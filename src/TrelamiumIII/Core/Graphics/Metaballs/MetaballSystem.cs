@@ -11,7 +11,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 ///     <list type="bullet">
 ///         <item>
 ///             <b>CheckMonoliths</b> is the one point in the frame where Terraria expects mods to
-///             be binding their own render targets -- it runs before the scene is drawn and
+///             be binding their own render targets as it runs before the scene is drawn and
 ///             nothing has claimed the backbuffer yet. Building the field anywhere later would
 ///             mean stealing a target mid-scene and putting back whatever was there.
 ///         </item>

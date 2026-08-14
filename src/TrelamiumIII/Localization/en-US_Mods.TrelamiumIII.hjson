@@ -53,7 +53,7 @@ Items: {
 		DisplayName: Sporeclot Sac
 		Tooltip:
 			'''
-			Sticks to enemies when tossed and builds up [Fungal Infection].
+			Sticks to enemies when tossed and builds up [buff:FungalInfection]
 			Fungal Infection is a stackable debuff, that when fully stacked, causes enemies to explode into transmittable spores
 			This effect can potentially chain across multiple targets
 			'''

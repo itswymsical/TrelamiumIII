@@ -8,7 +8,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 /// <remarks>
 ///     Kept at <see cref="PixelScale" /> below screen resolution for two reasons: the field is
 ///     blurry data rather than an image, so it loses nothing to the downscale, and the shader
-///     quantises its decisions to this grid -- one field texel becomes one chunky output pixel.
+///     quantises its decisions to this grid. One field texel becomes one chunky output pixel.
 /// </remarks>
 internal sealed class MetaballRenderTargetContent(MetaballLayer layer) : ARenderTargetContentByRequest
 {
@@ -39,7 +39,7 @@ internal sealed class MetaballRenderTargetContent(MetaballLayer layer) : ARender
         spriteBatch.Begin(
             SpriteSortMode.Deferred,
             BlendState.Additive,
-            SamplerState.LinearClamp,
+            SamplerState.PointClamp,
             DepthStencilState.None,
             RasterizerState.CullNone,
             null,

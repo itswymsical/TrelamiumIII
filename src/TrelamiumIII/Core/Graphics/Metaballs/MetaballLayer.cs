@@ -13,7 +13,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 ///         additively, so overlapping blobs sum into a continuous density field. That target is
 ///         then composited to the screen through <see cref="Shader" />, which cuts the field at a
 ///         threshold. Two blobs that merely sit near each other cross the threshold in the gap
-///         between them and fuse into one silhouette -- which is the whole trick.
+///         between them and fuse into one silhouette, which is the whole trick.
 ///     </para>
 ///     <para>
 ///         Layers are purely visual. Nodes do not damage, and nothing here reads or writes entity

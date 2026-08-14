@@ -4,9 +4,8 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 ///     One blob in a <see cref="MetaballLayer" />'s density field.
 /// </summary>
 /// <remarks>
-///     Nodes are simulated, but they are not entities -- they carry no damage, no owner and no
-///     immunity frames, and nothing outside the layer can be hit by one. A node is a place where
-///     the field is dense, and the layer's shader decides what that looks like.
+///     Nodes are simulated, but they are not entities like the gas system so they don't carry damage, or have an owner,
+///     immunity frames, etc., etc.
 /// </remarks>
 public struct MetaballNode
 {
@@ -20,13 +19,13 @@ public struct MetaballNode
     public float MaxLife;
 
     /// <summary>
-    ///     0.0 = very buoyant, 1.0 = very dense. <see cref="MetaballLayer" /> interpolates between
+    ///     0.0 = buoyoyoyant, 1.0 = dense. <see cref="MetaballLayer" /> interpolates between
     ///     its buoyancy and gravity constants across this range.
     /// </summary>
     public float Density;
 
     /// <summary>
-    ///     0.0 = flows freely, 1.0 = sluggish. Scales drag, and damps the lateral spread a node
+    ///     0.0 = flows freely, 1.0 = sluggish. Scales drag, and damps the spread a node
     ///     gets when it lands on something.
     /// </summary>
     public float Viscosity;
@@ -35,7 +34,7 @@ public struct MetaballNode
     public bool OnFloor;
     public bool OnWall;
 
-    /// <summary>Ticks this node has spent buried inside solid geometry.</summary>
+    /// <summary>Ticks this node has spent inside solid tiles.</summary>
     public int EnclosedTicks;
 
     /// <summary>
@@ -43,10 +42,9 @@ public struct MetaballNode
     /// </summary>
     /// <remarks>
     ///     Anchored nodes are pinned to <see cref="AnchorOffset" /> from the host's centre and skip
-    ///     collision entirely: they are cloth on a moving body, not gas in a room. Reseeding alone
-    ///     smears into a trail behind anything quick, which reads as exhaust rather than infection.
+    ///     collision entirely. 
     ///     The anchor releases on <see cref="AnchorTicks" /> expiry or host death, and the node
-    ///     finishes its life drifting normally -- so a cloud clings, then sloughs off.
+    ///     finishes its life drifting normally, so a cloud clings then falls off.
     /// </remarks>
     public int AnchorNPC;
 
@@ -56,7 +54,6 @@ public struct MetaballNode
 
     public readonly bool IsAnchored => AnchorNPC != NO_ANCHOR && AnchorTicks > 0;
 
-    /// <summary>Remaining fraction of life, which the layer draws the node's opacity from.</summary>
     public readonly float Alpha => MaxLife <= 0f ? 0f : Life / MaxLife;
 
     public readonly bool Active => Life > 0f;
