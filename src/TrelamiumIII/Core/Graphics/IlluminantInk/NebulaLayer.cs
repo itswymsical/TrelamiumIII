@@ -14,15 +14,71 @@ namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 internal sealed class NebulaLayer
 {
     private WrapperShaderData<Assets.Shaders.InkNebula.Parameters>? shader;
+    private WrapperShaderData<Assets.Shaders.InkPixelate.Parameters>? pixelate;
 
     public void Reset()
     {
         // Dropped rather than reused so a resolution change or a mod reload can't leave a
         // stale Effect bound to a dead device.
         shader = null;
+        pixelate = null;
     }
 
-    public void Draw(SpriteBatch spriteBatch, in InkFrame frame)
+    /// <summary>
+    ///     Draws the field into <see cref="InkTargets.Scene" />, through the pixel grid if one
+    ///     is configured.
+    /// </summary>
+    /// <remarks>
+    ///     When pixelating, the field is rendered at full resolution into the spare surface
+    ///     first and only then flattened to the grid, because the grid has to average what was
+    ///     under it -- see the note at the top of <c>InkPixelate.fx</c>. Rendering it small
+    ///     and scaling up would be cheaper and would turn the ink's filaments into static.
+    ///     <para />
+    ///     Borrowing <see cref="InkTargets.Swap" /> as the scratch surface is safe: the post
+    ///     chain fully overwrites it on its first pass, and nothing reads it before then.
+    /// </remarks>
+    public void Draw(SpriteBatch spriteBatch, GraphicsDevice device, InkTargets targets, in InkFrame frame)
+    {
+        var pixelSize = frame.PixelSize;
+
+        if (pixelSize <= 1)
+        {
+            DrawField(spriteBatch, in frame);
+            return;
+        }
+
+        device.SetRenderTarget(targets.Swap);
+        device.Clear(Color.Black);
+
+        DrawField(spriteBatch, in frame);
+
+        device.SetRenderTarget(targets.Scene);
+
+        pixelate ??= Assets.Shaders.InkPixelate.CreateP0();
+
+        var grid = pixelate.Parameters;
+        grid.uTexel = new Vector2(1f / Math.Max(targets.Width, 1), 1f / Math.Max(targets.Height, 1));
+        grid.uPixelSize = pixelSize;
+
+        // Linear, not point. The 4x4 lattice only lands on exact texel centres when the cell
+        // is a multiple of 4; at any other size point sampling silently drops whole columns
+        // of the cell from the average. Bilinear taps straddle the gaps and cover it.
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.Opaque,
+            SamplerState.LinearClamp,
+            DepthStencilState.None,
+            Main.Rasterizer
+        );
+
+        pixelate.Apply();
+
+        spriteBatch.Draw(targets.Swap, new Rectangle(0, 0, frame.Width, frame.Height), Color.White);
+
+        spriteBatch.End();
+    }
+
+    private void DrawField(SpriteBatch spriteBatch, in InkFrame frame)
     {
         shader ??= Assets.Shaders.InkNebula.CreateP0();
 
@@ -73,17 +129,17 @@ internal sealed class NebulaLayer
         // Both fields tile, so they are bound through the shader's own wrap samplers rather
         // than through s0 -- SpriteBatch owns s0 and its sampler state, and it would clamp
         // these into a smear at the edges.
-        parameters.uNoiseTex = Assets.Textures.Noise.FbmNoiseBright.Asset.Value;
+        parameters.uNoiseTex = Assets.Textures.Noise.Turbulence_09.Asset.Value;
         parameters.NoiseSampler = new HlslSampler2D
         {
-            Texture = Assets.Textures.Noise.FbmNoiseBright.Asset.Value,
+            Texture = Assets.Textures.Noise.Turbulence_09.Asset.Value,
             Sampler = SamplerState.LinearWrap,
         };
 
-        parameters.uCellTex = Assets.Textures.Noise.VoronoiNoise.Asset.Value;
+        parameters.uCellTex = Assets.Textures.Noise.Turbulence_05.Asset.Value;
         parameters.CellSampler = new HlslSampler2D
         {
-            Texture = Assets.Textures.Noise.VoronoiNoise.Asset.Value,
+            Texture = Assets.Textures.Noise.Turbulence_05.Asset.Value,
             Sampler = SamplerState.LinearWrap,
         };
 

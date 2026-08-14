@@ -23,7 +23,7 @@ internal static class InkStyle
     ///     Off-centre and below the logo: dead centre fights the logo for attention, and the
     ///     lensing reads better when the frame isn't symmetric about it.
     /// </remarks>
-    public static readonly Vector2 Singularity = new(0.565f, 0.545f);
+    public static readonly Vector2 Singularity = new(0.675f, 0.445f);
 
     /// <summary>Amplitude of the singularity's idle drift, in 0..1 screen space.</summary>
     public static readonly Vector2 SingularityDrift = new(0.012f, 0.008f);
@@ -37,18 +37,39 @@ internal static class InkStyle
     // these are measured rather than guessed. The two that are not free to move are
     // NebulaPivot and NebulaReliefEps -- see their notes.
 
-    public const float NebulaScale = 2.6f;
+    public const float NebulaScale = 2.22f;
 
     /// <summary>
-    ///     Median of the raw four-octave FBM sum for <c>FbmNoise2.png</c>.
+    ///     Where the raw four-octave FBM sum is recentred before being stretched. Doubles as
+    ///     the exposure control for the whole nebula.
     /// </summary>
     /// <remarks>
-    ///     Measured, not chosen: that texture averages far brighter than a symmetric noise
-    ///     field, and centring on the 0.5 one would assume pins the field at the top of its
-    ///     range and washes the whole nebula into flat grey fog. Re-measure if the bound
-    ///     noise texture is ever swapped.
+    ///     Set to a texture's true median this normalises the field. Measured medians:
+    ///     <c>FbmNoise2</c> 0.682, <c>FbmNoiseBright</c> 0.571. The value here sits well
+    ///     above the median of the texture actually bound, which pushes the field down its
+    ///     range and holds the ink dark -- so it is an art choice rather than a
+    ///     normalisation, and it is the first dial to reach for to change how bright the
+    ///     nebula reads overall.
+    ///     <para />
+    ///     If a different noise texture is bound, expect to re-tune by eye rather than to
+    ///     plug in that texture's median: what matters is where this sits relative to it.
     /// </remarks>
-    public const float NebulaPivot = 0.682f;
+    public const float NebulaPivot = 0.782f;
+
+    /// <summary>
+    ///     Edge of the nebula's pixel grid, in pixels at 1080p. 1 disables pixelation.
+    /// </summary>
+    /// <remarks>
+    ///     Scaled by resolution where it is used (see <see cref="InkFrame.PixelSize" />) so
+    ///     the ink reads equally chunky on a 4K panel as on a 1080p one, the same way
+    ///     Terraria scales its own menu. A fixed pixel count would shrink to nothing at high
+    ///     resolutions.
+    ///     <para />
+    ///     Applies to the nebula only. The starfield and motes stay crisp on purpose --
+    ///     quantising point-like sprites to the same grid makes them flicker between cells
+    ///     as they drift.
+    /// </remarks>
+    public const float NebulaPixelSize = 3.5f;
 
     /// <summary>Stretch that reopens the collapsed FBM histogram to a usable 0..1.</summary>
     public const float NebulaExpand = 5.0f;
@@ -154,7 +175,7 @@ internal static class InkStyle
     public const float MagnetForce = 0.34f;
 
     /// <summary>How far a fully magnetised mote stretches toward the cursor.</summary>
-    public const float MoteSpikeStretch = 1.9f;
+    public const float MoteSpikeStretch = 1.2f;
 
     public const float MoteRadiusMin = 9f;
     public const float MoteRadiusMax = 30f;
@@ -189,15 +210,9 @@ internal static class InkStyle
 
     // ---- logo -----------------------------------------------------------------------
 
-    /// <summary>
-    ///     Logo scale. ModLogo is 960x376, and the scene draws it centred on
-    ///     <c>logoDrawCenter</c> the way vanilla does, so this is sized to occupy roughly the
-    ///     footprint the vanilla logo does and leave the menu buttons clear.
-    /// </summary>
-    public const float LogoScale = 0.62f;
+    public const float LogoScale = 0.54f;
 
-    /// <summary>Nudge below vanilla's logo anchor, in UI-space pixels.</summary>
-    public const float LogoOffsetY = 15f;
+    public const float LogoOffsetY = 12f;
 
     /// <summary>
     ///     Alpha of the soft dark scrim laid behind the logo.

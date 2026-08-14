@@ -51,6 +51,16 @@ internal readonly struct InkFrame
     /// </summary>
     public float UnitToPixels => Height;
 
+    /// <summary>
+    ///     Edge of the nebula's pixel grid for this frame, in target pixels.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="InkStyle.NebulaPixelSize" /> is authored against 1080p and scaled here,
+    ///     so the grid keeps the same apparent chunkiness at any resolution instead of
+    ///     dissolving on a high-DPI panel. 1 means no pixelation and the pass is skipped.
+    /// </remarks>
+    public int PixelSize => Math.Max(1, (int)MathF.Round(InkStyle.NebulaPixelSize * Height / 1080f));
+
     /// <summary>Converts a polar offset from the singularity into a target pixel position.</summary>
     public Vector2 Orbit(float angle, float radius)
     {

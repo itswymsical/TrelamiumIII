@@ -118,7 +118,7 @@ internal static class IlluminantInkScene
         device.SetRenderTarget(Targets.Scene);
         device.Clear(Color.Black);
 
-        Compose(spriteBatch, in frame);
+        Compose(spriteBatch, device, in frame);
 
         var result = Post.Run(spriteBatch, device, Targets, in frame);
         var bloom = Post.PrepareBloom(in frame);
@@ -219,9 +219,13 @@ internal static class IlluminantInkScene
     }
 
     /// <summary>Draws the layer stack into the scene target, batched by blend mode.</summary>
-    private static void Compose(SpriteBatch spriteBatch, in InkFrame frame)
+    /// <remarks>
+    ///     The nebula takes the device because it may retarget mid-pass to run its pixel
+    ///     grid; it leaves <see cref="InkTargets.Scene" /> bound either way.
+    /// </remarks>
+    private static void Compose(SpriteBatch spriteBatch, GraphicsDevice device, in InkFrame frame)
     {
-        Nebula.Draw(spriteBatch, in frame);
+        Nebula.Draw(spriteBatch, device, Targets, in frame);
 
         spriteBatch.Begin(
             SpriteSortMode.Deferred,

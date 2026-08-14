@@ -75,8 +75,8 @@ internal sealed class SingularityLayer : IInkLayer
     public void DrawLight(SpriteBatch spriteBatch, in InkFrame frame)
     {
         var glowTexture = Assets.Textures.VFX.Glow.Asset.Value;
-        var flareTexture = Assets.Textures.VFX.GlowFlare.Asset.Value;
-        var trailTexture = Assets.Textures.VFX.BeamTrail_1.Asset.Value;
+        var flareTexture = Assets.Textures.VFX.Smoke_02.Asset.Value;
+        var trailTexture = Assets.Textures.VFX.BeamTrail_3.Asset.Value;
 
         var glowOrigin = glowTexture.Size() * 0.5f;
         var flareOrigin = flareTexture.Size() * 0.5f;
