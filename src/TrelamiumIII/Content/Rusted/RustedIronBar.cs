@@ -19,7 +19,7 @@ namespace TrelamiumIII.Content.Rusted
             Item.width = Item.height = 18;
             Item.maxStack = Item.CommonMaxStack;
             Item.rare = ItemRarityID.Gray;
-            Item.sellPrice(Item.buyPrice(copper: 3));
+            Item.value = Item.sellPrice(Item.buyPrice(copper: 3));
         }
     }
 }

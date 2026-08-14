@@ -1,0 +1,74 @@
+Keybinds: {
+	"Skip Cutscene.DisplayName": Skip  Cutscene
+	"Fast Forward Dialogue.DisplayName": Fast  Forward  Dialogue
+}
+
+Items: {
+	RustedIronBar: {
+		DisplayName: Rusted Iron Bar
+		Tooltip: ""
+	}
+
+	RustedIronBucket: {
+		DisplayName: Rusted Iron Bucket
+		Tooltip: ""
+	}
+
+	RustedIronPickaxe: {
+		DisplayName: Rusted Iron Pickaxe
+		Tooltip: ""
+	}
+
+	RustedIronSword: {
+		DisplayName: Rusted Iron Sword
+		Tooltip: ""
+	}
+
+	RustedAxe: {
+		DisplayName: Rusted Axe
+		Tooltip: ""
+	}
+
+	RustedHammer: {
+		DisplayName: Rusted Hammer
+		Tooltip: ""
+	}
+
+	RustedNugget: {
+		DisplayName: Rusted Nugget
+		Tooltip: ""
+	}
+
+	RustedPickaxe: {
+		DisplayName: Rusted Pickaxe
+		Tooltip: ""
+	}
+
+	TetanusShuriken: {
+		DisplayName: Tetanus Shuriken
+		Tooltip: ""
+	}
+
+	SporeclotSac: {
+		DisplayName: Sporeclot Sac
+		Tooltip:
+			'''
+			Sticks to enemies when tossed and builds up [Fungal Infection].
+			Fungal Infection is a stackable debuff, that when fully stacked, causes enemies to explode into transmittable spores
+			This effect can potentially chain across multiple targets
+			'''
+	}
+}
+
+Projectiles: {
+	TetanusShurikenProj.DisplayName: Tetanus Shuriken
+	SporeclotSacProj.DisplayName: Sporeclot Sac
+	SporeBlastProj.DisplayName: Spore Blast
+}
+
+Buffs: {
+	FungalInfection: {
+		DisplayName: Fungal Infection
+		Description: Spores are taking hold; a saturated host bursts and seeds everything nearby
+	}
+}
