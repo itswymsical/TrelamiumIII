@@ -51,7 +51,8 @@ public sealed class IlluminantInkMenu : ModMenu
 
         IlluminantInkScene.Update(InMenu);
     }
-
+    // TODO: maybe MenuBackground
+    // public override ModSurfaceBackgroundStyle MenuBackgroundStyle => base.MenuBackgroundStyle;
     public override bool PreDrawLogo(SpriteBatch spriteBatch, ref Vector2 logoDrawCenter, ref float logoRotation, ref float logoScale, ref Color drawColor)
     {
         drawColor = Color.White;

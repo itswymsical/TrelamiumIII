@@ -321,7 +321,11 @@ internal static class IlluminantInkScene
     {
         public override void OnWorldLoad()
         {
-            IlluminantInkScene.Update(active: false);
+            // OnWorldLoad runs on whichever thread loaded the world -- a pool worker, not the
+            // main thread -- and FNA3D refuses to touch a graphics resource from anywhere else,
+            // so disposing the targets inline here throws and tModLoader reports it as a world
+            // data problem. Deferring the teardown puts it on the next frame's main thread.
+            Main.QueueMainThreadAction(static () => IlluminantInkScene.Update(active: false));
         }
     }
 }
