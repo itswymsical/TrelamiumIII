@@ -1,0 +1,27 @@
+<Project Sdk="Tomat.Terraria.ModLoader.Sdk/2.1.1">
+
+  <Import Project="../../build/TrelamiumIII.Build.targets" />
+
+  <PropertyGroup>
+    <AssemblyName>TrelamiumIII</AssemblyName>
+    <RootNamespace>TrelamiumIII</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Content\Agate\" />
+    <Folder Include="Content\Menus\" />
+    <Folder Include="Core\" />
+    <Folder Include="Assets\" />
+  </ItemGroup>
+
+</Project>

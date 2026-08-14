@@ -1,0 +1,8 @@
+<Project>
+
+    <Import Project="TrelamiumIII.Analyzers.props"/>
+    <Import Project="TrelamiumIII.Publicizer.props"/>
+    <Import Project="TrelamiumIII.References.props"/>
+    <Import Project="TrelamiumIII.Usings.props"/>
+
+</Project>

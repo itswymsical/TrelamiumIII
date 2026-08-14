@@ -1,0 +1,20 @@
+#  Line text + anchor markers only. Flow lives in Core/Dialogue/Definitions.
+#
+#  Anchors:
+#    []       point anchor  - pairs with a point affect (Pause)
+#    [text]   span anchor   - pairs with a span affect (Wave, Shake, Slow, Fast, Pitch);
+#                             the text inside the brackets is what gets displayed
+#    [speakerName:Merchant]  substituted with that NPC's given name (not an affect anchor)
+DialogueLibrary: {
+	Example: {
+		Greeting: {
+			Line1.Text: This line pauses right here[] before finishing.
+			Line2.Text: And this one has a [wavy] word in it.
+		}
+	}
+}
+
+Keybinds: {
+	"Skip Cutscene.DisplayName": Skip  Cutscene
+	"Fast Forward Dialogue.DisplayName": Fast  Forward  Dialogue
+}

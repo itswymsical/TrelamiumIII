@@ -1,0 +1,3 @@
+displayName = Trelamium III
+author = wymsical
+version = 0.1

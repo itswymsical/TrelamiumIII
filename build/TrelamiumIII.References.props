@@ -1,0 +1,12 @@
+<Project>
+
+    <ItemGroup>
+      <!-- Drop mod .dll files into src/TrelamiumIII/References and reference them here.
+           Remember to also list them under modReferences in build.txt.
+      <Reference Include="ExampleLib">
+        <HintPath>References/ExampleLib.dll</HintPath>
+      </Reference>
+      -->
+    </ItemGroup>
+
+</Project>
