@@ -565,7 +565,7 @@ public class GirthquakeProj : ModProjectile
         {
             Amplitude = 16f * Charge,
             Thickness = (16f * 4.5f) * Charge,
-            Reach = (16f * 12) * Charge,
+            Reach = (16f * 3) * Charge,
             Blend = 0.64f,
             Snap = 0.75f,
         });

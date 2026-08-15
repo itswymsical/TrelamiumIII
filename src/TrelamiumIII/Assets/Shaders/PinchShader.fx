@@ -24,7 +24,7 @@
 // FilterManager.EndCapture draws the captured frame with Main.ColorOfTheSkies as the vertex
 // colour whenever any filter is active, and with Color.White only when none is. So COLOR0 is
 // the sky tint, not white, and `* col` crushes the ENTIRE screen toward black anywhere the sky
-// is dark -- space, glowing mushroom, underground, night -- and does so even at uMix 0.
+// is dark. THis means space, glowing mushroom, underground, night, blah blah, and does so even at uMix 0.
 // If this shader is ever reused for a plain sprite draw, tint through a uniform instead.
 
 sampler2D ImageSampler : register(s0);
