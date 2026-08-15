@@ -68,6 +68,17 @@ Items: {
 			The longer you hold the girth, the bigger the boom.
 			'''
 	}
+
+	Myclobutanil: {
+		DisplayName: Myclobutanil
+		Tooltip:
+			'''
+			Eating certain mushrooms will flood you with life regeneration for 3 seconds (+750% life regen)
+			After 3 seconds, your defense is stripped to nothing until potion sickness ends
+			Reduces potion sickness afflicted by mushrooms to 25 seconds
+			'''
+		PermanentConsumable: Permanent {0}
+	}
 }
 
 Projectiles: {
