@@ -58,7 +58,7 @@ public class GirthquakeShardProj : ModProjectile
         Projectile.tileCollide = true;
         Projectile.ignoreWater = false;
 
-        Projectile.penetrate = 1;
+        Projectile.penetrate = 2;
 
         Projectile.timeLeft = 150;
     }

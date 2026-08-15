@@ -69,6 +69,16 @@ Items: {
 			'''
 	}
 
+	OrphanSporeStaff: {
+		DisplayName: Orphan Spore Staff
+		Tooltip:
+			'''
+			Summons Fungore's orphaned child to fight for you
+			Shroomson grows mushrooms on demand and throws them at your foes
+			Left alone for long enough, he will grow one for you!
+			'''
+	}
+
 	Myclobutanil: {
 		DisplayName: Myclobutanil
 		Tooltip:
@@ -79,6 +89,21 @@ Items: {
 			'''
 		PermanentConsumable: Permanent {0}
 	}
+
+	FungoreBag: {
+		DisplayName: Treasure Bag (Fungore)
+		Tooltip: ""
+	}
+
+	FungoreMask: {
+		DisplayName: Fungore Mask
+		Tooltip: ""
+	}
+
+	FungoreTrophy: {
+		DisplayName: Fungore Trophy
+		Tooltip: ""
+	}
 }
 
 Projectiles: {
@@ -87,6 +112,8 @@ Projectiles: {
 	SporeBlastProj.DisplayName: Spore Blast
 	GirthquakeProj.DisplayName: Girthquake Proj
 	GirthquakeShardProj.DisplayName: Girthquake Shard Proj
+	ShroomsonMinion.DisplayName: Shroomson
+	ShroomsonMushroom.DisplayName: Mushroom
 }
 
 Buffs: {
@@ -94,4 +121,19 @@ Buffs: {
 		DisplayName: Fungal Infection
 		Description: Spores are taking hold; a saturated host bursts and seeds everything nearby
 	}
+
+	ShroomsonBuff: {
+		DisplayName: Shroomson
+		Description: Your son will fight for you
+	}
+
+	FungalInfectionHostile: {
+		DisplayName: Fungal Infection Hostile
+		Description: Mods.TrelamiumIII.Buffs.FungalInfectionHostile.Description
+	}
+}
+
+Misc: {
+	SonsMushroom: Son's Mushroom
+	SonsMushroomFlavour: Grown for you, by your son
 }

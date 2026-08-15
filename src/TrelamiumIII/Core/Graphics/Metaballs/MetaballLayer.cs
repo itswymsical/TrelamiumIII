@@ -108,7 +108,7 @@ public abstract class MetaballLayer
             MaxLife = life,
             Density = density < 0f ? DefaultDensity : density,
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
-            AnchorNPC = MetaballNode.NO_ANCHOR,
+            AnchorHost = null,
         });
     }
 
@@ -119,9 +119,14 @@ public abstract class MetaballLayer
     /// <remarks>
     ///     The offset is captured once, at spawn, so the cloud keeps its shape as the host moves
     ///     instead of being re-scattered every tick.
+    ///     <para>
+    ///         Takes an <see cref="Entity" /> rather than one overload per host kind: everything the
+    ///         anchor needs is on the base, and a second copy of this body is exactly how a player
+    ///         host ended up being looked up in the NPC array.
+    ///     </para>
     /// </remarks>
     public void SpawnAnchoredNode(
-        NPC host,
+        Entity host,
         Vector2 worldPosition,
         Vector2 velocity,
         float radius,
@@ -144,7 +149,7 @@ public abstract class MetaballLayer
             MaxLife = life,
             Density = density < 0f ? DefaultDensity : density,
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
-            AnchorNPC = host.whoAmI,
+            AnchorHost = host,
             AnchorOffset = worldPosition - host.Center,
             AnchorTicks = anchorTicks,
         });
@@ -197,9 +202,7 @@ public abstract class MetaballLayer
     /// </summary>
     private static void FollowAnchor(ref MetaballNode node)
     {
-        NPC host = Main.npc[node.AnchorNPC];
-
-        if (host is not { active: true })
+        if (node.AnchorHost is not { active: true } host)
         {
             Release(ref node);
             return;
@@ -220,15 +223,10 @@ public abstract class MetaballLayer
     /// </summary>
     private static void Release(ref MetaballNode node)
     {
-        if (node.AnchorNPC != MetaballNode.NO_ANCHOR)
-        {
-            NPC host = Main.npc[node.AnchorNPC];
+        if (node.AnchorHost is { active: true } host)
+            node.Velocity += host.velocity * 0.35f;
 
-            if (host is { active: true })
-                node.Velocity += host.velocity * 0.35f;
-        }
-
-        node.AnchorNPC = MetaballNode.NO_ANCHOR;
+        node.AnchorHost = null;
         node.AnchorTicks = 0;
     }
 

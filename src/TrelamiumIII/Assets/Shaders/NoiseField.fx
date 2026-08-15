@@ -6,11 +6,11 @@
 // so one shader serves both call sites unchanged: the visualizer element's
 // VisualizerPipeline.PostProcess and the chart effect's ScreenFxRenderer.PostProcess
 // (both bind the frame to s0 and draw Opaque). uOpacity is the contribution scalar each
-// side folds its own weight into — the element its lane fade, the chart effect its
+// side folds its own weight into. The element its lane fade, the chart effect its
 // envelope. Same trick BloomShader already uses to serve both paths.
 //
-// Built on the tiling noise texture through an explicit wrap sampler — the VisNoise /
-// VisEnergyPortal approach — so the FBM tiles past 0..1 instead of edge-clamping into
+// Built on the tiling noise texture through an explicit wrap sampler, the VisNoise /
+// VisEnergyPortal approach so the FBM tiles past 0..1 instead of edge-clamping into
 // a smear. Two decorrelated low-frequency taps domain-warp the lookup, which is what
 // turns flat FBM into something that curls.
 //
@@ -19,12 +19,12 @@
 //   uRise       upward scroll speed (smoke climbs)
 //   uDrift      sideways scroll speed
 //   uWarp       domain-warp strength (turbulence)
-//   uCoverage   density threshold MIDPOINT — the noise value that lands at 50% alpha
+//   uCoverage   density threshold MIDPOINT, the noise value that lands at 50% alpha
 //   uSoftness   width of the feather band centred on that midpoint (= inverse contrast)
 //   uGround     0..1 bottom-anchoring: 0 = even haze, 1 = hugs the lower edge
 //   uShade      how dark the thin wisps go relative to the tint (0..1)
 //   uOpacity    max alpha (already x the element's lane fade)
-//   uReact      0..1 audio boost — billows the smoke on hits
+//   uReact      0..1 audio boost, billows the smoke on hits
 //   uAspect     (width/height, 1) so the curls don't stretch on a wide target
 //   uTint       smoke colour
 
@@ -98,7 +98,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     float soft = max(uSoftness, 0.001);
 
     // The band is CENTRED on uCoverage, so softness changes contrast without also
-    // sliding the density — the two knobs stay independent in the editor.
+    // sliding the density so the two knobs stay independent in the editor.
     //
     // Scale matters more than it looks: four octaves at halving amplitude average four
     // samples of a mean-0.5 field, so n lands in a narrow ~0.47 +/- 0.04 band. A feather
@@ -113,7 +113,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
 
     a = saturate(a * uOpacity);
 
-    // Thin wisps read darker than the dense core — cheap stand-in for self-shadowing.
+    // Thin wisps read darker than the dense core, a cheap stand-in for self-shadowing.
     float3 smoke = uTint * lerp(saturate(uShade), 1.0, saturate(n * 1.4));
 
     float4 scene = tex2D(SceneSampler, uv);

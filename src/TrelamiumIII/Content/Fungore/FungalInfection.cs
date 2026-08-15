@@ -18,6 +18,37 @@ public sealed class FungalInfection : ModBuff
     }
 }
 
+public sealed class FungalInfectionHostile : ModBuff
+{
+    public override string Texture => AssetReferences.Content.Fungore.FungalInfection.KEY;
+
+    public override void SetStaticDefaults()
+    {
+        Main.debuff[Type] = true;
+        Main.pvpBuff[Type] = false;
+        Main.buffNoSave[Type] = true;
+        BuffID.Sets.LongerExpertDebuff[Type] = true;
+    }
+
+    public override void Update(Player player, ref int buffIndex)
+    {
+        player.GetModPlayer<FungalInfectionPlayer>().fungalInfection = true;
+        SporeLayer.Cling(player, 0.5f);
+    }
+}
+
+public class FungalInfectionPlayer : ModPlayer
+{
+    public bool fungalInfection;
+    public override void ResetEffects() => fungalInfection = false;
+    public override void UpdateDead() => fungalInfection = false;
+
+    public override void UpdateBadLifeRegen()
+    {
+        if (fungalInfection) Player.lifeRegen -= 2;
+    }
+}
+
 public sealed class FungalInfectionNPC : GlobalNPC
 {
     public const int MAX_STACKS = 5;
@@ -213,23 +244,6 @@ public sealed class FungalInfectionNPC : GlobalNPC
     }
 }
 
-/// <summary>
-///     One arm of a bloom: an invisible carrier that drags a tail of spores outward and seeds a
-///     stack of <see cref="FungalInfection" /> into anything it passes through.
-/// </summary>
-/// <remarks>
-///     <para>
-///         The blast is deliberately a fan of separate projectiles rather than one radius check.
-///         Overlapping arms near the origin means something standing next to the host is caught
-///         several times and takes several stacks, while something at the edge takes one -- the
-///         falloff comes out of the geometry instead of a distance curve.
-///     </para>
-///     <para>
-///         It does not collide with tiles. A pressure wave of spores that dies on the first cave
-///         bump would make the weapon's payoff feel arbitrary; vanilla explosions do not test
-///         terrain for their damage either. One bool if that turns out to be the wrong call.
-///     </para>
-/// </remarks>
 public sealed class SporeBlastProj : ModProjectile
 {
     public const int BLAST_COUNT = 14;
@@ -258,7 +272,6 @@ public sealed class SporeBlastProj : ModProjectile
 
     public override string Texture => AssetReferences.Content.Fungore.SporeclotSac.KEY;
 
-    /// <summary>Fires the ring. Server-authoritative, so the blast exists once and syncs outward.</summary>
     public static void SpawnRing(NPC source, Vector2 center, int owner)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -317,8 +330,6 @@ public sealed class SporeBlastProj : ModProjectile
         if (Main.dedServ || Projectile.timeLeft % SPORE_INTERVAL != 0)
             return;
 
-        // The visible half of the explosion. Radius tapers with the arm's remaining life so the
-        // cloud is fat at the origin and wispy at the leading edge.
         float taper = Projectile.timeLeft / (float)MAX_LIFETIME;
 
         SporeLayer.Trail(Projectile.Center, Projectile.velocity * 0.18f, MathHelper.Lerp(8f, 20f, taper));

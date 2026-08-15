@@ -128,10 +128,11 @@ public sealed class SporeLayer : MetaballLayer
     }
 
     /// <summary>
-    ///     The steady exhalation of an infected host. <paramref name="intensity" /> runs 0..1 with
-    ///     the stack count, and scales how much of the body the cloud covers.
+    ///     Clings a cloud that adheres to an infected host, NPC or player alike.
+    ///     <paramref name="intensity" /> runs 0..1 with the stack count, and scales how much of the
+    ///     body the cloud covers.
     /// </summary>
-    public static void Cling(NPC host, float intensity)
+    public static void Cling(Entity host, float intensity)
     {
         if (Layer is not { } layer || host is not { active: true })
             return;
@@ -181,6 +182,38 @@ public sealed class SporeLayer : MetaballLayer
                 life: Main.rand.NextFloat(130f, 190f)
             );
         }
+    }
+
+    /// <summary>
+    ///     The opposite of a burst: spores drawn inward on a point until they set into something
+    ///     solid. <paramref name="progress" /> runs 0..1 and tightens the ring as it climbs.
+    /// </summary>
+    /// <remarks>
+    ///     Called once per node wanted, per tick -- the caller decides how thick the cloud gets by
+    ///     how often it asks, the same way <see cref="Cling(Entity, float)" /> works.
+    /// </remarks>
+    public static void Coalesce(Vector2 center, float progress, float radius = 32f)
+    {
+        if (Layer is not { } layer)
+            return;
+
+        progress = MathHelper.Clamp(progress, 0f, 1f);
+
+        float ring = radius * MathHelper.Lerp(1f, 0.3f, progress);
+        Vector2 offset = Main.rand.NextVector2CircularEdge(ring, ring);
+
+        // Aimed at the centre and timed to roughly arrive there as it expires, so the cloud reads as
+        // being pulled in rather than merely drawn smaller each tick.
+        Vector2 velocity = -offset / 15f;
+
+        layer.SpawnNode(
+            center + offset,
+            velocity,
+            radius: MathHelper.Lerp(5f, 12f, progress) * Main.rand.NextFloat(0.8f, 1.2f),
+            life: Main.rand.NextFloat(14f, 22f),
+            // Neutral, so nothing rises or sinks out of the knot on its way in.
+            density: 0.5f
+        );
     }
 
     /// <summary>

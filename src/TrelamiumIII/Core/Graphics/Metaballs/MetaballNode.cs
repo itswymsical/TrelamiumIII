@@ -9,9 +9,6 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 /// </remarks>
 public struct MetaballNode
 {
-    /// <summary>Sentinel for <see cref="AnchorNPC" />: this node drifts under its own physics.</summary>
-    public const int NO_ANCHOR = -1;
-
     public Vector2 Position;
     public Vector2 Velocity;
     public float Radius;
@@ -38,21 +35,27 @@ public struct MetaballNode
     public int EnclosedTicks;
 
     /// <summary>
-    ///     Index of the NPC this node rides, or <see cref="NO_ANCHOR" />.
+    ///     The thing this node rides, or <see langword="null" /> when it drifts under its own physics.
     /// </summary>
     /// <remarks>
     ///     Anchored nodes are pinned to <see cref="AnchorOffset" /> from the host's centre and skip
-    ///     collision entirely. 
+    ///     collision entirely.
     ///     The anchor releases on <see cref="AnchorTicks" /> expiry or host death, and the node
     ///     finishes its life drifting normally, so a cloud clings then falls off.
+    ///     <para>
+    ///         Held as the entity rather than as an index into one of the arrays, because a node can
+    ///         ride an NPC or a player and there is no index that means the same thing in both. Both
+    ///         arrays are pooled for the life of the game, so the reference costs nothing to keep, and
+    ///         a host whose slot gets reused reads as dead rather than as somebody else.
+    ///     </para>
     /// </remarks>
-    public int AnchorNPC;
+    public Entity? AnchorHost;
 
     public Vector2 AnchorOffset;
 
     public int AnchorTicks;
 
-    public readonly bool IsAnchored => AnchorNPC != NO_ANCHOR && AnchorTicks > 0;
+    public readonly bool IsAnchored => AnchorHost is not null && AnchorTicks > 0;
 
     public readonly float Alpha => MaxLife <= 0f ? 0f : Life / MaxLife;
 
