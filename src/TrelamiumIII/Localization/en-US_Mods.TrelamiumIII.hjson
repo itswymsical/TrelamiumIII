@@ -64,8 +64,8 @@ Items: {
 		Tooltip:
 			'''
 			Must be lifted over your shoulders via holding attack.
-			Slamming down the Girthquake shatters the earth beneath you, blasting out damaging shrapnel.
-			The longer you hold the girth, the bigger the boom.
+			Slamming down the Girthquake shatters the earth beneath you, blasting out damaging shrapnel
+			The longer you hold the girth, the bigger the boom...
 			'''
 	}
 
@@ -104,6 +104,21 @@ Items: {
 		DisplayName: Fungore Trophy
 		Tooltip: ""
 	}
+
+	PossessedWorkshop: {
+		DisplayName: Possessed Workshop
+		Tooltip:
+			'''
+			Summons an apparition that haunts crafting stations
+			Right click the apparition to give it crafting stations, doing so will possess them to follow you
+			Each possessed station counts as a valid station for crafting
+			'''
+	}
+
+	FahHammer: {
+		DisplayName: Fah Hammer
+		Tooltip: ""
+	}
 }
 
 Projectiles: {
@@ -114,6 +129,9 @@ Projectiles: {
 	GirthquakeShardProj.DisplayName: Girthquake Shard Proj
 	ShroomsonMinion.DisplayName: Shroomson
 	ShroomsonMushroom.DisplayName: Mushroom
+	PossessedWorkshopPet.DisplayName: Possessed Workshop
+	WorkshopStationPet.DisplayName: Workshop Station Pet
+	FahHammerProj.DisplayName: Fah Hammer Proj
 }
 
 Buffs: {
@@ -131,9 +149,15 @@ Buffs: {
 		DisplayName: Fungal Infection Hostile
 		Description: Mods.TrelamiumIII.Buffs.FungalInfectionHostile.Description
 	}
+
+	PossessedWorkshopBuff: {
+		DisplayName: Possessed Workshop
+		Description: Your workshop is following you around
+	}
 }
 
 Misc: {
 	SonsMushroom: Son's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
+	WorkshopSlot: Station Slot
 }
