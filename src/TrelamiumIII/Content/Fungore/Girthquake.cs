@@ -4,6 +4,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Graphics.CameraModifiers;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Graphics.Shockwaves;
 using TrelamiumIII.Utilities;
 using static TrelamiumIII.Utilities.EaseFunction;
 
@@ -559,6 +560,15 @@ public class GirthquakeProj : ModProjectile
         float charge = ReleasedCharge;
 
         SoundEngine.PlaySound(GroundSound with { Pitch = GroundSound.Pitch - charge * 0.3f }, impactPoint);
+
+        TileShockwaveSystem.Spawn(new BlockWave(impactPoint, 90f * Charge, lifetime: 30)
+        {
+            Amplitude = 16f * Charge,
+            Thickness = (16f * 4.5f) * Charge,
+            Reach = (16f * 12) * Charge,
+            Blend = 0.64f,
+            Snap = 0.75f,
+        });
 
         Shake(charge);
         Rubble(charge);

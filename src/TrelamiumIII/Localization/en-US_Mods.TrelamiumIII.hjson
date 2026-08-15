@@ -114,11 +114,6 @@ Items: {
 			Each possessed station counts as a valid station for crafting
 			'''
 	}
-
-	FahHammer: {
-		DisplayName: Fah Hammer
-		Tooltip: ""
-	}
 }
 
 Projectiles: {

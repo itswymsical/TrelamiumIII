@@ -58,13 +58,13 @@ public sealed class Pause(int frames = 60) : DialogueAffect
     public override void OnReveal(DialogueTick tick) => tick.HoldFrames = frames;
 }
 
-/// <summary>Type the covered span <c>factor</c>× slower (replaces &lt;slow&gt;).</summary>
+/// <summary>Type the covered span <c>factor</c>x slower (replaces &lt;slow&gt;).</summary>
 public sealed class Slow(float factor = 2f) : DialogueAffect
 {
     public override void OnReveal(DialogueTick tick) => tick.SpeedMultiplier = factor <= 0f ? 1f : 1f / factor;
 }
 
-/// <summary>Type the covered span <c>factor</c>× faster (replaces &lt;fast&gt;).</summary>
+/// <summary>Type the covered span <c>factor</c>x faster (replaces &lt;fast&gt;).</summary>
 public sealed class Fast(float factor = 2f) : DialogueAffect
 {
     public override void OnReveal(DialogueTick tick) => tick.SpeedMultiplier = factor <= 0f ? 1f : factor;
