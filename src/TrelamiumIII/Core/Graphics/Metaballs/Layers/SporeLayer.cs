@@ -2,31 +2,12 @@ using ReLogic.Content;
 
 namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
-/// <summary>
-///     The Fungore spore cloud: warm ochre dust that hangs in the air and clings to whatever it
-///     lands on.
-/// </summary>
-/// <remarks>
-///     <para>
-///         Tuned to be near-neutrally buoyant. Spores are heavy enough that a burst does not rocket
-///         out of frame, light enough that the cloud creeps upward and pools under ceilings rather
-///         than raining onto the floor -- it should read as something that lingers where it was
-///         released, because that is what makes the infection look contagious.
-///     </para>
-///     <para>
-///         The layer is decoration only. Nothing here inflicts Fungal Infection; see
-///         <c>FungalInfectionNPC</c>, which owns the stacks and calls into the emitters below to
-///         show them.
-///     </para>
-/// </remarks>
 public sealed class SporeLayer : MetaballLayer
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
 
-    // Density sits below the midpoint so the buoyancy/gravity lerp lands just negative: a slow
-    // rise, not a plume.
     protected override float DefaultDensity => 0.28f;
 
     protected override float DefaultViscosity => 0.55f;
@@ -86,7 +67,7 @@ public sealed class SporeLayer : MetaballLayer
         effect.Parameters["Bands"]?.SetValue(5f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.86f);
 
-        // Fungore's cap: rust through burnt orange to a pale amber core, rimmed in gold.
+        // Fungore's cap :3 rust through burnt orange to a pale amber core, rimmed in gold.
         effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.28f, 0.10f, 0.05f));
         effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.74f, 0.32f, 0.10f));
         effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.94f, 0.63f, 0.18f));
@@ -102,7 +83,7 @@ public sealed class SporeLayer : MetaballLayer
     }
 
     /// <summary>
-    ///     Spores landing on tiles pack down: they slow, thicken, and creep along the surface.
+    ///     Spores landing on tiles pack down and creep along the surface.
     /// </summary>
     protected override void OnTileContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
     {

@@ -9,6 +9,7 @@ public class RustedPickaxe : ModItem
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useTime = 17;
         Item.useAnimation = 24;
+        Item.knockBack = 0.5f;
         Item.pick = 40;
         Item.DamageType = DamageClass.Melee;
         Item.rare = ItemRarityID.Gray;

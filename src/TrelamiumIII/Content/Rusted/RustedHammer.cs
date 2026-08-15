@@ -9,6 +9,8 @@ public class RustedHammer : ModItem
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useTime = 17;
         Item.useAnimation = 24;
+        Item.knockBack = 5.25f;
+
         Item.hammer = 40;
         Item.DamageType = DamageClass.Melee;
         Item.rare = ItemRarityID.Gray;

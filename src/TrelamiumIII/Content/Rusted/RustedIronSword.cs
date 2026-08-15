@@ -9,6 +9,8 @@ public class RustedIronSword : ModItem
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useTime = Item.useAnimation = 20;
         Item.DamageType = DamageClass.Melee;
+        Item.knockBack = 2.75f;
+
         Item.damage = 8;
         Item.rare = ItemRarityID.Gray;
         Item.UseSound = SoundID.Item1;

@@ -10,6 +10,8 @@ public class RustedAxe : ModItem
         Item.useTime = 17;
         Item.useAnimation = 24;
         Item.axe = 9;
+        Item.knockBack = 3.5f;
+
         Item.DamageType = DamageClass.Melee;
         Item.rare = ItemRarityID.Gray;
         Item.UseSound = SoundID.Item1;

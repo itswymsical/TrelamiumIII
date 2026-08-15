@@ -58,12 +58,24 @@ Items: {
 			This effect can potentially chain across multiple targets
 			'''
 	}
+
+	Girthquake: {
+		DisplayName: Girthquake
+		Tooltip:
+			'''
+			Must be lifted over your shoulders via holding attack.
+			Slamming down the Girthquake shatters the earth beneath you, blasting out damaging shrapnel.
+			The longer you hold the girth, the bigger the boom.
+			'''
+	}
 }
 
 Projectiles: {
 	TetanusShurikenProj.DisplayName: Tetanus Shuriken
 	SporeclotSacProj.DisplayName: Sporeclot Sac
 	SporeBlastProj.DisplayName: Spore Blast
+	GirthquakeProj.DisplayName: Girthquake Proj
+	GirthquakeShardProj.DisplayName: Girthquake Shard Proj
 }
 
 Buffs: {
