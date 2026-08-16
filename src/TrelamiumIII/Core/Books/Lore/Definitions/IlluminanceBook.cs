@@ -75,9 +75,9 @@ public static class IlluminanceBook
             .Prose("Ch3.Second", BlockStyle.Body with { Align = TextAlign.Justify })
 
             .Prose("Ch3.Third", BlockStyle.Body with { Align = TextAlign.Justify })
-            .Marginalia("Ch3.Marginal", offset: new Vector2(8f, -10f), rotation: -0.04f, width: 118f)
+            .StickyNote("Ch3.Marginal", offset: new Vector2(9f, -10f), rotation: -0.04f, width: 108f)
 
-            .Rule(span: 0.4f)
+            .Rule(span: 0.8f)
             .Quote("Ch3.Excerpt")
 
             .Panel(panel => panel

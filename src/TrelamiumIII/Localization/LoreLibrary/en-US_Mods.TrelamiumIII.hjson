@@ -37,22 +37,19 @@ LoreLibrary: {
 				It was put to me, at Leiden, that an instrument which must shine in order to read cannot be trusted to report on what it has shone at. I answered that this is true of the eye also, and the room laughed, and I took the laugh for an answer and carried it about with me for thirty years.
 				'''
 			Closing:
-			'''
-			Here, then, is the whole of my discovery, stated as plainly as I am able, and you will see it is nothing:[p]There are people upon whom the light of others falls, and does not stop. It goes through, and comes out altered, it lands on whoever is standing near. 
-			Most of us are surfaces. A very few are not. I could not measure that directly and I never have... What I measured was the darkness it made behind it and I described the darkness lovingly and in great detail. The world thought of it remarkable; they called it a discovery, and I failed correct the world...
-			[p]After said events, I went to the eleventh parish in February to find out what was standing in the middle of my figures.[p] To my surprise, it was a woman hanging cloth, and she was perfectly ordinary, yet-I have never in my life seen anything so bright...
-			'''
+				'''
+				Here, then, is the whole of my discovery, stated as plainly as I am able, and you will see it is nothing:[p]There are people upon whom the light of others falls, and does not stop. It goes through, and comes out altered, it lands on whoever is standing near. 
+				Most of us are surfaces. A very few are not. I could not measure that directly and I never have... What I measured was the darkness it made behind it and I described the darkness lovingly and in great detail. The world thought of it remarkable; they called it a discovery, and I failed correct the world...
+				[p]After said events, I went to the eleventh parish in February to find out what was standing in the middle of my figures.[p] To my surprise, it was a woman hanging cloth, and she was perfectly ordinary, yet-I have never in my life seen anything so bright...
+				'''
 		}
 
 		Ch3: {
 			Title: Ch. 3 | The Eleventh Parish
-			Opening:
-			'''
-			I introduced myself quite poorly. I have introduced myself poorly perhaps four hundred times in my life and remember only this one, which should tell you something about the reliability of the account that follows.[p]I said to that woman I was conducting a survey. Her response was "I am hanging washing", in the tone of a woman correcting an error of fact, and went on doing it. I stood in the cold and watched a stranger peg out sheets and could not for the life of me have told you why I did not leave. I had my figures! The figures were the reason I had come and the figures were finished. I stayed until the basket was empty, and then I asked whether I might come back tomorrow, and she said that the lane was public and she could hardly stop me, which I have since decided was the kindest thing anyone has ever said to me.
-			'''
+			Opening: I introduced myself quite poorly. I have introduced myself poorly perhaps four hundred times in my life and remember only this one, which should tell you something about the reliability of the account that follows.[p]I said to that woman I was conducting a survey. Her response was "I am hanging washing", in the tone of a woman correcting an error of fact, and went on doing it. I stood in the cold and watched a stranger peg out sheets and could not for the life of me have told you why I did not leave. I had my figures! The figures were the reason I had come and the figures were finished. I stayed until the basket was empty, and then I asked whether I might come back tomorrow, and she said that the lane was public and she could hardly stop me, which I have since decided was the kindest thing anyone has ever said to me.
 			Second: I came back for eleven months.[p]I brought her books, because I did not know what else a man brings. She read them at the rate of a woman with four hours a week to spare and returned them with opinions I was not prepared for - she thought Locke evasive, and said so in one sentence that I have never satisfactorily answered.[p]I also brought a notebook. I want to be exact about this, because it is the hinge of my life and I have spent thirty years describing it as an incidental. I brought a notebook, and I wrote in it, and she never once asked what was in it, and I never once offered. We walked a great deal that spring. I recorded what she said on those walks in the evenings, from memory, in a hand I kept small.[p]*I have told this story in company as a charming detail. It was not a charming detail. There were two people on those walks and only one of them knew that a record was being kept.*
 			Third: I will name her now. I said in the first chapter that I would not, and I find that I cannot get through this chapter without it, which is its own kind of evidence.[p]Her name was Hesper.[p]It means the evening star - the light that arrives at the end of the day, from very far off, having had nothing whatever to do with the day it arrives at the end of. I did not choose her name. I have never been able to decide whether that makes it worse.
-			Marginal: Page 31. He said he was not ready. He does it anyway, and then he apologises to the page instead of to her.
+			Marginal: her "figure..."
 			Excerpt: '''"You are making me into a place people go."'''
 			AsideTitle: On the keeping of notes
 			AsideBody: A record taken openly changes the thing recorded, and every man in my profession knows it, and we call this contamination and take pains against it. There is no term in our literature for a record taken quietly. I have looked. I would have used it.
@@ -67,6 +64,7 @@ LoreGlossary: {
 		Term: tidemark
 		Definition: The line a receding water level leaves behind. In the lower archive, a way of dating a shelf.
 	}
+
 	Figures: {
 		Term: figures
 		Definition: Recorded numbers; the readings of a survey. Laine's are tallies of a parish's disposition toward itself.
