@@ -4,6 +4,26 @@ Keybinds: {
 }
 
 Items: {
+
+	AcornLauncherItem: {
+		DisplayName: Acorn Launcher
+		Tooltip: Charges and fires acorns at high velocity
+	}
+
+	SaplingMakerItem: {
+		DisplayName: Sapling Maker
+		Tooltip: Deals hefty knockback and can be charged up to blast several acorns
+	}
+
+	SharpnutDaggerItem: {
+		DisplayName: Sharpnut Dagger
+		Tooltip:
+			'''
+			Impales and sticks to enemies
+			You deal 10% more damage on your target per impaled dagger
+			'''
+	}
+
 	RustedIronBar: {
 		DisplayName: Rusted Iron Bar
 		Tooltip: ""
@@ -46,7 +66,11 @@ Items: {
 
 	TetanusShuriken: {
 		DisplayName: Tetanus Shuriken
-		Tooltip: ""
+		Tooltip:
+		'''
+		Increases damage based on how many shurikens are stuck in your target
+		Each shuriken increases damage by 10%
+		'''
 	}
 
 	SporeclotSac: {
@@ -136,37 +160,39 @@ NPCs: {
 		Epithet: The Malevolent Myconid
 		Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
 	}
+
+	FungoreSporeSac.DisplayName: Spore Sac
 }
 
 Buffs: {
 	FungalInfection: {
 		DisplayName: Fungal Infection
-		Description: Spores are taking hold; a saturated host bursts and seeds everything nearby
+		Description: Spores are taking hold! a saturated host bursts and seeds everything nearby
 	}
 
 	ShroomsonBuff: {
 		DisplayName: Shroomson
-		Description: Your son will fight for you
+		Description: Your adoptive son will fight for you!
 	}
 
 	FungalInfectionHostile: {
 		DisplayName: Fungal Infection
-		Description: Spores are taking hold
+		Description: Spores are taking hold!
 	}
 
 	FungalInfectionSpore: {
 		DisplayName: Fungal Infection
-		Description: The spores went deep; this will not sit quietly
+		Description: The spores went deep! this will not sit quietly...
 	}
 
 	PossessedWorkshopBuff: {
 		DisplayName: Possessed Workshop
-		Description: Your workshop is following you around
+		Description: The apparition possesses your crafting stations, allowing you to craft from them anywhere!
 	}
 }
 
 Misc: {
-	SonsMushroom: Son's Mushroom
+	SonsMushroom: Shroomson's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
 	WorkshopSlot: Station Slot
 }

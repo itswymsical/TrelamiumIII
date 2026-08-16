@@ -13,7 +13,7 @@ public class SporeclotSac : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 6;
+        Item.damage = 9;
         Item.DamageType = DamageClass.Ranged;
         Item.crit = 2;
         Item.rare = ItemRarityID.Blue;

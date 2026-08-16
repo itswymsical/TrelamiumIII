@@ -3,6 +3,7 @@ using Terraria.DataStructures;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Content.Fungore;
 
@@ -27,7 +28,12 @@ public sealed class FungalInfectionHostile : ModBuff
         Main.debuff[Type] = true;
         Main.pvpBuff[Type] = false;
         Main.buffNoSave[Type] = true;
-        BuffID.Sets.LongerExpertDebuff[Type] = true;
+
+        // Off, and difficulty is handled by FungalInfectionPlayer.InfectionTicks instead. The
+        // vanilla flag is a blunt doubling applied on top of whatever duration was asked for, which
+        // turned a ten second cloud into twenty seconds of unreadable screen in expert -- and left
+        // no way to say that master should be harsher than expert without making expert worse too.
+        BuffID.Sets.LongerExpertDebuff[Type] = false;
     }
 
     public override void Update(Player player, ref int buffIndex)
@@ -77,6 +83,66 @@ public class FungalInfectionPlayer : ModPlayer
     public const int SPORE_BORNE = 2;
 
     /// <summary>
+    ///     Saturation ceiling.
+    /// </summary>
+    /// <remarks>
+    ///     Twice what a host can carry, and it buys something completely different. On an NPC the
+    ///     stack count is a fuse -- it raises damage and eventually ruptures. Here it does neither:
+    ///     the damage is fixed by the strain, and stacking only makes the world harder to look at.
+    ///     A player who stands in the gas is punished by being unable to read the fight, which is a
+    ///     cost they can play around, rather than by a number they cannot see.
+    /// </remarks>
+    public const int MAX_STACKS = 10;
+
+    /// <summary>
+    ///     Peak warp at a full stack.
+    /// </summary>
+    /// <remarks>
+    ///     The shader's displacement is 5% of the screen at 1, and anything near that stops being a
+    ///     debuff and starts being a blindfold -- a fight this readable should never take the reads
+    ///     away, only make them cost something. This is the number to raise if it is too gentle, and
+    ///     it should stay well under half.
+    /// </remarks>
+    private const float WOBBLE_STRENGTH = 0.4f;
+
+    /// <summary>Warp frequency at zero and full stacks. Climbing both is what sells it.</summary>
+    private const float WOBBLE_SCALE_MIN = 2.2f;
+
+    /// <summary>Capped low for the same reason: fine noise is what actually destroys legibility.</summary>
+    private const float WOBBLE_SCALE_MAX = 4.5f;
+
+    /// <summary>
+    ///     How long a fresh infection lasts, by difficulty.
+    /// </summary>
+    /// <remarks>
+    ///     Explicit rather than leaning on <see cref="BuffID.Sets.LongerExpertDebuff" />, which only
+    ///     knows how to double and cannot tell expert from master. Master is where the twenty second
+    ///     version belongs; a first boss in normal has no business holding one that long.
+    /// </remarks>
+    public static int InfectionTicks => Main.masterMode ? 20 * 60
+        : Main.expertMode ? 13 * 60
+        : 9 * 60;
+
+    /// <summary>
+    ///     Applies a strain and a stack of saturation in one go.
+    /// </summary>
+    /// <remarks>
+    ///     The single entry point on purpose. A caller that adds the buff itself gets the damage but
+    ///     none of the saturation, and the two drifting apart is exactly the bug that would never be
+    ///     noticed -- the debuff icon would be there and the screen would simply be calmer than it
+    ///     should be.
+    /// </remarks>
+    public static void Inflict(Player player, int buffType, int ticks, int stacks = 1)
+    {
+        if (player is not { active: true } || player.dead)
+            return;
+
+        player.AddBuff(buffType, ticks);
+
+        player.GetModPlayer<FungalInfectionPlayer>().AddStacks(stacks);
+    }
+
+    /// <summary>
     ///     Added to <see cref="Player.lifeRegen" /> per point of severity.
     /// </summary>
     /// <remarks>
@@ -88,7 +154,18 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>Worst strain in the player this frame. Rebuilt from scratch every tick.</summary>
     public int Severity;
 
+    /// <summary>
+    ///     How saturated they are, 0 to <see cref="MAX_STACKS" />.
+    /// </summary>
+    /// <remarks>
+    ///     Unlike <see cref="Severity" /> this is not rebuilt each tick -- it accumulates while an
+    ///     infection is running and is dropped when the last one wears off.
+    /// </remarks>
+    public int Stacks;
+
     public bool Infected => Severity > 0;
+
+    public void AddStacks(int count) => Stacks = Math.Clamp(Stacks + count, 0, MAX_STACKS);
 
     /// <summary>
     ///     Raises the infection to <paramref name="severity" />.
@@ -102,12 +179,47 @@ public class FungalInfectionPlayer : ModPlayer
 
     public override void ResetEffects() => Severity = 0;
 
-    public override void UpdateDead() => Severity = 0;
+    public override void UpdateDead()
+    {
+        Severity = 0;
+        Stacks = 0;
+    }
 
     public override void UpdateBadLifeRegen()
     {
         if (Infected)
             Player.lifeRegen -= REGEN_PER_SEVERITY * Severity;
+    }
+
+    /// <summary>
+    ///     Pushes the saturation into the warp.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Runs after buffs have had their say, so <see cref="Severity" /> is this frame's answer
+    ///         to "is anything still in them" -- which is what clears the stack count when the last
+    ///         strain wears off.
+    ///     </para>
+    ///     <para>
+    ///         Local player only. The wobble is a full-screen filter, and there is exactly one screen.
+    ///     </para>
+    /// </remarks>
+    public override void PostUpdate()
+    {
+        if (!Infected)
+            Stacks = 0;
+
+        if (Player.whoAmI != Main.myPlayer || Main.dedServ)
+            return;
+
+        float saturation = Stacks / (float)MAX_STACKS;
+
+        // Pushed every frame, zero included. The system ramps toward whatever it was last told, so
+        // a stack landing or the debuff falling off is a slide rather than a step.
+        ScreenWobbleSystem.Set(
+            saturation * WOBBLE_STRENGTH,
+            MathHelper.Lerp(WOBBLE_SCALE_MIN, WOBBLE_SCALE_MAX, saturation)
+        );
     }
 }
 

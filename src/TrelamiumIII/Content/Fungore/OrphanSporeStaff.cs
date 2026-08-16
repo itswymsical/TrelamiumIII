@@ -21,7 +21,7 @@ public class OrphanSporeStaff : ModItem
     public override void SetDefaults()
     {
         Item.DamageType = DamageClass.Summon;
-        Item.damage = 9;
+        Item.damage = 10;
 
         Item.knockBack = 4f;
         Item.mana = 10;
@@ -87,6 +87,7 @@ public class ShroomsonMinion : ModProjectile
         Dive,
         Burrow,
         Surface,
+        Ascend,
     }
 
     #region tuning
@@ -120,6 +121,39 @@ public class ShroomsonMinion : ModProjectile
     private const int FOLLOW_REROLL = 5 * 60;
 
     private const float BURROW_RANGE = 250f;
+
+    /// <summary>
+    ///     Height above him that a jump cannot clear, so climbing under his own power is the only
+    ///     way up.
+    /// </summary>
+    /// <remarks>
+    ///     A jump reaches <c>JUMP_SPEED^2 / (2 * GRAVITY)</c>, which is about sixty-eight pixels --
+    ///     four tiles. Everything past that used to fall into a hole between the two dig triggers: an
+    ///     owner directly overhead is inside <see cref="BURROW_RANGE" /> so distance never fires it,
+    ///     and inside <see cref="STUCK_SLACK" /> so the stuck counter is reset every tick and never
+    ///     fires it either. He would stand underneath and hop, forever.
+    /// </remarks>
+    private const float ASCEND_TRIGGER = 80f;
+
+    /// <summary>Furthest to the side the owner may be for this to read as "above" and not "over there".</summary>
+    private const float ASCEND_REACH = 280f;
+
+    private const float ASCEND_SPEED = 8.5f;
+
+    /// <summary>Horizontal steering while climbing.</summary>
+    private const float ASCEND_DRIFT = 5f;
+
+    /// <summary>Backstop, in case the owner climbs faster than he does.</summary>
+    private const int ASCEND_TIMEOUT = 150;
+
+    /// <summary>
+    ///     Frames before he may climb again.
+    /// </summary>
+    /// <remarks>
+    ///     Arriving level with an owner stood over a gap means falling straight back out of range,
+    ///     and without this he would climb again on the next tick and hover there.
+    /// </remarks>
+    private const int ASCEND_COOLDOWN = 45;
 
     /// <summary>Backstop for a Shroomson that is not even on the ground to dig into any more.</summary>
     private const float TELEPORT_RANGE = 2800f;
@@ -254,6 +288,8 @@ public class ShroomsonMinion : ModProjectile
     private int tossCooldown;
 
     private int giftCooldown;
+
+    private int ascendCooldown;
 
     private Vector2 followOffset;
 
@@ -397,6 +433,9 @@ public class ShroomsonMinion : ModProjectile
         if (giftCooldown > 0)
             giftCooldown--;
 
+        if (ascendCooldown > 0)
+            ascendCooldown--;
+
         NPC? target = FindTarget(owner);
 
         // Only Follow has anywhere to be; the rest are performed standing still, and a null
@@ -429,13 +468,17 @@ public class ShroomsonMinion : ModProjectile
                 UpdateSurface();
                 break;
 
+            case ShroomsonState.Ascend:
+                UpdateAscend(owner, target);
+                break;
+
             default:
                 destination = UpdateFollow(owner, target);
                 break;
         }
 
-        // Burrowing is the one state that moves itself: no gravity, no terrain, no walking.
-        if (State != ShroomsonState.Burrow)
+        // Burrowing and climbing both move themselves: no gravity, no terrain, no walking.
+        if (State is not (ShroomsonState.Burrow or ShroomsonState.Ascend))
         {
             Move(destination);
             TrackProgress(destination);
@@ -449,11 +492,29 @@ public class ShroomsonMinion : ModProjectile
     {
         Recall(owner);
 
-        if (Main.myPlayer == Projectile.owner && ShouldDig(owner))
+        // A Shroomson with something to attack neither tunnels nor climbs. The dig goes to the
+        // OWNER, so digging mid-fight both abandons the target and travels away from it -- and
+        // because the trigger is distance from the owner, and fighting is exactly when a minion is
+        // furthest from them, it fired constantly. Whatever he cannot reach can wait until there is
+        // nothing left to throw at.
+        if (target is null && Main.myPlayer == Projectile.owner)
         {
-            SetState(ShroomsonState.Dive);
+            // Climbing is tried first. It is the answer whenever the way up is simply open air, and
+            // it is also the case a dig cannot solve: there is no floor between them to surface
+            // through, so tunnelling would only put him back underneath the same gap.
+            if (ShouldAscend(owner))
+            {
+                SetState(ShroomsonState.Ascend);
 
-            return null;
+                return null;
+            }
+
+            if (ShouldDig(owner))
+            {
+                SetState(ShroomsonState.Dive);
+
+                return null;
+            }
         }
 
         if (target is not null)
@@ -508,6 +569,110 @@ public class ShroomsonMinion : ModProjectile
         Projectile.Center = owner.Center;
         Projectile.velocity = Vector2.Zero;
         Projectile.netUpdate = true;
+    }
+
+    /// <summary>
+    ///     Whether the owner is straight up through open air, which is the one gap a jump cannot
+    ///     close and a dig cannot fix.
+    /// </summary>
+    /// <remarks>
+    ///     Owner-only for the same reason <see cref="ShouldDig" /> is: the decision is measured
+    ///     against positions remote clients only approximate.
+    /// </remarks>
+    private bool ShouldAscend(Player owner)
+    {
+        if (!grounded || ascendCooldown > 0)
+            return false;
+
+        float rise = Projectile.Bottom.Y - owner.Bottom.Y;
+
+        // Above him, by more than he can jump.
+        if (rise < ASCEND_TRIGGER)
+            return false;
+
+        // Far enough to the side and this is not a climb, it is a walk he has not tried yet.
+        if (Math.Abs(owner.Center.X - Projectile.Center.X) > ASCEND_REACH)
+            return false;
+
+        return ColumnIsClear(Projectile.Center.X, Projectile.Top.Y, owner.Bottom.Y);
+    }
+
+    /// <summary>
+    ///     Whether the vertical run between two heights is free of anything he would have to go
+    ///     through.
+    /// </summary>
+    /// <remarks>
+    ///     Platforms deliberately do not count. They are passable from below, which is exactly the
+    ///     shape of arena this exists for -- an owner stood on a platform tower is reachable by
+    ///     climbing and not by anything else, because a dig has no floor down there to come up
+    ///     through and would strand him underneath all over again.
+    /// </remarks>
+    private static bool ColumnIsClear(float worldX, float fromY, float toY)
+    {
+        int tileX = (int)(worldX / 16f);
+
+        int top = (int)(Math.Min(fromY, toY) / 16f);
+        int bottom = (int)(Math.Max(fromY, toY) / 16f);
+
+        for (int y = top; y <= bottom; y++)
+        {
+            if (!WorldGen.InWorld(tileX, y, 2))
+                return false;
+
+            Tile tile = Framing.GetTileSafely(tileX, y);
+
+            if (!tile.HasUnactuatedTile)
+                continue;
+
+            if (Main.tileSolidTop[tile.TileType])
+                continue;
+
+            if (Main.tileSolid[tile.TileType])
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    ///     Climbs to the owner under his own power, steering as he goes.
+    /// </summary>
+    /// <remarks>
+    ///     A state rather than a bigger jump, because a leap sized to arrive exactly is fragile --
+    ///     it has to be re-derived every time the owner moves, and it overshoots or falls short the
+    ///     moment they do. Climbing simply keeps going until it is level with them, and gives up
+    ///     honestly when the way closes.
+    /// </remarks>
+    private void UpdateAscend(Player owner, NPC? target)
+    {
+        StateTimer++;
+
+        Projectile.velocity = new Vector2(
+            MathHelper.Clamp((owner.Bottom.X - Projectile.Center.X) * 0.08f, -ASCEND_DRIFT, ASCEND_DRIFT),
+            -ASCEND_SPEED
+        );
+
+        if (!Main.dedServ && StateTimer % 4f == 0f)
+        {
+            SporeLayer.Trail(
+                Projectile.Bottom + Main.rand.NextVector2Circular(6f, 4f),
+                new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(0.6f, 1.6f)),
+                Main.rand.NextFloat(5f, 9f)
+            );
+        }
+
+        bool arrived = Projectile.Bottom.Y <= owner.Bottom.Y;
+        bool blocked = !ColumnIsClear(Projectile.Center.X, Projectile.Top.Y, owner.Bottom.Y);
+
+        // A target found mid-climb ends it. Whatever he was going up for, there is a fight now.
+        if (!arrived && !blocked && target is null && StateTimer < ASCEND_TIMEOUT)
+            return;
+
+        // Cooled down on the way out rather than on arrival, so a climb that ended against a ceiling
+        // or ran out of time does not immediately start over.
+        ascendCooldown = ASCEND_COOLDOWN;
+
+        SetState(ShroomsonState.Follow);
     }
 
     /// <summary>
@@ -900,7 +1065,7 @@ public class ShroomsonMinion : ModProjectile
         }
     }
 
-    /// <summary>First solid tile below <paramref name="from" />, as the world Y to stand on.</summary>
+    /// <summary>First tile below <paramref name="from" /> that can be stood on, as a world Y.</summary>
     private static bool TryFindFloor(Vector2 from, out float floorY)
     {
         int tileX = (int)(from.X / 16f);
@@ -913,7 +1078,7 @@ public class ShroomsonMinion : ModProjectile
             if (y < 0 || y >= Main.maxTilesY)
                 break;
 
-            if (!WorldGen.SolidTile(tileX, y))
+            if (!IsStandable(tileX, y))
                 continue;
 
             floorY = y * 16f;
@@ -924,6 +1089,27 @@ public class ShroomsonMinion : ModProjectile
         floorY = from.Y;
 
         return false;
+    }
+
+    /// <summary>
+    ///     Whether a tile is something the Shroomson could come up onto.
+    /// </summary>
+    /// <remarks>
+    ///     Deliberately not <see cref="WorldGen.SolidTile(int, int, bool)" />, which answers a
+    ///     narrower question: it excludes anything <see cref="Main.tileSolidTop" />, and anything
+    ///     sloped or halved. Every one of those is a surface a player can stand on, so using it here
+    ///     meant a Shroomson digging to an owner stood on a platform ignored the platform, kept
+    ///     searching, and surfaced on whatever real ground happened to be underneath it -- which is
+    ///     usually a long way down, and sometimes nowhere at all.
+    /// </remarks>
+    private static bool IsStandable(int tileX, int tileY)
+    {
+        Tile tile = Framing.GetTileSafely(tileX, tileY);
+
+        if (!tile.HasUnactuatedTile)
+            return false;
+
+        return Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];
     }
 
     /// <summary>Open air above <paramref name="from" />: where a tunnel underneath would break out.</summary>
@@ -939,7 +1125,9 @@ public class ShroomsonMinion : ModProjectile
             if (y < 0)
                 break;
 
-            if (WorldGen.SolidTile(tileX, y))
+            // Same standable test as the floor search, so the dirt is thrown out at the surface the
+            // Shroomson is actually going to arrive on rather than at the one above it.
+            if (IsStandable(tileX, y))
                 continue;
 
             surfaceY = (y + 1) * 16f;
@@ -1106,6 +1294,9 @@ public class ShroomsonMinion : ModProjectile
 
             // The squish is doing all the work through the dig; the pose just stays out of its way.
             ShroomsonState.Dive or ShroomsonState.Burrow or ShroomsonState.Surface => FRAME_IDLE,
+
+            // Feet off the ground, which is the pose the walk cycle would have picked anyway.
+            ShroomsonState.Ascend => FRAME_AIRBORNE,
 
             _ => WalkFrame(),
         };

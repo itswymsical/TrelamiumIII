@@ -40,11 +40,14 @@ public sealed class FungoreSpore : ModProjectile
 
     private const float DRAG = 0.995f;
 
-    private const int TRAIL_INTERVAL = 3;
+    private const int TRAIL_INTERVAL = 4;
 
     private const int LIFETIME = 240;
 
-    public override string Texture => AssetReferences.Content.Fungore.SporeclotSac.KEY;
+    /// <summary>Tumble, in radians per tick.</summary>
+    private const float SPIN = 0.24f;
+
+    public override string Texture => AssetReferences.Content.Fungore.Mushroom.KEY;
 
     /// <summary>
     ///     Throws a fan of clots out of an impact.
@@ -91,7 +94,8 @@ public sealed class FungoreSpore : ModProjectile
 
     public override void SetDefaults()
     {
-        Projectile.width = Projectile.height = 20;
+        // A little under the 22x24 sprite, so a clot that visually grazes you does not connect.
+        Projectile.width = Projectile.height = 18;
 
         Projectile.hostile = true;
         Projectile.friendly = false;
@@ -104,28 +108,33 @@ public sealed class FungoreSpore : ModProjectile
         Projectile.timeLeft = LIFETIME;
     }
 
+    public override void OnSpawn(IEntitySource source)
+        => Projectile.rotation = Main.rand.NextFloat(MathHelper.TwoPi);
+
     public override void AI()
     {
         Projectile.velocity.X *= DRAG;
         Projectile.velocity.Y = Math.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
 
-        Projectile.rotation = Projectile.velocity.ToRotation();
+        // Tumbles the way it is travelling rather than pointing along its heading. It is a thrown
+        // lump, not a dart, and the spin is most of what sells the arc.
+        Projectile.rotation += SPIN * (Projectile.velocity.X < 0f ? -1f : 1f);
 
         if (Main.dedServ || Projectile.timeLeft % TRAIL_INTERVAL != 0)
             return;
 
-        // Thins out as it travels, so the head of the arc is the dense part and the tail is the
-        // wisp it left behind.
+        // Kept deliberately thin. The cloud is the tell that these carry an infection, but the
+        // mushroom underneath is the thing you have to actually dodge, so it stays legible.
         float taper = Projectile.timeLeft / (float)LIFETIME;
 
-        SporeLayer.Trail(Projectile.Center, Projectile.velocity * -0.12f, MathHelper.Lerp(7f, 17f, taper));
+        SporeLayer.Trail(Projectile.Center, Projectile.velocity * -0.12f, MathHelper.Lerp(5f, 11f, taper));
 
         Lighting.AddLight(Projectile.Center, 0.22f, 0.12f, 0.03f);
     }
 
     public override void OnHitPlayer(Player target, Player.HurtInfo info)
     {
-        target.AddBuff(ModContent.BuffType<FungalInfectionSpore>(), INFECTION_TICKS);
+        FungalInfectionPlayer.Inflict(target, ModContent.BuffType<FungalInfectionSpore>(), INFECTION_TICKS);
 
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.35f }, Projectile.Center);
 
@@ -145,6 +154,4 @@ public sealed class FungoreSpore : ModProjectile
 
         return false;
     }
-
-    public override bool PreDraw(ref Color lightColor) => false;
 }

@@ -15,8 +15,8 @@ public class Girthquake : ModItem
     public override void SetDefaults()
     {
         Item.width = Item.height = 56;
-        Item.damage = 13;
-        Item.crit = 12;
+        Item.damage = 15;
+        Item.crit = 21;
         Item.knockBack = 7.5f;
         Item.DamageType = DamageClass.Melee;
         Item.rare = ItemRarityID.Blue;
