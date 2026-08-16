@@ -127,6 +127,15 @@ Projectiles: {
 	PossessedWorkshopPet.DisplayName: Possessed Workshop
 	WorkshopStationPet.DisplayName: Workshop Station Pet
 	FahHammerProj.DisplayName: Fah Hammer Proj
+	FungoreSpore.DisplayName: Spore Clot
+}
+
+NPCs: {
+	FungoreBoss: {
+		DisplayName: Fungore
+		Epithet: The Malevolent Myconid
+		Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
+	}
 }
 
 Buffs: {
@@ -141,8 +150,13 @@ Buffs: {
 	}
 
 	FungalInfectionHostile: {
-		DisplayName: Fungal Infection Hostile
-		Description: Mods.TrelamiumIII.Buffs.FungalInfectionHostile.Description
+		DisplayName: Fungal Infection
+		Description: Spores are taking hold
+	}
+
+	FungalInfectionSpore: {
+		DisplayName: Fungal Infection
+		Description: The spores went deep; this will not sit quietly
 	}
 
 	PossessedWorkshopBuff: {

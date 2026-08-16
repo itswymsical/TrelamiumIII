@@ -32,20 +32,82 @@ public sealed class FungalInfectionHostile : ModBuff
 
     public override void Update(Player player, ref int buffIndex)
     {
-        player.GetModPlayer<FungalInfectionPlayer>().fungalInfection = true;
+        player.GetModPlayer<FungalInfectionPlayer>().Infect(FungalInfectionPlayer.AMBIENT);
         SporeLayer.Cling(player, 0.5f);
+    }
+}
+
+/// <summary>
+///     The heavier strain, thrown by <see cref="FungoreSpore" />.
+/// </summary>
+/// <remarks>
+///     A separate buff rather than a stack count on the ambient one, because the two are applied by
+///     completely different things and want completely different durations: the ambient strain hangs
+///     around for as long as you stand in a cloud, while this one is a short, sharp four seconds that
+///     a slam re-applies every time it catches you.
+/// </remarks>
+public sealed class FungalInfectionSpore : ModBuff
+{
+    public override string Texture => AssetReferences.Content.Fungore.FungalInfection.KEY;
+
+    public override void SetStaticDefaults()
+    {
+        Main.debuff[Type] = true;
+        Main.pvpBuff[Type] = false;
+        Main.buffNoSave[Type] = true;
+
+        // Deliberately not lengthened in expert. This one is already re-applied every few seconds
+        // by an attack that is hard to avoid; doubling it as well would make it permanent.
+        BuffID.Sets.LongerExpertDebuff[Type] = false;
+    }
+
+    public override void Update(Player player, ref int buffIndex)
+    {
+        player.GetModPlayer<FungalInfectionPlayer>().Infect(FungalInfectionPlayer.SPORE_BORNE);
+        SporeLayer.Cling(player, 0.85f);
     }
 }
 
 public class FungalInfectionPlayer : ModPlayer
 {
-    public bool fungalInfection;
-    public override void ResetEffects() => fungalInfection = false;
-    public override void UpdateDead() => fungalInfection = false;
+    /// <summary>Walked into a cloud. One tick of damage.</summary>
+    public const int AMBIENT = 1;
+
+    /// <summary>Caught by a slam. Two.</summary>
+    public const int SPORE_BORNE = 2;
+
+    /// <summary>
+    ///     Added to <see cref="Player.lifeRegen" /> per point of severity.
+    /// </summary>
+    /// <remarks>
+    ///     That field counts in half a health a second, so one point of severity is exactly one tick
+    ///     of damage as the debuff readout counts them.
+    /// </remarks>
+    private const int REGEN_PER_SEVERITY = 2;
+
+    /// <summary>Worst strain in the player this frame. Rebuilt from scratch every tick.</summary>
+    public int Severity;
+
+    public bool Infected => Severity > 0;
+
+    /// <summary>
+    ///     Raises the infection to <paramref name="severity" />.
+    /// </summary>
+    /// <remarks>
+    ///     The worse strain wins rather than the two summing: being in a cloud while a slam lands is
+    ///     already two sources of damage, and stacking the burn on top of that would make standing
+    ///     anywhere near the fight a slow death independent of what you get hit by.
+    /// </remarks>
+    public void Infect(int severity) => Severity = Math.Max(Severity, severity);
+
+    public override void ResetEffects() => Severity = 0;
+
+    public override void UpdateDead() => Severity = 0;
 
     public override void UpdateBadLifeRegen()
     {
-        if (fungalInfection) Player.lifeRegen -= 2;
+        if (Infected)
+            Player.lifeRegen -= REGEN_PER_SEVERITY * Severity;
     }
 }
 
