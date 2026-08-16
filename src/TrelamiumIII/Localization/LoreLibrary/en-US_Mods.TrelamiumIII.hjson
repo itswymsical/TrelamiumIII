@@ -1,0 +1,87 @@
+LoreLibrary: {
+	Example: {
+		FirstAccount: {
+			Title: A First Account
+			Opening: They kept the ledgers below the waterline, which tells you what they thought of them. Nine flights down, past the assay rooms, past the door nobody has the key to any more, in a room that was a cistern before it was an archive and has never entirely stopped being one.[p]I went because I was told the record of the [gloss:Tidemark] was there, and because I was young enough to think a record was the same thing as an answer.
+			Second: What I found was water damage and a very patient clerk. She had been down there eleven years. She knew where everything was in the way you know your own house in the dark, which is to say she could not have told you, only shown you.[p]She showed me the shelf. Then she showed me the gap in it, and said [redacted:the third seal] had come for it in the spring, and that they had signed for it properly, which she seemed to think was the important part.
+			Marginal: Eleven years! And they never once sent her a lamp.
+			Excerpt: '''"Item: one ledger, water-damaged, illegible past the fortieth leaf. Released on authority. Not to be copied."'''
+			WarningTitle: On the lower shelves
+			WarningBody: Anything below the third shelf has been underwater at least once. Handle it dry, read it fast, and do not be the one who finds out what the ink does when it warms.
+			SecondChapter: What the Clerk Said
+			Closing: I have written down her account as nearly as I can, though she spoke the way people do when they have not had to explain something in a long time - in the middle of it, assuming you were already there.[p][hand:She was right that I was not listening properly.][p]If you go, take a lamp. Take two. And when she tells you the room was a cistern, believe her, and look at the floor before you set anything down on it.
+		}
+	}
+
+	Illuminance: {
+		Title: Illuminance
+		ContentsHeader: Contents
+
+		Ch1: {
+			Title: Ch. 1 | False Light
+			Opening: My name is Laine L., and I ask a peculiar favour of you at the outset: believe me for forty pages.[p]I do not ask this because I am owed it; I ask because there is no other route to the thing I must show you, and because a man who tells you the end of a road before you have walked it has told you nothing except that he has been somewhere. Furthermore, I intend to take you along the way I went. You will find it a pleasant walk. I found it a pleasant walk. That is very nearly the whole of my complaint.
+			Second: The word first. The optical men divide the light a surface receives from the light a surface gives off, and they have a term for each, and I took the wrong one. Illuminance is the falling light - the light that arrives from elsewhere and lands upon a thing that had nothing to do with making it.[p]I meant to say luminance. I meant the light we give off. I have been corrected on this point by better men than myself, in print, on three occasions, and I accepted the correction each time with the good grace of a man who does not intend to change anything.[p]I now believe the slip was the only unpremeditated truth of my career, and that I spent thirty years walking away from it in a straight line.
+			Excerpt: I ask that you believe me for forty pages.
+			WarningTitle: A note to the reader who skips
+			WarningBody: Chapter the Fifth may be read alone and will make perfect sense, and you will have learned nothing whatsoever. I say this without irony. I have watched it happen.
+			Closing: You will want to know what the Illuminance is before you are willing to walk.[p]it is the light we all bare, uncovered and unhideable, and it is the plainest thing in the world once you have seen it in a single face.[p]I saw it in a single face. I will not name her yet.[p]Turn the page and I will show you how I came to look.
+		}
+
+		Ch2: {
+			Title: Ch. 2 | Shapes
+			Opening: I did not find the Illuminance. I want that on the record early while I still have your goodwill.[p]What I found was a [gloss:Silhouette] - a shape with light behind it; I have spent the better part of my life describing the shape and calling it the light. I fear this phenomenon is all too common amongst our kind, and that's putting it modestly. As for the methodology, and I mean to set it down properly, the method is sound, and *that* is precisely the difficulty.
+			Second: I came to it in the winter of my twenty-sixth year, in a parish I had gone to for an entirely different and much stupider reason. I had been keeping records of what I then called "civil temperature" - the disposition of a village toward itself; Who is lent to without a note being written? Where do the quarrels stop? Which houses the sick are carried to when there is a choice of houses? It was not a serious instrument-and yet, I was not yet a serious man. But I kept it faithfully across eleven parishes, and in the eleventh, the [gloss:Figures] went wrong... They stayed wrong, and were wrong in a shape.[p]There was something at the middle of that parish which I could not see, and I knew it was there the way you know a person has entered a room behind you: not by any evidence of the person, but by the change in the light on the wall you are already looking at.
+			Third:
+				'''
+				On the objection I was given:
+				It was put to me, at Leiden, that an instrument which must shine in order to read cannot be trusted to report on what it has shone at. I answered that this is true of the eye also, and the room laughed, and I took the laugh for an answer and carried it about with me for thirty years.
+				'''
+			Closing:
+			'''
+			Here, then, is the whole of my discovery, stated as plainly as I am able, and you will see it is nothing:[p]There are people upon whom the light of others falls, and does not stop. It goes through, and comes out altered, it lands on whoever is standing near. 
+			Most of us are surfaces. A very few are not. I could not measure that directly and I never have... What I measured was the darkness it made behind it and I described the darkness lovingly and in great detail. The world thought of it remarkable; they called it a discovery, and I failed correct the world...
+			[p]After said events, I went to the eleventh parish in February to find out what was standing in the middle of my figures.[p] To my surprise, it was a woman hanging cloth, and she was perfectly ordinary, yet-I have never in my life seen anything so bright...
+			'''
+		}
+
+		Ch3: {
+			Title: Ch. 3 | The Eleventh Parish
+			Opening:
+			'''
+			I introduced myself quite poorly. I have introduced myself poorly perhaps four hundred times in my life and remember only this one, which should tell you something about the reliability of the account that follows.[p]I said to that woman I was conducting a survey. Her response was "I am hanging washing", in the tone of a woman correcting an error of fact, and went on doing it. I stood in the cold and watched a stranger peg out sheets and could not for the life of me have told you why I did not leave. I had my figures! The figures were the reason I had come and the figures were finished. I stayed until the basket was empty, and then I asked whether I might come back tomorrow, and she said that the lane was public and she could hardly stop me, which I have since decided was the kindest thing anyone has ever said to me.
+			'''
+			Second: I came back for eleven months.[p]I brought her books, because I did not know what else a man brings. She read them at the rate of a woman with four hours a week to spare and returned them with opinions I was not prepared for - she thought Locke evasive, and said so in one sentence that I have never satisfactorily answered.[p]I also brought a notebook. I want to be exact about this, because it is the hinge of my life and I have spent thirty years describing it as an incidental. I brought a notebook, and I wrote in it, and she never once asked what was in it, and I never once offered. We walked a great deal that spring. I recorded what she said on those walks in the evenings, from memory, in a hand I kept small.[p]*I have told this story in company as a charming detail. It was not a charming detail. There were two people on those walks and only one of them knew that a record was being kept.*
+			Third: I will name her now. I said in the first chapter that I would not, and I find that I cannot get through this chapter without it, which is its own kind of evidence.[p]Her name was Hesper.[p]It means the evening star - the light that arrives at the end of the day, from very far off, having had nothing whatever to do with the day it arrives at the end of. I did not choose her name. I have never been able to decide whether that makes it worse.
+			Marginal: Page 31. He said he was not ready. He does it anyway, and then he apologises to the page instead of to her.
+			Excerpt: '''"You are making me into a place people go."'''
+			AsideTitle: On the keeping of notes
+			AsideBody: A record taken openly changes the thing recorded, and every man in my profession knows it, and we call this contamination and take pains against it. There is no term in our literature for a record taken quietly. I have looked. I would have used it.
+			Fourth: The good months were good. I will not have them read as prologue.[p]We were happy in an ordinary way that I had not previously believed was available to me, and the parish was happy around us, and the figures - I could not help myself, I kept the figures - the figures rose all spring and I told myself I was witnessing something and not causing it.[p]She was not a saint and I will not make her one, since making her one is precisely the crime. She was quick, and impatient with fools, and rather vain about her hands. She thought my work was silly. She said so. She also asked, once, in June, whether I would keep her name out of it, and I said yes without hesitation because at that moment I meant it entirely.[p]*I record that I meant it. I do not record it as a defence. A man who breaks a promise he never meant has committed one offence; a man who breaks one he did mean has committed two, and the second is against himself, and is the only one he is likely to grieve over.*
+			Closing: Whitlock came in August. He was a good man and a better observer than I was and he stood in the lane for a quarter of an hour and came away white, and wrote to Leiden that night.[p]I told her it was recognition. I believed it. I believed I was giving her something - that a light of that order ought to be *seen*, and that keeping it in one parish was a kind of theft, and I made this argument to her at length and with feeling and she listened to all of it and then said the thing I have set at the head of this chapter, and I wrote it in the notebook because it was a good line, and did not understand it for nineteen years.[p]By Michaelmas there were four. By Advent, eleven, and a list, and men writing ahead to ask whether they might be put on it. I kept that list myself. I kept it in my own hand, in the same book, three pages after the walks.[p]She was the only thing I have ever loved that I could not[p][hand:- stop looking at. He could not finish it. I have finished it for him a dozen times and it comes out the same.]
+		}
+	}
+}
+
+LoreGlossary: {
+	Tidemark: {
+		Term: tidemark
+		Definition: The line a receding water level leaves behind. In the lower archive, a way of dating a shelf.
+	}
+	Figures: {
+		Term: figures
+		Definition: Recorded numbers; the readings of a survey. Laine's are tallies of a parish's disposition toward itself.
+	}
+
+	Silhouette: {
+		Term: Silhouette
+		Definition: A shape or outline visible due to the light cast upon it.
+	}
+}
+
+LoreUI: {
+	OpenBook: Read: {0}
+	ContentsTab: Contents
+	ContentsTooltip: Turn to the contents
+	BookmarkEmpty: Mark this page
+	BookmarkPage: p. {0}
+}

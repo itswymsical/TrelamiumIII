@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <Folder Include="Content\Menus\" />
-    <Folder Include="Core\" />
+    <Folder Include="Content\Lore\" />
     <Folder Include="Assets\" />
   </ItemGroup>
 

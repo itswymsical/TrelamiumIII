@@ -25,12 +25,40 @@ namespace TrelamiumIII.Core.Text;
 ///             <c>[tex:TrelamiumIII/Content/Fungore/FungalInfection]</c> -- any texture, for cases
 ///             with no buff behind them. The option is a scale multiplier: <c>[tex/0.5:Path]</c>.
 ///         </item>
+///         <item>
+///             <c>[gloss:Tidemark]</c> -- a glossary term, underscored and explained on hover.
+///         </item>
+///         <item>
+///             <c>[lore:DrownedArchive]</c> -- a cross-reference to another lore book, which opens
+///             when clicked inside one.
+///         </item>
+///         <item>
+///             <c>[redacted:the third seal]</c> -- struck through with a bar until the reader has
+///             earned it.
+///         </item>
+///         <item>
+///             <c>[hand:someone wrote this later]</c> -- switches to the handwriting face mid-line.
+///         </item>
 ///     </list>
 /// </remarks>
 public sealed class InlineTagSystem : ModSystem
 {
     internal const string BUFF_TAG = "buff";
     internal const string TEXTURE_TAG = "tex";
+    internal const string GLOSS_TAG = "gloss";
+    internal const string LORE_TAG = "lore";
+    internal const string REDACTED_TAG = "redacted";
+    internal const string HAND_TAG = "hand";
+
+    private static readonly string[] Tags =
+    [
+        BUFF_TAG,
+        TEXTURE_TAG,
+        GLOSS_TAG,
+        LORE_TAG,
+        REDACTED_TAG,
+        HAND_TAG,
+    ];
 
     public override void Load()
     {
@@ -40,6 +68,10 @@ public sealed class InlineTagSystem : ModSystem
 
         ChatManager.Register<BuffTagHandler>(BUFF_TAG);
         ChatManager.Register<InlineTextureTagHandler>(TEXTURE_TAG);
+        ChatManager.Register<GlossTagHandler>(GLOSS_TAG);
+        ChatManager.Register<LoreLinkTagHandler>(LORE_TAG);
+        ChatManager.Register<RedactedTagHandler>(REDACTED_TAG);
+        ChatManager.Register<HandwritingTagHandler>(HAND_TAG);
     }
 
     public override void Unload() => UnregisterTags();
@@ -51,8 +83,8 @@ public sealed class InlineTagSystem : ModSystem
         if (field?.GetValue(null) is not IDictionary handlers)
             return;
 
-        handlers.Remove(BUFF_TAG);
-        handlers.Remove(TEXTURE_TAG);
+        foreach (string tag in Tags)
+            handlers.Remove(tag);
     }
 }
 
