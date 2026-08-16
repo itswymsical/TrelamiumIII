@@ -169,7 +169,14 @@ public sealed class ProseBlock : BookBlock
         while (fits > 0 && fits <= laid.Count && laid[fits - 1].IsBlank)
             fits--;
 
-        if (fits < MIN_LINES_PER_SIDE || laid.Count - fits < MIN_LINES_PER_SIDE)
+        // Too few lines left over is a widow. Pull an extra line down rather than refusing the split:
+        // refusing sends the entire paragraph to the next page, which stops being a typographic nicety
+        // and starts stranding the heading that introduced it on a page with nothing under it.
+        if (laid.Count - fits < MIN_LINES_PER_SIDE)
+            fits = laid.Count - MIN_LINES_PER_SIDE;
+
+        // Still no good: the paragraph is too short to divide at all, so it travels whole.
+        if (fits < MIN_LINES_PER_SIDE)
             return this;
 
         // The head is still the paragraph's opening, so it keeps the source and the style and goes on

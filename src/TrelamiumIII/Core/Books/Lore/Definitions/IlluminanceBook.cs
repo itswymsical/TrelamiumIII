@@ -37,7 +37,9 @@ public static class IlluminanceBook
 
         Chapter(builder, "Ch1");
         Chapter(builder, "Ch2");
-        ChapterThree(builder);
+        Chapter(builder, "Ch3");
+        Chapter(builder, "Ch4");
+        Chapter(builder, "Ch5");
 
         builder.Register();
     }
@@ -56,35 +58,16 @@ public static class IlluminanceBook
             .Prose($"{chapter}.Third", BlockStyle.Body with { Align = TextAlign.Justify })
 
 
-            .Rule()
+            .Rule(span: 0.8f)
             .Quote($"{chapter}.Excerpt")
 
             .Panel(panel => panel
-                .Heading($"{chapter}.WarningTitle", rule: false, BlockStyle.Heading with { Scale = 0.45f })
-                .Prose($"{chapter}.WarningBody", BlockStyle.Body with { Scale = 0.74f, SpaceAfter = 0f }))
+                .Heading($"{chapter}.AsideTitle", rule: false, BlockStyle.Heading with { Scale = 0.45f })
+                .Prose($"{chapter}.AsideBody", BlockStyle.Body with { Scale = 0.74f, SpaceAfter = 0f }))
 
+            .Prose($"{chapter}.Fourth", BlockStyle.Body with { Align = TextAlign.Justify })
+            .Prose($"{chapter}.Fifth", BlockStyle.Body with { Align = TextAlign.Justify })
+            .Prose($"{chapter}.Sixth", BlockStyle.Body with { Align = TextAlign.Justify })
             .Prose($"{chapter}.Closing", BlockStyle.Body with { Align = TextAlign.Justify });
-    }
-
-    private static void ChapterThree(LoreBookBuilder builder)
-    {
-        builder
-            .Chapter("Ch3")
-
-            .Prose("Ch3.Opening", BlockStyle.Body with { DropCap = true, Align = TextAlign.Justify })
-            .Prose("Ch3.Second", BlockStyle.Body with { Align = TextAlign.Justify })
-
-            .Prose("Ch3.Third", BlockStyle.Body with { Align = TextAlign.Justify })
-            .StickyNote("Ch3.Marginal", offset: new Vector2(9f, -10f), rotation: -0.04f, width: 108f)
-
-            .Rule(span: 0.8f)
-            .Quote("Ch3.Excerpt")
-
-            .Panel(panel => panel
-                .Heading("Ch3.AsideTitle", rule: false, BlockStyle.Heading with { Scale = 0.45f })
-                .Prose("Ch3.AsideBody", BlockStyle.Body with { Scale = 0.74f, SpaceAfter = 0f }))
-
-            .Prose("Ch3.Fourth", BlockStyle.Body with { Align = TextAlign.Justify })
-            .Prose("Ch3.Closing", BlockStyle.Body with { Align = TextAlign.Justify });
     }
 }

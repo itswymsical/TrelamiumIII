@@ -16,7 +16,11 @@ public readonly record struct PageMetrics(int Width, int Height, float MarginX, 
 }
 
 /// <summary>A block placed at a definite spot on a definite page.</summary>
-public readonly record struct PlacedBlock(BookBlock Block, BlockRect Rect);
+/// <param name="SourceIndex">
+///     Position in the book's block list. Kept so a block moved to another page after the fact can
+///     have its anchor corrected.
+/// </param>
+public readonly record struct PlacedBlock(BookBlock Block, BlockRect Rect, int SourceIndex);
 
 /// <summary>One composed page: what sits in the flow, and what lies over it.</summary>
 public sealed class ComposedPage
@@ -75,6 +79,9 @@ public static class PageComposer
         float width = metrics.ContentWidth;
         float y = metrics.ContentTop;
         int page = 0;
+
+        // Scratch for headings being moved onto the following page. Reused across the whole walk.
+        var carried = new List<PlacedBlock>();
 
         for (int i = 0; i < blocks.Count; i++)
         {
@@ -152,8 +159,14 @@ public static class PageComposer
                     break;
                 }
 
+                // Any heading directly above has to travel with this block, or it is left introducing
+                // a page that does not contain what it introduces.
+                CarryKeepWithNext(pages[page].Blocks, carried);
+
                 if (!NextPage(pages, ref page, ref y, metrics))
                     break;
+
+                ReplaceCarried(pages[page], page, carried, anchors, metrics, width, ref y);
             }
         }
 
@@ -176,9 +189,62 @@ public static class PageComposer
         int pageIndex,
         in BlockRect rect)
     {
-        page.Blocks.Add(new PlacedBlock(block, rect));
+        page.Blocks.Add(new PlacedBlock(block, rect, sourceIndex));
 
         anchors[sourceIndex] ??= (pageIndex, rect);
+    }
+
+    /// <summary>
+    ///     Lifts the run of keep-with-next blocks off the end of a page so they can follow the block
+    ///     that is being pushed past them.
+    /// </summary>
+    /// <remarks>
+    ///     Does nothing when the run is the whole page. Moving it then would only reproduce the same
+    ///     arrangement one page later while leaving a blank page behind -- and, since the block being
+    ///     pushed still would not fit, would do it again on every page after that.
+    /// </remarks>
+    private static void CarryKeepWithNext(List<PlacedBlock> placed, List<PlacedBlock> carried)
+    {
+        carried.Clear();
+
+        int start = placed.Count;
+
+        while (start > 0 && placed[start - 1].Block.KeepWithNext)
+            start--;
+
+        if (start == 0 || start == placed.Count)
+            return;
+
+        for (int i = start; i < placed.Count; i++)
+            carried.Add(placed[i]);
+
+        placed.RemoveRange(start, placed.Count - start);
+    }
+
+    /// <summary>Re-lays carried blocks at the top of the page they were moved to.</summary>
+    private static void ReplaceCarried(
+        ComposedPage page,
+        int pageIndex,
+        List<PlacedBlock> carried,
+        (int Page, BlockRect Rect)?[] anchors,
+        in PageMetrics metrics,
+        float width,
+        ref float y)
+    {
+        foreach (PlacedBlock moved in carried)
+        {
+            var rect = new BlockRect(metrics.MarginX, y, width, moved.Rect.Height);
+
+            page.Blocks.Add(moved with { Rect = rect });
+
+            // Assigned, not coalesced as in Place: this block's anchor still points at the page it
+            // just left, and a decoration pinned to it has to come along too.
+            anchors[moved.SourceIndex] = (pageIndex, rect);
+
+            y += moved.Rect.Height + moved.Block.Style.SpaceAfter;
+        }
+
+        carried.Clear();
     }
 
     private static bool NextPage(List<ComposedPage> pages, ref int page, ref float y, in PageMetrics metrics)

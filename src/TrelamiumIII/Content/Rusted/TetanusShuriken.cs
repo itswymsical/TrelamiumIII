@@ -33,7 +33,7 @@ public class TetanusShuriken : ModItem
     {
         base.AddRecipes();
         CreateRecipe(15)
-            .AddIngredient<RustedNugget>()
+            .AddIngredient<RustedIronBar>()
             .AddTile(TileID.Anvils)
             .Register();
     }

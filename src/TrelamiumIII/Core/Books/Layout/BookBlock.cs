@@ -120,6 +120,17 @@ public abstract class BookBlock
     public virtual bool IsEmpty => false;
 
     /// <summary>
+    ///     Whether this block must stay on the same page as whatever follows it.
+    /// </summary>
+    /// <remarks>
+    ///     A heading exists to introduce something. Left at the foot of a page with its content on the
+    ///     next one it introduces a blank space, which reads as a mistake even though every block
+    ///     involved was placed correctly. When the block after one of these has to move, the composer
+    ///     takes the heading with it.
+    /// </remarks>
+    public virtual bool KeepWithNext => false;
+
+    /// <summary>
     ///     Whether this block can be broken across a page boundary. Prose can; a figure cannot, and is
     ///     pushed whole onto the next page instead.
     /// </summary>

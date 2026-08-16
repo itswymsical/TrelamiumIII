@@ -20,6 +20,8 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
     /// <summary>An unwritten heading would still draw its rule, leaving a stray line on the page.</summary>
     public override bool IsEmpty => string.IsNullOrWhiteSpace(text);
 
+    public override bool KeepWithNext => true;
+
     protected override float MeasureCore(float width)
     {
         var laid = LinesFor(width);

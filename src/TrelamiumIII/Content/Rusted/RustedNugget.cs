@@ -20,6 +20,7 @@ namespace TrelamiumIII.Content.Rusted
             Item.maxStack = Item.CommonMaxStack;
             Item.rare = ItemRarityID.Gray;
             Item.value = Item.sellPrice(Item.buyPrice(copper: 0));
+            Item.DefaultToPlaceableTile(ModContent.TileType<RustedIronOre>());
         }
     }
 }
