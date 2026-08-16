@@ -4,7 +4,6 @@ Keybinds: {
 }
 
 Items: {
-
 	AcornLauncherItem: {
 		DisplayName: Acorn Launcher
 		Tooltip: Charges and fires acorns at high velocity
@@ -67,10 +66,10 @@ Items: {
 	TetanusShuriken: {
 		DisplayName: Tetanus Shuriken
 		Tooltip:
-		'''
-		Increases damage based on how many shurikens are stuck in your target
-		Each shuriken increases damage by 10%
-		'''
+			'''
+			Increases damage based on how many shurikens are stuck in your target
+			Each shuriken increases damage by 10%
+			'''
 	}
 
 	SporeclotSac: {
@@ -138,6 +137,191 @@ Items: {
 			Each possessed station counts as a valid station for crafting
 			'''
 	}
+
+	LodestoneItem: {
+		DisplayName: Lodestone
+		Tooltip: "'Highly magnetic'"
+	}
+
+	MagnetizedCoilItem: {
+		DisplayName: Magnetized Coil
+		Tooltip: Do not throw these at powerlines.
+	}
+
+	LodestoneMagnetizerItem: {
+		DisplayName: Dusty Ol' Magnetizer
+		Tooltip:
+			'''
+			Magnetizes ores out the ground with it's high powered vaccum
+			Sucks so strong, it can pass through tiles!
+			Cannot mine ores stronger than platinum
+			'''
+	}
+
+	LodestoneHelmet: {
+		DisplayName: Lodestone Mask
+		Tooltip: Increases mining speed by 10%
+	}
+
+	LodestoneChestplate: {
+		DisplayName: Lodestone Apron
+		Tooltip: Increases damage reduction by 2%
+	}
+
+	LodestoneLeggings: {
+		DisplayName: Lodestone Skirt
+		Tooltip: Increases run acceleration by 10%
+	}
+
+	MicrolithItem: {
+		DisplayName: Microlith
+		Tooltip: When you break an ore chunk, it has a small chance to drop x1-x3 the ore value
+	}
+
+	BorealHewerItem: {
+		DisplayName: Boreal Hewer
+		Tooltip:
+			'''
+			Toss an axe that sticks to enemies and tiles
+			The hewer will return to you after a short delay
+			Has a small chance to inflict 'Frostburn'
+			'''
+	}
+
+	FlailstormItem: {
+		DisplayName: Flailstorm
+		Tooltip:
+			'''
+			Charging the flail increases damage and generates a cloud of ice
+			the longer you charge the flailstorm, the stronger knockback you deal
+			Hitting an enemy when the flailstorm is charged will leave a large ice explosion.
+			'''
+	}
+
+	FrostbarkHelm: {
+		DisplayName: Frostbark Helm
+		Tooltip: Increases melee critical strike chance by 3%
+	}
+
+	FrostbarkHauberk: {
+		DisplayName: Frostbark Hauberk
+		Tooltip: Increases melee damage by 5%
+	}
+
+	FrostbarkGreaves: {
+		DisplayName: Frostbark Greaves
+		Tooltip: ""
+	}
+
+	AmberPendantItem: {
+		DisplayName: Amber Pendant
+		Tooltip: Increases max minions and sentries by 1
+	}
+
+	AmethystPendantItem: {
+		DisplayName: Amethyst Pendant
+		Tooltip:
+			'''
+			Increases damage reduction by 2%-10% depending on your current mana
+			Requires 60 mana
+			'''
+	}
+
+	DiamondPendantItem: {
+		DisplayName: Diamond Pendant
+		Tooltip: Increases critical strike chance by 10%
+	}
+
+	EmeraldPendantItem: {
+		DisplayName: Emerald Pendant
+		Tooltip:
+			'''
+			Increases defense by 2-8 depending on your current mana
+			Requires 60 mana
+			'''
+	}
+
+	RubyPendantItem: {
+		DisplayName: Ruby Pendant
+		Tooltip:
+			'''
+			Increases life regeneration 3%-10% depending on your current mana
+			Requires 80 mana
+			'''
+	}
+
+	SapphirePendantItem: {
+		DisplayName: Sapphire Pendant
+		Tooltip:
+			'''
+			Increases maximum mana by 40
+			Decreases mana cost by 8%
+			'''
+	}
+
+	TopazPendantItem: {
+		DisplayName: Topaz Pendant
+		Tooltip:
+			'''
+			Increases item pickup range
+			Increases movement and acceleration speed 3%-8% depending on your current mana
+			Requires 60 mana for movement bonus
+			'''
+	}
+
+	SeedBedItem_Dirt: {
+		DisplayName: Seed Bed (Dirt)
+		Tooltip:
+			'''
+			Used to plant food, herbs, and flowers.
+			Grows plants x5 faster than normal soil and planter boxes.
+			'''
+	}
+
+	SeedBedItem_Mud: {
+		DisplayName: Seed Bed (Mud)
+		Tooltip:
+			'''
+			Used to plant food, herbs, and flowers.
+			Grows plants x5 faster than normal soil and planter boxes.
+			'''
+	}
+
+	SeedBedItem_Sand: {
+		DisplayName: Seed Bed (Sand)
+		Tooltip:
+			'''
+			Used to plant food, herbs, and flowers.
+			Grows plants x5 faster than normal soil and planter boxes.
+			'''
+	}
+
+	SeedBedItem_Ash: {
+		DisplayName: Seed Bed (Ash)
+		Tooltip:
+			'''
+			Used to plant food, herbs, and flowers.
+			Grows plants x5 faster than normal soil and planter boxes.
+			'''
+	}
+
+	FlowerSatchelItem: {
+		DisplayName: Flower Satchel
+		Tooltip:
+			'''
+			Can be used to store potion herbs and flowers.
+			You can store up to 3 types of flowers, granting stat bonuses depending on the type, total stack, and combination.
+			You can only have one satchel in your inventory at a time.
+			Right-click to open.
+			'''
+	}
+}
+
+Tiles: {
+	SeedBedTile_Dirt.MapEntry: Seed Bed (Dirt)
+	SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
+	SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
+	SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
 }
 
 Projectiles: {
@@ -152,6 +336,22 @@ Projectiles: {
 	WorkshopStationPet.DisplayName: Workshop Station Pet
 	FahHammerProj.DisplayName: Fah Hammer Proj
 	FungoreSpore.DisplayName: Spore Clot
+	LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
+	BorealHewerProj.DisplayName: Boreal Hewer
+	FlailstormProj.DisplayName: Flailstorm
+	DaybloomSeedProjectile.DisplayName: Daybloom Seed
+	BlinkrootSeedProjectile.DisplayName: Blinkroot Seed
+	FireblossomSeedProjectile.DisplayName: Fireblossom Seed
+	ShiverthornSeedProjectile.DisplayName: Shiverthorn Seed
+	MoonglowSeedProjectile.DisplayName: Moonglow Seed
+	DeathweedSeedProjectile.DisplayName: Deathweed Seed
+	WaterleafSeedProjectile.DisplayName: Waterleaf Seed
+	AcornLauncherProjectile.DisplayName: Acorn Launcher Projectile
+	AcornProjectile.DisplayName: Acorn Projectile
+	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel Projectile
+	SaplingMakerProjectile.DisplayName: Sapling Maker Projectile
+	SaplingProjectile.DisplayName: Sapling Projectile
+	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
 }
 
 NPCs: {
