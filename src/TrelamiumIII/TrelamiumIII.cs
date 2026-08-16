@@ -1,4 +1,5 @@
 using Terraria.Localization;
+using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.Dialogue;
 
 namespace TrelamiumIII;
@@ -28,10 +29,12 @@ public sealed partial class TrelamiumIII : Mod
     {
         SpeakerRegistry.Load();
         DialogueRegistry.Load();
+        LoreBookRegistry.Load();
     }
 
     public override void Unload()
     {
+        LoreBookRegistry.Unload();
         DialogueRegistry.Unload();
         SpeakerRegistry.Unload();
     }
