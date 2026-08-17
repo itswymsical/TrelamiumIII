@@ -312,7 +312,16 @@ Items: {
 			Can be used to store potion herbs and flowers.
 			You can store up to 3 types of flowers, granting stat bonuses depending on the type, total stack, and combination.
 			You can only have one satchel in your inventory at a time.
-			Right-click to open.
+			Right-click to open/activate the satchel.
+			'''
+	}
+
+	IlluminanceBookItem: {
+		DisplayName: Illuminance I
+		Tooltip:
+			'''
+			'An Account of the Illuminance'
+			"Laine L."
 			'''
 	}
 }
@@ -395,4 +404,19 @@ Misc: {
 	SonsMushroom: Shroomson's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
 	WorkshopSlot: Station Slot
+}
+
+# Tooltip lines SeedAmmoGlobalItem adds to vanilla herb seeds. Keyed here rather than on the item
+# blocks above because the seeds are vanilla items, not content of this mod.
+SeedAmmo: {
+	# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
+	# bed sprites read almost identically at tooltip size.
+	FavouriteSoil: Favorite soil: [i:{0}] {1}
+	Daybloom: Critical strikes grant temporary [buff:Ironskin]
+	Blinkroot: Critical strikes grant temporary [buff:Hunter] and [buff:Swiftness]
+	Moonglow: Critical strikes grant temporary [buff:Regeneration]
+	Fireblossom: Critical strikes inflict [buff/f28755:OnFire] for a short duration
+	Shiverthorn: Critical strikes inflict [buff/6fc5f6:Frostburn] for a short duration
+	Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
+	Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
 }

@@ -15,9 +15,9 @@ public class Girthquake : ModItem
     public override void SetDefaults()
     {
         Item.width = Item.height = 56;
-        Item.damage = 15;
+        Item.damage = 27;
         Item.crit = 21;
-        Item.knockBack = 7.5f;
+        Item.knockBack = 16f;
         Item.DamageType = DamageClass.Melee;
         Item.rare = ItemRarityID.Blue;
         Item.value = Item.sellPrice(silver: 5);
@@ -108,8 +108,8 @@ public class GirthquakeProj : ModProjectile
 
     private const float FACING_DEADZONE = 14f;
 
-    private const float SLOW_CHARGE = 0.84f;
-    private const float SLOW_SWING = 0.70f;
+    private const float SLOW_CHARGE = 0.90f;
+    private const float SLOW_SWING = 0.86f;
     private const float SLOW_IDLE = 0.93f;
 
 

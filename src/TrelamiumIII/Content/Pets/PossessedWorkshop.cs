@@ -210,7 +210,7 @@ public class PossessedWorkshopPet : ModProjectile
 
     #endregion
 
-    public override string Texture => AssetReferences.Content.Pets.PossessedWorkshopPet.KEY;
+    public override string Texture => AssetReferences.Content.Pets.ArchitectApparition.KEY;
 
     public Player Owner => Main.player[Projectile.owner];
 
@@ -264,8 +264,8 @@ public class PossessedWorkshopPet : ModProjectile
 
     public override void SetDefaults()
     {
-        Projectile.width = 30;
-        Projectile.height = 46;
+        Projectile.width = 48;
+        Projectile.height = 72;
 
         Projectile.friendly = true;
         Projectile.penetrate = -1;

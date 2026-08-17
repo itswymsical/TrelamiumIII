@@ -21,7 +21,6 @@ public sealed class FungoreBoss : ModNPC
 {
     public enum FungoreState
     {
-        /// <summary>Default so a bestiary mannequin, which has no <c>ai</c>, stands rather than erupts.</summary>
         Idle = 0,
 
         Emerge,

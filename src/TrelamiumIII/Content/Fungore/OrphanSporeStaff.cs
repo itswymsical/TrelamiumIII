@@ -21,7 +21,7 @@ public class OrphanSporeStaff : ModItem
     public override void SetDefaults()
     {
         Item.DamageType = DamageClass.Summon;
-        Item.damage = 10;
+        Item.damage = 12;
 
         Item.knockBack = 4f;
         Item.mana = 10;

@@ -19,8 +19,19 @@ public class FlailstormProj : ModProjectile
     private const float ChargeLevel1Time = 60f;  // 1 second
     private const float ChargeLevel2Time = 120f; // 2 seconds
     private const float ChargeLevel3Time = 180f; // 3 seconds
-    private const int IceCloudSpawnRate = 15;    // Spawn ice cloud every 15 frames when charging
-    private float lastIceCloudSpawn = 0f;
+
+    /// <summary>
+    ///     Ticks a spin puff rides the flail head before it is let go. Short: long enough to read as
+    ///     frost clinging to the weapon, short enough that it is released while still near where the
+    ///     head was rather than being dragged a third of the way round the orbit.
+    /// </summary>
+    private const int RingCling = 5;
+
+    /// <summary>
+    ///     Ticks a released puff survives. The head laps the player roughly every twelve, so this is
+    ///     several laps' worth -- the ring closes on the first lap and then holds.
+    /// </summary>
+    private const float RingLife = 34f;
 
     // Charge properties
     private int ChargeLevel => SpinningStateTimer < ChargeLevel1Time ? 0 :
@@ -142,12 +153,9 @@ public class FlailstormProj : ModProjectile
 
         SpinningStateTimer += 1f;
 
-        // Spawn ice clouds while charging
-        if (SpinningStateTimer > 30f && SpinningStateTimer - lastIceCloudSpawn >= IceCloudSpawnRate)
-        {
-            SpawnIceCloud(player, mountedCenter);
-            lastIceCloudSpawn = SpinningStateTimer;
-        }
+        // Fed every tick from the moment the spin starts, rather than in bursts after a delay --
+        // the ring is the readout for "this is charging", so it wants to appear with the swing.
+        SpawnSpinRing();
 
         // Visual and audio feedback for charge levels
         if (SpinningStateTimer == ChargeLevel1Time || SpinningStateTimer == ChargeLevel2Time || SpinningStateTimer == ChargeLevel3Time)
@@ -179,34 +187,46 @@ public class FlailstormProj : ModProjectile
         Projectile.localNPCHitCooldown = SpinHitCooldown;
     }
 
-    private void SpawnIceCloud(Player player, Vector2 mountedCenter)
+    /// <summary>
+    ///     The ring of frost the spin builds up.
+    /// </summary>
+    /// <remarks>
+    ///     Each puff is <i>anchored</i> to the flail head for <see cref="RingCling" /> ticks and then
+    ///     let go. The clinging is what makes the ring: the head laps the player about every twelve
+    ///     ticks, so puffs released along the way are left standing in its orbit and close into a
+    ///     continuous band. Free-spawning them into a wide scatter around the head, as this did
+    ///     before, only ever read as bursts of fog going off near the weapon.
+    ///     <para>
+    ///         The release is momentum-free by construction: the spin pins
+    ///         <see cref="Projectile.velocity" /> to zero, and a released node inherits nothing but
+    ///         its host's velocity, so there is nothing to drag the ring outward as it forms.
+    ///     </para>
+    /// </remarks>
+    private void SpawnSpinRing()
     {
-        if (Main.myPlayer != Projectile.owner) return;
+        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+            return;
 
-        var mist = MetaballSystem.GetLayer<IceMistLayer>();
-        if (mist == null) return;
+        // Per tick rather than per burst, so the band packs evenly along the orbit instead of
+        // arriving in clumps. Charge thickens it.
+        int nodeCount = 1 + ChargeLevel;
 
-        // Node count and radius scale with charge level —
-        // the cloud visibly thickens as you hold the charge
-        int nodeCount = 4 + ChargeLevel * 3;       // 4, 7, 10, 13
         float radiusMin = 6f + ChargeLevel * 4f;
         float radiusMax = 14f + ChargeLevel * 4f;
-        float lifeMin = 35f + ChargeLevel * 4f;
-        float lifeMax = 70f + ChargeLevel * 4f;
 
         for (int i = 0; i < nodeCount; i++)
         {
-            // Spread around the flail head, not the player center —
-            // the cloud sits on the weapon, not the character
-            Vector2 offset = Main.rand.NextVector2Circular(40f + ChargeLevel * 10f, 40f + ChargeLevel * 10f);
-            Vector2 vel = offset.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.2f, 0.8f);
-            vel += Main.rand.NextVector2Circular(0.3f, 0.3f);
+            // Kept tight to the head. Any real spread and the puffs are released either side of the
+            // orbit rather than on it, which is the smear this is replacing.
+            Vector2 offset = Main.rand.NextVector2Circular(5f, 5f);
 
-            mist.SpawnNode(
+            mist.SpawnAnchoredNode(
+                Projectile,
                 Projectile.Center + offset,
-                vel,
+                Vector2.Zero,
                 radius: Main.rand.NextFloat(radiusMin, radiusMax),
-                life: Main.rand.NextFloat(lifeMin, lifeMax)
+                life: RingLife + ChargeLevel * 8f,
+                anchorTicks: RingCling
             );
         }
     }
@@ -352,16 +372,8 @@ public class FlailstormProj : ModProjectile
             );
         }
 
-        // Spinning state: ambient mist orbits with the flail head
-        if (CurrentAIState == AIState.Spinning && Main.rand.NextBool(3))
-        {
-            mist.SpawnNode(
-                Projectile.Center + Main.rand.NextVector2Circular(8f, 8f),
-                Main.rand.NextVector2Circular(0.3f, 0.3f),
-                radius: Main.rand.NextFloat(10f, 18f),
-                life: Main.rand.NextFloat(20f, 40f)
-            );
-        }
+        // Nothing extra for the spin -- SpawnSpinRing owns that state entirely. A second,
+        // unanchored source here was half of why the charge read as scattered puffs.
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
