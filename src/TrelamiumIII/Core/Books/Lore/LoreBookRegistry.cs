@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TrelamiumIII.Core.Books.Lore.Definitions;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
@@ -8,8 +7,8 @@ namespace TrelamiumIII.Core.Books.Lore;
 ///     Every lore book the mod defines, keyed by book id.
 /// </summary>
 /// <remarks>
-///     Mirrors <see cref="Core.Dialogue.DialogueRegistry" />: definitions are declared in code under
-///     <c>Definitions</c> and registered once at load, while their words live in
+///     Filled by <see cref="ModLoreBook" /> as tModLoader autoloads them, so there is nothing to
+///     maintain here. Structure is declared in code under <c>Definitions</c>; the words live in
 ///     <c>Localization/LoreLibrary</c>.
 /// </remarks>
 public static class LoreBookRegistry
@@ -25,13 +24,9 @@ public static class LoreBookRegistry
 
     public static IEnumerable<LoreBookDefinition> All => books.Values;
 
-    /// <summary>Registers every code-defined lore book. Called once from mod load.</summary>
-    public static void Load()
-    {
-        ExampleLoreBook.Register();
-        IlluminanceBook.Register();
-        // Register further lore book definitions here.
-    }
-
+    /// <summary>
+    ///     Drops every registration. Books re-register themselves on the next load, so this only has
+    ///     to run once rather than per book.
+    /// </summary>
     public static void Unload() => books.Clear();
 }

@@ -150,7 +150,10 @@ public abstract class MetaballLayer
             Density = density < 0f ? DefaultDensity : density,
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
             AnchorHost = host,
-            AnchorOffset = worldPosition - host.Center,
+
+            // Captured against the same anchor FollowAnchor rides, or the first frame would jump by
+            // whatever the host's graphical offset happened to be.
+            AnchorOffset = worldPosition - VisualCenter(host),
             AnchorTicks = anchorTicks,
         });
     }
@@ -211,11 +214,28 @@ public abstract class MetaballLayer
         node.AnchorTicks--;
         node.AnchorOffset += node.Velocity;
         node.Velocity *= 0.9f;
-        node.Position = host.Center + node.AnchorOffset;
+        node.Position = VisualCenter(host) + node.AnchorOffset;
 
         if (node.AnchorTicks <= 0)
             Release(ref node);
     }
+
+    /// <summary>
+    ///     Where a host is actually drawn, which is not always where it is.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Center</c> is the hitbox centre, and both players and NPCs are drawn offset from it by
+    ///     <c>gfxOffY</c> -- the smoothing applied while stepping up half blocks, slopes and stairs.
+    ///     It is zero standing still and up to a tile while moving over uneven ground, so a cloud
+    ///     anchored to <c>Center</c> alone sits correctly until its host starts walking and then
+    ///     visibly detaches, which is exactly the sort of bug that looks like a bad spawn offset.
+    /// </remarks>
+    private static Vector2 VisualCenter(Entity host) => host switch
+    {
+        Player player => player.Center + new Vector2(0f, player.gfxOffY),
+        NPC npc => npc.Center + new Vector2(0f, npc.gfxOffY),
+        _ => host.Center,
+    };
 
     /// <summary>
     ///     Cuts a node loose from its host, handing it the host's momentum so it slides off along

@@ -25,13 +25,18 @@ public class FungoreBag : ModItem
 
 	public override void ModifyItemLoot(ItemLoot itemLoot)
     {
-        itemLoot.Add(ItemDropRule.BossBag(ModContent.ItemType<Myclobutanil>()));
+        // Common, not BossBag. ItemDropRule.BossBag returns a DropLocalPerClientAndResetsNPCMoneyTo0
+        // -- it zeroes the dropping NPC's money, so it only works in NPC loot. Inside a bag there is
+        // no NPC and it throws. The bag itself is already expert-gated, so nothing is lost.
+        itemLoot.Add(ItemDropRule.Common(ModContent.ItemType<Myclobutanil>()));
 
         itemLoot.Add(ItemDropRule.NotScalingWithLuck(ModContent.ItemType<FungoreMask>(), 7));
-
-		itemLoot.Add(ItemDropRule.AlwaysAtleastOneSuccess(
-			ItemDropRule.Common(ModContent.ItemType<Girthquake>(), 2), 
-			ItemDropRule.Common(ModContent.ItemType<SporeclotSac>(), 2),
-            ItemDropRule.Common(ModContent.ItemType<OrphanSporeStaff>(), 2)));
+		itemLoot.Add(ItemDropRule.CoinsBasedOnNPCValue(ModContent.NPCType<FungoreBoss>()));
+        itemLoot.Add(ItemDropRule.OneFromOptions(
+            1,
+            ModContent.ItemType<Girthquake>(),
+            ModContent.ItemType<SporeclotSac>(),
+            ModContent.ItemType<OrphanSporeStaff>()
+        ));
     }
 }

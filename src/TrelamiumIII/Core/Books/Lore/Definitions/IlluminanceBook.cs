@@ -18,30 +18,26 @@ namespace TrelamiumIII.Core.Books.Lore.Definitions;
 ///         paragraphs are parted with <c>[p]</c> inside it and the block breaks across pages by itself.
 ///     </para>
 /// </remarks>
-public static class IlluminanceBook
+public sealed class IlluminanceBook : ModLoreBook
 {
-    private const string Book = "Illuminance";
+    public override string Key => "Illuminance";
 
-    public static void Register()
+    protected override void Build(LoreBookBuilder book)
     {
-        LoreBookBuilder builder = LoreBook.Define(Book);
-
         // Front matter: the title, then the table of contents. Contents may sit anywhere; it measures
         // from the chapter count, so putting it before the chapters it lists is not circular.
-        builder
+        book
             .Space(32f)
             .Heading("Title", rule: false, BlockStyle.Heading with { Scale = 0.9f, Align = TextAlign.Center })
             .Rule(span: 0.45f)
             .Space(12f)
             .Contents("ContentsHeader");
 
-        Chapter(builder, "Ch1");
-        Chapter(builder, "Ch2");
-        Chapter(builder, "Ch3");
-        Chapter(builder, "Ch4");
-        Chapter(builder, "Ch5");
-
-        builder.Register();
+        Chapter(book, "Ch1");
+        Chapter(book, "Ch2");
+        Chapter(book, "Ch3");
+        Chapter(book, "Ch4");
+        Chapter(book, "Ch5");
     }
 
     /// <summary>

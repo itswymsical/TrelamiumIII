@@ -41,6 +41,7 @@ public sealed class MetaballSystem : ModSystem
     public override void OnModLoad()
     {
         RegisterLayer(new SporeLayer());
+        RegisterLayer(new IceMistLayer());
 
         loaded = true;
 

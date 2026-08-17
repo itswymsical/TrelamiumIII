@@ -2,6 +2,10 @@
 //   uIntensity  0..1 charter intensity; drives warp amplitude and line opacity
 //   uDensity    line count band (whole number so the angular seam wraps clean)
 //   uNoiseTex   tiling noise source (AssetLibrary.NoiseTexture)
+//
+// COLOR0 is ignored on purpose -- see the note in ScreenFlash.fx. FilterManager.EndCapture draws
+// the captured frame tinted by the sky colour whenever any filter is active, so `* col` would pull
+// the whole screen toward black underground and at night, for as long as the lines were up.
 
 sampler2D ImageSampler : register(s0);
 
@@ -42,7 +46,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     float lineMask = smoothstep(0.35, 1.1, dist);
     c.rgb += lines * lineMask * uIntensity * 1.2;
 
-    return c * col;
+    return c;
 }
 
 technique Technique1

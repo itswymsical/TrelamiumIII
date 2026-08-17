@@ -23,28 +23,4 @@
     <Folder Include="Assets\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Content\Agate\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Content\Agate\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Content\Agate\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <LocalizationCompile Remove="Content\Agate\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Remove="Content\Agate\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ShaderCompile Remove="Content\Agate\**" />
-  </ItemGroup>
-
 </Project>

@@ -29,7 +29,8 @@ public sealed partial class TrelamiumIII : Mod
     {
         SpeakerRegistry.Load();
         DialogueRegistry.Load();
-        LoreBookRegistry.Load();
+
+        // Lore books autoload as ModLoreBook, so there is no registration step here.
     }
 
     public override void Unload()
