@@ -192,18 +192,18 @@ public sealed class LodestoneFieldWarp : ModSystem
     /// </summary>
     private sealed class FieldData : ScreenShaderData
     {
-        private readonly Asset<Effect> _asset;
+        private readonly Asset<Effect> _warpAsset;
         private readonly string _pass;
 
         public FieldData(Asset<Effect> shader, string passName) : base(shader, passName)
         {
-            _asset = shader;
+            _warpAsset = shader;
             _pass = passName;
         }
 
         public override void Apply()
         {
-            var effect = _asset.Value;
+            var effect = _warpAsset.Value;
             if (effect == null) return;
 
             effect.Parameters["uCenter"]?.SetValue(_center);
