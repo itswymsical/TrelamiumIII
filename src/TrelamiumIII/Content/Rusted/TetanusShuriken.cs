@@ -9,7 +9,7 @@ public class TetanusShuriken : ModItem
     public override void SetDefaults()
     {
         Item.DamageType = DamageClass.Ranged;
-        Item.damage = 8;
+        Item.damage = 5;
         Item.width = Item.height = 22;
         Item.useTime = Item.useAnimation = 20;
 

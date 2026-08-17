@@ -1,5 +1,5 @@
 using Terraria.DataStructures;
-using Terraria.GameContent;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Fungore;
 
@@ -20,15 +20,9 @@ namespace TrelamiumIII.Content.Fungore;
 public class GirthquakeShardProj : ModProjectile
 {
 
-    public const int CHUNK_SEEDS = 36;
+    public const int CHUNK_SEEDS = TileTextureUtils.CHUNK_SEEDS;
 
     public override string Texture => "Terraria/Images/Item_" + ItemID.StoneBlock;
-
-    /// <summary>Pixel pitch of a tile sheet. accounts for the 2px of padding.</summary>
-    private const int TILE_PITCH = 18;
-
-    /// <summary>Side of the crop taken out of a frame. A quarter block reads as a shard; a full one reads as a dropped block.</summary>
-    private const int CHUNK = 8;
 
     private const float GRAVITY = 0.32f;
     private const float MAX_FALL = 14f;
@@ -107,7 +101,7 @@ public class GirthquakeShardProj : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        Texture2D texture = ResolveChunk(out Rectangle source);
+        Texture2D texture = TileTextureUtils.ResolveChunk(SourceTile, ChunkSeed, out Rectangle source);
 
         Main.EntitySpriteDraw(
             texture,
@@ -122,42 +116,5 @@ public class GirthquakeShardProj : ModProjectile
         );
 
         return false;
-    }
-
-    /// <summary>
-    ///     Picks the crop this shard is cut from. The frames at the top-left of a standard tile sheet
-    ///     are all fully opaque blocks whichever way the tile blends, so any of them is safe to
-    ///     quarter; anything that does not fit that layout falls back to a stone block.
-    /// </summary>
-    private Texture2D ResolveChunk(out Rectangle source)
-    {
-        ushort tile = SourceTile;
-
-        if (tile < TileLoader.TileCount)
-        {
-            Main.instance.LoadTiles(tile);
-
-            if (TextureAssets.Tile[tile] is { Value: { } sheet })
-            {
-                int seed = ChunkSeed;
-
-                source = new Rectangle(
-                    seed % 3 * TILE_PITCH + seed / 9 % 2 * CHUNK,
-                    seed / 3 % 3 * TILE_PITCH + seed / 18 % 2 * CHUNK,
-                    CHUNK,
-                    CHUNK
-                );
-
-                if (source.Right <= sheet.Width && source.Bottom <= sheet.Height)
-                    return sheet;
-            }
-        }
-
-        Main.instance.LoadItem(ItemID.StoneBlock);
-
-        Texture2D fallback = TextureAssets.Item[ItemID.StoneBlock].Value;
-        source = fallback.Bounds;
-
-        return fallback;
     }
 }
