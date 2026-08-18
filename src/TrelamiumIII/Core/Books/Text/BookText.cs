@@ -123,16 +123,15 @@ public static class BookText
     /// </summary>
     public const string PARAGRAPH_TOKEN = "[p]";
 
-    public static DynamicSpriteFont FontFor(BookFont font) => font switch
-    {
-        BookFont.Display => FontAssets.DeathText.Value,
-        BookFont.Hand    => FontAssets.DeathText.Value,
-        _                => FontAssets.MouseText.Value,
-    };
+    /// <summary>
+    ///     Resolves a role against its typeface. The vanilla mapping that used to live here now sits
+    ///     in <see cref="BookTypeface.Vanilla" />, which is what a face with no typeface falls back to.
+    /// </summary>
+    public static DynamicSpriteFont FontFor(BookFace face) => face.Font;
 
     /// <summary>Height of one line of this font at this scale, before any extra leading.</summary>
-    public static float LineHeight(BookFont font, float scale) =>
-        FontFor(font).MeasureString("Ay").Y * scale;
+    public static float LineHeight(BookFace face, float scale) =>
+        FontFor(face).MeasureString("Ay").Y * scale;
 
     /// <summary>
     ///     Shortens text with an ellipsis until it fits, for the places that must stay one line --
@@ -194,7 +193,7 @@ public static class BookText
     /// <param name="leadingIndentLines">How many opening lines <paramref name="leadingIndent" /> applies to.</param>
     public static List<BookTextLine> Layout(
         string? text,
-        BookFont bookFont,
+        BookFace bookFont,
         float maxWidth,
         float scale,
         Color baseColor,
@@ -284,7 +283,7 @@ public static class BookText
     }
 
     /// <summary>Total height of a laid-out block, counting blank paragraph lines and leading.</summary>
-    public static float MeasureHeight(IReadOnlyList<BookTextLine> lines, BookFont font, float scale, float lineSpacing)
+    public static float MeasureHeight(IReadOnlyList<BookTextLine> lines, BookFace font, float scale, float lineSpacing)
     {
         if (lines.Count == 0)
             return 0f;
@@ -299,7 +298,7 @@ public static class BookText
     public static void DrawLine(
         SpriteBatch spriteBatch,
         BookTextLine line,
-        BookFont bookFont,
+        BookFace bookFont,
         Vector2 position,
         Color color,
         float scale,
@@ -480,7 +479,7 @@ public static class BookText
     /// </summary>
     public static int HitTest(
         BookTextLine line,
-        BookFont bookFont,
+        BookFace bookFont,
         Vector2 local,
         float scale,
         float columnWidth = -1f,

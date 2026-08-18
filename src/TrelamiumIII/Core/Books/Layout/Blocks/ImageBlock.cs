@@ -57,7 +57,7 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
         if (!string.IsNullOrEmpty(caption))
         {
             var lines = CaptionLines(width);
-            height += CAPTION_GAP + BookText.MeasureHeight(lines, CaptionStyle.Font, CaptionStyle.Scale, CaptionStyle.LineSpacing);
+            height += CAPTION_GAP + BookText.MeasureHeight(lines, CaptionStyle.Face, CaptionStyle.Scale, CaptionStyle.LineSpacing);
         }
 
         return height;
@@ -97,14 +97,14 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
             return;
 
         float captionY = inner.Y + plate.Y + (Framed ? Matting * 2f : 0f) + CAPTION_GAP;
-        float advance = BookText.LineHeight(CaptionStyle.Font, CaptionStyle.Scale) + CaptionStyle.LineSpacing;
+        float advance = BookText.LineHeight(CaptionStyle.Face, CaptionStyle.Scale) + CaptionStyle.LineSpacing;
 
         foreach (BookTextLine line in CaptionLines(inner.Width))
         {
             BookText.DrawLine(
                 spriteBatch,
                 line,
-                CaptionStyle.Font,
+                CaptionStyle.Face,
                 new Vector2(inner.X, captionY),
                 CaptionStyle.Color,
                 CaptionStyle.Scale,
@@ -141,7 +141,7 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
         if (captionLines is not null && Math.Abs(captionWidth - width) < 0.5f)
             return captionLines;
 
-        captionLines = BookText.Layout(caption, CaptionStyle.Font, width, CaptionStyle.Scale, CaptionStyle.Color);
+        captionLines = BookText.Layout(caption, CaptionStyle.Face, width, CaptionStyle.Scale, CaptionStyle.Color);
         captionWidth = width;
 
         return captionLines;

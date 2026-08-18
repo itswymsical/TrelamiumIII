@@ -19,6 +19,25 @@ public readonly record struct BlockStyle()
 {
     public BookFont Font { get; init; } = BookFont.Body;
 
+    /// <summary>
+    ///     Which set of real faces <see cref="Font" /> resolves against, or null to inherit.
+    /// </summary>
+    /// <remarks>
+    ///     Left null by every preset below, because a preset describes a role and not a look. The
+    ///     builder stamps the book's or section's typeface onto anything still null when the block is
+    ///     declared, so setting this explicitly is an element-level override that outranks both.
+    /// </remarks>
+    public BookTypeface? Typeface { get; init; } = null;
+
+    /// <summary>This style's role bound to its typeface. Pass this to <see cref="BookText" />, not <see cref="Font" />.</summary>
+    public BookFace Face => new(Font, Typeface);
+
+    /// <summary>
+    ///     Another role bound to this style's typeface, for the places a block sets something in a
+    ///     face other than its own -- a drop cap, a contents header.
+    /// </summary>
+    public BookFace FaceFor(BookFont role) => new(role, Typeface);
+
     /// <summary>Text size multiplier.</summary>
     public float Scale { get; init; } = 0.82f;
 

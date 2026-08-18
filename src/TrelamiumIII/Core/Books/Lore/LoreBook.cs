@@ -119,15 +119,95 @@ public sealed class LoreBookBuilder(string key)
     private readonly List<DecorationFactory> decorations = [];
     private readonly List<(string Key, int BlockIndex, int Depth)> chapters = [];
 
+    /// <summary>Typeface stamped onto blocks declared from here on. Null leaves them on vanilla.</summary>
+    private BookTypeface? typeface;
+
     /// <summary>Index the next block will take. Decorations anchor to it.</summary>
     private int LastBlockIndex => blocks.Count - 1;
+
+    /// <summary>Nested builder for a panel or section, carrying the enclosing typeface inward.</summary>
+    internal LoreBookBuilder(string key, BookTypeface? inherited) : this(key) => typeface = inherited;
+
+    #region Type
+
+    /// <summary>
+    ///     Sets the typeface for every block declared after this call.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Called before any block, this is the book's typeface. Called partway through, it opens
+    ///         a new section and runs to the end of the book or the next call -- which is what a
+    ///         section is here, since a book is a linear sequence of blocks. Use
+    ///         <see cref="Section" /> instead when the change should close again afterwards.
+    ///     </para>
+    ///     <para>
+    ///         Only fills in styles that did not name a typeface themselves, so an element-level
+    ///         override survives.
+    ///     </para>
+    /// </remarks>
+    public LoreBookBuilder Typeface(BookTypeface? face)
+    {
+        typeface = face;
+        return this;
+    }
+
+    /// <summary>
+    ///     A run of blocks set in <paramref name="face" />, after which the previous typeface resumes.
+    /// </summary>
+    /// <example>
+    ///     <code>
+    ///     book.Typeface(BookTypeface.Encyclopedia)
+    ///         .Chapter("Entries")
+    ///         .Prose("Definition")
+    ///         .Section(BookTypeface.Glossary, s => s
+    ///             .Heading("AsideTitle")
+    ///             .Prose("AsideBody"))
+    ///         .Prose("BackToEncyclopedia");
+    ///     </code>
+    /// </example>
+    /// <remarks>
+    ///     Runs the callback against this same builder rather than a nested one. A section is a run of
+    ///     ordinary sibling blocks, so collecting them separately and merging afterwards would leave
+    ///     every decoration inside the section anchored to the wrong block -- anchors are captured as
+    ///     indices into the block list at the moment they are declared.
+    /// </remarks>
+    public LoreBookBuilder Section(BookTypeface? face, Action<LoreBookBuilder> contents)
+    {
+        BookTypeface? previous = typeface;
+
+        typeface = face;
+        contents(this);
+        typeface = previous;
+
+        return this;
+    }
+
+    /// <summary>
+    ///     Picks the style for a block and stamps the current typeface onto it if it has none.
+    /// </summary>
+    /// <remarks>
+    ///     Callers must invoke this when the block is <em>declared</em>, not inside the factory
+    ///     lambda. The factory runs at <see cref="LoreBookDefinition.Build" />, by which point
+    ///     <see cref="typeface" /> holds whatever the last section left behind, and every block in the
+    ///     book would come out in that one face.
+    /// </remarks>
+    private BlockStyle Resolve(BlockStyle? style, BlockStyle fallback)
+    {
+        BlockStyle resolved = style ?? fallback;
+
+        return resolved.Typeface is null ? resolved with { Typeface = typeface } : resolved;
+    }
+
+    #endregion
 
     #region Flow
 
     /// <summary>A section heading, ruled underneath by default.</summary>
     public LoreBookBuilder Heading(string key, bool rule = true, BlockStyle? style = null)
     {
-        blocks.Add((text, _) => new HeadingBlock(text.Get(key), rule) { Style = style ?? BlockStyle.Heading });
+        BlockStyle resolved = Resolve(style, BlockStyle.Heading);
+
+        blocks.Add((text, _) => new HeadingBlock(text.Get(key), rule) { Style = resolved });
         return this;
     }
 
@@ -159,7 +239,7 @@ public sealed class LoreBookBuilder(string key)
 
         chapters.Add((key, blocks.Count, Math.Max(0, depth)));
 
-        BlockStyle resolved = style ?? (depth > 0
+        BlockStyle resolved = Resolve(style, depth > 0
             ? BlockStyle.Heading with { Scale = 0.5f, SpaceBefore = 8f }
             : BlockStyle.Heading);
 
@@ -177,9 +257,11 @@ public sealed class LoreBookBuilder(string key)
     /// </summary>
     public LoreBookBuilder Contents(string? header = null, BlockStyle? style = null)
     {
+        BlockStyle resolved = Resolve(style, BlockStyle.Body with { Scale = 0.78f, SpaceAfter = 12f });
+
         blocks.Add((text, contents) => new ContentsBlock(contents, header is null ? null : text.Get(header))
         {
-            Style = style ?? BlockStyle.Body with { Scale = 0.78f, SpaceAfter = 12f },
+            Style = resolved,
         });
 
         return this;
@@ -193,7 +275,9 @@ public sealed class LoreBookBuilder(string key)
     /// </remarks>
     public LoreBookBuilder Prose(string key, BlockStyle? style = null)
     {
-        blocks.Add((text, _) => new ProseBlock(text.Get(key)) { Style = style ?? BlockStyle.Body });
+        BlockStyle resolved = Resolve(style, BlockStyle.Body);
+
+        blocks.Add((text, _) => new ProseBlock(text.Get(key)) { Style = resolved });
         return this;
     }
 
@@ -204,11 +288,13 @@ public sealed class LoreBookBuilder(string key)
     /// <summary>A horizontal divider.</summary>
     public LoreBookBuilder Rule(float span = 1f, float thickness = 1f, BlockStyle? style = null)
     {
+        BlockStyle resolved = Resolve(style, BlockStyle.Body with { SpaceBefore = 6f, SpaceAfter = 8f });
+
         blocks.Add((_, _) => new RuleBlock
         {
             Span = span,
             Thickness = thickness,
-            Style = style ?? BlockStyle.Body with { SpaceBefore = 6f, SpaceAfter = 8f },
+            Style = resolved,
         });
 
         return this;
@@ -217,7 +303,9 @@ public sealed class LoreBookBuilder(string key)
     /// <summary>Blank vertical space.</summary>
     public LoreBookBuilder Space(float height = 32f)
     {
-        blocks.Add((_, _) => new SpacerBlock(height) { Style = BlockStyle.Body with { SpaceAfter = 0f } });
+        BlockStyle resolved = Resolve(null, BlockStyle.Body with { SpaceAfter = 0f });
+
+        blocks.Add((_, _) => new SpacerBlock(height) { Style = resolved });
         return this;
     }
 
@@ -238,12 +326,14 @@ public sealed class LoreBookBuilder(string key)
         Rectangle? frame = null,
         BlockStyle? style = null)
     {
+        BlockStyle resolved = Resolve(style, BlockStyle.Body) with { Align = align };
+
         blocks.Add((text, _) => new ImageBlock(texture, text.Get(captionKey))
         {
             Span = span,
             Framed = framed,
             Frame = frame,
-            Style = (style ?? BlockStyle.Body) with { Align = align },
+            Style = resolved,
         });
 
         return this;
@@ -252,10 +342,11 @@ public sealed class LoreBookBuilder(string key)
     /// <summary>A bordered aside holding its own blocks.</summary>
     public LoreBookBuilder Panel(Action<LoreBookBuilder> contents, float padding = 8f, BlockStyle? style = null)
     {
-        var inner = new LoreBookBuilder(key);
+        var inner = new LoreBookBuilder(key, typeface);
         contents(inner);
 
         List<BlockFactory> children = inner.blocks;
+        BlockStyle resolved = Resolve(style, BlockStyle.Body with { SpaceBefore = 6f, SpaceAfter = 10f });
 
         blocks.Add((text, bookContents) =>
         {
@@ -267,7 +358,7 @@ public sealed class LoreBookBuilder(string key)
             return new PanelBlock(built)
             {
                 Padding = padding,
-                Style = style ?? BlockStyle.Body with { SpaceBefore = 6f, SpaceAfter = 10f },
+                Style = resolved,
             };
         });
 
@@ -294,12 +385,13 @@ public sealed class LoreBookBuilder(string key)
         BlockStyle? style = null)
     {
         int target = anchorBlock ?? LastBlockIndex;
+        BlockStyle handStyle = Resolve(style, BlockStyle.Hand);
 
         decorations.Add(text => new BookDecoration
         {
             Content = new StickyNoteBlock(text.Get(key))
             {
-                Style = style ?? BlockStyle.Hand,
+                Style = handStyle,
                 Paper = paper ?? new Color(232, 214, 142),
             },
             AnchorBlockIndex = target,
@@ -326,10 +418,11 @@ public sealed class LoreBookBuilder(string key)
         BlockStyle? style = null)
     {
         int target = anchorBlock ?? LastBlockIndex;
+        BlockStyle handStyle = Resolve(style, BlockStyle.Hand);
 
         decorations.Add(text => new BookDecoration
         {
-            Content = new ProseBlock(text.Get(key)) { Style = style ?? BlockStyle.Hand },
+            Content = new ProseBlock(text.Get(key)) { Style = handStyle },
             AnchorBlockIndex = target,
             Anchor = anchor,
             Offset = offset,
