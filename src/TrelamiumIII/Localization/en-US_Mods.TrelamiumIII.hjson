@@ -192,9 +192,10 @@ Items: {
 		DisplayName: Flailstorm
 		Tooltip:
 			'''
-			Charging the flail increases damage and generates a cloud of ice
-			the longer you charge the flailstorm, the stronger knockback you deal
-			Hitting an enemy when the flailstorm is charged will leave a large ice explosion.
+			Swings slowly, and picks up speed with every full revolution
+			Each revolution sheds clouds of freezing fog that inflict 'Frostburn'
+			Damage, knockback and critical strike all climb as the ring builds
+			At full charge, the thrown head bursts into damaging ice on impact
 			'''
 	}
 
@@ -348,6 +349,7 @@ Projectiles: {
 	LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
 	BorealHewerProj.DisplayName: Boreal Hewer
 	FlailstormProj.DisplayName: Flailstorm
+	FrostCloudProj.DisplayName: Frost Cloud
 	DaybloomSeedProjectile.DisplayName: Daybloom Seed
 	BlinkrootSeedProjectile.DisplayName: Blinkroot Seed
 	FireblossomSeedProjectile.DisplayName: Fireblossom Seed
