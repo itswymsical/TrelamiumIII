@@ -22,6 +22,7 @@
     <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\AuthoredBook.cs" />
     <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\BookExporter.cs" />
     <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\CharFormat.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\ParagraphFormat.cs" />
   </ItemGroup>
 
 </Project>

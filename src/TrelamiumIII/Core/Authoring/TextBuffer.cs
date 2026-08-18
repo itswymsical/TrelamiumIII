@@ -127,7 +127,7 @@ public sealed class TextBuffer
 
         formats.Clear();
         paragraphs.Clear();
-        emptyParagraph = ParagraphFormat.Body;
+        trailing = ParagraphFormat.Body;
 
         for (int i = 0; i < value.Length; i++)
         {
@@ -209,7 +209,7 @@ public sealed class TextBuffer
 
     /// <summary>Keeps both parallel arrays the same length as the text after a splice.</summary>
     private void SpliceFormats(int at, int removed, int inserted, CharFormat fill) =>
-        SpliceFormats(at, removed, inserted, fill, ParagraphAt(at));
+        SpliceFormats(at, removed, inserted, fill, OwningFormatAt(at));
 
     private void SpliceFormats(int at, int removed, int inserted, CharFormat fill, ParagraphFormat owning)
     {
@@ -233,20 +233,22 @@ public sealed class TextBuffer
     /// <summary>Paragraph settings of the character at an offset.</summary>
     public ParagraphFormat ParagraphAt(int index)
     {
-        if (paragraphs.Count == 0) return emptyParagraph;
+        if (paragraphs.Count == 0) return trailing;
 
         return paragraphs[Math.Clamp(index, 0, paragraphs.Count - 1)];
     }
 
     /// <summary>
-    ///     Settings a paragraph keeps while the buffer holds no characters to carry them.
+    ///     Settings of the final paragraph while it holds no characters to carry them.
     /// </summary>
     /// <remarks>
-    ///     An empty document is still one paragraph with a kind, so the writer can set a heading style
-    ///     and then type into it. With nothing in the parallel array there is nowhere else to keep
-    ///     that until the first keystroke arrives.
+    ///     The one gap in storing paragraph settings per character: a paragraph of zero length has no
+    ///     characters, so it has nowhere to keep them. That is not an edge case -- it is the paragraph
+    ///     you are standing in every time you press Return at the end of the text, and the one you
+    ///     then want to make a heading. Only the last paragraph can be empty and unmarked, since an
+    ///     empty paragraph anywhere else is still terminated by a mark that can hold its settings.
     /// </remarks>
-    private ParagraphFormat emptyParagraph = ParagraphFormat.Body;
+    private ParagraphFormat trailing = ParagraphFormat.Body;
 
     /// <summary>Every paragraph in reading order. Always at least one.</summary>
     public IEnumerable<Paragraph> Paragraphs()
@@ -263,8 +265,27 @@ public sealed class TextBuffer
             start = i + 1;
         }
 
-        yield return new Paragraph(start, text.Length - start, index,
-            text.Length == 0 ? emptyParagraph : ParagraphAt(start));
+        int length = text.Length - start;
+
+        yield return new Paragraph(start, length, index, length == 0 ? trailing : ParagraphAt(start));
+    }
+
+    /// <summary>
+    ///     Settings of the paragraph an offset falls in, including the unmarked trailing one.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="ParagraphAt" /> reads the parallel array directly and clamps, which lands on the
+    ///     previous paragraph's last character when asked about an empty trailing paragraph. Insertions
+    ///     resolve their owner through here instead so text typed into a fresh heading is a heading.
+    /// </remarks>
+    private ParagraphFormat OwningFormatAt(int index)
+    {
+        foreach (Paragraph paragraph in Paragraphs())
+        {
+            if (index <= paragraph.End) return paragraph.Format;
+        }
+
+        return trailing;
     }
 
     /// <summary>The paragraph the caret sits in.</summary>
@@ -288,30 +309,19 @@ public sealed class TextBuffer
         int from = HasSelection ? SelectionStart : Caret;
         int to = HasSelection ? SelectionEnd : Caret;
 
-        if (text.Length == 0)
-        {
-            emptyParagraph = change(emptyParagraph);
-
-            return;
-        }
-
         foreach (Paragraph paragraph in Paragraphs())
         {
-            // Touching counts as overlapping at all, so a selection ending at a paragraph's first
-            // character does not silently restyle the paragraph the writer only just reached into.
             if (paragraph.End < from || paragraph.Start > to) continue;
-            if (paragraph.Length == 0 && paragraph.Start >= text.Length) continue;
 
             ParagraphFormat updated = change(paragraph.Format);
 
-            // The mark itself is included, so a paragraph that is later merged carries its settings
-            // on the character the merge inherits from.
-            for (int i = paragraph.Start; i < paragraph.End && i < paragraphs.Count; i++)
+            // The mark itself is written too, so a paragraph that is later merged carries its
+            // settings on the character the merge inherits from.
+            for (int i = paragraph.Start; i <= paragraph.End && i < paragraphs.Count; i++)
                 paragraphs[i] = updated;
 
-            if (paragraph.End < paragraphs.Count) paragraphs[paragraph.End] = updated;
-
-            if (paragraph.Start >= text.Length) emptyParagraph = updated;
+            // A zero-length final paragraph has no characters, so its settings live off to the side.
+            if (paragraph.End >= text.Length && paragraph.Length == 0) trailing = updated;
         }
 
         typingRunEnd = -1;
@@ -326,7 +336,7 @@ public sealed class TextBuffer
     /// </remarks>
     public void SplitParagraph()
     {
-        ParagraphFormat owning = HasSelection ? ParagraphAt(SelectionStart) : ParagraphAt(Caret);
+        ParagraphFormat owning = OwningFormatAt(HasSelection ? SelectionStart : Caret);
 
         PushUndo();
 
@@ -338,6 +348,10 @@ public sealed class TextBuffer
         Caret = Anchor = Caret + 1;
         Pending = null;
         typingRunEnd = -1;
+
+        // Splitting at the very end leaves a new final paragraph with no characters, so its
+        // inherited settings have to be parked where an empty trailing paragraph keeps them.
+        if (Caret >= text.Length) trailing = owning;
     }
 
     /// <summary>
@@ -405,13 +419,18 @@ public sealed class TextBuffer
 
         if (!continuesRun) PushUndo();
 
-        // Resolved before the selection goes, since replacing a selection takes the formatting of
-        // the text it replaced rather than of whatever happens to sit left of the collapsed caret.
+        // Both resolved before the text moves. The character format has to be read before the
+        // selection goes, since a replacement takes the formatting of what it replaced rather than of
+        // whatever ends up left of the collapsed caret. The paragraph has to be read before the
+        // insert, because growing the text turns an empty trailing paragraph into a non-empty one and
+        // the settings of an empty trailing paragraph live off to the side -- resolving afterwards
+        // finds a paragraph that no longer looks empty and falls back to the mark above it.
         CharFormat applied = Pending ?? InheritedFormat();
+        ParagraphFormat owning = OwningFormatAt(HasSelection ? SelectionStart : Caret);
 
         DeleteSelectionCore();
         text.Insert(Caret, value);
-        SpliceFormats(Caret, 0, value.Length, applied);
+        SpliceFormats(Caret, 0, value.Length, applied, owning);
         Caret = Anchor = Caret + value.Length;
         Pending = null;
 

@@ -145,4 +145,5 @@ failures += BufTest.ExportTests.Run();
 failures += BufTest.CaseTests.Run();
 failures += BufTest.FormatTests.Run();
 failures += BufTest.BufferFormatTests.Run();
+failures += BufTest.ParagraphTests.Run();
 return failures == 0 ? 0 : 1;
