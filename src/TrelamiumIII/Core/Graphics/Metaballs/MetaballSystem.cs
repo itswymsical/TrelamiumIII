@@ -43,6 +43,7 @@ public sealed class MetaballSystem : ModSystem
         RegisterLayer(new SporeLayer());
         RegisterLayer(new IceMistLayer());
         RegisterLayer(new MagnetizerLayer());
+        RegisterLayer(new InkLayer());
 
         loaded = true;
 

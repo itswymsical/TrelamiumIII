@@ -60,6 +60,15 @@ public abstract class MetaballLayer
 
     public int NodeCount => nodes.Count;
 
+    /// <summary>Drops every live node at once, for an emitter that has ended abruptly.</summary>
+    /// <remarks>
+    ///     Nodes normally expire on their own, which is what a cloud that has stopped being fed
+    ///     should do. This is for the case where the thing the field belonged to is simply gone --
+    ///     a vortex closing, a cutscene cut short -- and letting it drift on for another second
+    ///     would read as the effect having been left running.
+    /// </remarks>
+    public void ClearNodes() => nodes.Clear();
+
     private MetaballRenderTargetContent? target;
     private Asset<Effect>? shader;
     private Asset<Texture2D>? radialTexture;
