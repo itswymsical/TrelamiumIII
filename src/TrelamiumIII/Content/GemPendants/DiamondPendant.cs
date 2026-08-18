@@ -1,3 +1,5 @@
+using ReLogic.Graphics;
+
 namespace TrelamiumIII.Content.GemPendants;
 
 [AutoloadEquip(EquipType.Neck)]
