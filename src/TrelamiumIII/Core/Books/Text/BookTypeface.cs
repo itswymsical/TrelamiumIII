@@ -35,6 +35,37 @@ public sealed class BookTypeface(
     };
 
     /// <summary>
+    ///     Emphasis faces, where the set has them. Null means this set cannot express that emphasis.
+    /// </summary>
+    /// <remarks>
+    ///     Kept off <see cref="BookFont" /> on purpose. A role says what a run of text <em>is</em>;
+    ///     bold and italic say how it is stressed, and folding them into the role enum would produce
+    ///     a cross product that grows every time either side gains a member. A set that has no
+    ///     italic -- Paprika, which ships one face -- simply answers null and the caller keeps the
+    ///     upright, rather than the game synthesising a slant.
+    /// </remarks>
+    public Func<DynamicSpriteFont>? Bold { get; init; }
+
+    public Func<DynamicSpriteFont>? Italic { get; init; }
+
+    public Func<DynamicSpriteFont>? BoldItalic { get; init; }
+
+    /// <summary>Resolves a role with emphasis applied, falling back to the plain face.</summary>
+    public DynamicSpriteFont Variant(BookFont role, bool bold, bool italic)
+    {
+        Func<DynamicSpriteFont>? emphasis = bold && italic ? BoldItalic ?? Bold ?? Italic
+            : bold ? Bold
+            : italic ? Italic
+            : null;
+
+        return emphasis?.Invoke() ?? this[role];
+    }
+
+    /// <summary>Whether this set can express the emphasis at all, for greying the toolbar toggle.</summary>
+    public bool Supports(bool bold, bool italic) =>
+        (!bold || Bold is not null) && (!italic || Italic is not null);
+
+    /// <summary>
     ///     Terraria's own fonts. The default, so a book that says nothing about type reads exactly as
     ///     it did before typefaces existed.
     /// </summary>
@@ -50,7 +81,12 @@ public sealed class BookTypeface(
     public static BookTypeface Encyclopedia { get; } = new(
         () => TrelamiumFonts.Regular,
         () => TrelamiumFonts.Bold,
-        () => TrelamiumFonts.Italic);
+        () => TrelamiumFonts.Italic)
+    {
+        Bold = () => TrelamiumFonts.Bold,
+        Italic = () => TrelamiumFonts.Italic,
+        BoldItalic = () => TrelamiumFonts.BoldItalic,
+    };
 
     /// <summary>
     ///     Paprika throughout. The softer, warmer setting -- the roles are told apart by scale and

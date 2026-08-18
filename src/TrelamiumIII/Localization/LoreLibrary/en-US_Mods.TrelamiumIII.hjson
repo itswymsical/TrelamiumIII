@@ -160,3 +160,24 @@ LoreUI: {
 	BookmarkEmpty: Mark this page
 	BookmarkPage: p. {0}
 }
+
+Configs: {
+	AuthoringConfig: {
+		DisplayName: Authoring Config
+		Headers.Authoring: Authoring Header
+
+		SourceDirectory: {
+			Label: Mod source directory
+			Tooltip:
+				'''
+				Absolute path to src/TrelamiumIII. Leave empty to export to the Terraria save folder instead.
+				Example: C:/Users/you/Documents/My Games/Terraria/tModLoader/ModSources/TrelamiumIII/src/TrelamiumIII
+				'''
+		}
+
+		HasSourceDirectory: {
+			Label: Has Source Directory
+			Tooltip: ""
+		}
+	}
+}

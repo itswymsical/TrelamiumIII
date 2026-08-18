@@ -3,73 +3,101 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     Wraps the edit buffer's plain text to a column and answers the geometry questions a caret asks:
-///     where an offset sits, and which offset a point lands on.
+///     Wraps the edit buffer to a column and answers the geometry questions a caret asks: where an
+///     offset sits, and which offset a point lands on.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Character advances are accumulated with the same recurrence
+///         Metrics arrive per <em>index</em>, not per character value, because two identical letters
+///         in the same buffer may be set at different sizes or in different faces. Everything the
+///         provider returns is already scaled, so this class never learns what a font is and every
+///         coordinate it reports is in drawn pixels.
+///     </para>
+///     <para>
+///         Character advances accumulate with the same recurrence
 ///         <see cref="ReLogic.Graphics.DynamicSpriteFont.MeasureString" /> uses -- leading bearing
 ///         clamped on the first glyph of a line, then spacing plus the previous glyph's trailing
 ///         bearing before each subsequent one. Anything approximate here shows up immediately as a
-///         caret that drifts away from the glyphs as you move along a line.
+///         caret that drifts along a line.
 ///     </para>
 ///     <para>
-///         Metrics arrive through a delegate and every coordinate is a plain float, so the wrap and
-///         hit-testing can be exercised with synthetic glyph widths and no graphics device. Only the
-///         caller needs to know about fonts.
+///         Line height is no longer a constant. A line is as tall as the tallest thing on it, which
+///         means a line's height depends on where it happened to wrap. Heights are therefore stored
+///         per line and positions are accumulated rather than multiplied.
 ///     </para>
 /// </remarks>
 public sealed class EditorLayout
 {
-    /// <summary>Left bearing, ink width and right bearing of one glyph, unscaled.</summary>
-    public delegate (float Left, float Width, float Right) MetricsProvider(char character);
+    /// <summary>
+    ///     One character's contribution, already scaled to drawn pixels.
+    /// </summary>
+    /// <param name="Left">Leading bearing.</param>
+    /// <param name="Width">Ink width.</param>
+    /// <param name="Right">Trailing bearing.</param>
+    /// <param name="Spacing">Extra advance before this glyph when it is not first on its line.</param>
+    /// <param name="Ascent">Distance from this glyph's line-box top down to its baseline.</param>
+    /// <param name="Descent">Distance from its baseline down to the bottom of its line box.</param>
+    public readonly record struct CharMetrics(
+        float Left,
+        float Width,
+        float Right,
+        float Spacing,
+        float Ascent,
+        float Descent);
 
-    /// <summary>A visual line: a half-open range of the source text.</summary>
+    /// <summary>
+    ///     Supplies metrics for the character at an offset.
+    /// </summary>
+    /// <remarks>
+    ///     Called for offsets from 0 up to and including the text length. The last of those is the
+    ///     position after the final character, which has no glyph; a caller answers it with whatever
+    ///     newly typed text would be set in, so an empty buffer and an empty trailing line still get
+    ///     a line height and a caret of the right size.
+    /// </remarks>
+    public delegate CharMetrics MetricsProvider(int index);
+
+    /// <summary>A visual line: a half-open range of the source text, and how tall it turned out.</summary>
     /// <param name="HardBreak">True when a newline ended the line rather than the column edge.</param>
-    public readonly record struct Line(int Start, int Length, bool HardBreak)
+    public readonly record struct Line(
+        int Start,
+        int Length,
+        bool HardBreak,
+        float Ascent,
+        float Descent,
+        float Top)
     {
         public int End => Start + Length;
+
+        public float Height => Ascent + Descent;
+
+        public float Bottom => Top + Height;
     }
 
     private readonly string text;
+    private readonly CharMetrics[] metrics;
     private readonly float[] prefix;
     private readonly List<Line> lines = [];
 
-    public EditorLayout(
-        string text,
-        MetricsProvider metrics,
-        float characterSpacing,
-        float scale,
-        float lineHeight,
-        float maxWidth)
+    public EditorLayout(string text, MetricsProvider provider, float maxWidth)
     {
         this.text = text;
-        LineHeight = lineHeight;
 
-        prefix = BuildPrefixWidths(text, metrics, characterSpacing, scale);
+        // Sampled once, including the position past the end, so nothing below calls back into the
+        // caller mid-wrap and every pass sees the same numbers.
+        metrics = new CharMetrics[text.Length + 1];
+
+        for (int i = 0; i <= text.Length; i++) metrics[i] = provider(i);
+
+        prefix = BuildPrefixWidths();
         Wrap(maxWidth);
     }
 
     public IReadOnlyList<Line> Lines => lines;
 
-    public float LineHeight { get; }
+    public float Height => lines.Count == 0 ? 0f : lines[^1].Bottom;
 
-    public float Height => lines.Count * LineHeight;
-
-    /// <summary>
-    ///     Running width of the first <c>i</c> characters, for every <c>i</c> from 0 to length.
-    /// </summary>
-    /// <remarks>
-    ///     Measured once for the whole string rather than per line. A line's own width is the
-    ///     difference of two entries only because every line here restarts at the same pen origin;
-    ///     the first-glyph bearing clamp is re-applied in <see cref="XOf" /> where it matters.
-    /// </remarks>
-    private static float[] BuildPrefixWidths(
-        string text,
-        MetricsProvider metrics,
-        float characterSpacing,
-        float scale)
+    /// <summary>Running width of the first <c>i</c> characters, for every <c>i</c>.</summary>
+    private float[] BuildPrefixWidths()
     {
         float[] widths = new float[text.Length + 1];
         float pen = 0f;
@@ -78,18 +106,19 @@ public sealed class EditorLayout
 
         for (int i = 0; i < text.Length; i++)
         {
-            (float left, float width, float right) = metrics(text[i]);
+            CharMetrics m = metrics[i];
+            float left = m.Left;
 
             if (first)
                 left = Math.Max(left, 0f);
             else
-                pen += characterSpacing + trailing;
+                pen += m.Spacing + trailing;
 
-            pen += left + width;
-            trailing = right;
+            pen += left + m.Width;
+            trailing = m.Right;
             first = false;
 
-            widths[i + 1] = (pen + Math.Max(trailing, 0f)) * scale;
+            widths[i + 1] = pen + Math.Max(trailing, 0f);
         }
 
         return widths;
@@ -102,12 +131,21 @@ public sealed class EditorLayout
 
         int lineStart = 0;
         int lastBreak = -1;
+        float top = 0f;
+
+        void Emit(int start, int length, bool hardBreak)
+        {
+            (float ascent, float descent) = Extent(start, length);
+
+            lines.Add(new Line(start, length, hardBreak, ascent, descent, top));
+            top += ascent + descent;
+        }
 
         for (int i = 0; i < text.Length; i++)
         {
             if (text[i] == '\n')
             {
-                lines.Add(new Line(lineStart, i - lineStart, true));
+                Emit(lineStart, i - lineStart, true);
                 lineStart = i + 1;
                 lastBreak = -1;
 
@@ -121,26 +159,68 @@ public sealed class EditorLayout
             // Break after the last space so the space stays on the line it ended.
             int cut = lastBreak > lineStart ? lastBreak + 1 : i;
 
-            lines.Add(new Line(lineStart, cut - lineStart, false));
+            Emit(lineStart, cut - lineStart, false);
             lineStart = cut;
             lastBreak = -1;
             i = cut - 1;
         }
 
         // Always emit a final line, so an empty buffer still has somewhere to put the caret.
-        lines.Add(new Line(lineStart, text.Length - lineStart, true));
+        Emit(lineStart, text.Length - lineStart, true);
+    }
+
+    /// <summary>
+    ///     How far a line reaches above and below its baseline.
+    /// </summary>
+    /// <remarks>
+    ///     Taken as the maximum of each separately rather than of the total heights. A line holding
+    ///     small text with deep descenders and large text with tall ascenders needs room for both
+    ///     extremes at once, which the larger of the two totals would not necessarily give.
+    /// </remarks>
+    private (float Ascent, float Descent) Extent(int start, int length)
+    {
+        // An empty line still occupies its height, measured at the position the caret would sit.
+        if (length == 0)
+        {
+            CharMetrics at = metrics[Math.Min(start, text.Length)];
+
+            return (at.Ascent, at.Descent);
+        }
+
+        float ascent = 0f;
+        float descent = 0f;
+
+        for (int i = start; i < start + length; i++)
+        {
+            ascent = Math.Max(ascent, metrics[i].Ascent);
+            descent = Math.Max(descent, metrics[i].Descent);
+        }
+
+        return (ascent, descent);
     }
 
     private float Width(int start, int end) => prefix[end] - prefix[start];
+
+    /// <summary>
+    ///     Width of the text between two offsets, without asking which line they belong to.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="XOf" /> resolves its own line first, which is wrong for a selection highlight:
+    ///     the offset at a soft wrap resolves to the line below, so measuring the end of a highlighted
+    ///     line through it returns a position on the next line and the band draws backwards. A caller
+    ///     that already knows the line measures against it directly.
+    /// </remarks>
+    public float WidthOfRange(int start, int end) =>
+        Width(Math.Clamp(start, 0, text.Length), Math.Clamp(end, 0, text.Length));
 
     /// <summary>Index of the visual line holding an offset.</summary>
     /// <remarks>
     ///     The two kinds of break resolve the end-of-line caret differently. A soft break shares its
     ///     offset with the line below -- the next line starts at exactly that index -- and the caret
-    ///     belongs to the line it wrapped onto. A hard break does not: the newline occupies the
-    ///     offset, the next line starts past it, and a caret sitting there is at the end of this line
-    ///     with nowhere else to be. Treating both the same puts the caret a whole line away from the
-    ///     click every time a paragraph ends.
+    ///     belongs to the line it wrapped onto. A hard break does not: the newline occupies the offset,
+    ///     the next line starts past it, and a caret sitting there is at the end of this line with
+    ///     nowhere else to be. Treating both the same puts the caret a whole line away from the click
+    ///     every time a paragraph ends.
     /// </remarks>
     public int LineOf(int index)
     {
@@ -165,19 +245,36 @@ public sealed class EditorLayout
     }
 
     /// <summary>Top-left of the caret for an offset, relative to the text origin.</summary>
-    public (float X, float Y) CaretAt(int index)
-    {
-        int line = LineOf(index);
+    public (float X, float Y) CaretAt(int index) => (XOf(index), LineAt(LineOf(index)).Top);
 
-        return (XOf(index), line * LineHeight);
+    /// <summary>Height of the caret at an offset: the height of the line it sits on.</summary>
+    public float CaretHeight(int index) => LineAt(LineOf(index)).Height;
+
+    /// <summary>
+    ///     Where a character draws vertically within its line, so mixed sizes share a baseline.
+    /// </summary>
+    /// <remarks>
+    ///     Top-aligning boxes of different heights would hang large text from the same ceiling as
+    ///     small text and leave their baselines apart, which reads as one word floating above the
+    ///     line. Offsetting by the difference in ascent puts every baseline in the same place.
+    /// </remarks>
+    public float BaselineOffset(int index)
+    {
+        Line line = LineAt(LineOf(index));
+
+        return line.Ascent - metrics[Math.Clamp(index, 0, text.Length)].Ascent;
     }
 
     /// <summary>Nearest caret offset to a point, for click and drag placement.</summary>
     public int IndexAt(float x, float y)
     {
-        int line = Math.Clamp((int)(y / LineHeight), 0, lines.Count - 1);
+        // Walked rather than divided: lines are no longer a uniform height.
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (y < lines[i].Bottom || i == lines.Count - 1) return IndexOnLine(i, x);
+        }
 
-        return IndexOnLine(line, x);
+        return IndexOnLine(lines.Count - 1, x);
     }
 
     /// <summary>Nearest caret offset to an x position on a given line.</summary>

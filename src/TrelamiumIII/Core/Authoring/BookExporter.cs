@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Generic;
 using System.Text;
 
@@ -214,6 +215,10 @@ public static class BookExporter
 
         if (block.Align != AuthoredAlign.Left) parts.Add($"Align = TextAlign.{block.Align}");
         if (block.DropCap) parts.Add("DropCap = true");
+        if (block.Scale > 0f) parts.Add($"Scale = {block.Scale.ToString("0.###", CultureInfo.InvariantCulture)}f");
+
+        if (block.Ink is { } packed)
+            parts.Add($"Color = new Color({(packed >> 16) & 0xFF}, {(packed >> 8) & 0xFF}, {packed & 0xFF})");
 
         if (block.Typeface != AuthoredTypeface.Inherit)
             parts.Add($"Typeface = BookTypeface.{block.Typeface}");

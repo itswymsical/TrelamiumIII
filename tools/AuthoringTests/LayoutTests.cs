@@ -2,12 +2,27 @@ using TrelamiumIII.Core.Authoring;
 
 namespace BufTest;
 
-/// <summary>Layout checks with synthetic 10px-wide glyphs, so expected positions are exact.</summary>
+/// <summary>
+///     Layout checks with synthetic metrics, so every expected position is exact.
+/// </summary>
+/// <remarks>
+///     The uniform-metric cases are unchanged from before per-character metrics existed; they are the
+///     regression check that widening the model did not move anything that used to work.
+/// </remarks>
 public static class LayoutTests
 {
-    // Every glyph 10 wide: no bearings, no spacing. Prefix width of i characters is 10*i.
+    /// <summary>Every glyph 10 wide, 20 tall, no bearings or spacing. Prefix width of i chars is 10i.</summary>
     private static EditorLayout Build(string text, float width) =>
-        new(text, _ => (0f, 10f, 0f), characterSpacing: 0f, scale: 1f, lineHeight: 20f, maxWidth: width);
+        new(text, _ => new EditorLayout.CharMetrics(0f, 10f, 0f, 0f, 16f, 4f), width);
+
+    /// <summary>Widths and heights chosen per index, for the mixed-format cases.</summary>
+    private static EditorLayout Build(string text, float width, Func<int, (float W, float A, float D)> pick) =>
+        new(text, i =>
+        {
+            (float w, float a, float d) = pick(i);
+
+            return new EditorLayout.CharMetrics(0f, w, 0f, 0f, a, d);
+        }, width);
 
     public static int Run()
     {
@@ -33,10 +48,11 @@ public static class LayoutTests
         l = Build("", 100f);
         Check("one line", l.Lines.Count, 1);
         Check("caret at origin", l.CaretAt(0).X, 0f);
+        Check("and has a height", l.Height, 20f);
 
         Console.WriteLine("-- word wrap --");
-        // "aaa bbb ccc" = 11 chars at 10px each. A 70px column fits "aaa bbb"; the space that
-        // follows is kept on the line it ended, so line 0 is 8 characters and hangs one glyph.
+        // "aaa bbb ccc" is 11 chars at 10px. A 70px column fits "aaa bbb"; the space after is kept
+        // on the line it ended, so line 0 is 8 characters and hangs one glyph.
         l = Build("aaa bbb ccc", 70f);
         Check("wraps to 2 lines", l.Lines.Count, 2);
         Check("line 0 keeps its trailing space", l.LineAt(0).Length, 8);
@@ -53,6 +69,7 @@ public static class LayoutTests
         l = Build("ab\n", 1000f);
         Check("two lines", l.Lines.Count, 2);
         Check("last line empty", l.LineAt(1).Length, 0);
+        Check("but still tall", l.LineAt(1).Height, 20f);
 
         Console.WriteLine("-- unbreakable word longer than the column --");
         l = Build("aaaaaaaa", 30f);
@@ -86,7 +103,6 @@ public static class LayoutTests
         Console.WriteLine("-- vertical movement holds the column --");
         l = Build("abcdef\nxy\nabcdef", 1000f);
         Check("down from x=50 on line 0", l.MoveVertical(5, 1, 50f), 9);
-        // From the short middle line, continuing down with the original desired x lands back at 5.
         Check("down again keeps desired x", l.MoveVertical(9, 1, 50f), 15);
         Check("up from line 2", l.MoveVertical(15, -1, 50f), 9);
         Check("up past the top clamps to 0", l.MoveVertical(2, -1, 20f), 0);
@@ -97,6 +113,62 @@ public static class LayoutTests
         Check("line start from mid line 1", l.LineStartOf(9), 8);
         Check("line end on wrapped line excludes space", l.LineEndOf(1), 7);
         Check("line end on last line", l.LineEndOf(9), 11);
+
+        Console.WriteLine("-- selection spans measured against their own line --");
+        Check("range across line 0", l.WidthOfRange(0, 7), 70f);
+        Check("range is not line-relative", l.WidthOfRange(8, 11), 30f);
+        Check("XOf at a soft wrap resolves to the next line", l.XOf(8), 0f);
+        Check("which is why the highlight uses WidthOfRange", l.WidthOfRange(l.LineAt(0).Start, 8) > l.XOf(8), true);
+
+        Console.WriteLine("-- per-character widths --");
+        // "ab" where 'a' is 10 wide and 'b' is 30.
+        l = Build("ab", 1000f, i => (i == 0 ? 10f : 30f, 16f, 4f));
+        Check("first advance", l.XOf(1), 10f);
+        Check("second advance is its own", l.XOf(2), 40f);
+
+        Console.WriteLine("-- wrapping respects per-character widths --");
+        // Four glyphs of 30 in a 70px column: two fit, then it breaks mid-word.
+        l = Build("aaaa", 70f, _ => (30f, 16f, 4f));
+        Check("breaks after two", l.LineAt(0).Length, 2);
+
+        Console.WriteLine("-- a line is as tall as its tallest character --");
+        // Index 1 is double height; the rest are the 16/4 default.
+        l = Build("abc", 1000f, i => (10f, i == 1 ? 32f : 16f, i == 1 ? 8f : 4f));
+        Check("ascent is the max", l.LineAt(0).Ascent, 32f);
+        Check("descent is the max", l.LineAt(0).Descent, 8f);
+        Check("height is their sum", l.LineAt(0).Height, 40f);
+
+        Console.WriteLine("-- ascent and descent maxed separately --");
+        // Char 0 is tall with a shallow descender, char 1 short with a deep one. The line needs both.
+        l = Build("ab", 1000f, i => (10f, i == 0 ? 30f : 10f, i == 0 ? 2f : 12f));
+        Check("ascent from the tall one", l.LineAt(0).Ascent, 30f);
+        Check("descent from the deep one", l.LineAt(0).Descent, 12f);
+        Check("taller than either character alone", l.LineAt(0).Height, 42f);
+
+        Console.WriteLine("-- baselines align across sizes --");
+        l = Build("ab", 1000f, i => (10f, i == 0 ? 32f : 16f, 4f));
+        Check("tall char sits at the top", l.BaselineOffset(0), 0f);
+        Check("short char is pushed down to meet it", l.BaselineOffset(1), 16f);
+
+        Console.WriteLine("-- mixed line heights accumulate rather than multiply --");
+        // Line 0 holds the tall char, line 1 does not.
+        l = Build("a\nb", 1000f, i => (10f, i == 0 ? 40f : 16f, 4f));
+        Check("line 0 height", l.LineAt(0).Height, 44f);
+        Check("line 1 top is line 0's bottom", l.LineAt(1).Top, 44f);
+        Check("total height", l.Height, 64f);
+
+        Console.WriteLine("-- hit testing walks uneven lines --");
+        Check("click in line 0", l.IndexAt(0f, 10f), 0);
+        Check("click below line 0 lands on line 1", l.IndexAt(0f, 50f), 2);
+        Check("caret height follows its line", l.CaretHeight(0), 44f);
+        Check("and differs on the next", l.CaretHeight(2), 20f);
+
+        Console.WriteLine("-- per-character spacing is charged to the following glyph --");
+        // 2px of spacing before every glyph but the first on a line.
+        l = new EditorLayout("abc", _ => new EditorLayout.CharMetrics(0f, 10f, 0f, 2f, 16f, 4f), 1000f);
+        Check("first glyph is not charged", l.XOf(1), 10f);
+        Check("second is", l.XOf(2), 22f);
+        Check("third too", l.XOf(3), 34f);
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "LAYOUT: ALL PASS" : $"LAYOUT: {failures} FAILURE(S)");

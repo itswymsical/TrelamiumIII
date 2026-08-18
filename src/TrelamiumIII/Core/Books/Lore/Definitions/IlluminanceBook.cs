@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
 /// <summary>
-///     Laine L.'s <em>Illuminance</em>: a scholar's memoir, in chapters.
+///     Laine L.'s <em>Illuminance</em>: a scholar's memoir.
 /// </summary>
 /// <remarks>
 ///     <para>

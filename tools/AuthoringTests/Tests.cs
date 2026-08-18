@@ -142,4 +142,7 @@ Console.WriteLine(failures == 0 ? "ALL PASS" : $"{failures} FAILURE(S)");
 
 failures += BufTest.LayoutTests.Run();
 failures += BufTest.ExportTests.Run();
+failures += BufTest.CaseTests.Run();
+failures += BufTest.FormatTests.Run();
+failures += BufTest.BufferFormatTests.Run();
 return failures == 0 ? 0 : 1;

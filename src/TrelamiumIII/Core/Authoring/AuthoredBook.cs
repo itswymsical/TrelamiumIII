@@ -55,6 +55,23 @@ public sealed class AuthoredBlock
 
     public AuthoredTypeface Typeface { get; set; } = AuthoredTypeface.Inherit;
 
+    public bool Bold { get; set; }
+
+    public bool Italic { get; set; }
+
+    /// <summary>Text size multiplier, overriding the preset when non-zero.</summary>
+    public float Scale { get; set; }
+
+    /// <summary>
+    ///     Ink colour packed as 0xRRGGBB, or null to keep the preset's.
+    /// </summary>
+    /// <remarks>
+    ///     Held as an int rather than an XNA <c>Color</c> so this model stays free of the graphics
+    ///     stack. That is what lets it -- and the exporter over it -- be tested without a device, and
+    ///     it is the form the generated C# needs anyway.
+    /// </remarks>
+    public int? Ink { get; set; }
+
     public bool DropCap { get; set; }
 
     /// <summary>Contents depth for <see cref="AuthoredBlockKind.Chapter" />. 0 is a chapter.</summary>

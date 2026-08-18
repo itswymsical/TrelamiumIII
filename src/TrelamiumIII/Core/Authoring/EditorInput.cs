@@ -35,6 +35,12 @@ public sealed class EditorInput
     /// <summary>Set when an edit happened this frame, so the caller can invalidate its layout.</summary>
     public bool Dirty { get; private set; }
 
+    /// <summary>True while the buffer holds a one-line value rather than prose.</summary>
+    public bool SingleLine { get; set; }
+
+    /// <summary>Set for one frame when Return was pressed on a one-line field.</summary>
+    public bool Submitted { get; private set; }
+
     /// <summary>
     ///     Column the caret tries to keep while moving vertically, in layout pixels. Reset by any
     ///     horizontal move so the caret does not drift after an up-and-down trip through short lines.
@@ -42,6 +48,9 @@ public sealed class EditorInput
     private float desiredX;
 
     private bool desiredXValid;
+
+    /// <summary>Where the Shift+F3 cycle currently sits, so repeated presses walk the casings.</summary>
+    private TextCase caseCycle = TextCase.Sentence;
 
     public void Attach()
     {
@@ -73,6 +82,7 @@ public sealed class EditorInput
     public void Update(TextBuffer buffer, EditorLayout layout)
     {
         Dirty = false;
+        Submitted = false;
 
         // Holds off Terraria's own bindings, so typing 'i' does not open the inventory.
         PlayerInput.WritingText = true;
@@ -94,15 +104,35 @@ public sealed class EditorInput
             MarkDirty();
         }
 
+        // On a one-line field Return commits instead of breaking the line, and Tab has nothing
+        // sensible to insert. The host reads Submitted and moves focus off.
         if (Pressed(Keys.Enter))
         {
-            buffer.Insert("\n");
+            if (SingleLine)
+            {
+                Submitted = true;
+            }
+            else
+            {
+                // Splits the paragraph rather than inserting a bare newline, so both halves keep the
+                // kind and alignment the writer set.
+                buffer.SplitParagraph();
+                MarkDirty();
+            }
+        }
+
+        if (!SingleLine && Pressed(Keys.Tab))
+        {
+            buffer.Insert("\t");
             MarkDirty();
         }
 
-        if (Pressed(Keys.Tab))
+        // Shift+F3 cycles casing, the shortcut a writer coming from Word will already have.
+        if (shift && Pressed(Keys.F3))
         {
-            buffer.Insert("\t");
+            caseCycle = (TextCase)(((int)caseCycle + 1) % Enum.GetValues<TextCase>().Length);
+
+            buffer.ChangeCase(caseCycle);
             MarkDirty();
         }
 
@@ -202,7 +232,10 @@ public sealed class EditorInput
     {
         if (Repeats(Keys.Back))
         {
-            buffer.Backspace();
+            // Backspacing onto a paragraph mark merges the two paragraphs; anything else is an
+            // ordinary character deletion.
+            if (!buffer.MergeParagraphBackwards()) buffer.Backspace();
+
             MarkDirty();
         }
 

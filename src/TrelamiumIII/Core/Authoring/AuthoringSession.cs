@@ -1,16 +1,38 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using TrelamiumIII.Common.Configs;
+using TrelamiumIII.Core.Books.Layout;
 
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>Which of the editable strings the shared buffer is pointed at.</summary>
 public enum EditorField
 {
+    /// <summary>The prose itself. The only field that is more than one line.</summary>
     BlockText,
+
     BlockKey,
+
+    /// <summary>Text size, typed rather than stepped. Parsed on commit.</summary>
+    BlockScale,
+
     BookKey,
     BookTitle,
+}
+
+/// <summary>Extensions over <see cref="EditorField" />.</summary>
+public static class EditorFieldExtensions
+{
+    /// <summary>
+    ///     Whether the field is a one-line value rather than prose.
+    /// </summary>
+    /// <remarks>
+    ///     Short fields are set in the chrome font at chrome scale and never wrap, so the caret has to
+    ///     be measured against those rather than against the book face the page uses. They also treat
+    ///     Return as "done" instead of as a line break.
+    /// </remarks>
+    public static bool IsShort(this EditorField field) => field != EditorField.BlockText;
 }
 
 /// <summary>
@@ -27,6 +49,10 @@ public sealed class AuthoringSession
     {
         Book.Blocks.Add(new AuthoredBlock { Kind = AuthoredBlockKind.Heading, Key = "Title", Text = "Untitled" });
         Book.Blocks.Add(new AuthoredBlock { Kind = AuthoredBlockKind.Prose, Key = "Opening" });
+
+        // The buffer has not been loaded from anything yet, so Commit's guard makes the selection
+        // below harmless. Before that guard existed this line flushed the empty buffer over the
+        // heading's text, and an emptied heading is skipped by the composer -- a blank first page.
         SelectBlock(1);
     }
 
@@ -62,9 +88,19 @@ public sealed class AuthoringSession
         Reload();
     }
 
-    /// <summary>Writes the buffer back into whatever it is currently editing.</summary>
+    /// <summary>
+    ///     Writes the buffer back into whatever it was loaded from.
+    /// </summary>
+    /// <remarks>
+    ///     Guarded by what the buffer actually holds rather than by what is selected now. A commit
+    ///     against a target the buffer was never filled from overwrites that target with unrelated
+    ///     text -- silently, and with no undo, since the history belongs to the buffer and not to the
+    ///     block. Making the guard part of the method means no caller has to remember it.
+    /// </remarks>
     public void Commit()
     {
+        if (loadedFrom != SelectedIndex || loadedField != Focus) return;
+
         switch (Focus)
         {
             case EditorField.BookKey when Buffer.Text.Length > 0:
@@ -76,19 +112,100 @@ public sealed class AuthoringSession
             case EditorField.BlockKey when Selected is { } keyed && Buffer.Text.Length > 0:
                 keyed.Key = Buffer.Text;
                 break;
+
+            // Unparseable input leaves the size alone rather than snapping to a default: a half-typed
+            // "1." is a value mid-edit, not a mistake to correct.
+            case EditorField.BlockScale when Selected is { } sized:
+                if (float.TryParse(Buffer.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsed))
+                    sized.Scale = Math.Clamp(parsed, 0.2f, 3f);
+
+                break;
+            // Written back as tags, so the block's stored text is always exactly what would be
+            // exported. Keeping a second, parallel representation of the formatting is what would
+            // let the two drift.
             case EditorField.BlockText when Selected is { HasText: true } block:
-                block.Text = Buffer.Text;
+                block.Text = FormatCodec.Serialize(Buffer.Text, Buffer.Formats);
                 break;
         }
     }
 
-    private void Reload() => Buffer.Reset(Focus switch
+    /// <summary>Block index the buffer's contents came from, or -1 when it holds nothing's text.</summary>
+    private int loadedFrom = -1;
+
+    private EditorField loadedField = EditorField.BlockText;
+
+    private void Reload()
     {
-        EditorField.BookKey   => Book.Key,
-        EditorField.BookTitle => Book.Title,
-        EditorField.BlockKey  => Selected?.Key ?? string.Empty,
-        _                     => Selected is { HasText: true } block ? block.Text : string.Empty,
-    });
+        loadedFrom = SelectedIndex;
+        loadedField = Focus;
+
+        ReloadCore();
+    }
+
+    private void ReloadCore()
+    {
+        if (Focus == EditorField.BlockText)
+        {
+            // Tags come off on the way in and go back on the way out, so a book written by hand
+            // loads into the editor and survives the round trip untouched.
+            (string plain, CharFormat[] formats) =
+                FormatCodec.Parse(Selected is { HasText: true } block ? block.Text : string.Empty);
+
+            Buffer.Reset(plain, formats);
+
+            return;
+        }
+
+        Buffer.Reset(Focus switch
+        {
+            EditorField.BookKey    => Book.Key,
+            EditorField.BookTitle  => Book.Title,
+            EditorField.BlockKey   => Selected?.Key ?? string.Empty,
+            EditorField.BlockScale => ScaleText,
+            _                      => string.Empty,
+        });
+    }
+
+    /// <summary>
+    ///     The selected block's size as text, resolved through its preset when it has no override.
+    /// </summary>
+    /// <remarks>
+    ///     Seeding the field with the effective size rather than a blank means typing over it starts
+    ///     from what is actually on the page, which is what a size box in any editor does.
+    /// </remarks>
+    public string ScaleText => EffectiveScale.ToString("0.00", CultureInfo.InvariantCulture);
+
+    /// <summary>The size the selected block renders at, override or preset.</summary>
+    public float EffectiveScale
+    {
+        get
+        {
+            if (Selected is not { } block) return 1f;
+
+            if (block.Scale > 0f) return block.Scale;
+
+            // Read off the presets rather than restated as literals. Copying the numbers here would
+            // leave the size box reporting one thing while the page rendered another the moment a
+            // preset was retuned.
+            return block.Kind switch
+            {
+                AuthoredBlockKind.Heading or AuthoredBlockKind.Chapter => BlockStyle.Heading.Scale,
+                AuthoredBlockKind.Quote                                => BlockStyle.Quote.Scale,
+                AuthoredBlockKind.Caption                              => BlockStyle.Caption.Scale,
+                _                                                      => BlockStyle.Body.Scale,
+            };
+        }
+    }
+
+    /// <summary>Nudges the size, seeding from the preset when there was no override yet.</summary>
+    public void StepScale(float delta)
+    {
+        if (Selected is not { } block) return;
+
+        block.Scale = Math.Clamp(EffectiveScale + delta, 0.2f, 3f);
+
+        if (Focus == EditorField.BlockScale) ReloadCore();
+    }
 
     public void SelectBlock(int index)
     {
@@ -105,14 +222,18 @@ public sealed class AuthoringSession
     {
         Commit();
 
-        Book.Blocks.Insert(SelectedIndex + 1, new AuthoredBlock
+        int target = SelectedIndex + 1;
+
+        Book.Blocks.Insert(target, new AuthoredBlock
         {
             Kind = kind,
             Key = UniqueKey(kind.ToString()),
         });
 
+        // Cleared first so SelectBlock does not treat the move as a no-op, and so the commit it
+        // performs finds no block to write the outgoing buffer into -- it was saved above.
         SelectedIndex = -1;
-        SelectBlock(SelectedIndex + 2);
+        SelectBlock(target);
         Status = $"Added {kind}.";
     }
 
@@ -143,6 +264,12 @@ public sealed class AuthoringSession
         Commit();
         (Book.Blocks[SelectedIndex], Book.Blocks[target]) = (Book.Blocks[target], Book.Blocks[SelectedIndex]);
         SelectedIndex = target;
+
+        // The buffer still holds this same block's text -- it only changed position -- so the
+        // loaded-from index follows it. Without this the commit guard would reject every later
+        // write and everything typed after a move would be dropped on the next selection.
+        loadedFrom = target;
+
         Status = "Moved block.";
     }
 
