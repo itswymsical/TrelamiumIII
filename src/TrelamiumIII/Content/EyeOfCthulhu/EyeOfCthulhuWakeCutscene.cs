@@ -79,7 +79,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
         {
             // Still ordinary debris. The ink billow thrown at the moment of death is already out
             // there doing the work; the scene has not laid a finger on anything yet.
-            SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset);
+            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.65f, Pitch = -0.05f});
             return;
         }
 
