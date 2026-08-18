@@ -1,9 +1,9 @@
-using TrelamiumIII.Common.Systems.Jobs;
 using TrelamiumIII.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
 using Terraria.UI;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.UI.Jobs.Indicators;
 

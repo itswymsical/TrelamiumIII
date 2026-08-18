@@ -3,7 +3,7 @@ using System.Linq;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
-using TrelamiumIII.Common.Systems.Jobs;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.UI.Jobs;
 

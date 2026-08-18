@@ -1,7 +1,5 @@
 using Microsoft.Xna.Framework.Input;
 using ReLogic.Content;
-using TrelamiumIII.Common.Systems.Alchemy;
-using TrelamiumIII.Common.Systems.Alchemy.Brewing;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
@@ -10,6 +8,8 @@ using Terraria.UI;
 using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.UI;
 using TrelamiumIII.Common.UI;
+using TrelamiumIII.Core.Alchemy;
+using TrelamiumIII.Core.Alchemy.Brewing;
 
 namespace TrelamiumIII.Core.UI.AlchemyAlmanac;
 

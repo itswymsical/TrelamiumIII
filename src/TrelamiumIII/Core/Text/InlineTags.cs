@@ -2,7 +2,9 @@ using System.Collections;
 using System.Globalization;
 using System.Reflection;
 using Terraria.GameContent;
+using Terraria.Localization;
 using Terraria.UI.Chat;
+using TrelamiumIII.Common.ChemicalClass;
 
 namespace TrelamiumIII.Core.Text;
 
@@ -20,6 +22,12 @@ namespace TrelamiumIII.Core.Text;
 ///             Accepts an internal name, a <c>ModName/InternalName</c> pair, a vanilla buff name,
 ///             or a numeric id. An <c>RRGGBB</c> option retints the label:
 ///             <c>[buff/88FF88:FungalInfection]</c>.
+///         </item>
+///         <item>
+///             <c>[chem:Thermal]</c> -- a chemical damage type's name followed by its element
+///             medallion. Takes any <see cref="ChemicalDamageType" /> member, and accepts the same
+///             <c>RRGGBB</c> option as <c>buff</c> when the default element tint is wrong for the
+///             line.
 ///         </item>
 ///         <item>
 ///             <c>[tex:TrelamiumIII/Content/Fungore/FungalInfection]</c> -- any texture, for cases
@@ -45,6 +53,7 @@ public sealed class InlineTagSystem : ModSystem
 {
     internal const string BUFF_TAG = "buff";
     internal const string TEXTURE_TAG = "tex";
+    internal const string CHEMICAL_TAG = "chem";
     internal const string GLOSS_TAG = "gloss";
     internal const string LORE_TAG = "lore";
     internal const string REDACTED_TAG = "redacted";
@@ -54,6 +63,7 @@ public sealed class InlineTagSystem : ModSystem
     [
         BUFF_TAG,
         TEXTURE_TAG,
+        CHEMICAL_TAG,
         GLOSS_TAG,
         LORE_TAG,
         REDACTED_TAG,
@@ -68,6 +78,7 @@ public sealed class InlineTagSystem : ModSystem
 
         ChatManager.Register<BuffTagHandler>(BUFF_TAG);
         ChatManager.Register<InlineTextureTagHandler>(TEXTURE_TAG);
+        ChatManager.Register<ChemicalTagHandler>(CHEMICAL_TAG);
         ChatManager.Register<GlossTagHandler>(GLOSS_TAG);
         ChatManager.Register<LoreLinkTagHandler>(LORE_TAG);
         ChatManager.Register<RedactedTagHandler>(REDACTED_TAG);
@@ -171,6 +182,74 @@ public sealed class InlineTextureTagHandler : ITagHandler
         }
 
         return new InlineTextureSnippet(ModContent.Request<Texture2D>(path), raw, baseColor, iconScale: scale);
+    }
+}
+
+/// <summary>Renders a chemical damage type's name and element medallion inline.</summary>
+/// <remarks>
+///     The tag names a <see cref="ChemicalDamageType" /> rather than a texture path, so the medallion
+///     beside the word is always the one that element actually uses. A type added to the enum later
+///     needs nothing here beyond a sprite of the same name under <c>Assets/Textures/UI/Elements</c>.
+/// </remarks>
+public sealed class ChemicalTagHandler : ITagHandler
+{
+    private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/Elements/";
+
+    TextSnippet ITagHandler.Parse(string text, Color baseColor, string options)
+    {
+        string raw = $"[{InlineTagSystem.CHEMICAL_TAG}:{text}]";
+
+        if (!TryResolveType(text, out ChemicalDamageType type))
+            return new TextSnippet(raw, baseColor);
+
+        // The icons are named after their enum member, so the member is the path.
+        string path = ICON_DIRECTORY + type;
+
+        return new InlineTextureSnippet(
+            ModContent.HasAsset(path) ? ModContent.Request<Texture2D>(path) : null,
+            raw,
+            InlineTags.ParseColor(options) ?? LabelColor(type),
+            DisplayName(type)
+        );
+    }
+
+    private static bool TryResolveType(string text, out ChemicalDamageType type)
+    {
+        // TryParse also accepts numbers, and hands back an undefined value for one out of range
+        // rather than failing, so IsDefined is what keeps a typo from reaching Request.
+        return Enum.TryParse(text.Trim(), ignoreCase: true, out type)
+            && Enum.IsDefined(type)
+            && type != ChemicalDamageType.None;
+    }
+
+    /// <summary>
+    ///     Label tints sampled from the medallions themselves, so the word and the icon beside it
+    ///     read as one element rather than two.
+    /// </summary>
+    private static Color LabelColor(ChemicalDamageType type)
+    {
+        return type switch
+        {
+            ChemicalDamageType.Thermal => new Color(255, 135, 31),
+            ChemicalDamageType.Cryonic => new Color(157, 202, 238),
+            ChemicalDamageType.Caustic => new Color(93, 173, 63),
+            ChemicalDamageType.Necrotic => new Color(200, 84, 255),
+            ChemicalDamageType.Kinetic => new Color(245, 229, 88),
+            ChemicalDamageType.Electric => new Color(255, 106, 106),
+            _ => Color.White
+        };
+    }
+
+    /// <summary>
+    ///     The label is localised under <c>ChemicalDamageTypes.{member}</c>, so a translation can name
+    ///     an element in its own words without every tooltip that mentions it having to change.
+    /// </summary>
+    private static string DisplayName(ChemicalDamageType type)
+    {
+        string key = TrelamiumIII.Instance.GetLocalizationKey($"ChemicalDamageTypes.{type}");
+        string value = Language.GetTextValue(key);
+
+        return value == key ? type.ToString() : value;
     }
 }
 

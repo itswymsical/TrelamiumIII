@@ -1,6 +1,6 @@
-using TrelamiumIII.Common.Systems.Jobs;
 using System.Linq;
 using Terraria.GameContent;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.UI.Jobs.Indicators;
 

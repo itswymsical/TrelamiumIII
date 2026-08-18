@@ -76,25 +76,25 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource
         int insertionIndex = tooltips.FindIndex(line => line.Name == "Damage");
 
         var chemicalType = new TooltipLine(Mod, "ChemicalType",
-            $"({component.ChemicalDamage} {component.ChemicalType.ToString().ToLower()}/sec)")
+            $"({component.ChemicalDamage} [chem:{component.ChemicalType}]/sec)")
         {
             OverrideColor = component.ChemicalColor(),
         };
         tooltips.Insert(insertionIndex + 1, chemicalType);
 
-        var reactionChance = new TooltipLine(Mod, "ReactionChance",
-            $"{component.ReactionChance * 1000}% chemical reaction chance");
-        tooltips.Insert(insertionIndex + 2, reactionChance);
-
         if (component.ReactionDamage > 0f)
         {
             var reactionDamage = new TooltipLine(Mod, "ReactionDamage",
-                $"reaction burst deals {component.ReactionDamage:0} {component.ChemicalType.ToString().ToLower()} damage")
+                $"deals {component.ReactionDamage:0} [chem:{component.ChemicalType}] reaction damage")
             {
                 OverrideColor = component.ChemicalColor(),
             };
-            tooltips.Insert(insertionIndex + 3, reactionDamage);
+            tooltips.Insert(insertionIndex + 2, reactionDamage);
         }
+
+        var reactionChance = new TooltipLine(Mod, "ReactionChance",
+        $"{component.ReactionChance * 1000}% chemical reaction chance");
+        tooltips.Insert(insertionIndex + 3, reactionChance);
 
         int insertionIndex2 = tooltips.FindIndex(line => line.Name == "Speed");
         var afflictionDuration = new TooltipLine(Mod, "AfflictionDuration",

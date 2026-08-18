@@ -623,3 +623,21 @@ SeedAmmo: {
 	Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
 	Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
 }
+
+# Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name
+# an element in its own words without every tooltip that mentions it having to change.
+ChemicalDamageTypes: {
+	Thermal: Thermal
+	Cryonic: Cryonic
+	Caustic: Caustic
+	Necrotic: Necrotic
+	Kinetic: Kinetic
+	Electric: Electric
+}
+
+DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
+
+Liquids: {
+	CrudeOilLiquid.MapEntry: Crude Oil
+	BrineLiquid.MapEntry: Brine
+}

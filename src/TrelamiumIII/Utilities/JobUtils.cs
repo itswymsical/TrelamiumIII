@@ -1,5 +1,5 @@
-using TrelamiumIII.Common.Systems.Jobs;
 using Terraria.Audio;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Utilities;
 

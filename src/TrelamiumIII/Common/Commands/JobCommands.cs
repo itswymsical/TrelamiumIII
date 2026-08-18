@@ -1,6 +1,6 @@
-using TrelamiumIII.Common.Systems.Jobs;
-using TrelamiumIII.Common.Systems.Jobs.Events;
 using System.Linq;
+using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Core.Jobs.Events;
 
 namespace TrelamiumIII.Common.Commands;
 

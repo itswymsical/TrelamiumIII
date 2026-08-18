@@ -33,7 +33,7 @@ public class PrismaticStarflaskItem : ModItem
         if (!Item.TryEnable(out ChemicalSourceComponent component))
             return;
 
-        component.ChemicalType = ChemicalDamageType.Thermal;
+        component.ChemicalType = ChemicalDamageType.Kinetic;
         component.ChemicalDamage = 2f;
         component.AfflictionRate = 30;
         component.AfflictionDuration = TimeConversion.SetTime(secs: 2);

@@ -3,7 +3,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
 using Terraria.ObjectData;
-using TrelamiumIII.Common.Systems.Alchemy;
+using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 

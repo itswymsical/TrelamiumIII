@@ -20,7 +20,8 @@ public enum ChemicalDamageType
     Cryonic,
     Caustic,
     Necrotic,
-    Kinetic
+    Kinetic,
+    Electric // unused for now | may become alchemical elements in the future
 }
 
 public static class ChemicalMatchup

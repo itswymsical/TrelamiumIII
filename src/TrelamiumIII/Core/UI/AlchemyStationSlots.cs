@@ -2,7 +2,7 @@ using ReLogic.Content;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
-using TrelamiumIII.Common.Systems.Alchemy;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.UI.AlchemyStation;
 using static TrelamiumIII.Core.AssetReferences;
 

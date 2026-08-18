@@ -140,10 +140,3 @@ LoreUI: {
 	BookmarkEmpty: Mark this page
 	BookmarkPage: p. {0}
 }
-
-DamageClasses.ChemicalDamageClass.DisplayName: Chemical Damage Class
-
-Liquids: {
-	CrudeOilLiquid.MapEntry: Crude Oil Liquid
-	BrineLiquid.MapEntry: Brine Liquid
-}

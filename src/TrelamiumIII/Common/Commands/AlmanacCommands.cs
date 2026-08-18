@@ -1,5 +1,5 @@
-using TrelamiumIII.Common.Systems.Alchemy;
 using System.Collections.Generic;
+using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Common.Commands;
 
