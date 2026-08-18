@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Regression cover for the authoring layers that carry no game state. Kept outside src/ so the
+       tModLoader SDK never compiles it into the .tmod.
+
+       Only the graphics-free files are listed. TextBuffer and EditorLayout are written without any
+       XNA or Terraria dependency precisely so they can be exercised here; adding a file that touches
+       either will break this project, which is the intended signal. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TrelamiumIII.Tools.AuthoringTests</RootNamespace>
+    <AssemblyName>AuthoringTests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\TextBuffer.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\EditorLayout.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\AuthoredBook.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Core\Authoring\BookExporter.cs" />
+  </ItemGroup>
+
+</Project>
