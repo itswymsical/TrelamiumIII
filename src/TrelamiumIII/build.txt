@@ -1,3 +1,4 @@
 displayName = Trelamium III
 author = wymsical
 version = 0.1
+modReferences = ModLiquidLib, SubworldLibrary

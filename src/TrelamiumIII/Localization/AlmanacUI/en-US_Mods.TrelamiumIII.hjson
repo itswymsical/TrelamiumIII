@@ -1,0 +1,20 @@
+AlmanacUI: {
+	Title: Alchemist's Almanac
+	Hint1: A record of every chemical recipe.
+	Hint2: Collect and brew materials to unlock slots.
+	Hint3: Query a brew for the recipes that make it,
+	Hint3A: or a material for what it goes into.
+	Hint4: Click an entry to view its recipes.
+	Hint5: Click to flip da page.
+	SynthesisRecipes: Synthesis Recipes
+	AugmentationRecipes: Augmentation Recipes
+	AlchemyRecipes: Alchemy Recipes
+	AllRecipes: All Recipes
+	RecipeVariant: 1 recipe variant
+	RecipeVariants: recipe variants
+	HeaderRecipes: Recipes
+	Search: Query
+	DiscoveredText: discovered
+	RecipesDiscovered: recipes discovered
+	IngredientsDiscovered: ingredients found
+}

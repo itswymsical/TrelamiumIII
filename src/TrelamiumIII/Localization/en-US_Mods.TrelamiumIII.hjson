@@ -143,12 +143,12 @@ Items: {
 		Tooltip: "'Highly magnetic'"
 	}
 
-	MagnetizedCoilItem: {
+	MagnetizedCoil: {
 		DisplayName: Magnetized Coil
 		Tooltip: Do not throw these at powerlines.
 	}
 
-	LodestoneMagnetizerItem: {
+	LodestoneMagnetizer: {
 		DisplayName: Dusty Ol' Magnetizer
 		Tooltip:
 			'''
@@ -325,6 +325,186 @@ Items: {
 			"Laine L."
 			'''
 	}
+
+	AlchemistsAlmanacItem: {
+		DisplayName: Alchemist's Almanac
+		Tooltip: ""
+	}
+
+	AdvancedAlchemyStationChamberItem: {
+		DisplayName: Advanced Alchemy Station Chamber
+		Tooltip: ""
+	}
+
+	AdvancedAlchemyStationComponentItem: {
+		DisplayName: Advanced Alchemy Station Component
+		Tooltip: ""
+	}
+
+	AdvancedAlchemyStationItem: {
+		DisplayName: Advanced Alchemy Station
+		Tooltip: ""
+	}
+
+	AlchemyStationItem: {
+		DisplayName: Alchemy Station
+		Tooltip: ""
+	}
+
+	ArcaneSolutionItem: {
+		DisplayName: Arcane Solution
+		Tooltip: ""
+	}
+
+	BaneTonicItem: {
+		DisplayName: Bane Tonic
+		Tooltip: ""
+	}
+
+	BloodtoothExtractItem: {
+		DisplayName: Bloodtooth Extract
+		Tooltip: ""
+	}
+
+	BloodtoothFungusItem: {
+		DisplayName: Bloodtooth Fungus
+		Tooltip: ""
+	}
+
+	BottledOilItem: {
+		DisplayName: Bottled Oil
+		Tooltip: ""
+	}
+
+	BrineBottleItem: {
+		DisplayName: Brine Bottle
+		Tooltip: ""
+	}
+
+	BriskTonicItem: {
+		DisplayName: Brisk Tonic
+		Tooltip: ""
+	}
+
+	CharcoalItem: {
+		DisplayName: Charcoal
+		Tooltip: ""
+	}
+
+	DeadSolutionItem: {
+		DisplayName: Dead Solution
+		Tooltip: ""
+	}
+
+	FibrousSlurryItem: {
+		DisplayName: Fibrous Slurry
+		Tooltip: ""
+	}
+
+	FlyAgaricItem: {
+		DisplayName: Fly Agaric
+		Tooltip: ""
+	}
+
+	FortunateTonicItem: {
+		DisplayName: Fortunate Tonic
+		Tooltip: ""
+	}
+
+	HarmoniousTonicItem: {
+		DisplayName: Harmonious Tonic
+		Tooltip: ""
+	}
+
+	InertSolutionItem: {
+		DisplayName: Inert Solution
+		Tooltip: ""
+	}
+
+	MagnoliaItem: {
+		DisplayName: Magnolia
+		Tooltip: ""
+	}
+
+	MagnoliaPowderItem: {
+		DisplayName: Magnolia Powder
+		Tooltip: ""
+	}
+
+	MagnoliaSeedsItem: {
+		DisplayName: Magnolia Seeds
+		Tooltip: ""
+	}
+
+	MagnoliaSolutionItem: {
+		DisplayName: Magnolia Solution
+		Tooltip: ""
+	}
+
+	MartialTonicItem: {
+		DisplayName: Martial Tonic
+		Tooltip: ""
+	}
+
+	OxidizedCopperItem: {
+		DisplayName: Oxidized Copper
+		Tooltip: ""
+	}
+
+	SpecularTonicItem: {
+		DisplayName: Specular Tonic
+		Tooltip: ""
+	}
+
+	VitalTonicItem: {
+		DisplayName: Vital Tonic
+		Tooltip: ""
+	}
+
+	CorruptedSporeFlaskItem: {
+		DisplayName: Corrupted Spore Flask
+		Tooltip: ""
+	}
+
+	CrimsonEffusionFlaskItem: {
+		DisplayName: Crimson Effusion Flask
+		Tooltip: ""
+	}
+
+	HyperboreanFlaskItem: {
+		DisplayName: Hyperborean Flask
+		Tooltip: ""
+	}
+
+	PhytoncideFlaskItem: {
+		DisplayName: Phytoncide Flask
+		Tooltip: ""
+	}
+
+	PrismaticStarflaskItem: {
+		DisplayName: Prismatic Starflask
+		Tooltip: ""
+	}
+
+	ThermiteFlaskItem: {
+		DisplayName: Thermite Flask
+		Tooltip: ""
+	}
+
+	BrineBucketItem: {
+		DisplayName: Brine Bucket
+		Tooltip: ""
+	}
+
+	CrudeOilBucketItem: {
+		DisplayName: Crude Oil Bucket
+		Tooltip: ""
+	}
+
+	SaltBlockItem: {
+		DisplayName: Salt Block
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -332,19 +512,21 @@ Tiles: {
 	SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
 	SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
 	SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
+	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
+	AlchemyStationTile.MapEntry: Alchemy Station
+	MagnoliaTile.MapEntry: Magnolia
 }
 
 Projectiles: {
 	TetanusShurikenProj.DisplayName: Tetanus Shuriken
 	SporeclotSacProj.DisplayName: Sporeclot Sac
 	SporeBlastProj.DisplayName: Spore Blast
-	GirthquakeProj.DisplayName: Girthquake Proj
-	GirthquakeShardProj.DisplayName: Girthquake Shard Proj
+	GirthquakeProj.DisplayName: Girthquake
+	GirthquakeShardProj.DisplayName: Earth Shard
 	ShroomsonMinion.DisplayName: Shroomson
 	ShroomsonMushroom.DisplayName: Mushroom
 	PossessedWorkshopPet.DisplayName: Possessed Workshop
 	WorkshopStationPet.DisplayName: Workshop Station Pet
-	FahHammerProj.DisplayName: Fah Hammer Proj
 	FungoreSpore.DisplayName: Spore Clot
 	LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
 	BorealHewerProj.DisplayName: Boreal Hewer
@@ -357,12 +539,26 @@ Projectiles: {
 	MoonglowSeedProjectile.DisplayName: Moonglow Seed
 	DeathweedSeedProjectile.DisplayName: Deathweed Seed
 	WaterleafSeedProjectile.DisplayName: Waterleaf Seed
-	AcornLauncherProjectile.DisplayName: Acorn Launcher Projectile
+	AcornLauncherProjectile.DisplayName: Acorn Launcher
 	AcornProjectile.DisplayName: Acorn Projectile
-	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel Projectile
-	SaplingMakerProjectile.DisplayName: Sapling Maker Projectile
+	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel
+	SaplingMakerProjectile.DisplayName: Sapling Maker
 	SaplingProjectile.DisplayName: Sapling Projectile
-	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
+	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger
+	MagnoliaPowderProjectile.DisplayName: Magnolia Powder
+	CorruptedSporeBurstProjectile.DisplayName: Corrupted Spores
+	CorruptedSporeFlaskProjectile.DisplayName: Corrupted Spore Flask
+	CrimsonEffusionBurstProjectile.DisplayName: Crimson Effusion
+	CrimsonEffusionFlaskProjectile.DisplayName: Crimson Effusion Flask
+	HyperboreanFlaskBurstProjectile.DisplayName: Hyperborean Flask
+	HyperboreanFlaskProjectile.DisplayName: Hyperborean Flask
+	PhytoncideFlaskProjectile.DisplayName: Phytoncide Flask
+	PhytoncideSporeBurstProjectile.DisplayName: Phytoncide Spores
+	PrismaticStarflaskBurstProjectile.DisplayName: Prismatic Starflask
+	PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask
+	ThermiteBurstProjectile.DisplayName: Thermite
+	ThermiteFlaskProjectile.DisplayName: Thermite Flask
+	SporadicSlamProjectile.DisplayName: Sporadic Slam
 }
 
 NPCs: {
@@ -373,6 +569,11 @@ NPCs: {
 	}
 
 	FungoreSporeSac.DisplayName: Spore Sac
+	DesertTerrarian.DisplayName: Desert Terrarian
+	ForestTerrarian.DisplayName: Forest Terrarian
+	JungleTerrarian.DisplayName: Jungle Terrarian
+	SporadicSlime.DisplayName: Sporadic Slime
+	TundraTerrarian.DisplayName: Tundra Terrarian
 }
 
 Buffs: {
