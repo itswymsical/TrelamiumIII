@@ -25,8 +25,6 @@ internal sealed class ChromaticScreenEffect : ModSystem
 
     public static bool IsRunning => intensity > Cutoff || target > Cutoff;
 
-    public static Asset<Texture2D>? Noise { get; set; }
-
     public static void Set(float intensity, float spread, int ticks = 30)
     {
         if (Main.dedServ || shaderData is null)
@@ -58,8 +56,6 @@ internal sealed class ChromaticScreenEffect : ModSystem
         if (Main.dedServ)
             return;
 
-        Noise = Assets.Textures.Noise.Perlin.Asset;
-
         shaderData = new ChromaticShaderData(Assets.Shaders.ChromaticAberration.Asset, "P0");
 
         // Low: this is an affliction the player is under, and anything the world does -- a slam's
@@ -71,7 +67,6 @@ internal sealed class ChromaticScreenEffect : ModSystem
     public override void Unload()
     {
         shaderData = null;
-        Noise = null;
 
         intensity = 0f;
         target = 0f;
@@ -92,18 +87,15 @@ internal sealed class ChromaticScreenEffect : ModSystem
             return;
         }
 
-        if (Noise is not { Value: { } noise })
-        {
-            Deactivate();
-            return;
-        }
-
         var parameters = shaderData.Parameters;
 
         parameters.uIntensity = intensity;
         parameters.uSpread = spread;
 
-        parameters.ImageSampler = new HlslSampler2D { Texture = noise, Sampler = SamplerState.LinearWrap };
+        // ImageSampler (s0) is left alone here on purpose: the filter pipeline binds it to the
+        // captured screen automatically, same as RadialBlur does. Setting it ourselves (as this
+        // used to do, pointing it at the Perlin noise asset) hijacks that slot and the shader ends
+        // up aberrating the noise texture instead of the game screen.
 
         shaderData.UseIntensity(intensity);
 

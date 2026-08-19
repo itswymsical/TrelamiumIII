@@ -11,6 +11,7 @@ using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Core.Graphics.Shockwaves;
 using static TrelamiumIII.Utilities.EaseFunction;
 
@@ -797,7 +798,9 @@ public sealed class FungoreBoss : ModNPC
         introStarted = true;
 
         if (State == FungoreState.Emerge && StateTimer <= EMERGE_RUMBLE_TICKS)
+        {
             BossIntroSystem.Play(CreateIntro());
+        }
     }
 
     private static BossIntro CreateIntro() => new()

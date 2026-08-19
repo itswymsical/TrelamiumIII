@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.IlluminantInk;
+using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
 
