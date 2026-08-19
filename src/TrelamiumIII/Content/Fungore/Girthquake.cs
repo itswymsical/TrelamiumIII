@@ -23,7 +23,7 @@ public class Girthquake : ModItem
         Item.value = Item.sellPrice(silver: 5);
 
         Item.useStyle = ItemUseStyleID.Shoot;
-        Item.useTime = Item.useAnimation = 28;
+        Item.useTime = Item.useAnimation = 32;
         Item.channel = true;
         Item.autoReuse = false;
         Item.useTurn = false;

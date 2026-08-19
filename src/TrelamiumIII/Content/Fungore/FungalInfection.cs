@@ -237,7 +237,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
 
     public const int MAJOR_TICK_DAMAGE = 2;
 
-    public const int DAMAGE_INTERVAL = 30;
+    public const int DAMAGE_INTERVAL = 18;
 
 
     private const int BLOOM_COOLDOWN = 90;
