@@ -19,8 +19,13 @@ DialogueLibrary: {
 
 	CuriousSlime: {
 		Greeting: {
-			Line1.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
-			Line2.Text: ...[glorb gorbblpoo popo loopgorlb]...
+			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+			Line2.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
+		}
+
+		Job1End: {
+			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
 		}
 	}
 }

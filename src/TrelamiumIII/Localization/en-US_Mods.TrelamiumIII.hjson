@@ -574,6 +574,7 @@ NPCs: {
 	JungleTerrarian.DisplayName: Jungle Terrarian
 	SporadicSlime.DisplayName: Sporadic Slime
 	TundraTerrarian.DisplayName: Tundra Terrarian
+	CuriousSlime.DisplayName: Slime
 }
 
 Buffs: {

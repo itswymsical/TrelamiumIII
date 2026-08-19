@@ -48,9 +48,6 @@ public static class JobUtils
         return progressUpdated;
     }
 
-    /// <summary>
-    /// Removes items from player inventory for Job consumption.
-    /// </summary>
     public static void TakePlayerItems(Player player, int itemType, int amount = 1)
     {
         var remainingAmount = amount;
@@ -81,5 +78,38 @@ public static class JobUtils
             Color = new Color(255, 80, 80)
         }, player.Center);
         SoundEngine.PlaySound(SoundID.Grab, player.Center);
+    }
+
+    /// <summary>
+    /// Removes items from player inventory for Job consumption.
+    /// </summary>
+    public static void TakeMarkedJobItems(Player player)
+    {
+        for (var i = 0; i < player.inventory.Length; i++)
+        {
+            var item = player.inventory[i];
+
+            if (item.IsAir || !JobItemComponent.IsMarkedForJob(item))
+                continue;
+
+            var amount = item.stack;
+            var name = item.Name;
+
+            JobItemComponent.UnmarkForJob(item);
+            item.TurnToAir();
+
+            PopupText.NewText(
+                new AdvancedPopupRequest
+                {
+                    Text = $"-{amount} {name}",
+                    DurationInFrames = 90,
+                    Velocity = new Vector2(0f, -4f),
+                    Color = new Color(255, 80, 80)
+                },
+                player.Center
+            );
+
+            SoundEngine.PlaySound(SoundID.Grab, player.Center);
+        }
     }
 }

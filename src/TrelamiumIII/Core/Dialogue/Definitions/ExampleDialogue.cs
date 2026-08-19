@@ -2,14 +2,12 @@ namespace TrelamiumIII.Core.Dialogue.Definitions;
 
 /// <summary>
 ///   Template showing the shape of a dialogue definition: flow lives here, text and
-///   anchors live in <c>Localization/DialogueLibrary</c>. Delete this once you have
-///   real dialogue, and drop the <c>ExampleDialogue.Register()</c> call from
-///   <see cref="DialogueRegistry.Load"/> with it.
+///   anchors live in <c>Localization/DialogueLibrary</c>.
 ///   <para>
 ///   Test in game with <c>/dialogue play Example.Greeting</c>.
 ///   </para>
 /// </summary>
-class ExampleDialogue : DialogueEntry
+class ExampleDialogue : ModDialogue
 {
     private const string Speaker = "Player";
 

@@ -1,22 +1,38 @@
-﻿using TrelamiumIII.Common.Systems;
-using TrelamiumIII.Content.Alchemy;
-using System.Collections.Generic;
-using TrelamiumIII.Content.Alchemy.AlchemyStations;
+﻿using System.Linq;
+using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Jobs;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Players;
 
 public class SubstratePlayer : ModPlayer
 {
 
-    //public override void OnEnterWorld()
-    //{
-    //    if (!DownedBossSystem.scene)
-    //        CutsceneSystem.PlayCutscene<SomeScene>();              
-    //}
-
     public static float ShieldOpacity { get; private set; }
 
     private const float ShieldFadeSpeed = 0.04f;
+
+    public override void PostUpdateMiscEffects()
+    {
+        var mp = Player.GetModPlayer<JobPlayer>();
+        var slimeJob = mp.GetOrCreateJob(JobID.CuriousSlime1);
+
+        if (mp.UnlockedJobs().Contains(slimeJob))
+            return;
+
+        int slimeIndex = NPC.FindFirstNPC(ModContent.NPCType<CuriousSlime>());
+
+        if (slimeIndex != -1)
+        {
+            NPC slime = Main.npc[slimeIndex];
+
+            if (Player.Distance(slime.Center) < 128f &&
+                !mp.UnlockedJobs().Contains(slimeJob))
+            {
+                mp.UnlockJob(JobID.CuriousSlime1);
+            }
+        }
+    }
 
     public override void PreUpdate()
     {

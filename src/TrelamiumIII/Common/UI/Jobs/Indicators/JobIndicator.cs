@@ -1,5 +1,6 @@
 using System.Linq;
 using Terraria.GameContent;
+using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.UI.Jobs.Indicators;
@@ -49,16 +50,16 @@ public class JobIndicator : ScreenIndicator
         }
 
         // Temporarily hide during dialogue
-        //if (DialogueManager.Instance.IsAnyActive())
-        //{
-        //    if (!IsHidden)
-        //        Hide();
-        //}
-        //else
-        //{
-        //    if (IsHidden)
-        //        Unhide();
-        //}
+        if (DialogueManager.Instance.IsAnyActive())
+        {
+            if (!IsHidden)
+                Hide();
+        }
+        else
+        {
+            if (IsHidden)
+                Unhide();
+        }
     }
 
     /// <summary>

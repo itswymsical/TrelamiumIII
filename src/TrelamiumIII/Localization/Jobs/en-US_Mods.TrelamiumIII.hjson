@@ -5,8 +5,8 @@ Jobs: {
 
 		Tasks: {
 			Set0.obj0: Interact with Slime
-			Set1.obj0: Find Scrunglepuffs
-			Set2.obj0: Collect Puffballs
+			Set1.obj0: Attain Iron Ore
+			Set2.obj0: Return to Slime
 		}
 	}
 }

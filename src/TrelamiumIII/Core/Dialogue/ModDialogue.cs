@@ -1,6 +1,9 @@
 ﻿namespace TrelamiumIII.Core.Dialogue;
 
-abstract class DialogueEntry : ILoadable
+/// <summary>
+/// abstract class for defining and registering dialogue line effects, autoloaded.
+/// </summary>
+abstract class ModDialogue : ILoadable
 {
     protected abstract void Register();
 
