@@ -9,11 +9,11 @@ namespace TrelamiumIII.Core.Dialogue.Definitions;
 ///   Test in game with <c>/dialogue play Example.Greeting</c>.
 ///   </para>
 /// </summary>
-public static class ExampleDialogue
+class ExampleDialogue : DialogueEntry
 {
     private const string Speaker = "Player";
 
-    public static void Register()
+    protected override void Register()
     {
         // Affects bind to the bracketed anchors in the localized text, in order of appearance:
         // a [] point anchor takes a point affect (Pause), a [span] anchor takes a span affect

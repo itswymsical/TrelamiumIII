@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using TrelamiumIII.Core.Dialogue.Definitions;
 
 namespace TrelamiumIII.Core.Dialogue;
@@ -19,12 +20,27 @@ public static class DialogueRegistry
 
     public static bool Has(string key) => key != null && sequences.ContainsKey(key);
 
-    /// <summary>Registers all code-defined dialogue. Called once from mod load.</summary>
-    public static void Load()
-    {
-        ExampleDialogue.Register();
-        // as we add more dialogue, register their respective classes here.
-    }
+    //public static void Load()
+    //{
+    //    Assembly assembly = typeof(DialogueRegistry).Assembly;
+
+    //    foreach (Type type in assembly.GetTypes())
+    //    {
+    //        MethodInfo? register = type.GetMethod(
+    //            "Register",
+    //            BindingFlags.Public |
+    //            BindingFlags.NonPublic |
+    //            BindingFlags.Static);
+
+    //        if (register is null)
+    //            continue;
+
+    //        if (register.GetParameters().Length != 0)
+    //            continue;
+
+    //        register.Invoke(null, null);
+    //    }
+    //}
 
     public static void Unload() => sequences.Clear();
 }

@@ -1,0 +1,12 @@
+Jobs: {
+	CuriousSlime1: {
+		Name: Curious Slime
+		Description: "'glorb blorp gloop.'"
+
+		Tasks: {
+			Set0.obj0: Interact with Slime
+			Set1.obj0: Find Scrunglepuffs
+			Set2.obj0: Collect Puffballs
+		}
+	}
+}
