@@ -6,8 +6,6 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
 using TrelamiumIII.Core.Books.Lore;
-using TrelamiumIII.Core.UI;
-using TrelamiumIII.Common.UI;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Alchemy.Brewing;
 

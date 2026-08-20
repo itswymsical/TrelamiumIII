@@ -18,26 +18,41 @@ public class WorldNPCPersistenceSystem : ModSystem
         {
             NPC npc = Main.npc[i];
 
-            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc)
+            if (!npc.active)
                 continue;
 
-            if (!worldNpc.Persistent)
-                continue;
-
-            var entry = new TagCompound
+            if (npc.ModNPC is WorldNPC worldNpc)
             {
-                ["mod"] = worldNpc.Mod.Name,
-                ["name"] = worldNpc.Name,
-                ["x"] = npc.position.X,
-                ["y"] = npc.position.Y,
-            };
+                if (!worldNpc.Persistent)
+                    continue;
 
-            // Let the NPC save its own state (anchor tile, etc.).
-            worldNpc.SaveData(entry);
+                var entry = new TagCompound
+                {
+                    ["mod"] = worldNpc.Mod.Name,
+                    ["name"] = worldNpc.Name,
+                    ["x"] = npc.position.X,
+                    ["y"] = npc.position.Y,
+                };
+                worldNpc.SaveData(entry);
+                entries.Add(entry);
+            }
+            else if (npc.ModNPC is JobNPC jobNpc)
+            {
+                if (!jobNpc.Persistent)
+                    continue;
 
-            entries.Add(entry);
+                var entry2 = new TagCompound
+                {
+                    ["mod"] = jobNpc.Mod.Name,
+                    ["name"] = jobNpc.Name,
+                    ["x"] = npc.position.X,
+                    ["y"] = npc.position.Y,
+                };
+                jobNpc.SaveData(entry2);
+                entries.Add(entry2);
+
+            }
         }
-
         tag[SaveKey] = entries;
     }
 
@@ -73,8 +88,11 @@ public class WorldNPCPersistenceSystem : ModSystem
                 continue;
 
             // Restore anchor tile and any derived-class state.
+
             if (Main.npc[idx].ModNPC is WorldNPC spawned)
                 spawned.LoadData(entry);
+            if (Main.npc[idx].ModNPC is JobNPC jSpawn)
+                jSpawn.LoadData(entry);      
         }
     }
 }

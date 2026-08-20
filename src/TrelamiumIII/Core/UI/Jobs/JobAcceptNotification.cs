@@ -4,7 +4,7 @@ using Terraria.GameContent;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs;
 
-namespace TrelamiumIII.Common.UI.Jobs;
+namespace TrelamiumIII.Core.UI.Jobs;
 
 public class JobAcceptNotification(Job Job) : IInGameNotification
 {

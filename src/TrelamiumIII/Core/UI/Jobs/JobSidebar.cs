@@ -6,7 +6,7 @@ using Terraria.GameInput;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs;
 
-namespace TrelamiumIII.Common.UI.Jobs;
+namespace TrelamiumIII.Core.UI.Jobs;
 
 // TODO: Localization
 public class JobSidebar

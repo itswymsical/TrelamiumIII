@@ -1,10 +1,10 @@
-using TrelamiumIII.Common.UI.Jobs;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs.Events;
+using TrelamiumIII.Core.UI.Jobs;
 
 namespace TrelamiumIII.Core.Jobs;
 

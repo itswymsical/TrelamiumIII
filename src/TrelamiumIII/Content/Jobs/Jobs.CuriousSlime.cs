@@ -3,6 +3,7 @@ using Terraria.GameContent;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.Jobs.Events;
+using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Jobs;
@@ -82,7 +83,7 @@ public sealed class CuriousSlimeI : Job
     }
 }
 
-public class CuriousSlime : ModNPC
+public class CuriousSlime : JobNPC
 {
     public override string Texture => $"Terraria/Images/NPC_{NPCID.BlueSlime}";
 
@@ -95,7 +96,9 @@ public class CuriousSlime : ModNPC
         NPCID.Pinky,
         NPCID.RedSlime,
     };
+
     private int variantType = NPCID.BlueSlime;
+
     public override void SetStaticDefaults()
     {
         Main.npcFrameCount[Type] = 2;
@@ -106,7 +109,12 @@ public class CuriousSlime : ModNPC
         };
 
         NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, drawModifiers);
+        NPCID.Sets.ActsLikeTownNPC[Type] = true;
+        NPCID.Sets.NoTownNPCHappiness[Type] = true;
+
+        NPCID.Sets.DoesntDespawnToInactivityAndCountsNPCSlots[Type] = true;
     }
+
     public override void SetDefaults()
     {
         NPC.width = 24;
@@ -115,11 +123,32 @@ public class CuriousSlime : ModNPC
         NPC.dontTakeDamage = true;
         NPC.dontTakeDamageFromHostiles = true;
         NPC.friendly = true;
+        NPC.homeless = true;
         NPC.aiStyle = NPCAIStyleID.Passive;
         AIType = NPCID.TownSlimeYellow;
         AnimationType = NPCID.BlueSlime;
     }
 
+    public override bool PreAI()
+    {
+        if (!AJobAccepted)
+        {
+            timeAlive++;
+            if (timeAlive >= TimeConversion.SetTime(mins: 3) && !IsNpcOnscreen(NPC.Center))
+            {
+
+                NPC.active = false;
+                NPC.netSkip = -1;
+                NPC.life = 0;
+                //if (Main.netMode == NetmodeID.SinglePlayer) Main.NewText(Language.GetTextValue("LegacyMisc.35", NPC.FullName), 50, 125, 255);
+                //else ChatHelper.BroadcastChatMessage(NetworkText.FromKey("LegacyMisc.35", NPC.GetFullNetName()), new Color(50, 125, 255));
+
+                return false;
+            }
+
+        }
+        return true;
+    }
     public override void OnSpawn(IEntitySource source)
     {
         variantType = VariantPool[Main.rand.Next(VariantPool.Length)];

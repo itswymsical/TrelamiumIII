@@ -1,6 +1,7 @@
 using Terraria.GameContent;
 using TrelamiumIII.Core.UI.AlchemyAlmanac;
-namespace TrelamiumIII.Common.UI;
+
+namespace TrelamiumIII.Core.UI;
 
 /// <summary>
 /// Draws a book cover behind the <see cref="AlchemyAlmanacUI"/> and <see cref="AlchemyBookUI"/>.

@@ -3,7 +3,7 @@ using Terraria.GameContent;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 
-namespace TrelamiumIII.Common.UI.Jobs.Indicators;
+namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 
 // TODO: Localization
 public class JobIndicator : ScreenIndicator

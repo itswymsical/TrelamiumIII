@@ -328,27 +328,45 @@ Items: {
 
 	AlchemistsAlmanacItem: {
 		DisplayName: Alchemist's Almanac
-		Tooltip: ""
-	}
-
-	AdvancedAlchemyStationChamberItem: {
-		DisplayName: Advanced Alchemy Station Chamber
-		Tooltip: ""
-	}
-
-	AdvancedAlchemyStationComponentItem: {
-		DisplayName: Advanced Alchemy Station Component
-		Tooltip: ""
+		Tooltip:
+			'''
+			A living record of every alchemy recipe you have brewed.
+			Filter by mode or drop an ingredient in the search slot to find recipes that use it.
+			Right-click in the UI close.
+			'''
 	}
 
 	AdvancedAlchemyStationItem: {
-		DisplayName: Advanced Alchemy Station
-		Tooltip: ""
+		DisplayName: Solution Synthesizer (Base)
+		Tooltip: Used for advanced chemistry and alchemy
+	}
+
+	AdvancedAlchemyStationChamberItem: {
+		DisplayName: High-grade Solvent Chamber
+		Tooltip:
+			'''
+			A necessary component in the Solution Synthesizer
+			Right-click (while in hand), to install onto a Solution Synthesizer
+			'''
+	}
+
+	AdvancedAlchemyStationComponentItem: {
+		DisplayName: High-Effeciency Vacuum
+		Tooltip:
+			'''
+			A necessary component in the Solution Synthesizer
+			Right-click (while in hand), to install onto a Solution Synthesizer
+			'''
 	}
 
 	AlchemyStationItem: {
 		DisplayName: Alchemy Station
-		Tooltip: ""
+		Tooltip:
+			'''
+			Right-click to open the Alchemy Station interface.
+			The Alchemy Station allows you to combine different components with different solutions.
+			Combine these items to produce chemical solutions, potions/enhanced potions, or serums.
+			'''
 	}
 
 	ArcaneSolutionItem: {
@@ -423,21 +441,16 @@ Items: {
 
 	MagnoliaItem: {
 		DisplayName: Magnolia
-		Tooltip: ""
+		Tooltip: "'charismatic amongst other flowers...'"
 	}
 
 	MagnoliaPowderItem: {
 		DisplayName: Magnolia Powder
-		Tooltip: ""
+		Tooltip: Advances plants to their next growth stage.
 	}
 
 	MagnoliaSeedsItem: {
 		DisplayName: Magnolia Seeds
-		Tooltip: ""
-	}
-
-	MagnoliaSolutionItem: {
-		DisplayName: Magnolia Solution
 		Tooltip: ""
 	}
 
@@ -462,33 +475,53 @@ Items: {
 	}
 
 	CorruptedSporeFlaskItem: {
-		DisplayName: Corrupted Spore Flask
-		Tooltip: ""
+		DisplayName: Vilespore Flask
+		Tooltip:
+			'''
+			On Chemical reaction, corrupted spores engulf enemies and spread to the nearest target on kill.
+			This effect persists until the spores vanish or all targets are killed.
+			'''
 	}
 
 	CrimsonEffusionFlaskItem: {
-		DisplayName: Crimson Effusion Flask
-		Tooltip: ""
+		DisplayName: Effusion Flask
+		Tooltip:
+			'''
+			On chemical reaction, enemies burst from hemorrhaging
+			Hemorrhage burst blood deals more damage onto nearby enemies
+			'''
 	}
 
 	HyperboreanFlaskItem: {
 		DisplayName: Hyperborean Flask
-		Tooltip: ""
+		Tooltip:
+			'''
+			Releases a cloud of ice mist that afflicts enemies with frostburn
+			Transforms water into thin ice on contact
+			'''
 	}
 
 	PhytoncideFlaskItem: {
 		DisplayName: Phytoncide Flask
-		Tooltip: ""
+		Tooltip:
+			'''
+			Creates a large spore cloud that poisons enemies and slowly regenerates your health
+			On Chemical reaction, the Phytoncides will begin to lifesteal a portion of the dealt damage
+			'''
 	}
 
 	PrismaticStarflaskItem: {
 		DisplayName: Prismatic Starflask
-		Tooltip: ""
+		Tooltip: Creates a gas cloud of stardust on impact, which slowly burns enemies
 	}
 
 	ThermiteFlaskItem: {
 		DisplayName: Thermite Flask
-		Tooltip: ""
+		Tooltip:
+			'''
+			Creates a pool of molten thermite on impact
+			Thermine pools burn enemies and spread to nearby targets.
+			'''
 	}
 
 	BrineBucketItem: {
@@ -503,6 +536,11 @@ Items: {
 
 	SaltBlockItem: {
 		DisplayName: Salt Block
+		Tooltip: ""
+	}
+
+	MagnoliaSolutionItem: {
+		DisplayName: Magnolia Solution Item
 		Tooltip: ""
 	}
 }

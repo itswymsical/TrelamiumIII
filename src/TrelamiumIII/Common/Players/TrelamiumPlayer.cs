@@ -5,7 +5,7 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Players;
 
-public class SubstratePlayer : ModPlayer
+public class TrelamiumPlayer : ModPlayer
 {
 
     public static float ShieldOpacity { get; private set; }

@@ -1,8 +1,8 @@
-using TrelamiumIII.Common.UI.Jobs.Indicators;
 using TrelamiumIII.Utilities;
 using System.Collections.Generic;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Core.UI.Jobs.Indicators;
 
 namespace TrelamiumIII.Core.Jobs.Events;
 
@@ -128,7 +128,7 @@ public class EventNPC : GlobalNPC
     {
         base.AI(npc);
 
-        if (!npc.isLikeATownNPC)
+        if (!npc.friendly)
             return;
 
         int currentTick = (int)Main.GameUpdateCount;

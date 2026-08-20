@@ -759,3 +759,286 @@ public abstract class WorldNPC : ModNPC
 
     #endregion
 }
+
+public abstract class JobNPC : ModNPC
+{
+    public override string Texture => Assets.Textures.NullTex.KEY;
+
+
+    /// <summary>
+    /// The tile this NPC considers home. Decoupled from vanilla's
+    /// NPC.homeTileX/Y, which is kept at -1 to prevent housing assignment.
+    /// </summary>
+    public Point AnchorTile { get; private set; }
+
+    public bool IsAtAnchor
+    {
+        get
+        {
+            var current = NPC.Center.ToTileCoordinates();
+            return Math.Abs(current.X - AnchorTile.X) <= 2
+                && Math.Abs(current.Y - AnchorTile.Y) <= 4;
+        }
+    }
+
+    public float DistanceFromAnchor => Vector2.Distance(NPC.Center, AnchorTile.ToWorldCoordinates());
+
+    public void SetAnchorTile(Point tile)
+    {
+        AnchorTile = tile;
+    }
+
+    public void SetAnchorTile(Vector2 worldPosition)
+    {
+        SetAnchorTile(worldPosition.ToTileCoordinates());
+    }
+
+    /// <summary>
+    /// Cached director reference. Resolved lazily on first access.
+    /// Null if no director component is enabled on this NPC.
+    /// </summary>
+    private NPCDirector _director;
+    private bool _directorResolved;
+
+    protected NPCDirector Director
+    {
+        get
+        {
+            if (!_directorResolved)
+            {
+                _director = NPC.GetGlobalNPC<NPCDirector>();
+                if (_director != null && !_director.Enabled)
+                    _director = null;
+                _directorResolved = true;
+            }
+            return _director;
+        }
+        set
+        {
+            _director = value;
+            _directorResolved = true;
+        }
+    }
+
+    protected virtual float AnchorReturnDistance => 200f;
+
+    protected virtual bool AutoReturnToAnchor => true;
+
+    /// <summary>
+    /// The idle behavior the NPC falls into after returning to anchor.
+    /// Override to customize (add emotes, face player, etc.).
+    /// </summary>
+    protected virtual NPCBehavior CreateAnchorIdleBehavior()
+    {
+        return new StayBehavior()
+            .At(AnchorTile)
+            .WithTolerance(2);
+    }
+
+    /// <summary>
+    /// map head icon drawn by <see cref="WorldNPCMapSystem"/>.
+    /// Return null path to use a sprite instead of the DummyPlayer.
+    /// </summary>
+    public virtual string MapHeadTexture => null;
+
+    /// <summary>
+    /// When true, <see cref="WorldNPCPersistenceSystem"/> saves this NPC to the
+    /// world file and respawns it on load.
+    /// Defaults to true.
+    /// </summary>
+    public virtual bool Persistent => true;
+    /// <summary>
+    /// marks whether a job from this NPC has been accepted.
+    /// <para>
+    /// Used to prevent despawning this NPC while a job is active.
+    /// </para>
+    /// </summary>
+    public bool AJobAccepted;
+
+    //  Lifecycle
+    public override void SetStaticDefaults()
+    {
+        NPCID.Sets.ActsLikeTownNPC[Type] = true;
+        NPCID.Sets.NoTownNPCHappiness[Type] = true;
+
+        NPCID.Sets.DoesntDespawnToInactivityAndCountsNPCSlots[Type] = true;
+    }
+
+    /// <summary>
+    /// Do not override unless it's for an abstract class; this was intented to be sealed.
+    /// Use <see cref="SetWorldNPCDefaults"/> and <see cref="SetAppearanceDefaults"/> instead.
+    /// </summary>
+    public override void SetDefaults()
+    {
+        if (AJobAccepted)
+        {
+            NPC.dontTakeDamageFromHostiles = false;
+            NPC.immortal = false;
+        }
+        else
+        {
+            NPC.dontTakeDamageFromHostiles = true;
+            NPC.immortal = true;
+        }
+
+        NPC.townNPC = true;
+        TownNPCStayingHomeless = true;
+        NPC.friendly = true;
+        NPC.homeTileX = -1;
+        NPC.homeTileY = -1;
+
+        NPC.gfxOffY = -2f;
+
+        NPC.width = 20;
+        NPC.height = 42;
+
+        NPC.damage = 0;
+        NPC.defense = 0;
+        NPC.lifeMax = 200;
+        NPC.knockBackResist = 0.5f;
+        NPC.aiStyle = NPCAIStyleID.Passive;
+        NPC.npcSlots = 0f;
+
+        AnchorTile = NPC.Center.ToTileCoordinates();
+    }
+
+    public override void ModifyHoverBoundingBox(ref Rectangle boundingBox)
+    {
+        boundingBox.Inflate(18, 44);
+    }
+
+    #region Persistence
+    public override void SaveData(TagCompound tag)
+    {
+        tag["anchorX"] = AnchorTile.X;
+        tag["anchorY"] = AnchorTile.Y;
+        tag["aJobAccepted"] = AJobAccepted;
+    }
+
+    public override void LoadData(TagCompound tag)
+    {
+        if (tag.ContainsKey("anchorX") && tag.ContainsKey("anchorY"))
+        {
+            AnchorTile = new Point(
+                tag.GetInt("anchorX"),
+                tag.GetInt("anchorY"));
+        }
+
+        if (tag.ContainsKey("aJobAccepted"))
+            AJobAccepted = tag.GetBool("aJobAccepted");
+    }
+
+    #endregion
+
+    //  Housing Prevention
+    public override bool CheckConditions(int left, int right, int top, int bottom)
+        => false;
+
+    public override bool CanGoToStatue(bool toKingStatue)
+        => false;
+
+    public int timeAlive;
+    public override bool PreAI()
+    {
+        if (AJobAccepted)
+        {
+            timeAlive++;
+            if (timeAlive >= TimeConversion.SetTime(mins: 3) && !IsNpcOnscreen(NPC.Center))
+            {
+
+                NPC.active = false;
+                NPC.netSkip = -1;
+                NPC.life = 0;
+
+                return false;
+            }
+
+        }
+        return true;
+    }
+
+    public override bool ModifyDeathMessage(ref NetworkText customText, ref Color color)
+    {
+        Main.NewText($"{NPC.GivenName} was slain...", Color.Red);
+
+        return false;
+    }
+
+    protected static bool IsNpcOnscreen(Vector2 center)
+    {
+        int w = NPC.sWidth + NPC.safeRangeX * 2;
+        int h = NPC.sHeight + NPC.safeRangeY * 2;
+        Rectangle npcScreenRect = new Rectangle((int)center.X - w / 2, (int)center.Y - h / 2, w, h);
+        foreach (Player player in Main.ActivePlayers)
+        {
+            // If any player is close enough to the traveling merchant, it will prevent the npc from despawning
+            if (player.getRect().Intersects(npcScreenRect))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public override void PostAI()
+    {
+        NPC.homeless = true;
+        NPC.homeTileX = -1;
+        NPC.homeTileY = -1;
+
+        if (AutoReturnToAnchor)
+            TryPushAnchorReturn();
+    }
+
+    /// <summary>
+    /// Checks whether the director is idle and the NPC has drifted from
+    /// its anchor. If so, pushes a travel-to-anchor + idle sequence.
+    /// </summary>
+    private void TryPushAnchorReturn()
+    {
+        var dir = Director;
+        if (dir == null)
+            return;
+
+        // if Director is busy
+        if (dir.HasBehavior)
+            return;
+
+        if (DistanceFromAnchor <= AnchorReturnDistance)
+        {
+            dir.SetBehavior(NPC, CreateAnchorIdleBehavior());
+            return;
+        }
+
+        // if too far, walk back then idle
+        var anchorWorld = AnchorTile.ToWorldCoordinates();
+        dir.SetBehavior(NPC, new TravelToBehavior(anchorWorld)
+            .WithSpeed(BehaviorMovement.DefaultWalkSpeed)
+            .WithArrival(32f));
+
+        dir.Enqueue(CreateAnchorIdleBehavior());
+    }
+
+    /// <summary>
+    /// Spawns a WorldNPC of type T at the given world position and sets
+    /// that position as the anchor tile.
+    /// </summary>
+    public static T? Spawn<T>(Vector2 worldPosition) where T : WorldNPC
+    {
+        int type = ModContent.NPCType<T>();
+
+        int idx = NPC.NewNPC(
+            NPC.GetSource_None(),
+            (int)worldPosition.X,
+            (int)worldPosition.Y,
+            type
+        );
+
+        if (idx >= Main.maxNPCs) return null;
+
+        var worldNpc = Main.npc[idx].ModNPC as T;
+        worldNpc?.SetAnchorTile(worldPosition);
+
+        return worldNpc;
+    }
+}

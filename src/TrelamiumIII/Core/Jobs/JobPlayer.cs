@@ -1,11 +1,12 @@
 using Ionic.Zlib;
-using TrelamiumIII.Common.Commands;
-using TrelamiumIII.Common.UI.Jobs;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
+using TrelamiumIII.Common.Commands;
 using TrelamiumIII.Core.Jobs.Events;
+using TrelamiumIII.Core.NPCs.Actors;
+using TrelamiumIII.Core.UI.Jobs;
 
 namespace TrelamiumIII.Core.Jobs;
 
@@ -69,15 +70,30 @@ public partial class JobPlayer : ModPlayer
 
     public void StartJob(int JobId)
     {
-        var Job = GetOrCreateJob(JobId);
-        if (Job?.Status == JobStatus.Unlocked)
+        var job = GetOrCreateJob(JobId);
+
+        if (job?.Status == JobStatus.Unlocked)
         {
-            Job.Progress = JobProgress.Ongoing;
-            Job.OnJobStart();
+            job.Progress = JobProgress.Ongoing;
+            job.OnJobStart();
 
             if (Player.whoAmI == Main.myPlayer)
             {
-                InGameNotificationsTracker.AddNotification(new JobAcceptNotification(Job));
+                int npcId = job.ProviderNPC;
+
+                if (npcId >= 0 && npcId < Main.maxNPCs)
+                {
+                    NPC npc = Main.npc[npcId];
+
+                    if (npc.active && npc.ModNPC is JobNPC provider)
+                    {
+                        provider.AJobAccepted = true;
+                    }
+                }
+
+                InGameNotificationsTracker.AddNotification(
+                    new JobAcceptNotification(job)
+                );
             }
         }
     }

@@ -5,7 +5,7 @@ using Terraria.Audio;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs;
 
-namespace TrelamiumIII.Common.UI.Jobs.Indicators;
+namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 
 public enum AnimationType
 {
