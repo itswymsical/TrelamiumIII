@@ -1,6 +1,6 @@
 Keybinds: {
-	"Skip Cutscene.DisplayName": Skip  Cutscene
-	"Fast Forward Dialogue.DisplayName": Fast  Forward  Dialogue
+	"Skip Cutscene.DisplayName": Skip Cutscene
+	"Fast Forward Dialogue.DisplayName": Fast ForwardDialogue
 }
 
 Items: {
@@ -679,4 +679,65 @@ DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
 Liquids: {
 	CrudeOilLiquid.MapEntry: Crude Oil
 	BrineLiquid.MapEntry: Brine
+}
+
+Configs: {
+	VFXConfig: {
+		DisplayName: VFX Settings
+
+		Headers: {
+			QuickSettings: VFX Settings
+			ParticleCount: Particle Count
+			MetaballCount: Metaball Count
+		}
+
+		Preset: {
+			Label: Graphics Preset
+			Tooltip: ""
+		}
+
+		ParticleCount: {
+			Label: Particle Count
+			Tooltip: ""
+		}
+
+		MetaballCountMultiplier: {
+			Label: Metaball Count
+			Tooltip: ""
+		}
+	}
+
+	GraphicsPreset: {
+		Tooltip: ""
+
+		Toaster: {
+			Label: Toaster
+			Tooltip: ""
+		}
+
+		Low: {
+			Label: Low
+			Tooltip: ""
+		}
+
+		Standard: {
+			Label: Standard
+			Tooltip: ""
+		}
+
+		HighEnd: {
+			Label: High End
+			Tooltip: ""
+		}
+
+		NASA: {
+			Label: NASA
+			Tooltip: ""
+		}
+
+		Custom: {
+			Label: Custom
+			Tooltip: ""
+		}
+	}
 }

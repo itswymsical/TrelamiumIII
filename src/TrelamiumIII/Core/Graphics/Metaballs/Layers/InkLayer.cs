@@ -47,7 +47,7 @@ public sealed class InkLayer : MetaballLayer
     ///     Larger than the default budget. The vortex stage feeds this every tick off a ring, and a
     ///     400-node ceiling starves the shroud around the remains to pay for it.
     /// </summary>
-    protected override int MaxNodes => 560;
+    protected override int BaseMaxNodes => 560;
 
     private Asset<Texture2D>? noiseTexture;
 
