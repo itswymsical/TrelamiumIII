@@ -55,11 +55,12 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource
     {
         return ChemicalType switch
         {
-            ChemicalDamageType.Caustic => Color.Green,
-            ChemicalDamageType.Cryonic => Color.Cyan,
-            ChemicalDamageType.Thermal => Color.Orange,
-            ChemicalDamageType.Necrotic => Color.MediumPurple,
-            ChemicalDamageType.Kinetic => Color.Magenta,
+            ChemicalDamageType.Thermal => new Color(255, 135, 31),
+            ChemicalDamageType.Cryonic => new Color(157, 202, 238),
+            ChemicalDamageType.Caustic => new Color(93, 173, 63),
+            ChemicalDamageType.Necrotic => new Color(200, 84, 255),
+            ChemicalDamageType.Kinetic => new Color(245, 229, 88),
+            ChemicalDamageType.Electric => new Color(255, 106, 106),
             _ => Color.White
         };
     }

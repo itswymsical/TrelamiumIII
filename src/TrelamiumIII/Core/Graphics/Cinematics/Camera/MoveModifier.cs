@@ -11,8 +11,7 @@ internal class MoveModifier : ICameraModifier
     public bool Returning = false;
 
     public string UniqueIdentity => "TrelamiumIII Camera Move";
-    public bool Finished => Timer >= MovementDuration;
-
+    public bool Finished => Returning && Timer >= MovementDuration;
     public void PassiveUpdate()
     {
         if (MovementDuration > 0 && Target != Vector2.Zero)
@@ -28,9 +27,19 @@ internal class MoveModifier : ICameraModifier
         {
             var offset = new Vector2(-Main.screenWidth / 2f, -Main.screenHeight / 2f);
             if (Returning)
-                cameraPosition.CameraPosition = EaseFunction(Target + offset, cameraPosition.OriginalCameraCenter + offset, Timer / (float)MovementDuration);
+            {
+                cameraPosition.CameraPosition =
+                    EaseFunction(
+                        Target + offset,
+                        cameraPosition.OriginalCameraCenter + offset,
+                        Timer / (float)MovementDuration);
+            }
             else
-                cameraPosition.CameraPosition = EaseFunction(cameraPosition.OriginalCameraCenter + offset, Target + offset, Timer / (float)MovementDuration);
+                cameraPosition.CameraPosition =
+                    EaseFunction(
+                        cameraPosition.OriginalCameraCenter + offset,
+                        Target + offset,
+                        Timer / (float)MovementDuration);
         }
     }
 

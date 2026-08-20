@@ -1,7 +1,9 @@
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Cinematics;
+using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.IlluminantInk;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
 
@@ -48,6 +50,8 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
 
     private Vector2 focus;
 
+    private bool cameraMovedOut;
+
     public EyeOfCthulhuWakeCutscene()
     {
         // Set here rather than in OnCutsceneStart: Cutscene.Start reads these to raise the bars
@@ -81,6 +85,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
             // Still ordinary debris. The ink billow thrown at the moment of death is already out
             // there doing the work; the scene has not laid a finger on anything yet.
             SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.65f, Pitch = -0.05f});
+            RadialBlurEffect.Set(0.4f, ticks: 10);
             return;
         }
 
@@ -99,6 +104,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
         if (now < DRAW_END)
         {
             Winding(Ramp(now, SUMMON_END, DRAW_END));
+
             return;
         }
 
@@ -111,10 +117,16 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
         foreach (var piece in EyeOfCthulhuWakeSystem.Pieces)
         {
             piece.Drift = GoreDrift.Float;
-
-            // The bloom comes up with the lift rather than being on from the start, so the pieces
-            // read as catching light as they rise instead of having always been glowing.
             piece.GlowEnvelope = progress;
+        }
+
+        if (!cameraMovedOut)
+        {
+            CameraSystem.MoveCameraOut(
+                TimeConversion.SetTime(secs: 3),
+                InkVortex.Center);
+
+            cameraMovedOut = true;
         }
     }
 
@@ -126,7 +138,6 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
             piece.Drift = GoreDrift.Float;
             piece.GlowEnvelope = 1f;
         }
-
         InkVortex.Fade = SUMMON_FADE * progress;
         InkVortex.Progress = 0f;
     }
@@ -145,6 +156,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
         // rather than the hole appearing and then, separately, doing something.
         InkVortex.Fade = MathHelper.Lerp(SUMMON_FADE, 1f, MathF.Min(progress * 2.2f, 1f));
         InkVortex.Progress = progress;
+        //CameraSystem.ReturnCamera(60);
     }
 
     /// <summary>Nothing left to swallow. The hole shuts.</summary>
@@ -161,17 +173,18 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
 
     protected override void OnCutsceneEnd()
     {
-        // Closes rather than merely fading, so a skipped cutscene cannot leave a half-open vortex
-        // and a field of ink sitting in the world.
+        CameraSystem.ReturnCamera(
+            TimeConversion.SetTime(secs: 1));
+
         InkVortex.Close();
 
         foreach (var piece in EyeOfCthulhuWakeSystem.Pieces)
         {
-            // Handed back to ordinary physics. Anything the vortex did not reach falls, which is a
-            // better ending for a skipped scene than debris frozen in mid-air.
             piece.Drift = GoreDrift.Tumble;
             piece.GlowEnvelope = 0f;
         }
+
+        cameraMovedOut = false;
     }
 
     /// <summary>

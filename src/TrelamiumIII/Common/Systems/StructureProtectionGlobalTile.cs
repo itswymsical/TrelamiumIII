@@ -23,7 +23,7 @@ public class StructureProtectionGlobalTile : GlobalTile
 
     public override void PostDraw(int i, int j, int type, SpriteBatch spriteBatch)
     {
-        if (SubstratePlayer.ShieldOpacity <= 0f) return;
+        if (TrelamiumPlayer.ShieldOpacity <= 0f) return;
         if (!NearAnyProtectedArea(i, j)) return;
         if (!StructureProtectionSystem.IsProtected(i, j)) return;
 
@@ -41,7 +41,7 @@ public class StructureProtectionGlobalTile : GlobalTile
 
         shader.Parameters["uColor"]?.SetValue(new Vector3(0.3f, 0.8f, 1.0f));
         shader.Parameters["uSecondaryColor"]?.SetValue(new Vector3(0.6f, 0.4f, 1.0f));
-        shader.Parameters["uOpacity"]?.SetValue(0.65f * SubstratePlayer.ShieldOpacity);
+        shader.Parameters["uOpacity"]?.SetValue(0.65f * TrelamiumPlayer.ShieldOpacity);
         shader.Parameters["uTime"]?.SetValue(Main.GameUpdateCount * 0.02f);
         shader.Parameters["uScale"]?.SetValue(0.05f);
 

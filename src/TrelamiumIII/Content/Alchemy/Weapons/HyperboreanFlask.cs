@@ -16,7 +16,7 @@ public class HyperboreanFlaskItem : ModItem
         Item.damage = 10;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ItemRarityID.White;
 
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useAnimation = Item.useTime = 27;

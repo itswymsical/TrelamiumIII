@@ -1,12 +1,8 @@
-using TrelamiumIII.Common.UI;
-using TrelamiumIII.Utilities;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using Terraria.GameContent;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.UI;
-using TrelamiumIII.Core.Alchemy;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 

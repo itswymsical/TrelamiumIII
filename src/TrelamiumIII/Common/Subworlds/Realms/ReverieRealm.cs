@@ -35,13 +35,12 @@ public class ReverieRealm : SubworldRealm
     public override void Update()
     {
         ManageGameConditions();
-        RenderScreenEffects();
+        // RenderScreenEffects();
     }
 
     private void RenderScreenEffects()
     {
         ChromaticScreenEffect.Set(0.4f, 1.25f, 1);
-        RadialBlurEffect.Set(intensity: 0.2f, spread: 0.5f, rSpin: 0, ticks: 1);
     }
 
     private void ManageGameConditions()

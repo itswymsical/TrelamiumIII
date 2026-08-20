@@ -360,6 +360,7 @@ public abstract class GasLayer
     protected virtual void BindAdditionalTextures(GraphicsDevice device) { }
 
 
+    // TODO: take a list/params of effects for diabolical shaderslop activities
     protected virtual void ApplyShaderParameters(Effect effect) { }
 
     protected static bool IsSolidTile(int tileX, int tileY)

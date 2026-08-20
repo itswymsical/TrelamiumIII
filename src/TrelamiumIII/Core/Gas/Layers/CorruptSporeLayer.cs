@@ -12,13 +12,13 @@ public class CorruptedSporeLayer : ChemicalGasLayer
     // 1 = true gas: id 0 is the liquid path, which bleeds extra life on floor contact.
     protected override int GasType => GasTypeID.Gas;
 
-    protected override float DefaultDensity => 1.18f;
-    protected override float DefaultViscosity => 0.33f;
-    protected override float EnclosedLifePenalty => 1.5f;
+    protected override float DefaultDensity => 1.10f;
+    protected override float DefaultViscosity => 0.58f;
+    protected override float EnclosedLifePenalty => 2f;
     protected override float GravityScale => 0.0f;
-    protected override float BuoyancyForce => 0.14f;
+    protected override float BuoyancyForce => 0.68f;
     protected override float Drag => 0.9998f;
-    protected override float LifeDecay => 0.85f;
+    protected override float LifeDecay => 0.75f;
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
     public override float ChemicalDamage => 0.4f;
@@ -61,17 +61,17 @@ public class CorruptedSporeLayer : ChemicalGasLayer
         effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.6f);
+        effect.Parameters["NoiseScale"]?.SetValue(1.25f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.015f, -0.05f));   // slow upward boil
+        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
 
         effect.Parameters["Bands"]?.SetValue(4f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
 
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.14f, 0.09f, 0.18f));
+        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.66f, 0.5f, 0.8f));
         effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.52f, 0.22f, 0.72f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.32f, 0.15f, 0.48f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.40f, 0.33f, 0.71f));
+        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.2667f, 0.2392f, 0.3569f));
+        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.5647f, 0.5059f, 0.7020f));
         effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
     }
 

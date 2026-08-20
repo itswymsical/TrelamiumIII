@@ -16,6 +16,7 @@ public class RustedIronOre : ModTile
         Main.tileMergeDirt[Type] = true;
         Main.tileBlockLight[Type] = true;
         Main.tileBlendAll[Type] = true;
+        HitSound = SoundID.Tink;
         DustType = DustID.Iron;
         RegisterItemDrop(ItemID.MudBlock);
         AddMapEntry(new Color(108, 98, 88));

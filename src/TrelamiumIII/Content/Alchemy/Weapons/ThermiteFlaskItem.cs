@@ -1,11 +1,13 @@
-﻿using TrelamiumIII.Common.ChemicalClass;
+﻿using System.Runtime.InteropServices;
+using Terraria.Audio;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Utilities;
-using Terraria.Audio;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -13,10 +15,10 @@ public class ThermiteFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 3;
+        Item.damage = 10;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ItemRarityID.Orange;
 
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useAnimation = Item.useTime = 27;
@@ -51,7 +53,6 @@ public class ThermiteFlaskItem : ModItem
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
                                   .SafeNormalize(-Vector2.UnitY);
 
-        CameraSystem.shake = 12;
         SoundEngine.PlaySound(SoundID.DD2_BetsyFlameBreath);
 
         int count = Main.rand.Next(6, 10);
@@ -68,6 +69,7 @@ public class ThermiteFlaskItem : ModItem
 public class ThermiteFlaskProjectile : ModProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.ThermiteFlaskItem.KEY;
+    public static bool shattered;
 
     public override void SetDefaults()
     {
@@ -82,7 +84,7 @@ public class ThermiteFlaskProjectile : ModProjectile
     public override void PostAI()
     {
         base.PostAI();
-
+        shattered = false;
         var layer = GasSystem.GetLayer<ThermiteLayer>();
         if (layer == null) return;
 
@@ -102,6 +104,8 @@ public class ThermiteFlaskProjectile : ModProjectile
 
     public override void OnKill(int timeLeft)
     {
+        shattered = true;
+
         SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
 
         SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
@@ -117,20 +121,27 @@ public class ThermiteFlaskProjectile : ModProjectile
         Vector2 impactDir = Projectile.oldVelocity.SafeNormalize(-Vector2.UnitY);
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f).SafeNormalize(-Vector2.UnitY);
 
+        float spread = 2.5f;
+
+        float centre = -MathHelper.PiOver2 + Projectile.direction;
+
         if (Projectile.owner == Main.myPlayer)
         {
             int count = Main.rand.Next(12, 16);
+
             for (int i = 0; i < count; i++)
             {
-                Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
-                            * Main.rand.NextFloat(4f, 7f);
+                float slot = count == 1 ? 0.5f : i / (float)(count - 1);
+                float angle = centre + MathHelper.Lerp(-spread * 0.5f, spread * 0.5f, slot) + Main.rand.NextFloat(-0.06f, 0.06f);
+                float speed = 7f * Main.rand.NextFloat(0.75f, 1.15f);
 
                 Projectile.NewProjectile(
-                    Projectile.GetProjectileSource_FromThis(),
-                    Projectile.Center.X, Projectile.Center.Y,
-                    vel.X, vel.Y,
+                    Projectile.GetSource_FromThis(),
+                    Projectile.Center,
+                    angle.ToRotationVector2() * speed,
                     ModContent.ProjectileType<ThermiteBurstProjectile>(),
-                    Projectile.damage, 0f, Projectile.owner);
+                    Projectile.damage, 0f, Projectile.owner
+                );
             }
         }
     }
@@ -147,6 +158,15 @@ public class ThermiteBurstProjectile : ModProjectile
         get => (SplashType)(int)Projectile.ai[0];
         set => Projectile.ai[0] = (int)value;
     }
+    private ref float Bounces => ref Projectile.localAI[0];
+
+    private ref float Spin => ref Projectile.localAI[1];
+
+    private const float BOUNCE = 0.42f;
+    private const int MAX_BOUNCES = 2;
+    private const float GRAVITY = 0.32f;
+    private const float MAX_FALL = 14f;
+    private const float AIR_DRAG = 0.992f;
 
     public override void SetDefaults()
     {
@@ -154,22 +174,46 @@ public class ThermiteBurstProjectile : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 60 / 4;
+        Projectile.timeLeft = 100;
         Projectile.aiStyle = -1;
-        Projectile.tileCollide = false;
+        Projectile.tileCollide = true;
+    }
+
+    public override bool OnTileCollide(Vector2 oldVelocity)
+    {
+        Collision.HitTiles(Projectile.position, oldVelocity, Projectile.width, Projectile.height);
+
+        if (++Bounces > MAX_BOUNCES)
+            return true;
+
+        if (Projectile.velocity.X != oldVelocity.X)
+            Projectile.velocity.X = -oldVelocity.X * BOUNCE;
+
+        if (Projectile.velocity.Y != oldVelocity.Y)
+            Projectile.velocity.Y = -oldVelocity.Y * BOUNCE;
+
+        // Losing spin with speed, so a shard that has stopped skipping is not still whirling.
+        Spin *= BOUNCE;
+
+        return false;
     }
 
     public override void AI()
     {
+        Projectile.velocity.Y = MathHelper.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
+        Projectile.velocity.X *= AIR_DRAG;
+
+        Projectile.rotation += Spin;
+
         var layer = GasSystem.GetLayer<ThermiteLayer>();
         if (layer == null) return;
 
-        float progress = 1f - Projectile.timeLeft / 40f;
+        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
             SplashType.Core => 9f * progress,
-            SplashType.Body => 7f * progress,
-            SplashType.Droplet => 2f * progress,
+            SplashType.Body => 3f * progress,
+            SplashType.Droplet => 2.5f * progress,
             _ => 0f
         };
 

@@ -1,7 +1,10 @@
 using ReLogic.Content;
-using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
+using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Alchemy.Weapons;
+using TrelamiumIII.Content.Rusted;
+using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
@@ -10,10 +13,10 @@ public class ThermiteLayer : ChemicalGasLayer
     protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;
     protected override int GasType => GasTypeID.Liquid;
-    protected override float DefaultDensity => 1.2f;
-    protected override float DefaultViscosity => 0.67f;
+    protected override float DefaultDensity => 1.0f;
+    protected override float DefaultViscosity => 0.2f;
     protected override float EnclosedLifePenalty => 0.5f;
-    protected override float GravityScale => 0.09f;
+    protected override float GravityScale => 0.33f;
     protected override float BuoyancyForce => 0.5f;
     protected override float Drag => 0.9956f;
  
@@ -31,6 +34,7 @@ public class ThermiteLayer : ChemicalGasLayer
     public override void Load()
     {
         base.Load();
+
         noiseTex = Assets.Textures.Noise.Melt_03.Asset;
     }
 
@@ -59,9 +63,9 @@ public class ThermiteLayer : ChemicalGasLayer
         effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
         effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
-        effect.Parameters["Threshold"]?.SetValue(0.12f);
-        effect.Parameters["NoiseScale"]?.SetValue(0.75f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.04f);
+        effect.Parameters["Threshold"]?.SetValue(0.16f);
+        effect.Parameters["NoiseScale"]?.SetValue(1.05f);
+        effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
 
@@ -76,9 +80,19 @@ public class ThermiteLayer : ChemicalGasLayer
         effect.Parameters["HighlightColor"]?.SetValue(new Vector3(1f, 0.77f, 0.22f));
         effect.Parameters["HighlightAlpha"]?.SetValue(0.9f);
     }
+
     protected override void ApplyLighting(ref GasNode node)
     {
         Dust.NewDust(node.Position / 16, 16, 16, DustID.Lava);
+        Lighting.AddLight(node.Position, new Vector3(1f, 0.77f, 0.22f));
+    }
+
+    protected override void BindAdditionalTextures(GraphicsDevice device)
+    {
+        base.BindAdditionalTextures(device);
+
+        if (noiseTex?.IsLoaded == true)
+            device.Textures[1] = noiseTex.Value;
     }
 
     protected override void OnNPCContact(ref GasNode node, NPC npc)
@@ -92,6 +106,21 @@ public class ThermiteLayer : ChemicalGasLayer
     protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
     {
         node.Life *= 0.99f;
+        if (ThermiteFlaskProjectile.shattered)
+        {
+            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
+                TileID.Obsidian, LiquidID.Water, amountLeft: 50);
+        }
+        if (ThermiteFlaskProjectile.shattered)
+        {
+            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
+               (ushort)ModContent.TileType<RustedIronOre>(), LiquidID.Lava, amountLeft: 50);
+        }
+        if (ThermiteFlaskProjectile.shattered)
+        {
+            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
+               TileID.CrispyHoneyBlock, LiquidID.Honey, amountLeft: 50);
+        }
     }
 
     protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile)
@@ -107,7 +136,6 @@ public class ThermiteLayer : ChemicalGasLayer
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
                                   .SafeNormalize(-Vector2.UnitY);
 
-        CameraSystem.shake = 4;
         SoundEngine.PlaySound(SoundID.Item74);
 
         int count = Main.rand.Next(6, 8);
