@@ -142,7 +142,7 @@ public class CrimsonEffusionFlaskProjectile : ModProjectile
             float angle = MathHelper.Lerp(-SplashArc * 0.25f, SplashArc * 0.25f, t);
             float edge = Math.Abs(angle) / (SplashArc * 0.25f);
 
-            float speed = MathHelper.Lerp(6.5f, 7f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
+            float speed = MathHelper.Lerp(9.5f, 11f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
             Vector2 vel = outward.RotatedBy(angle) * speed;
 
             var splash = edge switch
@@ -181,7 +181,7 @@ public class CrimsonEffusionBurstProjectile : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 60 / 4;
+        Projectile.timeLeft = 15;
         Projectile.aiStyle = -1;
         Projectile.tileCollide = false;
     }
@@ -191,7 +191,7 @@ public class CrimsonEffusionBurstProjectile : ModProjectile
         var layer = GasSystem.GetLayer<BloodLayer>();
         if (layer == null) return;
 
-        float progress = 1f - Projectile.timeLeft / 40f;
+        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
             SplashType.Core => 9f * progress,
@@ -201,7 +201,7 @@ public class CrimsonEffusionBurstProjectile : ModProjectile
         };
 
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
-                             + Main.rand.NextVector2Circular(1.5f, 1.5f);
+                             + Main.rand.NextVector2Circular(1.5f, 3.5f);
 
         layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
     }

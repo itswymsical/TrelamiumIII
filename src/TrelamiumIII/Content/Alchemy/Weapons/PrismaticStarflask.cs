@@ -82,7 +82,7 @@ public class PrismaticStarflaskProjectile : ModProjectile
         base.PostAI();
         shattered = false;
 
-        var layer = GasSystem.GetLayer<PrismaticStarflaskLayer>();
+        var layer = GasSystem.GetLayer<StarLayer>();
 
         if (layer == null) return;
 
@@ -154,28 +154,28 @@ public class PrismaticStarflaskBurstProjectile : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 90 / 4;
+        Projectile.timeLeft = 30;
         Projectile.aiStyle = -1;
         Projectile.tileCollide = false;
     }
 
     public override void AI()
     {
-        var layer = GasSystem.GetLayer<PrismaticStarflaskLayer>();
+        var layer = GasSystem.GetLayer<StarLayer>();
         if (layer == null) return;
 
-        float progress = 1f - Projectile.timeLeft / 40f;
+        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
-            SplashType.Core => 19f * progress,
-            SplashType.Body => 11 * progress,
-            SplashType.Droplet => 12f * progress,
+            SplashType.Core => 12f * progress,
+            SplashType.Body => 10f * progress,
+            SplashType.Droplet => 9f * progress,
             _ => 0f
         };
 
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
                              + Main.rand.NextVector2Circular(1.5f, 1.5f);
-        var dust = Main.dust[Dust.NewDust(Projectile.position, 8, 8, DustID.PortalBoltTrail, nodeVelocity.X, nodeVelocity.Y)];
+        var dust = Main.dust[Dust.NewDust(Projectile.position, 8, 8, DustID.YellowStarDust, nodeVelocity.X / 2, nodeVelocity.Y, Scale: 0.65f)];
 
         layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
     }

@@ -181,8 +181,6 @@ public class ThermiteBurstProjectile : ModProjectile
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
-        Collision.HitTiles(Projectile.position, oldVelocity, Projectile.width, Projectile.height);
-
         if (++Bounces > MAX_BOUNCES)
             return true;
 

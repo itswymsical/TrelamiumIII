@@ -169,7 +169,7 @@ public class HyperboreanFlaskBurstProjectile : ModProjectile
         var layer = GasSystem.GetLayer<IceMistLayer>();
         if (layer == null) return;
 
-        float progress = 1f - Projectile.timeLeft / 40f;
+        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
             SplashType.Core => 19f * progress,

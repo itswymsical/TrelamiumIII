@@ -1,5 +1,6 @@
 ﻿using TrelamiumIII.Core.Gas.Layers;
 using System.Collections.Generic;
+using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -20,11 +21,12 @@ public class GasSystem : ModSystem
     {
         Instance = this;
         RegisterLayer(new BloodLayer());
-        RegisterLayer(new IceMistLayer());
+        RegisterLayer(new Gas.Layers.IceMistLayer());
         RegisterLayer(new ThermiteLayer());
         RegisterLayer(new PrismaticStarflaskLayer());
         RegisterLayer(new CorruptedSporeLayer());
         RegisterLayer(new PhytoncideSporeLayer());
+        RegisterLayer(new StarLayer());
 
         On_Main.CheckMonoliths += static orig =>
         {

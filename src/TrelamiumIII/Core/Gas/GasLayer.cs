@@ -150,6 +150,23 @@ public abstract class GasLayer
                     gasNodes.RemoveAt(i);
         }
     }
+    protected Vector3 SampleAverageLight(int samples = 16)
+    {
+        if (gasNodes.Count == 0)
+            return Vector3.One;
+
+        int stride = Math.Max(1, gasNodes.Count / samples);
+        Vector3 light = Vector3.Zero;
+        int taken = 0;
+
+        for (int i = 0; i < gasNodes.Count; i += stride)
+        {
+            light += Lighting.GetSubLight(gasNodes[i].Position);
+            taken++;
+        }
+
+        return taken == 0 ? Vector3.One : light / taken;
+    }
 
     protected virtual void UpdateGasNode(ref GasNode node, int index)
     {

@@ -159,7 +159,7 @@ public class CorruptedSporeBurstProjectile : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 60 / 4;
+        Projectile.timeLeft = 15;
         Projectile.aiStyle = -1;
         Projectile.tileCollide = false;
     }
@@ -169,7 +169,7 @@ public class CorruptedSporeBurstProjectile : ModProjectile
         var layer = GasSystem.GetLayer<CorruptedSporeLayer>();
         if (layer == null) return;
 
-        float progress = 1f - Projectile.timeLeft / 40f;
+        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
             SplashType.Core => 14f * progress,
