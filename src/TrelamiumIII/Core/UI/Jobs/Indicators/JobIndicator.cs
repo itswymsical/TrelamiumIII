@@ -1,7 +1,12 @@
+using ReLogic.Graphics;
+using System.Collections.Generic;
 using System.Linq;
 using Terraria.GameContent;
+using Terraria.GameInput;
+using Terraria.UI;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 
@@ -9,10 +14,22 @@ namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 public class JobIndicator : ScreenIndicator
 {
     private readonly Job job;
+    private readonly List<Job> jobs; // todo: job list
     private readonly Texture2D iconTexture;
 
     private const int PANEL_WIDTH = 220;
     private const int PADDING = 10;
+    private const int BUTTON_HEIGHT = 28;
+
+    private static readonly Color HeaderColor = new Color(255, 215, 0);
+    private static readonly Color TextColor = Color.White;
+    private static readonly Color ShadowColor = new Color(1, 1, 1, 170);
+    private static readonly Color ButtonHoverColor = new Color(200, 200, 50);
+    private static readonly Color ButtonIdleColor = Color.Yellow;
+
+    private bool isPanelOpen = false;
+    private Rectangle panelRect;
+    private Rectangle confirmButtonRect;
 
     public override AnimationType AnimationStyle => AnimationType.Wag;
 
@@ -29,7 +46,7 @@ public class JobIndicator : ScreenIndicator
             Height = iconTexture.Height;
         }
 
-        OnDrawWorld = DrawIndicator;
+        OnDrawWorld = Draw;
         OnClick += HandleClick;
     }
 
@@ -73,7 +90,7 @@ public class JobIndicator : ScreenIndicator
         return localJob?.Progress != JobProgress.Inactive || localJob?.Status != JobStatus.Unlocked;
     }
 
-    private void DrawIndicator(SpriteBatch spriteBatch, Vector2 screenPos, float opacity)
+    private void Draw(SpriteBatch spriteBatch, Vector2 screenPos, float opacity)
     {
 
         var scale = GetAnimationScale();
@@ -287,6 +304,7 @@ public class JobIndicator : ScreenIndicator
             currentX += charSize.X;
         }
     }
+    
     private struct RewardLayout
     {
         public bool HasRewards;
@@ -413,16 +431,17 @@ public class JobIndicator : ScreenIndicator
 
     private void HandleClick()
     {
+        var jobPlayer = Main.LocalPlayer.GetModPlayer<JobPlayer>();
+
         try
         {
-            var jobPlayer = Main.LocalPlayer.GetModPlayer<JobPlayer>();
             jobPlayer.StartJob(job.ID);
-
             IsActive = false;
         }
         catch (Exception ex)
         {
-            TrelamiumIII.Instance.Logger.Error($"Error starting job {job.Name}: {ex.Message}");
+            TrelamiumIII.Instance.Logger.Error(
+                $"Error starting job {job.Name}: {ex.Message}");
         }
     }
 }

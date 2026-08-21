@@ -35,18 +35,14 @@ public class VFXConfig : ModConfig
 
     public override void OnChanged()
     {
-        // 1. Check if the active sliders currently match any of our predefined presets
         GraphicsPreset currentPresetFromValues = GetPresetFromValues(ParticleCount, MetaballCountMultiplier);
 
-        // 2. If the user changed the Preset dropdown selection specifically
-        // (meaning the preset dropdown doesn't match what the sliders say), apply the new preset's values.
         if (Preset != GraphicsPreset.Custom && Preset != currentPresetFromValues)
         {
             ApplyPresetValues(Preset);
             return;
         }
 
-        // 3. Otherwise, update the dropdown to accurately reflect the slider positions
         Preset = currentPresetFromValues;
     }
 

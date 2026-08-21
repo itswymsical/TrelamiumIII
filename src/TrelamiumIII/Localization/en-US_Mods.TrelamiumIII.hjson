@@ -1,6 +1,6 @@
 Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
-	"Fast Forward Dialogue.DisplayName": Fast ForwardDialogue
+	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
 }
 
 Items: {
@@ -540,7 +540,7 @@ Items: {
 	}
 
 	MagnoliaSolutionItem: {
-		DisplayName: Magnolia Solution Item
+		DisplayName: Magnolia Solution
 		Tooltip: ""
 	}
 }
@@ -648,8 +648,6 @@ Misc: {
 	WorkshopSlot: Station Slot
 }
 
-# Tooltip lines SeedAmmoGlobalItem adds to vanilla herb seeds. Keyed here rather than on the item
-# blocks above because the seeds are vanilla items, not content of this mod.
 SeedAmmo: {
 	# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
 	# bed sprites read almost identically at tooltip size.
@@ -687,23 +685,23 @@ Configs: {
 
 		Headers: {
 			QuickSettings: VFX Settings
-			ParticleCount: Particle Count
-			MetaballCount: Metaball Count
+			ParticleCount: Particle Limits
+			MetaballCount: Metaball Limits
 		}
 
 		Preset: {
-			Label: Graphics Preset
-			Tooltip: ""
+			Label: Graphics Profile
+			Tooltip: Set the graphics profile for your PC.
 		}
 
 		ParticleCount: {
 			Label: Particle Count
-			Tooltip: ""
+			Tooltip: Set the maximum amount of particles that can exist, maximum is capped at 2048.
 		}
 
 		MetaballCountMultiplier: {
 			Label: Metaball Count
-			Tooltip: ""
+			Tooltip: By default, metaball counts are limited to 400 nodes. Performance impacts may occur around ~8k active nodes.
 		}
 	}
 
@@ -737,6 +735,16 @@ Configs: {
 
 		Custom: {
 			Label: Custom
+			Tooltip: ""
+		}
+	}
+
+	DebugConfig: {
+		DisplayName: Debug Config
+		Headers.DebugMode: Debug Mode Header
+
+		DebugMode: {
+			Label: Debug Mode
 			Tooltip: ""
 		}
 	}

@@ -1,9 +1,10 @@
-using TrelamiumIII.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
+using Terraria.GameInput;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 
@@ -15,7 +16,7 @@ public enum AnimationType
     Shake
 }
 
-public class ScreenIndicator
+public class ScreenIndicator : IInGameNotification
 {
     #region Properties
     public Vector2 WorldPosition { get; set; }
@@ -54,6 +55,8 @@ public class ScreenIndicator
     public bool IsTransitioning => isTransitioning;
     public float HideFadeOpacity => hideFade;
 
+    public bool ShouldBeRemoved => throw new NotImplementedException();
+
     private const float HOVER_FADE_SPEED = 0.12f;
     private const float WAG_DURATION = 0.8f;
     private const float WAG_INTENSITY = 0.25f;
@@ -89,6 +92,18 @@ public class ScreenIndicator
         {
             UpdateTrackingPosition();
         }
+    }
+
+    protected virtual Rectangle GetInteractionBounds()
+    {
+        var screenPos = GetScreenPosition();
+
+        return new Rectangle(
+            (int)screenPos.X - Width / 2,
+            (int)screenPos.Y - Height / 2,
+            Width,
+            Height
+        );
     }
 
     /// <summary>
@@ -146,14 +161,10 @@ public class ScreenIndicator
         }
 
         if (isTracking)
-        {
             UpdateTrackingPosition();
-        }
 
-        // Update hide/unhide fade animation
         UpdateHideFade();
 
-        // Skip hover detection and click handling when hidden or fading out
         if (!isHidden || hideFade > 0f)
         {
             WasHovering = IsHovering;
@@ -161,15 +172,9 @@ public class ScreenIndicator
 
             UpdateAnimations();
 
-            // Only handle clicks when fully visible (not hidden or transitioning)
-            if (!isHidden && !isTransitioning && IsHovering && Main.mouseLeft && Main.mouseLeftRelease)
-            {
-                OnClick?.Invoke();
-            }
         }
         else
         {
-            // Reset hover state when fully hidden
             WasHovering = false;
             IsHovering = false;
         }
@@ -355,7 +360,7 @@ public class ScreenIndicator
         if (!IsActive)
             return false;
 
-        // Convert world position to screen position for collision
+
         var worldPosWithOffset = WorldPosition + Offset;
         var screenPos = worldPosWithOffset - Main.screenPosition;
 
@@ -373,20 +378,41 @@ public class ScreenIndicator
         return hitboxRect.Contains(Main.MouseScreen.ToPoint());
     }
 
+    private void HandleMouseInput()
+    {
+        if (PlayerInput.IgnoreMouseInterface)
+            return;
+
+        if (!CheckHovering())
+            return;
+
+        Main.LocalPlayer.mouseInterface = true;
+
+        if (!Main.mouseLeft || !Main.mouseLeftRelease)
+            return;
+
+        Main.mouseLeftRelease = false;
+
+        OnClick?.Invoke();
+    }
+
     public virtual void Draw(SpriteBatch spriteBatch)
     {
         if (!IsActive)
             return;
 
-        // Don't render when fully hidden
         if (hideFade <= 0f)
             return;
 
-        // Convert world position to screen position for rendering
         var worldPosWithOffset = WorldPosition + Offset;
         var screenPos = worldPosWithOffset - Main.screenPosition;
 
-        // Apply hide fade to opacity
+        if (!PlayerInput.IgnoreMouseInterface && CheckHovering())
+        {
+            Main.LocalPlayer.mouseInterface = true;
+            HandleMouseInput();
+        }
+
         OnDrawWorld?.Invoke(spriteBatch, screenPos, hideFade);
     }
 
@@ -395,6 +421,16 @@ public class ScreenIndicator
     {
         var worldPosWithOffset = WorldPosition + Offset;
         return Vector2.Transform(worldPosWithOffset - Main.screenPosition, Main.GameViewMatrix.EffectMatrix);
+    }
+
+    public void DrawInGame(SpriteBatch spriteBatch, Vector2 bottomAnchorPosition)
+    {
+        Draw(spriteBatch);
+    }
+
+    public void PushAnchor(ref Vector2 positionAnchorBottom)
+    {
+        positionAnchorBottom = new Vector2(0);
     }
 }
 
@@ -568,7 +604,7 @@ public class ScreenIndicatorManager : ModSystem
         if (insertIndex != -1)
         {
             layers.Insert(insertIndex + 1, new LegacyGameInterfaceLayer(
-                "Substrate: Job Indicators",
+                "TrelamiumIII: Job Indicators",
                 delegate {
                     DrawIndicators(Main.spriteBatch);
                     return true;
@@ -582,7 +618,7 @@ public class ScreenIndicatorManager : ModSystem
     {
         foreach (var indicator in indicators)
         {
-            indicator.Draw(spriteBatch);
+            indicator.DrawInGame(spriteBatch, Vector2.One);
         }
     }
 

@@ -77,31 +77,31 @@ public class AlchemyRecipeSystem : ModSystem
         RecipeGroup.RegisterGroup(nameof(ItemID.DirtBlock), soilRecipeGroup);
     }
 
-    public override void PostAddRecipes()
-    {
-        for (int i = 0; i < Recipe.numRecipes; i++)
-        {
-            Recipe recipe = Main.recipe[i];
+    //public override void PostAddRecipes()
+    //{
+    //    for (int i = 0; i < Recipe.numRecipes; i++)
+    //    {
+    //        Recipe recipe = Main.recipe[i];
 
-            // Terraria's potion recipes are removed, the alchemy station's will handle this now.
-            // An unsupported mod's alternate route to a vanilla potion won't be removed.
-            if (recipe.IsVanillaRecipe() && recipe.CraftsVanillaPotion())
-            {
-                recipe.DisableRecipe();
-                continue;
-            }
+    //        // Terraria's potion recipes are removed, the alchemy station's will handle this now.
+    //        // An unsupported mod's alternate route to a vanilla potion won't be removed.
+    //        if (recipe.IsVanillaRecipe() && recipe.CraftsVanillaPotion())
+    //        {
+    //            recipe.DisableRecipe();
+    //            continue;
+    //        }
 
-            // A supported mod is only taken over where we actually replace it. Blanket-disabling
-            // would strand every potion of theirs we haven't written an alchemy recipe for yet, so
-            // this widens on its own as recipes get added to RegisterSpiritReforged().
-            if (recipe.IsFromSupportedMod()
-                && recipe.createItem.IsSupportedModPotion()
-                && AlchemyRecipeRegistry.Produces(recipe.createItem.type))
-            {
-                recipe.DisableRecipe();
-            }
-        }
-    }
+    //        // A supported mod is only taken over where we actually replace it. Blanket-disabling
+    //        // would strand every potion of theirs we haven't written an alchemy recipe for yet, so
+    //        // this widens on its own as recipes get added to RegisterSpiritReforged().
+    //        if (recipe.IsFromSupportedMod()
+    //            && recipe.createItem.IsSupportedModPotion()
+    //            && AlchemyRecipeRegistry.Produces(recipe.createItem.type))
+    //        {
+    //            recipe.DisableRecipe();
+    //        }
+    //    }
+    //}
 
     #endregion
 
