@@ -27,6 +27,7 @@ public class BrineBucketItem : ModItem
         Item.maxStack = Item.CommonMaxStack;
         Item.useTurn = true;
         Item.autoReuse = true;
+        Item.consumable = true;
         Item.useAnimation = 15;
         Item.useTime = 10;
         Item.useStyle = ItemUseStyleID.Swing;

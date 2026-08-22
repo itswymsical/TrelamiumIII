@@ -2,6 +2,7 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy;
 
@@ -13,7 +14,19 @@ public class FlyAgaricItem : ModItem
         base.SetDefaults();
         Item.width = Item.height = 30;
         Item.maxStack = Item.CommonMaxStack;
-    }    
+        Item.healLife = 30;
+        Item.potion = true;
+        Item.buffType = BuffID.Swiftness;
+        Item.buffTime = TimeConversion.SetTime(secs: 5);
+        Item.UseSound = SoundID.Item2;
+        Item.consumable = true;
+        Item.useTime = Item.useAnimation = 20;
+        Item.useStyle = ItemUseStyleID.EatFood;
+    }
+
+    public override void ModifyPotionDelay(Player player, ref int baseDelay)
+        => baseDelay -= TimeConversion.SetTime(secs: 15); // 45 seconds
+    
 }
 
 [LegacyName("FlyAgaric")]

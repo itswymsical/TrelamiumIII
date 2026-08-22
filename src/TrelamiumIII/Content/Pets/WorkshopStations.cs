@@ -205,7 +205,7 @@ public sealed class WorkshopPlayer : ModPlayer
             Player.noThrow = 2;
             Player.cursorItemIconEnabled = true;
             Player.cursorItemIconID = ModContent.ItemType<PossessedWorkshop>();
-            Player.mouseInterface = true;
+            //Player.mouseInterface = true;
         }
 
         if (!Main.mouseRight || !Main.mouseRightRelease)

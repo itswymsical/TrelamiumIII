@@ -271,7 +271,6 @@ public class PossessedWorkshopPet : ModProjectile
         Projectile.penetrate = -1;
         Projectile.timeLeft = 2;
 
-        // It is a ghost. Nothing about it touches the world.
         Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
 

@@ -24,7 +24,8 @@ public class CrudeOilBucketItem : ModItem
 		Item.autoReuse = true;
 		Item.useAnimation = 15;
 		Item.useTime = 10;
-		Item.useStyle = ItemUseStyleID.Swing;
+        Item.consumable = true;
+        Item.useStyle = ItemUseStyleID.Swing;
 	}
 
 	//It's recommended that you look at ExampleLiquidBucket to see how buckets work

@@ -421,7 +421,7 @@ Items: {
 
 	FlyAgaricItem: {
 		DisplayName: Fly Agaric
-		Tooltip: ""
+		Tooltip: Provides temporary swiftness
 	}
 
 	FortunateTonicItem: {
