@@ -808,14 +808,11 @@ public sealed class FungoreBoss : ModNPC
         Name = Lang.GetNPCNameValue(ModContent.NPCType<FungoreBoss>()),
         Epithet = Language.GetTextValue($"Mods.{nameof(TrelamiumIII)}.NPCs.{nameof(FungoreBoss)}.Epithet"),
 
-        // TODO: placeholder track, swapped with the real one when it lands.
         TrackTitle = "Fungal Fracas",
         TrackArtist = "wymsical",
 
         Accent = new Color(255, 176, 74),
 
-        // The bars, the lines and the boss all arrive on the same frame, which is the frame he
-        // breaks the surface on.
         RevealTick = EMERGE_RUMBLE_TICKS,
     };
 
