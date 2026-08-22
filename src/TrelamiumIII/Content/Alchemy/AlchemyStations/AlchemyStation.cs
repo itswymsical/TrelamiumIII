@@ -48,7 +48,7 @@ public class AlchemyStationTile : ModTile
         TileObjectData.newTile.CopyFrom(TileObjectData.Style4x2);
         TileObjectData.newTile.Width = 4;
         TileObjectData.newTile.Height = 3;
-        TileObjectData.newTile.Origin = new Point16(0, 2);
+        TileObjectData.newTile.Origin = new Point16(1, 2);
         TileObjectData.newTile.CoordinateWidth = 16;
         TileObjectData.newTile.CoordinateHeights = [16, 16, 18];
         TileObjectData.newTile.CoordinatePadding = 2;
@@ -56,11 +56,7 @@ public class AlchemyStationTile : ModTile
         TileObjectData.newTile.UsesCustomCanPlace = true;
         TileObjectData.newTile.LavaDeath = true;
 
-        TileObjectData.newTile.AnchorBottom = new AnchorData(
-            AnchorType.SolidTile | AnchorType.SolidWithTop | AnchorType.Table,
-            TileObjectData.newTile.Width,
-            0);
-        TileObjectData.newTile.StyleHorizontal = true;
+        TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.Table, TileObjectData.newTile.Width, 0);
 
         TileObjectData.addTile(Type);
 

@@ -199,6 +199,9 @@ public class ChemicalGlobalNPC : GlobalNPC
 
     private void DealAfflictionTick(NPC npc)
     {
+        if (npc.immortal || npc.dontTakeDamage)
+            return;
+
         int damage = Math.Max(1, (int)AfflictionDamagePerTick);
 
         npc.SimpleStrikeNPC(
