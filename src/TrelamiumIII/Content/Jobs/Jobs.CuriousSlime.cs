@@ -37,17 +37,25 @@ public sealed class CuriousSlimeI : Job
 
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {
-        if (CurrentSet == 1 &&
+        if (CurrentSet == 0 &&
+            evt.Type == GameEventType.NPCChat)
+            DialogueManager.Instance.StartDialogue("CuriousSlime.Chat", false, false);
+
+        else if (CurrentSet == 1 &&
             evt.ItemType.HasValue &&
             (evt.ItemType == ItemID.IronOre ||
              evt.ItemType == ItemID.LeadOre))
         {
-            // Mark the item that contributed to this event.
-            // This requires the event to expose the actual Item.
-            JobItemComponent.MarkForJob(evt.Item);
+            if (evt.Item != null)
+            {
+                MarkedItem.MarkForJob(evt.Item);
+
+                int itemKey = JobUtils.GetItemUniqueKey(evt.Item);
+                MarkItemAsContributed(itemKey);
+            }
         }
 
-        if (CurrentSet == 2 &&
+        else if (CurrentSet == 2 &&
             evt.Type == GameEventType.NPCChat)
         {
             JobUtils.TakeMarkedJobItems(Main.LocalPlayer);
@@ -140,8 +148,6 @@ public class CuriousSlime : JobNPC
                 NPC.active = false;
                 NPC.netSkip = -1;
                 NPC.life = 0;
-                //if (Main.netMode == NetmodeID.SinglePlayer) Main.NewText(Language.GetTextValue("LegacyMisc.35", NPC.FullName), 50, 125, 255);
-                //else ChatHelper.BroadcastChatMessage(NetworkText.FromKey("LegacyMisc.35", NPC.GetFullNetName()), new Color(50, 125, 255));
 
                 return false;
             }

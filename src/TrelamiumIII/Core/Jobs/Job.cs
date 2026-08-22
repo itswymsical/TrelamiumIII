@@ -43,6 +43,12 @@ public abstract class Job
     /// Index of the current task set the player is working on. Jobs can have multiple sets of tasks that need to be completed in order. This tracks which set is currently active.
     /// </summary>
     public int CurrentSet { get; set; } = 0;
+
+    /// <summary>
+    /// Tracks items that have already contributed to this Job's progress.
+    /// Stores item instance IDs to prevent duplicate contributions.
+    /// </summary>
+    private HashSet<int> ContributedItemIds { get; set; } = new();
     #endregion
 
     /// <summary>
@@ -148,11 +154,61 @@ public abstract class Job
         Progress = JobProgress.Inactive;
         Status = JobStatus.Unlocked;
         CurrentSet = 0;
+        ContributedItemIds.Clear();
         foreach (var set in TaskList)
         {
             set.Reset();
         }
     }
+
+    #region Contribution Tracking
+    /// <summary>
+    /// Checks if an item has already contributed progress to this Job.
+    /// </summary>
+    /// <param name="itemInstanceId">The unique instance ID of the item</param>
+    /// <returns>True if the item has already contributed, false otherwise</returns>
+    public bool HasItemContributed(int itemInstanceId)
+    {
+        return ContributedItemIds.Contains(itemInstanceId);
+    }
+
+    /// <summary>
+    /// Marks an item as having contributed to this Job's progress.
+    /// Prevents the same item instance from contributing multiple times.
+    /// </summary>
+    /// <param name="itemInstanceId">The unique instance ID of the item</param>
+    public void MarkItemAsContributed(int itemInstanceId)
+    {
+        ContributedItemIds.Add(itemInstanceId);
+    }
+
+    /// <summary>
+    /// Checks if an item should contribute to progress (convenience method combining check + mark).
+    /// </summary>
+    /// <param name="itemInstanceId">The unique instance ID of the item</param>
+    /// <returns>True if item hasn't contributed yet, false if it already has</returns>
+    public bool TryMarkItemContribution(int itemInstanceId)
+    {
+        if (ContributedItemIds.Contains(itemInstanceId))
+            return false;
+
+        ContributedItemIds.Add(itemInstanceId);
+        return true;
+    }
+
+    /// <summary>
+    /// Clears all tracked contributions. Useful for Job reset or testing.
+    /// </summary>
+    public void ClearContributions()
+    {
+        ContributedItemIds.Clear();
+    }
+
+    /// <summary>
+    /// Gets the list of contributed item IDs for serialization.
+    /// </summary>
+    internal List<int> GetContributedItemIds() => new(ContributedItemIds);
+    #endregion
 
     public void Complete()
     {

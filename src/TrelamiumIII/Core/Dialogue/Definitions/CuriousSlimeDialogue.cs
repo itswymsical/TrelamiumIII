@@ -8,6 +8,9 @@ class CuriousSlimeDialogue : ModDialogue
     {
         Dialogue.Define("CuriousSlime.Greeting")
             .Line(Speaker, emote: 0, speed: 1f, new Wave(3))
+            .Register();
+
+        Dialogue.Define("CuriousSlime.Chat")
             .Line(Speaker, emote: 0, speed: 1f, [new Pause(20), new Pause(20)])
             .Register();
 

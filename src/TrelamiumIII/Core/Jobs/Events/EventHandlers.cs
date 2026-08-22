@@ -31,7 +31,19 @@ public class EventItem : GlobalItem
 
     public override bool OnPickup(Item item, Player player)
     {
-        if (JobUtils.Check_If_ItemUpdatedProgress(item, player))
+        var jobPlayer = player.GetModPlayer<JobPlayer>();
+        bool itemContributed = false;
+
+        // Check each active job for item contribution
+        foreach (var job in jobPlayer.ActiveJobs())
+        {
+            if (JobUtils.CanItemContributeToJob(item, job))
+            {
+                itemContributed = true;
+            }
+        }
+
+        if (itemContributed)
         {
             OnItemPickup?.Invoke(item, player);
         }
@@ -60,7 +72,19 @@ public class EventItem : GlobalItem
     public override void UpdateEquip(Item item, Player player)
     {
         base.UpdateEquip(item, player);
-        if (JobUtils.Check_If_ItemUpdatedProgress(item, player))
+
+        var jobPlayer = player.GetModPlayer<JobPlayer>();
+        bool itemContributed = false;
+
+        foreach (var job in jobPlayer.ActiveJobs())
+        {
+            if (JobUtils.CanItemContributeToJob(item, job))
+            {
+                itemContributed = true;
+            }
+        }
+
+        if (itemContributed)
         {
             OnItemUpdate?.Invoke(item, player);
         }
@@ -70,7 +94,18 @@ public class EventItem : GlobalItem
     {
         base.UpdateInventory(item, player);
 
-        if (JobUtils.Check_If_ItemUpdatedProgress(item, player))
+        var jobPlayer = player.GetModPlayer<JobPlayer>();
+        bool itemContributed = false;
+
+        foreach (var job in jobPlayer.ActiveJobs())
+        {
+            if (JobUtils.CanItemContributeToJob(item, job))
+            {
+                itemContributed = true;
+            }
+        }
+
+        if (itemContributed)
         {
             OnItemUpdate?.Invoke(item, player);
         }

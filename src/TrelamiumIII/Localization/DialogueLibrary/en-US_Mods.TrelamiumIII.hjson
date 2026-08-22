@@ -6,9 +6,6 @@
 #                             the text inside the brackets is what gets displayed
 #    [speakerName:Merchant]  substituted with that NPC's given name (not an affect anchor)
 
-
-
-
 DialogueLibrary: {
 	Example: {
 		Greeting: {
@@ -18,10 +15,8 @@ DialogueLibrary: {
 	}
 
 	CuriousSlime: {
-		Greeting: {
-			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
-			Line2.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
-		}
+		Greeting.Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+		Chat.Line1.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
 
 		Job1End: {
 			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"

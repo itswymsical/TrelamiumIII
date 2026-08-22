@@ -1,12 +1,8 @@
-using ReLogic.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.GameContent;
-using Terraria.GameInput;
-using Terraria.UI;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.UI.Jobs.Indicators;
 

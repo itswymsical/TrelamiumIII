@@ -4,7 +4,7 @@ Jobs: {
 		Description: "'glorb blorp gloop.'"
 
 		Tasks: {
-			Set0.obj0: Interact with Slime
+			Set0.obj0: Chat with Slime
 			Set1.obj0: Attain Iron Ore
 			Set2.obj0: Return to Slime
 		}

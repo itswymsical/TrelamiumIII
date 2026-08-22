@@ -20,7 +20,8 @@ public partial class JobPlayer : ModPlayer
     #region Event Handling
     public void OnGameEvent(GameEvent evt)
     {
-        foreach (var Job in Jobs)
+        // Iterate over a copy to safely handle collection modifications during event processing
+        foreach (var Job in Jobs.ToList())
         {
             if (Job.Progress != JobProgress.Ongoing)
                 continue;
@@ -166,7 +167,8 @@ public partial class JobPlayer : ModPlayer
                 ["Progress"] = (int)Job.Progress,
                 ["Status"] = (int)Job.Status,
                 ["CurrentList"] = Job.CurrentSet,
-                ["Tasks"] = SerializeTasks(Job.TaskList)
+                ["Tasks"] = SerializeTasks(Job.TaskList),
+                ["Contributions"] = SerializeContributions(Job)
             });
         }
 
@@ -191,6 +193,7 @@ public partial class JobPlayer : ModPlayer
                 Job.CurrentSet = JobTag.GetInt("CurrentList");
 
                 DeserializeTasks(Job.TaskList, JobTag.GetList<TagCompound>("Tasks"));
+                DeserializeContributions(Job, JobTag.GetList<int>("Contributions"));
 
                 Jobs.Add(Job);
             }
@@ -222,7 +225,7 @@ public partial class JobPlayer : ModPlayer
         return result;
     }
 
-    private void DeserializeTasks(List<TaskList> taskSets, IList<TagCompound> savedSets)
+     private void DeserializeTasks(List<TaskList> taskSets, IList<TagCompound> savedSets)
     {
         for (var i = 0; i < Math.Min(taskSets.Count, savedSets.Count); i++)
         {
@@ -240,6 +243,19 @@ public partial class JobPlayer : ModPlayer
                     currentObj.Count = match.GetInt("Count");
                 }
             }
+        }
+    }
+
+    private List<int> SerializeContributions(Job job)
+    {
+        return job.GetContributedItemIds();
+    }
+
+    private void DeserializeContributions(Job job, IList<int> contributedIds)
+    {
+        foreach (var itemId in contributedIds)
+        {
+            job.MarkItemAsContributed(itemId);
         }
     }
     #endregion
