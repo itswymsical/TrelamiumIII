@@ -1,5 +1,3 @@
-using Terraria.GameContent;
-
 namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 
 /// <summary>
@@ -37,20 +35,20 @@ internal sealed class NebulaLayer
     ///     Borrowing <see cref="InkTargets.Swap" /> as the scratch surface is safe: the post
     ///     chain fully overwrites it on its first pass, and nothing reads it before then.
     /// </remarks>
-    public void Draw(SpriteBatch spriteBatch, GraphicsDevice device, InkTargets targets, in InkFrame frame)
+    public void Draw(SpriteBatch spriteBatch, GraphicsDevice device, InkTargets targets, in InkFrame frame, Texture2D mask, Rectangle area)
     {
         var pixelSize = frame.PixelSize;
 
         if (pixelSize <= 1)
         {
-            DrawField(spriteBatch, in frame);
+            DrawField(spriteBatch, in frame, mask, area);
             return;
         }
 
         device.SetRenderTarget(targets.Swap);
         device.Clear(Color.Black);
 
-        DrawField(spriteBatch, in frame);
+        DrawField(spriteBatch, in frame, mask, area);
 
         device.SetRenderTarget(targets.Scene);
 
@@ -78,15 +76,22 @@ internal sealed class NebulaLayer
         spriteBatch.End();
     }
 
-    private void DrawField(SpriteBatch spriteBatch, in InkFrame frame)
+    private void DrawField(SpriteBatch spriteBatch, in InkFrame frame, Texture2D mask, Rectangle area)
     {
         shader ??= Assets.Shaders.InkNebula.CreateP0();
 
         var parameters = shader.Parameters;
 
         parameters.uTime = frame.Time;
-        parameters.uAspect = frame.Aspect;
-        parameters.uCenter = frame.SingularityUv;
+        // TEXCOORD0 spans the quad this pass is drawn into, not the frame, so the geometry has to
+        // be expressed relative to that quad. Both terms reduce exactly to the frame-wide values
+        // when the quad IS the frame, which is the menu's case -- so a full-screen sky is
+        // unaffected, and a localised field gets the singularity at the middle of its own disc.
+        parameters.uAspect = new Vector2(area.Width / (float)Math.Max(area.Height, 1), 1f);
+        parameters.uCenter = new Vector2(
+            (frame.Singularity.X - area.X) / Math.Max(area.Width, 1),
+            (frame.Singularity.Y - area.Y) / Math.Max(area.Height, 1)
+        );
 
         parameters.uScale = InkStyle.NebulaScale;
         parameters.uPivot = InkStyle.NebulaPivot;
@@ -155,12 +160,14 @@ internal sealed class NebulaLayer
 
         shader.Apply();
 
-        // MagicPixel is white and opaque, so the shader's mask read is a no-op and the field
-        // covers the frame. Swapping in one of the Masks textures here confines the ink to a
-        // shape without touching the shader.
+        // The mask is s0, which InkNebula.fx multiplies its whole composed colour by -- void
+        // included. MagicPixel is white and opaque, so it reads as a no-op and the field covers
+        // the frame; a radial falloff instead confines the ink to a disc. Handed in rather than
+        // chosen here, because it is the one thing that differs between a full-screen sky and an
+        // effect standing somewhere in a world.
         spriteBatch.Draw(
-            TextureAssets.MagicPixel.Value,
-            new Rectangle(0, 0, frame.Width, frame.Height),
+            mask,
+            area,
             Color.White
         );
 

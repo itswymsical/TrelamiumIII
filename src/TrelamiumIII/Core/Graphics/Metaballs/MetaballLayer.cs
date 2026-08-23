@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Common.Configs;
 
 namespace TrelamiumIII.Core.Graphics.Metaballs;
 
@@ -52,13 +53,24 @@ public abstract class MetaballLayer
     ///     Ceiling on live nodes. Past it the oldest are dropped, so a runaway emitter costs a
     ///     thinner cloud rather than the frame rate.
     /// </summary>
-    protected virtual int MaxNodes => 400;
+    protected virtual int BaseMaxNodes => 400;
+
+    protected int MaxNodes => (int)(BaseMaxNodes * ModContent.GetInstance<VFXConfig>().MetaballCountMultiplier);
 
     protected virtual BlendState CompositeBlendState => BlendState.AlphaBlend;
 
     protected readonly List<MetaballNode> nodes = [];
 
     public int NodeCount => nodes.Count;
+
+    /// <summary>Drops every live node at once, for an emitter that has ended abruptly.</summary>
+    /// <remarks>
+    ///     Nodes normally expire on their own, which is what a cloud that has stopped being fed
+    ///     should do. This is for the case where the thing the field belonged to is simply gone --
+    ///     a vortex closing, a cutscene cut short -- and letting it drift on for another second
+    ///     would read as the effect having been left running.
+    /// </remarks>
+    public void ClearNodes() => nodes.Clear();
 
     private MetaballRenderTargetContent? target;
     private Asset<Effect>? shader;

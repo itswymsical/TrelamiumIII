@@ -1,61 +1,125 @@
-using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Core.Graphics.Interfaces;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Primitives;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Frostbark;
 
-public class FlailstormProj : ModProjectile
+/// <summary>
+///     A slow flail that picks up a gear every revolution, laying a ring of freezing fog as it goes
+///     and detonating on impact once it is wound all the way up.
+/// </summary>
+public class FlailstormProj : ModProjectile, IDrawPrimitive
 {
-    private const string ChainTexturePath = AssetReferences.Content.Frostbark.FlailstormChain.KEY;
-    private const string ChainTextureExtraPath = ChainTexturePath;
+    #region Configuration & Constants
 
-    private List<Vector2>? cache;
-    private int trailSpawnCounter = 0;
+    private const string CHAIN_TEXTURE_PATH = AssetReferences.Content.Frostbark.FlailstormChain.KEY;
 
-    // Charging system constants
-    private const float ChargeLevel1Time = 60f;  // 1 second
-    private const float ChargeLevel2Time = 120f; // 2 seconds
-    private const float ChargeLevel3Time = 180f; // 3 seconds
-    private const int IceCloudSpawnRate = 15;    // Spawn ice cloud every 15 frames when charging
-    private float lastIceCloudSpawn = 0f;
+    // One charge level per completed revolution. CHARGE_SCALE is what a full charge multiplies
+    // damage and knockback by, so the item's numbers are the floor and these are the ceiling:
+    // 10 damage becomes 25, 4.6 knockback becomes 11.5.
+    private const int MAX_CHARGE_LEVEL = 4;
+    private const float CHARGE_SCALE = 1.15f;
+    private const float MAX_CRIT = 45f;
 
-    // Charge properties
-    private int ChargeLevel => SpinningStateTimer < ChargeLevel1Time ? 0 :
-                              SpinningStateTimer < ChargeLevel2Time ? 1 :
-                              SpinningStateTimer < ChargeLevel3Time ? 2 : 3;
+    // Radians per tick. Stepped by charge level -- this is the gear change the weapon is named for.
+    private const float BASE_SPIN_SPEED = 0.070f;
+    private const float MAX_SPIN_SPEED = 0.250f;
 
-    private float ChargeMultiplier => 1f + ChargeLevel * 0.5f; // 1x, 1.5x, 2x, 2.5x knockback
+    // A plain ellipse, unlike the vanilla flail's flattened lower arc, so the ring trail has no kink.
+    private const float ORBIT_SQUASH = 0.86f;
 
-    private enum AIState
-    {
-        Spinning,
-        LaunchingForward,
-        Retracting,
-        ForcedRetracting,
-        Dropping
-    }
+    private const float BASE_SPIN_RADIUS = 30f;
+    private const float SPIN_RADIUS_GROWTH = 24f;
+    private const float BASE_HIT_RADIUS = 52f;
+    private const float HIT_RADIUS_GROWTH = 28f;
+
+    private const int LAUNCH_TIME_LIMIT = 18;
+    private const float MAX_LAUNCH_LENGTH = 800f;
+    private const float BASE_LAUNCH_SPEED = 9f;
+    private const float MAX_LAUNCH_SPEED = 16f;
+    private const float RETRACT_ACCEL = 3f;
+    private const float MAX_RETRACT_SPEED = 20f;
+    private const float FORCED_RETRACT_ACCEL = 6f;
+    private const float MAX_FORCED_RETRACT_SPEED = 25f;
+
+    private const int BASE_SPIN_HIT_COOLDOWN = 26;
+    private const int MIN_SPIN_HIT_COOLDOWN = 12;
+    private const int MOVING_HIT_COOLDOWN = 10;
+    private const int DEFAULT_HIT_COOLDOWN = 30;
+    private const float MAX_COLLISION_COUNT = 10f;
+
+    // Harmless frostburn fields left on the ring per revolution, and the damaging clouds a fully
+    // charged impact throws.
+    private const int FIELDS_PER_REVOLUTION = 2;
+    private const int BURST_CLOUDS = 8;
+    private const float BURST_SPEED = 4.5f;
+
+    // Spine points. Generated across the arc each frame rather than sampled from position history,
+    // so this only has to resolve a circle -- 48 is a point every 7.5 degrees at full closure.
+    private const int TRAIL_POINTS = 48;
+
+    // Arc at zero charge. Grows to a full turn as the charge tops out.
+    private const float MIN_TRAIL_ARC = 1.4f;
+
+    private const float TRAIL_WIDTH = 15f;
+    private const float TRAIL_REPEATS = 4f;
+
+    private static readonly Color TrailEdgeColor = new(78, 150, 235);
+    private static readonly Color TrailCoreColor = new(226, 245, 255);
+
+    private static readonly SoundStyle RevolutionSound = SoundID.Item30 with { Volume = 0.55f, MaxInstances = 2 };
+    private static readonly SoundStyle ChargedSound = SoundID.Item28 with { Volume = 0.8f, Pitch = 0.35f };
+    private static readonly SoundStyle BurstSound = SoundID.Item27 with { Volume = 0.9f, Pitch = -0.5f };
+
+    #endregion
+
+    #region Properties & Fields
+
+    private enum AIState { Spinning, LaunchingForward, Retracting, ForcedRetracting }
 
     private AIState CurrentAIState
     {
         get => (AIState)Projectile.ai[0];
         set => Projectile.ai[0] = (float)value;
     }
-    public ref float StateTimer => ref Projectile.ai[1];
-    public ref float CollisionCounter => ref Projectile.localAI[0];
-    public ref float SpinningStateTimer => ref Projectile.localAI[1];
 
-    private const int LaunchTimeLimit = 18;
-    private const float LaunchSpeed = 14f;
-    private const float MaxLaunchLength = 800f;
-    private const float RetractAcceleration = 3f;
-    private const float MaxRetractSpeed = 10f;
-    private const float ForcedRetractAcceleration = 6f;
-    private const float MaxForcedRetractSpeed = 15f;
-    private const int SpinHitCooldown = 20;
-    private const int MovingHitCooldown = 10;
+    public ref float StateTimer => ref Projectile.ai[1];
+
+    /// <summary>Which way round the orbit runs. Fixed at spawn so turning around cannot flip the ring.</summary>
+    public ref float SpinDirection => ref Projectile.ai[2];
+
+    public ref float CollisionCounter => ref Projectile.localAI[0];
+
+    /// <summary>Total radians swung. Drives the charge, and survives the throw so the head remembers it.</summary>
+    public ref float SpinAngle => ref Projectile.localAI[1];
+
+    private int ChargeLevel => Math.Min(MAX_CHARGE_LEVEL, (int)(SpinAngle / MathHelper.TwoPi));
+    private float ChargeProgress => Math.Min(1f, SpinAngle / (MathHelper.TwoPi * MAX_CHARGE_LEVEL));
+    private bool FullyCharged => ChargeLevel >= MAX_CHARGE_LEVEL;
+    private float ChargeMultiplier => MathHelper.Lerp(1f, CHARGE_SCALE, ChargeProgress);
+
+    // Only the swing rate steps per level. Everything else grows off ChargeProgress, which is
+    // continuous -- so the gear change is the one thing that reads as a step instead of the whole
+    // ring popping outward at once.
+    private float SpinSpeed => MathHelper.Lerp(BASE_SPIN_SPEED, MAX_SPIN_SPEED, ChargeLevel / (float)MAX_CHARGE_LEVEL);
+    private float SpinRadius => BASE_SPIN_RADIUS + ChargeProgress * SPIN_RADIUS_GROWTH;
+    private float HitRadius => BASE_HIT_RADIUS + ChargeProgress * HIT_RADIUS_GROWTH;
+    private float TrailArc => MathHelper.Lerp(MIN_TRAIL_ARC, MathHelper.TwoPi, ChargeProgress);
+    private float LaunchSpeed => MathHelper.Lerp(BASE_LAUNCH_SPEED, MAX_LAUNCH_SPEED, ChargeProgress);
+    private int Facing => SpinDirection < 0f ? -1 : 1;
+
+    private Vector2[]? trailPositions;
+    private VertexTrail? trail;
+
+    #endregion
+
+    #region Setup & Initialization
 
     public override void SetStaticDefaults()
     {
@@ -67,397 +131,369 @@ public class FlailstormProj : ModProjectile
     public override void SetDefaults()
     {
         Projectile.netImportant = true;
-        Projectile.width = 24;
-        Projectile.height = 24;
+        Projectile.width = Projectile.height = 24;
         Projectile.friendly = true;
         Projectile.penetrate = -1;
-        Projectile.DamageType = DamageClass.Melee;
+        Projectile.DamageType = DamageClass.MeleeNoSpeed;
         Projectile.usesLocalNPCImmunity = true;
-        Projectile.localNPCHitCooldown = 30;
+        Projectile.localNPCHitCooldown = DEFAULT_HIT_COOLDOWN;
     }
+
+    public override void OnSpawn(Terraria.DataStructures.IEntitySource source)
+        => SpinDirection = Main.player[Projectile.owner].direction;
+
+    #endregion
+
+    #region Core AI
 
     public override void AI()
     {
-        ManageCaches();
-        SpawnTrailNodes();
         var player = Main.player[Projectile.owner];
 
-        if (!player.active || player.dead || player.noItems || player.CCed || Vector2.Distance(Projectile.Center, player.Center) > 900f)
-        {
-            Projectile.Kill();
-            return;
-        }
-
-        if (Main.myPlayer == Projectile.owner && Main.mapFullscreen)
+        if (ShouldKillProjectile(player))
         {
             Projectile.Kill();
             return;
         }
 
         var mountedCenter = player.MountedCenter;
-        var meleeSpeedMultiplier = player.GetTotalAttackSpeed(DamageClass.Melee);
+        var meleeSpeed = player.GetTotalAttackSpeed(DamageClass.Melee);
 
+        ExecuteCurrentState(player, mountedCenter, meleeSpeed);
+
+        // Crit is a chance rather than a multiplier, so it cannot ride ChargeMultiplier with the
+        // rest. Refreshed every tick because the ring damages while it is still winding up.
+        Projectile.CritChance = (int)MathHelper.Lerp(player.GetWeaponCrit(player.HeldItem), MAX_CRIT, ChargeProgress);
+
+        UpdateProjectileTransform(mountedCenter);
+        UpdatePlayerAnimation(player, mountedCenter);
+        UpdateTrail(mountedCenter, player.gfxOffY);
+        TrailMist();
+    }
+
+    private bool ShouldKillProjectile(Player player) =>
+        !player.active || player.dead || player.noItems || player.CCed ||
+        Projectile.DistanceSQ(player.Center) > 900f * 900f ||
+        (Main.myPlayer == Projectile.owner && Main.mapFullscreen);
+
+    private void ExecuteCurrentState(Player player, Vector2 mountedCenter, float meleeSpeed)
+    {
         switch (CurrentAIState)
         {
             case AIState.Spinning:
-                HandleSpinningState(player, mountedCenter);
+                HandleSpinning(player, mountedCenter);
                 break;
             case AIState.LaunchingForward:
-                HandleLaunchingForwardState(player, mountedCenter, meleeSpeedMultiplier);
+                HandleLaunching(player, mountedCenter);
                 break;
             case AIState.Retracting:
-                HandleRetractingState(player, mountedCenter, meleeSpeedMultiplier);
+                HandleRetracting(player, mountedCenter, meleeSpeed);
                 break;
             case AIState.ForcedRetracting:
-                HandleForcedRetractingState(player, mountedCenter, meleeSpeedMultiplier);
-                break;
-            case AIState.Dropping:
-                HandleDroppingState(player, mountedCenter);
+                HandleForcedRetracting(player, mountedCenter, meleeSpeed);
                 break;
         }
-
-        HandleProjectileRotation(mountedCenter);
-        HandlePlayerAnimation(player, mountedCenter);
-        SpawnDust();
     }
 
-    private void HandleSpinningState(Player player, Vector2 mountedCenter)
+    #endregion
+
+    #region State Handlers
+
+    private void HandleSpinning(Player player, Vector2 mountedCenter)
     {
         if (Projectile.owner == Main.myPlayer)
         {
-            var unitVectorTowardsMouse = mountedCenter.DirectionTo(Main.MouseWorld).SafeNormalize(Vector2.UnitX * player.direction);
-            player.ChangeDir((unitVectorTowardsMouse.X > 0f).ToDirectionInt());
+            var mouseDir = Vector2.Normalize(Main.MouseWorld - mountedCenter);
+            if (mouseDir == Vector2.Zero) mouseDir = Vector2.UnitX * player.direction;
+
+            player.ChangeDir(Math.Sign(mouseDir.X));
+
             if (!player.channel)
             {
-                CurrentAIState = AIState.LaunchingForward;
-                StateTimer = 0f;
-                Projectile.velocity = unitVectorTowardsMouse * LaunchSpeed + player.velocity;
-                Projectile.Center = mountedCenter;
-                Projectile.netUpdate = true;
-                Projectile.ResetLocalNPCHitImmunity();
-                Projectile.localNPCHitCooldown = MovingHitCooldown;
+                LaunchProjectile(mouseDir, mountedCenter, player);
                 return;
             }
         }
 
-        SpinningStateTimer += 1f;
+        UpdateSpinning(player, mountedCenter);
+    }
 
-        // Spawn ice clouds while charging
-        if (SpinningStateTimer > 30f && SpinningStateTimer - lastIceCloudSpawn >= IceCloudSpawnRate)
-        {
-            SpawnIceCloud(player, mountedCenter);
-            lastIceCloudSpawn = SpinningStateTimer;
-        }
+    private void LaunchProjectile(Vector2 direction, Vector2 mountedCenter, Player player)
+    {
+        CurrentAIState = AIState.LaunchingForward;
+        StateTimer = 0f;
+        Projectile.velocity = direction * LaunchSpeed + player.velocity;
+        Projectile.Center = mountedCenter;
+        Projectile.netUpdate = true;
+        Projectile.ResetLocalNPCHitImmunity();
+        Projectile.localNPCHitCooldown = MOVING_HIT_COOLDOWN;
+    }
 
-        // Visual and audio feedback for charge levels
-        if (SpinningStateTimer == ChargeLevel1Time || SpinningStateTimer == ChargeLevel2Time || SpinningStateTimer == ChargeLevel3Time)
-        {
-            // Play charge up sound
-            SoundEngine.PlaySound(SoundID.Item30, Projectile.position);
+    private void UpdateSpinning(Player player, Vector2 mountedCenter)
+    {
+        int revolutionsBefore = (int)(SpinAngle / MathHelper.TwoPi);
 
-            // Spawn visual effect
-            for (int i = 0; i < 10; i++)
-            {
-                var dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height,
-                    DustID.IceTorch, 0f, 0f, 150, default, 1.5f);
-                dust.velocity = Main.rand.NextVector2Circular(3f, 3f);
-                dust.noGravity = true;
-            }
-        }
+        SpinAngle += SpinSpeed;
 
-        var offsetFromPlayer = new Vector2(player.direction).RotatedBy((float)Math.PI * 10f * (SpinningStateTimer / 60f) * player.direction);
-        offsetFromPlayer.Y *= 0.8f;
-        if (offsetFromPlayer.Y * player.gravDir > 0f)
-        {
-            offsetFromPlayer.Y *= 0.5f;
-        }
+        if ((int)(SpinAngle / MathHelper.TwoPi) > revolutionsBefore)
+            OnRevolutionComplete(mountedCenter);
 
-        // Increase spin radius slightly when charged
-        float spinRadius = 30f + ChargeLevel * 5f;
-        Projectile.Center = mountedCenter + offsetFromPlayer * spinRadius + new Vector2(0, player.gfxOffY);
+        Projectile.Center = mountedCenter + OrbitOffset() + new Vector2(0f, player.gfxOffY);
         Projectile.velocity = Vector2.Zero;
-        Projectile.localNPCHitCooldown = SpinHitCooldown;
+
+        // Faster spin, faster hits -- otherwise the extra swing speed would be visible and nothing
+        // more, because a ring hitting on the same cooldown does the same damage per second.
+        Projectile.localNPCHitCooldown = (int)MathHelper.Lerp(BASE_SPIN_HIT_COOLDOWN, MIN_SPIN_HIT_COOLDOWN, ChargeProgress);
+
+        RingMist();
     }
 
-    private void SpawnIceCloud(Player player, Vector2 mountedCenter)
+    private void HandleLaunching(Player player, Vector2 mountedCenter)
     {
-        if (Main.myPlayer != Projectile.owner) return;
+        StateTimer++;
+        bool shouldRetract = StateTimer >= LAUNCH_TIME_LIMIT ||
+                           Projectile.DistanceSQ(mountedCenter) >= MAX_LAUNCH_LENGTH * MAX_LAUNCH_LENGTH;
 
-        var mist = MetaballSystem.GetLayer<IceMistLayer>();
-        if (mist == null) return;
+        if (shouldRetract)
+            TransitionTo(AIState.Retracting, 0.3f);
 
-        // Node count and radius scale with charge level —
-        // the cloud visibly thickens as you hold the charge
-        int nodeCount = 4 + ChargeLevel * 3;       // 4, 7, 10, 13
-        float radiusMin = 6f + ChargeLevel * 4f;
-        float radiusMax = 14f + ChargeLevel * 4f;
-        float lifeMin = 35f + ChargeLevel * 4f;
-        float lifeMax = 70f + ChargeLevel * 4f;
-
-        for (int i = 0; i < nodeCount; i++)
-        {
-            // Spread around the flail head, not the player center —
-            // the cloud sits on the weapon, not the character
-            Vector2 offset = Main.rand.NextVector2Circular(40f + ChargeLevel * 10f, 40f + ChargeLevel * 10f);
-            Vector2 vel = offset.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.2f, 0.8f);
-            vel += Main.rand.NextVector2Circular(0.3f, 0.3f);
-
-            mist.SpawnNode(
-                Projectile.Center + offset,
-                vel,
-                radius: Main.rand.NextFloat(radiusMin, radiusMax),
-                life: Main.rand.NextFloat(lifeMin, lifeMax)
-            );
-        }
+        player.ChangeDir(Math.Sign(Projectile.Center.X - player.Center.X));
+        Projectile.localNPCHitCooldown = MOVING_HIT_COOLDOWN;
     }
 
-    private void HandleLaunchingForwardState(Player player, Vector2 mountedCenter, float meleeSpeedMultiplier)
+    private void HandleRetracting(Player player, Vector2 mountedCenter, float meleeSpeed)
     {
-        var shouldSwitchToRetracting = StateTimer++ >= LaunchTimeLimit;
-        shouldSwitchToRetracting |= Projectile.Distance(mountedCenter) >= MaxLaunchLength;
-        if (player.controlUseItem)
-        {
-            CurrentAIState = AIState.Dropping;
-            StateTimer = 0f;
-            Projectile.netUpdate = true;
-            Projectile.velocity *= 0.2f;
-        }
-        else if (shouldSwitchToRetracting)
-        {
-            CurrentAIState = AIState.Retracting;
-            StateTimer = 0f;
-            Projectile.netUpdate = true;
-            Projectile.velocity *= 0.3f;
-        }
-        player.ChangeDir((player.Center.X < Projectile.Center.X).ToDirectionInt());
-        Projectile.localNPCHitCooldown = MovingHitCooldown;
-    }
+        var toPlayer = mountedCenter - Projectile.Center;
 
-    private void HandleRetractingState(Player player, Vector2 mountedCenter, float meleeSpeedMultiplier)
-    {
-        var unitVectorTowardsPlayer = Projectile.DirectionTo(mountedCenter).SafeNormalize(Vector2.Zero);
-        if (Projectile.Distance(mountedCenter) <= MaxRetractSpeed * meleeSpeedMultiplier)
+        if (toPlayer.Length() <= MAX_RETRACT_SPEED * meleeSpeed)
         {
             Projectile.Kill();
             return;
         }
-        if (player.controlUseItem)
-        {
-            CurrentAIState = AIState.Dropping;
-            StateTimer = 0f;
-            Projectile.netUpdate = true;
-            Projectile.velocity *= 0.2f;
-        }
-        else
-        {
-            Projectile.velocity *= 0.98f;
-            Projectile.velocity = Projectile.velocity.MoveTowards(unitVectorTowardsPlayer * MaxRetractSpeed * meleeSpeedMultiplier, RetractAcceleration * meleeSpeedMultiplier);
-            player.ChangeDir((player.Center.X < Projectile.Center.X).ToDirectionInt());
-        }
+
+        var targetVel = Vector2.Normalize(toPlayer) * MAX_RETRACT_SPEED * meleeSpeed;
+        Projectile.velocity = Vector2.Lerp(Projectile.velocity * 0.98f, targetVel, RETRACT_ACCEL * meleeSpeed / 60f);
+
+        player.ChangeDir(Math.Sign(Projectile.Center.X - player.Center.X));
     }
 
-    private void HandleForcedRetractingState(Player player, Vector2 mountedCenter, float meleeSpeedMultiplier)
+    private void HandleForcedRetracting(Player player, Vector2 mountedCenter, float meleeSpeed)
     {
         Projectile.tileCollide = false;
-        var unitVectorTowardsPlayer = Projectile.DirectionTo(mountedCenter).SafeNormalize(Vector2.Zero);
-        if (Projectile.Distance(mountedCenter) <= MaxForcedRetractSpeed * meleeSpeedMultiplier)
+        var toPlayer = mountedCenter - Projectile.Center;
+
+        if (toPlayer.Length() <= MAX_FORCED_RETRACT_SPEED * meleeSpeed)
         {
             Projectile.Kill();
             return;
         }
-        Projectile.velocity *= 0.98f;
-        Projectile.velocity = Projectile.velocity.MoveTowards(unitVectorTowardsPlayer * MaxForcedRetractSpeed * meleeSpeedMultiplier, ForcedRetractAcceleration * meleeSpeedMultiplier);
-        var target = Projectile.Center + Projectile.velocity;
-        var value = mountedCenter.DirectionFrom(target).SafeNormalize(Vector2.Zero);
-        if (Vector2.Dot(unitVectorTowardsPlayer, value) < 0f)
+
+        var targetVel = Vector2.Normalize(toPlayer) * MAX_FORCED_RETRACT_SPEED * meleeSpeed;
+        Projectile.velocity = Vector2.Lerp(Projectile.velocity * 0.98f, targetVel, FORCED_RETRACT_ACCEL * meleeSpeed / 60f);
+
+        // Overshoot check by dot product
+        var futurePos = Projectile.Center + Projectile.velocity;
+        if (Vector2.Dot(Vector2.Normalize(toPlayer), Vector2.Normalize(mountedCenter - futurePos)) < 0f)
         {
             Projectile.Kill();
             return;
         }
-        player.ChangeDir((player.Center.X < Projectile.Center.X).ToDirectionInt());
+
+        player.ChangeDir(Math.Sign(Projectile.Center.X - player.Center.X));
     }
 
-    private void HandleDroppingState(Player player, Vector2 mountedCenter)
+    private void TransitionTo(AIState newState, float velocityMultiplier)
     {
-        if (!player.controlUseItem || Projectile.Distance(mountedCenter) > MaxLaunchLength + 160f)
-        {
-            CurrentAIState = AIState.ForcedRetracting;
-            StateTimer = 0f;
-            Projectile.netUpdate = true;
-        }
-        else
-        {
-            Projectile.velocity.Y += 0.8f;
-            Projectile.velocity.X *= 0.95f;
-            player.ChangeDir((player.Center.X < Projectile.Center.X).ToDirectionInt());
-        }
+        CurrentAIState = newState;
+        StateTimer = 0f;
+        Projectile.netUpdate = true;
+        Projectile.velocity *= velocityMultiplier;
     }
 
-    private void HandleProjectileRotation(Vector2 mountedCenter)
+    #endregion
+
+    #region Frost
+
+    // Payout for a completed revolution: a step of swing speed, and a couple of harmless
+    // frostburn fields left standing on the ring.
+    private void OnRevolutionComplete(Vector2 mountedCenter)
     {
-        Projectile.direction = (Projectile.velocity.X > 0f).ToDirectionInt();
-        Projectile.spriteDirection = Projectile.direction;
-        Projectile.rotation = CurrentAIState == AIState.Dropping
-            ? Projectile.velocity.ToRotation() + Projectile.velocity.X * 0.1f
-            : Projectile.DirectionTo(mountedCenter).ToRotation() + MathHelper.PiOver2;
+        // Past the top rung the ring keeps turning and keeps damaging, but stops paying out --
+        // otherwise holding forever would carpet the screen in fields.
+        if ((int)(SpinAngle / MathHelper.TwoPi) > MAX_CHARGE_LEVEL)
+            return;
+
+        SoundEngine.PlaySound(FullyCharged ? ChargedSound : RevolutionSound with
+        {
+            Pitch = -0.4f + ChargeLevel * 0.22f,
+        }, Projectile.Center);
+
+        if (Main.myPlayer != Projectile.owner)
+            return;
+
+        // Spaced round the orbit rather than dropped in a clump at the head, so the fields stand in
+        // the ring the player just drew.
+        for (int i = 0; i < FIELDS_PER_REVOLUTION; i++)
+        {
+            var position = mountedCenter + OrbitOffset(MathHelper.TwoPi * i / FIELDS_PER_REVOLUTION);
+
+            Projectile.NewProjectile(Projectile.GetSource_FromThis(), position, Vector2.Zero,
+                ModContent.ProjectileType<FrostCloudProj>(), 0, 0f, Projectile.owner);
+        }
     }
 
-    private void HandlePlayerAnimation(Player player, Vector2 mountedCenter)
+    // The fully charged payoff, thrown where the head lands: damaging clouds, and a long freeze.
+    private void FrostBurst(Vector2 position)
     {
-        Projectile.timeLeft = 2;
-        player.heldProj = Projectile.whoAmI;
-        player.SetDummyItemTime(2);
-        player.itemRotation = Projectile.DirectionFrom(mountedCenter).ToRotation();
-        if (Projectile.Center.X < mountedCenter.X)
+        CameraSystem.shake = 8;
+        SoundEngine.PlaySound(BurstSound, position);
+        BurstMist(position);
+
+        if (Main.myPlayer != Projectile.owner)
+            return;
+
+        // Full charged damage per cloud. The clouds share one static immunity, so overlapping them
+        // cannot multiply it -- see FrostCloudProj.
+        int damage = (int)(Projectile.damage * CHARGE_SCALE);
+        float knockback = Projectile.knockBack * CHARGE_SCALE;
+
+        for (int i = 0; i < BURST_CLOUDS; i++)
         {
-            player.itemRotation += (float)Math.PI;
+            var outward = (MathHelper.TwoPi * i / BURST_CLOUDS).ToRotationVector2();
+
+            Projectile.NewProjectile(Projectile.GetSource_FromThis(), position + outward * 12f, outward * BURST_SPEED,
+                ModContent.ProjectileType<FrostCloudProj>(), damage, knockback, Projectile.owner);
         }
-        player.itemRotation = MathHelper.WrapAngle(player.itemRotation);
     }
 
-    private void SpawnDust()
+    /// <summary>Fog laid along the arc while spinning, so the ring reads as frost and not just a ribbon.</summary>
+    private void RingMist()
     {
-        int dustFrequency = CurrentAIState == AIState.LaunchingForward ? 3 : 7;
-        if (CurrentAIState == AIState.Spinning && ChargeLevel > 0)
-            dustFrequency = Math.Max(1, dustFrequency - ChargeLevel);
+        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+            return;
 
-        if (Main.rand.NextBool(dustFrequency))
+        var mountedCenter = Main.player[Projectile.owner].MountedCenter;
+        int count = 1 + (int)(ChargeProgress * 2f);
+
+        for (int i = 0; i < count; i++)
         {
-            var dust = Main.dust[Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                DustID.FrostDaggerfish, 0f, 0f, 150, default, 1.3f + ChargeLevel * 0.3f)];
-            if (ChargeLevel > 0)
-            {
-                dust.noGravity = true;
-                dust.velocity *= 1f + ChargeLevel * 0.5f;
-            }
-        }
+            // Behind the head only. Fog ahead of it would read as the ring being drawn by something
+            // other than the weapon.
+            var position = mountedCenter + OrbitOffset(Main.rand.NextFloat(0f, TrailArc));
 
-        // Mist trail — always present while moving, thickens with charge.
-        // Short life keeps it tight to the projectile rather than lingering.
-        var mist = MetaballSystem.GetLayer<IceMistLayer>();
-        if (mist == null) return;
-
-        bool isMoving = CurrentAIState == AIState.LaunchingForward
-                     || CurrentAIState == AIState.Retracting
-                     || CurrentAIState == AIState.ForcedRetracting
-                     || CurrentAIState == AIState.Dropping;
-
-        if (isMoving && Main.rand.NextBool(2))
-        {
-            mist.SpawnNode(
-                Projectile.Center,
-                Projectile.velocity * 0.08f + Main.rand.NextVector2Circular(0.4f, 0.4f),
-                radius: Main.rand.NextFloat(14f, 22f + ChargeLevel * 4f),
-                life: Main.rand.NextFloat(18f, 35f)
-            );
-        }
-
-        // Spinning state: ambient mist orbits with the flail head
-        if (CurrentAIState == AIState.Spinning && Main.rand.NextBool(3))
-        {
-            mist.SpawnNode(
-                Projectile.Center + Main.rand.NextVector2Circular(8f, 8f),
-                Main.rand.NextVector2Circular(0.3f, 0.3f),
-                radius: Main.rand.NextFloat(10f, 18f),
-                life: Main.rand.NextFloat(20f, 40f)
-            );
+            mist.SpawnNode(position + Main.rand.NextVector2Circular(4f, 4f), Vector2.Zero,
+                radius: Main.rand.NextFloat(6f, 8f + ChargeProgress * 8f),
+                life: Main.rand.NextFloat(16f, 26f));
         }
     }
+
+    /// <summary>Frost shed off the head in flight. Thin -- the head and chain are the read here.</summary>
+    private void TrailMist()
+    {
+        if (CurrentAIState == AIState.Spinning || !Main.rand.NextBool(2))
+            return;
+
+        MetaballSystem.GetLayer<IceMistLayer>()?.SpawnNode(
+            Projectile.Center + Main.rand.NextVector2Circular(5f, 5f),
+            Projectile.velocity * 0.06f + Main.rand.NextVector2Circular(0.3f, 0.3f),
+            radius: Main.rand.NextFloat(10f, 16f + ChargeProgress * 8f),
+            life: Main.rand.NextFloat(18f, 32f));
+    }
+
+    /// <summary>The flash of fog a burst goes off inside, ahead of the clouds carrying it outward.</summary>
+    private static void BurstMist(Vector2 position)
+    {
+        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+            return;
+
+        const int count = 20;
+
+        for (int i = 0; i < count; i++)
+        {
+            var velocity = (MathHelper.TwoPi * i / count).ToRotationVector2() * Main.rand.NextFloat(2.2f, 5f);
+
+            mist.SpawnNode(position + velocity * 5f, velocity,
+                radius: Main.rand.NextFloat(13f, 26f),
+                life: Main.rand.NextFloat(30f, 56f));
+        }
+    }
+
+    #endregion
+
+    #region Collision & Damage
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
-        var defaultLocalNPCHitCooldown = 10;
         var impactIntensity = 0;
-        var velocity = Projectile.velocity;
-        var bounceFactor = 0.3f;
-
-        if (CurrentAIState == AIState.LaunchingForward)
+        var bounceFactor = CurrentAIState switch
         {
-            bounceFactor = 0.5f;
+            AIState.LaunchingForward => 0.5f,
+            _ => 0.3f
+        };
+
+        if (MathF.Abs(oldVelocity.X - Projectile.velocity.X) > 0.1f)
+        {
+            if (MathF.Abs(oldVelocity.X) > 4f) impactIntensity = 1;
+            Projectile.velocity.X = -oldVelocity.X * bounceFactor;
+            CollisionCounter++;
         }
 
-        if (CurrentAIState == AIState.Dropping)
+        if (MathF.Abs(oldVelocity.Y - Projectile.velocity.Y) > 0.1f)
         {
-            bounceFactor = 0.1f;
-        }
-
-        if (oldVelocity.X != Projectile.velocity.X)
-        {
-            if (Math.Abs(oldVelocity.X) > 4f)
-            {
-                impactIntensity = 1;
-            }
-
-            Projectile.velocity.X = (0f - oldVelocity.X) * bounceFactor;
-            CollisionCounter += 1f;
-        }
-
-        if (oldVelocity.Y != Projectile.velocity.Y)
-        {
-            if (Math.Abs(oldVelocity.Y) > 4f)
-            {
-                impactIntensity = 1;
-            }
-
-            Projectile.velocity.Y = (0f - oldVelocity.Y) * bounceFactor;
-            CollisionCounter += 1f;
+            if (MathF.Abs(oldVelocity.Y) > 4f) impactIntensity = 1;
+            Projectile.velocity.Y = -oldVelocity.Y * bounceFactor;
+            CollisionCounter++;
         }
 
         if (CurrentAIState == AIState.LaunchingForward)
-        {
-            Projectile.localNPCHitCooldown = defaultLocalNPCHitCooldown;
-            Projectile.netUpdate = true;
-            var scanAreaStart = Projectile.TopLeft.ToTileCoordinates();
-            var scanAreaEnd = Projectile.BottomRight.ToTileCoordinates();
-            impactIntensity = 2;
-            Projectile.CreateImpactExplosion(2, Projectile.Center, ref scanAreaStart, ref scanAreaEnd, Projectile.width, out var causedShockwaves);
-            Projectile.CreateImpactExplosion2_FlailTileCollision(Projectile.Center, causedShockwaves, velocity);
-            Projectile.position -= velocity;
-
-            // Spawn ice explosion on charged tile collision
-            if (ChargeLevel > 0)
-            {
-                SpawnIceExplosion(Projectile.Center);
-            }
-        }
+            HandleLaunchCollision(oldVelocity, ref impactIntensity);
 
         if (impactIntensity > 0)
         {
             Projectile.netUpdate = true;
-            for (var i = 0; i < impactIntensity; i++)
-            {
-                Collision.HitTiles(Projectile.position, velocity, Projectile.width, Projectile.height);
-            }
+            for (int i = 0; i < impactIntensity; i++)
+                Collision.HitTiles(Projectile.position, oldVelocity, Projectile.width, Projectile.height);
 
             SoundEngine.PlaySound(SoundID.Dig, Projectile.position);
         }
 
-        if (CurrentAIState != AIState.Spinning && CurrentAIState != AIState.Dropping && CollisionCounter >= 10f)
+        if (CurrentAIState != AIState.Spinning && CollisionCounter >= MAX_COLLISION_COUNT)
         {
             CurrentAIState = AIState.ForcedRetracting;
             Projectile.netUpdate = true;
         }
+
         return false;
     }
 
-    public override bool? CanDamage()
+    private void HandleLaunchCollision(Vector2 velocity, ref int impactIntensity)
     {
-        if (CurrentAIState == AIState.Spinning && SpinningStateTimer <= 12f)
-        {
-            return false;
-        }
-        return base.CanDamage();
+        Projectile.localNPCHitCooldown = MOVING_HIT_COOLDOWN;
+        Projectile.netUpdate = true;
+
+        var scanStart = Projectile.TopLeft.ToTileCoordinates();
+        var scanEnd = Projectile.BottomRight.ToTileCoordinates();
+        impactIntensity = 2;
+
+        Projectile.CreateImpactExplosion(2, Projectile.Center, ref scanStart, ref scanEnd, Projectile.width, out var causedShockwaves);
+        Projectile.CreateImpactExplosion2_FlailTileCollision(Projectile.Center, causedShockwaves, velocity);
+        Projectile.position -= velocity;
+
+        if (FullyCharged)
+            FrostBurst(Projectile.Center);
     }
+
+    public override bool? CanDamage() =>
+        CurrentAIState == AIState.Spinning && SpinAngle <= MathHelper.PiOver2 ? false : null;
 
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
     {
         if (CurrentAIState == AIState.Spinning)
         {
             var mountedCenter = Main.player[Projectile.owner].MountedCenter;
-            var shortestVectorFromPlayerToTarget = targetHitbox.ClosestPointInRect(mountedCenter) - mountedCenter;
-            shortestVectorFromPlayerToTarget.Y /= 0.8f;
-            var hitRadius = 55f + ChargeLevel * 10f; // Larger hitbox when charged
-            return shortestVectorFromPlayerToTarget.Length() <= hitRadius;
+            var toTarget = targetHitbox.ClosestPointInRect(mountedCenter) - mountedCenter;
+            toTarget.Y /= ORBIT_SQUASH; // undo the orbit's squash, so reach matches the drawn ring
+            return toTarget.LengthSquared() <= HitRadius * HitRadius;
         }
         return base.Colliding(projHitbox, targetHitbox);
     }
@@ -467,259 +503,359 @@ public class FlailstormProj : ModProjectile
         SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with
         {
             MaxInstances = 1,
-            Volume = 0.4f + ChargeLevel * 0.1f,
-            Pitch = -0.9f + ChargeLevel * 0.1f,
-        }, Projectile.position);
+            Volume = MathHelper.Lerp(0.4f, 0.7f, ChargeProgress),
+            Pitch = MathHelper.Lerp(-0.9f, -0.55f, ChargeProgress),
+        }, Projectile.Center);
 
-        // Spawn ice explosion when charged
-        if (ChargeLevel > 0)
-        {
-            SpawnIceExplosion(target.Center);
-        }
-    }
+        target.AddBuff(BuffID.Frostburn, (int)MathHelper.Lerp(40f, 150f, ChargeProgress));
 
-    private void SpawnIceExplosion(Vector2 position)
-    {
-        if (Main.myPlayer != Projectile.owner) return;
-
-        // Existing sound and dust stays as-is.
-        SoundEngine.PlaySound(SoundID.Item27, position);
-
-        for (int i = 0; i < 20 + ChargeLevel * 10; i++)
-        {
-            var dust = Dust.NewDustDirect(position - Vector2.One * 20f, 40, 40,
-                DustID.IceTorch, 0f, 0f, 150, default, 1.5f + ChargeLevel * 0.5f);
-            dust.velocity = Main.rand.NextVector2Circular(5f + ChargeLevel * 2f, 5f + ChargeLevel * 2f);
-            dust.noGravity = true;
-        }
-
-        // Metaball burst — radial explosion of mist nodes.
-        // Two rings: a fast outer burst that expands and fades quickly,
-        // and a slow inner cloud that lingers as the "explosion residue".
-        var mist = MetaballSystem.GetLayer<IceMistLayer>();
-        if (mist == null) return;
-
-        int outerCount = 8 + ChargeLevel * 4;   // 8, 12, 16, 20
-        int innerCount = 5 + ChargeLevel * 3;   // 5, 8, 11, 14
-
-        // Outer ring — fast, short life, reads as the initial shockwave
-        for (int i = 0; i < outerCount; i++)
-        {
-            float angle = MathHelper.TwoPi / outerCount * i;
-            float speed = 3.5f + ChargeLevel * 1.2f;
-            var vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed;
-            vel += Main.rand.NextVector2Circular(0.8f, 0.8f);
-
-            mist.SpawnNode(
-                position + vel * 4f,  // start slightly offset so they don't all begin at center
-                vel,
-                radius: Main.rand.NextFloat(4f + ChargeLevel, 16f + ChargeLevel),
-                life: Main.rand.NextFloat(30f, 55f + ChargeLevel * 10f)
-            );
-        }
-
-        // Inner cloud — slow, long life, sits at the impact point
-        // and slowly expands outward like frozen breath
-        for (int i = 0; i < innerCount; i++)
-        {
-            var vel = Main.rand.NextVector2Circular(1.2f, 1.2f);
-
-            mist.SpawnNode(
-                position + Main.rand.NextVector2Circular(20f, 20f),
-                vel,
-                radius: Main.rand.NextFloat(4f + ChargeLevel, 16f + ChargeLevel),
-                life: Main.rand.NextFloat(60f, 100f + ChargeLevel * 20f)
-            );
-        }
+        // Only the thrown head detonates. A spinning ring sweeps the same target every dozen ticks,
+        // and bursting on each of those would be a wall of fog rather than a payoff.
+        if (FullyCharged && CurrentAIState != AIState.Spinning)
+            FrostBurst(target.Center);
     }
 
     public override void OnHitPlayer(Player target, Player.HurtInfo info)
-    {
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with
-        {
-            MaxInstances = 1,
-            Volume = 0.4f + ChargeLevel * 0.1f,
-            Pitch = -0.9f + ChargeLevel * 0.1f,
-        }, Projectile.position);
-    }
+        => SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with { MaxInstances = 1, Volume = 0.4f, Pitch = -0.9f }, Projectile.Center);
 
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
     {
-        if (CurrentAIState == AIState.Spinning)
-            modifiers.SourceDamage *= 1.1f + ChargeLevel * 0.2f; // Increased damage when charged
+        modifiers.SourceDamage *= ChargeMultiplier;
+        modifiers.HitDirectionOverride = Math.Sign(target.Center.X - Main.player[Projectile.owner].Center.X);
 
-        else if (CurrentAIState == AIState.LaunchingForward || CurrentAIState == AIState.Retracting)
-            modifiers.SourceDamage *= 1.3f + ChargeLevel * 0.3f; // Even more damage when charged
-
-        modifiers.HitDirectionOverride = (Main.player[Projectile.owner].Center.X < target.Center.X).ToDirectionInt();
-
-        if (CurrentAIState == AIState.Spinning)
-            modifiers.Knockback *= 0.25f * ChargeMultiplier; // Charge affects knockback
-
-        else if (CurrentAIState == AIState.Dropping)
-            modifiers.Knockback *= 0.5f * ChargeMultiplier;
-        else
-            modifiers.Knockback *= ChargeMultiplier; // Apply charge multiplier to other states
+        // The ring sweeps a target repeatedly, so it has to stay a wind-up rather than the payoff.
+        modifiers.Knockback *= CurrentAIState == AIState.Spinning
+            ? ChargeMultiplier * 0.3f
+            : ChargeMultiplier;
     }
 
-    private void ManageCaches()
+    #endregion
+
+    #region Drawing & Rendering
+
+    // Walked backwards from the head through the same OrbitOffset that positions it -- that shared
+    // derivation is what makes the trail track the radial exactly and close into a real circle.
+    private void UpdateTrail(Vector2 mountedCenter, float gfxOffY)
     {
-        var pos = Projectile.Center;
+        if (CurrentAIState != AIState.Spinning)
+            return;
 
-        if (cache == null)
+        trailPositions ??= new Vector2[TRAIL_POINTS];
+        trail ??= new VertexTrail(TRAIL_POINTS, TrailWidth, TrailColor);
+
+        var anchor = mountedCenter + new Vector2(0f, gfxOffY);
+        float arc = TrailArc;
+
+        for (int i = 0; i < TRAIL_POINTS; i++)
         {
-            cache = [];
-            for (var i = 0; i < 25; i++)
-            {
-                cache.Add(pos);
-            }
+            // 0 = tail, 1 = head, matching VertexTrail's convention that the last point is newest.
+            float factor = i / (float)(TRAIL_POINTS - 1);
+            trailPositions[i] = anchor + OrbitOffset(arc * (1f - factor));
         }
 
-        cache.Add(pos);
-        while (cache.Count > 25)
-        {
-            cache.RemoveAt(0);
-        }
+        trail.Positions = trailPositions;
     }
 
-    private void SpawnTrailNodes()
+    // Tapers to the tail, by less and less as the charge climbs: a low arc reads as a comet tail,
+    // while a closed ring keeps most of its width so the circle reads as a circle.
+    private float TrailWidth(float factor)
+        => TRAIL_WIDTH * MathHelper.Lerp(ChargeProgress * 0.8f, 1f, factor);
+
+    private Color TrailColor(float factor)
     {
-        // Only spawn while the flail is in motion — no trail while spinning idle
-        bool isMoving = CurrentAIState == AIState.LaunchingForward
-                     || CurrentAIState == AIState.Retracting
-                     || CurrentAIState == AIState.ForcedRetracting
-                     || CurrentAIState == AIState.Dropping;
+        // Squared, so the bright core stays gathered at the head -- which is what tells the player
+        // which way the thing is turning.
+        var color = Color.Lerp(TrailEdgeColor, TrailCoreColor, factor * factor);
 
-        if (!isMoving || cache == null || cache.Count < 2) return;
+        return color * MathHelper.Lerp(0.4f, 1f, ChargeProgress) * MathHelper.Lerp(0.2f, 1f, factor);
+    }
 
-        var mist = MetaballSystem.GetLayer<IceMistLayer>();
-        if (mist == null) return;
+    public void DrawPrimitives()
+    {
+        if (CurrentAIState != AIState.Spinning || trail == null)
+            return;
 
-        trailSpawnCounter++;
+        var effect = Assets.Shaders.LightningTrail.Asset.Value;
+        if (effect == null) return;
 
-        // Spawn across the cached positions every other frame —
-        // 25-30 nodes spread along the trail history.
-        // Every frame would be too dense; every other frame keeps it sparse.
-        if (trailSpawnCounter % 4 != 0) return;
+        var transform = Matrix.CreateTranslation(-Main.screenPosition.ToVector3())
+                      * Main.GameViewMatrix.TransformationMatrix
+                      * Matrix.CreateOrthographicOffCenter(0, Main.screenWidth, Main.screenHeight, 0, -1, 1);
 
-        int nodeCount = 16;
-        float cacheCount = cache.Count - 1;
+        effect.Parameters["time"]?.SetValue(Main.GameUpdateCount * 0.04f);
+        effect.Parameters["repeats"]?.SetValue(TRAIL_REPEATS);
+        effect.Parameters["transformMatrix"]?.SetValue(transform);
+        effect.Parameters["sampleTexture"]?.SetValue(
+            ModContent.Request<Texture2D>(Assets.Textures.VFX.EnergyTrail.KEY).Value);
 
-        for (int i = 0; i < nodeCount; i++)
-        {
-            // Sample evenly spaced positions across the cache
-            float t = i / (float)(nodeCount - 1);
-            int cacheIdx = (int)(t * cacheCount);
-            cacheIdx = Math.Clamp(cacheIdx, 0, cache.Count - 1);
-
-            Vector2 basePos = cache[cacheIdx];
-
-            // Small perpendicular scatter so nodes don't stack on a single line
-            Vector2 trailDir = Vector2.Zero;
-            if (cacheIdx < cache.Count - 1)
-                trailDir = Vector2.Normalize(cache[cacheIdx + 1] - cache[cacheIdx]);
-            Vector2 perpendicular = new(-trailDir.Y, trailDir.X);
-
-            float scatter = Main.rand.NextFloat(-6f, 6f);
-            Vector2 spawnPos = basePos + perpendicular * scatter
-                                + Main.rand.NextVector2Circular(3f, 3f);
-
-            // Nodes at the head of the trail are larger — they just spawned.
-            // Nodes toward the tail are smaller — they've been drifting.
-            // t = 0 is tail (small), t = 1 is head (larger).
-            float sizeLerp = t;
-            float radius = MathHelper.Lerp(3.5f, 9f + ChargeLevel * 1.5f, sizeLerp);
-            float life = MathHelper.Lerp(56f, 96f + ChargeLevel * 3f, sizeLerp);
-
-            // Nearly zero velocity — nodes sit in place and fade.
-            // A tiny outward drift gives them presence without movement.
-            Vector2 vel = perpendicular * Main.rand.NextFloat(-0.15f, 0.15f)
-                            + Main.rand.NextVector2Circular(0.1f, 0.1f);
-
-            mist.SpawnNode(spawnPos, vel, radius, life);
-        }
+        trail.Render(effect);
     }
 
     public override bool PreDraw(ref Color lightColor)
     {
-        var playerArmPosition = Main.GetPlayerArmPosition(Projectile);
-        playerArmPosition.Y -= Main.player[Projectile.owner].gfxOffY;
+        var texture = TextureAssets.Projectile[Projectile.type].Value;
+        var drawPos = Projectile.Center - Main.screenPosition + new Vector2(0f, Projectile.gfxOffY);
+        var drawOrigin = texture.Size() * 0.5f;
+        var spriteEffects = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-        var chainTexture = ModContent.Request<Texture2D>(ChainTexturePath);
-        var chainTextureExtra = ModContent.Request<Texture2D>(ChainTextureExtraPath);
-        Rectangle? chainSourceRectangle = null;
-        var chainHeightAdjustment = 0f;
+        DrawChain();
+        DrawAfterImages(lightColor);
 
-        var chainOrigin = chainSourceRectangle.HasValue ? chainSourceRectangle.Value.Size() / 2f : chainTexture.Size() / 2f;
-        var chainDrawPosition = Projectile.Center;
-        var vectorFromProjectileToPlayerArms = playerArmPosition.MoveTowards(chainDrawPosition, 4f) - chainDrawPosition;
-        var unitVectorFromProjectileToPlayerArms = vectorFromProjectileToPlayerArms.SafeNormalize(Vector2.Zero);
-        var chainSegmentLength = (chainSourceRectangle.HasValue ? chainSourceRectangle.Value.Height : chainTexture.Height()) + chainHeightAdjustment;
-        if (chainSegmentLength == 0)
+        Main.EntitySpriteDraw(texture, drawPos, null, Projectile.GetAlpha(lightColor), Projectile.rotation,
+            drawOrigin, Projectile.scale, spriteEffects, 0);
+
+        // Fully charged pulse, so the ready state stays legible with the ring off the side of the screen.
+        if (CurrentAIState == AIState.Spinning && FullyCharged)
         {
-            chainSegmentLength = 10;
-        }
-        var chainRotation = unitVectorFromProjectileToPlayerArms.ToRotation() + MathHelper.PiOver2;
-        var chainCount = 0;
-        var chainLengthRemainingToDraw = vectorFromProjectileToPlayerArms.Length() + chainSegmentLength / 2f;
+            float cycle = Main.GameUpdateCount % 30 / 30f;
+            float opacity = cycle < 0.15f ? MathF.Sin(cycle * MathHelper.Pi * 6.67f) : 0f;
 
-        while (chainLengthRemainingToDraw > 0f)
-        {
-            var chainDrawColor = Lighting.GetColor((int)chainDrawPosition.X / 16, (int)(chainDrawPosition.Y / 16f));
-
-            var chainTextureToDraw = chainTexture;
-            if (chainCount >= 4)
+            if (opacity > 0f)
             {
+                var flash = TrailCoreColor.ToVector4();
+                flash.W = 0f; // additive
 
+                Main.EntitySpriteDraw(texture, drawPos, null, new Color(flash) * opacity * 1.5f,
+                    Projectile.rotation, drawOrigin, Projectile.scale, spriteEffects, 0);
             }
-            else if (chainCount >= 2)
-            {
-                chainTextureToDraw = chainTextureExtra;
-                byte minValue = (byte)(140 + ChargeLevel * 20); // Brighter when charged
-                if (chainDrawColor.R < minValue)
-                    chainDrawColor.R = minValue;
-
-                if (chainDrawColor.G < minValue)
-                    chainDrawColor.G = minValue;
-
-                if (chainDrawColor.B < minValue)
-                    chainDrawColor.B = minValue;
-            }
-            else
-            {
-                chainTextureToDraw = chainTextureExtra;
-                // Add ice glow when charged
-                chainDrawColor = ChargeLevel > 0 ?
-                    Color.Lerp(Color.White, new Color(120, 200, 255), ChargeLevel * 0.3f) :
-                    Color.White;
-            }
-
-            Main.spriteBatch.Draw(chainTextureToDraw.Value, chainDrawPosition - Main.screenPosition, chainSourceRectangle, chainDrawColor, chainRotation, chainOrigin, 1f, SpriteEffects.None, 0f);
-
-            chainDrawPosition += unitVectorFromProjectileToPlayerArms * chainSegmentLength;
-            chainCount++;
-            chainLengthRemainingToDraw -= chainSegmentLength;
         }
 
-        if (CurrentAIState == AIState.LaunchingForward)
-        {
-            var projectileTexture = TextureAssets.Projectile[Projectile.type].Value;
-            Vector2 drawOrigin = new(projectileTexture.Width * 0.5f, Projectile.height * 0.5f);
-            var spriteEffects = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-            for (var k = 0; k < Projectile.oldPos.Length && k < StateTimer; k++)
-            {
-                var drawPos = Projectile.oldPos[k] - Main.screenPosition + drawOrigin + new Vector2(0f, Projectile.gfxOffY);
-                var color = Projectile.GetAlpha(lightColor) * ((Projectile.oldPos.Length - k) / (float)Projectile.oldPos.Length);
-
-                // Add charge glow
-                if (ChargeLevel > 0)
-                {
-                    color = Color.Lerp(color, new Color(120, 200, 255), ChargeLevel * 0.2f);
-                }
-
-                Main.spriteBatch.Draw(projectileTexture, drawPos, null, color, Projectile.rotation, drawOrigin, Projectile.scale - k / (float)Projectile.oldPos.Length / 3, spriteEffects, 0f);
-            }
-        }
-        return true;
+        return false;
     }
+
+    private void DrawChain()
+    {
+        var playerArmPos = Main.GetPlayerArmPosition(Projectile);
+        playerArmPos.Y -= Main.player[Projectile.owner].gfxOffY;
+
+        var chainTexture = ModContent.Request<Texture2D>(CHAIN_TEXTURE_PATH);
+        var chainOrigin = chainTexture.Size() * 0.5f;
+        var toPlayer = playerArmPos.MoveTowards(Projectile.Center, 4f) - Projectile.Center;
+        var chainDir = Vector2.Normalize(toPlayer);
+        var chainRotation = chainDir.ToRotation() + MathHelper.PiOver2;
+        var segmentLength = chainTexture.Height();
+
+        if (segmentLength == 0) segmentLength = 10;
+
+        var chainPos = Projectile.Center;
+        var remainingLength = toPlayer.Length() + segmentLength * 0.5f;
+        int segmentCount = 0;
+
+        while (remainingLength > 0f)
+        {
+            var chainColor = Lighting.GetColor((int)(chainPos.X / 16), (int)(chainPos.Y / 16));
+
+            // Frost climbs the chain from the head, so the charge is readable off the chain alone.
+            if (segmentCount < 4 && ChargeProgress > 0f)
+            {
+                float glow = ChargeProgress * (1f - segmentCount / 4f);
+                chainColor = Color.Lerp(chainColor, TrailCoreColor, glow);
+                chainColor = Color.Lerp(chainColor, TrailEdgeColor, glow * 0.4f);
+            }
+
+            Main.spriteBatch.Draw(chainTexture.Value, chainPos - Main.screenPosition, null,
+                chainColor, chainRotation, chainOrigin, 1f, SpriteEffects.None, 0f);
+
+            chainPos += chainDir * segmentLength;
+            segmentCount++;
+            remainingLength -= segmentLength;
+        }
+    }
+
+    private void DrawAfterImages(Color lightColor)
+    {
+        if (CurrentAIState != AIState.LaunchingForward) return;
+
+        var texture = TextureAssets.Projectile[Projectile.type].Value;
+        var drawOrigin = texture.Size() * 0.5f;
+        var spriteEffects = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+
+        for (int k = 0; k < Math.Min(Projectile.oldPos.Length, StateTimer); k++)
+        {
+            var drawPos = Projectile.oldPos[k] - Main.screenPosition + drawOrigin + new Vector2(0f, Projectile.gfxOffY);
+            float opacity = (float)(Projectile.oldPos.Length - k) / Projectile.oldPos.Length;
+            var color = Color.Lerp(Projectile.GetAlpha(lightColor) * opacity, TrailEdgeColor * opacity, ChargeProgress * 0.6f);
+
+            float scale = Projectile.scale - k / (float)Projectile.oldPos.Length / 3;
+            Main.spriteBatch.Draw(texture, drawPos, null, color, Projectile.rotation, drawOrigin, scale, spriteEffects, 0f);
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    ///     Head position <paramref name="behind" /> radians back along the orbit, relative to the
+    ///     player. The one description of the orbit -- the head and the trail both read it.
+    /// </summary>
+    private Vector2 OrbitOffset(float behind = 0f)
+    {
+        float angle = (SpinAngle - behind) * Facing;
+
+        return new Vector2(MathF.Cos(angle), MathF.Sin(angle) * ORBIT_SQUASH) * SpinRadius;
+    }
+
+    private void UpdateProjectileTransform(Vector2 mountedCenter)
+    {
+        Projectile.direction = Math.Sign(Projectile.velocity.X);
+        Projectile.spriteDirection = Projectile.direction;
+        Projectile.rotation = (mountedCenter - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+    }
+
+    private void UpdatePlayerAnimation(Player player, Vector2 mountedCenter)
+    {
+        Projectile.timeLeft = 2;
+        player.heldProj = Projectile.whoAmI;
+        player.SetDummyItemTime(2);
+        player.itemRotation = (Projectile.Center - mountedCenter).ToRotation();
+
+        if (Projectile.Center.X < mountedCenter.X)
+            player.itemRotation += MathHelper.Pi;
+
+        player.itemRotation = MathHelper.WrapAngle(player.itemRotation);
+    }
+
+    #endregion
+}
+
+/// <summary>
+///     A standing volume of freezing fog. The projectile is the field, not the picture -- it draws
+///     nothing, and feeds <see cref="IceMistLayer" /> instead, whose thresholded density field is
+///     what makes several overlapping clouds read as one bank of fog.
+/// </summary>
+/// <remarks>
+///     Spawned with zero damage it only freezes, which is what the wind-up drops on the ring.
+///     Spawned with damage it is a piece of a burst: bigger, shorter-lived, bites once and leaves a
+///     five second freeze. Immunity is static rather than local, so a burst lands as a single hit
+///     however many of its clouds overlap the target.
+/// </remarks>
+public class FrostCloudProj : ModProjectile
+{
+    public override string Texture => Assets.Textures.VFX.RadialGradient.KEY;
+
+    private const int LINGER_LIFETIME = 240;
+    private const int BURST_LIFETIME = 100;
+
+    private const float LINGER_RADIUS = 46f;
+    private const float BURST_RADIUS = 74f;
+
+    private const int LINGER_FROSTBURN = 90;
+    private const int BURST_FROSTBURN = 5 * 60;
+
+    /// <summary>Ticks from spawn a burst cloud deals damage for.</summary>
+    private const int BITE_TICKS = 20;
+
+    /// <summary>Ticks between re-freezes of something loitering in the field.</summary>
+    private const int REFREEZE_INTERVAL = 30;
+
+    private const int SWELL_TICKS = 12;
+    private const int FADE_TICKS = 40;
+
+    private bool Damaging => Projectile.damage > 0;
+    private float Radius => Damaging ? BURST_RADIUS : LINGER_RADIUS;
+    private int Lifetime => Damaging ? BURST_LIFETIME : LINGER_LIFETIME;
+    private int FrostburnTicks => Damaging ? BURST_FROSTBURN : LINGER_FROSTBURN;
+    private int Age => Lifetime - Projectile.timeLeft;
+
+    /// <summary>0 at spawn, 1 at full size, back to 0 at death.</summary>
+    private float Envelope => MathHelper.Clamp(Age / (float)SWELL_TICKS, 0f, 1f)
+                            * MathHelper.Clamp(Projectile.timeLeft / (float)FADE_TICKS, 0f, 1f);
+
+    public override void SetDefaults()
+    {
+        Projectile.width = Projectile.height = 16;
+        Projectile.friendly = true;
+        Projectile.penetrate = -1;
+        Projectile.tileCollide = false;
+        Projectile.ignoreWater = true;
+        Projectile.DamageType = DamageClass.MeleeNoSpeed;
+
+        Projectile.usesIDStaticNPCImmunity = true;
+        Projectile.idStaticNPCHitCooldown = BITE_TICKS;
+
+        Projectile.timeLeft = BURST_LIFETIME;
+    }
+
+    // Assigned here rather than in SetDefaults because damage -- which is what picks the profile --
+    // is not set until the projectile exists.
+    public override void OnSpawn(Terraria.DataStructures.IEntitySource source)
+        => Projectile.timeLeft = Lifetime;
+
+    public override void AI()
+    {
+        Projectile.velocity *= 0.91f;
+
+        // The field is the hitbox, so it grows with the envelope rather than biting at full width on
+        // the frame it appears.
+        int span = Math.Max((int)(Radius * 2f * Envelope), 2);
+        Projectile.Resize(span, span);
+
+        Freeze();
+        Fog();
+
+        Lighting.AddLight(Projectile.Center, 0.14f * Envelope, 0.24f * Envelope, 0.34f * Envelope);
+    }
+
+    // Frostburn on everything standing in the field. Separate from OnHitNPC: a lingering cloud never
+    // hits anything, and a burst cloud stops biting long before it fades.
+    private void Freeze()
+    {
+        if (Main.myPlayer != Projectile.owner || Age % REFREEZE_INTERVAL != 0)
+            return;
+
+        float radius = Radius * Envelope;
+
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            var npc = Main.npc[i];
+
+            if (!npc.active || npc.friendly || npc.dontTakeDamage || !npc.CanBeChasedBy(Projectile))
+                continue;
+
+            if (npc.Hitbox.ClosestPointInRect(Projectile.Center).DistanceSQ(Projectile.Center) <= radius * radius)
+                npc.AddBuff(BuffID.Frostburn, FrostburnTicks);
+        }
+    }
+
+    private void Fog()
+    {
+        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+            return;
+
+        float envelope = Envelope;
+        int count = Damaging ? 2 : 1;
+        float nodeRadius = Damaging ? 22f : 15f;
+
+        for (int i = 0; i < count; i++)
+        {
+            // Inset, because a blob has its own radius on top of this one -- the drawn fog should
+            // promise slightly less than the field delivers, never more.
+            var offset = Main.rand.NextVector2Circular(1f, 1f) * Radius * 0.62f * envelope;
+
+            mist.SpawnNode(Projectile.Center + offset,
+                offset * 0.012f + Projectile.velocity * 0.15f,
+                radius: Main.rand.NextFloat(nodeRadius * 0.6f, nodeRadius) * MathHelper.Lerp(0.5f, 1f, envelope),
+                life: Main.rand.NextFloat(26f, 48f));
+        }
+    }
+
+    /// <summary>A cloud is a volume, not the square hitbox <see cref="Projectile.Resize" /> gives it.</summary>
+    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
+    {
+        float radius = Radius * Envelope;
+
+        return targetHitbox.ClosestPointInRect(Projectile.Center).DistanceSQ(Projectile.Center) <= radius * radius;
+    }
+
+    public override bool? CanDamage() => Damaging && Age < BITE_TICKS;
+
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
+        => target.AddBuff(BuffID.Frostburn, FrostburnTicks);
+
+    public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
+        => modifiers.HitDirectionOverride = Math.Sign(target.Center.X - Projectile.Center.X);
+
+    /// <summary>The mist layer draws this. There is nothing else to put on the screen.</summary>
+    public override bool PreDraw(ref Color lightColor) => false;
 }

@@ -5,11 +5,7 @@ namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
 /// <summary>
 ///     Template showing the shape of a lore book: structure and presentation live here, the words live
-///     in <c>Localization/LoreLibrary</c>. Delete this once you have real books -- nothing else refers
-///     to it, since books autoload.
-///     <para>
-///     Read it in game with <c>/lorebook Example.FirstAccount</c>.
-///     </para>
+///     in <c>Localization/LoreLibrary</c>.
 /// </summary>
 public sealed class ExampleLoreBook : ModLoreBook
 {

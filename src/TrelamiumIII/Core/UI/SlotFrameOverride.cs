@@ -1,4 +1,3 @@
-// Ported from SubstrateMod, itself modified from Spirit Mod's Backpack slot.
 // Credits: Spirit Mod, GabeHasWon
 // https://github.com/GabeHasWon/SpiritReforged/blob/master/Common/UI/Misc/BasicItemSlot.cs#L8
 

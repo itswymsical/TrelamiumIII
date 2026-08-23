@@ -320,14 +320,62 @@ public abstract class Particle : ILoadable
         }
     }
 
-    internal void Draw(SpriteBatch spriteBatch)
+    /// <summary>
+    ///     A texture to wear in place of the class's own variant sheet.
+    /// </summary>
+    /// <remarks>
+    ///     Assigned after <see cref="ParticleSystem.Spawn{T}" /> returns, for debris whose sprite is
+    ///     not known until it spawns -- the pieces of a dead boss wearing the very gore textures the
+    ///     base game just threw, rather than a copy of them picked at load time.
+    ///     <para>
+    ///         Resolved per draw rather than per class, so it bypasses the registry entirely.
+    ///         <see cref="FrameCount" /> still applies to it.
+    ///     </para>
+    /// </remarks>
+    public Asset<Texture2D>? TextureOverride { get; set; }
+
+    /// <summary>
+    ///     Whether this particle draws into the additive pass. Costs a second batch across the whole
+    ///     list, so it is opt-in.
+    /// </summary>
+    public virtual bool HasGlow => false;
+
+    /// <summary>
+    ///     Drawn under <see cref="BlendState.Additive" />, before the body pass, so whatever this
+    ///     lays down sits behind the sprite.
+    /// </summary>
+    /// <remarks>
+    ///     Requires <see cref="HasGlow" />. <paramref name="texture" /> is the particle's own
+    ///     resolved sprite, which is what makes the vanilla Fallen Star trick available: sample the
+    ///     sprite into a bloom by stamping it around itself, instead of needing an authored glow
+    ///     texture that would have to be redrawn for every piece.
+    /// </remarks>
+    public virtual void DrawGlow(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, float opacity) { }
+
+    /// <summary>The sprite this particle is wearing, or null while nothing has resolved yet.</summary>
+    protected Texture2D? ResolveTexture()
     {
+        if (TextureOverride is { Value: { } overridden })
+            return overridden;
+
         if (VariantTextures is null)
-            return;
+            return null;
 
         int index = Math.Clamp(Variant, 0, VariantTextures.Length - 1);
 
-        if (VariantTextures[index] is not { Value: { } texture })
+        return VariantTextures[index]?.Value;
+    }
+
+    internal void DrawGlowPass(SpriteBatch spriteBatch)
+    {
+        if (ResolveTexture() is not { } texture)
+            return;
+
+        DrawGlow(spriteBatch, texture, Position - Main.screenPosition, Opacity);
+    }
+    internal void Draw(SpriteBatch spriteBatch)
+    {
+        if (ResolveTexture() is not { } texture)
             return;
 
         int frames = Math.Max(FrameCount, 1);

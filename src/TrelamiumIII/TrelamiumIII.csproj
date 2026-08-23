@@ -18,9 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Common\Generation\" />
     <Folder Include="Content\Menus\" />
-    <Folder Include="Content\Lore\" />
-    <Folder Include="Assets\" />
   </ItemGroup>
 
 </Project>

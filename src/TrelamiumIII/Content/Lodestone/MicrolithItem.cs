@@ -5,6 +5,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.UI;
+using TrelamiumIII.Common.Systems;
 
 namespace TrelamiumIII.Content.Lodestone;
 
@@ -52,67 +53,82 @@ public class MicrolithNotificationSystem : ModSystem
 {
     public override void PostUpdateWorld()
     {
+        if (Main.dedServ)
+            return;
+
         if (Main.LocalPlayer?.active == true && !Main.gameMenu)
             HarvestNotificationManager.UpdateNotifications();
     }
+
+    /// <remarks>
+    ///     The list is static, so without this a notification outlives the world that produced it and
+    ///     the next world starts out able to stack onto an entry no tracker is drawing.
+    /// </remarks>
+    public override void ClearWorld() => HarvestNotificationManager.Clear();
 }
 
 public class MicrolithGlobalTile : GlobalTile
 {
-    private bool bonusApplied;
+    private const float BONUS_CHANCE = 0.15f;
 
     public override void Drop(int i, int j, int type)
     {
         base.Drop(i, j, type);
 
-        Player player = Main.LocalPlayer;
-        if (!player.GetModPlayer<MicrolithPlayer>().MicrolithEquipped)
-        {
-            bonusApplied = false;
+        // Drop resolves on the server in multiplayer, where Main.LocalPlayer is the dummy player 255
+        // and never has the accessory equipped. GetPlayerForTile is tModLoader's documented answer for
+        // attributing a tile operation to whoever caused it, and returns the local player in single
+        // player.
+        Player player = WorldGen.GetPlayerForTile(i, j);
+        if (player is null || !player.active)
             return;
-        }
 
-        bool isValidTile = Main.tileSolid[type] && (Main.tileSpelunker[type] || TileID.Sets.Ore[type]);
+        if (!player.GetModPlayer<MicrolithPlayer>().MicrolithEquipped)
+            return;
 
-        if (isValidTile && Main.rand.NextFloat() < 0.15f)
-        {
-            int itemType = GetGemOrOreItem(type);
-            int extraItems = Main.rand.Next(1, 3);
+        // Kept a subset of PlacedTileTracker.IsValuable, so nothing can be paid out on that the
+        // tracker never had a chance to record.
+        if (!Main.tileSolid[type] || !PlacedTileTracker.IsValuable(type))
+            return;
 
-            bonusApplied = true;
-            player.QuickSpawnItem(new EntitySource_TileBreak(i, j), itemType, extraItems);
-            HarvestNotificationManager.ShowHarvestNotification(itemType, extraItems);
-        }
-        else
-        {
-            bonusApplied = false;
-        }
+        // The block has to have been found, not carried in. Without this any single ore block can be
+        // placed and re-mined indefinitely for a net gain. Released either way -- the tile is on its
+        // way out, so keeping the mark would only leave the set to grow.
+        bool wasPlacedByPlayer = PlacedTileTracker.WasPlacedByPlayer(i, j);
+        PlacedTileTracker.Forget(i, j);
+
+        if (wasPlacedByPlayer)
+            return;
+
+        if (Main.rand.NextFloat() >= BONUS_CHANCE)
+            return;
+
+        int itemType = GetGemOrOreItem(i, j, type);
+
+        // GetItemDropFromTypeAndStyle returns 0 for a tile that drops nothing. Spawning type 0 yields
+        // a blank item and a notification titled after it, so there is nothing to award here.
+        if (itemType <= 0)
+            return;
+
+        int extraItems = Main.rand.Next(1, 3);
+        player.QuickSpawnItem(new EntitySource_TileBreak(i, j), itemType, extraItems);
+
+        PlayHarvestFeedback(i, j, player, itemType, extraItems);
     }
 
-    private int GetGemOrOreItem(int tileType)
+    /// <remarks>
+    ///     Runs from <see cref="Drop" /> rather than <see cref="KillTile" />. The KillTile hook fires
+    ///     <i>before</i> drops resolve -- its <c>fail</c> and <c>noItem</c> parameters exist precisely
+    ///     to influence them -- so a flag set during Drop and read in KillTile lands one tile late,
+    ///     playing the previous break's effects on the next block mined.
+    /// </remarks>
+    private static void PlayHarvestFeedback(int i, int j, Player player, int itemType, int count)
     {
-        // gem blocks drop actual gems instead of blocks
-        return tileType switch
-        {
-            63 => ItemID.Sapphire,
-            64 => ItemID.Ruby,
-            65 => ItemID.Emerald,
-            66 => ItemID.Topaz,
-            67 => ItemID.Amethyst,
-            68 => ItemID.Diamond,
-            _ => TileLoader.GetItemDropFromTypeAndStyle(tileType)
-        };
-    }
+        // Dust, sound and the popup are all local presentation. On a server there is no one to show
+        // them to, and in multiplayer they belong to the client that did the mining.
+        if (Main.dedServ || player.whoAmI != Main.myPlayer)
+            return;
 
-    public override void KillTile(int i, int j, int type, ref bool fail, ref bool effectOnly, ref bool noItem)
-    {
-        base.KillTile(i, j, type, ref fail, ref effectOnly, ref noItem);
-
-        if (!bonusApplied) return;
-
-        bonusApplied = false;
-
-        // sparkly harvest effects
         Vector2 tilePos = new Vector2(i * 16, j * 16);
         for (int dustCount = 0; dustCount < 30; dustCount++)
         {
@@ -122,6 +138,29 @@ public class MicrolithGlobalTile : GlobalTile
         }
 
         SoundEngine.PlaySound(SoundID.CoinPickup, tilePos);
+        HarvestNotificationManager.ShowHarvestNotification(itemType, count);
+    }
+
+    private static int GetGemOrOreItem(int i, int j, int tileType)
+    {
+        // gem blocks drop actual gems instead of blocks
+        switch (tileType)
+        {
+            case TileID.Sapphire: return ItemID.Sapphire;
+            case TileID.Ruby: return ItemID.Ruby;
+            case TileID.Emerald: return ItemID.Emerald;
+            case TileID.Topaz: return ItemID.Topaz;
+            case TileID.Amethyst: return ItemID.Amethyst;
+            case TileID.Diamond: return ItemID.Diamond;
+        }
+
+        // Style has to come from the tile, not default to 0. A multi-style ore -- modded ores sharing
+        // one tile type, most obviously -- otherwise always pays out as whichever variant sits at
+        // style 0.
+        Tile tile = Framing.GetTileSafely(i, j);
+        int style = tile.TileFrameX / 18;
+
+        return TileLoader.GetItemDropFromTypeAndStyle(tileType, style);
     }
 }
 
@@ -232,6 +271,12 @@ public static class HarvestNotificationManager
 
     public static void ShowHarvestNotification(int itemType, int count)
     {
+        // ShouldBeRemoved is the same predicate InGameNotificationsTracker prunes on, and its sweep
+        // can run before ours. Testing it here rather than trusting the list closes the window where
+        // an expired entry is still present: stacking onto one would reset a timer on a notification
+        // the vanilla tracker has already dropped, and the pickup would show nothing at all.
+        UpdateNotifications();
+
         var existing = ActiveNotifications.FirstOrDefault(n => n.ItemType == itemType);
 
         if (existing != null)
@@ -256,4 +301,7 @@ public static class HarvestNotificationManager
             }
         }
     }
+
+    /// <summary>Drops every tracked notification when leaving a world.</summary>
+    public static void Clear() => ActiveNotifications.Clear();
 }

@@ -116,7 +116,7 @@ public sealed class InlineTextureSnippet : TextSnippet
         {
             // Centred on the line rather than sat on the baseline: the icon is taller than the
             // glyphs, and aligning their tops would leave it hanging below the text.
-            Vector2 iconCenter = position + new Vector2(labelSize.X + gap + iconSize.X * 0.5f, size.Y * 0.5f);
+            Vector2 iconCenter = position + new Vector2(labelSize.X + gap + iconSize.X * 0.5f, size.Y * 0.325f);
 
             spriteBatch.Draw(texture!.Value, iconCenter, source, Color.White * (color.A / 255f), 0f, source.Size() * 0.5f, drawScale, SpriteEffects.None, 0f);
         }

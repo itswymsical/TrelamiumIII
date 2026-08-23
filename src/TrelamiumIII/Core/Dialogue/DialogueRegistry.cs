@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
-using TrelamiumIII.Core.Dialogue.Definitions;
 
 namespace TrelamiumIII.Core.Dialogue;
 
 /// <summary>
 ///  Central registry for code-defined dialogue sequences. Each sequence is a list of lines, and each line.
+///  <para>Note: loading is handled via ILoadable so this is mostly plain data</para>
 /// </summary>
 public static class DialogueRegistry
 {
@@ -14,17 +13,10 @@ public static class DialogueRegistry
     public static void Add(DialogueSequence sequence) => sequences[sequence.Key] = sequence;
 
     /// <summary>Returns the registered sequence for the key, or null if none (use the hjson fallback).</summary>
-    public static DialogueSequence Get(string key) =>
+    public static DialogueSequence? Get(string key) =>
         key != null && sequences.TryGetValue(key, out var sequence) ? sequence : null;
 
     public static bool Has(string key) => key != null && sequences.ContainsKey(key);
-
-    /// <summary>Registers all code-defined dialogue. Called once from mod load.</summary>
-    public static void Load()
-    {
-        ExampleDialogue.Register();
-        // as we add more dialogue, register their respective classes here.
-    }
 
     public static void Unload() => sequences.Clear();
 }

@@ -1,7 +1,5 @@
 displayName = Trelamium III
 author = wymsical
 version = 0.1
-
-# The .ttf sources are bake input for tools/FontBaker, not runtime assets.
-# The game reads the .dsf + atlas pair instead, so keep 2.6 MB of fonts out of the .tmod.
 buildIgnore = *.ttf
+modReferences = ModLiquidLib, SubworldLibrary

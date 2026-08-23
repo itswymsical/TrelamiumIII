@@ -428,8 +428,14 @@ public class WorkshopStationPet : ModProjectile
 
     private bool HasFloorBelow()
     {
-        int tileX = (int)(Projectile.Center.X / 16f);
         int tileY = (int)(Projectile.Bottom.Y / 16f);
+
+        // Swept across the whole footprint rather than down the centre column alone. A furnace is
+        // three tiles wide, and a platform run it is half-overhanging is still somewhere it can
+        // stand -- checking only the middle had wide stations refusing to come down at the end of a
+        // walkway.
+        int left = (int)(Projectile.Left.X / 16f);
+        int right = (int)(Projectile.Right.X / 16f);
 
         for (int i = 0; i < 8; i++)
         {
@@ -438,11 +444,37 @@ public class WorkshopStationPet : ModProjectile
             if (y < 0 || y >= Main.maxTilesY)
                 return false;
 
-            if (WorldGen.SolidTile(tileX, y))
-                return true;
+            for (int x = left; x <= right; x++)
+            {
+                if (IsStandable(x, y))
+                    return true;
+            }
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     Whether a tile is something a station could come down onto.
+    /// </summary>
+    /// <remarks>
+    ///     Deliberately not <see cref="WorldGen.SolidTile(int, int, bool)" />, which excludes
+    ///     anything <see cref="Main.tileSolidTop" /> -- platforms, most notably. A pet that had
+    ///     given up and taken off would then never find a floor over a platform, so it hovered
+    ///     beside the player indefinitely instead of landing and resuming its hop.
+    ///     <para>
+    ///         <see cref="Collision.TileCollision" /> already stops the fall on platforms, so this
+    ///         only ever needed to agree with it about what counts as ground.
+    ///     </para>
+    /// </remarks>
+    private static bool IsStandable(int tileX, int tileY)
+    {
+        Tile tile = Framing.GetTileSafely(tileX, tileY);
+
+        if (!tile.HasUnactuatedTile)
+            return false;
+
+        return Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];
     }
 
     private void Recall(Player owner)

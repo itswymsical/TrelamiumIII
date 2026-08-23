@@ -11,98 +11,19 @@ public delegate float TrailWidthFunction(float factor);
 public delegate Color TrailColorFunction(float factor);
 
 // -----------------------------------------------------------------------
-// VertexBuffer
-// Owns DynamicVertexBuffer and DynamicIndexBuffer on the GPU.
-// Pre-allocated at construction SetDataOptions.Discard lets the
-// driver orphan the old buffer instead of stalling the pipeline.
-// All GPU resource creation and disposal is queued to the main thread.
-// -----------------------------------------------------------------------
-public sealed class VertexBuffer : IDisposable
-{
-    readonly GraphicsDevice device;
-    DynamicVertexBuffer? vertexBuffer;
-    DynamicIndexBuffer? indexBuffer;
-
-    public bool IsReady => vertexBuffer != null && indexBuffer != null;
-    public bool IsDisposed { get; private set; }
-
-    public VertexBuffer(GraphicsDevice device, int maxVertices, int maxIndices)
-    {
-        this.device = device;
-
-        Main.QueueMainThreadAction(() =>
-        {
-            vertexBuffer = new DynamicVertexBuffer(device,
-                typeof(VertexPositionColorTexture), maxVertices, BufferUsage.WriteOnly);
-            indexBuffer = new DynamicIndexBuffer(device,
-                IndexElementSize.SixteenBits, maxIndices, BufferUsage.WriteOnly);
-        });
-    }
-
-    public void Upload(VertexPositionColorTexture[] vertices, int vertexCount,
-                       short[] indices, int indexCount)
-    {
-        if (!IsReady || IsDisposed) return;
-
-        vertexBuffer!.SetData(0, vertices, 0, vertexCount,
-            VertexPositionColorTexture.VertexDeclaration.VertexStride,
-            SetDataOptions.Discard);
-
-        indexBuffer!.SetData(0, indices, 0, indexCount,
-            SetDataOptions.Discard);
-    }
-
-    public void Draw(Effect effect, Matrix world)
-    {
-        if (!IsReady || IsDisposed) return;
-
-        device.SetVertexBuffer(vertexBuffer);
-        device.Indices = indexBuffer;
-        device.RasterizerState = RasterizerState.CullNone;
-        device.DepthStencilState = DepthStencilState.None;
-
-        var view = Main.GameViewMatrix.TransformationMatrix;
-        var projection = Matrix.CreateOrthographicOffCenter(
-            0, Main.screenWidth, Main.screenHeight, 0, -1, 1);
-
-        effect.Parameters["uWorldViewProjection"]
-            ?.SetValue(world * view * projection);
-
-        foreach (var pass in effect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            device.DrawIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                0, 0, vertexBuffer!.VertexCount,
-                0, indexBuffer!.IndexCount / 3);
-        }
-    }
-
-    public void Dispose()
-    {
-        if (IsDisposed) return;
-        IsDisposed = true;
-        GC.SuppressFinalize(this);
-
-        Main.QueueMainThreadAction(() =>
-        {
-            vertexBuffer?.Dispose();
-            indexBuffer?.Dispose();
-        });
-    }
-}
-
-// -----------------------------------------------------------------------
 // VertexTrail
 // A vertex strip that follows a list of world-space positions.
 //
-// The mesh is two rows of vertices top and bottom  offset from each
-// spine point by the perpendicular scaled by widthFn. Every adjacent
-// pair of spine points forms two triangles.
+// The mesh is two rows of vertices, top and bottom, offset from each spine
+// point by the perpendicular scaled by widthFn. Every adjacent pair of
+// spine points forms two triangles.
 //
-// Both the GPU buffers and the CPU staging arrays are allocated once
-// at construction. GenerateMesh writes into those arrays every frame
-// zero heap allocation per draw call.
+// The staging arrays are allocated once at construction and the index list
+// is built once with them -- it only ever depends on pointCount. Drawing
+// goes through DrawUserIndexedPrimitives, so a trail owns no GPU resources
+// of its own: nothing to allocate per instance, nothing to wait on before
+// the first frame renders, and nothing to leak when a projectile dies
+// without anyone disposing it.
 //
 // Usage:
 //   trail = new VertexTrail(pointCount, widthFn, colorFn);
@@ -110,7 +31,7 @@ public sealed class VertexBuffer : IDisposable
 //   trail.Positions = positionBuffer;
 //   trail.Render(effect);
 // -----------------------------------------------------------------------
-public sealed class VertexTrail : IDisposable
+public sealed class VertexTrail
 {
     readonly int pointCount;
     readonly TrailWidthFunction widthFn;
@@ -119,10 +40,6 @@ public sealed class VertexTrail : IDisposable
     // Pre-allocated staging arrays written into every frame, never replaced
     readonly VertexPositionColorTexture[] stagingVertices;
     readonly short[] stagingIndices;
-
-    readonly VertexBuffer buffer;
-
-    public bool IsDisposed { get; private set; }
 
     // Positions[0] = tail, Positions[^1] = head.
     // Must match pointCount exactly.
@@ -135,21 +52,43 @@ public sealed class VertexTrail : IDisposable
         this.colorFn = colorFn;
 
         // Two vertices per spine point (top + bottom row)
-        var maxVertices = pointCount * 2;
+        stagingVertices = new VertexPositionColorTexture[pointCount * 2];
 
         // Two triangles between each adjacent pair of spine points,
         // each triangle defined by 3 indices
-        var maxIndices = 6 * (pointCount - 1);
+        stagingIndices = new short[6 * (pointCount - 1)];
 
-        stagingVertices = new VertexPositionColorTexture[maxVertices];
-        stagingIndices = new short[maxIndices];
+        BuildIndices();
+    }
 
-        buffer = new VertexBuffer(Main.graphics.GraphicsDevice, maxVertices, maxIndices);
+    /// <summary>
+    ///     Winding is a pure function of <see cref="pointCount" />, so it is written once here
+    ///     rather than rebuilt and re-uploaded on every frame of every trail.
+    /// </summary>
+    void BuildIndices()
+    {
+        // Two triangles per segment:
+        // (k+n, k+n+1, k+1) and (k+1, k, k+n)
+        for (short k = 0; k < pointCount - 1; k++)
+        {
+            var b = k * 6;
+            stagingIndices[b] = (short)(k + pointCount);
+            stagingIndices[b + 1] = (short)(k + pointCount + 1);
+            stagingIndices[b + 2] = (short)(k + 1);
+            stagingIndices[b + 3] = (short)(k + 1);
+            stagingIndices[b + 4] = k;
+            stagingIndices[b + 5] = (short)(k + pointCount);
+        }
     }
 
     void BuildMesh()
     {
         var pos = Positions!;
+
+        // Carried between iterations so a run of identical points -- a padded tail, or a
+        // projectile that has stopped dead against a tile -- keeps the ribbon's last known
+        // orientation instead of collapsing it and flipping the strip inside out as it recovers.
+        var perp = Vector2.Zero;
 
         for (var k = 0; k < pos.Length; k++)
         {
@@ -165,7 +104,9 @@ public sealed class VertexTrail : IDisposable
                 : pos[^1] + (pos[^1] - pos[^2]);
 
             var toNext = (next - current).SafeNormalize(Vector2.Zero);
-            var perp = toNext.RotatedBy(MathHelper.PiOver2);
+
+            if (toNext != Vector2.Zero)
+                perp = toNext.RotatedBy(MathHelper.PiOver2);
 
             // Top row: indices 0..n-1
             // Bottom row: indices n..2n-1
@@ -179,39 +120,39 @@ public sealed class VertexTrail : IDisposable
                 color,
                 new Vector2(factor, 1f));
         }
-
-        // Two triangles per segment:
-        // (k+n, k+n+1, k+1) and (k+1, k, k+n)
-        for (short k = 0; k < pointCount - 1; k++)
-        {
-            var b = k * 6;
-            stagingIndices[b] = (short)(k + pointCount);
-            stagingIndices[b + 1] = (short)(k + pointCount + 1);
-            stagingIndices[b + 2] = (short)(k + 1);
-            stagingIndices[b + 3] = (short)(k + 1);
-            stagingIndices[b + 4] = k;
-            stagingIndices[b + 5] = (short)(k + pointCount);
-        }
     }
 
     public void Render(Effect effect, Vector2? screenOffset = null)
     {
-        if (Positions == null || IsDisposed || effect == null) return;
+        if (Positions == null || effect == null || Positions.Length != pointCount)
+            return;
 
         BuildMesh();
-        buffer.Upload(stagingVertices, stagingVertices.Length,
-                      stagingIndices, stagingIndices.Length);
+
+        var device = Main.graphics.GraphicsDevice;
+
+        device.RasterizerState = RasterizerState.CullNone;
+        device.DepthStencilState = DepthStencilState.None;
 
         var offset = screenOffset ?? -Main.screenPosition;
-        buffer.Draw(effect, Matrix.CreateTranslation(new Vector3(offset, 0f)));
-    }
+        var world = Matrix.CreateTranslation(new Vector3(offset, 0f));
+        var view = Main.GameViewMatrix.TransformationMatrix;
+        var projection = Matrix.CreateOrthographicOffCenter(
+            0, Main.screenWidth, Main.screenHeight, 0, -1, 1);
 
-    public void Dispose()
-    {
-        if (IsDisposed) return;
-        IsDisposed = true;
-        GC.SuppressFinalize(this);
-        buffer?.Dispose();
+        // Only shaders that take the transform themselves use this. pixelTrail wants its own
+        // `transformMatrix`, which the caller sets alongside its other parameters.
+        effect.Parameters["uWorldViewProjection"]?.SetValue(world * view * projection);
+
+        foreach (var pass in effect.CurrentTechnique.Passes)
+        {
+            pass.Apply();
+
+            device.DrawUserIndexedPrimitives(
+                PrimitiveType.TriangleList,
+                stagingVertices, 0, stagingVertices.Length,
+                stagingIndices, 0, stagingIndices.Length / 3);
+        }
     }
 }
 
@@ -244,19 +185,45 @@ public sealed class TrailPositionCache
         buffer[0] = position;
     }
 
-    // Write into an existing array, oldest position first (tail to head).
-    // If the cache isn't full yet, the tail is padded with the oldest known point.
+    /// <summary>
+    ///     Writes into an existing array, oldest position first, so
+    ///     <c>destination[^1]</c> is always the newest.
+    /// </summary>
+    /// <remarks>
+    ///     While the cache is still filling, the shortfall is padded onto the <i>tail</i> with the
+    ///     oldest known point. Padding the far end instead left the newest position sitting in the
+    ///     middle of the array and the head pinned to wherever the projectile spawned, which drew
+    ///     the ribbon stretched back to the throw point for its first frames -- most visible on a
+    ///     fast projectile, where those frames cover a lot of ground.
+    /// </remarks>
     public void Fill(Vector2[] destination)
     {
+        if (count == 0)
+        {
+            Array.Clear(destination);
+            return;
+        }
+
         var fillCount = Math.Min(count, destination.Length);
+        var pad = destination.Length - fillCount;
 
-        // Write from oldest (tail) to newest (head)
+        for (var i = 0; i < pad; i++)
+            destination[i] = buffer[count - 1];
+
         for (var i = 0; i < fillCount; i++)
-            destination[i] = buffer[fillCount - 1 - i];
+            destination[pad + i] = buffer[fillCount - 1 - i];
+    }
 
-        // Pad with the oldest known point if the cache isn't full yet
-        for (var i = fillCount; i < destination.Length; i++)
-            destination[i] = count > 0 ? buffer[count - 1] : Vector2.Zero;
+    /// <summary>
+    ///     Fills the whole history with one position, so a trail starts collapsed on its projectile
+    ///     rather than growing out of a padded tail. Call on spawn.
+    /// </summary>
+    public void Prime(Vector2 position)
+    {
+        count = capacity;
+
+        for (var i = 0; i < capacity; i++)
+            buffer[i] = position;
     }
 
     public void Reset() => count = 0;

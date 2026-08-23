@@ -31,12 +31,10 @@ internal delegate BookBlock BlockFactory(LoreText text, BookContents contents);
 internal delegate BookDecoration DecorationFactory(LoreText text);
 
 /// <summary>
-///     A book's structure: an ordered list of blocks, plus the decorations pinned to them.
+///     an ordered list of blocks, plus the decorations pinned to them.
 /// </summary>
 /// <remarks>
-///     A definition holds factories rather than blocks. Every reading builds its own blocks, which is
-///     what keeps two readers -- or one reader who changed language between them -- from sharing
-///     laid-out state.
+///     A definition holds factories rather than blocks.
 /// </remarks>
 public sealed class LoreBookDefinition
 {

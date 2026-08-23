@@ -1,7 +1,10 @@
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Interfaces;
+using TrelamiumIII.Core.Graphics.Metaballs;
+using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 
@@ -33,9 +36,14 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
     private float oldRotation;
 
+    private const int TRAIL_POINTS = 15;
+
     TrailPositionCache? _trailCache;
     Vector2[]? _trailPositions;
     VertexTrail? _trail;
+
+    /// <summary>Whether the axe is travelling rather than buried in something.</summary>
+    private bool InFlight => !stickingToNPC && !stickingToTile && Projectile.velocity != Vector2.Zero;
 
     public override void SetStaticDefaults()
     {
@@ -63,9 +71,22 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         base.SetDefaults();
     }
 
+    /// <summary>
+    ///     Seeds the whole trail history on the throw. Without it the ribbon spends its first
+    ///     fifteen ticks growing out of a tail padded at the spawn point, and an axe this fast has
+    ///     already crossed half a screen by then.
+    /// </summary>
+    public override void OnSpawn(IEntitySource source)
+    {
+        _trailCache ??= new TrailPositionCache(TRAIL_POINTS);
+        _trailCache.Prime(Projectile.Center);
+    }
+
     public override void AI()
     {
         UpdateTrail();
+        TrailMist();
+
         if (stickingToNPC)
         {
             if (Target.active && !Target.dontTakeDamage)
@@ -214,6 +235,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         }
 
         SoundEngine.PlaySound(SoundID.Item50, Projectile.position);
+        BurstMist(Projectile.Center, 0.8f);
         StickToTile();
         return false;
     }
@@ -221,6 +243,10 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
         SoundEngine.PlaySound(SoundID.Item50, target.position);
+
+        // A crit is the hit that frostburns, so it gets the heavier cloud to match.
+        BurstMist(Projectile.Center, hit.Crit ? 1.4f : 1f);
+
         if (hit.Crit)
         {
             target.AddBuff(BuffID.Frostburn, 40 + damageDone / 10);
@@ -289,10 +315,10 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
     private void UpdateTrail()
     {
-        _trailCache ??= new TrailPositionCache(15);
-        _trailPositions ??= new Vector2[15];
+        _trailCache ??= new TrailPositionCache(TRAIL_POINTS);
+        _trailPositions ??= new Vector2[TRAIL_POINTS];
 
-        _trail ??= new VertexTrail(15,
+        _trail ??= new VertexTrail(TRAIL_POINTS,
             f => f * 60f,
             f => new Color(120, 200, 255) * 0.6f * MathF.Pow(f, 2f));
 
@@ -301,6 +327,50 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         _trailCache.Update(Projectile.Center - Projectile.velocity.SafeNormalize(Vector2.Zero));
         _trailCache.Fill(_trailPositions);
         _trail.Positions = _trailPositions;
+    }
+
+    /// <summary>
+    ///     Frost shed off the blade in flight. Thin on purpose: the ribbon is the axe's main read,
+    ///     and mist heavy enough to compete with it just smears the arc.
+    /// </summary>
+    private void TrailMist()
+    {
+        if (!InFlight || !Main.rand.NextBool(2))
+            return;
+
+        // Thrown off the back of the swing rather than dropped on the axe, so the fog reads as
+        // something being torn loose by the spin.
+        Vector2 back = -Projectile.velocity.SafeNormalize(Vector2.Zero);
+
+        MetaballSystem.GetLayer<IceMistLayer>()?.SpawnNode(
+            Projectile.Center + Main.rand.NextVector2Circular(6f, 6f),
+            back * Main.rand.NextFloat(0.3f, 1.1f) + Main.rand.NextVector2Circular(0.3f, 0.3f),
+            radius: Main.rand.NextFloat(9f, 16f),
+            life: Main.rand.NextFloat(20f, 34f)
+        );
+    }
+
+    /// <summary>The puff of frost thrown out where the axe bites in.</summary>
+    private static void BurstMist(Vector2 position, float scale = 1f)
+    {
+        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+            return;
+
+        int count = (int)(7 * scale);
+
+        for (int i = 0; i < count; i++)
+        {
+            float angle = MathHelper.TwoPi / count * i;
+            Vector2 velocity = angle.ToRotationVector2() * Main.rand.NextFloat(1.2f, 2.6f) * scale
+                               + Main.rand.NextVector2Circular(0.4f, 0.4f);
+
+            mist.SpawnNode(
+                position + velocity * 3f,
+                velocity,
+                radius: Main.rand.NextFloat(13f, 24f) * scale,
+                life: Main.rand.NextFloat(28f, 48f)
+            );
+        }
     }
 
     public void DrawPrimitives()

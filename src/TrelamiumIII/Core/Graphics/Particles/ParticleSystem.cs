@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Common.Configs;
 
 namespace TrelamiumIII.Core.Graphics.Particles;
 
@@ -16,12 +17,14 @@ public sealed class ParticleSystem : ModSystem
 {
     /// <summary>Pass as <c>variant</c> to <see cref="Spawn{T}" /> to pick one at random.</summary>
     public const int RANDOM_VARIANT = -1;
-
     /// <summary>
     ///     Past this, the oldest particles are dropped. A burst that overruns the budget costs
     ///     thinner debris rather than the frame rate.
     /// </summary>
-    private const int MAX_PARTICLES = 256;
+    private static int MAX_PARTICLES => ModContent.GetInstance<VFXConfig>().ParticleCount;
+
+    /// <summary>Marks a <see cref="Particle.Textures" /> entry as one of Terraria's own.</summary>
+    private const string VANILLA_PREFIX = "Images/";
 
     private static readonly List<Particle> particles = [];
     private static readonly Dictionary<System.Type, Asset<Texture2D>[]> registry = [];
@@ -43,9 +46,30 @@ public sealed class ParticleSystem : ModSystem
         var assets = new Asset<Texture2D>[paths.Length];
 
         for (int i = 0; i < paths.Length; i++)
-            assets[i] = ModContent.Request<Texture2D>(paths[i]);
+            assets[i] = RequestTexture(paths[i]);
 
         registry[prototype.GetType()] = assets;
+    }
+
+    /// <summary>
+    ///     Resolves one texture path, from either the mod or the base game.
+    /// </summary>
+    /// <remarks>
+    ///     A path under <c>Images/</c> is Terraria's own and has to be requested from
+    ///     <see cref="Main.Assets" />; <see cref="ModContent" /> only knows about mod content and
+    ///     throws on a vanilla key. This is what lets a particle wear a vanilla sprite -- the gore
+    ///     sheets in particular -- rather than needing a copy of it traced into the mod.
+    ///     <para>
+    ///         Loaded immediately, unlike mod content. The registry hands every spawn the same
+    ///         <see cref="Asset{T}" />, so a deferred vanilla request would leave the first burst
+    ///         drawing nothing on the frames before it resolved.
+    ///     </para>
+    /// </remarks>
+    private static Asset<Texture2D> RequestTexture(string path)
+    {
+        return path.StartsWith(VANILLA_PREFIX, StringComparison.Ordinal)
+            ? Main.Assets.Request<Texture2D>(path, AssetRequestMode.ImmediateLoad)
+            : ModContent.Request<Texture2D>(path);
     }
 
     /// <summary>
@@ -149,21 +173,67 @@ public sealed class ParticleSystem : ModSystem
 
         var spriteBatch = Main.spriteBatch;
 
-        // PointClamp to keep the pixel art crisp, and the game view matrix so debris tracks the
-        // world through zoom exactly like the entities it broke off.
+        // Two passes, batched by blend mode rather than by particle, for the same reason the ink
+        // layers split DrawInk from DrawLight: a glow *adds* and a body *occludes*, and
+        // interleaving them per particle would mean a SpriteBatch restart for every particle
+        // instead of two for the whole list.
+        //
+        // Glow first, so it lands behind the sprite it belongs to. A particle that wants the
+        // vanilla Fallen Star look -- the sprite sampled into a bloom around itself -- gets it by
+        // overriding DrawGlow, and pays nothing when it does not.
+        if (AnyGlow())
+        {
+            BeginPass(spriteBatch, BlendState.Additive);
+
+            foreach (var particle in particles)
+            {
+                if (particle.HasGlow)
+                    particle.DrawGlowPass(spriteBatch);
+            }
+
+            spriteBatch.End();
+        }
+
+        BeginPass(spriteBatch, BlendState.AlphaBlend);
+
+        foreach (var particle in particles)
+            particle.Draw(spriteBatch);
+
+        spriteBatch.End();
+    }
+
+    /// <summary>
+    ///     Whether any live particle wants the additive pass.
+    /// </summary>
+    /// <remarks>
+    ///     Checked up front so a list of ordinary debris -- the common case -- does not pay for an
+    ///     empty Begin/End pair every frame.
+    /// </remarks>
+    private static bool AnyGlow()
+    {
+        foreach (var particle in particles)
+        {
+            if (particle.HasGlow)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Opens a particle pass. PointClamp to keep the pixel art crisp, and the game view matrix
+    ///     so debris tracks the world through zoom exactly like the entities it broke off.
+    /// </summary>
+    private static void BeginPass(SpriteBatch spriteBatch, BlendState blend)
+    {
         spriteBatch.Begin(
             SpriteSortMode.Deferred,
-            BlendState.AlphaBlend,
+            blend,
             SamplerState.PointClamp,
             DepthStencilState.None,
             Main.Rasterizer,
             null,
             Main.GameViewMatrix.TransformationMatrix
         );
-
-        foreach (var particle in particles)
-            particle.Draw(spriteBatch);
-
-        spriteBatch.End();
     }
 }

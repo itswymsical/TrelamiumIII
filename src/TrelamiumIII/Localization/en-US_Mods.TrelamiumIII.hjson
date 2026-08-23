@@ -1,6 +1,6 @@
 Keybinds: {
-	"Skip Cutscene.DisplayName": Skip  Cutscene
-	"Fast Forward Dialogue.DisplayName": Fast  Forward  Dialogue
+	"Skip Cutscene.DisplayName": Skip Cutscene
+	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
 }
 
 Items: {
@@ -143,12 +143,12 @@ Items: {
 		Tooltip: "'Highly magnetic'"
 	}
 
-	MagnetizedCoilItem: {
+	MagnetizedCoil: {
 		DisplayName: Magnetized Coil
 		Tooltip: Do not throw these at powerlines.
 	}
 
-	LodestoneMagnetizerItem: {
+	LodestoneMagnetizer: {
 		DisplayName: Dusty Ol' Magnetizer
 		Tooltip:
 			'''
@@ -192,9 +192,10 @@ Items: {
 		DisplayName: Flailstorm
 		Tooltip:
 			'''
-			Charging the flail increases damage and generates a cloud of ice
-			the longer you charge the flailstorm, the stronger knockback you deal
-			Hitting an enemy when the flailstorm is charged will leave a large ice explosion.
+			Swings slowly, and picks up speed with every full revolution
+			Each revolution sheds clouds of freezing fog that inflict 'Frostburn'
+			Damage, knockback and critical strike all climb as the ring builds
+			At full charge, the thrown head bursts into damaging ice on impact
 			'''
 	}
 
@@ -312,8 +313,235 @@ Items: {
 			Can be used to store potion herbs and flowers.
 			You can store up to 3 types of flowers, granting stat bonuses depending on the type, total stack, and combination.
 			You can only have one satchel in your inventory at a time.
-			Right-click to open.
+			Right-click to open/activate the satchel.
 			'''
+	}
+
+	IlluminanceBookItem: {
+		DisplayName: Illuminance I
+		Tooltip:
+			'''
+			'An Account of the Illuminance'
+			"Laine L."
+			'''
+	}
+
+	AlchemistsAlmanacItem: {
+		DisplayName: Alchemist's Almanac
+		Tooltip:
+			'''
+			A living record of every alchemy recipe you have brewed.
+			Filter by mode or drop an ingredient in the search slot to find recipes that use it.
+			Right-click in the UI close.
+			'''
+	}
+
+	AdvancedAlchemyStationItem: {
+		DisplayName: Solution Synthesizer (Base)
+		Tooltip: Used for advanced chemistry and alchemy
+	}
+
+	AdvancedAlchemyStationChamberItem: {
+		DisplayName: High-grade Solvent Chamber
+		Tooltip:
+			'''
+			A necessary component in the Solution Synthesizer
+			Right-click (while in hand), to install onto a Solution Synthesizer
+			'''
+	}
+
+	AdvancedAlchemyStationComponentItem: {
+		DisplayName: High-Effeciency Vacuum
+		Tooltip:
+			'''
+			A necessary component in the Solution Synthesizer
+			Right-click (while in hand), to install onto a Solution Synthesizer
+			'''
+	}
+
+	AlchemyStationItem: {
+		DisplayName: Alchemy Station
+		Tooltip:
+			'''
+			Right-click to open the Alchemy Station interface.
+			The Alchemy Station allows you to combine different components with different solutions.
+			Combine these items to produce chemical solutions, potions/enhanced potions, or serums.
+			'''
+	}
+
+	ArcaneSolutionItem: {
+		DisplayName: Arcane Solution
+		Tooltip: ""
+	}
+
+	BaneTonicItem: {
+		DisplayName: Bane Tonic
+		Tooltip: ""
+	}
+
+	BloodtoothExtractItem: {
+		DisplayName: Bloodtooth Extract
+		Tooltip: ""
+	}
+
+	BloodtoothFungusItem: {
+		DisplayName: Bloodtooth Fungus
+		Tooltip: ""
+	}
+
+	BottledOilItem: {
+		DisplayName: Bottled Oil
+		Tooltip: ""
+	}
+
+	BrineBottleItem: {
+		DisplayName: Brine Bottle
+		Tooltip: ""
+	}
+
+	BriskTonicItem: {
+		DisplayName: Brisk Tonic
+		Tooltip: ""
+	}
+
+	CharcoalItem: {
+		DisplayName: Charcoal
+		Tooltip: ""
+	}
+
+	DeadSolutionItem: {
+		DisplayName: Dead Solution
+		Tooltip: ""
+	}
+
+	FibrousSlurryItem: {
+		DisplayName: Fibrous Slurry
+		Tooltip: ""
+	}
+
+	FlyAgaricItem: {
+		DisplayName: Fly Agaric
+		Tooltip: Provides temporary swiftness
+	}
+
+	FortunateTonicItem: {
+		DisplayName: Fortunate Tonic
+		Tooltip: ""
+	}
+
+	HarmoniousTonicItem: {
+		DisplayName: Harmonious Tonic
+		Tooltip: ""
+	}
+
+	InertSolutionItem: {
+		DisplayName: Inert Solution
+		Tooltip: ""
+	}
+
+	MagnoliaItem: {
+		DisplayName: Magnolia
+		Tooltip: "'charismatic amongst other flowers...'"
+	}
+
+	MagnoliaPowderItem: {
+		DisplayName: Magnolia Powder
+		Tooltip: Advances plants to their next growth stage.
+	}
+
+	MagnoliaSeedsItem: {
+		DisplayName: Magnolia Seeds
+		Tooltip: ""
+	}
+
+	MartialTonicItem: {
+		DisplayName: Martial Tonic
+		Tooltip: ""
+	}
+
+	OxidizedCopperItem: {
+		DisplayName: Oxidized Copper
+		Tooltip: ""
+	}
+
+	SpecularTonicItem: {
+		DisplayName: Specular Tonic
+		Tooltip: ""
+	}
+
+	VitalTonicItem: {
+		DisplayName: Vital Tonic
+		Tooltip: ""
+	}
+
+	CorruptedSporeFlaskItem: {
+		DisplayName: Vilespore Flask
+		Tooltip:
+			'''
+			On Chemical reaction, corrupted spores engulf enemies and spread to the nearest target on kill.
+			This effect persists until the spores vanish or all targets are killed.
+			'''
+	}
+
+	CrimsonEffusionFlaskItem: {
+		DisplayName: Effusion Flask
+		Tooltip:
+			'''
+			On chemical reaction, enemies burst from hemorrhaging
+			Hemorrhage burst blood deals more damage onto nearby enemies
+			'''
+	}
+
+	HyperboreanFlaskItem: {
+		DisplayName: Hyperborean Flask
+		Tooltip:
+			'''
+			Releases a cloud of ice mist that afflicts enemies with frostburn
+			Transforms water into thin ice on contact
+			'''
+	}
+
+	PhytoncideFlaskItem: {
+		DisplayName: Phytoncide Flask
+		Tooltip:
+			'''
+			Creates a large spore cloud that poisons enemies and slowly regenerates your health
+			On Chemical reaction, the Phytoncides will begin to lifesteal a portion of the dealt damage
+			'''
+	}
+
+	PrismaticStarflaskItem: {
+		DisplayName: Prismatic Starflask
+		Tooltip: Creates a gas cloud of stardust on impact, which slowly burns enemies
+	}
+
+	ThermiteFlaskItem: {
+		DisplayName: Thermite Flask
+		Tooltip:
+			'''
+			Creates a pool of molten thermite on impact
+			Thermine pools burn enemies and spread to nearby targets.
+			'''
+	}
+
+	BrineBucketItem: {
+		DisplayName: Brine Bucket
+		Tooltip: ""
+	}
+
+	CrudeOilBucketItem: {
+		DisplayName: Crude Oil Bucket
+		Tooltip: ""
+	}
+
+	SaltBlockItem: {
+		DisplayName: Salt Block
+		Tooltip: ""
+	}
+
+	MagnoliaSolutionItem: {
+		DisplayName: Magnolia Solution
+		Tooltip: ""
 	}
 }
 
@@ -322,23 +550,26 @@ Tiles: {
 	SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
 	SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
 	SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
+	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
+	AlchemyStationTile.MapEntry: Alchemy Station
+	MagnoliaTile.MapEntry: Magnolia
 }
 
 Projectiles: {
 	TetanusShurikenProj.DisplayName: Tetanus Shuriken
 	SporeclotSacProj.DisplayName: Sporeclot Sac
 	SporeBlastProj.DisplayName: Spore Blast
-	GirthquakeProj.DisplayName: Girthquake Proj
-	GirthquakeShardProj.DisplayName: Girthquake Shard Proj
+	GirthquakeProj.DisplayName: Girthquake
+	GirthquakeShardProj.DisplayName: Earth Shard
 	ShroomsonMinion.DisplayName: Shroomson
 	ShroomsonMushroom.DisplayName: Mushroom
 	PossessedWorkshopPet.DisplayName: Possessed Workshop
 	WorkshopStationPet.DisplayName: Workshop Station Pet
-	FahHammerProj.DisplayName: Fah Hammer Proj
 	FungoreSpore.DisplayName: Spore Clot
 	LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
 	BorealHewerProj.DisplayName: Boreal Hewer
 	FlailstormProj.DisplayName: Flailstorm
+	FrostCloudProj.DisplayName: Frost Cloud
 	DaybloomSeedProjectile.DisplayName: Daybloom Seed
 	BlinkrootSeedProjectile.DisplayName: Blinkroot Seed
 	FireblossomSeedProjectile.DisplayName: Fireblossom Seed
@@ -346,12 +577,26 @@ Projectiles: {
 	MoonglowSeedProjectile.DisplayName: Moonglow Seed
 	DeathweedSeedProjectile.DisplayName: Deathweed Seed
 	WaterleafSeedProjectile.DisplayName: Waterleaf Seed
-	AcornLauncherProjectile.DisplayName: Acorn Launcher Projectile
+	AcornLauncherProjectile.DisplayName: Acorn Launcher
 	AcornProjectile.DisplayName: Acorn Projectile
-	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel Projectile
-	SaplingMakerProjectile.DisplayName: Sapling Maker Projectile
+	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel
+	SaplingMakerProjectile.DisplayName: Sapling Maker
 	SaplingProjectile.DisplayName: Sapling Projectile
-	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
+	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger
+	MagnoliaPowderProjectile.DisplayName: Magnolia Powder
+	CorruptedSporeBurstProjectile.DisplayName: Corrupted Spores
+	CorruptedSporeFlaskProjectile.DisplayName: Corrupted Spore Flask
+	CrimsonEffusionBurstProjectile.DisplayName: Crimson Effusion
+	CrimsonEffusionFlaskProjectile.DisplayName: Crimson Effusion Flask
+	HyperboreanFlaskBurstProjectile.DisplayName: Hyperborean Flask
+	HyperboreanFlaskProjectile.DisplayName: Hyperborean Flask
+	PhytoncideFlaskProjectile.DisplayName: Phytoncide Flask
+	PhytoncideSporeBurstProjectile.DisplayName: Phytoncide Spores
+	PrismaticStarflaskBurstProjectile.DisplayName: Prismatic Starflask
+	PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask
+	ThermiteBurstProjectile.DisplayName: Thermite
+	ThermiteFlaskProjectile.DisplayName: Thermite Flask
+	SporadicSlamProjectile.DisplayName: Sporadic Slam
 }
 
 NPCs: {
@@ -361,7 +606,14 @@ NPCs: {
 		Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
 	}
 
+	EyeOfCthulhu.Epithet: The Watcher
 	FungoreSporeSac.DisplayName: Spore Sac
+	DesertTerrarian.DisplayName: Desert Terrarian
+	ForestTerrarian.DisplayName: Forest Terrarian
+	JungleTerrarian.DisplayName: Jungle Terrarian
+	SporadicSlime.DisplayName: Sporadic Slime
+	TundraTerrarian.DisplayName: Tundra Terrarian
+	CuriousSlime.DisplayName: Slime
 }
 
 Buffs: {
@@ -395,4 +647,106 @@ Misc: {
 	SonsMushroom: Shroomson's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
 	WorkshopSlot: Station Slot
+}
+
+SeedAmmo: {
+	# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
+	# bed sprites read almost identically at tooltip size.
+	FavouriteSoil: Favorite soil: [i:{0}] {1}
+	Daybloom: Critical strikes grant temporary [buff:Ironskin]
+	Blinkroot: Critical strikes grant temporary [buff:Hunter] and [buff:Swiftness]
+	Moonglow: Critical strikes grant temporary [buff:Regeneration]
+	Fireblossom: Critical strikes inflict [buff/f28755:OnFire] for a short duration
+	Shiverthorn: Critical strikes inflict [buff/6fc5f6:Frostburn] for a short duration
+	Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
+	Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
+}
+
+# Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name
+# an element in its own words without every tooltip that mentions it having to change.
+ChemicalDamageTypes: {
+	Thermal: Thermal
+	Cryonic: Cryonic
+	Caustic: Caustic
+	Necrotic: Necrotic
+	Kinetic: Kinetic
+	Electric: Electric
+}
+
+DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
+
+Liquids: {
+	CrudeOilLiquid.MapEntry: Crude Oil
+	BrineLiquid.MapEntry: Brine
+}
+
+Configs: {
+	VFXConfig: {
+		DisplayName: VFX Settings
+
+		Headers: {
+			QuickSettings: VFX Settings
+			ParticleCount: Particle Limits
+			MetaballCount: Metaball Limits
+		}
+
+		Preset: {
+			Label: Graphics Profile
+			Tooltip: Set the graphics profile for your PC.
+		}
+
+		ParticleCount: {
+			Label: Particle Count
+			Tooltip: Set the maximum amount of particles that can exist, maximum is capped at 2048.
+		}
+
+		MetaballCountMultiplier: {
+			Label: Metaball Count
+			Tooltip: By default, metaball counts are limited to 400 nodes. Performance impacts may occur around ~8k active nodes.
+		}
+	}
+
+	GraphicsPreset: {
+		Tooltip: ""
+
+		Toaster: {
+			Label: Toaster
+			Tooltip: ""
+		}
+
+		Low: {
+			Label: Low
+			Tooltip: ""
+		}
+
+		Standard: {
+			Label: Standard
+			Tooltip: ""
+		}
+
+		HighEnd: {
+			Label: High End
+			Tooltip: ""
+		}
+
+		NASA: {
+			Label: NASA
+			Tooltip: ""
+		}
+
+		Custom: {
+			Label: Custom
+			Tooltip: ""
+		}
+	}
+
+	DebugConfig: {
+		DisplayName: Debug Config
+		Headers.DebugMode: Debug Mode Header
+
+		DebugMode: {
+			Label: Debug Mode
+			Tooltip: ""
+		}
+	}
 }
