@@ -59,6 +59,9 @@ public sealed class InlineTagSystem : ModSystem
     internal const string REDACTED_TAG = "redacted";
     internal const string HAND_TAG = "hand";
 
+    /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
+    internal const string FORMAT_TAG = Authoring.FormatCodec.TAG;
+
     private static readonly string[] Tags =
     [
         BUFF_TAG,
@@ -68,6 +71,7 @@ public sealed class InlineTagSystem : ModSystem
         LORE_TAG,
         REDACTED_TAG,
         HAND_TAG,
+        FORMAT_TAG,
     ];
 
     public override void Load()
@@ -83,6 +87,7 @@ public sealed class InlineTagSystem : ModSystem
         ChatManager.Register<LoreLinkTagHandler>(LORE_TAG);
         ChatManager.Register<RedactedTagHandler>(REDACTED_TAG);
         ChatManager.Register<HandwritingTagHandler>(HAND_TAG);
+        ChatManager.Register<FormatTagHandler>(FORMAT_TAG);
     }
 
     public override void Unload() => UnregisterTags();

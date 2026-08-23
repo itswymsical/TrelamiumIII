@@ -104,13 +104,13 @@ public sealed class ContentsBlock : BookBlock
     private int RowCount => Math.Min(rowLimit, Math.Max(0, contents.Entries.Count - firstRow));
 
     private float HeaderHeight =>
-        string.IsNullOrEmpty(header) ? 0f : BookText.LineHeight(BookFont.Display, Style.Scale) + HEADER_GAP;
+        string.IsNullOrEmpty(header) ? 0f : BookText.LineHeight(Style.FaceFor(BookFont.Display), Style.Scale) + HEADER_GAP;
 
     /// <summary>
     ///     Derived from the style rather than fixed, so restyling the contents cannot leave the rows
     ///     shorter than the text sitting in them.
     /// </summary>
-    private float RowHeight => BookText.LineHeight(Style.Font, Style.Scale) + ROW_PADDING;
+    private float RowHeight => BookText.LineHeight(Style.Face, Style.Scale) + ROW_PADDING;
 
     protected override float MeasureCore(float width) => HeaderHeight + RowCount * RowHeight;
 
@@ -123,7 +123,7 @@ public sealed class ContentsBlock : BookBlock
         {
             Utils.DrawBorderStringFourWay(
                 spriteBatch,
-                BookText.FontFor(BookFont.Display),
+                BookText.FontFor(Style.FaceFor(BookFont.Display)),
                 header,
                 inner.X,
                 y,
@@ -161,7 +161,7 @@ public sealed class ContentsBlock : BookBlock
                 context.HoverPage ??= entry.Page;
         }
 
-        var font = BookText.FontFor(Style.Font);
+        var font = BookText.FontFor(Style.Face);
         Color color = hovered ? Style.Color : Style.Color * 0.88f;
 
         float indent = entry.Depth * DEPTH_INDENT;
@@ -169,7 +169,7 @@ public sealed class ContentsBlock : BookBlock
 
         string number = entry.Page >= 0 ? (entry.Page + 1).ToString() : string.Empty;
 
-        var numberFont = BookText.FontFor(NumberStyle.Font);
+        var numberFont = BookText.FontFor(NumberStyle.Face);
         float numberWidth = numberFont.MeasureString(number).X * NumberStyle.Scale;
         float numberX = row.Right - numberWidth;
 
@@ -189,7 +189,7 @@ public sealed class ContentsBlock : BookBlock
                 spriteBatch,
                 titleX + titleWidth + LEADER_STEP,
                 numberX - LEADER_STEP,
-                row.Y + BookText.LineHeight(Style.Font, Style.Scale) * 0.62f,
+                row.Y + BookText.LineHeight(Style.Face, Style.Scale) * 0.62f,
                 color);
         }
     }

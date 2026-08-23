@@ -11,6 +11,12 @@ public sealed class ExampleLoreBook : ModLoreBook
 {
     public override string Key => "Example.FirstAccount";
 
+    /// <summary>
+    ///     The book's typeface, and the bottom of the cascade. Everything below is set in Andika
+    ///     unless a section or an element says otherwise.
+    /// </summary>
+    protected override BookTypeface? Typeface => BookTypeface.Encyclopedia;
+
     protected override void Build(LoreBookBuilder book) => book
         .Heading("Title")
 
@@ -26,11 +32,21 @@ public sealed class ExampleLoreBook : ModLoreBook
         .Rule(span: 0.4f)
         .Quote("Excerpt")
 
-        .Panel(panel => panel
-            .Heading("WarningTitle", rule: false, BlockStyle.Heading with { Scale = 0.5f })
-            .Prose("WarningBody", BlockStyle.Body with { Scale = 0.74f, SpaceAfter = 0f }))
+        // A run set in the softer face, which closes again afterwards. Everything inside inherits
+        // it -- the panel's own blocks included, since a panel carries the typeface inward.
+        .Section(BookTypeface.Glossary, glossary => glossary
+            .Panel(panel => panel
+                .Heading("WarningTitle", rule: false, BlockStyle.Heading with { Scale = 0.5f })
+                .Prose("WarningBody", BlockStyle.Body with { Scale = 0.74f, SpaceAfter = 0f })))
 
         .PageBreak()
         .Heading("SecondChapter")
-        .Prose("Closing", BlockStyle.Body with { Align = TextAlign.Justify });
+
+        // Back in Andika, because the section closed. An element can still opt out on its own:
+        // naming a typeface in the style outranks both the section and the book.
+        .Prose("Closing", BlockStyle.Body with
+        {
+            Align = TextAlign.Justify,
+            Typeface = BookTypeface.Glossary,
+        });
 }
