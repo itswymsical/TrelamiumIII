@@ -3,27 +3,20 @@ using ReLogic.Content;
 namespace TrelamiumIII.Core.Graphics.Particles;
 
 /// <summary>
-///     A short-lived piece of world debris: a texture with physics, a lifetime, and no gameplay
-///     weight.
+///     Particles are highly modular objects containing a texture or list of textures, physics, a lifetime, and event calls.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This exists instead of <see cref="ModGore" /> because the two are not the same thing.
-///         Gore is viscera, and a player who turns gore off in settings is asking not to see
-///         viscera -- they are not asking for the shattered remains of a thrown sac to stop
-///         existing. Debris routed through here is unaffected by that setting.
-///     </para>
-///     <para>
-///         One class covers a whole family of debris. <see cref="Textures" /> lists a texture per
-///         variant, and <see cref="Variant" /> selects between them, so a shattered sac is one
-///         class with three chunk sprites rather than three near-identical classes. Anything that
-///         differs per variant -- <see cref="Size" />, <see cref="Bounce" /> -- can just switch on
+///         One class covers a whole family of particles, <see cref="Textures" /> lists a texture per
+///         variant, and <see cref="Variant" /> selects between them, so a particle is one
+///         class with three variants sprites rather than three near-identical classes. Anything that
+///         differs per variant (i.e., <see cref="Size" />, <see cref="Bounce" />) can just switch on
 ///         <see cref="Variant" />, which is assigned before <see cref="OnSpawn" /> runs.
 ///     </para>
 ///     <para>
 ///         Subclasses are reflection-loaded: <see cref="Particle" /> is an <see cref="ILoadable" />,
 ///         so tModLoader finds every concrete subclass in the assembly and registers it, variants
-///         and all. The autoloaded instance is only a prototype -- it is never simulated. Spawned
+///         and all. The autoloaded instance is only a prototype, so its never simulated. Spawned
 ///         particles are fresh instances from <see cref="ParticleSystem.Spawn{T}" />.
 ///     </para>
 /// </remarks>
@@ -39,8 +32,7 @@ public abstract class Particle : ILoadable
     public virtual int FrameCount => 1;
 
     /// <summary>
-    ///     Collision box in pixels. Deliberately separate from the texture size -- debris usually
-    ///     wants a footprint tighter than its sprite so it beds into corners instead of hovering.
+    ///     Collision box in pixels. This is separate from the texture size.
     /// </summary>
     public virtual Vector2 Size => new(8f);
 
@@ -142,10 +134,10 @@ public abstract class Particle : ILoadable
     /// <summary>Fired after the kick impulse has been applied.</summary>
     public virtual void OnPlayerCollide(Player player) { }
 
-    /// <summary>Requires <see cref="NPCCollide" />. No default physics -- the hook is the behaviour.</summary>
+    /// <summary>Requires <see cref="NPCCollide" />. No default physics as the hook is the behaviour.</summary>
     public virtual void OnNPCCollide(NPC npc) { }
 
-    /// <summary>Requires <see cref="ProjectileCollide" />. No default physics -- the hook is the behaviour.</summary>
+    /// <summary>Requires <see cref="ProjectileCollide" />. No default physics as the hook is the behaviour.</summary>
     public virtual void OnProjectileCollide(Projectile projectile) { }
 
     /// <summary><paramref name="liquid" /> is a <see cref="LiquidID" />.</summary>
@@ -325,8 +317,7 @@ public abstract class Particle : ILoadable
     /// </summary>
     /// <remarks>
     ///     Assigned after <see cref="ParticleSystem.Spawn{T}" /> returns, for debris whose sprite is
-    ///     not known until it spawns -- the pieces of a dead boss wearing the very gore textures the
-    ///     base game just threw, rather than a copy of them picked at load time.
+    ///     not known until it spawns.
     ///     <para>
     ///         Resolved per draw rather than per class, so it bypasses the registry entirely.
     ///         <see cref="FrameCount" /> still applies to it.
