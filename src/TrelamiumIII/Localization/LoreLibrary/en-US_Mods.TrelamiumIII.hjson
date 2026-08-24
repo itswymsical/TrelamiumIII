@@ -13,13 +13,31 @@ LoreLibrary: {
 		}
 	}
 
+	Misc: {
+		Diary: {
+			Title: Annie's Diary
+			Day1.Title: Day 1
+			Opening:
+				'''
+				Dear diary... It's been 2 weeks I've found myself staring down the hills of this overworld. The cool breeze and pink petals from the wilted trees are keeping me sane, given a slime is always on the prowl.
+				I haven't made any friends yet, mother said It'd happen in no time... Ah, that's okay! I have my precious babu! He's so soft and fluffly, warm and kind. I don't need anything else in this world when he's my light.
+				Maybe tomorrow we'll go searching for fruit! The village isn't too far away.
+
+				'''
+			Day2.Title: Day 2
+			Prose:
+				'''
+				Dear diary... Babu and I made it to the village, but there was no fruit. I am sad. I want fruit.
+				Why is this world so dark.
+				I'm cold.
+				'''
+		}
+	}
+
 	Lore: {
 		CorridorOfDarkness: {
 			Title: Corridor of Darkness
-
-			Chapter: {
-				Title: My Own Corridor
-			}
+			Chapter.Title: My Own Corridor
 			Prose:
 				'''
 				It's been quite some time since I have stepped out of my chambers. I fear I am keeping the luminant light waiting, and for no good reason.
@@ -29,6 +47,7 @@ LoreLibrary: {
 				'''
 		}
 	}
+
 	IlluminanceSeries: {
 		IlluminanceI: {
 			Title: Illuminance
@@ -114,42 +133,6 @@ LoreLibrary: {
 				Fourth: Fifth:
 				Sixth: Closing:
 			}
-		}
-	}
-
-	Demo: {
-		NationalTreasure: {
-			Title:
-				'''
-				A National Treasure
-
-				'''
-			Opening:
-				'''
-
-				He's a [fmt/i:national treasure!], I tell ya'. Steve-O is the man, and the myth. You can't get through him!
-				But let me tell you somethin', he a a darn good soul. You ever meet a man like him, just [fmt/b:know] he'll have your back.
-
-
-				Heh. It's outstanding. ♥ ♥ ♥ — em dash em dash
-				'''
-			Prose:
-				'''
-
-				Let me tell you somethin' again, pal. I'm writng all of this. IN GAME.
-				Aint that shit wild? ♥
-				'''
-			Prose2:
-				'''
-				It's interesting times we live in
-
-				'''
-			Chapter.Title:
-				'''
-				Chapter 1 | Fogbound
-
-				'''
-			Prose3: I call it... The FogBound. I got the inspiration for it after I saw a cover of a movie. the boss is basically a Ghastly Face made of fog. its very spooky, Demented, Demonic, hellish, and evil. this boss will be late hardmode. in order to summon him, you will need to make the Foggy Mirror. (a new summoning item for the boss.) in order to craft it, you need a magic mirror and some fog. Fog is an uncommon drop from Wyverns. it has a 45% drop rate chance. you need 15 fog and one magic mirror for this item. this boss is like the ice king from the Necro mod. and the full fight can only be fought at night. it can be fought in the day, but he will despawn when he gets to half his health. when summoned, a message will say. "You've awoken me... time to pay the price..." The fight is very challenging, as he makes copies of himself like the Brain of Cthulu and the Lunatic Cultist. however, you simply have to guess which face it is because the differences between the faces are almost next to none, making part of this fight luck based. his attacks are sending fast fists made of fog to smash you into Oblivion, making the screen foggy and blurry so that you cant see him as well, and if you touch him, you get debuffs like blindness, and other debuffs that are related to making it so that you cant really see around yourself. he is also able to charge directly into you. when he gets below half of his health, he gets 2 fists and his attacks get stronger and faster, however, there is one thing that can make the FogBound extremely deadly. if you see his eyes start to flash orange, it means he is about to blast you with a lethal 1 hit kill laser. this attack is avoidable, but the laser is quite large. for health, he has 65,000. as for the loot, you can decide. try to make it fog themed if you can.
 		}
 	}
 }
