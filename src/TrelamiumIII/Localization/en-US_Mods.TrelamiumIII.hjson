@@ -543,6 +543,11 @@ Items: {
 		DisplayName: Magnolia Solution
 		Tooltip: ""
 	}
+
+	BramblerootItem: {
+		DisplayName: Brambleroot Item
+		Tooltip: ""
+	}
 }
 
 Tiles: {

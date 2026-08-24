@@ -5,6 +5,7 @@ using Terraria.GameContent;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
+using TrelamiumIII.Content.GardenOfIngress;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Utilities;
@@ -39,7 +40,7 @@ public class IngressRealm : SubworldRealm
         }
         catch (Exception ex)
         {
-            TrelamiumIII.Instance?.Logger.Error($"Error in ReverieRealm.SetStaticDefaults: {ex.Message}");
+            TrelamiumIII.Instance?.Logger.Error($"Error in IngressRealm.SetStaticDefaults: {ex.Message}");
             OtherworldTitle = null;
         }
     }
@@ -93,25 +94,20 @@ public class IngressFloor : GenPass
     {
         progress.Message = "Generating Ingress Floor";
 
-        //int surfaceY = Main.maxTilesY / 4;
         Main.spawnTileY = surfaceY;
 
-        // 1. surface terrain
-        //surfaceNoise = new FastNoiseLite(WorldGen.genRand.Next());
-        //surfaceNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2S);
-        //surfaceNoise.SetFrequency(0.0041f); // (lower = smoother/wider)
-        //surfaceNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
-        //surfaceNoise.SetFractalOctaves(8);
-        //surfaceNoise.SetFractalGain(0.5f);
-
         int heightAmplitude = 30;
+        int dirtLayerThickness = 120;
 
-        // 2. generate surface heightmap and tile grid
+        // 1. generate surface heightmap and tile grid
         for (int x = 0; x < Main.maxTilesX; x++)
         {
             // Sample 1D noise by locking Y to 0
             float rawNoise = surfaceNoise.GetNoise(x, 0f); // Returns -1.0 to 1.0
             int localSurfaceY = surfaceY + (int)(rawNoise * heightAmplitude);
+
+            // Create a slightly jagged, natural-looking transition line
+            int transitionY = localSurfaceY + dirtLayerThickness + WorldGen.genRand.Next(-6, 7);
 
             // Carve air above the surface line
             for (int y = surfaceY - heightAmplitude; y < localSurfaceY; y++)
@@ -130,17 +126,21 @@ public class IngressFloor : GenPass
                 {
                     Tile tile = Main.tile[x, y];
                     tile.HasTile = true;
-                    tile.TileType = TileID.Dirt;
+
+                    if (y < transitionY)
+                    {
+                        tile.TileType = TileID.Dirt;
+                        tile.WallType = WallID.FlowerUnsafe; 
+                    }
+                    else
+                    {
+                        tile.TileType = TileID.LivingWood;
+                    }
                 }
             }
         }
 
-        // 3. Spawn Mountain & Guaranteed Tunnel
-        int spawnMountainX = Main.spawnTileX - 75;
-        WorldGen.Mountinater(spawnMountainX, surfaceY);
-        DigMountainCave(spawnMountainX, surfaceY);
-
-        // 4. Random Mountains across the world
+        // 3. Random Mountains across the world
         int surfaceX = WorldGen.genRand.Next(100, 200);
 
         while (surfaceX < Main.maxTilesX - 100)
@@ -154,6 +154,66 @@ public class IngressFloor : GenPass
             surfaceX += WorldGen.genRand.Next(200, 400);
         }
         StonePatches();
+    }
+
+    private void StonePatches()
+    {
+        int x = WorldGen.genRand.Next(100, 200);
+
+        while (x < Main.maxTilesX - 100)
+        {
+            // 1. Find surface level
+            int surfaceY2 = 0;
+            for (int y = 150; y < Main.maxTilesY; y++)
+            {
+                if (Main.tile[x, y].HasTile && Main.tileSolid[Main.tile[x, y].TileType])
+                {
+                    surfaceY2 = y;
+                    break;
+                }
+            }
+
+            // 2. Temporarily fulfill StonePatch prerequisites:
+            // Set surface tiles to Grass & place walls underneath
+            for (int i = x - 10; i <= x + 10; i++)
+            {
+                if (WorldGen.InWorld(i, surfaceY2))
+                {
+                    Main.tile[i, surfaceY2].TileType = TileID.Grass;
+
+                    for (int j = surfaceY2 + 1; j <= surfaceY2 + 35; j++)
+                    {
+                        if (WorldGen.InWorld(i, j))
+                            Main.tile[i, j].WallType = WallID.FlowerUnsafe;
+                    }
+                }
+            }
+
+            // 3. Attempt generation
+            if (WorldGen.StonePatch(x, surfaceY2))
+            {
+                x += WorldGen.genRand.Next(100, 200); // Space out successful patches
+                continue;
+            }
+
+            x += WorldGen.genRand.Next(20, 40); // Try nearby spot on failure
+        }
+    }
+}
+
+public class IngressGrass : GrassSpreadPass
+{
+    public IngressGrass() : base("[T3] Ingress Grass", 100f) { }
+
+    protected override ushort GetGrassTileType() => TileID.Grass;
+
+
+    protected override string GetProgressMessage() => "Spreading Grass";
+
+    protected override ushort GetSoilTileType() => TileID.Dirt;
+    protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+    {
+        base.ApplyPass(progress, configuration);
         LivingTrees();
     }
 
@@ -190,87 +250,6 @@ public class IngressFloor : GenPass
             x += WorldGen.genRand.Next(15, 35);
         }
     }
-    private void StonePatches()
-    {
-        int x = WorldGen.genRand.Next(100, 200);
-
-        while (x < Main.maxTilesX - 100)
-        {
-            // 1. Find surface level
-            int surfaceY2 = 0;
-            for (int y = 150; y < Main.maxTilesY; y++)
-            {
-                if (Main.tile[x, y].HasTile && Main.tileSolid[Main.tile[x, y].TileType])
-                {
-                    surfaceY2 = y;
-                    break;
-                }
-            }
-
-            // 2. Temporarily fulfill StonePatch prerequisites:
-            // Set surface tiles to Grass & place walls underneath
-            for (int i = x - 10; i <= x + 10; i++)
-            {
-                if (WorldGen.InWorld(i, surfaceY2))
-                {
-                    Main.tile[i, surfaceY2].TileType = TileID.Grass;
-
-                    for (int j = surfaceY2 + 1; j <= surfaceY2 + 35; j++)
-                    {
-                        if (WorldGen.InWorld(i, j))
-                            Main.tile[i, j].WallType = WallID.Dirt;
-                    }
-                }
-            }
-
-            // 3. Attempt generation
-            if (WorldGen.StonePatch(x, surfaceY2))
-            {
-                x += WorldGen.genRand.Next(100, 200); // Space out successful patches
-                continue;
-            }
-
-            x += WorldGen.genRand.Next(20, 40); // Try nearby spot on failure
-        }
-    }
-    private void DigMountainCave(int mountainX, int mountainY)
-    {
-        // 1. Start entrance on the right slope of the mountain base
-        double startX = mountainX + 50;
-        double startY = mountainY - 5;
-
-        // 2. Tunnel 1: Cut inward to the left (-X) and slightly downward (+Y)
-        Vector2D caveCore = WorldGen.digTunnel(
-            X: startX,
-            Y: startY,
-            xDir: -3.0,  // Move Left
-            yDir: 0.4,   // Shallow downward tilt
-            Steps: 35,   // Distance to reach mountain center
-            Size: 4      // Tunnel width
-        );
-
-        // 3. Tunnel 2: Curve sharply downwards (+Y) deep into the cavern layer
-        WorldGen.digTunnel(
-            X: caveCore.X,
-            Y: caveCore.Y,
-            xDir: -0.1,  // Slight leftward drift
-            yDir: 1.0,   // Dig straight down
-            Steps: 80,   // Length of shaft
-            Size: 9      // Slightly wider main shaft
-        );
-    }
-}
-
-public class IngressGrass : GrassSpreadPass
-{
-    public IngressGrass() : base("[T3] Ingress Grass", 100f) { }
-
-    protected override ushort GetGrassTileType() => TileID.Grass;
-
-
-    protected override string GetProgressMessage() => "Spreading Grass";
-
-    protected override ushort GetSoilTileType() => TileID.Dirt;
 }
 
 public class IngressVegetation : GenPass
@@ -355,27 +334,11 @@ public class IngressCaves : GenPass
 
     protected override void ApplyPass(GenerationProgress progress, GameConfiguration config)
     {
-        progress.Message = "Nurturing Ingress";
+        progress.Message = "Carving Ingress Caves";
 
-        var originX = Main.maxTilesX / 2;
-        var originY = (int)(Main.maxTilesY * 0.5f);
-        var boundsW = Main.maxTilesX;
-        var boundsH = (int)(Main.maxTilesY * 0.8f);
-
-        // all tile unit values scale by this so medium/small worlds produce the scale as large ones.
         var scale = WorldScale;
 
         // Noise setup
-        var baseBlobNoise = new FastNoiseLite(WorldGen.genRand.Next());
-        baseBlobNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        baseBlobNoise.SetFrequency(0.34f); // note: set BaseBlobWarpFreq to 0.14f
-
-        var baseBlobRoughNoise = new FastNoiseLite(WorldGen.genRand.Next());
-        baseBlobRoughNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-        baseBlobRoughNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
-        baseBlobRoughNoise.SetFractalOctaves(4);
-        baseBlobRoughNoise.SetFrequency(BaseBlobRoughFreq);
-
         var blobNoise = new FastNoiseLite(WorldGen.genRand.Next());
         blobNoise.SetNoiseType(FastNoiseLite.NoiseType.Value);
         blobNoise.SetFrequency(BlobFreq);
@@ -393,28 +356,25 @@ public class IngressCaves : GenPass
         wallWarpNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         wallWarpNoise.SetFrequency(TunnelWallWarpFreq);
 
-        // 1. Fill base biome blob (0.0 to 0.22)
-        var biomeMask = BiomeBlob(originX, originY, boundsW, boundsH, baseBlobNoise, baseBlobRoughNoise, progress, 0.0, 0.22, scale);
+        // 1. Scatter nodes
+        var nodes = ScatterNodes(scale, out Node argieNode);
 
-        // 2. Scatter nodes (grid) across the whole world
-        var nodes = ScatterNodesGlobal(scale, out Node argieNode);
-
-        // 3. Build MST then add extra edges (tunnels)
+        // 2. Build MST and extra edges 
         var edges = BuildMST(nodes);
-        // Increase extra edges significantly to interconnect the grid
+
         TryAddExtraEdges(nodes, edges, extraCount: ExtraEdgeCount);
 
-        // 4. Carve blobs (0.22 to 0.42)
+        // 3. Carve blobs 
         for (var i = 0; i < nodes.Count; i++)
         {
-            progress.Value = 0.22 + i / (double)nodes.Count * 0.20;
+            progress.Value = i / (double)nodes.Count * 0.40;
             CarveBlob(nodes[i], blobNoise, scale);
         }
 
-        // 5. Walk tunnels (0.42 to 0.62)
+        // 4. Walk tunnels
         for (var i = 0; i < edges.Count; i++)
         {
-            progress.Value = 0.42 + i / (double)edges.Count * 0.20;
+            progress.Value = 0.40 + i / (double)edges.Count * 0.40;
             var (a, b) = edges[i];
             WalkTunnel(
                 new Vector2(nodes[a].X, nodes[a].Y),
@@ -423,128 +383,29 @@ public class IngressCaves : GenPass
             );
         }
 
-        // 6. Ambient air pockets (0.62 to 0.70)
-        var pockets = ScatterAmbientPockets(biomeMask, scale);
+        // 5. Ambient air pockets
+        var pockets = ScatterAmbientPockets(scale);
         for (var i = 0; i < pockets.Count; i++)
         {
-            progress.Value = 0.62 + i / (double)pockets.Count * 0.08;
+            progress.Value = 0.80 + i / (double)pockets.Count * 0.20;
             CarveBlob(pockets[i], blobNoise, scale);
         }
-
-        // 7. Edge walls (0.70 to 0.78)
+        // 7. Edge walls
         progress.Message = "Tracing cave walls...";
-        PlaceEdgeWalls(biomeMask, progress, 0.70, 0.78);
-
-        // 9. Spread woodgrass (0.82 to 1)
-        progress.Message = "Spreading mold...";
-        SpreadGrass(biomeMask, progress, 0.78, 1);
+        PlaceEdgeWalls(progress, 0.70, 0.78);
 
         progress.Value = 1.0;
     }
 
-    private BiomeMask BiomeBlob(int originX, int originY, int width, int height, FastNoiseLite noise, FastNoiseLite roughNoise,
-        GenerationProgress progress, double progressStart, double progressEnd, float scale)
-    {
-        List<MetaballNode> metaballs = new();
-
-        metaballs.Add(
-        new MetaballNode
-        {
-            Position = new(originX, originY),
-            Radius = 250 * scale
-        });
-
-        for (int i = 0; i < 40; i++)
-        {
-            var parent = metaballs[WorldGen.genRand.Next(metaballs.Count)];
-
-            float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-            float distance = Main.rand.NextFloat(125f, 175f) * scale;
-
-            metaballs.Add(new MetaballNode
-            {
-                Position = parent.Position + angle.ToRotationVector2() * distance,
-                Radius = Main.rand.NextFloat(130f, 160f) * scale
-            });
-        }
-
-        float minX = originX, maxX = originX, minY = originY, maxY = originY;
-        foreach (var node in metaballs)
-        {
-            minX = Math.Min(minX, node.Position.X - node.Radius);
-            maxX = Math.Max(maxX, node.Position.X + node.Radius);
-            minY = Math.Min(minY, node.Position.Y - node.Radius);
-            maxY = Math.Max(maxY, node.Position.Y + node.Radius);
-        }
-
-        float warpAmt = BaseBlobWarpAmt * scale;
-        float roughAmt = BaseBlobRoughAmt * scale;
-        int margin = (int)(warpAmt + roughAmt + 2);
-
-        int left = (int)Math.Floor(minX) - margin;
-        int right = (int)Math.Ceiling(maxX) + margin;
-        int top = (int)Math.Floor(minY) - margin;
-        int bottom = (int)Math.Ceiling(maxY) + margin;
-
-        var mask = new BiomeMask(left, top, right - left + 1, bottom - top + 1);
-
-        int totalColumns = right - left + 1;
-        int column = 0;
-
-        for (int tileX = left; tileX <= right; tileX++)
-        {
-            progress.Value = progressStart + (column++ / (double)totalColumns) * (progressEnd - progressStart);
-            for (int tileY = top; tileY <= bottom; tileY++)
-            {
-                if (!WorldGen.InWorld(tileX, tileY)) continue;
-
-                float warpedX = tileX + noise.GetNoise(tileX, tileY) * warpAmt;
-                float warpedY = tileY + noise.GetNoise(tileX + 700f, tileY + 700f) * warpAmt;
-                warpedX += roughNoise.GetNoise(tileX, tileY) * roughAmt;
-                warpedY += roughNoise.GetNoise(tileX + 400f, tileY + 400f) * roughAmt;
-
-                float density = 0f;
-
-                foreach (var node in metaballs)
-                {
-                    float dx = warpedX - node.Position.X;
-                    float dy = warpedY - node.Position.Y;
-                    float distSq = (dx * dx) + (dy * dy);
-
-                    if (distSq == 0)
-                    {
-                        density += 1000f;
-                    }
-                    else
-                    {
-                        float distance = MathF.Sqrt(distSq);
-
-                        if (distance < node.Radius)
-                        {
-                            density += 1f - distance / node.Radius;
-                        }
-                    }
-                }
-
-                if (density >= 1f)
-                {
-                    WorldGen.PlaceTile(tileX, tileY, mudTile, mute: true, forced: true);
-                    mask.Mark(tileX, tileY);
-                }
-            }
-        }
-
-        return mask;
-    }
-
-    private void PlaceEdgeWalls(BiomeMask mask, GenerationProgress progress, double progressStart, double progressEnd)
+    private void PlaceEdgeWalls(GenerationProgress progress, double progressStart, double progressEnd)
     {
         const int wallThickness = 3;
 
-        var left = mask.Left - wallThickness;
-        var right = mask.Left + mask.Width + wallThickness;
-        var top = mask.Top - wallThickness;
-        var bottom = mask.Top + mask.Height + wallThickness;
+        // Scan from the surface down to the bottom of the world
+        int left = 40;
+        int right = Main.maxTilesX - 40;
+        int top = (int)(IngressFloor.surfaceY * 1.25f);
+        int bottom = Main.maxTilesY - 40;
 
         var total = (right - left + 1) * (bottom - top + 1);
         var processed = 0;
@@ -553,27 +414,28 @@ public class IngressCaves : GenPass
         {
             for (var y = top; y <= bottom; y++)
             {
-                if (processed++ % 500 == 0)
+                if (processed++ % 5000 == 0) // Updated to 5000 so the progress bar doesn't stutter on the massive scale
                     progress.Value = progressStart + processed / (double)total * (progressEnd - progressStart);
 
                 if (!WorldGen.InWorld(x, y)) continue;
 
                 var tile = Framing.GetTileSafely(x, y);
+
                 if (tile.HasTile) continue;
 
-                // Restrict wall placement to air tiles neighboring the biome's actual solid footprint
-                if (HasBiomeNeighbor(mask, x, y, wallThickness))
+                if (HasSolidNeighbor(x, y, wallThickness))
                     WorldGen.PlaceWall(x, y, wallTile, mute: true);
             }
         }
     }
 
-    private static bool HasBiomeNeighbor(BiomeMask mask, int x, int y, int radius)
+    private static bool HasSolidNeighbor(int x, int y, int radius)
     {
         for (int dx = -radius; dx <= radius; dx++)
         {
             for (int dy = -radius; dy <= radius; dy++)
             {
+                // Creates a diamond/circle shape for the thickness check
                 if (Math.Abs(dx) + Math.Abs(dy) > radius)
                     continue;
 
@@ -583,141 +445,37 @@ public class IngressCaves : GenPass
                 if (!WorldGen.InWorld(nx, ny))
                     continue;
 
-                // The neighbor tile must be inside the dynamic biome mask AND be solid
-                if (mask.Contains(nx, ny))
-                {
-                    if (Framing.GetTileSafely(nx, ny).HasTile)
-                        return true;
-                }
+                // If the neighbor has a solid block, return true
+                if (Framing.GetTileSafely(nx, ny).HasTile)
+                    return true;
             }
         }
 
         return false;
     }
 
-    private void SpreadGrass(BiomeMask biomeMask, GenerationProgress progress, double progressStart, double progressEnd)
-    {
-        var left = biomeMask.Left;
-        var right = biomeMask.Left + biomeMask.Width - 1;
-        var top = biomeMask.Top;
-        var bottom = biomeMask.Top + biomeMask.Height - 1;
-
-        var total = (right - left + 1) * (bottom - top + 1);
-        var processed = 0;
-        var grassType = TileID.Grass;
-
-        for (var x = left; x <= right; x++)
-        {
-            for (var y = top; y <= bottom; y++)
-            {
-                if (biomeMask.Contains(x, y))
-                {
-                    if (processed++ % 500 == 0)
-                        progress.Value = progressStart + processed / (double)total * (progressEnd - progressStart);
-
-                    if (!WorldGen.InWorld(x, y)) continue;
-
-                    var tile = Framing.GetTileSafely(x, y);
-                    if (!tile.HasTile || tile.TileType != TileID.LivingWood) continue;
-
-                    if (IsAdjacentToCarvedSpace(x, y))
-                    {
-                        tile.TileType = grassType;
-                        WorldGen.SquareTileFrame(x, y, true);
-                    }
-                }
-            }
-        }
-    }
-
-    private bool IsAdjacentToCarvedSpace(int x, int y)
-    {
-        for (var nx = x - 1; nx <= x + 1; nx++)
-        {
-            for (var ny = y - 1; ny <= y + 1; ny++)
-            {
-                if (nx == x && ny == y) continue;
-                if (!WorldGen.InWorld(nx, ny)) continue;
-
-                var neighbor = Framing.GetTileSafely(nx, ny);
-                if (!neighbor.HasTile) return true;
-                if (neighbor.WallType == wallTile) return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    private List<Node> ScatterAmbientPockets(BiomeMask mask, float scale)
+    private List<Node> ScatterAmbientPockets(float scale)
     {
         var pockets = new List<Node>();
 
+        int startX = 50;
+        int endX = Main.maxTilesX - 50;
+        int startY = IngressFloor.surfaceY + 60;
+        int endY = Main.maxTilesY - 50;
+
         for (var i = 0; i < AmbientPocketCount; i++)
         {
-            var point = mask.RandomPoint();
+            var px = WorldGen.genRand.Next(startX, endX);
+            var py = WorldGen.genRand.Next(startY, endY);
             var r = (int)(WorldGen.genRand.Next(AmbientRadiusMin, AmbientRadiusMax) * scale);
-            pockets.Add(new Node(point.X, point.Y, r));
+
+            pockets.Add(new Node(px, py, r));
         }
 
         return pockets;
     }
 
-    private List<Node> ScatterNodes(float scale, BiomeMask mask, out Node argieNode)
-    {
-        var nodes = new List<Node>();
-
-        int maskCenterX = mask.Left + mask.Width / 2;
-        int maskCenterY = mask.Top + mask.Height / 2;
-
-        // Argie is the biome's hub: anchored to the mask's true center,
-        // so tuning GridCols/GridRows/GridInnerZone later can never move her.
-        // Inserted at index 0 so Prim's MST (which roots at nodes[0]) grows outward from her.
-        var argieBoxW = (int)(mask.Width * ArgieCenterZone);
-        var argieBoxH = (int)(mask.Height * ArgieCenterZone);
-        var argiePoint = PlaceWithinMask(mask, maskCenterX, maskCenterY, argieBoxW / 2, argieBoxH / 2);
-        argieNode = new Node(argiePoint.X, argiePoint.Y, (int)(ArgieNodeRadius * scale));
-        nodes.Add(argieNode);
-
-        var innerW = (int)(mask.Width * GridInnerZone);
-        var innerH = (int)(mask.Height * GridInnerZone);
-        var cellW = innerW / GridCols;
-        var cellH = innerH / GridRows;
-        var gridLeft = maskCenterX - innerW / 2;
-        var gridTop = maskCenterY - innerH / 2;
-
-        for (var col = 0; col < GridCols; col++)
-        {
-            for (var row = 0; row < GridRows; row++)
-            {
-                var cellCx = gridLeft + col * cellW + cellW / 2;
-                var cellCy = gridTop + row * cellH + cellH / 2;
-                var jitterX = (int)(cellW * 0.52f);
-                var jitterY = (int)(cellH * 0.72f);
-
-                var point = PlaceWithinMask(mask, cellCx, cellCy, jitterX, jitterY);
-                var r = (int)(WorldGen.genRand.Next(NodeRadiusMin, NodeRadiusMax) * scale);
-                nodes.Add(new Node(point.X, point.Y, r));
-            }
-        }
-
-        var spineTop = maskCenterY - innerH / 2;
-        var spineBottom = maskCenterY + innerH / 2;
-        var maxDrift = (int)(mask.Width * SpineCenterBias);
-
-        for (var i = 0; i < SpineNodeCount; i++)
-        {
-            var t = i / (float)(SpineNodeCount - 1);
-            var targetY = spineTop + (int)(t * (spineBottom - spineTop));
-            var point = PlaceWithinMask(mask, maskCenterX, targetY, maxDrift, 0);
-            var r = (int)(WorldGen.genRand.Next(NodeRadiusMin, NodeRadiusMax) * scale);
-
-            nodes.Add(new Node(point.X, point.Y, r));
-        }
-
-        return nodes;
-    }
-    private List<Node> ScatterNodesGlobal(float scale, out Node argieNode)
+    private List<Node> ScatterNodes(float scale, out Node argieNode)
     {
         var nodes = new List<Node>();
 
@@ -764,34 +522,6 @@ public class IngressCaves : GenPass
         }
 
         return nodes;
-    }
-    private static Point PlaceWithinMask(BiomeMask mask, int cx, int cy, int jitterX, int jitterY)
-    {
-        const int attemptsPerRadius = 12;
-        const int maxExpansions = 5;
-
-        var jx = jitterX;
-        var jy = jitterY;
-
-        for (var expansion = 0; expansion < maxExpansions; expansion++)
-        {
-            for (var attempt = 0; attempt < attemptsPerRadius; attempt++)
-            {
-                var x = cx + WorldGen.genRand.Next(-jx, jx + 1);
-                var y = cy + WorldGen.genRand.Next(-jy, jy + 1);
-
-                if (mask.Contains(x, y))
-                    return new Point(x, y);
-            }
-
-            // Neighborhood missed the blob; widen the search before giving up on it.
-            jx = jx * 3 / 2 + 1;
-            jy = jy * 3 / 2 + 1;
-        }
-
-        // Whole neighborhood is outside the biome (deep inlet, pinched lobe).
-        // Any valid tile beats a node spawning in solid, uncarved rock.
-        return mask.RandomPoint();
     }
 
     // Prim's MST
