@@ -1,0 +1,13 @@
+namespace TrelamiumIII.Content.Alchemy;
+
+[LegacyName("FibrousSlurry")]
+public class FibrousSlurryItem : ModItem
+{
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+        Item.width = Item.height = 30;
+        Item.rare = ItemRarityID.White;
+        Item.maxStack = Item.CommonMaxStack;
+    }    
+}

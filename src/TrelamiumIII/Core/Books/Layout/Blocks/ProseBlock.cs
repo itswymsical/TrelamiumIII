@@ -71,7 +71,7 @@ public sealed class ProseBlock : BookBlock
             ? source[0]
             : '\0';
 
-    private float LineAdvance => BookText.LineHeight(Style.Font, Style.Scale) + Style.LineSpacing;
+    private float LineAdvance => BookText.LineHeight(Style.Face, Style.Scale) + Style.LineSpacing;
 
     protected override float MeasureCore(float width)
     {
@@ -116,7 +116,7 @@ public sealed class ProseBlock : BookBlock
             BookText.DrawLine(
                 spriteBatch,
                 line,
-                Style.Font,
+                Style.Face,
                 position,
                 Style.Color,
                 Style.Scale,
@@ -136,7 +136,7 @@ public sealed class ProseBlock : BookBlock
             return;
 
         Vector2 local = mouse - position;
-        int index = BookText.HitTest(line, Style.Font, local, Style.Scale, columnWidth, Style.Align);
+        int index = BookText.HitTest(line, Style.Face, local, Style.Scale, columnWidth, Style.Align);
 
         if (index < 0)
             return;
@@ -208,7 +208,7 @@ public sealed class ProseBlock : BookBlock
         // A drop cap eats its own letter: it is drawn separately, so the flowed text starts after it.
         string? body = cap != '\0' ? source![1..].TrimStart() : source;
 
-        lines = BookText.Layout(body, Style.Font, width, Style.Scale, Style.Color, leading, leadingLines);
+        lines = BookText.Layout(body, Style.Face, width, Style.Scale, Style.Color, leading, leadingLines);
         layoutWidth = width;
 
         return lines;
@@ -223,8 +223,8 @@ public sealed class ProseBlock : BookBlock
     /// <summary>Scale that makes the cap's ink exactly <see cref="DROP_CAP_LINES" /> lines tall.</summary>
     private float DropCapScale(char cap)
     {
-        var font = BookText.FontFor(BookFont.Display);
-        float target = BookText.LineHeight(Style.Font, Style.Scale) * DROP_CAP_LINES;
+        var font = BookText.FontFor(Style.FaceFor(BookFont.Display));
+        float target = BookText.LineHeight(Style.Face, Style.Scale) * DROP_CAP_LINES;
 
         float ink = BookText.TryGetGlyphInk(font, cap, out float height, out _)
             ? height
@@ -234,11 +234,11 @@ public sealed class ProseBlock : BookBlock
     }
 
     private float MeasureDropCap(char cap) =>
-        BookText.FontFor(BookFont.Display).MeasureString(cap.ToString()).X * DropCapScale(cap);
+        BookText.FontFor(Style.FaceFor(BookFont.Display)).MeasureString(cap.ToString()).X * DropCapScale(cap);
 
     private float DrawDropCap(SpriteBatch spriteBatch, char cap, Vector2 position)
     {
-        var font = BookText.FontFor(BookFont.Display);
+        var font = BookText.FontFor(Style.FaceFor(BookFont.Display));
         string text = cap.ToString();
         float scale = DropCapScale(cap);
 

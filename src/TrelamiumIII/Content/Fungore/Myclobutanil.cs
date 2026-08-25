@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Content.Alchemy;
 
 namespace TrelamiumIII.Content.Fungore;
 
@@ -36,7 +37,7 @@ public class MyclobutanilMushroom : GlobalItem
     /// <summary>
     ///     What counts as a mushroom. More will be added to the list, eventually.
     /// </summary>
-    public static readonly HashSet<int> Mushrooms = [ItemID.Mushroom];
+    public static readonly HashSet<int> Mushrooms = [ItemID.Mushroom, ModContent.ItemType<FlyAgaricItem>()];
 
     public override void OnConsumeItem(Item item, Player player)
     {

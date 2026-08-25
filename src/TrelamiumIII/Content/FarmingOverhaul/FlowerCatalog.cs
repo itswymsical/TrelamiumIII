@@ -1,3 +1,5 @@
+using TrelamiumIII.Content.Alchemy;
+
 namespace TrelamiumIII.Content.FarmingOverhaul;
 
 /// <summary>
@@ -53,6 +55,10 @@ public class FlowerCatalogSystem : ModSystem
         FlowerRegistry.Register(ItemID.Deathweed)
             .PerUnit(FlowerStat.Thorns, 0.001f)
             .PerUnit(FlowerStat.Crit, 0.001f);
+
+        FlowerRegistry.Register(ModContent.ItemType<MagnoliaItem>())
+            .PerUnit(FlowerStat.Defense, 0.15f)
+            .PerUnit(FlowerStat.LifeRegen, 0.02f);
     }
 
     /// <summary>
@@ -70,7 +76,22 @@ public class FlowerCatalogSystem : ModSystem
 
     private static void RegisterBouquets()
     {
-        FlowerRegistry.RegisterBouquet("Dawn's Grace Bouquet")
+        FlowerRegistry.RegisterBouquet("Sunday Morning")
+            .From(ModContent.ItemType<MagnoliaItem>(), FlowerStat.Defense, 0.1f)
+            .From(ItemID.Daybloom, FlowerStat.Life, 0.075f)
+            .From(ItemID.Blinkroot, FlowerStat.PickSpeed, 0.0035f);
+
+        FlowerRegistry.RegisterBouquet("Spring Cleaning")
+            .From(ItemID.Waterleaf, FlowerStat.MagicDamage, 0.00125f)
+            .From(ItemID.Sunflower, FlowerStat.MoveSpeed, 0.00025f)
+            .From(ModContent.ItemType<MagnoliaItem>(), FlowerStat.LifeRegen, 0.005f);
+
+        FlowerRegistry.RegisterBouquet("Baleful Harvest")
+            .From(ItemID.Deathweed, FlowerStat.Thorns, 0.002f)
+            .From(ItemID.Fireblossom, FlowerStat.Crit, 0.5f)
+            .From(ItemID.Deathweed, FlowerStat.Knockback, 0.0015f);
+
+        FlowerRegistry.RegisterBouquet("Temperate Breeze")
             .From(ItemID.Shiverthorn, FlowerStat.Endurance, 0.002f)
             .From(ItemID.Daybloom, FlowerStat.Life, 2f)
             .From(ItemID.Blinkroot, FlowerStat.PickSpeed, 0.0075f)
@@ -86,6 +107,11 @@ public class FlowerCatalogSystem : ModSystem
             .From(ItemID.Shiverthorn, FlowerStat.Crit, 0.35f)
             .From(ItemID.Fireblossom, FlowerStat.MeleeDamage, 0.004f)
             .From(ItemID.Fireblossom, FlowerStat.Knockback, 0.003f);
+
+        FlowerRegistry.RegisterBouquet("Balefrost Arrangement")
+            .From(ItemID.Deathweed, FlowerStat.Thorns, 0.002f)
+            .From(ItemID.Fireblossom, FlowerStat.MeleeDamage, 0.004f)
+            .From(ItemID.Shiverthorn, FlowerStat.Crit, 0.35f);
 
         FlowerRegistry.RegisterBouquet("Sunrise Spray")
             .From(ItemID.Fireblossom, FlowerStat.LifeRegen, 1f / 3f)

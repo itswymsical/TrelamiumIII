@@ -35,7 +35,7 @@ public sealed class EyeOfCthulhuWake : GlobalNPC
 
         // Read before OnKill has a chance to set it, which is what makes this mean "the player has
         // not seen this yet" rather than "the boss is not dead yet".
-        EyeOfCthulhuWakeSystem.Arm(npc.Center, firstKill: true);
+        EyeOfCthulhuWakeSystem.Arm(npc.Center, firstKill: !DownedBossSystem.SeenEyeOfCthulhuWake);
     }
 
     public override void OnKill(NPC npc)

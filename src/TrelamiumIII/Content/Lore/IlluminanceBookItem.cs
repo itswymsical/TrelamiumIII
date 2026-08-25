@@ -20,7 +20,7 @@ public class IlluminanceBookItem : ModItem
 
     public override bool? UseItem(Player player)
     {
-        LoreBookUI.Open("Illuminance");
+        LoreBookUI.Open("IlluminanceSeries.IlluminanceI");
         return true;
     }
 }

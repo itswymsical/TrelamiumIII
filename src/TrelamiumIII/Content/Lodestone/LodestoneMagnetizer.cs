@@ -10,7 +10,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Lodestone;
 
-public class LodestoneMagnetizerItem : ModItem
+public class LodestoneMagnetizer : ModItem
 {
     public const int PICK_POWER = 25;
 
@@ -73,7 +73,7 @@ public class LodestoneMagnetizerItem : ModItem
     {
         CreateRecipe()
         .AddIngredient<LodestoneItem>(25)
-        .AddIngredient<MagnetizedCoilItem>(8)
+        .AddIngredient<MagnetizedCoil>(8)
         .AddRecipeGroup(nameof(ItemID.CopperBar), 15)
         .AddTile(TileID.Anvils)
         .Register();
@@ -82,7 +82,7 @@ public class LodestoneMagnetizerItem : ModItem
 
 public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
 {
-    public override string Texture => AssetReferences.Content.Lodestone.LodestoneMagnetizerItem.KEY;
+    public override string Texture => AssetReferences.Content.Lodestone.LodestoneMagnetizer.KEY;
 
     #region tuning
 
@@ -352,7 +352,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
     ///     Read off the constant rather than <c>HeldItem.pick</c>, which is zero by design -- see
     ///     <see cref="LodestoneMagnetizerItem.PICK_POWER" />.
     /// </summary>
-    private static int PickPower() => LodestoneMagnetizerItem.PICK_POWER;
+    private static int PickPower() => LodestoneMagnetizer.PICK_POWER;
 
     public override void AI()
     {

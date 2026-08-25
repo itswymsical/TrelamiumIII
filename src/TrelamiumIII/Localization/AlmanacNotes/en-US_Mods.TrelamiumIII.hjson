@@ -1,0 +1,45 @@
+Almanac: {
+	Notes: {
+		Foreword: {
+			Title: A Word Before You Begin.
+			Body:
+				'''
+				If you're reading this, then the assailants have done their work and I've done my dying. But you, my boy, have inherited the better half of me: this book.[p]I don't want you to worry! Everything I know about alchemy is in these pages, and everything I didn't... well, I've left room for you to fill in.
+				The world out there is much bigger and stranger than the one I had at your age, and twice as full of things that yearn to be discovered.
+				[p]Please, read this almanac when you're stuck, ignore me when you're not.[p] And for the love of all that ferments, label your bottles. - Uncle J.
+				[p]Oh, and one more thing: if you find a woman named Argie, tell her I said hi. She was a good friend of mine, and I think she'd like to know that you found this book.
+				'''
+		}
+
+		HowToUse: {
+			Title: Reading This Book.
+			Body:
+				'''
+				The book sorts itself for you, so you needn't.
+				Flip to Recipes to see everything you can brew; the little tabs down the side narrow it by discipline. Ingredients lists every reagent worth the name, tap one to learn its uses, though it will only speak of brews you've actually discovered. Secrets are earned, not handed over.
+				Drop a thing into the slot on the side and the book shows only what uses it. Most pages stay blank until you've earned them. So go and earn them.[p]I'll be rooting for 'ya, kid. I can already tell you're going to be a fantastic alchemist.
+				'''
+		}
+
+		Principles: {
+			Title: The Seven Principles.
+			Body: Every substance leans toward one of seven natures. Learn to read them and you'll know the quality of a brew before you ever pour it. Here is the short of it, and how each tends to behave when it meets another:
+		}
+
+		Chemistry: {
+			Title: Solvents & Solutes.
+			Body: There are six temperaments paired into three old quarrels. Every solute carries at least one, and every brew is the argument they have inside the bottle. Learn who opposes who:
+		}
+
+		OnPotency: {
+			Title: On Potency...
+			Body:
+				'''
+				Each time you make a brew, there is a rating which determines the strength and potency of the output. Higher stars means the brew's strong, and sometimes longer. Fewer stars usually indicates it's gentler and brief. Although, every substance is different, meaning affects follow suit.
+				[p]The clever alchemist is not the one who always reaches for five-star potency, it's the one who knows when it is one.
+				[p][p]As for those mundane solutions, don't snore at them! A blank page is where every story starts.
+				[p]Speaking of, You need to create yourself an alchemy station to get started. I've already left you a cooking pot, I trust you can figure out the rest.
+				'''
+		}
+	}
+}

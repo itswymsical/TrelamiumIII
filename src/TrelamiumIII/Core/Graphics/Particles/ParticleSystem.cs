@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Common.Configs;
 
 namespace TrelamiumIII.Core.Graphics.Particles;
 
@@ -16,12 +17,11 @@ public sealed class ParticleSystem : ModSystem
 {
     /// <summary>Pass as <c>variant</c> to <see cref="Spawn{T}" /> to pick one at random.</summary>
     public const int RANDOM_VARIANT = -1;
-
     /// <summary>
     ///     Past this, the oldest particles are dropped. A burst that overruns the budget costs
     ///     thinner debris rather than the frame rate.
     /// </summary>
-    private const int MAX_PARTICLES = 256;
+    private static int MAX_PARTICLES => ModContent.GetInstance<VFXConfig>().ParticleCount;
 
     /// <summary>Marks a <see cref="Particle.Textures" /> entry as one of Terraria's own.</summary>
     private const string VANILLA_PREFIX = "Images/";

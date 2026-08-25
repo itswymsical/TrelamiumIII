@@ -29,7 +29,7 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
         if (laid.Count == 0)
             return 0f;
 
-        float height = laid.Count * (BookText.LineHeight(Style.Font, Style.Scale) + Style.LineSpacing) - Style.LineSpacing;
+        float height = laid.Count * (BookText.LineHeight(Style.Face, Style.Scale) + Style.LineSpacing) - Style.LineSpacing;
 
         return rule ? height + RULE_GAP + RULE_THICKNESS : height;
     }
@@ -39,12 +39,12 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
         BlockRect inner = Inset(rect);
         var laid = LinesFor(inner.Width);
 
-        float advance = BookText.LineHeight(Style.Font, Style.Scale) + Style.LineSpacing;
+        float advance = BookText.LineHeight(Style.Face, Style.Scale) + Style.LineSpacing;
         float y = inner.Y;
 
         foreach (BookTextLine line in laid)
         {
-            BookText.DrawLine(spriteBatch, line, Style.Font, new Vector2(inner.X, y), Style.Color, Style.Scale, inner.Width, Style.Align);
+            BookText.DrawLine(spriteBatch, line, Style.Face, new Vector2(inner.X, y), Style.Color, Style.Scale, inner.Width, Style.Align);
             y += advance;
         }
 
@@ -64,7 +64,7 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
         if (lines is not null && Math.Abs(layoutWidth - width) < 0.5f)
             return lines;
 
-        lines = BookText.Layout(text, Style.Font, width, Style.Scale, Style.Color);
+        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.Color);
         layoutWidth = width;
 
         return lines;

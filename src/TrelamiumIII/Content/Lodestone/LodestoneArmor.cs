@@ -22,7 +22,7 @@ public class LodestoneLeggings : ModItem
     {
         CreateRecipe()
         .AddIngredient(ModContent.ItemType<LodestoneItem>(), 10)
-        .AddIngredient(ModContent.ItemType<MagnetizedCoilItem>(), 2)
+        .AddIngredient(ModContent.ItemType<MagnetizedCoil>(), 2)
         .AddTile(TileID.Anvils)
         .Register();
     }
@@ -48,7 +48,7 @@ public class LodestoneChestplate : ModItem
     {
         CreateRecipe()
         .AddIngredient(ModContent.ItemType<LodestoneItem>(), 12)
-        .AddIngredient(ModContent.ItemType<MagnetizedCoilItem>(), 1)
+        .AddIngredient(ModContent.ItemType<MagnetizedCoil>(), 1)
         .AddIngredient(ItemID.Silk, 6)
         .AddTile(TileID.Anvils)
         .Register();
@@ -194,7 +194,7 @@ public class LodestoneHelmet : ModItem
     {
         CreateRecipe()
         .AddIngredient(ModContent.ItemType<LodestoneItem>(), 8)
-        .AddIngredient(ModContent.ItemType<MagnetizedCoilItem>(), 2)
+        .AddIngredient(ModContent.ItemType<MagnetizedCoil>(), 2)
         .AddIngredient(ItemID.CopperBar, 2)
         .AddTile(TileID.Anvils)
         .Register();

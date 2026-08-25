@@ -5,11 +5,22 @@
 #    [text]   span anchor   - pairs with a span affect (Wave, Shake, Slow, Fast, Pitch);
 #                             the text inside the brackets is what gets displayed
 #    [speakerName:Merchant]  substituted with that NPC's given name (not an affect anchor)
+
 DialogueLibrary: {
 	Example: {
 		Greeting: {
 			Line1.Text: This line pauses right here[] before finishing.
 			Line2.Text: And this one has a [wavy] word in it.
+		}
+	}
+
+	CuriousSlime: {
+		Greeting.Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+		Chat.Line1.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
+
+		Job1End: {
+			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
 		}
 	}
 }

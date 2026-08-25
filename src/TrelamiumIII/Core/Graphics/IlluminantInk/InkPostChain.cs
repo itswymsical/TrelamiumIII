@@ -85,7 +85,7 @@ internal sealed class InkPostChain
     /// </remarks>
     public ShaderData PrepareBloom(in InkFrame frame)
     {
-        bloom ??= Assets.Shaders.BloomShader.CreateBloomPass();
+        bloom ??= AssetReferences.Assets.Shaders.BloomShader.CreateBloomPass();
 
         var parameters = bloom.Parameters;
         parameters.uTexelSize = new Vector2(1f / Math.Max(frame.Width, 1), 1f / Math.Max(frame.Height, 1));

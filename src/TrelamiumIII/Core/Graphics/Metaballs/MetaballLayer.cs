@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Common.Configs;
 
 namespace TrelamiumIII.Core.Graphics.Metaballs;
 
@@ -52,7 +53,9 @@ public abstract class MetaballLayer
     ///     Ceiling on live nodes. Past it the oldest are dropped, so a runaway emitter costs a
     ///     thinner cloud rather than the frame rate.
     /// </summary>
-    protected virtual int MaxNodes => 400;
+    protected virtual int BaseMaxNodes => 400;
+
+    protected int MaxNodes => (int)(BaseMaxNodes * ModContent.GetInstance<VFXConfig>().MetaballCountMultiplier);
 
     protected virtual BlendState CompositeBlendState => BlendState.AlphaBlend;
 

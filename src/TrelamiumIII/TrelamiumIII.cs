@@ -1,6 +1,7 @@
 using Terraria.Localization;
 using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII;
 
@@ -27,8 +28,9 @@ public sealed partial class TrelamiumIII : Mod
 
     public override void Load()
     {
+        TrelamiumFonts.Load(this);
         SpeakerRegistry.Load();
-        DialogueRegistry.Load();
+        //DialogueRegistry.Load(); // now autoloading
 
         // Lore books autoload as ModLoreBook, so there is no registration step here.
     }
@@ -38,6 +40,7 @@ public sealed partial class TrelamiumIII : Mod
         LoreBookRegistry.Unload();
         DialogueRegistry.Unload();
         SpeakerRegistry.Unload();
+        TrelamiumFonts.Unload();
     }
 }
 

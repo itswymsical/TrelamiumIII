@@ -134,7 +134,7 @@ public sealed class StickyNoteBlock(string? text) : BookBlock
     {
         var laid = LinesFor(Math.Max(1f, width - Padding * 2f));
 
-        return BookText.MeasureHeight(laid, Style.Font, Style.Scale, Style.LineSpacing) + Padding * 2f + GumHeight;
+        return BookText.MeasureHeight(laid, Style.Face, Style.Scale, Style.LineSpacing) + Padding * 2f + GumHeight;
     }
 
     public override void Draw(SpriteBatch spriteBatch, in BlockRect rect, BookPageContext context)
@@ -153,14 +153,14 @@ public sealed class StickyNoteBlock(string? text) : BookBlock
 
         float contentWidth = Math.Max(1f, inner.Width - Padding * 2f);
         float y = inner.Y + Padding + GumHeight;
-        float advance = BookText.LineHeight(Style.Font, Style.Scale) + Style.LineSpacing;
+        float advance = BookText.LineHeight(Style.Face, Style.Scale) + Style.LineSpacing;
 
         foreach (BookTextLine line in LinesFor(contentWidth))
         {
             BookText.DrawLine(
                 spriteBatch,
                 line,
-                Style.Font,
+                Style.Face,
                 new Vector2(inner.X + Padding, y),
                 Style.Color,
                 Style.Scale,
@@ -176,7 +176,7 @@ public sealed class StickyNoteBlock(string? text) : BookBlock
         if (lines is not null && Math.Abs(layoutWidth - width) < 0.5f)
             return lines;
 
-        lines = BookText.Layout(text, Style.Font, width, Style.Scale, Style.Color);
+        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.Color);
         layoutWidth = width;
 
         return lines;

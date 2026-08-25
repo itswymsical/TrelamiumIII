@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrelamiumIII.Content.Rusted;
+﻿namespace TrelamiumIII.Content.Rusted;
 
 public class RustedIronOre : ModTile
 {
@@ -16,6 +10,7 @@ public class RustedIronOre : ModTile
         Main.tileMergeDirt[Type] = true;
         Main.tileBlockLight[Type] = true;
         Main.tileBlendAll[Type] = true;
+        HitSound = SoundID.Tink;
         DustType = DustID.Iron;
         RegisterItemDrop(ItemID.MudBlock);
         AddMapEntry(new Color(108, 98, 88));

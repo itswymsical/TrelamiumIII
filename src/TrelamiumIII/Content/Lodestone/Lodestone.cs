@@ -107,7 +107,7 @@ public class LodestoneTile : ModTile
     public override bool IsTileSpelunkable(int i, int j) => true;
 }
 
-public class MagnetizedCoilItem : ModItem
+public class MagnetizedCoil : ModItem
 {
     public override void SetDefaults()
     {

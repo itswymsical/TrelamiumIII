@@ -11,7 +11,7 @@ using Terraria.GameContent.Drawing;
 using Terraria.ObjectData;
 using static Terraria.GameContent.Drawing.TileDrawing;
 
-namespace TrelamiumIII.Common.Globals.Tiles;
+namespace TrelamiumIII.Common.Globals;
 
 internal class TileSwaySystem : ModSystem
 {

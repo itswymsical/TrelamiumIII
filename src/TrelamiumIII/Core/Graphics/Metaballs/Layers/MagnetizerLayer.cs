@@ -68,7 +68,7 @@ public sealed class MagnetizerLayer : MetaballLayer
     ///     Lower than the gas layers on purpose. The stream is thin by design -- it crosses the tiles
     ///     the player is trying to see, and a mining tool that hides its own workings is a bad one.
     /// </summary>
-    protected override int MaxNodes => 160;
+    protected override int BaseMaxNodes => 160;
 
     private Asset<Texture2D>? noiseTexture;
 
