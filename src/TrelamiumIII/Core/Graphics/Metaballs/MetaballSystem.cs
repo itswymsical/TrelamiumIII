@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
 namespace TrelamiumIII.Core.Graphics.Metaballs;
@@ -40,11 +42,18 @@ public sealed class MetaballSystem : ModSystem
 
     public override void OnModLoad()
     {
-        RegisterLayer(new SporeLayer());
-        RegisterLayer(new IceMistLayer());
-        RegisterLayer(new MagnetizerLayer());
-        RegisterLayer(new InkLayer());
-        RegisterLayer(new MagnoliaLayer());
+        List<MetaballLayer> discovered = [];
+
+        foreach (Type type in Mod.Code.GetTypes())
+        {
+            if (type.IsAbstract || !type.IsSubclassOf(typeof(MetaballLayer)))
+                continue;
+
+            discovered.Add((MetaballLayer)Activator.CreateInstance(type));
+        }
+
+        foreach (var layer in discovered)
+            RegisterLayer(layer);
 
         loaded = true;
 

@@ -1,5 +1,6 @@
-﻿using TrelamiumIII.Core.Gas.Layers;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
+using TrelamiumIII.Core.Gas.Layers;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -19,12 +20,19 @@ public class GasSystem : ModSystem
     public override void OnModLoad()
     {
         Instance = this;
-        RegisterLayer(new BloodLayer());
-        RegisterLayer(new IceMistLayer());
-        RegisterLayer(new ThermiteLayer());
-        RegisterLayer(new CorruptedSporeLayer());
-        RegisterLayer(new PhytoncideSporeLayer());
-        RegisterLayer(new StarLayer());
+
+        List<GasLayer> discovered = [];
+
+        foreach (Type type in Mod.Code.GetTypes())
+        {
+            if (type.IsAbstract || !type.IsSubclassOf(typeof(GasLayer)))
+                continue;
+
+            discovered.Add((GasLayer)Activator.CreateInstance(type));
+        }
+
+        foreach (var layer in discovered.OrderBy(l => l.LoadOrder))
+            RegisterLayer(layer);
 
         On_Main.CheckMonoliths += static orig =>
         {
