@@ -1,8 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Terraria.Audio;
-using TrelamiumIII.Common.Systems;
-using TrelamiumIII.Utilities;
+﻿using TrelamiumIII.Content.EyeOfCthulhu;
+using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.Misc;
 
@@ -10,77 +7,216 @@ public class WoodenBuckler : ModItem
 {
     public override void SetDefaults()
     {
-        Item.accessory = true;
         Item.width = Item.height = 28;
         Item.rare = ItemRarityID.White;
-        Item.value = Item.sellPrice(silver: 2);
-        Item.defense = 1;
+        Item.value = Item.sellPrice(copper: 3);
+        Item.damage = 25;
+        Item.knockBack = 7f;
+        Item.maxStack = 10;
+        Item.consumable = true;
     }
 
-    public override void UpdateEquip(Player player)
-        => player.GetModPlayer<WoodenBucklerPlayer>().buckled = true;
+    public override void UpdateInventory(Player player)
+    {
+        base.UpdateInventory(player);
+        player.GetModPlayer<WoodenBucklerPlayer>().BucklerEquipped = true;
+    }
 
     public override void AddRecipes()
     {
         CreateRecipe()
         .AddIngredient(ItemID.Wood, 12)
-        .AddIngredient(ItemID.IronBar)
-        .AddTile(TileID.Anvils);
-    }
-    public override void ModifyTooltips(List<TooltipLine> tooltips)
-    {
-        string keyName = "Unbound";
-
-        var assignedKeys = KeybindsSystem.BucklerKeybind.GetAssignedKeys();
-        if (assignedKeys.Count > 0)
-        {
-            keyName = assignedKeys[0];
-        }
-
-        TooltipLine tooltipLine = tooltips.FirstOrDefault(x => x.Name == "Tooltip0" && x.Mod == "Terraria");
-
-        if (tooltipLine != null)
-        {
-            tooltipLine.Text = tooltipLine.Text.Replace("[KEY]", keyName);
-        }
+        .AddRecipeGroup(RecipeGroupID.IronBar)
+        .AddTile(TileID.Anvils)
+        .Register();
     }
 }
 
 public class WoodenBucklerPlayer : ModPlayer
 {
-    public bool buckled;
-    public bool buckleParry;
-    public int buckleTimer;
-    public int buckleCooldown;
+    public const int DashRight = 2;
+    public const int DashLeft = 3;
 
-    public override void ResetEffects() => buckled = false;
+    public const int DashCooldown = 50;
+    public const int DashDuration = 35;
 
-    public override void PreUpdate()
+    public const float DashVelocity = 10f;
+    /// <summary>
+    /// indicates there is no current dash direction
+    /// </summary>
+    public int DashDir = -1;
+
+    public int DashDelay = 0;
+    public int DashTimer = 0;
+    public bool BucklerEquipped;
+
+    public override void ResetEffects()
     {
-        if (buckleCooldown > 0)
+        BucklerEquipped = false;
+
+        if (Player.controlRight && Player.releaseRight
+            && Player.doubleTapCardinalTimer[DashRight] < 15 && Player.doubleTapCardinalTimer[DashLeft] == 0)
+            DashDir = DashRight;
+
+        else if (Player.controlLeft && Player.releaseLeft
+            && Player.doubleTapCardinalTimer[DashLeft] < 15 && Player.doubleTapCardinalTimer[DashRight] == 0)
+            DashDir = DashLeft;
+
+        else
+            DashDir = -1;
+
+    }
+
+    private bool CanUseDash()
+        => BucklerEquipped && Player.dashType == DashID.None && !Player.setSolar && !Player.mount.Active;
+
+
+    public override void PreUpdateMovement()
+    {
+        if (CanUseDash() && DashDir != -1 && DashDelay == 0)
         {
-            buckleCooldown--;
+            Vector2 newVelocity = Player.velocity;
+            switch (DashDir)
+            {
+                case DashLeft when Player.velocity.X > -DashVelocity:
+                case DashRight when Player.velocity.X < DashVelocity:
+                    {
+                        float dashDirection = DashDir == DashRight ? 1 : -1;
+                        newVelocity.X = dashDirection * DashVelocity;
+                        break;
+                    }
+                default:
+                    return;
+            }
+
+            DashDelay = DashCooldown;
+            DashTimer = DashDuration;
+            Player.velocity = newVelocity;
         }
 
-        if (KeybindsSystem.BucklerKeybind.JustPressed && buckleCooldown == 0 && buckled)
+        if (DashDelay > 0)
+            DashDelay--;
+
+        if (DashTimer > 0)
         {
-            buckleParry = true;
-            buckleCooldown = TimeConversion.SetTime(secs: 5);
-            SoundEngine.PlaySound(SoundID.Research with { Pitch = -0.05f }, Player.Center);
+            Player.eocDash = DashTimer;
+            Player.armorEffectDrawShadowEOCShield = true;
+            CheckDashHit();
+            DashTimer--;
         }
     }
 
-    public override void UpdateEquips()
+    private Item BucklerStats()
     {
-        if (buckleParry && buckleTimer < TimeConversion.SetTime(secs: 1, ticks: 30))
+        for (int i = 0; i < Player.inventory.Length; i++)
         {
-            buckleTimer++;
-            Player.endurance += 0.5f;
-            if (buckleTimer >= TimeConversion.SetTime(secs: 1, ticks: 30))
+            if (Player.inventory[i].type == ModContent.ItemType<WoodenBuckler>())
             {
-                buckleParry = false;
-                buckleTimer = 0;
+                return Player.inventory[i];
+            }
+        }
+        return null;
+    }
+
+    private void CheckDashHit()
+    {
+        Rectangle hitBox = new Rectangle(
+                    (int)(Player.position.X + Player.velocity.X * 0.5f - 6f),
+                    (int)(Player.position.Y + Player.velocity.Y * 0.5f - 6f),
+                    Player.width + 10,
+                    Player.height + 10
+                );
+
+        Item buckler = BucklerStats();
+
+        // Safety check: if they somehow dashed but don't have the item.
+        if (buckler == null) return;
+
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            NPC target = Main.npc[i];
+
+            if (!target.active || target.friendly || target.dontTakeDamage || target.immune[Player.whoAmI] > 0)
+                continue;
+
+            if (hitBox.Intersects(target.Hitbox))
+            {
+                int hitDirection = Player.velocity.X > 0 ? 1 : -1;
+
+                int damage = Player.GetWeaponDamage(buckler);
+
+                float knockback = Player.GetWeaponKnockback(buckler, buckler.knockBack);
+
+                Player.ApplyDamageToNPC(target, damage, knockback, hitDirection, false);
+
+                // SoundEngine.PlaySound(SoundID.Item37, Player.position);
+
+                Player.immune = true;
+                Player.immuneTime = 20;
+                Player.velocity.X = -hitDirection * 4f;
+                Player.velocity.Y = -3f;
+
+                ConsumeShield();
+
+                DashTimer = 0;
+                break;
             }
         }
     }
+
+    private void ConsumeShield()
+    {
+        for (int i = 0; i < Player.inventory.Length; i++)
+        {
+            if (Player.inventory[i].type == ModContent.ItemType<WoodenBuckler>())
+            {
+                Player.inventory[i].stack--;
+                BreakShieldVFX();
+                if (Player.inventory[i].stack <= 0)
+                {
+                    Player.inventory[i].TurnToAir();
+                }
+                break;
+            }
+        }
+    }
+
+    private void BreakShieldVFX()
+    {
+        Vector2 offset = Main.rand.NextVector2Circular(7f, 14f);
+
+        for (int i = 0; i < 8; i++)
+        {
+            ParticleSystem.Spawn<BucklerParticle>(
+                Player.Center + offset,
+                new Vector2(-DashVelocity * Player.direction, -DashVelocity) * 0.4f + Main.rand.NextVector2Circular(0.7f, 0.7f),
+                timeLeft: Main.rand.Next(22, 40),
+                scale: Main.rand.NextFloat(0.5f, 1.05f),
+                rotation: Main.rand.NextFloat(MathHelper.TwoPi),
+                rotationVelocity: Main.rand.NextFloat(-0.05f, 0.05f)
+            );
+        }
+    }
+}
+
+public class BucklerParticle : Particle
+{
+    public override string[] Textures => ["Images/Item_9", "Images/Item_11"]; // placeholder lol
+
+    public override Vector2 Size => new(10f);
+
+    public override float Gravity => Drift == GoreDrift.Tumble ? 0.2f : 0f;
+
+    public override bool TileCollide => Drift == GoreDrift.Tumble;
+
+    public override float Drag => Drift == GoreDrift.Tumble ? 0.995f : 0.98f;
+
+    public override float Bounce => 0.34f;
+
+    public override int FadeOutTicks => 30;
+
+    public GoreDrift Drift { get; set; } = GoreDrift.Tumble;
+
+    public override bool UseLighting => true;
+
 }

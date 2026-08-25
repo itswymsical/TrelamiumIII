@@ -1,7 +1,6 @@
 Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
-	WoodenBucklerParry.DisplayName: Wooden Buckler Parry
 }
 
 Items: {
@@ -549,8 +548,8 @@ Items: {
 		DisplayName: Wooden Buckler
 		Tooltip:
 			'''
-			Pressing [KEY] reduces all incoming damage by 50% for 1.5 seconds
-			5 second cooldown
+			A disposable shield that allows you to ram into enemies
+			Ramming into enemies will immediately destroy the buckler
 			'''
 	}
 }

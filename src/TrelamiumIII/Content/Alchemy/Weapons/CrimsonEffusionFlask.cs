@@ -111,39 +111,51 @@ public class CrimsonEffusionFlaskProjectile : ModProjectile
     public override void OnKill(int timeLeft)
     {
         SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
-
         SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
 
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity,
-            Projectile.width, Projectile.height);
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity,
-            Projectile.width, Projectile.height);
+        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
+        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
 
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
+        Gore.NewGore(Projectile.GetProjectileSource_FromThis(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
+        Gore.NewGore(Projectile.GetProjectileSource_FromThis(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
 
         if (Projectile.owner != Main.myPlayer) return;
 
-        Vector2 outward = _impactNormal != Vector2.Zero
-            ? _impactNormal
-            : (-Projectile.oldVelocity).SafeNormalize(-Vector2.UnitY);
+        bool hitTile = _impactNormal != Vector2.Zero;
 
-        Vector2 up = -Vector2.UnitY;
-        if (Vector2.Dot(up, outward) >= 0f)
-            outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
+        int count = hitTile ? Main.rand.Next(18, 24) : Main.rand.Next(20, 28);
+        Vector2 origin = Projectile.Center + (hitTile ? _impactNormal * 2f : Vector2.Zero);
 
-        Vector2 origin = Projectile.Center + outward * 6f;
-
-        int count = Main.rand.Next(18, 24);
         for (int i = 0; i < count; i++)
         {
+            Vector2 vel;
+            float edge;
 
-            float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
-            float angle = MathHelper.Lerp(-SplashArc * 0.25f, SplashArc * 0.25f, t);
-            float edge = Math.Abs(angle) / (SplashArc * 0.25f);
+            if (hitTile)
+            {
+                //  Tile Splash
+                Vector2 outward = _impactNormal;
+                Vector2 up = -Vector2.UnitY;
+                if (Vector2.Dot(up, outward) >= 0f)
+                    outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
 
-            float speed = MathHelper.Lerp(9.5f, 11f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
-            Vector2 vel = outward.RotatedBy(angle) * speed;
+                float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
+                float arcRange = SplashArc * 0.25f;
+                float angle = MathHelper.Lerp(-arcRange, arcRange, t);
+                edge = Math.Abs(angle) / arcRange;
+
+                float speed = MathHelper.Lerp(5.5f, 10f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
+                vel = outward.RotatedBy(angle) * speed;
+            }
+            else
+            {
+                // Burst
+                float angle = MathHelper.TwoPi * ((float)i / count) + Main.rand.NextFloat(-0.2f, 0.2f);
+                edge = Main.rand.NextFloat();
+
+                float speed = Main.rand.NextFloat(4.5f, 6f);
+                vel = angle.ToRotationVector2() * speed;
+            }
 
             var splash = edge switch
             {

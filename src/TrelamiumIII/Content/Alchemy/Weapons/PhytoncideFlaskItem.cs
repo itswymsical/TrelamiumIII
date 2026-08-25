@@ -90,7 +90,7 @@ public class PhytoncideFlaskProjectile : ModProjectile
         Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
                       + Main.rand.NextVector2Circular(0.5f, 0.5f);
 
-        layer.SpawnNode(Projectile.Center, drift, radius: 4f, life: 40f);
+        layer.SpawnNode(Projectile.Center, drift, radius: 5f, life: 8f);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -106,37 +106,50 @@ public class PhytoncideFlaskProjectile : ModProjectile
     public override void OnKill(int timeLeft)
     {
         SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
-
         SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
 
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity,
-            Projectile.width, Projectile.height);
+        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
 
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
+        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
+        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
 
         if (Projectile.owner != Main.myPlayer) return;
 
-        Vector2 outward = _impactNormal != Vector2.Zero
-            ? _impactNormal
-            : (-Projectile.oldVelocity).SafeNormalize(-Vector2.UnitY);
+        bool hitTile = _impactNormal != Vector2.Zero;
 
-        Vector2 up = -Vector2.UnitY;
-        if (Vector2.Dot(up, outward) >= 0f)
-            outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
+        int count = hitTile ? Main.rand.Next(7, 11) : Main.rand.Next(12, 16);
 
-        Vector2 origin = Projectile.Center + outward * 6f;
+        Vector2 origin = Projectile.Center + (hitTile ? _impactNormal * 2f : Vector2.Zero);
 
-        int count = Main.rand.Next(12, 17);
         for (int i = 0; i < count; i++)
         {
+            Vector2 vel;
+            float edge;
 
-            float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
-            float angle = MathHelper.Lerp(-SplashArc * 0.5f, SplashArc * 0.5f, t);
-            float edge = Math.Abs(angle) / (SplashArc * 0.5f);
+            if (hitTile)
+            {
+                Vector2 outward = _impactNormal;
+                Vector2 up = -Vector2.UnitY;
 
-            float speed = MathHelper.Lerp(11.5f, 12f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
-            Vector2 vel = outward.RotatedBy(angle) * speed;
+                if (Vector2.Dot(up, outward) >= 0f)
+                    outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
+
+                float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
+                float angle = MathHelper.Lerp(-SplashArc * 0.5f, SplashArc * 0.5f, t);
+                edge = Math.Abs(angle) / (SplashArc * 0.5f);
+
+                float speed = MathHelper.Lerp(11.5f, 12f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
+                vel = outward.RotatedBy(angle) * speed;
+            }
+            else
+            {
+                float angle = MathHelper.TwoPi * ((float)i / count) + Main.rand.NextFloat(-0.2f, 0.2f);
+
+                edge = Main.rand.NextFloat();
+
+                float speed = Main.rand.NextFloat(3f, 8f);
+                vel = angle.ToRotationVector2() * speed;
+            }
 
             var splash = edge switch
             {
@@ -146,7 +159,7 @@ public class PhytoncideFlaskProjectile : ModProjectile
             };
 
             Projectile.NewProjectile(
-                Projectile.GetProjectileSource_FromThis(),
+                Projectile.GetSource_FromThis(),
                 origin.X, origin.Y,
                 vel.X, vel.Y,
                 ModContent.ProjectileType<PhytoncideSporeBurstProjectile>(),
@@ -203,6 +216,6 @@ public class PhytoncideSporeBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
                              + Main.rand.NextVector2Circular(1.5f, 1.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 34);
     }
 }
