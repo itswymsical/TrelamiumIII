@@ -44,6 +44,7 @@ public sealed class MetaballSystem : ModSystem
         RegisterLayer(new IceMistLayer());
         RegisterLayer(new MagnetizerLayer());
         RegisterLayer(new InkLayer());
+        RegisterLayer(new MagnoliaLayer());
 
         loaded = true;
 

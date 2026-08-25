@@ -4,6 +4,10 @@ using Terraria.GameContent;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
 using TrelamiumIII.Content.FarmingOverhaul;
+using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Graphics.Metaballs;
+using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
 namespace TrelamiumIII.Content.Alchemy;
 
@@ -211,7 +215,7 @@ public class MagnoliaPowderItem : ModItem
         Item.useTime = Item.useAnimation = 19;
         Item.UseSound = SoundID.Grass;
         Item.maxStack = Item.CommonMaxStack;
-        Item.shootSpeed = 8f;
+        Item.shootSpeed = 5f;
         Item.shoot = ModContent.ProjectileType<MagnoliaPowderProjectile>();
     }
 
@@ -302,7 +306,7 @@ public class MagnoliaPowderProjectile : ModProjectile
         Projectile.friendly = true;
         Projectile.aiStyle = -1;
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 8;
+        Projectile.timeLeft = 18;
 
         Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
@@ -314,6 +318,10 @@ public class MagnoliaPowderProjectile : ModProjectile
     public override void AI()
     {
         base.AI();
+
+        var layer = MetaballSystem.GetLayer<MagnoliaLayer>();
+        if (layer == null) return;
+
         delay++;
 
         if (delay >= 2)
@@ -339,19 +347,12 @@ public class MagnoliaPowderProjectile : ModProjectile
             delay = 0;
         }
 
-        for (int count = 0; count < 16; count++)
+        for (int count = 0; count < 7; count++)
         {
-            Dust dust7 = Main.dust[Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.WhiteTorch, Projectile.velocity.X, Projectile.velocity.Y, 4)];
+            Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
+              + Main.rand.NextVector2Circular(2.5f, 5.5f);
 
-            dust7.noGravity = count % 3 != 0;
-            if (!dust7.noGravity)
-            {
-                Dust dust2 = dust7;
-                dust2.scale *= 1.25f;
-                dust2 = dust7;
-                dust2.velocity /= 2f;
-                dust7.velocity.Y -= 2.2f;
-            }
+            layer.SpawnNode(Projectile.Center, drift, radius: 6.7f, life: 32f);
         }
     }
 }
