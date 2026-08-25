@@ -111,8 +111,19 @@ public sealed class StarLayer : GasLayer
     protected override void UpdateGasNode(ref GasNode node, int index)
     {
         base.UpdateGasNode(ref node, index);
+        if (Main.rand.NextFloat() < 0.025f)
+        {
+            Vector2 offset = Main.rand.NextVector2Circular(14f, 14f);
 
-        ParticleSystem.Spawn<InkSparkParticle>(node.Position, node.Velocity, (int)node.Life / 3, scale: 0.75f);
+            ParticleSystem.Spawn<InkSparkParticle>(
+                node.Position,
+                node.Velocity * 0.4f + Main.rand.NextVector2Circular(0.7f, 0.7f),
+                timeLeft: (int)node.Life / 3,
+                scale: Main.rand.NextFloat(0.5f, 0.75f),
+                rotation: Main.rand.NextFloat(MathHelper.TwoPi),
+                rotationVelocity: Main.rand.NextFloat(-0.05f, 0.05f)
+            );
+        }
     }
 
     //private static InkLayer? Layer => MetaballSystem.GetLayer<InkLayer>();

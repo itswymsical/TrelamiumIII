@@ -8,7 +8,7 @@ namespace TrelamiumIII.Core.Gas.Layers;
 public class PhytoncideSporeLayer : ChemicalGasLayer
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
-    protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
+    protected override string TexturePath => Assets.Textures.VFX.InkMote.KEY;
     protected override int GasType => GasTypeID.Gas;
 
     protected override float DefaultDensity => 1.00f;
