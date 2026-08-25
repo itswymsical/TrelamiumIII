@@ -58,6 +58,7 @@ public sealed class InlineTagSystem : ModSystem
     internal const string LORE_TAG = "lore";
     internal const string REDACTED_TAG = "redacted";
     internal const string HAND_TAG = "hand";
+    internal const string KEY_TAG = "key";
 
     /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
     internal const string FORMAT_TAG = Authoring.FormatCodec.TAG;
@@ -71,6 +72,7 @@ public sealed class InlineTagSystem : ModSystem
         LORE_TAG,
         REDACTED_TAG,
         HAND_TAG,
+        KEY_TAG,
         FORMAT_TAG,
     ];
 
@@ -87,6 +89,7 @@ public sealed class InlineTagSystem : ModSystem
         ChatManager.Register<LoreLinkTagHandler>(LORE_TAG);
         ChatManager.Register<RedactedTagHandler>(REDACTED_TAG);
         ChatManager.Register<HandwritingTagHandler>(HAND_TAG);
+        ChatManager.Register<HandwritingTagHandler>(KEY_TAG);
         ChatManager.Register<FormatTagHandler>(FORMAT_TAG);
     }
 

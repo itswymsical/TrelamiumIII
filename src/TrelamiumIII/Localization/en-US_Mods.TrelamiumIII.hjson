@@ -1,6 +1,7 @@
 Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
+	WoodenBucklerParry.DisplayName: Wooden Buckler Parry
 }
 
 Items: {
@@ -542,6 +543,15 @@ Items: {
 	MagnoliaSolutionItem: {
 		DisplayName: Magnolia Solution
 		Tooltip: ""
+	}
+
+	WoodenBuckler: {
+		DisplayName: Wooden Buckler
+		Tooltip:
+			'''
+			Pressing [KEY] reduces all incoming damage by 50% for 1.5 seconds
+			5 second cooldown
+			'''
 	}
 }
 
