@@ -474,7 +474,7 @@ Items: {
 		Tooltip: ""
 	}
 
-	CorruptedSporeFlaskItem: {
+	VilesporeFlaskItem: {
 		DisplayName: Vilespore Flask
 		Tooltip:
 			'''
@@ -552,6 +552,11 @@ Items: {
 			Ramming into enemies will immediately destroy the buckler
 			'''
 	}
+
+	MyconidSpore: {
+		DisplayName: Myconid Spore
+		Tooltip: Summons a Malevolent Myconid
+	}
 }
 
 Tiles: {
@@ -562,6 +567,7 @@ Tiles: {
 	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
 	AlchemyStationTile.MapEntry: Alchemy Station
 	MagnoliaTile.MapEntry: Magnolia
+	MyconidSporeTile.MapEntry: Myconid Spore Tile
 }
 
 Projectiles: {
@@ -606,6 +612,8 @@ Projectiles: {
 	ThermiteBurstProjectile.DisplayName: Thermite
 	ThermiteFlaskProjectile.DisplayName: Thermite Flask
 	SporadicSlamProjectile.DisplayName: Sporadic Slam
+	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
+	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
 }
 
 NPCs: {
@@ -623,6 +631,7 @@ NPCs: {
 	SporadicSlime.DisplayName: Sporadic Slime
 	TundraTerrarian.DisplayName: Tundra Terrarian
 	CuriousSlime.DisplayName: Slime
+	BodyguardNPC.DisplayName: Bodyguard N P C
 }
 
 Buffs: {

@@ -8,7 +8,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
-public class CorruptedSporeFlaskItem : ModItem
+public class VilesporeFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
@@ -21,7 +21,7 @@ public class CorruptedSporeFlaskItem : ModItem
         Item.useAnimation = Item.useTime = 23;
 
         Item.UseSound = SoundID.Item106;
-        Item.shoot = ModContent.ProjectileType<CorruptedSporeFlaskProjectile>();
+        Item.shoot = ModContent.ProjectileType<VilesporeFlaskProjectile>();
         Item.shootSpeed = 7f;
         Item.autoReuse = true;
         Item.consumable = true;
@@ -45,9 +45,9 @@ public class CorruptedSporeFlaskItem : ModItem
         => SporePlagueGlobalNPC.InfectWithBurst(e.Target);
 }
 
-public class CorruptedSporeFlaskProjectile : ModProjectile
+public class VilesporeFlaskProjectile : ModProjectile
 {
-    public override string Texture => AssetReferences.Content.Alchemy.Weapons.CorruptedSporeFlaskItem.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.Weapons.VilesporeFlaskItem.KEY;
 
     public override void SetDefaults()
     {
@@ -135,23 +135,23 @@ public class CorruptedSporeFlaskProjectile : ModProjectile
 
             var splash = edge switch
             {
-                < 0.5f => CorruptedSporeBurstProjectile.SplashType.Core,
-                < 0.7f => CorruptedSporeBurstProjectile.SplashType.Body,
-                _ => CorruptedSporeBurstProjectile.SplashType.Droplet,
+                < 0.5f => VilesporeFlaskBurstProjectile.SplashType.Core,
+                < 0.7f => VilesporeFlaskBurstProjectile.SplashType.Body,
+                _ => VilesporeFlaskBurstProjectile.SplashType.Droplet,
             };
 
             Projectile.NewProjectile(
                 Projectile.GetProjectileSource_FromThis(),
                 origin.X, origin.Y,
                 vel.X, vel.Y,
-                ModContent.ProjectileType<CorruptedSporeBurstProjectile>(),
+                ModContent.ProjectileType<VilesporeFlaskBurstProjectile>(),
                 Projectile.damage, 0f, Projectile.owner,
                 ai0: (float)(int)splash);
         }
     }
 }
 
-public class CorruptedSporeBurstProjectile : ModProjectile
+public class VilesporeFlaskBurstProjectile : ModProjectile
 {
     public override string Texture => Assets.Textures.NullTex.KEY;
 

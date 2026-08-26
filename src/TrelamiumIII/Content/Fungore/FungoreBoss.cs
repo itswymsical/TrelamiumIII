@@ -287,9 +287,9 @@ public sealed class FungoreBoss : ModNPC
     ///     and a second and a half is the difference between a boss you can read and one that simply
     ///     hits you from off screen.
     /// </remarks>
-    private const int BURROW_TELL_TICKS = 90;
+    private const int BURROW_TELL_TICKS = 35;
 
-    private const int BURROW_TELL_TICKS_MASTER = 60;
+    private const int BURROW_TELL_TICKS_MASTER = 20;
 
     /// <summary>Frames of the eased shot up out of the floor.</summary>
     private const int BURROW_RISE_TICKS = 18;
@@ -796,6 +796,7 @@ public sealed class FungoreBoss : ModNPC
             return;
 
         introStarted = true;
+        CameraSystem.MoveCameraOut(EMERGE_RUMBLE_TICKS, NPC.Center);
 
         if (State == FungoreState.Emerge && StateTimer <= EMERGE_RUMBLE_TICKS)
         {
@@ -1002,7 +1003,7 @@ public sealed class FungoreBoss : ModNPC
 
             // Everything the entrance owns comes off here, at the exact frame the fight starts.
             BossIntroSystem.Settle();
-
+            CameraSystem.ReturnCamera(30);
             return;
         }
 

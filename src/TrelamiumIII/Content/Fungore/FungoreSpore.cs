@@ -22,7 +22,7 @@ namespace TrelamiumIII.Content.Fungore;
 public sealed class FungoreSpore : ModProjectile
 {
     /// <summary>Pre-difficulty figure. Expert and master scale it the usual way.</summary>
-    public const int SPORE_DAMAGE = 20;
+    public const int SPORE_DAMAGE = 9;
 
     /// <summary>Seconds of infection a clot passes on. Re-applied, not stacked, by a second hit.</summary>
     public const int INFECTION_TICKS = 4 * 60;
