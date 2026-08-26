@@ -10,7 +10,7 @@ public class WoodenBuckler : ModItem
         Item.width = Item.height = 28;
         Item.rare = ItemRarityID.White;
         Item.value = Item.sellPrice(copper: 3);
-        Item.damage = 25;
+        Item.damage = 20;
         Item.knockBack = 7f;
         Item.maxStack = 10;
         Item.consumable = true;
@@ -40,7 +40,7 @@ public class WoodenBucklerPlayer : ModPlayer
     public const int DashCooldown = 50;
     public const int DashDuration = 35;
 
-    public const float DashVelocity = 10f;
+    public const float DashVelocity = 9.5f;
     /// <summary>
     /// indicates there is no current dash direction
     /// </summary>
