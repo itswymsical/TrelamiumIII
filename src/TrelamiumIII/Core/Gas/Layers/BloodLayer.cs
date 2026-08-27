@@ -39,18 +39,7 @@ public class BloodLayer : ChemicalGasLayer
         effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
-        int stride = Math.Max(1, gasNodes.Count / 16);
-
-        Vector3 light = Vector3.Zero;
-        int samples = 0;
-
-        for (int i = 0; i < gasNodes.Count; i += stride)
-        {
-            light += Lighting.GetSubLight(gasNodes[i].Position);
-            samples++;
-        }
-
-        light /= samples;
+        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 

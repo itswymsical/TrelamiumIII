@@ -32,14 +32,17 @@ public abstract class BaseTerrarian : WorldNPC
     public override List<string> SetNPCNameList() 
         => Male ? [.. MaleNames] : [.. FemaleNames];
     
-
+    public virtual bool UsesTradingSystem { get; set;  } = true;
     private static T Pick<T>(T[] source) => source[Main.rand.Next(source.Length)];
 
     public sealed override void SetDefaults()
     {
         base.SetDefaults();
-        InitializeTrades();
-        SetTradeInventory();
+        if (UsesTradingSystem)
+        {
+            InitializeTrades();
+            SetTradeInventory();
+        }
     }
 
     public override string GetChat() => Main.rand.Next(11) switch
@@ -90,12 +93,18 @@ public abstract class BaseTerrarian : WorldNPC
 
     public override void SetChatButtons(ref string button, ref string button2)
     {
+        if (!UsesTradingSystem)
+            return;
+
         if (Trades is { Count: > 0 })
             button = "Trade";
     }
 
     public override void OnChatButtonClicked(bool firstButton, ref string shop)
     {
+        if (!UsesTradingSystem)
+            return;
+
         if (firstButton && Trades is { Count: > 0 })
             OpenTradeUI();
     }

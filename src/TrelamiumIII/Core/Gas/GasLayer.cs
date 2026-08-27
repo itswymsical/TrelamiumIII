@@ -150,7 +150,7 @@ public abstract class GasLayer
                     gasNodes.RemoveAt(i);
         }
     }
-    protected Vector3 SampleAverageLight(int samples = 16)
+    protected Vector3 SampleAverageLight(int samples = 32)
     {
         if (gasNodes.Count == 0)
             return Vector3.One;

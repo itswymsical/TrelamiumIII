@@ -478,7 +478,7 @@ public abstract class MetaballLayer
     ///     field rather than a per-node one. Sampling a fixed count keeps the cost flat no matter
     ///     how large the cloud grows.
     /// </remarks>
-    protected Vector3 SampleAverageLight(int samples = 16)
+    protected Vector3 SampleAverageLight(int samples = 32)
     {
         if (nodes.Count == 0)
             return Vector3.One;

@@ -17,21 +17,27 @@ public class TrelamiumPlayer : ModPlayer
         var mp = Player.GetModPlayer<JobPlayer>();
         var slimeJob = mp.GetOrCreateJob(JobID.CuriousSlime1);
 
-        if (mp.UnlockedJobs().Contains(slimeJob))
+
+        // Definition check: must still be locked
+        if (slimeJob.Status != JobStatus.Locked)
+            return;
+
+        // Runtime check: must be inactive
+        if (slimeJob.Progress != JobProgress.Inactive)
             return;
 
         int slimeIndex = NPC.FindFirstNPC(ModContent.NPCType<CuriousSlime>());
 
-        if (slimeIndex != -1)
-        {
-            NPC slime = Main.npc[slimeIndex];
+        if (slimeIndex == -1)
+            return;
 
-            if (Player.Distance(slime.Center) < 128f &&
-                !mp.UnlockedJobs().Contains(slimeJob))
-            {
-                mp.UnlockJob(JobID.CuriousSlime1);
-            }
-        }
+        NPC slime = Main.npc[slimeIndex];
+
+        if (Player.Distance(slime.Center) >= 128f)
+            return;
+
+        mp.UnlockJob(JobID.CuriousSlime1);
+        Main.NewText("Unlocked");
     }
 
     public override void PreUpdate()

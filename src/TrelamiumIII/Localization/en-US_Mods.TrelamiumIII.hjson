@@ -175,7 +175,11 @@ Items: {
 
 	MicrolithItem: {
 		DisplayName: Microlith
-		Tooltip: When you break an ore chunk, it has a small chance to drop x1-x3 the ore value
+		Tooltip:
+			'''
+			When you break an ore chunk, it has a small chance to drop x1-x3 the ore value
+			No, you cannot cheese it
+			'''
 	}
 
 	BorealHewerItem: {
@@ -643,6 +647,8 @@ NPCs: {
 			'''
 		Epithet: The Guardian of Ingress
 	}
+
+	ShinobiNPC.DisplayName: Shinobi
 }
 
 Buffs: {

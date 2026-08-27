@@ -5,7 +5,7 @@ namespace TrelamiumIII.Core.NPCs;
 public static class HairDatabase
 {
     public static readonly int[] Masculine = [0, 1, 2, 75, ];
-    public static readonly int[] Feminine = [];
+    public static readonly int[] Feminine = [/*173, 174, 195, 196, */];
     public static readonly int[] Neutral = [];
 
     public static class Tags // I'll have to come back in 1.4.5 and update this :C
@@ -20,7 +20,7 @@ public static class HairDatabase
 
         public static readonly int[] Stylistic = [10, 16, 23, 25, 52, 92, 94, 109, 123, 124, 125, 126, 127, 128, 129, 131, 132, 163];
 
-        public static readonly int[] Shinobi = [47, 78, 79, 94, 109, 180, 190/*, 193, 197, 199, 209, 210, 211, 212, 213, 214, 215*/];
+        public static readonly int[] Shinobi = [47, 78, 79, 94, 109 /*, 180, 190, 193, 197, 199, 209, 210, 211, 212, 213, 214, 215*/];
     }
 
 }
@@ -33,7 +33,7 @@ public static class HairQuery
     }
 }
 
-public static class HairID // work in progress, im doing this manually lol.
+public static class HairstyleID // work in progress, im doing this manually lol.
 {
     public const int Default = 0;
     public const int Default2 = 1;
