@@ -88,10 +88,9 @@ public class ThermiteLayer : ChemicalGasLayer
 
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
-        // Apply chemistry first, then layer the visual bleeding tick on top.
         base.OnNPCContact(ref node, npc);
-        if (!npc.friendly)
-            npc.AddBuff(BuffID.OnFire, 120);
+
+        npc.AddBuff(BuffID.OnFire, 120);
     }
 
     protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)

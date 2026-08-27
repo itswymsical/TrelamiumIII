@@ -24,9 +24,17 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
 
     public virtual float ReactionDamage => 0f;
 
+    /// <summary>
+    /// automatically checks if the NPC is not friendly, immortal, or doesnt take damage. strip base if you don't care for those checks.
+    /// </summary>
+    /// <param name="node"></param>
+    /// <param name="npc"></param>
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
         if (npc.friendly) return;
+
+        if (npc.immortal || npc.dontTakeDamage)
+            return;
 
         var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
         chem.ApplyAffliction(ChemicalDamage, AfflictionDuration, AfflictionRate, ChemicalType);

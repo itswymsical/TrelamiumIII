@@ -73,9 +73,16 @@ public class PhytoncideSporeLayer : ChemicalGasLayer
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
-        if (!npc.friendly)
-            npc.AddBuff(BuffID.Poisoned, 30);
+
+        if (npc.friendly)
+            return;
+
+        if (npc.immortal || npc.dontTakeDamage)
+            return;
+
+        npc.AddBuff(BuffID.Poisoned, 30);
     }
+    
     protected override void OnPlayerContact(ref GasNode node, Player player)
     {
         base.OnPlayerContact(ref node, player);

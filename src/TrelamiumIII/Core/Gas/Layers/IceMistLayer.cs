@@ -73,10 +73,9 @@ public class IceMistLayer : ChemicalGasLayer
 
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
-        // Apply chemistry first, then layer the visual frostburn tick on top.
         base.OnNPCContact(ref node, npc);
-        if (!npc.friendly)
-            npc.AddBuff(BuffID.Frostburn, 30);
+
+        npc.AddBuff(BuffID.Frostburn, 30);
     }
 
     protected override void OnPlayerContact(ref GasNode node, Player player) { }

@@ -73,8 +73,8 @@ public class CorruptedSporeLayer : ChemicalGasLayer
 
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
-        // Apply chemistry first, then layer the visual bleeding tick on top.
         base.OnNPCContact(ref node, npc);
+        npc.AddBuff(BuffID.Poisoned, 30);
     }
     public override void OnChemicalReaction(in ChemicalReactionEvent e)
     {

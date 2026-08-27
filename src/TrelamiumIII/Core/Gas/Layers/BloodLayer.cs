@@ -70,8 +70,8 @@ public class BloodLayer : ChemicalGasLayer
     {
         // Apply chemistry first, then layer the visual bleeding tick on top.
         base.OnNPCContact(ref node, npc);
-        if (!npc.friendly)
-            npc.AddBuff(BuffID.BloodButcherer, 30);
+
+        npc.AddBuff(BuffID.BloodButcherer, 30);
     }
 
     public override void OnChemicalReaction(in ChemicalReactionEvent e)
