@@ -34,10 +34,6 @@ public static class SpeakerRegistry
         id != null && (id.Equals("you", StringComparison.OrdinalIgnoreCase)
                     || id.Equals("player", StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>Helper for voice clips living under Assets/Sounds/Dialogue.</summary>
-    private static SoundStyle Speech(string path) =>
-        new($"{nameof(TrelamiumIII)}/Assets/Sounds/Dialogue/{path}") { Volume = 0.7f, MaxInstances = 0 };
-
     public static void Load()
     {
         // The player speaks with no portrait; the box already hides the portrait frame for them.
@@ -50,21 +46,23 @@ public static class SpeakerRegistry
         // Register one profile per speaking character. Portraits are vertical emote sheets
         // (92x92 per frame) under Assets/Textures/UI/Dialogue/Characters.
         //
-        // Register(new SpeakerProfile
-        // {
-        //     Id = "Guide",
-        //     TexturePath = Assets.Textures.UI.Dialogue.Characters.Guide.KEY,
-        //     FrameCount = 7,
-        //     Color = new(100, 150, 200),
-        //     Voice = new VoiceProfile(VoiceMode.Single, Speech("Guide/Speech")),
-        // });
-        //
-        // A VoiceMode.Random profile picks a different blip each keystroke:
-        //
-        // Voice = new VoiceProfile(VoiceMode.Random,
-        //     Speech("Someone/Speech_0"),
-        //     Speech("Someone/Speech_1"),
-        //     Speech("Someone/Speech_2")),
+        Register(new SpeakerProfile
+        {
+            Id = "Guide",
+            TexturePath = Assets.Textures.UI.Dialogue.Portraits.Guide.KEY,
+            FrameCount = 7,
+            Color = new(100, 150, 200),
+            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Guide.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "NerdySlime",
+            TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
+            FrameCount = 1,
+            Color = new(100, 150, 200),
+            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Sophie.Asset]),
+        });
     }
 
     public static void Unload() => profiles.Clear();

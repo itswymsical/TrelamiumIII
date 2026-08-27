@@ -23,4 +23,13 @@ DialogueLibrary: {
 			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
 		}
 	}
+
+	NerdySlime: {
+		Greeting.Line1.Text: Hello, [speakerName:player]! [] I have a task for you!
+
+		Job1: {
+			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
+			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
+		}
+	}
 }

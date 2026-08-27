@@ -523,8 +523,8 @@ Items: {
 		DisplayName: Thermite Flask
 		Tooltip:
 			'''
-			Creates a pool of molten thermite on impact
-			Thermine pools burn enemies and spread to nearby targets.
+			Creates a sprinklage of molten thermite on impact
+			On Chemical reaction, thermite puddles seap through enemies and spread to nearby targets.
 			'''
 	}
 

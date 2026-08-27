@@ -14,9 +14,14 @@ public class TrelamiumPlayer : ModPlayer
 
     public override void PostUpdateMiscEffects()
     {
+        // Put all the job checks here -- yeah, i know it's ass, i do not care.
+        JobChecks_PreHM();
+    }
+
+    private void JobChecks_PreHM()
+    {
         var mp = Player.GetModPlayer<JobPlayer>();
         var slimeJob = mp.GetOrCreateJob(JobID.CuriousSlime1);
-
 
         // Definition check: must still be locked
         if (slimeJob.Status != JobStatus.Locked)
@@ -37,7 +42,8 @@ public class TrelamiumPlayer : ModPlayer
             return;
 
         mp.UnlockJob(JobID.CuriousSlime1);
-        Main.NewText("Unlocked");
+
+
     }
 
     public override void PreUpdate()

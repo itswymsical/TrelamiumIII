@@ -4,4 +4,5 @@ public static class JobID
 {
     public const int None = 0;
     public const int CuriousSlime1 = 1;
+    public const int NerdySlimeI = 2;
 }

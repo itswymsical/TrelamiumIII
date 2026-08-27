@@ -9,4 +9,15 @@ Jobs: {
 			Set2.obj0: Return to Slime
 		}
 	}
+
+	NerdySlimeI: {
+		Name: Nerdy Slime's Sublime Task!
+		Description: "'Help me build a quantum relocator!'"
+
+		Tasks: {
+			Set0.obj0: Chat with Nerdy Slime
+			Set1.obj0: Attain Iron Ore
+			Set2.obj0: Return to Slime
+		}
+	}
 }
