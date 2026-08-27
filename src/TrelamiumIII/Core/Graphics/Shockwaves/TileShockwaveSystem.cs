@@ -8,54 +8,11 @@ namespace TrelamiumIII.Core.Graphics.Shockwaves;
 ///     <c>Main.instance.tileTarget</c> a distorted stand-in for the duration of the one draw call
 ///     that puts it on the screen.
 /// </summary>
-/// <remarks>
-///     <para>
-///         vanilla renders solid tiles once every few frames into <c>Main.instance.tileTarget</c>
-///         -- a target the size of the screen plus <see cref="Main.offScreenRange" /> on every
-///         side -- and then blits it each frame in <c>DoDraw_Tiles_Solid</c> at
-///         <c>sceneTilePos - screenPosition</c>. Substituting the texture for that blit means the
-///         distortion touches nothing else: players, NPCs, projectiles and dust are all drawn later
-///         in world space and stay perfectly still, which is what makes it read as the ground moving
-///         rather than the camera shaking.
-///     </para>
-///     <para>
-///         <b>Why this is split across two hooks.</b> The distortion passes bind render targets, and
-///         binding one during the scene is destructive: <c>Main.screenTarget</c> is allocated with
-///         the default <see cref="RenderTargetUsage.DiscardContents" /> (unlike <c>mapTarget</c>,
-///         which vanilla explicitly allocates as <c>PreserveContents</c>), so restoring it with
-///         <c>SetRenderTargets</c> mid-frame discards everything drawn up to that point -- sky,
-///         backgrounds, walls, non-solid tiles -- and they come back black. vanilla never hits this
-///         because it never re-binds the scene surface once the frame is underway.
-///     </para>
-///     <para>
-///         So the passes run in <c>CheckMonoliths</c>, before anything has claimed the backbuffer,
-///         and only the cheap texture swap happens during the scene.
-///     </para>
-///     <para>
-///         <b>What that costs.</b> <c>CheckMonoliths</c> runs before the block that may re-render
-///         <c>tileTarget</c> this frame, so on a refresh frame the snapshot is one lighting cycle
-///         behind. <see cref="snapshotScenePos" /> is carried alongside it and swapped in too, so
-///         the stand-in is drawn at the position its source was actually valid for -- the image is
-///         momentarily old, never misaligned. Three frames in four the two agree exactly and the
-///         override is a no-op.
-///     </para>
-///     <para>
-///         Tile entities and the block-damage animations that <c>DoDraw_Tiles_Solid</c> draws after
-///         the blit are not displaced -- they go straight to the screen in world space. In practice
-///         that reads fine, but a chest sitting perfectly still inside a rippling wall is the one
-///         artefact to expect.
-///     </para>
-/// </remarks>
 internal sealed class TileShockwaveSystem : ModSystem
 {
     /// <summary>
     ///     How many waves may distort the same frame.
     /// </summary>
-    /// <remarks>
-    ///     Each one is a separate full-target pass -- at 1080p that is a 2304x1464 blit apiece --
-    ///     so this is a fill-rate ceiling, not a gameplay limit. Waves past it are still updated
-    ///     and still expire on schedule; they just do not draw.
-    /// </remarks>
     private const int MaxConcurrentWaves = 4;
 
     private static readonly List<ITileWave> waves = [];
@@ -151,9 +108,9 @@ internal sealed class TileShockwaveSystem : ModSystem
         //     Main.LightingEveryFrame && !Main.RenderTargetsRequired && !Lighting.NotRetro
         // so the usual "no targets under Retro lighting" warning is only two thirds true:
         // RenderTargetsRequired is set by zoom (GameZoomTarget > 1), so a Retro-lighting player
-        // who is zoomed in DOES get populated targets and DOES see this effect. A mod that needs
+        // who is zoomed in does actually get populated targets and DOES see this effect. A mod that needs
         // them unconditionally can clear Main.LightingEveryFrame, at the cost of retro lighting
-        // no longer relighting every frame -- which is the entire point of those modes.
+        // no longer relighting every frame, which is the entire point of those modes.
         if (Main.drawToScreen)
             return;
 
@@ -196,7 +153,7 @@ internal sealed class TileShockwaveSystem : ModSystem
             applied++;
         }
 
-        // Unbind to null rather than restoring previous bindings -- exactly what RenderTiles and
+        // Unbind to null rather than restoring previous bindings, exactly what RenderTiles and
         // friends do. Nothing is bound this early in the frame, so there is nothing to put back.
         device.SetRenderTarget(null);
 
