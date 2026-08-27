@@ -207,15 +207,15 @@ public class PhytoncideSporeBurstProjectile : ModProjectile
 
         float radius = splashType switch
         {
-            SplashType.Core => 14f * grow,
-            SplashType.Body => 11f * grow,
+            SplashType.Core => 28f * grow,
+            SplashType.Body => 12f * grow,
             SplashType.Droplet => 7f * grow,
             _ => 0f
         };
 
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
-                             + Main.rand.NextVector2Circular(1.5f, 1.5f);
+                             + Main.rand.NextVector2Circular(1.5f, 5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 34);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: Lifetime * 1.65f);
     }
 }

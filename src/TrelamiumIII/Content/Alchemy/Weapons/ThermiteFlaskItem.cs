@@ -127,7 +127,7 @@ public class ThermiteFlaskProjectile : ModProjectile
 
         if (Projectile.owner == Main.myPlayer)
         {
-            int count = Main.rand.Next(12, 16);
+            int count = Main.rand.Next(8, 11);
 
             for (int i = 0; i < count; i++)
             {
@@ -209,15 +209,15 @@ public class ThermiteBurstProjectile : ModProjectile
         float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
         float radius = splashType switch
         {
-            SplashType.Core => 9f * progress,
+            SplashType.Core => 6f * progress,
             SplashType.Body => 3f * progress,
-            SplashType.Droplet => 2.5f * progress,
+            SplashType.Droplet => 1.5f * progress,
             _ => 0f
         };
 
         Vector2 nodeVelocity = Projectile.velocity * 0.2f
                              + Main.rand.NextVector2Circular(7.5f, 7.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 120);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30);
     }
 }
