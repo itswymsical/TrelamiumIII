@@ -631,7 +631,18 @@ NPCs: {
 	SporadicSlime.DisplayName: Sporadic Slime
 	TundraTerrarian.DisplayName: Tundra Terrarian
 	CuriousSlime.DisplayName: Slime
-	BodyguardNPC.DisplayName: Bodyguard N P C
+	BodyguardNPC.DisplayName: Bodyguard
+	WardenArm.DisplayName: Warden Arm
+
+	WoodenWardenBoss: {
+		DisplayName: Wooden Warden
+		Bestiary:
+			'''
+			The Protector of the Ligneous Fortress
+			Wooden Warden is a sentient golem ordered to protect the Scar of Ingress, and what lies behind it...
+			'''
+		Epithet: The Guardian of Ingress
+	}
 }
 
 Buffs: {

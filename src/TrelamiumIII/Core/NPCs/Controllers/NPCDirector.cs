@@ -204,8 +204,8 @@ public class NPCDirector : NPCComponent
         active.OnEnd(npc);
 
         // Clear held item from WorldNPC when behavior ends.
-        if (active.HeldItem is { ItemType: > 0 } && npc.ModNPC is WorldNPC worldNpc)
-            worldNpc.SetHeldItem(0);
+        //if (active.HeldItem is { ItemType: > 0 } && npc.ModNPC is WorldNPC worldNpc)
+        //    worldNpc.SetHeldItem(0);
 
         active = null;
     }

@@ -1,9 +1,12 @@
-using TrelamiumIII.Core.NPCs.Controllers;
-using TrelamiumIII.Utilities;
 using System.Collections.Generic;
 using Terraria.Chat;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.NPCs.Controllers;
+using TrelamiumIII.Utilities;
+using static TrelamiumIII.Core.NPCs.Controllers.NPCBehavior;
 
 namespace TrelamiumIII.Core.NPCs.Actors;
 
@@ -92,6 +95,15 @@ public abstract class WorldNPC : ModNPC
 
     //  Appearance
 
+    /// <summary>
+    /// Returns the item currently held by the dummy. 
+    /// </summary>
+    public Item ActiveWeapon => DummyPlayer.inventory[DummyPlayer.selectedItem];
+
+    /// <summary>
+    /// Checks if the dummy is currently holding a valid, usable weapon.
+    /// </summary>
+    public bool HasValidWeapon => ActiveWeapon != null && !ActiveWeapon.IsAir && ActiveWeapon.type > ItemID.None;
     /// <summary>
     /// Sets the gender. True = Male, False = Female.
     /// </summary>
@@ -185,18 +197,6 @@ public abstract class WorldNPC : ModNPC
             throw new ArgumentOutOfRangeException(nameof(slotIndex), "Accessory slot index must be 0–6.");
 
         SetArmorSlot(vanity ? 13 + slotIndex : 3 + slotIndex, itemId);
-    }
-
-    public void SetHeldItem(int itemId)
-    {
-        // to be refactored when I add actual item use behavior, but for now we can at least set the held item so it shows up in the player's hand.
-
-        //var item = DummyPlayer.inventory[DummyPlayer.selectedItem];
-        //item.SetDefaults(itemId);
-
-        // holdStyle == 0 means the item only draws during active use animation.
-        // Flag this so PostAI can sustain the animation each frame.
-        // _heldItemNeedsAnimation = itemId > ItemID.None && item.holdStyle == 0;
     }
 
     /// <summary>
@@ -572,10 +572,16 @@ public abstract class WorldNPC : ModNPC
         {
             spriteBatch.End();
             PreparePlayerRender();
+
             Main.PlayerRenderer.DrawPlayer(
                 Main.Camera, DummyPlayer, DummyPlayer.position,
                 DummyPlayer.fullRotation, DummyPlayer.fullRotationOrigin,
                 shadow: 0f, scale: 1f);
+
+            new PlayerDrawSet();
+
+            // PlayerDrawLayers ???
+
             FinalizePlayerRender();
             spriteBatch.Begin(
                 SpriteSortMode.Immediate, BlendState.AlphaBlend,
@@ -585,6 +591,9 @@ public abstract class WorldNPC : ModNPC
         }
 
         PostDrawWorldNPC(spriteBatch, screenPos, drawColor);
+
+        // Manually draw the item since vanilla layers ignore dummies
+        DrawHeldItem(this, spriteBatch, screenPos, drawColor);
     }
 
     /// <summary>
@@ -604,6 +613,107 @@ public abstract class WorldNPC : ModNPC
     /// The spriteBatch is active and in world-space when this runs.
     /// </summary>
     protected virtual void PostDrawWorldNPC(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) { }
+
+    /// <summary>
+    /// Spawns an item directly into the dummy's active slot.
+    /// </summary>
+    public void EquipItem(int itemId)
+    {
+        // Always use slot 0 for simplicity
+        DummyPlayer.selectedItem = 0;
+
+        // Initialize the item. If it's 0 (ItemID.None), it safely creates an empty 'Air' item.
+        DummyPlayer.inventory[DummyPlayer.selectedItem] = new Item();
+        if (itemId > 0)
+        {
+            DummyPlayer.inventory[DummyPlayer.selectedItem].SetDefaults(itemId);
+        }
+    }
+
+    private static Rectangle GetItemDrawFrame(int type)
+    {
+        if (Main.dedServ)
+            return Rectangle.Empty;
+
+        Main.instance.LoadItem(type);
+
+        if (ItemID.Sets.IsFood[type])
+            return TextureAssets.Item[type].Frame(1, 3, 0, 1);
+
+        Terraria.DataStructures.DrawAnimation drawAnimation = Main.itemAnimations[type];
+        if (drawAnimation != null)
+        {
+            return drawAnimation.GetFrame(TextureAssets.Item[type].Value, -1);
+        }
+
+        return TextureAssets.Item[type].Frame();
+    }
+
+    private static void DrawHeldItem(WorldNPC worldNpc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+    {
+        Player dummy = worldNpc.DummyPlayer;
+        Item item = dummy.inventory[dummy.selectedItem];
+
+        if (item.IsAir || item.type == ItemID.None) return;
+
+        Texture2D texture = TextureAssets.Item[item.type].Value;
+        Rectangle sourceRect = GetItemDrawFrame(item.type);
+
+        Vector2 drawPos = dummy.itemLocation - screenPos;
+        float rotation = dummy.itemRotation;
+
+        Vector2 origin = new Vector2(
+            dummy.direction == 1 ? 0 : sourceRect.Width,
+            sourceRect.Height
+        );
+
+        SpriteEffects effects = dummy.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+
+        spriteBatch.Draw(
+            texture,
+            drawPos,
+            sourceRect,
+            drawColor,
+            rotation,
+            origin,
+            item.scale,
+            effects,
+            0f
+        );
+    }
+
+    /// <summary>
+    /// Equips an item and forcefully starts its use animation on the DummyPlayer.
+    /// </summary>
+    public void StartItemUse(int itemId)
+    {
+        Item item = DummyPlayer.inventory[DummyPlayer.selectedItem];
+        item.SetDefaults(itemId);
+
+        // Initialize timers based on the item's properties
+        DummyPlayer.itemAnimation = item.useAnimation;
+        DummyPlayer.itemAnimationMax = item.useAnimation;
+        DummyPlayer.itemTime = item.useTime;
+    }
+
+    /// <summary>
+    /// Decrements the item animation timers. 
+    /// Should be called every tick by an active behavior utilizing an item.
+    /// </summary>
+    public void UpdateItemTimers()
+    {
+        if (DummyPlayer.itemAnimation > 0)
+            DummyPlayer.itemAnimation--;
+
+        if (DummyPlayer.itemTime > 0)
+            DummyPlayer.itemTime--;
+
+        // Clear the item when the animation completes
+        if (DummyPlayer.itemAnimation == 0 && !DummyPlayer.inventory[DummyPlayer.selectedItem].IsAir)
+        {
+            DummyPlayer.inventory[DummyPlayer.selectedItem].TurnToAir();
+        }
+    }
 
     /// <summary>
     /// Spawns a WorldNPC of type T at the given world position and sets

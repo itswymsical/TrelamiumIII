@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Terraria;
 using Terraria.GameContent.UI;
 using Terraria.ID;
+using TrelamiumIII.Core.NPCs.Actors;
 
 namespace TrelamiumIII.Core.NPCs.Controllers;
 
@@ -741,6 +742,105 @@ public class DialogueBehavior : NPCBehavior
         return this;
     }
     public DialogueBehavior WithoutEmotes() { EmoteInterval = 0; return this; }
+}
+
+public class UseItemBehavior : NPCBehavior
+{
+    private readonly int _itemId;
+    private readonly Vector2 _targetPosition;
+    private WorldNPC _worldNpc;
+
+    /// <summary>
+    /// Uses an item dynamically. If it shoots a projectile, it aims at the target position.
+    /// </summary>
+    public UseItemBehavior(int itemId, Vector2 targetPosition = default)
+    {
+        _itemId = itemId;
+        _targetPosition = targetPosition;
+        OverrideVanillaAI = true;
+    }
+
+    public override void OnStart(NPC npc)
+    {
+        _worldNpc = npc.ModNPC as WorldNPC;
+        if (_worldNpc != null)
+        {
+            _worldNpc.StartItemUse(_itemId);
+        }
+        else
+        {
+            Complete();
+        }
+    }
+
+    public override void Update(NPC npc)
+    {
+        if (_worldNpc == null) return;
+
+        Item item = _worldNpc.DummyPlayer.inventory[_worldNpc.DummyPlayer.selectedItem];
+
+        // Face the target we are aiming at
+        if (_targetPosition != default)
+        {
+            npc.direction = _targetPosition.X < npc.Center.X ? -1 : 1;
+            npc.spriteDirection = npc.direction;
+        }
+
+        // Trigger the item's effect on the first frame of its use time cycle
+        if (_worldNpc.DummyPlayer.itemTime == item.useTime && !item.IsAir)
+        {
+            FireItemDynamically(npc, item);
+        }
+
+        // Advance the animation frames
+        _worldNpc.UpdateItemTimers();
+
+        if (_worldNpc.DummyPlayer.itemAnimation <= 0)
+        {
+            Complete();
+        }
+    }
+
+    private void FireItemDynamically(NPC npc, Item item)
+    {
+        // 1. Play the item's native use sound
+        if (item.UseSound != null)
+        {
+            Terraria.Audio.SoundEngine.PlaySound(item.UseSound, npc.Center);
+        }
+
+        // 2. Dynamically spawn the projectile if the item has one
+        if (item.shoot > 0)
+        {
+            Vector2 aim = _targetPosition - npc.Center;
+            if (aim != Vector2.Zero)
+            {
+                aim.Normalize();
+            }
+            else
+            {
+                aim = new Vector2(npc.direction, 0); // Default forward if no target
+            }
+
+            // Apply the item's native shoot speed
+            aim *= item.shootSpeed;
+
+            // Spawn the projectile dynamically as friendly to the NPC (hostile to enemies)
+            int proj = Terraria.Projectile.NewProjectile(
+                npc.GetSource_FromAI(),
+                npc.Center,
+                aim,
+                item.shoot,
+                item.damage,
+                item.knockBack,
+                Main.myPlayer // Or 255 to unassign it from a specific player
+            );
+
+            // Optional: Mark it as friendly so it hurts enemies, not players
+            Main.projectile[proj].friendly = true;
+            Main.projectile[proj].hostile = false;
+        }
+    }
 }
 
 /// <summary>
