@@ -231,7 +231,6 @@ public class EventSystem : ModSystem
     #endregion
 
     #region Event Broadcasting
-
     public override void PostUpdateEverything()
     {
         ConditionChecker.Update();

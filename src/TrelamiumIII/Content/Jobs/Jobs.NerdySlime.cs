@@ -31,6 +31,10 @@ public sealed class NerdySlimeI : Job
         base.OnJobComplete(giveRewards);
         //DialogueManager.Instance.StartDialogue("NerdySlime.Job1End", false, false);
     }
+    public override void Update()
+    {
+        base.Update();
+    }
 
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {

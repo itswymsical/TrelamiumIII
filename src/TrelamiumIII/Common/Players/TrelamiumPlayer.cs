@@ -2,6 +2,8 @@
 using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Content.Jobs;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Core.Jobs.Events;
+using static Terraria.ModLoader.BackupIO;
 
 namespace TrelamiumIII.Common.Players;
 
@@ -42,8 +44,6 @@ public class TrelamiumPlayer : ModPlayer
             return;
 
         mp.UnlockJob(JobID.CuriousSlime1);
-
-
     }
 
     public override void PreUpdate()
