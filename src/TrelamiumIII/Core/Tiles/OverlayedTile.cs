@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Terraria.Graphics.Shaders;
 using TrelamiumIII.Core.Graphics;
 
 /// <summary>
@@ -133,63 +134,49 @@ public class OverlayedTileManager : ModSystem
     }
 }
 
-public class OverlayTextureSystem : ModSystem
+/// <summary>
+///     One VFX overlay applicable to individual tiles -- e.g. the slimed metaball King Slime
+///     splatters onto tiles it touches, or the scorch marks a burn effect leaves behind.
+/// </summary>
+/// <remarks>
+///     Painted, not drawn: instead of a texture-atlas sprite per tile, an overlay stamps a white
+///     mask into <see cref="TileOverlayManager" />'s accumulation field (see
+///     <see cref="StampMask" />) and separately configures the one shader
+///     (<see cref="PrepareCompositeShader" />) that turns the whole accumulated field -- every
+///     tile this overlay currently owns, summed together -- into the final coloured output. That
+///     split is what lets several nearby splats merge into one blobby shape instead of rendering
+///     as a grid of separate stamps.
+/// </remarks>
+internal abstract class TileOverlay
 {
-    private static WorldFieldTarget overlayTarget;
+    public abstract Texture2D Mask { get; }
 
-    public override void Load()
+    /// <summary>
+    ///     Stamps this overlay's mask at <paramref name="screenPos" />, additively -- overlapping
+    ///     stamps should sum so nearby tiles merge into one shape once the field is thresholded.
+    /// </summary>
+    /// <param name="intensity">
+    ///     0.2-1, falling as the overlay's remaining time runs out. Letting the stamp itself fade
+    ///     means the metaball naturally shrinks below threshold as it expires, rather than needing
+    ///     a separate fade-out step.
+    /// </param>
+    public virtual void StampMask(SpriteBatch spriteBatch, int i, int j, Vector2 screenPos, float intensity)
     {
-        if (Main.dedServ) return;
+        Vector2 origin = new Vector2(Mask.Width, Mask.Height) * 0.5f;
+        Color stampColor = Color.White * intensity;
 
-        // Initialize the target with standard alpha blending for textures
-        overlayTarget = new WorldFieldTarget(DrawOverlaysToTarget)
-        {
-            PixelScale = 1,
-            Blend = BlendState.AlphaBlend,
-            Sampler = SamplerState.PointClamp
-        };
-
-        On_Main.CheckMonoliths += BuildTarget;
-        On_Main.DoDraw_Tiles_Solid += DrawTargetToScreen;
+        spriteBatch.Draw(Mask, screenPos, null, stampColor, 0f, origin, 1f, SpriteEffects.None, 0f);
     }
 
-    private void BuildTarget(On_Main.orig_CheckMonoliths orig)
+    /// <summary>
+    ///     Configures the shader that reads the field this overlay's stamps built and produces
+    ///     the final on-screen colour. Called once per frame this overlay has at least one active
+    ///     tile -- not once per tile.
+    /// </summary>
+    public abstract ShaderData PrepareCompositeShader(RenderTarget2D field);
+
+    /// <summary>Called once a frame for each player standing on a tile this overlay owns.</summary>
+    public virtual void OnContact(Player player)
     {
-        orig();
-        // Rebuilds the surface from scratch
-        overlayTarget.Build();
-    }
-
-    private void DrawOverlaysToTarget(SpriteBatch spriteBatch)
-    {
-        // The ViewMatrix already handles zoom and screen offset[cite: 2].
-        // You just draw your textures directly at their world coordinates (i * 16, j * 16).
-
-        /* Example:
-        foreach (var tile in activeOverlays) {
-            Vector2 worldPos = new Vector2(tile.X * 16, tile.Y * 16);
-            spriteBatch.Draw(slimeTexture, worldPos, Color.White);
-        }
-        */
-
-    }
-
-    private void DrawTargetToScreen(On_Main.orig_DoDraw_Tiles_Solid orig, Main self)
-    {
-        // 1. Let vanilla draw all solid tiles first
-        orig(self);
-
-        // 2. Draw the finished surface on top[cite: 2]
-        if (overlayTarget.Field != null)
-        {
-            Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-            Main.spriteBatch.Draw(overlayTarget.Field, Vector2.Zero, Color.White);
-            Main.spriteBatch.End();
-        }
-    }
-
-    public override void Unload()
-    {
-        overlayTarget = null;
     }
 }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Terraria.Localization;
+﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Jobs;
 

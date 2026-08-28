@@ -13,12 +13,14 @@ public class EventSystem : ModSystem
     private static readonly Dictionary<int, Type> JobTypes = [];
     private static bool isExploding = false;
 
+    private static readonly Dictionary<Point, int> HousingCooldowns = [];
+    private const int CooldownTicks = 60;
     public override void Load()
     {
         RegisterJobs();
 
         SubscribeToEvents();
-
+        On_WorldGen.StartRoomCheck += HookStartRoomCheck;
         On_Projectile.ExplodeTiles += HookExplodeTiles;
     }
 
@@ -27,13 +29,56 @@ public class EventSystem : ModSystem
         UnsubscribeFromEvents();
 
         JobTypes.Clear();
-
+        On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
+        HousingCooldowns.Clear();
         On_Projectile.ExplodeTiles -= HookExplodeTiles;
     }
 
     public static IEnumerable<Job> GetAllAvailableJobs(JobPlayer player)
     {
         return player.UnlockedJobs();
+    }
+
+    private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
+    {
+        // vanilla boundary logic
+        bool isValid = orig(x, y);
+
+        // furniture and Biome checks
+        if (isValid)
+        {
+            isValid = WorldGen.RoomNeeds(0);
+
+            if (isValid)
+            {
+                WorldGen.ScoreRoom(-1, -1);
+
+                // ScoreRoom sets hiScore to -1 and pauses if someone lives there.
+                // The room is valid if it passes the score check OR is currently occupied.
+                isValid = WorldGen.hiScore > 0 || WorldGen.roomOccupied;
+            }
+        }
+
+        if (Main.LocalPlayer == null || !Main.LocalPlayer.active)
+            return isValid;
+
+        int currentTick = (int)Main.GameUpdateCount;
+        Point coord = new Point(x, y);
+
+        // cooldown
+        if (HousingCooldowns.TryGetValue(coord, out int lastTick) && currentTick - lastTick < CooldownTicks)
+        {
+            return isValid;
+        }
+        HousingCooldowns[coord] = currentTick;
+
+        // occupancy Check
+        bool isOccupied = WorldGen.roomOccupied;
+
+        var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer);
+        BroadcastEvent(evt);
+
+        return isValid;
     }
 
     #region Auto-Registration
@@ -246,8 +291,16 @@ public class EventSystem : ModSystem
         JobPlayer?.OnGameEvent(evt);
 
         ConditionChecker.OnGameEvent(evt);
-
-        TrelamiumIII.Instance.Logger.Debug($"{evt.Type} event triggered by player: ({evt.Player.name})");
+        if (evt.Type == GameEventType.HousingChecked)
+        {
+            bool isValid = evt.Amount == 1;
+            TrelamiumIII.Instance.Logger.Info
+                ($"EventSystem.HousingChecked() at X:{evt.TileX} Y:{evt.TileY} | Valid: {isValid} | Occupied: {evt.IsOccupied} | Player: ({evt.Player.name})");
+        }
+        else
+        {
+            TrelamiumIII.Instance.Logger.Info($" EventSystem.{evt.Type}() event triggered by player: ({evt.Player.name})");
+        }
     }
     #endregion
 }

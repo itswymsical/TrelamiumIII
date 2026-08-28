@@ -18,6 +18,8 @@ public class TrelamiumPlayer : ModPlayer
     {
         // Put all the job checks here -- yeah, i know it's ass, i do not care.
         JobChecks_PreHM();
+        //Main.NewText($"Player Position | X: {(int)Player.position.X / 16}, Y: {(int)Player.position.Y / 16}");
+
     }
 
     private void JobChecks_PreHM()
@@ -44,6 +46,8 @@ public class TrelamiumPlayer : ModPlayer
             return;
 
         mp.UnlockJob(JobID.CuriousSlime1);
+        Main.NewText($"{Main.npc[NPCID.TownSlimeBlue].GivenName} {Mod.GetLocalizationKey("JobInfo.NewJob")}", Color.LightBlue);
+
     }
 
     public override void PreUpdate()

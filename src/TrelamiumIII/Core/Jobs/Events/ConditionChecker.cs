@@ -169,6 +169,32 @@ public class PickedUpItem(int itemType, int count = 1) : EventCondition
     }
 }
 
+public class ValidatedHousing : EventCondition
+{
+    private readonly bool _mustBeUnoccupied;
+
+    public ValidatedHousing(bool mustBeUnoccupied = true)
+    {
+        _mustBeUnoccupied = mustBeUnoccupied;
+    }
+
+    public override void Accumulate(GameEvent evt)
+    {
+        if (IsMet) return;
+        if (evt.Type != GameEventType.HousingChecked) return;
+
+        bool isRoomValid = evt.Amount == 1;
+
+        if (isRoomValid)
+        {
+            if (_mustBeUnoccupied && evt.IsOccupied)
+                return;
+
+            IsMet = true;
+        }
+    }
+}
+
 public class CraftedItem(int itemType, int count = 1) : EventCondition
 {
     private int _accumulated;

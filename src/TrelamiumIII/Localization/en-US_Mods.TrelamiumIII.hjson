@@ -2,9 +2,9 @@ Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
 }
-JobInfo: { 
-NewJob: " seems to have a new task for you."
-}
+
+JobInfo.NewJob: " seems to have a new task for you."
+
 Items: {
 	AcornLauncherItem: {
 		DisplayName: Acorn Launcher

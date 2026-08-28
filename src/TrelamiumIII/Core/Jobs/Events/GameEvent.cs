@@ -40,6 +40,20 @@ public struct GameEvent
     public bool WasCrit;
     public Vector2? NPCPosition;
     public AdvancedPopupRequest PopupRequest;
+    public bool IsOccupied;
+
+    public static GameEvent HousingChecked(int x, int y, bool isValid, bool isOccupied, Player player)
+    {
+        return new GameEvent
+        {
+            Type = GameEventType.HousingChecked,
+            TileX = x,
+            TileY = y,
+            Player = player,
+            Amount = isValid ? 1 : 0,
+            IsOccupied = isOccupied
+        };
+    }
 
     public static GameEvent TileBreak(int i, int j, int type, Player player, int? explosiveType = null)
     {
@@ -236,5 +250,6 @@ public enum GameEventType
     FishingAttempt,
     CaughtFish,
     TakeDamage,
-    OnCheckDistance
+    OnCheckDistance,
+    HousingChecked
 }
