@@ -32,4 +32,13 @@ DialogueLibrary: {
 			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
 		}
 	}
+
+	Guide: {
+		HomeForagerGreeting.Line1.Text: Hey, [speakerName:player]! [] I have a task for you!
+
+		HomeForagerTask1: {
+			Line1.Text: Somethin something blah bag
+			Line2.Text: Go gather some resources
+		}
+	}
 }

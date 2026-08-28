@@ -20,4 +20,19 @@ Jobs: {
 			Set2.obj0: Return to Slime
 		}
 	}
+
+	TownlessTown: {
+		Name: Home Forager
+		Description: "'The Guide’s quite particular about housing – you cant have town without townsfolk! Go gather some resources and build yourself a town center.'"
+
+		Tasks: {
+			Set0: {
+				obj0: Gather Wood
+				obj1: Gather Stone
+			}
+
+			Set1.obj0: Create suitible housing units
+			Set2.obj0: Check in with the Guide
+		}
+	}
 }

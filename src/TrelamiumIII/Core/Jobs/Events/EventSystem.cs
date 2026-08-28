@@ -39,6 +39,7 @@ public class EventSystem : ModSystem
         return player.UnlockedJobs();
     }
 
+    // TODO: Mark valid-checked rooms as 'dirty' if they have been checked once already, to prevent them from multi-checked during missions.
     private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
     {
         // vanilla boundary logic

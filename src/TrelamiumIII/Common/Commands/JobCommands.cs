@@ -134,7 +134,7 @@ public class StartJobCommand : ModCommand
 
         if (Job.Status != JobStatus.Unlocked)
         {
-            caller.Reply($"Job '{Job.Name}' is locked. Use /unlockm first", Color.Yellow);
+            caller.Reply($"Job '{Job.Name}' is locked. Use /unlockj first", Color.Yellow);
             return;
         }
 

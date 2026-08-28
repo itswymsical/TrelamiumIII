@@ -7,4 +7,5 @@ public static class JobID
     public const int NerdySlimeI = 2;
     public const int GuideKingSlimeI = 3;
     public const int MerchantEyeOfCthulhuI = 4;
+    public const int HomeForager = 5;
 }
