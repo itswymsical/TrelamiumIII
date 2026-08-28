@@ -4,6 +4,7 @@ using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Core.Tiles;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;

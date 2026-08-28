@@ -6,6 +6,7 @@ using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Core.Tiles;
 using TrelamiumIII.Utilities;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -99,6 +100,7 @@ public class ThermiteFlaskProjectile : ModProjectile
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
         Projectile.oldVelocity.Y = -Projectile.oldVelocity.Y;
+
         return true;
     }
 
@@ -190,9 +192,27 @@ public class ThermiteBurstProjectile : ModProjectile
         if (Projectile.velocity.Y != oldVelocity.Y)
             Projectile.velocity.Y = -oldVelocity.Y * BOUNCE;
 
-        // Losing spin with speed, so a shard that has stopped skipping is not still whirling.
         Spin *= BOUNCE;
 
+        int tileX = (int)(Projectile.Center.X / 16f);
+        int tileY = (int)(Projectile.Center.Y / 16f);
+
+        // Scan a 3x3 area around the impact point
+        for (int x = tileX - 1; x <= tileX + 1; x++)
+        {
+            for (int y = tileY - 1; y <= tileY + 1; y++)
+            {
+                if (WorldGen.InWorld(x, y))
+                {
+                    Tile tile = Framing.GetTileSafely(x, y);
+
+                    if (tile.HasTile && Main.tileSolid[tile.TileType])
+                    {
+                        OverlayedTileManager.AddOverlayedTile<BurnOverlay>(x, y);
+                    }
+                }
+            }
+        }
         return false;
     }
 

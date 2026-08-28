@@ -33,7 +33,7 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
     {
         if (npc.friendly) return;
 
-        if (npc.immortal || npc.dontTakeDamage)
+        if (npc.dontTakeDamage)
             return;
 
         var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
