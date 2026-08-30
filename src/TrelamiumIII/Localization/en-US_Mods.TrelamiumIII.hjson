@@ -563,6 +563,11 @@ Items: {
 		DisplayName: Myconid Spore
 		Tooltip: Summons a Malevolent Myconid
 	}
+
+	WallBomb: {
+		DisplayName: Wall Bomb
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -620,6 +625,7 @@ Projectiles: {
 	SporadicSlamProjectile.DisplayName: Sporadic Slam
 	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
 	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
+	WallBombProj.DisplayName: Wall Bomb Proj
 }
 
 NPCs: {
