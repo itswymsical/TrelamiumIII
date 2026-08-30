@@ -3,7 +3,7 @@
 //   uDensity    line count band (whole number so the angular seam wraps clean)
 //   uNoiseTex   tiling noise source (AssetLibrary.NoiseTexture)
 //
-// COLOR0 is ignored on purpose -- see the note in ScreenFlash.fx. FilterManager.EndCapture draws
+// COLOR0 is ignored on purpose, see the note in ScreenFlash.fx. FilterManager.EndCapture draws
 // the captured frame tinted by the sky colour whenever any filter is active, so `* col` would pull
 // the whole screen toward black underground and at night, for as long as the lines were up.
 

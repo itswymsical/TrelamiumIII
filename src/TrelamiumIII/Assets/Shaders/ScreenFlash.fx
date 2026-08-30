@@ -10,7 +10,7 @@
 //
 // The haze re-samples the frame LEVELS times along the from-centre direction, each slice weighted
 // by a rainbow triangle (R..G..B) and the total normalised. Offsets grow with distance from the
-// centre, so the middle of the screen stays readable and the fringing builds toward the edges --
+// centre, so the middle of the screen stays readable and the fringing builds toward the edges,
 // which is what a real lens does, and what keeps this from reading as a blur.
 //
 // At uHaze 0 every slice samples the same texel and the weighted average collapses back to the
@@ -19,8 +19,7 @@
 
 // COLOR0 is ignored on purpose. FilterManager.EndCapture draws the captured frame with
 // Main.ColorOfTheSkies as the vertex colour whenever any filter is active, and with Color.White
-// only when none is. So col is the sky tint, not white, and `* col` would crush the entire screen
-// toward black anywhere the sky is dark -- space, underground, night -- including at uFlash 0.
+// only when none is.
 
 sampler2D ImageSampler : register(s0);
 

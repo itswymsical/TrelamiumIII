@@ -7,11 +7,6 @@ namespace TrelamiumIII.Content.EyeOfCthulhu;
 /// <summary>
 ///     How a piece of the remains is currently behaving.
 /// </summary>
-/// <remarks>
-///     The cutscene owns this. A piece spawns in <see cref="Tumble" /> and stays there through the
-///     ordinary death -- so a player who has already seen the cutscene, or who skips it, gets debris
-///     that simply falls and beds into the ground. Everything past that is the cutscene taking hold.
-/// </remarks>
 public enum GoreDrift
 {
     /// <summary>Ordinary debris: gravity, tile collision, settles and fades.</summary>
@@ -27,31 +22,11 @@ public enum GoreDrift
 /// <summary>
 ///     One piece of the Eye of Cthulhu, wearing the gore sprite the base game threw for it.
 /// </summary>
-/// <remarks>
-///     <para>
-///         A <see cref="Particle" /> rather than a <see cref="ModGore" /> for the reason the base
-///         class gives: a player who turns gore off is asking not to see viscera, not asking the
-///         cutscene to lose its cast. The pieces are re-staged debris, so they survive that setting.
-///     </para>
-///     <para>
-///         The sprite normally arrives through <see cref="Particle.TextureOverride" />, set by
-///         whatever spawned the piece from the gore vanilla had already created -- which is why there
-///         are no gore ids in the interesting path here. <see cref="Textures" /> is only the fallback
-///         for when there was no vanilla gore to adopt, which happens whenever the player has gore
-///         disabled.
-///     </para>
-/// </remarks>
 public sealed class EyeGoreParticle : Particle
 {
     /// <summary>
     ///     Fallback sprites, used only when no vanilla gore was available to adopt.
     /// </summary>
-    /// <remarks>
-    ///     Vanilla gore keys, so they resolve through <see cref="Main.Assets" /> rather than the mod.
-    ///     These are a generic dark chunk rather than the Eye's own pieces -- worth eyeballing once
-    ///     in game with gore disabled and swapping for whichever indices read best, since this path
-    ///     cannot borrow the real thing.
-    /// </remarks>
     public override string[] Textures => ["Images/Gore_6", "Images/Gore_7", "Images/Gore_8"];
 
     /// <summary>Tighter than the sprite, so a settling chunk beds into a corner instead of hovering.</summary>
@@ -99,16 +74,6 @@ public sealed class EyeGoreParticle : Particle
     /// <summary>
     ///     The sub-rectangle of the sprite this piece wears, or null for the whole texture.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="Particle" /> models frames as a vertical strip -- <c>Height / FrameCount</c> --
-    ///     which cannot describe a vanilla gore sheet laid out as a GRID. A sheet like that drawn
-    ///     without a source rect renders in full, as a lattice of every sprite on it, so anything
-    ///     wearing a sheeted gore has to be told which cell it is.
-    ///     <para>
-    ///         Read by all three draw paths -- body, bloom and coverage stamp -- so a piece cannot end
-    ///         up glowing or casting a silhouette in a shape its body does not have.
-    ///     </para>
-    /// </remarks>
     public Rectangle? SourceRect { get; set; }
 
     private Rectangle Cell(Texture2D texture) => SourceRect ?? texture.Bounds;
@@ -248,23 +213,6 @@ public sealed class EyeGoreParticle : Particle
         }
     }
 
-    /// <summary>
-    ///     The Fallen Star read: the sprite sampled into its own bloom, with a soft halo under it.
-    /// </summary>
-    /// <remarks>
-    ///     Two parts, and the order matters because both are additive. The halo goes down first as a
-    ///     wide, weak indigo wash -- it is what the eye reads as light in the air around the piece,
-    ///     and it is mostly there so the silhouette has something to sit against. Then the sprite
-    ///     itself is stamped <see cref="BLOOM_COPIES" /> times around a small circle whose angle
-    ///     advances with time, which is the trick the base game uses on a fallen star: no authored
-    ///     glow texture, just the sprite smeared around its own centre until the shape reads as
-    ///     emitting rather than as lit.
-    ///     <para>
-    ///         The copies are scaled slightly past the body so the bloom pokes out beyond the crisp
-    ///         edge. Kept small -- past about 1.25 the piece stops reading as a solid object with a
-    ///         glow and starts reading as a blurry sprite.
-    ///     </para>
-    /// </remarks>
     public override void DrawGlow(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, float opacity)
     {
         float envelope = MathHelper.Clamp(GlowEnvelope, 0f, 1f) * opacity;
@@ -320,17 +268,6 @@ public sealed class EyeGoreParticle : Particle
     /// <summary>
     ///     Stamps this piece into a coverage field as flat white.
     /// </summary>
-    /// <remarks>
-    ///     Lives here rather than in the renderer that calls it because the sprite a piece is
-    ///     wearing is resolved privately -- it may be a vanilla gore adopted at spawn, and nothing
-    ///     outside the particle should have to know which.
-    ///     <para>
-    ///         Drawn larger than the body and at partial strength. The extra spread gives the
-    ///         silhouette room to carry a rim outside the sprite, and the partial strength is what
-    ///         lets two pieces SUM into one shape where they overlap instead of one of them simply
-    ///         saturating the field on its own.
-    ///     </para>
-    /// </remarks>
     public void StampCoverage(SpriteBatch spriteBatch)
     {
         if (ResolveTexture() is not { } texture)

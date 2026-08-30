@@ -8,29 +8,6 @@ namespace TrelamiumIII.Content.EyeOfCthulhu;
 ///     Renders the drifting remains a second time, as one wobbling ink silhouette being dragged
 ///     toward the vortex.
 /// </summary>
-/// <remarks>
-///     <para>
-///         This is not the pieces and it is not the gas. Each piece already draws its own sprite and
-///         its own bloom, and <see cref="Core.Graphics.Metaballs.Layers.InkLayer" /> already sheds gas
-///         around them. What neither can do is see more than one piece at a time: a sprite draw only
-///         knows the fragment it is on, so nothing in either path can fuse two pieces into a single
-///         shape, or smear that shape along a direction. Both need a surface that holds the whole
-///         accumulation, which is what <see cref="WorldFieldTarget" /> is for.
-///     </para>
-///     <para>
-///         The pieces stamp into that surface as flat coverage, and <c>InkSilhouette.fx</c> reads it
-///         back once: wobble the lookup, smear it toward the drain, cut it hard, rim the cut. The cut
-///         happening <em>after</em> the smear is what makes separate pieces fuse -- two whose own
-///         coverage never touches will still both trail into the gap between them and cross the
-///         threshold there.
-///     </para>
-///     <para>
-///         <b>The one hard rule about where this runs.</b> The field is built in
-///         <c>CheckMonoliths</c>, the single point in the frame where Terraria expects a mod to be
-///         binding a render target, and only read back in <c>DrawDust</c>. Building it any later means
-///         claiming a target mid-scene and having to restore whatever was there.
-///     </para>
-/// </remarks>
 internal sealed class GoreSilhouetteRenderer : ModSystem
 {
     /// <summary>
@@ -137,12 +114,6 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
     /// <summary>
     ///     How strongly the silhouette shows, taken from the pieces rather than set by the cutscene.
     /// </summary>
-    /// <remarks>
-    ///     The brightest piece wins. Every piece's own envelope is already driven by the cutscene, so
-    ///     reading it back here means there is one schedule for the whole effect instead of two that
-    ///     can disagree -- and a player who has seen the wake already, and so gets no cutscene, gets
-    ///     ordinary debris with no silhouette for free.
-    /// </remarks>
     private static float Envelope()
     {
         float peak = 0f;
@@ -244,7 +215,7 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
     /// <summary>The point the coverage is smeared toward, in 0..1 screen space.</summary>
     /// <remarks>
     ///     Through the game view matrix rather than a bare subtraction, so the focus tracks the world
-    ///     under zoom -- the same conversion <see cref="InkVortex" /> uses to place its disc, and for
+    ///     under zoom: the same conversion <see cref="InkVortex" /> uses to place its disc, and for
     ///     the same reason.
     /// </remarks>
     private static Vector2 FocusUv()

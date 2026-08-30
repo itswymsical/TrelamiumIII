@@ -46,12 +46,6 @@ public sealed class FungalInfectionHostile : ModBuff
 /// <summary>
 ///     The heavier strain, thrown by <see cref="FungoreSpore" />.
 /// </summary>
-/// <remarks>
-///     A separate buff rather than a stack count on the ambient one, because the two are applied by
-///     completely different things and want completely different durations: the ambient strain hangs
-///     around for as long as you stand in a cloud, while this one is a short, sharp four seconds that
-///     a slam re-applies every time it catches you.
-/// </remarks>
 public sealed class FungalInfectionSpore : ModBuff
 {
     public override string Texture => AssetReferences.Content.Fungore.FungalInfection.KEY;
@@ -85,24 +79,11 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     Saturation ceiling.
     /// </summary>
-    /// <remarks>
-    ///     Twice what a host can carry, and it buys something completely different. On an NPC the
-    ///     stack count is a fuse -- it raises damage and eventually ruptures. Here it does neither:
-    ///     the damage is fixed by the strain, and stacking only makes the world harder to look at.
-    ///     A player who stands in the gas is punished by being unable to read the fight, which is a
-    ///     cost they can play around, rather than by a number they cannot see.
-    /// </remarks>
     public const int MAX_STACKS = 10;
 
     /// <summary>
     ///     Peak warp at a full stack.
     /// </summary>
-    /// <remarks>
-    ///     The shader's displacement is 5% of the screen at 1, and anything near that stops being a
-    ///     debuff and starts being a blindfold -- a fight this readable should never take the reads
-    ///     away, only make them cost something. This is the number to raise if it is too gentle, and
-    ///     it should stay well under half.
-    /// </remarks>
     private const float WOBBLE_STRENGTH = 0.4f;
 
     /// <summary>Warp frequency at zero and full stacks. Climbing both is what sells it.</summary>
@@ -114,11 +95,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     How long a fresh infection lasts, by difficulty.
     /// </summary>
-    /// <remarks>
-    ///     Explicit rather than leaning on <see cref="BuffID.Sets.LongerExpertDebuff" />, which only
-    ///     knows how to double and cannot tell expert from master. Master is where the twenty second
-    ///     version belongs; a first boss in normal has no business holding one that long.
-    /// </remarks>
     public static int InfectionTicks => Main.masterMode ? 20 * 60
         : Main.expertMode ? 13 * 60
         : 9 * 60;
@@ -126,12 +102,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     Applies a strain and a stack of saturation in one go.
     /// </summary>
-    /// <remarks>
-    ///     The single entry point on purpose. A caller that adds the buff itself gets the damage but
-    ///     none of the saturation, and the two drifting apart is exactly the bug that would never be
-    ///     noticed -- the debuff icon would be there and the screen would simply be calmer than it
-    ///     should be.
-    /// </remarks>
     public static void Inflict(Player player, int buffType, int ticks, int stacks = 1)
     {
         if (player is not { active: true } || player.dead)
@@ -157,10 +127,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     How saturated they are, 0 to <see cref="MAX_STACKS" />.
     /// </summary>
-    /// <remarks>
-    ///     Unlike <see cref="Severity" /> this is not rebuilt each tick -- it accumulates while an
-    ///     infection is running and is dropped when the last one wears off.
-    /// </remarks>
     public int Stacks;
 
     public bool Infected => Severity > 0;
@@ -170,11 +136,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     Raises the infection to <paramref name="severity" />.
     /// </summary>
-    /// <remarks>
-    ///     The worse strain wins rather than the two summing: being in a cloud while a slam lands is
-    ///     already two sources of damage, and stacking the burn on top of that would make standing
-    ///     anywhere near the fight a slow death independent of what you get hit by.
-    /// </remarks>
     public void Infect(int severity) => Severity = Math.Max(Severity, severity);
 
     public override void ResetEffects() => Severity = 0;
@@ -194,16 +155,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     Pushes the saturation into the warp.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Runs after buffs have had their say, so <see cref="Severity" /> is this frame's answer
-    ///         to "is anything still in them" -- which is what clears the stack count when the last
-    ///         strain wears off.
-    ///     </para>
-    ///     <para>
-    ///         Local player only. The wobble is a full-screen filter, and there is exactly one screen.
-    ///     </para>
-    /// </remarks>
     public override void PostUpdate()
     {
         if (!Infected)
@@ -381,15 +332,6 @@ public sealed class FungalInfectionNPC : GlobalNPC
     /// <summary>
     ///     Applies infection damage, crediting <paramref name="owner" /> so kills still drop loot.
     /// </summary>
-    /// <remarks>
-    ///     Struck through a prebuilt <see cref="NPC.HitInfo" /> rather than
-    ///     <c>SimpleStrikeNPC</c>, because HitInfo.Damage is the final figure -- defense does not
-    ///     get to shave a 1-damage tick down to nothing on anything armoured.
-    ///     <para>
-    ///         Server-authoritative: letting clients strike here would apply the tick once per
-    ///         player in the world.
-    ///     </para>
-    /// </remarks>
     private void TickDamage(NPC npc)
     {
         int damage = TickDamageFor(Stacks);

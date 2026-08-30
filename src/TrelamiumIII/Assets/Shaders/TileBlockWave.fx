@@ -42,7 +42,6 @@
 //   uBlend      0 = rigid blocks, 1 = smooth warp; how far a block eases toward its neighbours
 //   uMix        0..1 overall strength, carrying the wave's fade
 //
-// COLOR0 is ignored on purpose -- see the note in TileShockwave.fx. Same reasoning, same hazard.
 
 sampler2D ImageSampler : register(s0);
 

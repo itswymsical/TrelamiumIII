@@ -192,7 +192,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
     /// </summary>
     /// <remarks>
     ///     Smoothstepped rather than linear because every consumer is an envelope that reads as
-    ///     motion -- a linear ramp gives the lift and the wind-in a visible corner at each boundary.
+    ///     motion: a linear ramp gives the lift and the wind-in a visible corner at each boundary.
     /// </remarks>
     private static float Ramp(float now, float from, float to)
     {

@@ -1,6 +1,5 @@
 // A glass sphere pressed into the frame. Unlike an additive overlay it draws almost no light
-// of its own -- it is legible because of what it does to the world behind it: refracts it,
-// splits the colour at the bevel, frosts it toward the rim, and rings the silhouette.
+// of its own
 //
 // The 3D read comes from treating the disc as the projection of a sphere. For a pixel at
 // normalised radius rn:
@@ -9,8 +8,7 @@
 //   n = (dir * rn, z)          already unit length, so no normalize needed
 //
 // z is doing double duty: it is the surface normal's Z, and it is the thickness of glass the
-// view ray passes through -- thickest through the middle, zero at the silhouette. Every
-// depth cue in here (fresnel, specular, bevel) falls out of those two lines.
+// view ray passes through
 //
 // The radial remap has two lobes that both vanish at rn == 1, so the disc joins the untouched
 // frame with no seam:
@@ -42,13 +40,6 @@
 //   uIridescence     thin-film sheen at grazing angles
 //   uTint            glass colour
 //   uTintStrength    0..1 how much colour the glass carries
-
-// DO NOT MULTIPLY BY COLOR0. FilterManager.EndCapture draws the captured frame with
-// Main.ColorOfTheSkies as the vertex colour whenever any filter is active, and with
-// Color.White only when none is. So COLOR0 in a scene filter is the sky tint, not white, and
-// `* col` crushes the ENTIRE screen toward black anywhere the sky is dark -- space, glowing
-// mushroom, underground, night. Worse, it applies even at uMix 0, so the effect does not have
-// to be visible to black out the game. Vanilla's screen shaders ignore COLOR0 for this reason.
 
 sampler2D ImageSampler : register(s0);
 

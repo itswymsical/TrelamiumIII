@@ -25,7 +25,7 @@
 //
 //   uFieldTexel    1 / field-target size; one texel = uPixelScale screen px
 //   uAspect        screen w/h, so the smear disc and the noise read circular
-//   uWorldOffset   screenPosition / screenHeight -- locks the wobble to the world
+//   uWorldOffset   screenPosition / screenHeight
 //   uTime          seconds
 //   uWobble        peak UV displacement of the silhouette lookup
 //   uWobbleScale   FBM frequency for that displacement

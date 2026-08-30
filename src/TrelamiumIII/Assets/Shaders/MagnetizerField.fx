@@ -9,21 +9,13 @@
 // This pass also carried a refraction lens: it treated the mask's alpha as a height field, took its
 // gradient, and displaced the frame along it so the rock around the cone was visibly dragged into
 // it. That worked, in the sense that it did what it said. It was also too much. A magnetizer is a
-// mining tool used at close range against a wall of tiles, and bending those tiles -- however
-// carefully the bending was kept to the cone's lip -- competes with the one thing the player is
-// looking at. The gradient taps, the chromatic dispersion and the edge normalisation all went with
-// it, which also takes this pass from seventeen texture reads to eleven.
+// mining tool used at close range against a wall of tiles, and bending those tiles
 //
 // The shape of the intake is now carried by the sine trail, which is a pixelated ribbon drawn as
 // primitives, and by the ore metaballs and block chips travelling up it. Those are all opaque,
 // chunky, vanilla-looking things: they read as an intake without touching the frame behind them at
 // all. What is left here is the one screen effect that earns its place, because nothing drawn on
 // top of the frame can fake it:
-//
-//   THE WOBBLE. The world inside the cone shimmers, the way air does over something hot or under
-//   strain. It is fine-grained, so it costs no readability -- you can still count the ore veins
-//   through it -- but it is unmistakably the frame itself moving, which is what says "field" rather
-//   than "sprite". Confined to the mask, so it is an exact passthrough everywhere else.
 //
 //   uMix            0..1 effect weight; must resolve to an exact passthrough at 0
 //   uWobble         peak displacement in UV, at full mask strength
@@ -34,13 +26,6 @@
 //   uAspect         screen w/h, so the FBM is not stretched
 //   uGlow           gain on the field's emitted light
 //   uLightResponse  0..1 how far the added light tracks the brightness behind it
-
-// DO NOT MULTIPLY BY COLOR0. FilterManager.EndCapture draws the captured frame with
-// Main.ColorOfTheSkies as the vertex colour whenever any filter is active, and with Color.White
-// only when none is. So COLOR0 in a scene filter is the sky tint, not white, and `* col` crushes
-// the ENTIRE screen toward black anywhere the sky is dark -- space, glowing mushroom, underground,
-// night. Worse, it applies even at uMix 0, so the effect does not have to be visible to black out
-// the game. Vanilla's screen shaders ignore COLOR0 for this reason.
 
 sampler2D ImageSampler : register(s0);
 

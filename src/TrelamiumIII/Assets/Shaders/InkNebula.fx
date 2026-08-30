@@ -1,5 +1,5 @@
-// A ferrofluid nebula wound around a black hole. Grayscale by construction -- this is
-// ink and starlight, not gas, so there is no hue anywhere in the pipeline; the only
+// A ferrofluid nebula wound around a black hole. Grayscale by construction.
+// this is ink and starlight, not gas, so there is no hue anywhere in the pipeline; the only
 // colour comes from the two endpoint uniforms and they are meant to stay near neutral.
 //
 // The look rests on three ideas stacked in order:
@@ -33,18 +33,18 @@
 //   uAspect      (width/height, 1) so the disc and the swirl read circular
 //   uCenter      0..1 singularity position
 //   uScale       base FBM frequency
-//   uPivot       median of the raw FBM sum for the bound noise texture -- see Fbm()
-//   uExpand      histogram stretch applied to the raw FBM -- see the note at Fbm()
+//   uPivot       median of the raw FBM sum for the bound noise texture, see Fbm()
+//   uExpand      histogram stretch applied to the raw FBM, see the note at Fbm()
 //   uWarp        domain-warp strength (turbulence)
 //   uSwirl       winding strength; the rotation angle is uSwirl / (r + uSwirlCore)
 //   uSwirlCore   softening on that divide, so the very centre doesn't shear to mush
 //   uSpin        rigid rotation rate layered on top of the shear (rad/sec)
 //   uDensity     coverage midpoint of the ink body
 //   uContrast    half-width of the body's feather band
-//   uBodyLevel   how much light the ink MASS emits -- keep low, it is a silhouette
+//   uBodyLevel   how much light the ink MASS emits.
 //   uSheen       specular strength (the wet-chrome highlight)
 //   uRelief      how steeply the height field tilts its normals; the "bumpiness" dial
-//   uReliefEps   which SCALE of the field the gloss follows -- the key material knob
+//   uReliefEps   which SCALE of the field the gloss follows
 //   uGloss       specular exponent; higher = tighter, harder highlight
 //   uRim         grazing-angle highlight strength along crests
 //   uRimPower    exponent on that rim term
@@ -66,10 +66,7 @@
 //   uInkLow      colour of empty void (near black)
 //   uInkHigh     colour of a full specular highlight (near white)
 
-// s0 is the sprite SpriteBatch binds for us. It is read as a coverage MASK -- draw the
-// pass with MagicPixel for a full-screen field, or with one of the mask textures to
-// confine the ink to a shape. Reading it also pins the sampler to register 0, which
-// keeps the wrap samplers below off the register SpriteBatch owns.
+// s0 is the sprite SpriteBatch binds for us.
 sampler2D ImageSampler : register(s0);
 
 texture2D uNoiseTex;
@@ -144,9 +141,7 @@ float N(float2 p)
 //
 // uPivot is the MEDIAN OF THE RAW SUM for whichever texture is bound, and it is a
 // uniform rather than a constant because it is a property of that texture, not of this
-// shader. FbmNoise2 sits at 0.682 -- nowhere near the 0.5 a symmetric field would give,
-// and assuming otherwise pins the whole field at the top of the range and washes it out.
-// Measure it again if the texture is swapped.
+// shader. FbmNoise2 sits at 0.682
 float Fbm(float2 p)
 {
     float sum = 0.0;
@@ -189,10 +184,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     // The ink is a SURFACE, not a density.
     //
     // This is the whole trick of the material. Ferrofluid is recognisable because it is
-    // black and glossy, and gloss is a property of a surface NORMAL -- it cannot be
-    // recovered from a coverage threshold. Thresholding the field instead gives
-    // hard-edged islands, each outlined by its own level set, which reads as cracked dry
-    // mud rather than as liquid metal.
+    // black and glossy, and gloss is a property of a surface NORMAL
     //
     // So the FBM is treated as a height field and lit. Two extra taps give a forward
     // difference for the slope; the difference is deliberately NOT divided by the epsilon,
@@ -200,9 +192,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     //
     // uReliefEps is the single most consequential knob in the shader and is worth
     // understanding before touching it. It sets which SCALE of the field the gloss
-    // follows. Small values differentiate the finest octave and the highlight breaks into
-    // speckle -- wet granite. Large values follow whole billows and the highlight flows
-    // over them in sheets, which is the liquid read this is after.
+    // follows.
     float eps = max(uReliefEps, 1e-3);
 
     float h = Fbm(p);
@@ -216,8 +206,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     // Tight, bright, and moving over the surface as the field flows underneath it.
     float spec = pow(saturate(dot(normal, light)), max(uGloss, 1.0)) * uSheen;
 
-    // Grazing angles catch light all along a crest -- the thread of white that runs down
-    // the edge of a ferrofluid spike, independent of where the key light happens to be.
+    // Grazing angles catch light all along a crest
     float rim = pow(1.0 - saturate(normal.z), max(uRimPower, 1.0)) * uRim;
 
     // Cellular walls, nudged by the same warp so the beading travels with the billows
@@ -225,14 +214,12 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     float cell = tex2D(CellSampler, q * uScale * 0.55 + (w - 0.5) * 0.12).r;
     float web = pow(saturate(cell), max(uWebPower, 1.0)) * uWeb;
 
-    // The mass is a SILHOUETTE. Letting it emit any real amount of light is what turns
-    // this from ink into fog -- the body covers most of the frame, so even a modest
-    // level lifts the entire background off black and flattens everything drawn over it.
+    // The mass is a SILHOUETTE.
     float soft = max(uContrast, 0.001);
     float body = smoothstep(uDensity - soft, uDensity + soft, h);
 
-    // Webbing only exists where there is ink to bead up -- unmasked, the Voronoi walls
-    // hang in the empty void looking like a wire mesh laid over the frame.
+    // Webbing only exists where there is ink to bead up
+    // the Voronoi walls hang in the empty void looking like a wire mesh laid over the frame.
     float v = saturate(body * uBodyLevel + spec + rim + web * body);
 
     // Concentration toward the core. A galaxy is brightest where the mass is, and

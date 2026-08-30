@@ -5,19 +5,6 @@ namespace TrelamiumIII.Content.EyeOfCthulhu;
 /// <summary>
 ///     A glint struck off a drifting piece of the remains.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The small four-pointed sparks that orbit a fallen star on the ground. They exist to give
-///         the bloom something to punctuate it: a bloom on its own reads as a static wash however
-///         much it breathes, and it is the sparks appearing and dying at different moments that make
-///         the piece look like it is actively shedding light.
-///     </para>
-///     <para>
-///         Drawn only in the additive pass -- <see cref="PreDraw" /> declines the body pass outright.
-///         A spark has no substance to occlude with, and drawing it once alpha-blended and once
-///         additively would give it a muddy dark core.
-///     </para>
-/// </remarks>
 public sealed class InkSparkParticle : Particle
 {
     public override string[] Textures => [Assets.Textures.VFX.PixelStar.KEY];

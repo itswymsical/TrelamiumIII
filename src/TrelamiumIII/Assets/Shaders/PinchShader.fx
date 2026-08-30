@@ -68,7 +68,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     // pixels past the rim resolve to EXACTLY uv. Lerping the coordinate (not the colour)
     // also means a partial mix reads as a weaker pinch, not a double-exposed ghost.
     float2 src = lerp(uv, warped, edge * saturate(uMix));
-    // col is the sky tint, not white. Ignored on purpose -- see the note at the top.
+    // col is the sky tint, not white. Ignored on purpose: see the note at the top.
     return tex2D(ImageSampler, src);
 }
 
