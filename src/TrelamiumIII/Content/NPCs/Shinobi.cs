@@ -2,7 +2,7 @@
 
 namespace TrelamiumIII.Content.NPCs;
 
-public class ShinobiNPC : BaseTerrarian
+public class ShinobiNPC : Villager
 {
     //public enum Phase
     //{

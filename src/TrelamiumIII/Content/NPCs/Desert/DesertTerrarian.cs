@@ -3,9 +3,9 @@ using TrelamiumIII.Core.NPCs;
 using System.Collections.Generic;
 using TrelamiumIII.Content.Alchemy;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Desert;
 
-public class DesertTerrarian : BaseTerrarian
+public class DesertTerrarian : Villager
 {
     protected override Color[] HairPalette =>
     [

@@ -645,11 +645,11 @@ NPCs: {
 
 	EyeOfCthulhu.Epithet: The Watcher
 	FungoreSporeSac.DisplayName: Spore Sac
-	DesertTerrarian.DisplayName: Desert Terrarian
-	ForestTerrarian.DisplayName: Forest Terrarian
-	JungleTerrarian.DisplayName: Jungle Terrarian
+	DesertTerrarian.DisplayName: Desert Villager
+	ForestTerrarian.DisplayName: Forest Villager
+	JungleTerrarian.DisplayName: Jungle Villager
 	SporadicSlime.DisplayName: Sporadic Slime
-	TundraTerrarian.DisplayName: Tundra Terrarian
+	TundraTerrarian.DisplayName: Tundra Villager
 	CuriousSlime.DisplayName: Slime
 	BodyguardNPC.DisplayName: Bodyguard
 	WardenArm.DisplayName: Warden Arm

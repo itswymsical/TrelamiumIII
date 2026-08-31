@@ -1,10 +1,11 @@
 ﻿using TrelamiumIII.Content.Alchemy;
 using System.Collections.Generic;
 using Terraria.ModLoader.Default.Patreon;
+using TrelamiumIII.Core.NPCs;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Jungle;
 
-public class JungleTerrarian : BaseTerrarian
+public class JungleTerrarian : Villager
 {
     protected override Color[] HairPalette =>
     [        

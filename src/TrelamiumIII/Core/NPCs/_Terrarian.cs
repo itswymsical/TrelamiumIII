@@ -9,12 +9,12 @@ using Terraria.Chat;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Core.NPCs;
 
 /// <summary>
 /// This class acts as the "wandering World NPC" template.
 /// </summary>
-public abstract class BaseTerrarian : WorldNPC
+public abstract class Villager : WorldNPC
 {
     public override bool CanDespawn => true;
 

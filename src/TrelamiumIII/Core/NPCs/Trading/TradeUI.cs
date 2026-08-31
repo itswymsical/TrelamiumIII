@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Input;
-using TrelamiumIII.Content.NPCs;
 using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -15,7 +14,7 @@ namespace TrelamiumIII.Core.NPCs.Trading;
 public static class TradeUI
 {
     public static bool IsOpen { get; private set; }
-    public static BaseTerrarian CurrentTrader { get; private set; }
+    public static Villager CurrentTrader { get; private set; }
 
     // Layout
     private const int PanelWidth = 440;
@@ -45,7 +44,7 @@ public static class TradeUI
     private static int _holdCountdown;
     private static int _currentDelay;
     private static int _holdFireCount;
-    public static void Open(BaseTerrarian trader)
+    public static void Open(Villager trader)
     {
         if (trader == null || trader.Trades == null || trader.Trades.Count == 0)
             return;

@@ -1,11 +1,12 @@
 ﻿using TrelamiumIII.Core.NPCs.Trading;
 using System.Collections.Generic;
 using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Core.NPCs;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Forest;
 
 // USA BABYYYYYYYY!
-public class ForestTerrarian : BaseTerrarian
+public class ForestTerrarian : Villager
 {
     protected override Color[] HairPalette =>
     [

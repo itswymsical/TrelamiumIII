@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Core.NPCs;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Snow;
 
-public class TundraTerrarian : BaseTerrarian
+public class TundraTerrarian : Villager
 {
     protected override Color[] HairPalette =>
     [

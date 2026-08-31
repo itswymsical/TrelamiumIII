@@ -10,7 +10,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Particles;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Forest;
 
 public class SporadicSlime : ModNPC
 {
