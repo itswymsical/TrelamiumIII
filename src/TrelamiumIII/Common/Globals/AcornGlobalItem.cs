@@ -16,7 +16,8 @@ public sealed class AcornGlobalItem : GlobalItem
         entity.knockBack = 1f;
         entity.noMelee = true;
         entity.shootSpeed = 7f;
-        
+        entity.notAmmo = true;
+
         entity.ammo = entity.type;
     }
 }

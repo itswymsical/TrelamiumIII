@@ -5,7 +5,7 @@ namespace TrelamiumIII.Content.Lodestone;
 
 /// <summary>
 ///     draws an 8x8 crop lifted straight out of the struck
-///     tile's sheet, the same trick <see cref="Fungore.GirthquakeShardProj" /> uses and now the
+///     tile's sheet, the same trick <see cref="Fungore.EarthShardProj" /> uses and now the
 ///     same code.
 /// <para>
 ///     See <see cref="TileTextureUtils.ResolveChunk" />.

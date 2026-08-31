@@ -1,6 +1,8 @@
 ﻿using Terraria.Audio;
+using Terraria.Chat;
 using Terraria.DataStructures;
 using Terraria.Enums;
+using Terraria.Localization;
 using Terraria.ObjectData;
 using TrelamiumIII.Core;
 
@@ -23,14 +25,24 @@ public class MyconidSpore : ModItem
         if (player.whoAmI == Main.myPlayer)
         {
             SoundEngine.PlaySound(SoundID.Roar, player.position);
+        }
 
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+        {
             int type = ModContent.NPCType<FungoreBoss>();
 
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-                NPC.SpawnOnPlayer(player.whoAmI, type);
-            
-            else
-                NetMessage.SendData(MessageID.SpawnBossUseLicenseStartEvent, number: player.whoAmI, number2: type);
+            int spawnX = (int)player.Center.X;
+            int spawnY = (int)player.Bottom.Y;
+
+            int npcIndex = NPC.NewNPC(player.GetSource_ItemUse(Item), spawnX, spawnY, type);
+
+            if (npcIndex != Main.maxNPCs)
+            {
+                if (Main.netMode == NetmodeID.SinglePlayer)
+                    Main.NewText(Language.GetTextValue("Announcement.HasAwoken", Main.npc[npcIndex].TypeName), 175, 75, 255);
+                else
+                    ChatHelper.BroadcastChatMessage(NetworkText.FromKey("Announcement.HasAwoken", Main.npc[npcIndex].GetTypeNetName()), new Color(175, 75, 255));
+            }
         }
         return true;
     }
@@ -73,18 +85,26 @@ public class MyconidSporeTile : ModTile
         base.KillTile(i, j, ref fail, ref effectOnly, ref noItem);
         if (!fail)
         {
-            if (Main.LocalPlayer.whoAmI == Main.myPlayer)
+            if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-
                 int type = ModContent.NPCType<FungoreBoss>();
 
-                if (Main.netMode != NetmodeID.MultiplayerClient)
-                    NPC.SpawnOnPlayer(Main.LocalPlayer.whoAmI, type);
+                int spawnX = i * 16 + 8;
+                int spawnY = j * 16 + 16;
 
-                else
-                    NetMessage.SendData(MessageID.SpawnBossUseLicenseStartEvent, number: Main.LocalPlayer.whoAmI, number2: type);
+                var source = new EntitySource_TileBreak(i, j);
+
+                int npcIndex = NPC.NewNPC(source, spawnX, spawnY, type);
+
+                if (npcIndex != Main.maxNPCs)
+                {
+                    if (Main.netMode == NetmodeID.SinglePlayer)
+                        Main.NewText(Language.GetTextValue("Announcement.HasAwoken", Main.npc[npcIndex].TypeName), 175, 75, 255);
+                    else
+                        ChatHelper.BroadcastChatMessage(NetworkText.FromKey("Announcement.HasAwoken", Main.npc[npcIndex].GetTypeNetName()), new Color(175, 75, 255));
+                }
             }
-        }    
+        }
     }
 }
 public class MyconidSporeGlobal : GlobalTile
@@ -92,9 +112,21 @@ public class MyconidSporeGlobal : GlobalTile
     public override void RandomUpdate(int i, int j, int type)
     {
         base.RandomUpdate(i, j, type);
+
         if (type == TileID.Grass || type == TileID.Dirt)
         {
+            if (Main.rand.NextBool(800))
+            {
+                if (!Main.tile[i, j - 1].HasTile)
+                {
+                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
 
+                    if (Main.netMode == NetmodeID.Server)
+                    {
+                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
+                    }
+                }
+            }
         }
     }
 }

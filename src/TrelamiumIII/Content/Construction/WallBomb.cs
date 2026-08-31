@@ -158,7 +158,6 @@ public class WallBombProj : ModProjectile
     public override string Texture => $"Terraria/Images/Projectile_{ProjectileID.Bomb}";
     private const int RADIUS = 15;
     private const int FillRadius = 20;
-    private const int FuseTicks = 60; // ~1 second
     public int SourceItemType = -1;
     public ushort LoadedWallType
     {
@@ -347,7 +346,7 @@ public class WallFillSystem : ModSystem
 
                 if (invIndex == -1)
                 {
-                    ActiveFills.RemoveAt(i); // Stop filling if they run out of this wall type
+                    ActiveFills.RemoveAt(i); // Stop filling, your out of resources bub!
                     break;
                 }
 
@@ -394,7 +393,7 @@ public class WallFillSystem : ModSystem
         visited.Add(origin);
         frontier.Enqueue(origin);
 
-        // Belt-and-suspenders cap for insurance
+        // a cap for insurance
         int maxTiles = (radius * 2 + 1) * (radius * 2 + 1);
 
         while (frontier.Count > 0 && visited.Count < maxTiles)
@@ -412,7 +411,7 @@ public class WallFillSystem : ModSystem
                 if (visited.Contains(next))
                     continue;
 
-                // Solid tile = the room's boundary. 4-directional only, on purpose:
+                // Solid tile = the room's boundary. 4-directional only, cuz
                 // an 8-directional fill can squeeze diagonally between two solid
                 // tiles that only touch at a corner, which is exactly the kind of
                 // leak this needs to avoid.

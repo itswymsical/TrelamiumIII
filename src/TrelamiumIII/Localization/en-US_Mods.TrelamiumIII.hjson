@@ -568,6 +568,11 @@ Items: {
 		DisplayName: Wall Bomb
 		Tooltip: ""
 	}
+
+	StalactiteCannon: {
+		DisplayName: Stalactite Cannon
+		Tooltip: "Fires high speed stone blocks that shatter into gravel on contact"
+	}
 }
 
 Tiles: {
@@ -626,6 +631,9 @@ Projectiles: {
 	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
 	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
 	WallBombProj.DisplayName: Wall Bomb Proj
+	StalactiteCannonProj.DisplayName: Stalactite Cannon
+	StalactiteProj.DisplayName: Stalactite
+	EarthShardProj.DisplayName: Earth Shard
 }
 
 NPCs: {

@@ -37,10 +37,10 @@ public class WoodenBucklerPlayer : ModPlayer
     public const int DashRight = 2;
     public const int DashLeft = 3;
 
-    public const int DashCooldown = 50;
+    public const int DashCooldown = 60;
     public const int DashDuration = 35;
 
-    public const float DashVelocity = 9.5f;
+    public const float DashVelocity = 8.5f;
     /// <summary>
     /// indicates there is no current dash direction
     /// </summary>

@@ -588,7 +588,7 @@ public class GirthquakeProj : ModProjectile
         // Per-shard damage is flat too. Holding throws more of them, which is already the reward --
         // making each one hit harder as well would quietly turn the hold back into a damage gate.
         int damage = Math.Max(1, (int)(Projectile.damage * SHARD_DAMAGE_FRACTION));
-        int type = ModContent.ProjectileType<GirthquakeShardProj>();
+        int type = ModContent.ProjectileType<EarthShardProj>();
 
         for (int i = 0; i < count; i++)
         {
@@ -605,7 +605,7 @@ public class GirthquakeProj : ModProjectile
                 Projectile.knockBack * 0.4f,
                 Projectile.owner,
                 materialTile,
-                Main.rand.Next(GirthquakeShardProj.CHUNK_SEEDS)
+                Main.rand.Next(EarthShardProj.CHUNK_SEEDS)
             );
         }
     }

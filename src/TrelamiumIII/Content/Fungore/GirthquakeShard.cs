@@ -17,7 +17,7 @@ namespace TrelamiumIII.Content.Fungore;
 ///         sheet without any extra syncing.
 ///     </para>
 /// </remarks>
-public class GirthquakeShardProj : ModProjectile
+public class EarthShardProj : ModProjectile
 {
 
     public const int CHUNK_SEEDS = TileTextureUtils.CHUNK_SEEDS;
