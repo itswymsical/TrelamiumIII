@@ -1,15 +1,10 @@
-﻿using System.Linq;
-using TrelamiumIII.Common.Systems;
-using TrelamiumIII.Content.Jobs;
-using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
+﻿using TrelamiumIII.Common.Systems;
 using static Terraria.ModLoader.BackupIO;
 
 namespace TrelamiumIII.Common.Players;
 
 public class TrelamiumPlayer : ModPlayer
 {
-
     public static float ShieldOpacity { get; private set; }
 
     private const float ShieldFadeSpeed = 0.04f;
@@ -17,36 +12,7 @@ public class TrelamiumPlayer : ModPlayer
     public override void PostUpdateMiscEffects()
     {
         // Put all the job checks here -- yeah, i know it's ass, i do not care.
-        JobChecks_PreHM();
         //Main.NewText($"Player Position | X: {(int)Player.position.X / 16}, Y: {(int)Player.position.Y / 16}");
-
-    }
-
-    private void JobChecks_PreHM()
-    {
-        var mp = Player.GetModPlayer<JobPlayer>();
-        var slimeJob = mp.GetOrCreateJob(JobID.CuriousSlime1);
-
-        // Definition check: must still be locked
-        if (slimeJob.Status != JobStatus.Locked)
-            return;
-
-        // Runtime check: must be inactive
-        if (slimeJob.Progress != JobProgress.Inactive)
-            return;
-
-        int slimeIndex = NPC.FindFirstNPC(ModContent.NPCType<CuriousSlime>());
-
-        if (slimeIndex == -1)
-            return;
-
-        NPC slime = Main.npc[slimeIndex];
-
-        if (Player.Distance(slime.Center) >= 128f)
-            return;
-
-        mp.UnlockJob(JobID.CuriousSlime1);
-        Main.NewText($"{Main.npc[NPCID.TownSlimeBlue].GivenName} {Mod.GetLocalizationKey("JobInfo.NewJob")}", Color.LightBlue);
 
     }
 

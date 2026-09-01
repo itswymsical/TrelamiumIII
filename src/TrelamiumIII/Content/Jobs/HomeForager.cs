@@ -7,16 +7,16 @@ namespace TrelamiumIII.Content.Jobs;
 public sealed class HomeForager : Job
 {
     public HomeForager() :
-        base(JobID.HomeForager, "TownlessTown.Name", "TownlessTown.Description",
+        base(JobID.HomeForager, "HomeForager.Name", "HomeForager.Description",
         taskList: 
         [
             [
-                ("TownlessTown.Tasks.Set0.obj0", 50), // wood
-                ("TownlessTown.Tasks.Set0.obj0", 25) // stone
+                ("HomeForager.Tasks.Set0.obj0", 10), // trees
+                ("HomeForager.Tasks.Set0.obj1", 25) // stone
             ],
 
-            [("TownlessTown.Tasks.Set1.obj0", 3)], // create housing(s)
-            [("TownlessTown.Tasks.Set2.obj0", 1)], // check in
+            [("HomeForager.Tasks.Set1.obj0", 3)], // create housing(s)
+            [("HomeForager.Tasks.Set2.obj0", 1)], // check in
         ],
         rewards: 
         [
@@ -28,7 +28,7 @@ public sealed class HomeForager : Job
     public override void OnJobStart()
     {
         base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Guide.HomeForagerGreeting", true, true);
+        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: true);
     }
 
     public override void OnJobComplete(bool giveRewards = true)
@@ -43,46 +43,32 @@ public sealed class HomeForager : Job
 
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {
-        if (CurrentSet == 1 && evt.Type == GameEventType.HousingChecked)
+        if (CurrentSet == 0 && evt.Type == GameEventType.HousingChecked)
         {
-
         }
+
         return base.OnMatchedEvent(evt, taskIndex);
     }
 
     public override bool MatchesEvent(GameEvent evt, int currentSet, int taskIndex)
     {
-        var wood = (evt.ItemType == ItemID.Wood) 
-            || (evt.ItemType == ItemID.BorealWood)
-            || (evt.ItemType == ItemID.PalmWood)
-            || (evt.ItemType == ItemID.Shadewood)
-            || (evt.ItemType == ItemID.Ebonwood)
-            || (evt.ItemType == ItemID.AshWood)
-            || (evt.ItemType == ItemID.RichMahogany);
-
-        // Set 0, Task 0: gather resources
-        if (currentSet == 0 && taskIndex == 0)
+        // Set 0, Task 0: chop trees
+        if (currentSet == 0)
         {
-            return evt.Type == GameEventType.ItemPickup
-                && evt.ItemType.HasValue && wood;
-        }
-
-        if (currentSet == 0 && taskIndex == 1)
-        {
-            return evt.Type == GameEventType.ItemPickup
-                && evt.ItemType.HasValue && evt.ItemType == ItemID.StoneBlock;
+            if (taskIndex == 0)
+                return evt.Type == GameEventType.TileBreak
+                    && evt.TileType.HasValue && evt.TileType == TileID.Trees;
+            else if (taskIndex == 1)
+                return evt.Type == GameEventType.ItemPickup
+                    && evt.ItemType.HasValue && evt.ItemType == ItemID.StoneBlock;
         }
 
         if (currentSet == 1 && taskIndex == 0)
-        {
             return evt.Type == GameEventType.HousingChecked;
-        }
-
+        
         if (currentSet == 2 && taskIndex == 0)
-        {
             return evt.Type == GameEventType.NPCChat
-                && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);
-        }
+                && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);        
 
         return false;
     }

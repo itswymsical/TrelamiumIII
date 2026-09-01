@@ -14,16 +14,6 @@ DialogueLibrary: {
 		}
 	}
 
-	CuriousSlime: {
-		Greeting.Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
-		Chat.Line1.Text: '''"I require sustenance.[] Bring me material of my delicacy.[] Take grocery list."'''
-
-		Job1End: {
-			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
-			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
-		}
-	}
-
 	NerdySlime: {
 		Greeting.Line1.Text: Hello, [speakerName:player]! [] I have a task for you!
 
@@ -34,11 +24,12 @@ DialogueLibrary: {
 	}
 
 	Guide: {
-		HomeForagerGreeting.Line1.Text: Hey, [speakerName:player]! [] I have a task for you!
+		HomeForager.Line1.Text: Hey, [speakerName:player]! [] I have a task for you!
 
-		HomeForagerTask1: {
-			Line1.Text: Somethin something blah bag
-			Line2.Text: Go gather some resources
+		HomeForager_Greeting: {
+			Line1.Text: Hey,[] [speakerName:player]!
+			Line2.Text: I know you're pretty new here, so I want to make sure you have a good start.[] I have a few things for you to do, and if you complete them,[] I'll give you a reward!
+			Line3.Text: First,[] I need you to gather some resources for me.[] You can find them in the forest nearby.[] Once you have them, bring them back to spawn and I'll let you know what to do next.[] Good luck!
 		}
 	}
 }

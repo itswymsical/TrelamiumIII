@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Systems;
@@ -10,7 +11,7 @@ public class WorldTimeSystem : ModSystem
 
     private readonly Dictionary<int, int[]> _jobMilestones = new()
     {
-        { 3, [ JobID.GuideKingSlimeI, JobID.MerchantEyeOfCthulhuI ] },
+        { 1, [ JobID.HomeForager ] },
         // { 7, [ JobID.DryadEaterOfWorldsI, JobID.ArmsDealerGunI ] }
     };
 
@@ -61,6 +62,10 @@ public class WorldTimeSystem : ModSystem
                 mp.UnlockJob(job.ID);
                 string npcName = Lang.GetNPCNameValue(job.ProviderNPC);
                 Main.NewText($"{npcName} {Mod.GetLocalizationKey("JobInfo.NewJob")}", Color.LightBlue);
+                if (job.ID == JobID.HomeForager)
+                {
+                    DialogueManager.Instance.StartDialogue("Guide.HomeForager", zoomIn: false, letterbox: false);
+                }
             }
         }
     }

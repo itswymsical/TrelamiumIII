@@ -1,34 +1,25 @@
 Jobs: {
-	CuriousSlime1: {
-		Name: Curious Slime
-		Description: "'glorb blorp gloop.'"
-
-		Tasks: {
-			Set0.obj0: Chat with Slime
-			Set1.obj0: Attain Iron Ore
-			Set2.obj0: Return to Slime
-		}
-	}
-
 	NerdySlimeI: {
 		Name: Nerdy Slime's Sublime Task!
 		Description: "'Help me build a quantum relocator!'"
 
 		Tasks: {
 			Set0.obj0: Chat with Nerdy Slime
-			Set1.obj0: Attain Iron Ore
+			Set1.obj0: eat a blueberry bandaid
 			Set2.obj0: Return to Slime
 		}
 	}
 
-	TownlessTown: {
+	HomeForager: {
 		Name: Home Forager
-		Description: "'The Guide’s quite particular about housing – you cant have town without townsfolk! Go gather some resources and build yourself a town center.'"
-
+		Description:
+		'''
+		"I'm a bit particular about housing – you can't have town without townsfolk!"
+		'''
 		Tasks: {
 			Set0: {
-				obj0: Gather Wood
-				obj1: Gather Stone
+				obj0: Chop down trees
+				obj1: Mine and gather stone blocks
 			}
 
 			Set1.obj0: Create suitible housing units
