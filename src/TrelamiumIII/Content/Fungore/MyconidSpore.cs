@@ -113,9 +113,9 @@ public class MyconidSporeGlobal : GlobalTile
     {
         base.RandomUpdate(i, j, type);
 
-        if (type == TileID.Grass || type == TileID.Dirt)
+        if (type == TileID.Grass)
         {
-            if (Main.rand.NextBool(800))
+            if (WorldGen.genRand.NextBool(700))
             {
                 if (!Main.tile[i, j - 1].HasTile)
                 {

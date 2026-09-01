@@ -571,7 +571,7 @@ Items: {
 
 	StalactiteCannon: {
 		DisplayName: Stalactite Cannon
-		Tooltip: "Fires high speed stone blocks that shatter into gravel on contact"
+		Tooltip: Fires high speed stone blocks that shatter into gravel on contact
 	}
 }
 

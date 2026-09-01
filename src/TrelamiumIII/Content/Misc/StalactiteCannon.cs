@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Content.Fungore;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
 
@@ -329,9 +331,11 @@ public class StalactiteProj : ModProjectile
                 vel.X, vel.Y,
                 ModContent.ProjectileType<EarthShardProj>(),
                 Projectile.damage / 3, 0f, Projectile.owner, ai0: TileID.Stone);
+            ParticleSystem.Spawn<StoneBlockParticle>(origin, vel, 60);
         }
     }
 }
+
 public sealed class StoneAmmoItem : GlobalItem
 {
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)
@@ -352,4 +356,21 @@ public sealed class StoneAmmoItem : GlobalItem
         entity.ammo = entity.type;
 
     }
+}
+
+public class StoneBlockParticle : Particle
+{
+    public override string[] Textures => [$"Images/Item_{ItemID.StoneBlock}"];
+    public GoreDrift Drift { get; set; } = GoreDrift.Tumble;
+
+    public override Vector2 Size => new(6f);
+    public override float Gravity => Drift == GoreDrift.Tumble ? 0.2f : 0f;
+
+    public override bool TileCollide => Drift == GoreDrift.Tumble;
+
+    public override float Drag => Drift == GoreDrift.Tumble ? 0.995f : 0.98f;
+
+    public override float Bounce => 0.34f;
+    public override int FadeOutTicks => 30;
+    public override bool UseLighting => true;
 }
