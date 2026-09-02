@@ -8,7 +8,7 @@ namespace TrelamiumIII.Core.Books.Lore.Definitions;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The shape a long book wants. A chapter is one <see cref="LoreBookBuilder.Chapter" /> call
+///         The shape a long book wants. A chapter is one <see cref="BookBuilder.Chapter" /> call
 ///         and a handful of prose blocks; the chapter breaks its own page, earns its contents row, and
 ///         reports the page it landed on once the book is flowed.
 ///     </para>
@@ -21,8 +21,7 @@ namespace TrelamiumIII.Core.Books.Lore.Definitions;
 public sealed class IlluminanceBook : ModLoreBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceI";
-
-    protected override void Build(LoreBookBuilder book)
+    protected override void Build(BookBuilder book)
     {
         // Front matter: the title, then the table of contents. Contents may sit anywhere; it measures
         // from the chapter count, so putting it before the chapters it lists is not circular.
@@ -44,7 +43,7 @@ public sealed class IlluminanceBook : ModLoreBook
     ///     One chapter's furniture. Every chapter in this book is set the same way, so the arrangement
     ///     lives in one place rather than being repeated per chapter.
     /// </summary>
-    private static void Chapter(LoreBookBuilder builder, string chapter)
+    private static void Chapter(BookBuilder builder, string chapter)
     {
         builder
             .Chapter(chapter)
@@ -72,7 +71,7 @@ public sealed class IlluminanceBook2 : ModLoreBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceII";
 
-    protected override void Build(LoreBookBuilder book)
+    protected override void Build(BookBuilder book)
     {
         // Front matter: the title, then the table of contents. Contents may sit anywhere; it measures
         // from the chapter count, so putting it before the chapters it lists is not circular.
@@ -94,7 +93,7 @@ public sealed class IlluminanceBook2 : ModLoreBook
     ///     One chapter's furniture. Every chapter in this book is set the same way, so the arrangement
     ///     lives in one place rather than being repeated per chapter.
     /// </summary>
-    private static void Chapter(LoreBookBuilder builder, string chapter)
+    private static void Chapter(BookBuilder builder, string chapter)
     {
         builder
             .Chapter(chapter)

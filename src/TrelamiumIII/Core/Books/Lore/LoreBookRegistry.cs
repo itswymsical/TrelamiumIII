@@ -13,16 +13,16 @@ namespace TrelamiumIII.Core.Books.Lore;
 /// </remarks>
 public static class LoreBookRegistry
 {
-    private static readonly Dictionary<string, LoreBookDefinition> books = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, BookDefinition> books = new(StringComparer.OrdinalIgnoreCase);
 
-    public static void Add(LoreBookDefinition definition) => books[definition.Key] = definition;
+    public static void Add(BookDefinition definition) => books[definition.Key] = definition;
 
-    public static LoreBookDefinition? Get(string? key) =>
-        key is not null && books.TryGetValue(key, out LoreBookDefinition? definition) ? definition : null;
+    public static BookDefinition? Get(string? key) =>
+        key is not null && books.TryGetValue(key, out BookDefinition? definition) ? definition : null;
 
     public static bool Has(string? key) => key is not null && books.ContainsKey(key);
 
-    public static IEnumerable<LoreBookDefinition> All => books.Values;
+    public static IEnumerable<BookDefinition> All => books.Values;
 
     /// <summary>
     ///     Drops every registration. Books re-register themselves on the next load, so this only has

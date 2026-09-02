@@ -17,7 +17,7 @@ public sealed class ExampleLoreBook : ModLoreBook
     /// </summary>
     protected override BookTypeface? Typeface => BookTypeface.Encyclopedia;
 
-    protected override void Build(LoreBookBuilder book) => book
+    protected override void Build(BookBuilder book) => book
         .Heading("Title")
 
         // A drop cap only makes sense on the paragraph that opens a chapter.

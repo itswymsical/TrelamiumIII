@@ -17,7 +17,7 @@ namespace TrelamiumIII.Core.Books.Lore;
 ///         takes effect on the next reading without any invalidation of its own.
 ///     </para>
 /// </remarks>
-public sealed class LoreText(string bookKey)
+public sealed class BookProseText(string bookKey)
 {
     public string BookKey => bookKey;
 
@@ -27,7 +27,7 @@ public sealed class LoreText(string bookKey)
         if (string.IsNullOrEmpty(name))
             return null;
 
-        string key = TrelamiumIII.Instance.GetLocalizationKey($"LoreLibrary.{bookKey}.{name}");
+        string key = TrelamiumIII.Instance.GetLocalizationKey($"BookLibrary.{bookKey}.{name}");
         string value = Language.GetTextValue(key);
 
         // GetTextValue echoes the key path back when there is no entry, which would otherwise be

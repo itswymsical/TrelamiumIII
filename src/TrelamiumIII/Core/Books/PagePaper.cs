@@ -13,7 +13,7 @@ namespace TrelamiumIII.Core.Books;
 /// </remarks>
 public static class PagePaper
 {
-    private static readonly Color Base = new(226, 211, 178);
+    private static readonly Color Base = new(235, 234, 211);
     private static readonly Color Edge = new(150, 128, 92);
 
     /// <summary>Width of the shading that falls away from the spine.</summary>

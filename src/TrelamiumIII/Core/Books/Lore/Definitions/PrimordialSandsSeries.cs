@@ -7,7 +7,7 @@ public sealed class PrimordialSandsBook1: ModLoreBook
 {
     public override string Key => "PrimordialSands1";
 
-    protected override void Build(LoreBookBuilder book)
+    protected override void Build(BookBuilder book)
     {
         book
             .Space(32f)
@@ -23,7 +23,7 @@ public sealed class PrimordialSandsBook1: ModLoreBook
         //Chapter(book, "Ch5");
     }
 
-    private static void Chapter(LoreBookBuilder builder, string chapter)
+    private static void Chapter(BookBuilder builder, string chapter)
     {
         builder
             .Chapter(chapter)

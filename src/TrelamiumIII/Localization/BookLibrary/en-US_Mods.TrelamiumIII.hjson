@@ -1,17 +1,4 @@
-LoreLibrary: {
-	Example: {
-		FirstAccount: {
-			Title: A First Account
-			Opening: They kept the ledgers below the waterline, which tells you what they thought of them. Nine flights down, past the assay rooms, past the door nobody has the key to any more, in a room that was a cistern before it was an archive and has never entirely stopped being one.[p]I went because I was told the record of the [gloss:Tidemark] was there, and because I was young enough to think a record was the same thing as an answer.
-			Second: What I found was water damage and a very patient clerk. She had been down there eleven years. She knew where everything was in the way you know your own house in the dark, which is to say she could not have told you, only shown you.[p]She showed me the shelf. Then she showed me the gap in it, and said [redacted:the third seal] had come for it in the spring, and that they had signed for it properly, which she seemed to think was the important part.
-			Marginal: Eleven years! And they never once sent her a lamp.
-			Excerpt: '''"Item: one ledger, water-damaged, illegible past the fortieth leaf. Released on authority. Not to be copied."'''
-			WarningTitle: On the lower shelves
-			WarningBody: Anything below the third shelf has been underwater at least once. Handle it dry, read it fast, and do not be the one who finds out what the ink does when it warms.
-			SecondChapter: What the Clerk Said
-			Closing: I have written down her account as nearly as I can, though she spoke the way people do when they have not had to explain something in a long time - in the middle of it, assuming you were already there.[p][hand:She was right that I was not listening properly.][p]If you go, take a lamp. Take two. And when she tells you the room was a cistern, believe her, and look at the floor before you set anything down on it.
-		}
-	}
+BookLibrary: {
 
 	Misc: {
 		Diary: {
@@ -212,75 +199,6 @@ Configs: {
 
 		HasSourceDirectory: {
 			Label: Has Source Directory
-			Tooltip: ""
-		}
-	}
-
-	DebugConfig: {
-		DisplayName: Debug Config
-		Headers.DebugMode: Debug Mode Header
-
-		DebugMode: {
-			Label: Debug Mode
-			Tooltip: ""
-		}
-	}
-
-	VFXConfig: {
-		DisplayName: V F X Config
-
-		Headers: {
-			QuickSettings: Quick Settings Header
-			ParticleCount: Particle Count Header
-			MetaballCount: Metaball Count Header
-		}
-
-		Preset: {
-			Label: Preset
-			Tooltip: ""
-		}
-
-		ParticleCount: {
-			Label: Particle Count
-			Tooltip: ""
-		}
-
-		MetaballCountMultiplier: {
-			Label: Metaball Count Multiplier
-			Tooltip: ""
-		}
-	}
-
-	GraphicsPreset: {
-		Tooltip: ""
-
-		Toaster: {
-			Label: Toaster
-			Tooltip: ""
-		}
-
-		Low: {
-			Label: Low
-			Tooltip: ""
-		}
-
-		Standard: {
-			Label: Standard
-			Tooltip: ""
-		}
-
-		HighEnd: {
-			Label: High End
-			Tooltip: ""
-		}
-
-		NASA: {
-			Label: N A S A
-			Tooltip: ""
-		}
-
-		Custom: {
-			Label: Custom
 			Tooltip: ""
 		}
 	}

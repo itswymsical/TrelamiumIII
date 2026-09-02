@@ -30,7 +30,7 @@ public sealed class LoreBookUI : BookUI
     /// <summary>Only one book is readable at a time; a second would fight for the cursor.</summary>
     public static LoreBookUI? Current { get; private set; }
 
-    private readonly LoreBookContent content;
+    private readonly BookContent content;
     private readonly List<ComposedPage> pages;
 
     /// <summary>Page the table of contents sits on, or -1 when the book has none.</summary>
@@ -45,7 +45,7 @@ public sealed class LoreBookUI : BookUI
 
     public override int PageHeight => PAGE_HEIGHT;
 
-    private LoreBookUI(LoreBookDefinition definition)
+    private LoreBookUI(BookDefinition definition)
     {
         Key = definition.Key;
         content = definition.Build();
@@ -73,7 +73,7 @@ public sealed class LoreBookUI : BookUI
         if (Current is not null)
             return;
 
-        LoreBookDefinition? definition = LoreBookRegistry.Get(key);
+        BookDefinition? definition = LoreBookRegistry.Get(key);
 
         if (definition is null)
         {

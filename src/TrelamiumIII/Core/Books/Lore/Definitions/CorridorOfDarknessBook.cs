@@ -8,7 +8,7 @@ public sealed class CorridorOfDarknessBook : ModLoreBook
 {
     public override string Key => "Lore.CorridorOfDarkness";
 
-    protected override void Build(LoreBookBuilder book) => book
+    protected override void Build(BookBuilder book) => book
         .Heading("Title")
         .Chapter("Chapter")
         .Prose("Prose");

@@ -7,14 +7,14 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Lore;
 
 /// <summary>Entry point for defining a lore book.</summary>
-public static class LoreBook
+public static class BookNovel
 {
     /// <summary>
-    ///     Starts a definition. Finish it with <see cref="LoreBookBuilder.Register" />.
+    ///     Starts a definition. Finish it with <see cref="BookBuilder.Register" />.
     /// </summary>
     /// <example>
     ///     <code>
-    ///     LoreBook.Define("DrownedArchive")
+    ///     BookNovel.Define("DrownedArchive")
     ///         .Heading("Title")
     ///         .Prose("Opening", BlockStyle.Body with { DropCap = true })
     ///         .Image(Assets.Textures.UI.Lore.ArchiveSeal.Asset, "SealCaption", span: 0.6f)
@@ -23,12 +23,12 @@ public static class LoreBook
     ///         .Register();
     ///     </code>
     /// </example>
-    public static LoreBookBuilder Define(string key) => new(key);
+    public static BookBuilder Define(string key) => new(key);
 }
 
-internal delegate BookBlock BlockFactory(LoreText text, BookContents contents);
+internal delegate BookBlock BlockFactory(BookProseText text, BookContents contents);
 
-internal delegate BookDecoration DecorationFactory(LoreText text);
+internal delegate BookDecoration DecorationFactory(BookProseText text);
 
 /// <summary>
 ///     an ordered list of blocks, plus the decorations pinned to them.
@@ -36,7 +36,7 @@ internal delegate BookDecoration DecorationFactory(LoreText text);
 /// <remarks>
 ///     A definition holds factories rather than blocks.
 /// </remarks>
-public sealed class LoreBookDefinition
+public sealed class BookDefinition
 {
     public required string Key { get; init; }
 
@@ -50,12 +50,12 @@ public sealed class LoreBookDefinition
     internal IReadOnlyList<(string Key, int BlockIndex, int Depth)> Chapters { get; init; } = [];
 
     /// <summary>Localized title, for item tooltips and the cover imprint.</summary>
-    public string Title => new LoreText(Key).Title;
+    public string Title => new BookProseText(Key).Title;
 
     /// <summary>Instantiates the book's content in the current language.</summary>
-    public LoreBookContent Build()
+    public BookContent Build()
     {
-        var text = new LoreText(Key);
+        var text = new BookProseText(Key);
         var contents = new BookContents();
 
         // Entries are created before the blocks so the contents block, which is itself one of those
@@ -80,7 +80,7 @@ public sealed class LoreBookDefinition
         foreach (DecorationFactory factory in Decorations)
             decorations.Add(factory(text));
 
-        return new LoreBookContent
+        return new BookContent
         {
             Title = text.Title,
             Blocks = blocks,
@@ -91,7 +91,7 @@ public sealed class LoreBookDefinition
 }
 
 /// <summary>One reading's worth of built content, ready to be flowed onto pages.</summary>
-public sealed class LoreBookContent
+public sealed class BookContent
 {
     public required string Title { get; init; }
 
@@ -111,7 +111,7 @@ public sealed class LoreBookContent
 ///     <c>LoreLibrary.{book}</c>, never the text itself. Spacing, alignment, size and placement are
 ///     arguments here because they are decisions about the book, not about the language it is read in.
 /// </remarks>
-public sealed class LoreBookBuilder(string key)
+public sealed class BookBuilder(string key)
 {
     private readonly List<BlockFactory> blocks = [];
     private readonly List<DecorationFactory> decorations = [];
@@ -124,7 +124,7 @@ public sealed class LoreBookBuilder(string key)
     private int LastBlockIndex => blocks.Count - 1;
 
     /// <summary>Nested builder for a panel or section, carrying the enclosing typeface inward.</summary>
-    internal LoreBookBuilder(string key, BookTypeface? inherited) : this(key) => typeface = inherited;
+    internal BookBuilder(string key, BookTypeface? inherited) : this(key) => typeface = inherited;
 
     #region Type
 
@@ -143,7 +143,7 @@ public sealed class LoreBookBuilder(string key)
     ///         override survives.
     ///     </para>
     /// </remarks>
-    public LoreBookBuilder Typeface(BookTypeface? face)
+    public BookBuilder Typeface(BookTypeface? face)
     {
         typeface = face;
         return this;
@@ -169,7 +169,7 @@ public sealed class LoreBookBuilder(string key)
     ///     every decoration inside the section anchored to the wrong block -- anchors are captured as
     ///     indices into the block list at the moment they are declared.
     /// </remarks>
-    public LoreBookBuilder Section(BookTypeface? face, Action<LoreBookBuilder> contents)
+    public BookBuilder Section(BookTypeface? face, Action<BookBuilder> contents)
     {
         BookTypeface? previous = typeface;
 
@@ -185,7 +185,7 @@ public sealed class LoreBookBuilder(string key)
     /// </summary>
     /// <remarks>
     ///     Callers must invoke this when the block is <em>declared</em>, not inside the factory
-    ///     lambda. The factory runs at <see cref="LoreBookDefinition.Build" />, by which point
+    ///     lambda. The factory runs at <see cref="BookDefinition.Build" />, by which point
     ///     <see cref="typeface" /> holds whatever the last section left behind, and every block in the
     ///     book would come out in that one face.
     /// </remarks>
@@ -201,7 +201,7 @@ public sealed class LoreBookBuilder(string key)
     #region Flow
 
     /// <summary>A section heading, ruled underneath by default.</summary>
-    public LoreBookBuilder Heading(string key, bool rule = true, BlockStyle? style = null)
+    public BookBuilder Heading(string key, bool rule = true, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Heading);
 
@@ -225,7 +225,7 @@ public sealed class LoreBookBuilder(string key)
     ///     </para>
     /// </remarks>
     /// <param name="depth">0 for a chapter, 1 for a section beneath it. Indents the contents row.</param>
-    public LoreBookBuilder Chapter(
+    public BookBuilder Chapter(
         string key,
         int depth = 0,
         bool pageBreak = true,
@@ -253,7 +253,7 @@ public sealed class LoreBookBuilder(string key)
     ///     The table of contents. Rows are filled from every <see cref="Chapter" /> in the book,
     ///     wherever they are declared relative to this call.
     /// </summary>
-    public LoreBookBuilder Contents(string? header = null, BlockStyle? style = null)
+    public BookBuilder Contents(string? header = null, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body with { Scale = 0.78f, SpaceAfter = 12f });
 
@@ -271,7 +271,7 @@ public sealed class LoreBookBuilder(string key)
     ///     <see cref="BookText.PARAGRAPH_TOKEN" /> inside a single localization entry, and the block
     ///     flows across as many pages as it needs. There is no reason to declare a block per paragraph.
     /// </remarks>
-    public LoreBookBuilder Prose(string key, BlockStyle? style = null)
+    public BookBuilder Prose(string key, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body);
 
@@ -280,11 +280,11 @@ public sealed class LoreBookBuilder(string key)
     }
 
     /// <summary>Quoted or excerpted matter, indented and lightened.</summary>
-    public LoreBookBuilder Quote(string key, BlockStyle? style = null) =>
+    public BookBuilder Quote(string key, BlockStyle? style = null) =>
         Prose(key, style ?? BlockStyle.Quote);
 
     /// <summary>A horizontal divider.</summary>
-    public LoreBookBuilder Rule(float span = 1f, float thickness = 1f, BlockStyle? style = null)
+    public BookBuilder Rule(float span = 1f, float thickness = 1f, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body with { SpaceBefore = 6f, SpaceAfter = 8f });
 
@@ -299,7 +299,7 @@ public sealed class LoreBookBuilder(string key)
     }
 
     /// <summary>Blank vertical space.</summary>
-    public LoreBookBuilder Space(float height = 32f)
+    public BookBuilder Space(float height = 32f)
     {
         BlockStyle resolved = Resolve(null, BlockStyle.Body with { SpaceAfter = 0f });
 
@@ -308,14 +308,14 @@ public sealed class LoreBookBuilder(string key)
     }
 
     /// <summary>Pushes everything after this onto a fresh page.</summary>
-    public LoreBookBuilder PageBreak()
+    public BookBuilder PageBreak()
     {
         blocks.Add((_, _) => new PageBreakBlock());
         return this;
     }
 
     /// <summary>A figure set into the page, optionally captioned.</summary>
-    public LoreBookBuilder Image(
+    public BookBuilder Image(
         Asset<Texture2D> texture,
         string? captionKey = null,
         float span = 1f,
@@ -338,9 +338,9 @@ public sealed class LoreBookBuilder(string key)
     }
 
     /// <summary>A bordered aside holding its own blocks.</summary>
-    public LoreBookBuilder Panel(Action<LoreBookBuilder> contents, float padding = 8f, BlockStyle? style = null)
+    public BookBuilder Panel(Action<BookBuilder> contents, float padding = 8f, BlockStyle? style = null)
     {
-        var inner = new LoreBookBuilder(key, typeface);
+        var inner = new BookBuilder(key, typeface);
         contents(inner);
 
         List<BlockFactory> children = inner.blocks;
@@ -372,7 +372,7 @@ public sealed class LoreBookBuilder(string key)
     ///     <paramref name="anchorBlock" /> says otherwise, so it travels with that block through
     ///     reflow instead of being pinned to a page number that shifts.
     /// </summary>
-    public LoreBookBuilder StickyNote(
+    public BookBuilder StickyNote(
         string key,
         Vector2 offset = default,
         float rotation = 0f,
@@ -406,7 +406,7 @@ public sealed class LoreBookBuilder(string key)
     ///     Handwriting in the margin, with no paper behind it. Reads as something added to the page
     ///     rather than stuck onto it.
     /// </summary>
-    public LoreBookBuilder Marginalia(
+    public BookBuilder Marginalia(
         string key,
         Vector2 offset = default,
         float rotation = 0f,
@@ -434,9 +434,9 @@ public sealed class LoreBookBuilder(string key)
     #endregion
 
     /// <summary>Adds the finished definition to the registry.</summary>
-    public LoreBookDefinition Register()
+    public BookDefinition Register()
     {
-        var definition = new LoreBookDefinition
+        var definition = new BookDefinition
         {
             Key = key,
             Blocks = blocks,

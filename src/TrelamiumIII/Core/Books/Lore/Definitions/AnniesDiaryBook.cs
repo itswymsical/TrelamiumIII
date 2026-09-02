@@ -8,7 +8,7 @@ public sealed class AnniesDiaryBook : ModLoreBook
 {
     public override string Key => "Misc.Diary";
 
-    protected override void Build(LoreBookBuilder book) 
+    protected override void Build(BookBuilder book) 
     {
         book
             .Space(32f)
@@ -20,7 +20,7 @@ public sealed class AnniesDiaryBook : ModLoreBook
         Day(book, "Day1");
     }
 
-    private static void Day(LoreBookBuilder builder, string chapter)
+    private static void Day(BookBuilder builder, string chapter)
     {
         builder
             .Chapter(chapter)

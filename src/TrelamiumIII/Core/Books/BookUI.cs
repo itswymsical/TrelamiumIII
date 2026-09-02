@@ -142,7 +142,7 @@ public abstract class BookUI : IInGameNotification, IBookView
     protected float Opacity => state is BookState.Opening or BookState.Closing ? openProgress : 1f;
 
     bool IBookView.IsCover(BookSide side, bool next) => SpreadShowsCover(next ? NextSpread : CurrentSpread, side);
-
+    public virtual BookPalette BookPalette => BookPalette.Default();
     void IBookView.DrawCover(SpriteBatch spriteBatch) => DrawCoverFace(spriteBatch);
 
     void IBookView.DrawPage(SpriteBatch spriteBatch, BookSide side, bool next)
@@ -371,7 +371,7 @@ public abstract class BookUI : IInGameNotification, IBookView
         if (tabs.Count > 0)
             BookTabs.Draw(spriteBatch, origin, tabs, hoveredTab, Opacity);
 
-        BookCoverFrame.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity);
+        BookCoverFrame.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity, BookPalette);
 
         spriteBatch.Draw(renderer.Composite, origin, Color.White * Opacity);
 
