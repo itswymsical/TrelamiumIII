@@ -57,8 +57,8 @@ public sealed class ParticleSystem : ModSystem
     /// <remarks>
     ///     A path under <c>Images/</c> is Terraria's own and has to be requested from
     ///     <see cref="Main.Assets" />; <see cref="ModContent" /> only knows about mod content and
-    ///     throws on a vanilla key. This is what lets a particle wear a vanilla sprite -- the gore
-    ///     sheets in particular -- rather than needing a copy of it traced into the mod.
+    ///     throws on a vanilla key. This is what lets a particle wear a vanilla sprite, the gore
+    ///     sheets in particular, rather than needing a copy of it traced into the mod.
     ///     <para>
     ///         Loaded immediately, unlike mod content. The registry hands every spawn the same
     ///         <see cref="Asset{T}" />, so a deferred vanilla request would leave the first burst
@@ -179,7 +179,7 @@ public sealed class ParticleSystem : ModSystem
         // instead of two for the whole list.
         //
         // Glow first, so it lands behind the sprite it belongs to. A particle that wants the
-        // vanilla Fallen Star look -- the sprite sampled into a bloom around itself -- gets it by
+        // vanilla Fallen Star look, the sprite sampled into a bloom around itself, gets it by
         // overriding DrawGlow, and pays nothing when it does not.
         if (AnyGlow())
         {
@@ -206,7 +206,7 @@ public sealed class ParticleSystem : ModSystem
     ///     Whether any live particle wants the additive pass.
     /// </summary>
     /// <remarks>
-    ///     Checked up front so a list of ordinary debris -- the common case -- does not pay for an
+    ///     Checked up front so a list of ordinary debris, the common case, does not pay for an
     ///     empty Begin/End pair every frame.
     /// </remarks>
     private static bool AnyGlow()

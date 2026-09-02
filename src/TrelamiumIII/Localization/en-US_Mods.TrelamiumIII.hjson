@@ -581,8 +581,6 @@ Items: {
 
 	Brambleroot: {
 		DisplayName: Brambleroot
-		Tooltip: ""
-	}
 }
 
 Tiles: {

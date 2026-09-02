@@ -16,7 +16,7 @@ namespace TrelamiumIII.Core.NPCs.Actors;
 /// </summary>
 public abstract class WorldNPC : ModNPC
 {
-    public override string Texture => Assets.Textures.NullTex.KEY;
+    public override string Texture => AssetReferences.Core.NPCs.Actors.WorldNPC.KEY;
 
     /// <summary>
     /// All appearance and equipment state lives here. Mutate this instance.

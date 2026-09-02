@@ -32,6 +32,6 @@ public class RealmCommands : ModCommand
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {
-        SubworldSystem.Enter<ReverieRealm>();
+        SubworldSystem.Enter<IngressRealm>();
     }
 }
