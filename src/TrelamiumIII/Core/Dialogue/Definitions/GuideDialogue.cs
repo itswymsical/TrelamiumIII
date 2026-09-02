@@ -11,6 +11,10 @@ class GuideDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.4f, new Pause(20))
             .Register();
 
+        Dialogue.Define("Guide.HomeForager_Occupied")
+            .Line(Speaker, emote: 0, speed: 1.4f, [new Pause(20), new Pause(16)])
+            .Register();
+
         Dialogue.Define("Guide.HomeForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.4f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.4f, [new Pause(20), new Pause(16)])

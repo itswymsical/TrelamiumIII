@@ -1,4 +1,4 @@
-using Terraria.DataStructures;
+﻿using Terraria.DataStructures;
 
 namespace TrelamiumIII.Core.Jobs.Events;
 
@@ -42,7 +42,14 @@ public struct GameEvent
     public AdvancedPopupRequest PopupRequest;
     public bool IsOccupied;
 
-    public static GameEvent HousingChecked(int x, int y, bool isValid, bool isOccupied, Player player)
+    // Housing events
+    /// <summary>
+    /// Canonical identity of the room that was checked, independent of which tile the check
+    /// was started from. Null if the room could not be resolved (e.g. the check failed early).
+    /// </summary>
+    public Point? RoomId;
+
+    public static GameEvent HousingChecked(int x, int y, bool isValid, bool isOccupied, Player player, Point? roomId = null)
     {
         return new GameEvent
         {
@@ -51,7 +58,8 @@ public struct GameEvent
             TileY = y,
             Player = player,
             Amount = isValid ? 1 : 0,
-            IsOccupied = isOccupied
+            IsOccupied = isOccupied,
+            RoomId = roomId
         };
     }
 

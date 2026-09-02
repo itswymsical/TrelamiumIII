@@ -253,6 +253,7 @@ public class AlchemyRecipeSystem : ModSystem
             outputType: ModContent.ItemType<InertSolutionItem>(),
             new AlchemyVariant(Mushroom));
 
+        #region Inert-bases
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<InertSolutionItem>(),
             outputType: ModContent.ItemType<HarmoniousTonicItem>(),
@@ -271,7 +272,7 @@ public class AlchemyRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.GoldOre));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
-            inputType: ItemID.BottledWater,
+            inputType: ModContent.ItemType<InertSolutionItem>(),
             outputType: ModContent.ItemType<SpecularTonicItem>(),
             new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
 
@@ -299,17 +300,17 @@ public class AlchemyRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.LeadOre));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, 
-            inputType: ItemID.BottledWater, 
+            inputType: ModContent.ItemType<InertSolutionItem>(), 
             outputType: ModContent.ItemType<ArcaneSolutionItem>(),
             new AlchemyVariant(ItemID.FallenStar));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, 
-            inputType: ItemID.BottledWater, 
+            inputType: ModContent.ItemType<InertSolutionItem>(), 
             outputType: ModContent.ItemType<DeadSolutionItem>(),
             new AlchemyVariant(RottenChunkVertabrae));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, 
-            inputType: ItemID.BottledWater, 
+            inputType: ModContent.ItemType<InertSolutionItem>(), 
             outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
             new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
@@ -321,6 +322,78 @@ public class AlchemyRecipeSystem : ModSystem
             new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
             new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
             new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+        #endregion
+
+        #region Water-bases
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<HarmoniousTonicItem>(),
+            new AlchemyVariant(ItemID.CopperOre),
+            new AlchemyVariant(ModContent.ItemType<OxidizedCopperItem>()));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<BriskTonicItem>(),
+            new AlchemyVariant(ModContent.ItemType<LodestoneItem>()) { OutputStack = 2 },
+            new AlchemyVariant(ItemID.TinOre) { OutputStack = 2 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<VitalTonicItem>(),
+            new AlchemyVariant(ItemID.GoldOre));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<SpecularTonicItem>(),
+            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<SpecularTonicItem>(),
+            new AlchemyVariant(ItemID.SilverOre),
+            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<MartialTonicItem>(),
+            new AlchemyVariant(ItemID.IronOre));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<FortunateTonicItem>(),
+            new AlchemyVariant(ItemID.PlatinumOre) { OutputStack = 3 },
+            new AlchemyVariant(ItemID.TinOre));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<BaneTonicItem>(),
+            new AlchemyVariant(AnyEvilOre),
+            new AlchemyVariant(ItemID.LeadOre));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<ArcaneSolutionItem>(),
+            new AlchemyVariant(ItemID.FallenStar));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<DeadSolutionItem>(),
+            new AlchemyVariant(RottenChunkVertabrae));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
+            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
+            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+        #endregion
     }
 
     /// <summary>
@@ -737,6 +810,33 @@ public class AlchemyRecipeSystem : ModSystem
                 OutputStack = 2,
                 Potency = 2,
                 StrengthPercent = 120
+            });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Augmentation,
+            inputType: ItemID.LesserHealingPotion,
+            outputType: ItemID.HealingPotion,
+            new AlchemyVariant(ItemID.GlowingMushroom) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Augmentation,
+            inputType: ItemID.HealingPotion,
+            outputType: ItemID.HealingPotion,
+            new AlchemyVariant(ItemID.Daybloom) 
+            { 
+                OutputStack = 2, 
+                Potency = 1, 
+                StrengthPercent = 100,
+                Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20))
+            });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Augmentation,
+            inputType: ItemID.HealingPotion,
+            outputType: ItemID.HealingPotion,
+            new AlchemyVariant(ItemID.Daybloom)
+            {
+                OutputStack = 2,
+                Potency = 1,
+                StrengthPercent = 100,
+                Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20))
             });
         #endregion
 

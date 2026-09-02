@@ -581,232 +581,234 @@ Items: {
 
 	Brambleroot: {
 		DisplayName: Brambleroot
-}
-
-Tiles: {
-	SeedBedTile_Dirt.MapEntry: Seed Bed (Dirt)
-	SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
-	SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
-	SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
-	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
-	AlchemyStationTile.MapEntry: Alchemy Station
-	MagnoliaTile.MapEntry: Magnolia
-	MyconidSporeTile.MapEntry: Myconid Spore Tile
-}
-
-Projectiles: {
-	TetanusShurikenProj.DisplayName: Tetanus Shuriken
-	SporeclotSacProj.DisplayName: Sporeclot Sac
-	SporeBlastProj.DisplayName: Spore Blast
-	GirthquakeProj.DisplayName: Girthquake
-	GirthquakeShardProj.DisplayName: Earth Shard
-	ShroomsonMinion.DisplayName: Shroomson
-	ShroomsonMushroom.DisplayName: Mushroom
-	PossessedWorkshopPet.DisplayName: Possessed Workshop
-	WorkshopStationPet.DisplayName: Workshop Station Pet
-	FungoreSpore.DisplayName: Spore Clot
-	LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
-	BorealHewerProj.DisplayName: Boreal Hewer
-	FlailstormProj.DisplayName: Flailstorm
-	FrostCloudProj.DisplayName: Frost Cloud
-	DaybloomSeedProjectile.DisplayName: Daybloom Seed
-	BlinkrootSeedProjectile.DisplayName: Blinkroot Seed
-	FireblossomSeedProjectile.DisplayName: Fireblossom Seed
-	ShiverthornSeedProjectile.DisplayName: Shiverthorn Seed
-	MoonglowSeedProjectile.DisplayName: Moonglow Seed
-	DeathweedSeedProjectile.DisplayName: Deathweed Seed
-	WaterleafSeedProjectile.DisplayName: Waterleaf Seed
-	AcornLauncherProjectile.DisplayName: Acorn Launcher
-	AcornProjectile.DisplayName: Acorn Projectile
-	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel
-	SaplingMakerProjectile.DisplayName: Sapling Maker
-	SaplingProjectile.DisplayName: Sapling Projectile
-	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger
-	MagnoliaPowderProjectile.DisplayName: Magnolia Powder
-	CorruptedSporeBurstProjectile.DisplayName: Corrupted Spores
-	CorruptedSporeFlaskProjectile.DisplayName: Corrupted Spore Flask
-	CrimsonEffusionBurstProjectile.DisplayName: Crimson Effusion
-	CrimsonEffusionFlaskProjectile.DisplayName: Crimson Effusion Flask
-	HyperboreanFlaskBurstProjectile.DisplayName: Hyperborean Flask
-	HyperboreanFlaskProjectile.DisplayName: Hyperborean Flask
-	PhytoncideFlaskProjectile.DisplayName: Phytoncide Flask
-	PhytoncideSporeBurstProjectile.DisplayName: Phytoncide Spores
-	PrismaticStarflaskBurstProjectile.DisplayName: Prismatic Starflask
-	PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask
-	ThermiteBurstProjectile.DisplayName: Thermite
-	ThermiteFlaskProjectile.DisplayName: Thermite Flask
-	SporadicSlamProjectile.DisplayName: Sporadic Slam
-	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
-	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
-	WallBombProj.DisplayName: Wall Bomb Proj
-	StalactiteCannonProj.DisplayName: Stalactite Cannon
-	StalactiteProj.DisplayName: Stalactite
-	EarthShardProj.DisplayName: Earth Shard
-	SkofnungProjectile.DisplayName: Skofnung Projectile
-}
-
-NPCs: {
-	FungoreBoss: {
-		DisplayName: Fungore
-		Epithet: The Malevolent Myconid
-		Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
-	}
-
-	EyeOfCthulhu.Epithet: The Watcher
-	FungoreSporeSac.DisplayName: Spore Sac
-	DesertTerrarian.DisplayName: Desert Villager
-	ForestTerrarian.DisplayName: Forest Villager
-	JungleTerrarian.DisplayName: Jungle Villager
-	SporadicSlime.DisplayName: Sporadic Slime
-	TundraTerrarian.DisplayName: Tundra Villager
-	CuriousSlime.DisplayName: Slime
-	BodyguardNPC.DisplayName: Bodyguard
-	WardenArm.DisplayName: Warden Arm
-
-	WoodenWardenBoss: {
-		DisplayName: Wooden Warden
-		Bestiary:
-			'''
-			The Protector of the Ligneous Fortress
-			Wooden Warden is a sentient golem ordered to protect the Scar of Ingress, and what lies behind it...
-			'''
-		Epithet: The Guardian of Ingress
-	}
-
-	ShinobiNPC.DisplayName: Shinobi
-}
-
-Buffs: {
-	FungalInfection: {
-		DisplayName: Fungal Infection
-		Description: Spores are taking hold! a saturated host bursts and seeds everything nearby
-	}
-
-	ShroomsonBuff: {
-		DisplayName: Shroomson
-		Description: Your adoptive son will fight for you!
-	}
-
-	FungalInfectionHostile: {
-		DisplayName: Fungal Infection
-		Description: Spores are taking hold!
-	}
-
-	FungalInfectionSpore: {
-		DisplayName: Fungal Infection
-		Description: The spores went deep! this will not sit quietly...
-	}
-
-	PossessedWorkshopBuff: {
-		DisplayName: Possessed Workshop
-		Description: The apparition possesses your crafting stations, allowing you to craft from them anywhere!
-	}
-}
-
-Misc: {
-	SonsMushroom: Shroomson's Mushroom
-	SonsMushroomFlavour: Grown for you, by your son
-	WorkshopSlot: Station Slot
-}
-
-SeedAmmo: {
-	# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
-	# bed sprites read almost identically at tooltip size.
-	FavouriteSoil: Favorite soil: [i:{0}] {1}
-	Daybloom: Critical strikes grant temporary [buff:Ironskin]
-	Blinkroot: Critical strikes grant temporary [buff:Hunter] and [buff:Swiftness]
-	Moonglow: Critical strikes grant temporary [buff:Regeneration]
-	Fireblossom: Critical strikes inflict [buff/f28755:OnFire] for a short duration
-	Shiverthorn: Critical strikes inflict [buff/6fc5f6:Frostburn] for a short duration
-	Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
-	Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
-}
-
-# Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name
-# an element in its own words without every tooltip that mentions it having to change.
-ChemicalDamageTypes: {
-	Thermal: Thermal
-	Cryonic: Cryonic
-	Caustic: Caustic
-	Necrotic: Necrotic
-	Kinetic: Kinetic
-	Electric: Electric
-}
-
-DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
-
-Liquids: {
-	CrudeOilLiquid.MapEntry: Crude Oil
-	BrineLiquid.MapEntry: Brine
-}
-
-Configs: {
-	VFXConfig: {
-		DisplayName: VFX Settings
-
-		Headers: {
-			QuickSettings: VFX Settings
-			ParticleCount: Particle Limits
-			MetaballCount: Metaball Limits
-		}
-
-		Preset: {
-			Label: Graphics Profile
-			Tooltip: Set the graphics profile for your PC.
-		}
-
-		ParticleCount: {
-			Label: Particle Count
-			Tooltip: Set the maximum amount of particles that can exist, maximum is capped at 2048.
-		}
-
-		MetaballCountMultiplier: {
-			Label: Metaball Count
-			Tooltip: By default, metaball counts are limited to 400 nodes. Performance impacts may occur around ~8k active nodes.
-		}
-	}
-
-	GraphicsPreset: {
 		Tooltip: ""
+	}
 
-		Toaster: {
-			Label: Toaster
-			Tooltip: ""
+	Tiles: {
+		SeedBedTile_Dirt.MapEntry: Seed Bed (Dirt)
+		SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
+		SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
+		SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
+		AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
+		AlchemyStationTile.MapEntry: Alchemy Station
+		MagnoliaTile.MapEntry: Magnolia
+		MyconidSporeTile.MapEntry: Myconid Spore Tile
+	}
+
+	Projectiles: {
+		TetanusShurikenProj.DisplayName: Tetanus Shuriken
+		SporeclotSacProj.DisplayName: Sporeclot Sac
+		SporeBlastProj.DisplayName: Spore Blast
+		GirthquakeProj.DisplayName: Girthquake
+		GirthquakeShardProj.DisplayName: Earth Shard
+		ShroomsonMinion.DisplayName: Shroomson
+		ShroomsonMushroom.DisplayName: Mushroom
+		PossessedWorkshopPet.DisplayName: Possessed Workshop
+		WorkshopStationPet.DisplayName: Workshop Station Pet
+		FungoreSpore.DisplayName: Spore Clot
+		LodestoneMagnetizerProjectile.DisplayName: Dusty Ol' Magnetizer
+		BorealHewerProj.DisplayName: Boreal Hewer
+		FlailstormProj.DisplayName: Flailstorm
+		FrostCloudProj.DisplayName: Frost Cloud
+		DaybloomSeedProjectile.DisplayName: Daybloom Seed
+		BlinkrootSeedProjectile.DisplayName: Blinkroot Seed
+		FireblossomSeedProjectile.DisplayName: Fireblossom Seed
+		ShiverthornSeedProjectile.DisplayName: Shiverthorn Seed
+		MoonglowSeedProjectile.DisplayName: Moonglow Seed
+		DeathweedSeedProjectile.DisplayName: Deathweed Seed
+		WaterleafSeedProjectile.DisplayName: Waterleaf Seed
+		AcornLauncherProjectile.DisplayName: Acorn Launcher
+		AcornProjectile.DisplayName: Acorn Projectile
+		AcornShrapnelProjectile.DisplayName: Acorn Shrapnel
+		SaplingMakerProjectile.DisplayName: Sapling Maker
+		SaplingProjectile.DisplayName: Sapling Projectile
+		SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger
+		MagnoliaPowderProjectile.DisplayName: Magnolia Powder
+		CorruptedSporeBurstProjectile.DisplayName: Corrupted Spores
+		CorruptedSporeFlaskProjectile.DisplayName: Corrupted Spore Flask
+		CrimsonEffusionBurstProjectile.DisplayName: Crimson Effusion
+		CrimsonEffusionFlaskProjectile.DisplayName: Crimson Effusion Flask
+		HyperboreanFlaskBurstProjectile.DisplayName: Hyperborean Flask
+		HyperboreanFlaskProjectile.DisplayName: Hyperborean Flask
+		PhytoncideFlaskProjectile.DisplayName: Phytoncide Flask
+		PhytoncideSporeBurstProjectile.DisplayName: Phytoncide Spores
+		PrismaticStarflaskBurstProjectile.DisplayName: Prismatic Starflask
+		PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask
+		ThermiteBurstProjectile.DisplayName: Thermite
+		ThermiteFlaskProjectile.DisplayName: Thermite Flask
+		SporadicSlamProjectile.DisplayName: Sporadic Slam
+		VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
+		VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
+		WallBombProj.DisplayName: Wall Bomb Proj
+		StalactiteCannonProj.DisplayName: Stalactite Cannon
+		StalactiteProj.DisplayName: Stalactite
+		EarthShardProj.DisplayName: Earth Shard
+		SkofnungProjectile.DisplayName: Skofnung Projectile
+	}
+
+	NPCs: {
+		FungoreBoss: {
+			DisplayName: Fungore
+			Epithet: The Malevolent Myconid
+			Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
 		}
 
-		Low: {
-			Label: Low
-			Tooltip: ""
+		EyeOfCthulhu.Epithet: The Watcher
+		FungoreSporeSac.DisplayName: Spore Sac
+		DesertTerrarian.DisplayName: Desert Villager
+		ForestTerrarian.DisplayName: Forest Villager
+		JungleTerrarian.DisplayName: Jungle Villager
+		SporadicSlime.DisplayName: Sporadic Slime
+		TundraTerrarian.DisplayName: Tundra Villager
+		CuriousSlime.DisplayName: Slime
+		BodyguardNPC.DisplayName: Bodyguard
+		WardenArm.DisplayName: Warden Arm
+
+		WoodenWardenBoss: {
+			DisplayName: Wooden Warden
+			Bestiary:
+				'''
+				The Protector of the Ligneous Fortress
+				Wooden Warden is a sentient golem ordered to protect the Scar of Ingress, and what lies behind it...
+				'''
+			Epithet: The Guardian of Ingress
 		}
 
-		Standard: {
-			Label: Standard
-			Tooltip: ""
+		ShinobiNPC.DisplayName: Shinobi
+	}
+
+	Buffs: {
+		FungalInfection: {
+			DisplayName: Fungal Infection
+			Description: Spores are taking hold! a saturated host bursts and seeds everything nearby
 		}
 
-		HighEnd: {
-			Label: High End
-			Tooltip: ""
+		ShroomsonBuff: {
+			DisplayName: Shroomson
+			Description: Your adoptive son will fight for you!
 		}
 
-		NASA: {
-			Label: NASA
-			Tooltip: ""
+		FungalInfectionHostile: {
+			DisplayName: Fungal Infection
+			Description: Spores are taking hold!
 		}
 
-		Custom: {
-			Label: Custom
-			Tooltip: ""
+		FungalInfectionSpore: {
+			DisplayName: Fungal Infection
+			Description: The spores went deep! this will not sit quietly...
+		}
+
+		PossessedWorkshopBuff: {
+			DisplayName: Possessed Workshop
+			Description: The apparition possesses your crafting stations, allowing you to craft from them anywhere!
 		}
 	}
 
-	DebugConfig: {
-		DisplayName: Debug Config
-		Headers.DebugMode: Debug Mode Header
+	Misc: {
+		SonsMushroom: Shroomson's Mushroom
+		SonsMushroomFlavour: Grown for you, by your son
+		WorkshopSlot: Station Slot
+	}
 
-		DebugMode: {
-			Label: Debug Mode
+	SeedAmmo: {
+		# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
+		# bed sprites read almost identically at tooltip size.
+		FavouriteSoil: Favorite soil: [i:{0}] {1}
+		Daybloom: Critical strikes grant temporary [buff:Ironskin]
+		Blinkroot: Critical strikes grant temporary [buff:Hunter] and [buff:Swiftness]
+		Moonglow: Critical strikes grant temporary [buff:Regeneration]
+		Fireblossom: Critical strikes inflict [buff/f28755:OnFire] for a short duration
+		Shiverthorn: Critical strikes inflict [buff/6fc5f6:Frostburn] for a short duration
+		Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
+		Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
+	}
+
+	# Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name
+	# an element in its own words without every tooltip that mentions it having to change.
+	ChemicalDamageTypes: {
+		Thermal: Thermal
+		Cryonic: Cryonic
+		Caustic: Caustic
+		Necrotic: Necrotic
+		Kinetic: Kinetic
+		Electric: Electric
+	}
+
+	DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
+
+	Liquids: {
+		CrudeOilLiquid.MapEntry: Crude Oil
+		BrineLiquid.MapEntry: Brine
+	}
+
+	Configs: {
+		VFXConfig: {
+			DisplayName: VFX Settings
+
+			Headers: {
+				QuickSettings: VFX Settings
+				ParticleCount: Particle Limits
+				MetaballCount: Metaball Limits
+			}
+
+			Preset: {
+				Label: Graphics Profile
+				Tooltip: Set the graphics profile for your PC.
+			}
+
+			ParticleCount: {
+				Label: Particle Count
+				Tooltip: Set the maximum amount of particles that can exist, maximum is capped at 2048.
+			}
+
+			MetaballCountMultiplier: {
+				Label: Metaball Count
+				Tooltip: By default, metaball counts are limited to 400 nodes. Performance impacts may occur around ~8k active nodes.
+			}
+		}
+
+		GraphicsPreset: {
 			Tooltip: ""
+
+			Toaster: {
+				Label: Toaster
+				Tooltip: ""
+			}
+
+			Low: {
+				Label: Low
+				Tooltip: ""
+			}
+
+			Standard: {
+				Label: Standard
+				Tooltip: ""
+			}
+
+			HighEnd: {
+				Label: High End
+				Tooltip: ""
+			}
+
+			NASA: {
+				Label: NASA
+				Tooltip: ""
+			}
+
+			Custom: {
+				Label: Custom
+				Tooltip: ""
+			}
+		}
+
+		DebugConfig: {
+			DisplayName: Debug Config
+			Headers.DebugMode: Debug Mode Header
+
+			DebugMode: {
+				Label: Debug Mode
+				Tooltip: ""
+			}
 		}
 	}
 }

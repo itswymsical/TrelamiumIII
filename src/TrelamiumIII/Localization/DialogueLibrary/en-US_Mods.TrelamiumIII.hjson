@@ -31,5 +31,7 @@ DialogueLibrary: {
 			Line2.Text: I know you're pretty new here, so I want to make sure you have a good start.[] I have a few things for you to do, and if you complete them,[] I'll give you a reward!
 			Line3.Text: First,[] I need you to gather some resources for me.[] You can find them in the forest nearby.[] Once you have them, bring them back to spawn and I'll let you know what to do next.[] Good luck!
 		}
+
+		HomeForager_Occupied.Line1.Text: Sorry, [speakerName:player]![] It looks like that housing is already occupied.[] Maybe try another one.
 	}
 }

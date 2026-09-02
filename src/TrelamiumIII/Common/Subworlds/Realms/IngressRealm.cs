@@ -5,7 +5,7 @@ using Terraria.GameContent;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
-using TrelamiumIII.Content.GardenOfIngress;
+using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Utilities;
@@ -46,19 +46,17 @@ public class IngressRealm : SubworldRealm
     }
     public IngressRealm()
     {
+        GenVars.rockLayer = Main.maxTilesY / 1.75;
+        GenVars.rockLayerHigh = Main.maxTilesY / 2;
+        GenVars.rockLayerLow = Main.maxTilesY / 1.6;
 
+        GenVars.worldSurface = Main.maxTilesY / 2.75;
+        GenVars.worldSurfaceHigh = Main.maxTilesY / 3;
+        GenVars.worldSurfaceLow = Main.maxTilesY / 2.5;
     }
     public override void Update()
     {
         ManageGameConditions();
-    }
-
-    private void RenderScreenEffects()
-    {
-        if (Main.dayTime)
-            ChromaticScreenEffect.Set(0.4f, 1.05f, 0);
-        else
-            ChromaticScreenEffect.Cut();
     }
 
     private void ManageGameConditions()
@@ -134,7 +132,7 @@ public class IngressFloor : GenPass
                     }
                     else
                     {
-                        tile.TileType = TileID.LivingWood;
+                        tile.TileType = (ushort)ModContent.TileType<BramblerootTile>();
                     }
                 }
             }
@@ -268,8 +266,8 @@ public class IngressVegetation : GenPass
 public class IngressCaves : GenPass
 {
     // Base biome blob
-    private int mudTile = TileID.LivingWood;
-    private const int wallTile = WallID.DirtUnsafe1;
+    private int mudTile = (ushort)ModContent.TileType<BramblerootTile>();
+    private const int wallTile = WallID.MudUnsafe;
 
     private const float BaseBlobWarpAmt = 28f;
     private const float BaseBlobWarpFreq = 0.097f;
@@ -595,11 +593,8 @@ public class IngressCaves : GenPass
     }
 
     // Turtle walker
-    private void WalkTunnel(
-        Vector2 from, Vector2 to,
-        FastNoiseLite pathNoise,
-        FastNoiseLite radiusNoise,
-        FastNoiseLite wallWarpNoise,
+    private void WalkTunnel(Vector2 from, Vector2 to, 
+        FastNoiseLite pathNoise, FastNoiseLite radiusNoise, FastNoiseLite wallWarpNoise, 
         float scale)
     {
         var pos = from;

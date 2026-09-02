@@ -20,8 +20,10 @@ Jobs: {
 				obj1: Mine and gather stone blocks
 			}
 
-			Set1.obj0: Create suitible housing units
-			Set2.obj0: Check in with the Guide
+			Set1.obj0: Create suitible housing for the Guide
+			Set2.obj0: Create suitible housing for the Merchant
+			Set3.obj0: Create an extra housing
+			Set4.obj0: Check in with the Guide
 		}
 	}
 }

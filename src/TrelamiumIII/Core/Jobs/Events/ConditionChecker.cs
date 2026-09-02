@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 
 namespace TrelamiumIII.Core.Jobs.Events;
 
@@ -169,14 +170,19 @@ public class PickedUpItem(int itemType, int count = 1) : EventCondition
     }
 }
 
-public class ValidatedHousing : EventCondition
+/// <summary>
+/// Met once <paramref name="count"/> <i>distinct</i> rooms have passed a housing check.
+/// Re-checking a room that has already counted is ignored, so the player can't satisfy a
+/// multi-house objective by repeatedly checking one house.
+/// </summary>
+public class ValidatedHousing(int count = 1, bool mustBeUnoccupied = true) : EventCondition
 {
-    private readonly bool _mustBeUnoccupied;
+    private readonly HashSet<Point> _countedRooms = [];
 
-    public ValidatedHousing(bool mustBeUnoccupied = true)
-    {
-        _mustBeUnoccupied = mustBeUnoccupied;
-    }
+    /// <summary>Distinct rooms validated so far. Useful for "3/5 houses" style progress display.</summary>
+    public int Progress => _countedRooms.Count;
+
+    public int Required => count;
 
     public override void Accumulate(GameEvent evt)
     {
@@ -184,14 +190,21 @@ public class ValidatedHousing : EventCondition
         if (evt.Type != GameEventType.HousingChecked) return;
 
         bool isRoomValid = evt.Amount == 1;
+        if (!isRoomValid) return;
 
-        if (isRoomValid)
-        {
-            if (_mustBeUnoccupied && evt.IsOccupied)
-                return;
+        if (mustBeUnoccupied && evt.IsOccupied)
+            return;
 
+        // No resolvable room identity means we can't prove this is a new house, so don't credit it.
+        if (evt.RoomId is not Point roomId)
+            return;
+
+        // Add returns false if we've already credited this room.
+        if (!_countedRooms.Add(roomId))
+            return;
+
+        if (_countedRooms.Count >= count)
             IsMet = true;
-        }
     }
 }
 

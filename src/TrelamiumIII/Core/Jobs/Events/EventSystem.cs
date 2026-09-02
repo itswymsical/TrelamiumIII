@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Jobs;
@@ -13,8 +13,11 @@ public class EventSystem : ModSystem
     private static readonly Dictionary<int, Type> JobTypes = [];
     private static bool isExploding = false;
 
+    /// <summary>debounce keyed by canonical room id</summary>
     private static readonly Dictionary<Point, int> HousingCooldowns = [];
     private const int CooldownTicks = 60;
+    private const int CooldownPruneInterval = 3600;
+    private static int _lastCooldownPrune;
     public override void Load()
     {
         RegisterJobs();
@@ -39,7 +42,6 @@ public class EventSystem : ModSystem
         return player.UnlockedJobs();
     }
 
-    // TODO: Mark valid-checked rooms as 'dirty' if they have been checked once already, to prevent them from multi-checked during missions.
     private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
     {
         // vanilla boundary logic
@@ -64,22 +66,77 @@ public class EventSystem : ModSystem
             return isValid;
 
         int currentTick = (int)Main.GameUpdateCount;
-        Point coord = new Point(x, y);
 
-        // cooldown
-        if (HousingCooldowns.TryGetValue(coord, out int lastTick) && currentTick - lastTick < CooldownTicks)
+        // Resolve the room's canonical identity. StartRoomCheck is called with whichever tile the
+        // check was started from, so keying anything off (x, y) treats every tile of the same house
+        // as a distinct house. Falls back to the probe point only when the room can't be resolved.
+        Point roomId = TryGetRoomId(out Point resolved) ? resolved : new Point(x, y);
+
+        PruneHousingCooldowns(currentTick);
+
+        // Debounce: the housing UI calls StartRoomCheck many times per frame.
+        if (HousingCooldowns.TryGetValue(roomId, out int lastTick) && currentTick - lastTick < CooldownTicks)
         {
             return isValid;
         }
-        HousingCooldowns[coord] = currentTick;
+        HousingCooldowns[roomId] = currentTick;
 
         // occupancy Check
         bool isOccupied = WorldGen.roomOccupied;
 
-        var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer);
+        var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer, roomId);
         BroadcastEvent(evt);
 
         return isValid;
+    }
+
+    /// <summary>
+    /// Derives a stable identity for the room vanilla just flood-filled into
+    /// <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>, using the lexicographic-minimum
+    /// tile in the set. Any tile inside the same room resolves to the same id.
+    /// </summary>
+    private static bool TryGetRoomId(out Point roomId)
+    {
+        roomId = default;
+
+        int tileCount = Math.Min(WorldGen.numRoomTiles, WorldGen.roomX.Length);
+        if (tileCount <= 0)
+            return false;
+
+        int minX = int.MaxValue;
+        int minY = int.MaxValue;
+
+        for (int i = 0; i < tileCount; i++)
+        {
+            int tx = WorldGen.roomX[i];
+            int ty = WorldGen.roomY[i];
+
+            if (tx < minX || (tx == minX && ty < minY))
+            {
+                minX = tx;
+                minY = ty;
+            }
+        }
+
+        roomId = new Point(minX, minY);
+        return true;
+    }
+
+    /// <summary>Drops cooldown entries that can no longer suppress anything, so the dictionary doesn't grow with the world.</summary>
+    private static void PruneHousingCooldowns(int currentTick)
+    {
+        if (currentTick - _lastCooldownPrune < CooldownPruneInterval)
+            return;
+
+        _lastCooldownPrune = currentTick;
+
+        var stale = HousingCooldowns
+            .Where(kvp => currentTick - kvp.Value >= CooldownTicks)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var key in stale)
+            HousingCooldowns.Remove(key);
     }
 
     #region Auto-Registration

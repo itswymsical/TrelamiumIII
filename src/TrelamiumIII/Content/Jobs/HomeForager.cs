@@ -15,9 +15,15 @@ public sealed class HomeForager : Job
                 ("HomeForager.Tasks.Set0.obj1", 25) // stone
             ],
 
-            [("HomeForager.Tasks.Set1.obj0", 3)], // create housing(s)
-            [("HomeForager.Tasks.Set2.obj0", 1)], // check in
-        ],
+            [("HomeForager.Tasks.Set1.obj0", 1)], // create housing(s)
+            [("HomeForager.Tasks.Set2.obj0", 1)], // create housing(s)
+            [("HomeForager.Tasks.Set3.obj0", 1)], // create housing(s)
+            [("HomeForager.Tasks.Set4.obj0", 1)], // check in
+        ], // the reason I did 3 separate sets for the housing tasks is to avoid any valid housing checks
+           // going off with manually checking valid housing, while an NPC is trying to move in.
+           // When a housing is occupied the housing becomes invalid for our housing checks,
+           // so there's still a slight chance a clever player can exploit this, however, i want the exploit to be less obvious.
+           // This is a known edge case i havent fixed yet so bare with my patchwork.
         rewards: 
         [
             new JobReward(ItemID.SilverCoin, 75),
@@ -43,10 +49,10 @@ public sealed class HomeForager : Job
 
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {
-        if (CurrentSet == 0 && evt.Type == GameEventType.HousingChecked)
+        if (evt.Type == GameEventType.HousingChecked && evt.IsOccupied)
         {
+            DialogueManager.Instance.StartDialogue("Guide.HomeForager_Occupied", zoomIn: false, letterbox: false);
         }
-
         return base.OnMatchedEvent(evt, taskIndex);
     }
 
@@ -63,10 +69,10 @@ public sealed class HomeForager : Job
                     && evt.ItemType.HasValue && evt.ItemType == ItemID.StoneBlock;
         }
 
-        if (currentSet == 1 && taskIndex == 0)
-            return evt.Type == GameEventType.HousingChecked;
+        if ((currentSet >= 1 && currentSet <= 3) && taskIndex == 0)
+            return evt.Type == GameEventType.HousingChecked && !evt.IsOccupied && evt.RoomId.HasValue;
         
-        if (currentSet == 2 && taskIndex == 0)
+        if (currentSet == 4 && taskIndex == 0)
             return evt.Type == GameEventType.NPCChat
                 && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);        
 

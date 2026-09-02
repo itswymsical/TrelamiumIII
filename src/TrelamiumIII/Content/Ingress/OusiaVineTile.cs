@@ -1,7 +1,7 @@
 using Terraria.GameContent.Metadata;
 using Terraria.Graphics.Renderers;
 
-namespace TrelamiumIII.Content.GardenOfIngress;
+namespace TrelamiumIII.Content.Ingress;
 
 public class OusiaVineTile : ModTile
 {

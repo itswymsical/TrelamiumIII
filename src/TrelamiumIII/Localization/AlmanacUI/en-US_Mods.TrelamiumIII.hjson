@@ -18,3 +18,113 @@ AlmanacUI: {
 	RecipesDiscovered: recipes discovered
 	IngredientsDiscovered: ingredients found
 }
+
+DamageClasses.ChemicalDamageClass.DisplayName: Chemical Damage Class
+
+Tiles: {
+	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
+	AlchemyStationTile.MapEntry: Alchemy Station Tile
+	MagnoliaTile.MapEntry: Magnolia Tile
+	SeedBedTile_Ash.MapEntry: Seed Bed Tile_ Ash
+	SeedBedTile_Dirt.MapEntry: Seed Bed Tile_ Dirt
+	SeedBedTile_Mud.MapEntry: Seed Bed Tile_ Mud
+	SeedBedTile_Sand.MapEntry: Seed Bed Tile_ Sand
+	MyconidSporeTile.MapEntry: Myconid Spore Tile
+}
+
+Misc: {
+	SonsMushroom: Son's Mushroom
+	SonsMushroomFlavour: Grown for you, by your son
+}
+
+Buffs: {
+	FungalInfection: {
+		DisplayName: Fungal Infection
+		Description: Mods.TrelamiumIII.Buffs.FungalInfection.Description
+	}
+
+	FungalInfectionHostile: {
+		DisplayName: Fungal Infection Hostile
+		Description: Mods.TrelamiumIII.Buffs.FungalInfectionHostile.Description
+	}
+
+	FungalInfectionSpore: {
+		DisplayName: Fungal Infection Spore
+		Description: Mods.TrelamiumIII.Buffs.FungalInfectionSpore.Description
+	}
+
+	ShroomsonBuff: {
+		DisplayName: Shroomson Buff
+		Description: Mods.TrelamiumIII.Buffs.ShroomsonBuff.Description
+	}
+
+	PossessedWorkshopBuff: {
+		DisplayName: Possessed Workshop Buff
+		Description: Mods.TrelamiumIII.Buffs.PossessedWorkshopBuff.Description
+	}
+}
+
+NPCs: {
+	FungoreBoss.DisplayName: Fungore Boss
+	FungoreSporeSac.DisplayName: Fungore Spore Sac
+	DesertTerrarian.DisplayName: Desert Terrarian
+	ForestTerrarian.DisplayName: Forest Terrarian
+	SporadicSlime.DisplayName: Sporadic Slime
+	JungleTerrarian.DisplayName: Jungle Terrarian
+	ShinobiNPC.DisplayName: Shinobi N P C
+	TundraTerrarian.DisplayName: Tundra Terrarian
+	WardenArm.DisplayName: Warden Arm
+	WoodenWardenBoss.DisplayName: Wooden Warden Boss
+}
+
+Projectiles: {
+	MagnoliaPowderProjectile.DisplayName: Magnolia Powder Projectile
+	CrimsonEffusionBurstProjectile.DisplayName: Crimson Effusion Burst Projectile
+	CrimsonEffusionFlaskProjectile.DisplayName: Crimson Effusion Flask Projectile
+	HyperboreanFlaskBurstProjectile.DisplayName: Hyperborean Flask Burst Projectile
+	HyperboreanFlaskProjectile.DisplayName: Hyperborean Flask Projectile
+	PhytoncideFlaskProjectile.DisplayName: Phytoncide Flask Projectile
+	PhytoncideSporeBurstProjectile.DisplayName: Phytoncide Spore Burst Projectile
+	PrismaticStarflaskBurstProjectile.DisplayName: Prismatic Starflask Burst Projectile
+	PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask Projectile
+	ThermiteBurstProjectile.DisplayName: Thermite Burst Projectile
+	ThermiteFlaskProjectile.DisplayName: Thermite Flask Projectile
+	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
+	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
+	WallBombProj.DisplayName: Wall Bomb Proj
+	BlinkrootSeedProjectile.DisplayName: Blinkroot Seed Projectile
+	DaybloomSeedProjectile.DisplayName: Daybloom Seed Projectile
+	DeathweedSeedProjectile.DisplayName: Deathweed Seed Projectile
+	FireblossomSeedProjectile.DisplayName: Fireblossom Seed Projectile
+	MoonglowSeedProjectile.DisplayName: Moonglow Seed Projectile
+	ShiverthornSeedProjectile.DisplayName: Shiverthorn Seed Projectile
+	WaterleafSeedProjectile.DisplayName: Waterleaf Seed Projectile
+	BorealHewerProj.DisplayName: Boreal Hewer Proj
+	FlailstormProj.DisplayName: Flailstorm Proj
+	FrostCloudProj.DisplayName: Frost Cloud Proj
+	EarthShardProj.DisplayName: Earth Shard Proj
+	FungoreSpore.DisplayName: Fungore Spore
+	GirthquakeProj.DisplayName: Girthquake Proj
+	ShroomsonMinion.DisplayName: Shroomson Minion
+	ShroomsonMushroom.DisplayName: Shroomson Mushroom
+	SporeBlastProj.DisplayName: Spore Blast Proj
+	SporeclotSacProj.DisplayName: Sporeclot Sac Proj
+	LodestoneMagnetizerProjectile.DisplayName: Lodestone Magnetizer Projectile
+	StalactiteCannonProj.DisplayName: Stalactite Cannon Proj
+	StalactiteProj.DisplayName: Stalactite Proj
+	SporadicSlamProjectile.DisplayName: Sporadic Slam Projectile
+	PossessedWorkshopPet.DisplayName: Possessed Workshop Pet
+	WorkshopStationPet.DisplayName: Workshop Station Pet
+	TetanusShurikenProj.DisplayName: Tetanus Shuriken Proj
+	AcornLauncherProjectile.DisplayName: Acorn Launcher Projectile
+	AcornProjectile.DisplayName: Acorn Projectile
+	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel Projectile
+	SaplingMakerProjectile.DisplayName: Sapling Maker Projectile
+	SaplingProjectile.DisplayName: Sapling Projectile
+	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
+}
+
+Liquids: {
+	CrudeOilLiquid.MapEntry: Crude Oil Liquid
+	BrineLiquid.MapEntry: Brine Liquid
+}
