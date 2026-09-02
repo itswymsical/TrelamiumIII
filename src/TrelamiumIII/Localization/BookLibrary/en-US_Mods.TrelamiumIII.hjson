@@ -1,5 +1,4 @@
 BookLibrary: {
-
 	Misc: {
 		Diary: {
 			Title: Annie's Diary
@@ -199,6 +198,75 @@ Configs: {
 
 		HasSourceDirectory: {
 			Label: Has Source Directory
+			Tooltip: ""
+		}
+	}
+
+	DebugConfig: {
+		DisplayName: Debug Config
+		Headers.DebugMode: Debug Mode Header
+
+		DebugMode: {
+			Label: Debug Mode
+			Tooltip: ""
+		}
+	}
+
+	VFXConfig: {
+		DisplayName: V F X Config
+
+		Headers: {
+			QuickSettings: Quick Settings Header
+			ParticleCount: Particle Count Header
+			MetaballCount: Metaball Count Header
+		}
+
+		Preset: {
+			Label: Preset
+			Tooltip: ""
+		}
+
+		ParticleCount: {
+			Label: Particle Count
+			Tooltip: ""
+		}
+
+		MetaballCountMultiplier: {
+			Label: Metaball Count Multiplier
+			Tooltip: ""
+		}
+	}
+
+	GraphicsPreset: {
+		Tooltip: ""
+
+		Toaster: {
+			Label: Toaster
+			Tooltip: ""
+		}
+
+		Low: {
+			Label: Low
+			Tooltip: ""
+		}
+
+		Standard: {
+			Label: Standard
+			Tooltip: ""
+		}
+
+		HighEnd: {
+			Label: High End
+			Tooltip: ""
+		}
+
+		NASA: {
+			Label: N A S A
+			Tooltip: ""
+		}
+
+		Custom: {
+			Label: Custom
 			Tooltip: ""
 		}
 	}

@@ -116,11 +116,6 @@ public sealed class BookTextLine
 /// </remarks>
 public static class BookText
 {
-    /// <summary>
-    ///     Paragraph token. Authored text uses this rather than a bare newline because hjson block
-    ///     strings swallow single line breaks, and because it survives translation intact -- a
-    ///     translator who breaks their prose differently still gets the paragraph the author meant.
-    /// </summary>
     public const string PARAGRAPH_TOKEN = "[p]";
 
     /// <summary>

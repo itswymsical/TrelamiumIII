@@ -231,7 +231,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     {
         if (Current != null) return;
 
-        if (LoreBookUI.Current != null) return;
+        if (BasicBookUI.Current != null) return;
 
         var n = new AlchemyAlmanacUI();
         InGameNotificationsTracker.AddNotification(n);

@@ -61,7 +61,7 @@ public readonly record struct BlockStyle()
     /// <summary>Additional inset applied to the first line only. Negative gives a hanging indent.</summary>
     public float FirstLineIndent { get; init; } = 0f;
 
-    public Color Color { get; init; } = new(62, 44, 30);
+    public Color Color { get; init; } = new(37, 38, 38);
 
     /// <summary>
     ///     Enlarges the paragraph's opening letter across the first lines. Ignored when the block does
@@ -86,7 +86,7 @@ public readonly record struct BlockStyle()
     public static BlockStyle Quote => new()
     {
         Scale = 0.76f,
-        Color = new Color(92, 72, 54),
+        Color = new Color(33, 33, 33),
         IndentLeft = 20f,
         IndentRight = 14f,
         SpaceBefore = 4f,
@@ -97,7 +97,7 @@ public readonly record struct BlockStyle()
     public static BlockStyle Caption => new()
     {
         Scale = 0.68f,
-        Color = new Color(104, 84, 66),
+        Color = new Color(66, 66, 66),
         Align = TextAlign.Center,
         LineSpacing = 1f,
         SpaceBefore = 3f,
@@ -109,7 +109,7 @@ public readonly record struct BlockStyle()
     {
         Font = BookFont.Hand,
         Scale = 0.5f,
-        Color = new Color(46, 58, 104),
+        Color = new Color(46, 32, 99),
         LineSpacing = 1f,
     };
 }

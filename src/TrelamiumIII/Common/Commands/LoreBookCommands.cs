@@ -36,6 +36,6 @@ public class LoreBookCommand : ModCommand
             return;
         }
 
-        LoreBookUI.Open(requested);
+        BasicBookUI.Open(requested);
     }
 }

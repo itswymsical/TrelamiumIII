@@ -1,3 +1,4 @@
+using ReLogic.Content;
 using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -5,6 +6,7 @@ using Terraria.Localization;
 using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Layout.Blocks;
 using TrelamiumIII.Core.Books.Text;
+using static TrelamiumIII.Core.Books.BookCover;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
@@ -46,10 +48,10 @@ public sealed class IlluminanceBookUI : BookUI
     public override int PageHeight => PAGE_HEIGHT;
     public override BookPalette BookPalette => new BookPalette()
     {
-        Cover = new Color(30, 86, 113),
+        Cover = new Color(2, 19, 27),
         Shadow = new Color(3, 42, 59),
         Spine = new Color(2, 19, 27),
-        Trim = new Color(69, 140, 146)
+        Trim = new Color(30, 86, 113)
     };
     private IlluminanceBookUI(BookDefinition definition)
     {
@@ -265,7 +267,7 @@ public sealed class IlluminanceBookUI : BookUI
 
     protected override void DrawSpreadSide(SpriteBatch spriteBatch, int spread, BookSide side, BookPageContext context)
     {
-        PagePaper.Draw(spriteBatch, PAGE_WIDTH, PAGE_HEIGHT, side);
+        PagePaper.Draw(spriteBatch, PAGE_WIDTH, PAGE_HEIGHT, side, BookPalette);
 
         int pageIndex = PageIndexFor(spread, side);
 
@@ -354,14 +356,15 @@ public sealed class IlluminanceBookUI : BookUI
     {
         // The cover target is transparent where nothing is drawn, which lets the bound cover behind
         // the spread show through as the board itself.
-        Texture2D pixel = TextureAssets.MagicPixel.Value;
+        Texture2D pixel = ModContent.Request<Texture2D>(Assets.Textures.BookCoverArt.IlluminanceCover.KEY,
+            AssetRequestMode.ImmediateLoad).Value;
 
-        spriteBatch.Draw(pixel, new Rectangle(0, 0, PAGE_WIDTH, PAGE_HEIGHT), new Color(58, 36, 18));
+        spriteBatch.Draw(pixel, new Rectangle(18, 22, PAGE_WIDTH - 36, PAGE_HEIGHT - 44), Color.White);
 
         var gold = new Color(168, 132, 74);
         var frame = new Rectangle(18, 22, PAGE_WIDTH - 36, PAGE_HEIGHT - 44);
 
-        Layout.Blocks.ImageBlock.DrawBorder(spriteBatch, frame, gold * 0.8f);
+        Layout.Blocks.ImageBlock.DrawBorder(spriteBatch, frame, gold * 0.75f);
 
         List<BookTextLine> lines = BookText.Layout(
             content.Title,

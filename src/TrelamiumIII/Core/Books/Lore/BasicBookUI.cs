@@ -18,7 +18,7 @@ namespace TrelamiumIII.Core.Books.Lore;
 ///         the first page, and every spread after that holds two.
 ///     </para>
 /// </remarks>
-public sealed class LoreBookUI : BookUI
+public sealed class BasicBookUI : BookUI
 {
     public const int PAGE_WIDTH = 290;
     public const int PAGE_HEIGHT = 430;
@@ -28,7 +28,7 @@ public sealed class LoreBookUI : BookUI
     private const float MARGIN_BOTTOM = 30f;
 
     /// <summary>Only one book is readable at a time; a second would fight for the cursor.</summary>
-    public static LoreBookUI? Current { get; private set; }
+    public static BasicBookUI? Current { get; private set; }
 
     private readonly BookContent content;
     private readonly List<ComposedPage> pages;
@@ -45,7 +45,7 @@ public sealed class LoreBookUI : BookUI
 
     public override int PageHeight => PAGE_HEIGHT;
 
-    private LoreBookUI(BookDefinition definition)
+    private BasicBookUI(BookDefinition definition)
     {
         Key = definition.Key;
         content = definition.Build();
@@ -81,7 +81,7 @@ public sealed class LoreBookUI : BookUI
             return;
         }
 
-        var book = new LoreBookUI(definition);
+        var book = new BasicBookUI(definition);
         Current = book;
         book.BeginShowing();
     }
@@ -259,7 +259,7 @@ public sealed class LoreBookUI : BookUI
 
     protected override void DrawSpreadSide(SpriteBatch spriteBatch, int spread, BookSide side, BookPageContext context)
     {
-        PagePaper.Draw(spriteBatch, PAGE_WIDTH, PAGE_HEIGHT, side);
+        PagePaper.Draw(spriteBatch, PAGE_WIDTH, PAGE_HEIGHT, side, BookPalette);
 
         int pageIndex = PageIndexFor(spread, side);
 

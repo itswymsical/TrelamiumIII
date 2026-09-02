@@ -25,7 +25,7 @@ public static class PagePaper
     /// <summary>Optional paper texture. Null draws the procedural fallback.</summary>
     public static Asset<Texture2D>? Texture { get; set; }
 
-    public static void Draw(SpriteBatch spriteBatch, int width, int height, BookSide side)
+    public static void Draw(SpriteBatch spriteBatch, int width, int height, BookSide side, BookPalette palette)
     {
         if (Texture is { Value: { } texture })
         {
@@ -44,7 +44,7 @@ public static class PagePaper
 
         Texture2D pixel = TextureAssets.MagicPixel.Value;
 
-        spriteBatch.Draw(pixel, new Rectangle(0, 0, width, height), Base);
+        spriteBatch.Draw(pixel, new Rectangle(0, 0, width, height), palette.PageColor);
 
         // The spine is on the inner edge, which is the right of a left leaf and the left of a right one.
         bool spineOnRight = side == BookSide.Left;
@@ -52,7 +52,7 @@ public static class PagePaper
         for (int i = 0; i < GUTTER_SHADE; i++)
         {
             float depth = 1f - i / (float)GUTTER_SHADE;
-            var shade = Edge * (depth * depth * 0.35f);
+            var shade = palette.PageEdgeColor * (depth * depth * 0.35f);
             int x = spineOnRight ? width - 1 - i : i;
 
             spriteBatch.Draw(pixel, new Rectangle(x, 0, 1, height), shade);
@@ -61,7 +61,7 @@ public static class PagePaper
         for (int i = 0; i < EDGE_SHADE; i++)
         {
             float depth = 1f - i / (float)EDGE_SHADE;
-            var shade = Edge * (depth * depth * 0.22f);
+            var shade = palette.PageEdgeColor * (depth * depth * 0.22f);
             int x = spineOnRight ? i : width - 1 - i;
 
             spriteBatch.Draw(pixel, new Rectangle(x, 0, 1, height), shade);

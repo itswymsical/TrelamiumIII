@@ -5,6 +5,7 @@ using Terraria.GameContent;
 using Terraria.UI;
 using Terraria.UI.Chat;
 using TrelamiumIII.Core.Books.Layout;
+using static TrelamiumIII.Core.Books.BookCover;
 
 namespace TrelamiumIII.Core.Books;
 
@@ -268,7 +269,7 @@ public abstract class BookUI : IInGameNotification, IBookView
 
         // Tabs are resolved first and swallow the click either way, so a right-click meant to clear
         // one does not shut the book instead.
-        hoveredTab = BookTabs.HitTest(SpreadOrigin(), Tabs.Count, mouse);
+        hoveredTab = BookCover.HitTest(SpreadOrigin(), Tabs.Count, mouse);
 
         if (hoveredTab >= 0)
         {
@@ -369,9 +370,9 @@ public abstract class BookUI : IInGameNotification, IBookView
         IReadOnlyList<BookTab> tabs = Tabs;
 
         if (tabs.Count > 0)
-            BookTabs.Draw(spriteBatch, origin, tabs, hoveredTab, Opacity);
+            BookCover.DrawBookTabs(spriteBatch, origin, tabs, hoveredTab, Opacity, BookPalette);
 
-        BookCoverFrame.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity, BookPalette);
+        BookCover.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity, BookPalette);
 
         spriteBatch.Draw(renderer.Composite, origin, Color.White * Opacity);
 
