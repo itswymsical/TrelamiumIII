@@ -12,10 +12,8 @@ Jobs: {
 
 	HomeForager: {
 		Name: Home Forager
-		Description:
-		'''
-		"I'm a bit particular about housing – you can't have town without townsfolk!"
-		'''
+		Description: '''"I'm a bit particular about housing – you can't have town without townsfolk!"'''
+
 		Tasks: {
 			Set0: {
 				obj0: Chop down trees

@@ -61,7 +61,7 @@ public class WorldTimeSystem : ModSystem
             {
                 mp.UnlockJob(job.ID);
                 string npcName = Lang.GetNPCNameValue(job.ProviderNPC);
-                Main.NewText($"{npcName} {Mod.GetLocalizationKey("JobInfo.NewJob")}", Color.LightBlue);
+                //Main.NewText($"{npcName}" + Mod.GetLocalizationKey("JobInfo.NewJob"), Color.LightBlue);
                 if (job.ID == JobID.HomeForager)
                 {
                     DialogueManager.Instance.StartDialogue("Guide.HomeForager", zoomIn: false, letterbox: false);

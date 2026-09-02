@@ -573,6 +573,16 @@ Items: {
 		DisplayName: Stalactite Cannon
 		Tooltip: Fires high speed stone blocks that shatter into gravel on contact
 	}
+
+	Skofnung: {
+		DisplayName: Skofnung
+		Tooltip: ""
+	}
+
+	Brambleroot: {
+		DisplayName: Brambleroot
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -634,6 +644,7 @@ Projectiles: {
 	StalactiteCannonProj.DisplayName: Stalactite Cannon
 	StalactiteProj.DisplayName: Stalactite
 	EarthShardProj.DisplayName: Earth Shard
+	SkofnungProjectile.DisplayName: Skofnung Projectile
 }
 
 NPCs: {
