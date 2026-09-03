@@ -13,7 +13,7 @@ public class TrelamiumPlayer : ModPlayer
     {
         // Put all the job checks here -- yeah, i know it's ass, i do not care.
         //Main.NewText($"Player Position | X: {(int)Player.position.X / 16}, Y: {(int)Player.position.Y / 16}");
-
+        
     }
 
     public override void PreUpdate()

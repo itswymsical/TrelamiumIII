@@ -4,6 +4,8 @@ public static class JobID
 {
     public const int None = 0;
     public const int HomeForager = 1;
-    public const int GuideKingSlimeI = 2;
-    public const int MerchantEyeOfCthulhuI = 3;
+    public const int GoldMine = 2;
+
+   // public const int GuideKingSlimeI = 0;
+   // public const int MerchantEyeOfCthulhuI = 0;
 }

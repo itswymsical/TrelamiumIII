@@ -26,4 +26,21 @@ Jobs: {
 			Set4.obj0: Check in with the Guide
 		}
 	}
+
+	GoldMine: {
+		Name: Gold Mine
+		Description:
+			'''
+			"I'm hearing word there’ll be a flood of investors coming through the forest 
+			and I'm not too keen on their politics. They want gold, so we’ll give ‘em fool’s gold!"
+			'''
+
+		Tasks: {
+			Set0.obj0: Speak with Merchant
+			Set1.obj0: Obtain copper objects
+			Set2.obj0: Create suitible housing for the Merchant
+			Set3.obj0: Create an extra housing
+			Set4.obj0: Check in with the Guide
+		}
+	}
 }

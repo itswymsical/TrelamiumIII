@@ -811,4 +811,9 @@ Items: {
 			}
 		}
 	}
+
+	RewardBag: {
+		DisplayName: Reward Bag
+		Tooltip: ""
+	}
 }

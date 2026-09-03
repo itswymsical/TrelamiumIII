@@ -144,4 +144,153 @@ public static class ItemUtils
     public static bool CraftsManagedPotion(this Recipe recipe) => recipe.createItem.IsManagedPotion();
 
     #endregion
+
+    #region Recursive search
+    /// <summary>
+    /// Checks if an item is crafted with a specific ingredient, directly or indirectly.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="ingredient"></param>
+    /// <returns></returns>
+    public static bool CraftedWith(this Item item, int ingredient)
+    {
+        for (var i = 0; i < Recipe.maxRecipes; i++)
+        {
+            var currentRecipe = Main.recipe[i];
+
+            if (currentRecipe == null || currentRecipe.createItem.type != item.type)
+                continue;
+
+            for (var j = 0; j < currentRecipe.requiredItem.Count; j++)
+            {
+                if (currentRecipe.requiredItem[j] != null && currentRecipe.requiredItem[j].type == ingredient)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+    /// <summary>
+    /// Checks if an item is crafted with a specific ingredient, directly or indirectly.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="ingredient"></param>
+    /// <returns></returns>
+    public static bool CraftedWith(this Item item, Item ingredient)
+    {
+        for (var i = 0; i < Recipe.maxRecipes; i++)
+        {
+            var currentRecipe = Main.recipe[i];
+
+            if (currentRecipe == null || currentRecipe.createItem.type != item.type)
+                continue;
+
+            for (var j = 0; j < currentRecipe.requiredItem.Count; j++)
+            {
+                if (currentRecipe.requiredItem[j] != null && currentRecipe.requiredItem[j].type == ingredient.type)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Recursively checks if an item is crafted from a base ingredient, directly or indirectly.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="baseIngredient"></param>
+    /// <param name="visitedItems"></param>
+    /// <returns></returns>
+    public static bool CraftedFromRecursive(this Item item, Item baseIngredient, HashSet<int> visitedItems = null)
+    {
+        // Initialize visited items set to prevent infinite recursion
+        if (visitedItems == null)
+            visitedItems = new HashSet<int>();
+
+        // If we've already checked this item, skip to prevent cycles
+        if (visitedItems.Contains(item.type))
+            return false;
+
+        // Add current item to visited set
+        visitedItems.Add(item.type);
+
+        // Check all recipes that create this item
+        for (var i = 0; i < Recipe.maxRecipes; i++)
+        {
+            var currentRecipe = Main.recipe[i];
+
+            // Skip null or invalid recipes
+            if (currentRecipe == null || currentRecipe.createItem.type != item.type)
+                continue;
+
+            // Check each ingredient in this recipe
+            for (var j = 0; j < currentRecipe.requiredItem.Count; j++)
+            {
+                var requiredItem = currentRecipe.requiredItem[j];
+                if (requiredItem == null)
+                    continue;
+
+                // Direct match - this recipe directly uses the base ingredient
+                if (requiredItem.type == baseIngredient.type)
+                    return true;
+
+                // Recursive check - does this ingredient's crafting chain contain the base ingredient?
+                if (requiredItem.CraftedFromRecursive(baseIngredient, visitedItems))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+    /// <summary>
+    /// Recursively checks if an item is crafted from a base ingredient, directly or indirectly.
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="baseIngredient"></param>
+    /// <param name="visitedItems"></param>
+    /// <returns></returns>
+    public static bool CraftedFromRecursive(this Item item, int baseIngredient, HashSet<int> visitedItems = null)
+    {
+        // Initialize visited items set to prevent infinite recursion
+        if (visitedItems == null)
+            visitedItems = new HashSet<int>();
+
+        // If we've already checked this item, skip to prevent cycles
+        if (visitedItems.Contains(item.type))
+            return false;
+
+        // Add current item to visited set
+        visitedItems.Add(item.type);
+
+        // Check all recipes that create this item
+        for (var i = 0; i < Recipe.maxRecipes; i++)
+        {
+            var currentRecipe = Main.recipe[i];
+
+            // Skip null or invalid recipes
+            if (currentRecipe == null || currentRecipe.createItem.type != item.type)
+                continue;
+
+            // Check each ingredient in this recipe
+            for (var j = 0; j < currentRecipe.requiredItem.Count; j++)
+            {
+                var requiredItem = currentRecipe.requiredItem[j];
+                if (requiredItem == null)
+                    continue;
+
+                // Direct match - this recipe directly uses the base ingredient
+                if (requiredItem.type == baseIngredient)
+                    return true;
+
+                // Recursive check - does this ingredient's crafting chain contain the base ingredient?
+                if (requiredItem.CraftedFromRecursive(baseIngredient, visitedItems))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    #endregion
 }
