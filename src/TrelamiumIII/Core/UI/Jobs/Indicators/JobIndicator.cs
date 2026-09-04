@@ -212,7 +212,7 @@ public class JobIndicator : ScreenIndicator
                 Color.White * opacity,
                 Color.Black * opacity,
                 Vector2.Zero,
-                0.8f
+                0.75f
             );
             textY += 20;
 
@@ -239,7 +239,7 @@ public class JobIndicator : ScreenIndicator
     {
         var (plainText, effects) = JobTextParser.ParseDescription(rawDescription);
         var font = FontAssets.MouseText.Value;
-        var scale = 0.8f;
+        var scale = 1f;
 
         // Set defaults for colors
         var defaultBase = baseColor ?? Color.White * opacity;

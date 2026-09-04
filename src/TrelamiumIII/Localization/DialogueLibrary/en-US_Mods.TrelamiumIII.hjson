@@ -14,6 +14,32 @@ DialogueLibrary: {
 		}
 	}
 
+	Sonder: {
+		SonderGreeting: {
+			Line1.Text: Greetings, [speakerName:player]. [] I am Sonder,[] a mere wanderer of the world.[] I have traveled far and wide, and I have many stories to tell.
+			Line2.Text: If you wish to hear them,
+			Line3.Text: you must first answer a question.
+
+			Line4: {
+				Text: Have you experienced...[] the feeling of sonder?
+				Choice1.Text: No, I have not.
+				Choice2.Text: I am experiencing it now.
+				Choice3.Text: I have felt it many times.
+				Choice4.Text: ...
+			}
+		}
+
+		SonderChoice_1: {
+			Line1.Text: Sonder is the realization that each random passerby is living a life as vivid and complex as your own.
+			Line2.Text: They have their own ambitions, friends, routines, worries, and inherited craziness.
+			Line3.Text: They are not simply background characters in your story;[] They are the main character of their own story.
+		}
+
+		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true. Perchance in more way than one.
+		SonderChoice_3.Line1.Text: Indeed.[] It is a rare and beautiful thing to feel sonder, and I am glad you have experienced it.
+		SonderChoice_4.Line1.Text: I see.[] Well, I hope you will have the opportunity to experience it in the future.
+	}
+
 	NerdySlime: {
 		Greeting.Line1.Text: Hello, [speakerName:player]! [] I have a task for you!
 

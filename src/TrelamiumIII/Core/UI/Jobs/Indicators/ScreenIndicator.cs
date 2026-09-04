@@ -422,10 +422,18 @@ public class ScreenIndicator : IInGameNotification
         var worldPosWithOffset = WorldPosition + Offset;
         return Vector2.Transform(worldPosWithOffset - Main.screenPosition, Main.GameViewMatrix.EffectMatrix);
     }
+    protected Vector2 GetOldScreenPosition()
+    {
+        var worldPosWithOffset = WorldPosition + Offset;
+        return Vector2.Transform(worldPosWithOffset - Main.screenPosition, Main.GameViewMatrix.EffectMatrix);
+    }
 
     public void DrawInGame(SpriteBatch spriteBatch, Vector2 bottomAnchorPosition)
     {
+        spriteBatch.End();
+        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer);
         Draw(spriteBatch);
+
     }
 
     public void PushAnchor(ref Vector2 positionAnchorBottom)

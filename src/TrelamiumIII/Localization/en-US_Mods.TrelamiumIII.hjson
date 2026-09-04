@@ -816,4 +816,9 @@ Items: {
 		DisplayName: Reward Bag
 		Tooltip: ""
 	}
+
+	MyconidSeeds: {
+		DisplayName: Myconid Seeds
+		Tooltip: ""
+	}
 }
