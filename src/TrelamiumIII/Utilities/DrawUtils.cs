@@ -223,10 +223,15 @@ internal static class DrawUtils
 
     // 9-slice panel: corners stay fixed, edges stretch. Drawn twice, an inner fill
     // tinted with the speaker color and a white outline on top.
-    public static void DrawPanel(SpriteBatch sb, int x, int y, int w, int h, Color c = default, Texture texture = null)
+    public static void DrawPanel(SpriteBatch sb, int x, int y, int w, int h, Color c = default, Texture texture = null, float opacity = 1f)
     {
         if (c == default)
             c = new Color(63, 65, 151, 255) * 0.785f;
+
+        // Faded as one piece, so a panel animating in or out does not leave its outline hanging in
+        // the air at full strength while the fill underneath it disappears.
+        c *= opacity;
+        var outline = Color.White * opacity;
 
         var value = (Texture2D)Assets.Textures.UI.Dialogue.PortraitBox.Asset;
         var value2 = (Texture2D)Assets.Textures.UI.Dialogue.PortraitBox_Inner.Asset;
@@ -294,42 +299,43 @@ internal static class DrawUtils
         #region Outline
         // Top-left corner
         sb.Draw(value, new Rectangle(x, y, borderLeft, borderTop),
-                new Rectangle(0, 0, borderLeft, borderTop), Color.White);
+                new Rectangle(0, 0, borderLeft, borderTop), outline);
 
         // Top edge (stretch horizontally)
         sb.Draw(value, new Rectangle(x + borderLeft, y, w - borderLeft - borderRight, borderTop),
-                new Rectangle(borderLeft, 0, srcCenterWidth, borderTop), Color.White);
+                new Rectangle(borderLeft, 0, srcCenterWidth, borderTop), outline);
 
         // Top-right corner
         sb.Draw(value, new Rectangle(x + w - borderRight, y, borderRight, borderTop),
-                new Rectangle(srcWidth - borderRight, 0, borderRight, borderTop), Color.White);
+                new Rectangle(srcWidth - borderRight, 0, borderRight, borderTop), outline);
 
         // Left edge (stretch vertically)
         sb.Draw(value, new Rectangle(x, y + borderTop, borderLeft, h - borderTop - borderBottom),
-                new Rectangle(0, borderTop, borderLeft, srcCenterHeight), Color.White);
+                new Rectangle(0, borderTop, borderLeft, srcCenterHeight), outline);
 
         // Center (stretch both ways)
         sb.Draw(value, new Rectangle(x + borderLeft, y + borderTop, w - borderLeft - borderRight, h - borderTop - borderBottom),
-                new Rectangle(borderLeft, borderTop, srcCenterWidth, srcCenterHeight), Color.White);
+                new Rectangle(borderLeft, borderTop, srcCenterWidth, srcCenterHeight), outline);
 
         // Right edge (stretch vertically)
         sb.Draw(value, new Rectangle(x + w - borderRight, y + borderTop, borderRight, h - borderTop - borderBottom),
-                new Rectangle(srcWidth - borderRight, borderTop, borderRight, srcCenterHeight), Color.White);
+                new Rectangle(srcWidth - borderRight, borderTop, borderRight, srcCenterHeight), outline);
 
         // Bottom-left corner
         sb.Draw(value, new Rectangle(x, y + h - borderBottom, borderLeft, borderBottom),
-                new Rectangle(0, srcHeight - borderBottom, borderLeft, borderBottom), Color.White);
+                new Rectangle(0, srcHeight - borderBottom, borderLeft, borderBottom), outline);
 
         // Bottom edge (stretch horizontally)
         sb.Draw(value, new Rectangle(x + borderLeft, y + h - borderBottom, w - borderLeft - borderRight, borderBottom),
-                new Rectangle(borderLeft, srcHeight - borderBottom, srcCenterWidth, borderBottom), Color.White);
+                new Rectangle(borderLeft, srcHeight - borderBottom, srcCenterWidth, borderBottom), outline);
 
         // Bottom-right corner
         sb.Draw(value, new Rectangle(x + w - borderRight, y + h - borderBottom, borderRight, borderBottom),
-                new Rectangle(srcWidth - borderRight, srcHeight - borderBottom, borderRight, borderBottom), Color.White);
+                new Rectangle(srcWidth - borderRight, srcHeight - borderBottom, borderRight, borderBottom), outline);
         #endregion
     }
 
-    public static void DrawPanel(SpriteBatch sb, Rectangle R, Color c = default, Texture texture = null) => DrawPanel(sb, R.X, R.Y, R.Width, R.Height, c);
+    public static void DrawPanel(SpriteBatch sb, Rectangle R, Color c = default, Texture texture = null, float opacity = 1f)
+        => DrawPanel(sb, R.X, R.Y, R.Width, R.Height, c, texture, opacity);
 
 }

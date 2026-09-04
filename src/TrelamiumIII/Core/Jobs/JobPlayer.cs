@@ -69,34 +69,62 @@ public partial class JobPlayer : ModPlayer
         return null;
     }
 
-    public void StartJob(int JobId)
+    /// <summary>
+    /// Starts a Job the player has taken on.
+    /// </summary>
+    /// <param name="JobId">The Job to start.</param>
+    /// <param name="provider">
+    /// The NPC the player actually took it from, when that is known — the job board passes the one
+    /// that was clicked. Left null (commands, scripted grants) the provider is searched for by type.
+    /// </param>
+    public void StartJob(int JobId, NPC? provider = null)
     {
         var job = GetOrCreateJob(JobId);
 
-        if (job?.Status == JobStatus.Unlocked)
+        if (job?.Status != JobStatus.Unlocked)
+            return;
+
+        job.Progress = JobProgress.Ongoing;
+        job.OnJobStart();
+
+        if (Player.whoAmI != Main.myPlayer)
+            return;
+
+        NotifyProvider(job, provider);
+
+        InGameNotificationsTracker.AddNotification(
+            new JobAcceptNotification(job)
+        );
+    }
+
+    /// <summary>
+    /// Lets the providing NPC know one of its Jobs was taken.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Job.ProviderNPC"/> holds an NPC <em>type</em> (see the NPCID passed by each Job
+    /// definition), so it cannot be used to index <see cref="Main.npc"/> — doing so reaches whichever
+    /// NPC happens to occupy that slot. When the caller knows the instance it hands it over; otherwise
+    /// the world is searched for one of the right type.
+    /// </remarks>
+    private static void NotifyProvider(Job job, NPC? provider)
+    {
+        provider ??= FindProviderByType(job.ProviderNPC);
+
+        if (provider is { active: true } && provider.ModNPC is JobNPC jobNPC)
+            jobNPC.AJobAccepted = true;
+    }
+
+    private static NPC? FindProviderByType(int npcType)
+    {
+        for (int i = 0; i < Main.maxNPCs; i++)
         {
-            job.Progress = JobProgress.Ongoing;
-            job.OnJobStart();
+            var npc = Main.npc[i];
 
-            if (Player.whoAmI == Main.myPlayer)
-            {
-                int npcId = job.ProviderNPC;
-
-                if (npcId >= 0 && npcId < Main.maxNPCs)
-                {
-                    NPC npc = Main.npc[npcId];
-
-                    if (npc.active && npc.ModNPC is JobNPC provider)
-                    {
-                        provider.AJobAccepted = true;
-                    }
-                }
-
-                InGameNotificationsTracker.AddNotification(
-                    new JobAcceptNotification(job)
-                );
-            }
+            if (npc.active && npc.type == npcType)
+                return npc;
         }
+
+        return null;
     }
 
     public void UnlockJob(int JobId)
@@ -146,6 +174,19 @@ public partial class JobPlayer : ModPlayer
         Jobs.Where(m => m.Status == JobStatus.Unlocked);
 
     public IEnumerable<Job> GetAllJobs() => Jobs;
+
+    /// <summary>
+    /// Every Job the given NPC type is currently offering: unlocked, and not already underway or done.
+    /// </summary>
+    /// <remarks>
+    /// The single definition of "this NPC has work going", used by the indicator to decide whether to
+    /// appear and by the job board to fill its list. Note this is a <em>type</em>, matching how
+    /// <see cref="Job.ProviderNPC"/> is stored.
+    /// </remarks>
+    public IEnumerable<Job> AvailableJobsFrom(int npcType) =>
+        Jobs.Where(m => m.ProviderNPC == npcType
+                     && m.Status == JobStatus.Unlocked
+                     && m.Progress == JobProgress.Inactive);
 
     /// <summary>
     /// Returns true if the player has any Jobs that are unlocked but not yet started.

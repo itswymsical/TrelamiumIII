@@ -1,4 +1,17 @@
 Jobs: {
+	// Strings for the in-world job board (Core/UI/Jobs/Board).
+	UI: {
+		ListHeader: Jobs ({0})
+		From: From: {0}
+		Rewards: Rewards
+		NoneAvailable: Nothing available
+		TakeJob: Take Job
+		Close: Close
+		ConfirmPrompt: Take this job?
+		ConfirmAccept: Accept
+		ConfirmBack: Back
+	}
+
 	NerdySlimeI: {
 		Name: Nerdy Slime's Sublime Task!
 		Description: "'Help me build a quantum relocator!'"

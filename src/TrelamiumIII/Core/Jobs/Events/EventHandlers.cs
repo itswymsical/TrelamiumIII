@@ -2,7 +2,8 @@ using TrelamiumIII.Utilities;
 using System.Collections.Generic;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.UI.Jobs.Indicators;
+using TrelamiumIII.Core.UI.Jobs.Board;
+using TrelamiumIII.Core.UI.World;
 
 namespace TrelamiumIII.Core.Jobs.Events;
 
@@ -137,10 +138,16 @@ public class EventNPC : GlobalNPC
     public override bool InstancePerEntity => true;
     private DamageClass lastDamageClass = DamageClass.Default;
 
-    // Cache: NPC type -> Job, rebuilt every CacheRefreshInterval ticks
-    private static Dictionary<int, Job> JobByNPCType = [];
+    // Cache: NPC type -> every Job that NPC is offering, rebuilt every CacheRefreshInterval ticks.
+    // A list rather than a single Job: an NPC may have several jobs going at once, and the board
+    // lets the player pick between them.
+    private static readonly Dictionary<int, List<Job>> JobsByNPCType = [];
     private static int lastCacheRefreshTick = -1;
     private const int CacheRefreshInterval = 30; // every half second
+
+    /// <summary>This NPC's own marker, if it is offering anything. Owned here so nothing has to
+    /// keep a side table of which NPC has which indicator.</summary>
+    private JobIndicator? jobIndicator;
 
     /// <summary>
     /// Forces the Job indicator cache to rebuild on the next AI tick.
@@ -174,20 +181,61 @@ public class EventNPC : GlobalNPC
             RebuildJobCache();
         }
 
-        if (JobByNPCType.TryGetValue(npc.type, out var Job) && npc.active)
-            ScreenIndicatorManager.Instance.CreateJobIndicatorForNPC(npc, Job);
-        else
-            ScreenIndicatorManager.Instance.RemoveIndicatorForNPC(npc.whoAmI);
+        UpdateJobIndicator(npc);
+    }
+
+    /// <summary>
+    /// Keeps this NPC's marker in step with whether it still has work to offer. The indicator is
+    /// held on the NPC's own instance, so it lives and dies with the NPC and nothing has to track
+    /// which marker belongs to which whoAmI.
+    /// </summary>
+    private void UpdateJobIndicator(NPC npc)
+    {
+        if (Main.dedServ)
+            return;
+
+        // The indicator retires itself once its jobs are gone; drop the stale reference so a
+        // later unlock can put a fresh one up.
+        if (jobIndicator is { IsActive: false })
+            jobIndicator = null;
+
+        bool hasJobs = npc.active && JobsByNPCType.ContainsKey(npc.type);
+
+        if (!hasJobs)
+        {
+            if (jobIndicator != null)
+            {
+                jobIndicator.IsActive = false;
+                jobIndicator = null;
+            }
+
+            return;
+        }
+
+        if (jobIndicator != null)
+            return;
+
+        jobIndicator = JobIndicator.TryCreate(npc);
+
+        if (jobIndicator != null)
+            WorldUISystem.Register(jobIndicator);
     }
 
     private static void RebuildJobCache()
     {
-        JobByNPCType.Clear();
-        var JobPlayer = Main.LocalPlayer.GetModPlayer<JobPlayer>();
+        JobsByNPCType.Clear();
+        var jobPlayer = Main.LocalPlayer.GetModPlayer<JobPlayer>();
 
-        foreach (var Job in EventSystem.GetAllAvailableJobs(JobPlayer))
+        // Grouped rather than first-one-wins: an NPC offering three jobs should surface all three.
+        foreach (var job in EventSystem.GetAllAvailableJobs(jobPlayer))
         {
-            JobByNPCType.TryAdd(Job.ProviderNPC, Job);
+            if (job.Progress != JobProgress.Inactive)
+                continue;
+
+            if (!JobsByNPCType.TryGetValue(job.ProviderNPC, out var jobs))
+                JobsByNPCType[job.ProviderNPC] = jobs = [];
+
+            jobs.Add(job);
         }
     }
 
