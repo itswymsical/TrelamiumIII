@@ -123,8 +123,8 @@ internal sealed class JobRewardGrid : UIElement
 
         Texture2D texture = TextureAssets.Item[item.type].Value;
 
-        // Items vary wildly in texture size, so fit each one to the slot rather than trusting the
-        // grid's nominal scale — a tall sword would otherwise spill over its neighbours.
+        // Items vary wildly in texture size, so fit each one to the slot
+        // rather than trusting the grid's nominal scale
         float fit = Math.Min(
             1f,
             Math.Min(_layout.SlotSize / (float)texture.Width, _layout.SlotSize / (float)texture.Height));

@@ -30,8 +30,6 @@ public static class AdvancedAlchemyStationRenderer
     // Bottom-centre of the 96x96 chamber (ChamberOffset + ~half width, near the base).
     private static readonly Vector2 ChamberPivot = new(172, 92);
 
-    // Liquid inside the chamber window — grayscale overlay, drawn BEHIND the chamber so the glass overlays it.
-    // Future: replace with a LiquidRenderer-backed RenderTarget composite for proper fluid visuals.
     private static readonly Vector2 ChamberLiquidOffset = new(132, 34);
 
     // Center of the held item inside a component cylinder (relative to component top-left).

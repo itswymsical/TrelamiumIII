@@ -6,8 +6,7 @@ using TrelamiumIII.Core.Jobs;
 namespace TrelamiumIII.Core.UI.Jobs.Board;
 
 /// <summary>
-///     One job in the board's master list. Selecting a row only changes what the detail pane shows —
-///     taking the job is a separate, deliberate step.
+///     One job in the board's master list. Selecting a row only changes what the detail pane shows. Taking the job is a separate step.
 /// </summary>
 internal sealed class JobListRow : UIElement
 {

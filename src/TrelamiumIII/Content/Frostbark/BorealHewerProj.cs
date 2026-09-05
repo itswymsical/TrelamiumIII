@@ -322,8 +322,6 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
             f => f * 60f,
             f => new Color(120, 200, 255) * 0.6f * MathF.Pow(f, 2f));
 
-        // Trail follows the point just behind the projectile, not center —
-        // preserves the original ManageCaches behavior
         _trailCache.Update(Projectile.Center - Projectile.velocity.SafeNormalize(Vector2.Zero));
         _trailCache.Fill(_trailPositions);
         _trail.Positions = _trailPositions;

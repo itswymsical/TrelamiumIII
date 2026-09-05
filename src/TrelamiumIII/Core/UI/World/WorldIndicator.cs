@@ -21,9 +21,8 @@ public enum AnimationType
 }
 
 /// <summary>
-///     A small icon that floats at a world position — usually over an entity's head — and reacts to
-///     the cursor. The clickable marker half of a world UI; anything it opens is a
-///     <see cref="WorldPanel" />.
+///     A small icon that floats at a world position and reacts to
+///     the cursor. See <see cref="WorldPanel" />.
 /// </summary>
 /// <remarks>
 ///     Unlike the panel, the icon scales with the camera so it sits in the scene rather than on top
@@ -305,7 +304,7 @@ public class WorldIndicator : IWorldUI
     /// </summary>
     protected float IconScale => GetAnimationScale() * WorldUI.ZoomScale / Main.UIScale;
 
-    /// <summary>The icon's box in UI space — the same space the cursor is tested in.</summary>
+    /// <summary>The icon's box in UI space.</summary>
     protected Rectangle Bounds()
     {
         Vector2 center = WorldUI.ToUI(WorldAnchor + Offset);

@@ -237,7 +237,7 @@ internal sealed class JobBoardPanel : WorldPanel
     public override void Update(GameTime gameTime)
     {
         // Nobody left to offer the work: the board has outlived its reason to be open. Note this
-        // falls through to base.Update rather than returning — the close fade is driven from there,
+        // falls through to base.Update rather than returning.the close fade is driven from there,
         // so bailing out early would leave the panel frozen on screen instead of dismissing it.
         if (_npc is not { active: true })
             RequestClose();

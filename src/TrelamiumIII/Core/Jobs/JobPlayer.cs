@@ -77,8 +77,7 @@ public partial class JobPlayer : ModPlayer
     /// </summary>
     /// <param name="JobId">The Job to start.</param>
     /// <param name="provider">
-    /// The NPC the player actually took it from, when that is known — the job board passes the one
-    /// that was clicked. Left null (commands, scripted grants) the provider is searched for by type.
+    /// da NPC instance that provided the Job, if known. If not provided, the world is searched for one of the right type.
     /// </param>
     public void StartJob(int JobId, NPC? provider = null)
     {
@@ -103,12 +102,6 @@ public partial class JobPlayer : ModPlayer
     /// <summary>
     /// Lets the providing NPC know one of its Jobs was taken.
     /// </summary>
-    /// <remarks>
-    /// <see cref="Job.ProviderNPC"/> holds an NPC <em>type</em> (see the NPCID passed by each Job
-    /// definition), so it cannot be used to index <see cref="Main.npc"/> — doing so reaches whichever
-    /// NPC happens to occupy that slot. When the caller knows the instance it hands it over; otherwise
-    /// the world is searched for one of the right type.
-    /// </remarks>
     private static void NotifyProvider(Job job, NPC? provider)
     {
         provider ??= FindProviderByType(job.ProviderNPC);

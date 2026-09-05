@@ -20,7 +20,6 @@ internal sealed class WorldUIButton : UIElement
     public Func<bool>? IsEnabled;
     public Func<float>? Opacity;
 
-    /// <summary>Tints the button for weight — an accept reads differently to a cancel.</summary>
     public Color Accent { get; set; } = new(120, 160, 255);
 
     public WorldUIButton(string label, float width, float height, float scale = 0.9f)

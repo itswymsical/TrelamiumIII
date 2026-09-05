@@ -77,7 +77,6 @@ public abstract class WorldPanel : UIState, IWorldUI
         OnCloseRequested();
     }
 
-    /// <summary>Hook for reacting to a close before the fade starts — a sound, say.</summary>
     protected virtual void OnCloseRequested() { }
 
     /// <summary>
@@ -168,11 +167,6 @@ public abstract class WorldPanel : UIState, IWorldUI
     /// <summary>Hook for re-reading <see cref="WorldAnchor" /> from a moving target each tick.</summary>
     protected virtual void TrackAnchor() { }
 
-    /// <summary>
-    ///     Stops a click on the panel also reaching the world behind it — swinging a pickaxe at the
-    ///     ground while picking a job. Claimed here during the update rather than only while drawing,
-    ///     so it does not depend on the panel's draw having run first.
-    /// </summary>
     private void BlockCursor()
     {
         if (_body != null && _body.GetDimensions().ToRectangle().Contains(WorldUI.MouseUI.ToPoint()))

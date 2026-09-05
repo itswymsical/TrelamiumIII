@@ -11,10 +11,6 @@ namespace TrelamiumIII.Core.UI.Jobs.Board;
 ///     The marker over an NPC with work going: bobs above their head, and opens their
 ///     <see cref="JobBoardPanel" /> when clicked.
 /// </summary>
-/// <remarks>
-///     The click only opens the board — it no longer starts anything. Accepting happens behind a
-///     confirmation inside the panel, so walking past a townsfolk cannot commit the player to a job.
-/// </remarks>
 internal sealed class JobIndicator : WorldIndicator
 {
     /// <summary>How far above the NPC's head the icon floats, in world pixels.</summary>

@@ -34,9 +34,7 @@ public static class WorldUI
 
     /// <summary>
     ///     World pixel to UI-space coordinate. <see cref="WorldUISystem" /> registers its layer as
-    ///     <see cref="Terraria.UI.InterfaceScaleType.UI" />, so the UI scale matrix is already
-    ///     applied at draw time and positions must be handed over divided by it — otherwise
-    ///     everything drifts off its anchor at any UI scale but 1.0.
+    ///     <see cref="Terraria.UI.InterfaceScaleType.UI" />.
     /// </summary>
     public static Vector2 ToUI(Vector2 world) => ToScreen(world) / Main.UIScale;
 

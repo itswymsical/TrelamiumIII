@@ -102,14 +102,14 @@ public abstract class Job
 
     /// <summary>
     /// Called for every event this Job sees while it is ongoing, matching or not, before the current set's
-    /// tasks get a look at it. Override for reactions that aren't progress — commentary, hints, bookkeeping.
+    /// tasks get a look at it. Override for reactions that aren't progress (commentary, hints, bookkeeping)
     /// </summary>
     /// <param name="evt">The event that occurred</param>
     public virtual void OnEvent(GameEvent evt) { }
 
     /// <summary>
     /// Called when the last task of a set is finished and the Job moves on to the next one.
-    /// Override to mark the transition — a line from the provider, a cutscene, unlocking something.
+    /// Override to mark the transition.
     /// </summary>
     /// <param name="previousSet">The set that was just completed</param>
     /// <param name="newSet">The set now underway</param>

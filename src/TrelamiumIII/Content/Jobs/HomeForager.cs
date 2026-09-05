@@ -57,11 +57,6 @@ public sealed class HomeForager : Job
         lastCommentTick = 0;
     }
 
-    /// <summary>
-    /// The Guide's running commentary on housing. Only manual checks are worth answering — vanilla runs its own
-    /// room checks constantly (NPCs re-checking their home, the nightly spawn pass) and none of those are the
-    /// player asking a question.
-    /// </summary>
     public override void OnEvent(GameEvent evt)
     {
         if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck)

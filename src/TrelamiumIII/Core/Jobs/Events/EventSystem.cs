@@ -7,7 +7,9 @@ using TrelamiumIII.Core.Jobs;
 namespace TrelamiumIII.Core.Jobs.Events;
 
 /// <summary>
-/// Large system responsible for managing Jobs and challenges via events. Auto-registers all Jobs and challenges in the assembly. Broadcasts events for Job/challenge tracking. Also handles some custom events that aren't easily tracked via vanilla hooks (e.g. tile interactions, biome entry).
+/// Large system responsible for managing Jobs and challenges via events. 
+/// Broadcasts events for Job/challenge tracking. 
+/// Also handles some custom events that aren't easily tracked via vanilla hooks (e.g. tile interactions, biome entry).
 /// </summary>
 public class EventSystem : ModSystem
 {
@@ -21,9 +23,7 @@ public class EventSystem : ModSystem
     private static readonly HashSet<Point> RoomTiles = [];
 
     /// <summary>
-    /// True while a player-initiated housing check is running. <see cref="WorldGen.MoveTownNPC"/> is the
-    /// housing UI's entry point — both the query button and dragging an NPC onto a room — and it is the only
-    /// caller that reports back to the player, so everything underneath it came from the player asking.
+    /// True while a player-initiated housing check is running.
     /// </summary>
     private static bool isManualHousingCheck;
     private const int CooldownTicks = 60;
@@ -125,9 +125,7 @@ public class EventSystem : ModSystem
     }
 
     /// <summary>
-    /// Marks everything underneath as player-initiated. <see cref="WorldGen.MoveTownNPC"/> is what the housing
-    /// UI calls — it is the code that prints "this housing is missing a chair" and friends — so a room check
-    /// running inside it is one the player asked for, not one of vanilla's background scans.
+    /// Marks everything underneath as player-initiated. <see cref="WorldGen.MoveTownNPC"/> is what the housing UI calls
     /// </summary>
     private bool HookMoveTownNPC(On_WorldGen.orig_MoveTownNPC orig, int x, int y, int n)
     {
@@ -181,9 +179,7 @@ public class EventSystem : ModSystem
     }
 
     /// <summary>
-    /// Reads the room vanilla just flood-filled into <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>:
-    /// a stable identity for it (the lexicographic-minimum tile in the set, so any tile inside the same room
-    /// resolves to the same id) and whether a town NPC already lives in it.
+    /// Reads the room vanilla just flood-filled into <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>
     /// </summary>
     private static bool TryScanRoom(out Point roomId, out bool isOccupied)
     {
@@ -220,12 +216,6 @@ public class EventSystem : ModSystem
 
     /// <summary>
     /// True when any town NPC (town pets included) has its home tile inside <see cref="RoomTiles"/>.
-    /// <para/>
-    /// <see cref="WorldGen.roomOccupied"/> cannot answer this on its own: it is a <i>compatibility</i> flag,
-    /// not an occupancy one. Vanilla only raises it when the resident refuses to share the room with the NPC
-    /// type asking for it (<c>ScoreRoom_IsThisRoomOccupiedBySomeone</c> → <c>TownManager.CanNPCsLiveWithEachOther</c>),
-    /// so a probe that asks with type -1 — which is what a housing check with no NPC attached does — reads a
-    /// house with a single resident as unoccupied.
     /// </summary>
     private static bool RoomHasResident()
     {
