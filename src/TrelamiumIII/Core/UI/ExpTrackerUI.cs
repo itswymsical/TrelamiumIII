@@ -3,6 +3,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
 using Terraria.UI.Chat;
+using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.ExperientialSystem.Acts;
 using TrelamiumIII.Utilities;
 
@@ -33,9 +34,6 @@ public sealed class ExpMilestoneUI
 
     /// <summary>Frames the completion flourish runs for: the scale settle, the flash, and the bar slamming full.</summary>
     private const float PUNCH_FRAMES = 26f;
-
-    /// <summary>How much larger the panel starts before easing back to its resting size.</summary>
-    private const float PUNCH_SCALE = 1.14f;
 
     /// <summary>The default fill <see cref="DrawUtils.DrawPanel"/> uses, so an unflashed panel matches every other panel.</summary>
     private static readonly Color PanelBase = new Color(63, 65, 151, 255) * 0.785f;
@@ -96,26 +94,17 @@ public sealed class ExpMilestoneUI
     /// <summary>0 at the moment of completion, 1 once the flourish has finished.</summary>
     private float Punch => Math.Clamp(punchTimer / PUNCH_FRAMES, 0f, 1f);
 
-    /// <summary>Overshoots slightly past its target and settles back, so the panel lands rather than snaps.</summary>
-    private static float EaseOutBack(float t)
-    {
-        const float c1 = 1.70158f;
-        const float c3 = c1 + 1f;
-
-        float u = t - 1f;
-        return 1f + c3 * u * u * u + c1 * u * u;
-    }
-
     private static float EaseOutCubic(float t)
     {
         float u = 1f - t;
         return 1f - u * u * u;
     }
 
-    private float PanelScale => isComplete ? MathHelper.Lerp(PUNCH_SCALE, 1f, EaseOutBack(Punch)) : 1f;
-
-    /// <summary>White wash over the panel at the instant of completion, decaying fast.</summary>
-    private float FlashAlpha
+    /// <summary>
+    /// 1 at the instant of completion, decaying to 0 over the flourish. Drives the content scale, the text
+    /// glow and the bar bloom from one number, so the whole panel pulses together.
+    /// </summary>
+    private float ContentPulse
     {
         get
         {
@@ -123,7 +112,7 @@ public sealed class ExpMilestoneUI
                 return 0f;
 
             float remaining = 1f - Punch;
-            return remaining * remaining * 0.55f;
+            return remaining * remaining;
         }
     }
 
@@ -162,62 +151,61 @@ public sealed class ExpMilestoneUI
 
         var font = FontAssets.MouseText.Value;
 
-        // Under the map.
-        int panelX = Main.screenWidth - PANEL_WIDTH - 44;
-        int panelY = 348;
+        // Under the map. The panel itself never moves or resizes - only its contents pulse. Growing the
+        // frame made the whole corner of the screen lurch, which is the opposite of drawing the eye to
+        // the thing that actually changed.
+        Rectangle panelRect = new(Main.screenWidth - PANEL_WIDTH - 44, 348, PANEL_WIDTH, PANEL_HEIGHT);
 
-        // The flourish grows the panel about its own centre so it does not drift as it settles.
-        float scale = PanelScale;
-        int grownW = (int)(PANEL_WIDTH * scale);
-        int grownH = (int)(PANEL_HEIGHT * scale);
+        DrawUtils.DrawPanel(spriteBatch, panelRect, PanelBase, opacity: alpha);
 
-        Rectangle panelRect = new(
-            panelX - (grownW - PANEL_WIDTH) / 2,
-            panelY - (grownH - PANEL_HEIGHT) / 2,
-            grownW, grownH);
-
-        // Tint the panel rather than overlaying a rectangle on it: the panel texture has worked corners,
-        // and a square white wash over the top of them reads as a rendering fault rather than a flash.
-        Color panelColor = FlashAlpha > 0f
-            ? Color.Lerp(PanelBase, CompleteGreen, FlashAlpha)
-            : PanelBase;
-
-        DrawUtils.DrawPanel(spriteBatch, panelRect, panelColor, opacity: alpha);
+        float pulse = ContentPulse;
+        float contentScale = 1f + 0.16f * pulse;
 
         float innerX = panelRect.X + panelRect.Width / 12f;
-        Color nameColor = (isComplete ? CompleteGreen : Color.Gold) * alpha;
 
-        Vector2 namePos = new(innerX, panelRect.Y + panelRect.Height / 5.5f);
+        // Text is centred on its slot so a pulsing line grows about itself instead of sliding right.
+        float centreX = innerX + PROGRESS_BAR_WIDTH / 2f;
+
         string nameText = $"{act.Name} | {act.Category.DisplayName()}";
 
-        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, font, nameText, namePos,
-            nameColor, Color.Black * alpha, 0f, Vector2.Zero, new Vector2(0.7f * scale));
+        GlowText.Draw(spriteBatch, font, nameText,
+            new Vector2(centreX, panelRect.Y + panelRect.Height / 4.2f),
+            isComplete ? CompleteGreen : Color.Gold, Color.White,
+            0.7f * contentScale, alpha, pulse);
 
         // Milestones restate what the act is; a completion says which rung just paid.
         string subText = isComplete
             ? TrelamiumIII.Instance.GetLocalizationValue("ActLang.UI.TierComplete", tierIndex + 1)
             : act.Description;
 
-        Vector2 subPos = new(innerX, panelRect.Y + panelRect.Height / 2.5f);
+        GlowText.Draw(spriteBatch, font, subText,
+            new Vector2(centreX, panelRect.Y + panelRect.Height / 2.3f),
+            isComplete ? CompleteGreen : Color.White, Color.White,
+            0.65f * contentScale, alpha, pulse);
 
-        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, font, subText, subPos,
-            (isComplete ? CompleteGreen : Color.White) * alpha, Color.Black * alpha, 0f, Vector2.Zero,
-            new Vector2(0.65f * scale));
-
-        Vector2 barPos = new(innerX, panelRect.Y + panelRect.Height / 1.6f);
-        DrawProgressBar(spriteBatch, barPos, scale);
+        DrawProgressBar(spriteBatch, new Vector2(innerX, panelRect.Y + panelRect.Height / 1.6f), pulse);
     }
 
-    private void DrawProgressBar(SpriteBatch spriteBatch, Vector2 position, float scale)
+    private void DrawProgressBar(SpriteBatch spriteBatch, Vector2 position, float pulse)
     {
-        int barWidth = (int)(PROGRESS_BAR_WIDTH * scale);
-        int barHeight = (int)(PROGRESS_BAR_HEIGHT * scale);
+        // The bar grows in height only. Widening it would move the fill edge, which is the one part of
+        // this panel that is meant to read as a measurement.
+        int barHeight = (int)(PROGRESS_BAR_HEIGHT * (1f + 0.7f * pulse));
+        int lift = (barHeight - PROGRESS_BAR_HEIGHT) / 2;
 
-        Rectangle barBg = new((int)position.X, (int)position.Y, barWidth, barHeight);
-        Rectangle barFill = new((int)position.X, (int)position.Y, (int)(barWidth * BarPercent), barHeight);
+        Rectangle barBg = new((int)position.X, (int)position.Y - lift, PROGRESS_BAR_WIDTH, barHeight);
+        Rectangle barFill = barBg with { Width = (int)(PROGRESS_BAR_WIDTH * BarPercent) };
 
         spriteBatch.Draw(TextureAssets.MagicPixel.Value, barBg, new Color(40, 40, 40) * alpha);
         spriteBatch.Draw(TextureAssets.MagicPixel.Value, barFill, FillColor * alpha);
+
+        // Additive wash over the fill, so a completing bar blooms rather than just turning green.
+        if (pulse > 0f)
+        {
+            GlowText.Restart(spriteBatch, BlendState.Additive);
+            spriteBatch.Draw(TextureAssets.MagicPixel.Value, barFill, CompleteBar * (0.75f * pulse * alpha));
+            GlowText.Restart(spriteBatch, BlendState.AlphaBlend);
+        }
 
         DrawBorder(spriteBatch, barBg, new Color(80, 80, 80) * alpha, 1);
 
@@ -226,12 +214,9 @@ public sealed class ExpMilestoneUI
             ? TrelamiumIII.Instance.GetLocalizationValue("ActLang.UI.ExpGained", exp)
             : $"{currentProgress} / {targetThreshold}";
 
-        var font = FontAssets.MouseText.Value;
-        Vector2 textSize = font.MeasureString(barText) * 0.6f;
-        Vector2 textPos = position + new Vector2((barWidth - textSize.X) / 2f, (barHeight - textSize.Y) / 2f + 2f);
-
-        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, font, barText, textPos,
-            Color.White * alpha, Color.Black * alpha, 0f, Vector2.Zero, new Vector2(0.65f));
+        GlowText.Draw(spriteBatch, FontAssets.MouseText.Value, barText,
+            new Vector2(barBg.Center.X, barBg.Center.Y + 1f),
+            Color.White, CompleteGreen, 0.65f, alpha, pulse);
     }
 
     /// <summary>Green once the tier is in hand, otherwise brightening as the bar approaches the next rung.</summary>
@@ -293,6 +278,13 @@ public sealed class ActTrackerManager : ModSystem
 
         current = tracker;
     }
+
+    /// <summary>
+    /// Whether the tracker is wanted at all. Checked before a popup is built rather than before it is
+    /// drawn, so a disabled tracker costs nothing per event instead of costing a constructed object and a
+    /// sound cue that nobody sees.
+    /// </summary>
+    public static bool Wanted => ExperientialConfig.MilestoneTracker;
 
     public void Clear() => current = null;
 

@@ -1,5 +1,4 @@
 using Terraria.ModLoader.IO;
-using Terraria.UI;
 using TrelamiumIII.Core.UI;
 
 namespace TrelamiumIII.Core.ExperientialSystem;
@@ -81,7 +80,28 @@ public sealed class ExperientialPlayer : ModPlayer
             return 0;
 
         Allowance.Record(source, granted);
+
+        return Bank(granted);
+    }
+
+    /// <summary>
+    /// Adds Exp with no source metering at all. Debug only - the allowance is what stops a single source
+    /// carrying a Threshold, so every content path must go through <see cref="Grant"/>.
+    /// </summary>
+    internal int GrantUnmetered(int amount) => amount > 0 ? Bank(amount) : 0;
+
+    /// <summary>
+    /// Puts Exp in the meter, announces it, and ascends as far as the new total reaches. The one place
+    /// the meter actually moves, so nothing can add Exp without the popup and the Threshold check.
+    /// </summary>
+    private int Bank(int granted)
+    {
         Exp += granted;
+
+        // Every route into the meter reports here, so no caller has to remember to announce itself and
+        // no two of them can announce the same Exp differently.
+        if (Player.whoAmI == Main.myPlayer)
+            ExpPopupSystem.Show(granted);
 
         while (!AtMaxThreshold && Exp >= Capacity)
             Ascend();
@@ -107,8 +127,8 @@ public sealed class ExperientialPlayer : ModPlayer
 
         OnThresholdGained?.Invoke(Threshold);
 
-        if (Player.whoAmI == Main.myPlayer)
-            InGameNotificationsTracker.AddNotification(new LevelUpNotification(this));
+        // No panel and no banner. Crossing a Threshold is meant to be felt and then asked about, not read.
+        ThresholdAscendEffect.PlayThreshold(Player);
     }
 
     #endregion

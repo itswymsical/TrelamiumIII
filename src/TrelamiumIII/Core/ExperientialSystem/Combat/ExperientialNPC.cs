@@ -159,13 +159,11 @@ public sealed class ExperientialNPC : GlobalNPC
             multiplier = ledger.RewardMultiplier(source.Id);
         }
 
-        int granted = experiential.GrantFraction(fraction * multiplier, source);
+        // GrantFraction reports the Exp itself, so there is nothing to announce here.
+        experiential.GrantFraction(fraction * multiplier, source);
 
         // The kill happened whether or not it paid, so it counts against familiarity either way.
         ledger?.RegisterKill(source.Id);
-
-        if (granted > 0 && player.whoAmI == Main.myPlayer)
-            ShowPopup(player, granted);
     }
 
     #endregion
@@ -180,17 +178,6 @@ public sealed class ExperientialNPC : GlobalNPC
 
     public static MenaceTier TierFor(NPC npc, Player player) => StatBoard.TierOf(MenaceFor(npc, player));
 
-    private static void ShowPopup(Player player, int exp)
-    {
-        AdvancedPopupRequest popup = new()
-        {
-            Color = new Color(180, 180, 180),
-            Text = $"+{exp} Exp",
-            DurationInFrames = 60
-        };
-
-        PopupText.NewText(popup, player.position);
-    }
 
     #endregion
 

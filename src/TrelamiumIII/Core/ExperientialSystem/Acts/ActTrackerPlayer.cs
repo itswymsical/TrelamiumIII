@@ -178,6 +178,15 @@ public sealed class ActTrackerPlayer : ModPlayer
             record.TiersPaid++;
         }
 
+        // A smaller cousin of the Threshold burst. Fired before the tracker check below, so switching the
+        // panel off leaves the moment intact rather than silently removing it too - the burst is the
+        // feedback that survives when the reading material is turned off.
+        if (granted > 0)
+            ThresholdAscendEffect.PlayActTier(Player);
+
+        if (!ActTrackerManager.Wanted)
+            return;
+
         int lastTier = reached - 1;
 
         ActTrackerManager.Instance?.Show(
@@ -213,6 +222,9 @@ public sealed class ActTrackerPlayer : ModPlayer
 
         float previous = act.BandProgress(nextTier, before);
         float current = act.BandProgress(nextTier, record.Count);
+
+        if (!ActTrackerManager.Wanted)
+            return;
 
         foreach (float milestone in Milestones)
         {
