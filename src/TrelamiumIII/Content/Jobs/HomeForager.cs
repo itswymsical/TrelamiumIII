@@ -19,11 +19,7 @@ public sealed class HomeForager : Job
             [("HomeForager.Tasks.Set2.obj0", 1)], // create housing(s)
             [("HomeForager.Tasks.Set3.obj0", 1)], // create housing(s)
             [("HomeForager.Tasks.Set4.obj0", 1)], // check in
-        ], // the reason I did 3 separate sets for the housing tasks is to avoid any valid housing checks
-           // going off with manually checking valid housing, while an NPC is trying to move in.
-           // When a housing is occupied the housing becomes invalid for our housing checks,
-           // so there's still a slight chance a clever player can exploit this, however, i want the exploit to be less obvious.
-           // This is a known edge case i havent fixed yet so bare with my patchwork.
+        ],
         rewards: 
         [
             new JobReward(ItemID.SilverCoin, 75),

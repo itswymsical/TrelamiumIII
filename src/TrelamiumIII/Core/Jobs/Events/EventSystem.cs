@@ -15,6 +15,9 @@ public class EventSystem : ModSystem
 
     /// <summary>debounce keyed by canonical room id</summary>
     private static readonly Dictionary<Point, int> HousingCooldowns = [];
+
+    /// <summary>Scratch set of the tiles in the room vanilla last flood-filled. Rebuilt per room check.</summary>
+    private static readonly HashSet<Point> RoomTiles = [];
     private const int CooldownTicks = 60;
     private const int CooldownPruneInterval = 3600;
     private static int _lastCooldownPrune;
@@ -34,6 +37,7 @@ public class EventSystem : ModSystem
         JobTypes.Clear();
         On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
         HousingCooldowns.Clear();
+        RoomTiles.Clear();
         On_Projectile.ExplodeTiles -= HookExplodeTiles;
     }
 
@@ -44,33 +48,42 @@ public class EventSystem : ModSystem
 
     private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
     {
-        // vanilla boundary logic
+        // vanilla boundary logic. Flood-fills the room containing (x, y) into WorldGen.roomX/roomY.
         bool isValid = orig(x, y);
+
+        // Resolve the room's canonical identity and its residents from the tiles vanilla just filled in.
+        // StartRoomCheck is called with whichever tile the check was started from, so keying anything
+        // off (x, y) treats every tile of the same house as a distinct house. Falls back to the probe
+        // point only when the room can't be resolved.
+        Point roomId = TryScanRoom(out Point resolved, out bool isOccupied) ? resolved : new Point(x, y);
 
         // furniture and Biome checks
         if (isValid)
         {
+            // RoomNeeds/ScoreRoom write WorldGen's shared housing scratch state, which vanilla callers
+            // (QuickFindHome, SpawnTownNPC, MoveTownNPC) read back after StartRoomCheck returns.
+            // Snapshot it so this probe stays invisible to them.
+            HousingScratch scratch = HousingScratch.Capture();
+
             isValid = WorldGen.RoomNeeds(0);
 
             if (isValid)
             {
                 WorldGen.ScoreRoom(-1, -1);
 
-                // ScoreRoom sets hiScore to -1 and pauses if someone lives there.
-                // The room is valid if it passes the score check OR is currently occupied.
+                // ScoreRoom sets hiScore to -1 and bails out when a resident refuses to share with the
+                // NPC type asking. The room is valid if it passes the score check OR bailed for that reason.
                 isValid = WorldGen.hiScore > 0 || WorldGen.roomOccupied;
+                isOccupied |= WorldGen.roomOccupied;
             }
+
+            scratch.Restore();
         }
 
         if (Main.LocalPlayer == null || !Main.LocalPlayer.active)
             return isValid;
 
         int currentTick = (int)Main.GameUpdateCount;
-
-        // Resolve the room's canonical identity. StartRoomCheck is called with whichever tile the
-        // check was started from, so keying anything off (x, y) treats every tile of the same house
-        // as a distinct house. Falls back to the probe point only when the room can't be resolved.
-        Point roomId = TryGetRoomId(out Point resolved) ? resolved : new Point(x, y);
 
         PruneHousingCooldowns(currentTick);
 
@@ -81,9 +94,6 @@ public class EventSystem : ModSystem
         }
         HousingCooldowns[roomId] = currentTick;
 
-        // occupancy Check
-        bool isOccupied = WorldGen.roomOccupied;
-
         var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer, roomId);
         BroadcastEvent(evt);
 
@@ -91,17 +101,20 @@ public class EventSystem : ModSystem
     }
 
     /// <summary>
-    /// Derives a stable identity for the room vanilla just flood-filled into
-    /// <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>, using the lexicographic-minimum
-    /// tile in the set. Any tile inside the same room resolves to the same id.
+    /// Reads the room vanilla just flood-filled into <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>:
+    /// a stable identity for it (the lexicographic-minimum tile in the set, so any tile inside the same room
+    /// resolves to the same id) and whether a town NPC already lives in it.
     /// </summary>
-    private static bool TryGetRoomId(out Point roomId)
+    private static bool TryScanRoom(out Point roomId, out bool isOccupied)
     {
         roomId = default;
+        isOccupied = false;
 
         int tileCount = Math.Min(WorldGen.numRoomTiles, WorldGen.roomX.Length);
         if (tileCount <= 0)
             return false;
+
+        RoomTiles.Clear();
 
         int minX = int.MaxValue;
         int minY = int.MaxValue;
@@ -111,6 +124,8 @@ public class EventSystem : ModSystem
             int tx = WorldGen.roomX[i];
             int ty = WorldGen.roomY[i];
 
+            RoomTiles.Add(new Point(tx, ty));
+
             if (tx < minX || (tx == minX && ty < minY))
             {
                 minX = tx;
@@ -119,7 +134,75 @@ public class EventSystem : ModSystem
         }
 
         roomId = new Point(minX, minY);
+        isOccupied = RoomHasResident();
         return true;
+    }
+
+    /// <summary>
+    /// True when any town NPC (town pets included) has its home tile inside <see cref="RoomTiles"/>.
+    /// <para/>
+    /// <see cref="WorldGen.roomOccupied"/> cannot answer this on its own: it is a <i>compatibility</i> flag,
+    /// not an occupancy one. Vanilla only raises it when the resident refuses to share the room with the NPC
+    /// type asking for it (<c>ScoreRoom_IsThisRoomOccupiedBySomeone</c> → <c>TownManager.CanNPCsLiveWithEachOther</c>),
+    /// so a probe that asks with type -1 — which is what a housing check with no NPC attached does — reads a
+    /// house with a single resident as unoccupied.
+    /// </summary>
+    private static bool RoomHasResident()
+    {
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            NPC npc = Main.npc[i];
+
+            if (!npc.active || !npc.townNPC || npc.homeless)
+                continue;
+
+            if (RoomTiles.Contains(new Point(npc.homeTileX, npc.homeTileY)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Snapshot of the WorldGen fields <see cref="WorldGen.RoomNeeds"/> and <see cref="WorldGen.ScoreRoom"/>
+    /// write to, so this system can run them as a read-only probe from inside a vanilla room check.
+    /// </summary>
+    private readonly struct HousingScratch
+    {
+        private readonly bool canSpawn, roomChair, roomDoor, roomTable, roomTorch, roomOccupied, roomEvil;
+        private readonly int hiScore, bestX, bestY, sharedRoomX;
+
+        public HousingScratch()
+        {
+            canSpawn = WorldGen.canSpawn;
+            roomChair = WorldGen.roomChair;
+            roomDoor = WorldGen.roomDoor;
+            roomTable = WorldGen.roomTable;
+            roomTorch = WorldGen.roomTorch;
+            roomOccupied = WorldGen.roomOccupied;
+            roomEvil = WorldGen.roomEvil;
+            hiScore = WorldGen.hiScore;
+            bestX = WorldGen.bestX;
+            bestY = WorldGen.bestY;
+            sharedRoomX = WorldGen.sharedRoomX;
+        }
+
+        public static HousingScratch Capture() => new();
+
+        public void Restore()
+        {
+            WorldGen.canSpawn = canSpawn;
+            WorldGen.roomChair = roomChair;
+            WorldGen.roomDoor = roomDoor;
+            WorldGen.roomTable = roomTable;
+            WorldGen.roomTorch = roomTorch;
+            WorldGen.roomOccupied = roomOccupied;
+            WorldGen.roomEvil = roomEvil;
+            WorldGen.hiScore = hiScore;
+            WorldGen.bestX = bestX;
+            WorldGen.bestY = bestY;
+            WorldGen.sharedRoomX = sharedRoomX;
+        }
     }
 
     /// <summary>Drops cooldown entries that can no longer suppress anything, so the dictionary doesn't grow with the world.</summary>
