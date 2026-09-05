@@ -742,6 +742,34 @@ Items: {
 	}
 
 	Configs: {
+		ExperientialConfig: {
+			DisplayName: Experiential System
+			Headers.Feedback: Feedback
+
+			ShowMilestoneTracker: {
+				Label: Act Tracker
+				Tooltip:
+					'''
+					Shows a panel naming each act and its progress as you work at it.
+					Off by default: the system is meant to be noticed and asked about, not read off a corner of the screen.
+					'''
+			}
+
+			ShowExpPopups: {
+				Label: Exp Popups
+				Tooltip: Floating text when Exp is earned.
+			}
+
+			ShowThresholdEffect: {
+				Label: Exp Bursts
+				Tooltip:
+					'''
+					The light that gathers back into you when Exp is earned.
+					Large when a Threshold is crossed, smaller when an act tier pays out.
+					'''
+			}
+		}
+
 		VFXConfig: {
 			DisplayName: VFX Settings
 

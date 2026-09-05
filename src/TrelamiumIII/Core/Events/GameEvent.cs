@@ -1,6 +1,6 @@
 ﻿using Terraria.DataStructures;
 
-namespace TrelamiumIII.Core.Jobs.Events;
+namespace TrelamiumIII.Core.Events;
 
 /// <summary>
 /// Struct representing an in-game event that can be used for Job/challenge tracking. Contains relevant information about the event such as type, player involved, and specific details depending on the event type (e.g. tile type for tile events, NPC type for NPC events, etc.). This allows for a flexible and extensible way to track a wide variety of events without needing separate hooks for each one.

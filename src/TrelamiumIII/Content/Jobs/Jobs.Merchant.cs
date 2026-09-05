@@ -1,7 +1,7 @@
 ﻿using Terraria.DataStructures;
 using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Jobs;

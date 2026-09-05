@@ -5,7 +5,7 @@ using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.UI.Jobs.Board;
 using TrelamiumIII.Core.UI.World;
 
-namespace TrelamiumIII.Core.Jobs.Events;
+namespace TrelamiumIII.Core.Events;
 
 /// <summary>
 /// Handles item-based events. Such as item creation, pickup, update (in inventory or equipped), consumption, and use. Broadcasts these events for Job/challenge tracking. Also handles some custom logic for item progress updates and Job indicators on NPCs that provide Jobs.

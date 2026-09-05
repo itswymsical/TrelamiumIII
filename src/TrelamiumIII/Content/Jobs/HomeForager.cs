@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
 
 namespace TrelamiumIII.Content.Jobs;
 

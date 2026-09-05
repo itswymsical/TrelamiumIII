@@ -270,4 +270,24 @@ Configs: {
 			Tooltip: ""
 		}
 	}
+
+	ExperientialConfig: {
+		DisplayName: Experiential Config
+		Headers.Feedback: Feedback Header
+
+		ShowMilestoneTracker: {
+			Label: Show Milestone Tracker
+			Tooltip: ""
+		}
+
+		ShowExpPopups: {
+			Label: Show Exp Popups
+			Tooltip: ""
+		}
+
+		ShowThresholdEffect: {
+			Label: Show Threshold Effect
+			Tooltip: ""
+		}
+	}
 }
