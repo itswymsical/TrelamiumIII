@@ -1,5 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 
@@ -25,6 +27,9 @@ public class BloodLayer : ChemicalGasLayer
     public override float AfflictionRate => 30f;
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
+
+    /// <summary>Blood pools where it lands.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
 
     private Asset<Texture2D> noiseTex;
 

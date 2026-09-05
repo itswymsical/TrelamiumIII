@@ -78,6 +78,79 @@ public static class LiquidUtils
     /// <param name="tileY">The Y-coordinate of the tile where the liquid will be converted.</param>
     /// <param name="tile">The tile object representing the target tile to receive the converted liquid.</param>
     /// <param name="amountLeft">How much water to leave left.</param>
+    /// <summary>
+    /// Boils a tile's liquid away a little at a time, leaving <paramref name="tileType"/> behind
+    /// once it is spent.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The field-driven replacement for <see cref="ConvertLiquidIntoTile"/>. That one is called
+    /// per node per frame and drains <c>radius * 10</c> at a go, so one node clipping a full tile
+    /// empties it in two frames -- water flashes to obsidian the instant anything touches it, with
+    /// no sense of the pool fighting back. This drains a fixed amount per call and only converts on
+    /// the tick the liquid actually runs out, so a deep pool visibly boils down.
+    /// </para>
+    /// <para>
+    /// World mutation, so it is gated to the server and to singleplayer. The old path ran on every
+    /// client independently and each one converted its own copy of the tile, which is a desync the
+    /// moment two clients' simulations diverge by a frame.
+    /// </para>
+    /// </remarks>
+    /// <param name="drain">Liquid units removed by this call, out of 255.</param>
+    /// <param name="amountLeft">Liquid left in the tile once it converts.</param>
+    /// <returns>Whether this call was the one that converted the tile.</returns>
+    public static bool BoilLiquidIntoTile(int tileX, int tileY, ushort tileType, int liquidType, int drain, byte amountLeft = 0)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient || !WorldGen.InWorld(tileX, tileY, 1))
+            return false;
+
+        Tile tile = Framing.GetTileSafely(tileX, tileY);
+
+        if (tile.LiquidAmount == 0 || tile.LiquidType != liquidType || tile.LiquidAmount <= amountLeft)
+            return false;
+
+        int remaining = tile.LiquidAmount - Math.Max(drain, 1);
+
+        // Still boiling. Nothing is placed until the pool is actually gone, so a tile part way
+        // through the process is a shallower pool rather than a half-formed block.
+        if (remaining > amountLeft)
+        {
+            tile.LiquidAmount = (byte)remaining;
+
+            if (Main.netMode == NetmodeID.Server)
+                NetMessage.sendWater(tileX, tileY);
+
+            return false;
+        }
+
+        tile.LiquidAmount = amountLeft;
+
+        if (!tile.HasTile)
+        {
+            tile.HasTile = true;
+            tile.TileType = tileType;
+            WorldGen.SquareTileFrame(tileX, tileY);
+        }
+
+        if (Main.netMode == NetmodeID.Server)
+        {
+            NetMessage.SendTileSquare(-1, tileX, tileY);
+            NetMessage.sendWater(tileX, tileY);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Per-node, single-shot liquid conversion. Superseded by <see cref="BoilLiquidIntoTile"/>;
+    /// no longer called by anything.
+    /// </summary>
+    /// <remarks>
+    /// Kept only because it is public. Prefer the field-driven version for anything new: this one
+    /// drains <c>radius * 10</c> per call from a per-node hook that fires every frame, so a pool
+    /// converts on contact rather than boiling down, and it mutates the world on every client
+    /// independently with no sync.
+    /// </remarks>
     public static void ConvertLiquidIntoTile(ref GasNode node, int tileX, int tileY, Tile tile, ushort tileType, int liquidType, byte amountLeft = 0)
     {
         if (tile.LiquidType != liquidType)

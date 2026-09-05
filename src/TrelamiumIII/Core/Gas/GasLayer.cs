@@ -141,13 +141,137 @@ public abstract class GasLayer
     {
         for (int i = gasNodes.Count - 1; i >= 0; i--)
         {
-            var node = gasNodes[i];      
+            var node = gasNodes[i];
                 UpdateGasNode(ref node, i);
                 ApplyLighting(ref node);
                 gasNodes[i] = node;
 
                 if (node.Life <= 0f)
                     gasNodes.RemoveAt(i);
+        }
+
+        UpdateTileField();
+    }
+
+    /// <summary>
+    /// Set true on layers that change the world, to pay for the tile field. Off by default.
+    /// </summary>
+    protected virtual bool UsesTileField => false;
+
+    /// <summary>
+    /// Coverage a tile must accumulate before <see cref="OnTileField"/> and
+    /// <see cref="OnLiquidField"/> fire on it.
+    /// </summary>
+    /// <remarks>
+    /// In units of nodes: 1.0 is one node at full life sitting dead centre on the tile, and partial
+    /// overlaps add up toward it. So a value under 1 means a single passing wisp is enough, and a
+    /// value above it means the layer has to actually pool before the world notices.
+    /// </remarks>
+    protected virtual float TileFieldThreshold => 0.9f;
+
+    /// <summary>Ticks between field rebuilds.</summary>
+    /// <remarks>
+    /// The world does not need re-deciding at 60Hz, and the interval is also what turns a drain
+    /// into something the player can watch happen rather than a single frame of state change.
+    /// </remarks>
+    protected virtual int TileFieldInterval => 5;
+
+    /// <summary>Per-tile accumulated node coverage. Rebuilt from scratch each pass.</summary>
+    private readonly Dictionary<Point, float> tileField = [];
+
+    private int tileFieldTimer;
+
+    /// <summary>
+    /// A tile the layer has genuinely pooled on, with the coverage that got it over the threshold.
+    /// </summary>
+    /// <remarks>
+    /// This is the hook for anything that changes the world, and it is deliberately not
+    /// <see cref="OnTileContact"/>. Per-node contact answers "did this blob touch geometry", which
+    /// is the right question for the blob's own physics and the wrong one for the terrain: one node
+    /// clipping a corner at the tail of its life is invisible on screen and yet was enough to char
+    /// a tile, boil a pool dry, or convert the block underneath. Thresholding an accumulated field
+    /// asks the question the renderer asks -- is there visibly something here -- so what burns is
+    /// what the player can see burning.
+    /// </remarks>
+    protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density) { }
+
+    /// <inheritdoc cref="OnTileField"/>
+    protected virtual void OnLiquidField(int tileX, int tileY, Tile tile, float density) { }
+
+    private void UpdateTileField()
+    {
+        if (!UsesTileField || gasNodes.Count == 0)
+            return;
+
+        if (++tileFieldTimer < TileFieldInterval)
+            return;
+
+        tileFieldTimer = 0;
+
+        AccumulateTileField();
+
+        foreach (KeyValuePair<Point, float> pair in tileField)
+        {
+            if (pair.Value < TileFieldThreshold)
+                continue;
+
+            Tile tile = Framing.GetTileSafely(pair.Key.X, pair.Key.Y);
+
+            if (tile.LiquidAmount > 0)
+                OnLiquidField(pair.Key.X, pair.Key.Y, tile, pair.Value);
+
+            if (tile.HasTile && Main.tileSolid[tile.TileType])
+                OnTileField(pair.Key.X, pair.Key.Y, tile, pair.Value);
+        }
+    }
+
+    /// <summary>
+    /// Sums every node's coverage into the tiles it overlaps.
+    /// </summary>
+    /// <remarks>
+    /// The falloff is squared so a node contributes its full weight only at the tile it is centred
+    /// on and tails off quickly across its radius, which is roughly the shape of the radial gradient
+    /// the renderer stamps. It is an approximation of the field the shader thresholds rather than
+    /// the same number -- the shader samples an actual texture and squares the sum afterwards -- so
+    /// <see cref="TileFieldThreshold"/> is tuned against this, not copied from the shader.
+    /// </remarks>
+    private void AccumulateTileField()
+    {
+        tileField.Clear();
+
+        foreach (GasNode node in gasNodes)
+        {
+            float radius = node.Radius;
+
+            if (radius <= 0f || node.Life <= 0f)
+                continue;
+
+            float alpha = MathHelper.Clamp(node.Alpha, 0f, 1f);
+
+            int minX = (int)((node.Position.X - radius) / 16f);
+            int maxX = (int)((node.Position.X + radius) / 16f);
+            int minY = (int)((node.Position.Y - radius) / 16f);
+            int maxY = (int)((node.Position.Y + radius) / 16f);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    if (!WorldGen.InWorld(x, y, 1))
+                        continue;
+
+                    float distance = Vector2.Distance(node.Position, new Vector2(x * 16f + 8f, y * 16f + 8f));
+
+                    if (distance >= radius)
+                        continue;
+
+                    float falloff = 1f - distance / radius;
+                    var key = new Point(x, y);
+
+                    tileField.TryGetValue(key, out float sum);
+                    tileField[key] = sum + alpha * falloff * falloff;
+                }
+            }
         }
     }
     protected Vector3 SampleAverageLight(int samples = 32)
@@ -307,6 +431,29 @@ public abstract class GasLayer
             OnLiquidContact(ref node, tileX, tileY, tile);
     }
 
+    /// <summary>
+    /// Whether this layer's nodes may act on <paramref name="npc"/> at all.
+    /// </summary>
+    /// <remarks>
+    /// Checked in the sweep, before any hook runs, rather than at the top of
+    /// <see cref="OnNPCContact"/>. That placement is the whole point: a guard inside an overridable
+    /// hook only holds for as long as every override remembers that calling <c>base</c> is not the
+    /// same as returning when <c>base</c> returns early. Four layers did exactly that -- they
+    /// deferred to the chemical guard and then applied a debuff underneath it regardless -- and
+    /// town NPCs caught fire, poison and frostburn from weapons aimed past them. Filtering here
+    /// means no override can reach a target this says no to.
+    /// <para>
+    /// Matches the strictest check any layer was already making by hand: friendly covers town NPCs
+    /// and critters, immortal covers target dummies, and dontTakeDamage covers everything else that
+    /// is scenery wearing an NPC slot.
+    /// </para>
+    /// </remarks>
+    protected virtual bool CanAffect(NPC npc)
+        => !npc.friendly && !npc.dontTakeDamage && !npc.immortal;
+
+    /// <inheritdoc cref="CanAffect(NPC)"/>
+    protected virtual bool CanAffect(Player player) => true;
+
     private void CheckEntityContacts(ref GasNode node)
     {
         float radiusSq = node.Radius * node.Radius;
@@ -314,7 +461,7 @@ public abstract class GasLayer
         for (int i = 0; i < Main.maxNPCs; i++)
         {
             NPC npc = Main.npc[i];
-            if (!npc.active) continue;
+            if (!npc.active || !CanAffect(npc)) continue;
             if (Vector2.DistanceSquared(node.Position, npc.Center) < radiusSq)
                 OnNPCContact(ref node, npc);
         }
@@ -322,12 +469,16 @@ public abstract class GasLayer
         for (int i = 0; i < Main.maxPlayers; i++)
         {
             Player player = Main.player[i];
-            if (!player.active || player.dead) continue;
+            if (!player.active || player.dead || !CanAffect(player)) continue;
             if (Vector2.DistanceSquared(node.Position, player.Center) < radiusSq)
                 OnPlayerContact(ref node, player);
         }
     }
 
+    /// <summary>
+    /// Called for each entity a node overlaps. Targets have already passed
+    /// <see cref="CanAffect(NPC)"/>, so an override does not need to re-check for friendlies.
+    /// </summary>
     protected virtual void OnNPCContact(ref GasNode node, NPC npc) { }
 
     protected virtual void OnPlayerContact(ref GasNode node, Player player) { }

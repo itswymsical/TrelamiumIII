@@ -1,5 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Utilities;
 
@@ -81,12 +83,29 @@ public class IceMistLayer : ChemicalGasLayer
     protected override void OnPlayerContact(ref GasNode node, Player player) { }
     protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile) { }
 
-    protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
+    /// <summary>Mist that settles leaves a rime on the surface.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CryonicResidueCondition>();
+
+    /// <summary>
+    /// Lower than thermite's: mist is thin, and a frost that only forms under a dense cloud would
+    /// almost never appear.
+    /// </summary>
+    protected override float TileFieldThreshold => 0.7f;
+
+    /// <summary>
+    /// Freezes over a pool the mist has actually settled on.
+    /// </summary>
+    /// <remarks>
+    /// Moved off the per-node liquid hook for the same reason thermite's conversions were: run
+    /// there, one node clipping the surface froze a full tile of water on the frame it touched it.
+    /// </remarks>
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density)
     {
-        if (HyperboreanFlaskProjectile.shattered)
-        {
-            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
-                TileID.BreakableIce, LiquidID.Water, amountLeft: 200);
-        }
+        if (!HyperboreanFlaskProjectile.shattered)
+            return;
+
+        int drain = (int)MathHelper.Clamp(density * 4f, 2f, 14f);
+
+        LiquidUtils.BoilLiquidIntoTile(tileX, tileY, TileID.BreakableIce, LiquidID.Water, drain, amountLeft: 200);
     }
 }
