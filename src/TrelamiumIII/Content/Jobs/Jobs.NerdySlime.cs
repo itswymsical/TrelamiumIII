@@ -1,8 +1,4 @@
-﻿using TrelamiumIII.Core.Dialogue;
-using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
-
-namespace TrelamiumIII.Content.Jobs;
+﻿namespace TrelamiumIII.Content.Jobs;
 
 //public sealed class NerdySlimeI : Job
 //{

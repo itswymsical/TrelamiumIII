@@ -1,0 +1,152 @@
+// Keys are derived from each act's id with its "act." prefix stripped, so "act.ore.copper" reads its
+// name at ActLang.ore.copper.Name. Nothing types the key by hand renaming an act's id here without
+// renaming it in code shows the key itself in the UI rather than failing loudly.
+ActLang: {
+	// Strings for the act popup (Core/UI/ExpTrackerUI).
+	UI: {
+		ExpGained: +{0} Exp
+		TierComplete: Tier {0} complete
+	}
+
+	// Shown beside the act name in the milestone tracker.
+	Category: {
+		Obstruction: Obstruction
+		Combat: Combat
+		Exploration: Exploration
+		Crafting: Crafting
+		Fishing: Fishing
+		Building: Building
+	}
+
+	ore: {
+		// --- Pre-hardmode metals ---
+		copper: {
+			Name: Fool's Gold
+			Description: Obstruct copper ore
+		}
+
+		tin: {
+			Name: Tinner's Luck
+			Description: Obstruct tin ore
+		}
+
+		iron: {
+			Name: Hefty
+			Description: Obstruct iron ore
+		}
+
+		lead: {
+			Name: Heavy Metal
+			Description: Obstruct lead ore
+		}
+
+		silver: {
+			Name: Quicksilver
+			Description: Obstruct silver ore
+		}
+
+		tungsten: {
+			Name: Filament
+			Description: Obstruct tungsten ore
+		}
+
+		gold: {
+			Name: Auriferous
+			Description: Obstruct gold ore
+		}
+
+		platinum: {
+			Name: Noble Metal
+			Description: Obstruct platinum ore
+		}
+
+		// --- Hardmode metals ---
+		cobalt: {
+			Name: Blue Shift
+			Description: Obstruct cobalt ore
+		}
+
+		palladium: {
+			Name: Rejuvena
+			Description: Obstruct palladium ore
+		}
+
+		mythril: {
+			Name: Mythmaker
+			Description: Obstruct mythril ore
+		}
+
+		orichalcum: {
+			Name: Pink Petals
+			Description: Obstruct orichalcum ore
+		}
+
+		adamantite: {
+			Name: Unconquerable
+			Description: Obstruct adamantite ore
+		}
+
+		titanium: {
+			Name: Titan's Wake
+			Description: Obstruct titanium ore
+		}
+
+		// --- Groups. Paid in proportion to how many member ores you have actually mined. ---
+		metals: {
+			prehardmode: {
+				Name: Prospector
+				Description: Obstruct every metal ore
+			}
+
+			hardmode: {
+				Name: Prolithic Excavator
+				Description: Obstruct every mythical metal ore
+			}
+		}
+
+		exotic: {
+			Name: Unnatural Veins
+			Description: Obstruct exotic ore
+		}
+	}
+
+	gems: {
+		Name: Lapidary
+		Description: Obstruct gemstone
+	}
+
+	soil: {
+		Name: Soilin' It
+		Description: Obstruct soil
+	}
+
+	tundra: {
+		Name: Cold Territory
+		Description: Obstruct snow and ice
+	}
+
+	lumber: {
+		Name: Lumberjack
+		Description: Fell tree trunks
+	}
+
+	slimes: {
+		Name: Sticky Situations
+		Description: kill slimes of any kind
+	}
+
+	undead: {
+		Name: Fall of the Dead
+		Description: Slay undead creatures
+	}
+
+	bars: {
+		Name: Blacksmith
+		Description: Smelt bars of every metal
+	}
+
+	planting: {
+		Name: Botanist
+		Description: Plant herbs
+	}
+}

@@ -4,7 +4,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
-using TrelamiumIII.Core.Jobs.Events;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.UI.Jobs;
 
 namespace TrelamiumIII.Core.Jobs;
