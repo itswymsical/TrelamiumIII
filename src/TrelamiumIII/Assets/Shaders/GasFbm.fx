@@ -28,6 +28,7 @@ float Time;
 float2 FieldTexel;      // 1 / field-target size; one texel = 2 screen px
 float2 WorldOffset;     // screenPosition / screenHeight
 float Aspect;           // screen w/h
+float2 Zoom;            // Main.GameViewMatrix.Zoom
 
 float Threshold;
 float NoiseScale;
@@ -63,6 +64,22 @@ float Fbm(float2 p)
     return sum;
 }
 
+// Screen uv -> world position, in units of screen heights.
+//
+// The field composites as a full-screen quad, so uv is a SCREEN coordinate, and the camera zooms
+// about the centre of the screen. Undoing that zoom before adding the camera offset is what makes
+// the result a world position. Skipping it leaves an error of (1 - Zoom) * cameraCentre, which is
+// zero at Zoom = 1 and otherwise MOVES WITH THE CAMERA -- so the noise slides across the terrain
+// whenever the player pans while zoomed. That is why this read as correct for so long: every
+// screenshot of it was taken at Zoom = 1, where the two expressions are algebraically identical.
+float2 WorldUv(float2 uv)
+{
+    float2 aspect = float2(Aspect, 1.0);
+    float2 halfExtent = aspect * 0.5;
+
+    return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
+}
+
 // Field density at a (quantized) uv
 float Density(float2 uv)
 {
@@ -78,7 +95,7 @@ float4 GasPass(float2 uv : TEXCOORD0) : COLOR0
 
     // world-locked, drifting FBM: the texture boils in place while the camera
     // pans across it, instead of swimming with the screen.
-    float2 p = (cell * float2(Aspect, 1.0) + WorldOffset) * NoiseScale + NoiseDrift * Time;
+    float2 p = WorldUv(cell) * NoiseScale + NoiseDrift * Time;
     float fbm = Fbm(p);
 
     // erode the field with the noise, then cut it hard. (fbm - 0.5): erosion digs

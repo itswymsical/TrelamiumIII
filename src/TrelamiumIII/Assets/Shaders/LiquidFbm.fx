@@ -20,6 +20,7 @@ float Time;
 float2 FieldTexel;      // 1 / field-target size; one texel = 2 screen px
 float2 WorldOffset;     // screenPosition / screenHeight
 float Aspect;           // screen w/h
+float2 Zoom;            // Main.GameViewMatrix.Zoom
 
 float Threshold;
 float NoiseScale;
@@ -60,6 +61,17 @@ float Fbm(float2 p)
     return sum;
 }
 
+// Screen uv -> world position, in units of screen heights. See GasFbm.fx for why the zoom has to
+// be undone here: without it the noise carries a (1 - Zoom) * cameraCentre error that moves with
+// the camera, so the pattern slides across the world whenever the player pans while zoomed.
+float2 WorldUv(float2 uv)
+{
+    float2 aspect = float2(Aspect, 1.0);
+    float2 halfExtent = aspect * 0.5;
+
+    return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
+}
+
 float Density(float2 uv)
 {
     float f = tex2D(FieldSampler, uv).r;
@@ -72,7 +84,7 @@ float4 LiquidPass(float2 uv : TEXCOORD0) : COLOR0
     float2 cell = (floor(uv / FieldTexel) + 0.5) * FieldTexel;
 
     // World-locked FBM, stretched so the pattern runs vertically like a drip.
-    float2 p = (cell * float2(Aspect, 1.0) + WorldOffset) * NoiseScale;
+    float2 p = WorldUv(cell) * NoiseScale;
     p = p * NoiseStretch + NoiseDrift * Time;
     float fbm = Fbm(p);
 

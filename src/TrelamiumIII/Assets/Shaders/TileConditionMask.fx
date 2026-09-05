@@ -33,6 +33,7 @@ float Time;
 float2 FieldTexel;      // 1 / field-target size; one texel = PixelScale screen px
 float2 WorldOffset;     // screenPosition / screenHeight
 float Aspect;           // screen w/h
+float2 Zoom;            // Main.GameViewMatrix.Zoom
 
 float Threshold;
 float NoiseScale;
@@ -66,6 +67,17 @@ float Fbm(float2 p)
     return sum;
 }
 
+// Screen uv -> world position, in units of screen heights. See GasFbm.fx for why the zoom has to
+// be undone here: without it the noise carries a (1 - Zoom) * cameraCentre error that moves with
+// the camera, so the char pattern slides across the terrain whenever the player pans while zoomed.
+float2 WorldUv(float2 uv)
+{
+    float2 aspect = float2(Aspect, 1.0);
+    float2 halfExtent = aspect * 0.5;
+
+    return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
+}
+
 float4 MaskPass(float2 uv : TEXCOORD0) : COLOR0
 {
     // Snap to the field-texel grid, so every decision below happens once per field texel and the
@@ -79,7 +91,7 @@ float4 MaskPass(float2 uv : TEXCOORD0) : COLOR0
 
     // World-locked and drifting: the char boils in place while the camera pans across it, instead
     // of swimming with the screen.
-    float2 p = (cell * float2(Aspect, 1.0) + WorldOffset) * NoiseScale + NoiseDrift * Time;
+    float2 p = WorldUv(cell) * NoiseScale + NoiseDrift * Time;
     float fbm = Fbm(p);
 
     // Centred on zero so the erosion digs and bulges either way, which keeps Threshold meaning

@@ -159,5 +159,11 @@ public abstract class TileCondition : ITileCondition
         effect.Parameters["FieldTexel"]?.SetValue(new Vector2(FieldPixelScale / (float)Main.screenWidth, FieldPixelScale / (float)Main.screenHeight));
         effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
         effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
+
+        // The camera offset above is only half of the world lock. The field bakes the zoom into its
+        // own transform, so the shader is handed a screen uv and has to undo that zoom before the
+        // offset means anything -- otherwise the error is (1 - Zoom) * cameraCentre, which is zero
+        // at Zoom 1 and moves with the camera at every other zoom.
+        effect.Parameters["Zoom"]?.SetValue(Main.GameViewMatrix.Zoom);
     }
 }

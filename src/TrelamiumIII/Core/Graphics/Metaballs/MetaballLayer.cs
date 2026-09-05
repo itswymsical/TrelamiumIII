@@ -446,6 +446,12 @@ public abstract class MetaballLayer
         var effect = shader.Value;
         var device = Main.graphics.GraphicsDevice;
 
+        // Set centrally, ahead of the layer's own block, because every layer needs it and none of
+        // them should have to remember. The field target bakes the zoom into its own transform, so
+        // a shader reading world position back out of a screen uv has to undo it -- without this it
+        // silently assumes 1 and its noise slides across the world as the camera pans.
+        effect.Parameters["Zoom"]?.SetValue(Main.GameViewMatrix.Zoom);
+
         ApplyShaderParameters(effect);
 
         // PointClamp: the field is deliberately half-resolution, and the shader snaps its decisions

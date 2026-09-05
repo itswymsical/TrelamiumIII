@@ -57,6 +57,7 @@ float2 uWobbleDrift;
 float  uTime;
 float2 uWorldOffset;
 float  uAspect;
+float2 uZoom;
 
 float  uGlow;
 float  uLightResponse;
@@ -80,6 +81,17 @@ float Fbm(float2 p)
     return sum;
 }
 
+// Screen uv -> world position, in units of screen heights. See GasFbm.fx for why the zoom has to
+// be undone here: without it the noise carries a (1 - uZoom) * cameraCentre error that moves with
+// the camera, so the shimmer slides across the world whenever the player pans while zoomed.
+float2 WorldUv(float2 uv)
+{
+    float2 aspect = float2(uAspect, 1.0);
+    float2 halfExtent = aspect * 0.5;
+
+    return (uv * aspect - halfExtent) / uZoom + halfExtent + uWorldOffset;
+}
+
 float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
 {
     float4 bg = tex2D(ImageSampler, uv);
@@ -101,14 +113,16 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
 
     // World-locked and drifting, so the shimmer churns in place while the camera moves across it
     // rather than swimming along with the screen. Same convention as GasFbm.fx.
-    float2 p = (uv * float2(uAspect, 1.0) + uWorldOffset) * uWobbleScale + uWobbleDrift * uTime;
+    float2 p = WorldUv(uv) * uWobbleScale + uWobbleDrift * uTime;
 
     // 0.47 rather than 0.5: the noise texture's mean sits slightly below centre, and centring on its
     // actual mean is what keeps the warp from carrying a constant bias in one direction -- which
     // would read as the whole cone sliding rather than shimmering.
     float2 wobble = float2(Fbm(p) - 0.47, Fbm(p + 7.31) - 0.47);
 
-    float3 warped = tex2D(ImageSampler, uv + wobble * uWobble * strength).rgb;
+    // uZoom because the offset is in SCREEN uv while uWobble is authored against the cone, which the
+    // camera magnifies. Left unscaled, a zoomed-in cone refracts proportionally less and flattens.
+    float3 warped = tex2D(ImageSampler, uv + wobble * uWobble * uZoom * strength).rgb;
 
     // How bright the world already is behind this pixel of field.
     //
