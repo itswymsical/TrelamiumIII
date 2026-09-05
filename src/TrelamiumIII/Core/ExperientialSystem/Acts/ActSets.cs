@@ -125,6 +125,13 @@ public static class ActCurves
     /// <summary>Ordinary enemy kills, counted per family.</summary>
     public static readonly int[] Combat = [20, 50, 110, 210, 380, 620, 950, 1400, 2000, 2800];
 
+    /// <summary>
+    /// Loot containers smashed in passing. Sized well below <see cref="Bulk"/>: a world only generates a
+    /// few thousand pots in total, so a bulk ladder would leave the top rungs - and over half the act's
+    /// Exp - permanently out of reach.
+    /// </summary>
+    public static readonly int[] Scavenge = [15, 40, 90, 170, 290, 460, 700, 1020, 1450, 2000];
+
     /// <summary>Deliberate, slower acts - planting a herb, felling a tree.</summary>
     public static readonly int[] Deliberate = [8, 22, 50, 95, 165, 270, 420, 620, 880, 1200];
 }

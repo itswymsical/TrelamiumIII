@@ -71,10 +71,41 @@ public abstract class Act
     public abstract ActCategory Category { get; }
 
     /// <summary>
-    /// Progress counts at which each tier pays out. Must be strictly ascending -
-    /// <see cref="ActRegistry"/> checks this at load and sorts anything that is not.
+    /// Progress counts at which each tier pays out, counted in <i>actions</i> rather than raw events -
+    /// see <see cref="EventsPerAction"/>. Must be strictly ascending; <see cref="ActRegistry"/> checks
+    /// this at load and sorts anything that is not.
+    ///
+    /// <para>
+    /// Either share one of the <see cref="ActCurves"/> ladders or write the array inline. Read through
+    /// <see cref="Ladder"/>, never directly - an inline collection expression allocates a fresh array on
+    /// every access, and this is read on every matching event.
+    /// </para>
     /// </summary>
     public abstract int[] Thresholds { get; }
+
+    /// <summary>
+    /// The validated ladder, snapshotted on first read. Everything internal goes through this so an act
+    /// is free to build its <see cref="Thresholds"/> inline without allocating per event, and so the
+    /// registry sorting a malformed ladder actually sticks.
+    /// </summary>
+    public int[] Ladder => _ladder ??= Thresholds;
+
+    /// <summary>
+    /// Raw <see cref="GameEvent"/> amounts that make up one action the player would recognise. 1 for
+    /// anything broken one-to-one.
+    ///
+    /// <para>
+    /// This exists because tile events do not map onto actions. A pot is a 2x2 multitile, so smashing one
+    /// raises four tile breaks; a tree is killed a trunk tile at a time, so felling one raises a dozen or
+    /// more. Left at 1, a "break 2000 pots" ladder is really 500 pots and a tree ladder is off by an order
+    /// of magnitude - which is exactly why the old tree challenge needed thresholds in the hundreds.
+    /// </para>
+    ///
+    /// <para>
+    /// The tracker carries the remainder between events, so a divisor never loses a fraction of progress.
+    /// </para>
+    /// </summary>
+    public virtual int EventsPerAction => 1;
 
     /// <summary>Whether this event moves this act's progress at all.</summary>
     public abstract bool Matches(in GameEvent evt);
@@ -102,7 +133,9 @@ public abstract class Act
 
     #region Tier maths
 
-    public int TierCount => Thresholds.Length;
+    private int[]? _ladder;
+
+    public int TierCount => Ladder.Length;
 
     /// <summary>
     /// How many tiers can ever pay. Authoring more thresholds than
@@ -119,7 +152,7 @@ public abstract class Act
     {
         int reached = 0;
 
-        while (reached < Thresholds.Length && progress >= Thresholds[reached])
+        while (reached < Ladder.Length && progress >= Ladder[reached])
             reached++;
 
         return reached;
@@ -127,7 +160,7 @@ public abstract class Act
 
     /// <summary>Progress needed for <paramref name="tierIndex"/>, or <see cref="int.MaxValue"/> past the last tier.</summary>
     public int ThresholdOf(int tierIndex)
-        => tierIndex >= 0 && tierIndex < Thresholds.Length ? Thresholds[tierIndex] : int.MaxValue;
+        => tierIndex >= 0 && tierIndex < Ladder.Length ? Ladder[tierIndex] : int.MaxValue;
 
     /// <summary>Progress the band leading up to <paramref name="tierIndex"/> starts from.</summary>
     public int BandStart(int tierIndex) => tierIndex <= 0 ? 0 : ThresholdOf(tierIndex - 1);
@@ -135,7 +168,7 @@ public abstract class Act
     /// <summary>How far <paramref name="progress"/> is through the band ending at <paramref name="tierIndex"/>, as 0-1.</summary>
     public float BandProgress(int tierIndex, int progress)
     {
-        if (tierIndex < 0 || tierIndex >= Thresholds.Length)
+        if (tierIndex < 0 || tierIndex >= Ladder.Length)
             return 1f;
 
         int start = BandStart(tierIndex);

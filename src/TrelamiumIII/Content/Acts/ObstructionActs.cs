@@ -68,11 +68,21 @@ public sealed class SoilAct : TileBreakPredicateAct
 
     protected override bool TestTile(int tileType) => TileID.Sets.CanBeDugByShovel[tileType];
 }
+/// <summary>
+/// Smashing pots - the most mundane act in the game, and the one the whole system was described around.
+/// </summary>
 public sealed class PotAct : TileBreakPredicateAct
 {
     public override string ID => "act.pots";
     public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
+    public override int[] Thresholds => ActCurves.Scavenge;
+
+    /// <summary>
+    /// A pot is a 2x2 multitile, so one smash raises four tile breaks - confirmed in game, four breaks at
+    /// the four corners of one footprint. Pots are worldgen-only and never placeable, so vanilla registers
+    /// no TileObjectData for them and the fallback is what actually answers here.
+    /// </summary>
+    public override int EventsPerAction => ActUnits.MultiTileFootprint(TileID.Pots, fallback: ActUnits.TwoByTwo);
 
     protected override bool TestTile(int tileType) => tileType == TileID.Pots;
 }
@@ -86,13 +96,24 @@ public sealed class TundraAct : TileBreakPredicateAct
         => TileID.Sets.Ices[tileType] || TileID.Sets.IcesSlush[tileType] || TileID.Sets.IcesSnow[tileType];
 }
 
+/// <summary>
+/// Felling trees. Also the worked example of a bespoke ladder: an act that does not fit any of the shared
+/// <see cref="ActCurves"/> just declares its own array, held in a static field so it is allocated once.
+/// </summary>
 public sealed class LumberAct : TileBreakPredicateAct
 {
+    /// <summary>Counted in trees felled, not trunk tiles broken. See <see cref="EventsPerAction"/>.</summary>
+    private static readonly int[] Trees = [5, 15, 35, 70, 120, 190, 290, 420, 580, 780];
+
     public override string ID => "act.lumber";
     public override ActCategory Category => ActCategory.Obstruction;
+    public override int[] Thresholds => Trees;
 
-    // Deliberate rather than Bulk: a trunk is many tiles, but felling a tree is one decision.
-    public override int[] Thresholds => ActCurves.Deliberate;
+    /// <summary>
+    /// A tree is killed one trunk tile at a time, so felling one raises a dozen or so breaks. This is what
+    /// forced the old tree challenge into thresholds of 500 for what was really forty trees.
+    /// </summary>
+    public override int EventsPerAction => ActUnits.AverageTreeTiles;
 
     protected override bool TestTile(int tileType) => TileID.Sets.IsATreeTrunk[tileType];
 }

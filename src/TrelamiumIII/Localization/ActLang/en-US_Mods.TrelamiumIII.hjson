@@ -120,6 +120,11 @@ ActLang: {
 		Description: Obstruct soil
 	}
 
+	pots: {
+		Name: Potsherd
+		Description: Obstruct pots
+	}
+
 	tundra: {
 		Name: Cold Territory
 		Description: Obstruct snow and ice

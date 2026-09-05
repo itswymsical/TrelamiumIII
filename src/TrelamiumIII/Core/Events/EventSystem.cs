@@ -508,16 +508,8 @@ public class EventSystem : ModSystem
         evt.Player.GetModPlayer<ActTrackerPlayer>().OnGameEvent(evt);
 
         ConditionChecker.OnGameEvent(evt);
-        if (evt.Type == GameEventType.HousingChecked)
-        {
-            bool isValid = evt.Amount == 1;
-            TrelamiumIII.Instance.Logger.Info
-                ($"EventSystem.HousingChecked() at X:{evt.TileX} Y:{evt.TileY} | Room: {evt.RoomId} | Valid: {isValid} | Occupied: {evt.IsOccupied} | Issue: {evt.Issue} | Manual: {evt.IsManualCheck} | Player: ({evt.Player.name})");
-        }
-        else
-        {
-            TrelamiumIII.Instance.Logger.Info($" EventSystem.{evt.Type}() event triggered by player: ({evt.Player.name})");
-        }
+
+        EventLog.Trace(EventLog.Describe(evt));
     }
     #endregion
 }

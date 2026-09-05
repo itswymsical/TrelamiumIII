@@ -47,7 +47,11 @@ public sealed class ActRegistry : ModSystem
         TrelamiumIII.Instance.Logger.Info($"Registered {All.Count} experiential acts");
     }
 
-    public override void Unload() => Clear();
+    public override void Unload()
+    {
+        Clear();
+        ActUnits.ClearCache();
+    }
 
     private static void Clear()
     {
@@ -170,23 +174,30 @@ public sealed class ActRegistry : ModSystem
             return false;
         }
 
-        if (act.Thresholds is not { Length: > 0 })
+        if (act.Ladder is not { Length: > 0 })
         {
             TrelamiumIII.Instance.Logger.Error($"Act '{act.ID}' has no thresholds; dropped.");
             return false;
         }
 
-        for (int i = 1; i < act.Thresholds.Length; i++)
+        // Sorts act.Ladder, not act.Thresholds: an act that builds its array inline hands back a fresh
+        // one on every read, so sorting that would fix nothing.
+        for (int i = 1; i < act.Ladder.Length; i++)
         {
-            if (act.Thresholds[i] > act.Thresholds[i - 1])
+            if (act.Ladder[i] > act.Ladder[i - 1])
                 continue;
 
             TrelamiumIII.Instance.Logger.Warn(
-                $"Act '{act.ID}' has thresholds that are not strictly ascending ({string.Join(", ", act.Thresholds)}); sorting them in place.");
+                $"Act {act.ID} has thresholds that are not strictly ascending ({string.Join(", ", act.Ladder)}); sorting them in place.");
 
-            Array.Sort(act.Thresholds);
+            Array.Sort(act.Ladder);
             break;
         }
+
+        // Deliberately does not touch act.EventsPerAction. Reading it here runs during Mod.Load, before
+        // tile object data is populated, so an act that resolves its divisor from TileObjectData would
+        // cache a wrong answer for the session - which is precisely what made one pot count as four.
+        // The tracker clamps the divisor at its point of use instead.
 
         if (act.Members.Length > 1 && act.Members.Distinct().Count() != act.Members.Length)
         {

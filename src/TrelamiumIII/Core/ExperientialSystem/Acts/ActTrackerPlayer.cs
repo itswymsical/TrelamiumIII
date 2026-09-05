@@ -20,8 +20,14 @@ namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 /// </summary>
 public sealed class ActProgress
 {
-    /// <summary>Raw accumulated count for this act.</summary>
+    /// <summary>Completed actions for this act - pots smashed, trees felled - not raw tile events.</summary>
     public int Count;
+
+    /// <summary>
+    /// Raw events banked toward the next whole action, for acts whose <see cref="Act.EventsPerAction"/>
+    /// is above 1. Persisted so quitting halfway through a tree does not throw the part away.
+    /// </summary>
+    public int Partial;
 
     /// <summary>How many tiers have already paid out. Never decreases.</summary>
     public int TiersPaid;
@@ -124,11 +130,33 @@ public sealed class ActTrackerPlayer : ModPlayer
         ActProgress record = Record(act.ID);
 
         int before = record.Count;
-        record.Count += Math.Max(evt.Amount, 1);
 
-        // Coverage is only meaningful for groups, so single-member acts allocate no set at all.
+        // Coverage is only meaningful for groups, so single-member acts allocate no set at all. Recorded
+        // before the fold below can bail out: meeting a member counts even on a tile break that only
+        // banks a fraction of an action.
         if (act.Members.Length > 1 && act.MemberFor(evt) is int member and >= 0)
             (record.Members ??= []).Add(member);
+
+        // Fold raw events into whole actions, keeping the remainder. A 2x2 pot raises four tile breaks
+        // and a tree raises a dozen, so counting events directly would count the wrong thing entirely.
+        int banked = record.Partial + Math.Max(evt.Amount, 1);
+        int perAction = Math.Max(act.EventsPerAction, 1);
+
+        record.Count += banked / perAction;
+        record.Partial = banked % perAction;
+
+        if (EventLog.Enabled)
+        {
+            // Reads "+1 raw -> 3/4 banked" while an object is mid-break, then "-> action 12" when one
+            // lands. Smash a single pot with tracing on and the divisor is either confirmed or disproved.
+            EventLog.Trace(record.Count == before
+                ? $"[Act] {act.ID} +{evt.Amount} raw -> {record.Partial}/{perAction} banked, no action yet"
+                : $"[Act] {act.ID} +{evt.Amount} raw -> action {record.Count} (+{record.Count - before}), {record.Partial}/{perAction} banked");
+        }
+
+        // Mid-object: nothing the player would call progress has happened yet.
+        if (record.Count == before)
+            return;
 
         int reached = act.TiersReached(record.Count);
 
@@ -216,6 +244,7 @@ public sealed class ActTrackerPlayer : ModPlayer
         {
             ["id"] = entry.Key,
             ["count"] = entry.Value.Count,
+            ["partial"] = entry.Value.Partial,
             ["tiers"] = entry.Value.TiersPaid,
             ["members"] = entry.Value.Members?.ToList() ?? []
         }).ToList();
@@ -234,6 +263,7 @@ public sealed class ActTrackerPlayer : ModPlayer
             var record = new ActProgress
             {
                 Count = entry.GetInt("count"),
+                Partial = entry.GetInt("partial"),
                 TiersPaid = entry.GetInt("tiers")
             };
 
