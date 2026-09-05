@@ -107,26 +107,26 @@ public class MyconidSporeTile : ModTile
         }
     }
 }
-public class MyconidSporeGlobal : GlobalTile
-{
-    public override void RandomUpdate(int i, int j, int type)
-    {
-        base.RandomUpdate(i, j, type);
+//public class MyconidSporeGlobal : GlobalTile
+//{
+//    public override void RandomUpdate(int i, int j, int type)
+//    {
+//        base.RandomUpdate(i, j, type);
 
-        if (type == TileID.Grass)
-        {
-            if (WorldGen.genRand.NextBool(700))
-            {
-                if (!Main.tile[i, j - 1].HasTile)
-                {
-                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
+//        if (type == TileID.Grass)
+//        {
+//            if (WorldGen.genRand.NextBool(700))
+//            {
+//                if (!Main.tile[i, j - 1].HasTile)
+//                {
+//                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
 
-                    if (Main.netMode == NetmodeID.Server)
-                    {
-                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
-                    }
-                }
-            }
-        }
-    }
-}
+//                    if (Main.netMode == NetmodeID.Server)
+//                    {
+//                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}

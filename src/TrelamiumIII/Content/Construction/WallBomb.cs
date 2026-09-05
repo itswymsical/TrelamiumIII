@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
-using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Construction;
 
@@ -10,13 +9,14 @@ public class WallBomb : ModItem
 {
     public override string Texture => $"Terraria/Images/Item_{ItemID.Bomb}";
     public const string TOOLTIP_KEY = $"{TrelamiumIII.NAME_PREFIX}Wall Bomb Tooltip";
+    public const string CANCEL_TOOLTIP_KEY = $"{TrelamiumIII.NAME_PREFIX}Wall Bomb Cancel Tooltip";
+
     public override void SetStaticDefaults()
     {
         ItemID.Sets.OpenableBag[Type] = true;
         ItemID.Sets.ItemsThatCountAsBombsForDemolitionistToSpawn[Type] = false;
     }
 
-    public ushort LoadedWallType = WallID.Wood; // TODO: Wall selector/loader
     public override void SetDefaults()
     {
         Item.useStyle = ItemUseStyleID.Swing;
@@ -24,8 +24,6 @@ public class WallBomb : ModItem
         Item.shoot = ModContent.ProjectileType<WallBombProj>();
         Item.width = 8;
         Item.height = 28;
-        //Item.maxStack = Item.CommonMaxStack;
-        //Item.consumable = true;
         Item.UseSound = SoundID.Item1;
         Item.useAnimation = 40;
         Item.useTime = 40;
@@ -34,6 +32,7 @@ public class WallBomb : ModItem
         Item.value = Item.buyPrice(silver: 20);
         Item.rare = ItemRarityID.Blue;
     }
+
     public override bool ConsumeItem(Player player) => false;
 
     public override bool CanRightClick() => true;
@@ -42,18 +41,18 @@ public class WallBomb : ModItem
     {
         var modPlayer = player.GetModPlayer<WallFillPlayer>();
 
-        // Gather all unique wall item types currently in the player's inventory
+        // Gather all unique wall item types currently in the inventory
         List<int> availableWalls = new List<int>();
-        for (int i = 0; i < 58; i++)
+        for (int i = 0; i < WallFillPlayer.INVENTORY_SLOTS; i++)
         {
             Item item = player.inventory[i];
-            if (!item.IsAir && item.createWall > -1 && !availableWalls.Contains(item.type))
+            if (!item.IsAir && GetWallIdForItem(item.type) != WallID.None && !availableWalls.Contains(item.type))
                 availableWalls.Add(item.type);
         }
 
         if (availableWalls.Count == 0)
         {
-            modPlayer.SelectedWallItemType = -1;
+            modPlayer.SelectedWallItemType = ItemID.None;
             Main.NewText("No walls found in inventory.");
             return;
         }
@@ -66,6 +65,55 @@ public class WallBomb : ModItem
         SoundEngine.PlaySound(SoundID.MenuTick);
     }
 
+    public override bool AltFunctionUse(Player player) => true;
+
+    /// <summary>Cancelling should feel instant; the 40 tick wind-up only makes sense for a throw.</summary>
+    public override float UseSpeedMultiplier(Player player) => player.altFunctionUse == 2 ? 4f : 1f;
+
+    public override bool CanUseItem(Player player)
+    {
+        var modPlayer = player.GetModPlayer<WallFillPlayer>();
+
+        // Right click exists solely to call off a fill that is already running.
+        if (player.altFunctionUse == 2)
+            return modPlayer.HasActiveFill;
+
+        int selectedType = modPlayer.SelectedWallItemType;
+
+        if (GetWallIdForItem(selectedType) == WallID.None)
+        {
+            if (player.whoAmI == Main.myPlayer)
+                Main.NewText("Right click the Wall Bomb in your inventory to pick a wall.");
+
+            return false;
+        }
+
+        if (WallFillPlayer.CountInInventory(player, selectedType) > 0)
+            return true;
+
+        if (player.whoAmI == Main.myPlayer)
+            Main.NewText($"Out of {Lang.GetItemNameValue(selectedType)}.");
+
+        return false;
+    }
+
+    public override bool? UseItem(Player player)
+    {
+        if (player.altFunctionUse != 2)
+            return null;
+
+        // CanUseItem already established there is a fill to stop.
+        player.GetModPlayer<WallFillPlayer>().CancelFill();
+
+        if (player.whoAmI == Main.myPlayer)
+        {
+            SoundEngine.PlaySound(SoundID.MenuClose);
+            Main.NewText("Wall placement cancelled.");
+        }
+
+        return true;
+    }
+
     public override void ModifyTooltips(List<TooltipLine> tooltips)
     {
         var modPlayer = Main.LocalPlayer.GetModPlayer<WallFillPlayer>();
@@ -73,39 +121,28 @@ public class WallBomb : ModItem
 
         string text = "Selected Wall: None";
 
-        if (selectedType != -1)
+        if (GetWallIdForItem(selectedType) != WallID.None)
         {
-            int totalCount = 0;
+            int totalCount = WallFillPlayer.CountInInventory(Main.LocalPlayer, selectedType);
             string itemName = Lang.GetItemNameValue(selectedType);
-
-            // Tally up every stack of this item type in the inventory
-            for (int i = 0; i < 58; i++)
-            {
-                if (Main.LocalPlayer.inventory[i].type == selectedType)
-                    totalCount += Main.LocalPlayer.inventory[i].stack;
-            }
 
             text = $"{itemName} [i:{selectedType}] (x{totalCount})";
         }
 
         tooltips.Add(new TooltipLine(Mod, TOOLTIP_KEY, text));
+
+        if (modPlayer.HasActiveFill)
+            tooltips.Add(new TooltipLine(Mod, CANCEL_TOOLTIP_KEY, "Right click to cancel the running fill"));
     }
 
     public override void PostDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
     {
-        var modPlayer = Main.LocalPlayer.GetModPlayer<WallFillPlayer>();
-        int selectedType = modPlayer.SelectedWallItemType;
+        int selectedType = Main.LocalPlayer.GetModPlayer<WallFillPlayer>().SelectedWallItemType;
 
-        if (selectedType == -1)
+        if (GetWallIdForItem(selectedType) == WallID.None)
             return;
 
-        int totalCount = 0;
-        for (int i = 0; i < 58; i++)
-        {
-            if (Main.LocalPlayer.inventory[i].type == selectedType)
-                totalCount += Main.LocalPlayer.inventory[i].stack;
-        }
-
+        int totalCount = WallFillPlayer.CountInInventory(Main.LocalPlayer, selectedType);
         if (totalCount <= 0)
             return;
 
@@ -121,59 +158,76 @@ public class WallBomb : ModItem
         Vector2 spriteOffset = new Vector2(14f, 14f) * scale;
         Vector2 drawPos = position + spriteOffset;
 
-        spriteBatch.Draw(texture, drawPos, spriteFrame, Color.White, 0f, 
+        spriteBatch.Draw(texture, drawPos, spriteFrame, Color.White, 0f,
             spriteFrame.Size() / 2f, miniScale, SpriteEffects.None, 0f);
 
         Vector2 textOffset = new Vector2(8f, 6f) * scale;
-        Utils.DrawBorderString(spriteBatch, totalCount.ToString(), 
+        Utils.DrawBorderString(spriteBatch, totalCount.ToString(),
             drawPos + textOffset, Color.White, scale * 0.75f, anchorx: 0.5f, anchory: 0.5f);
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
     {
-        var modPlayer = player.GetModPlayer<WallFillPlayer>();
-        int itemType = modPlayer.SelectedWallItemType;
+        // A right click is a cancel, not a throw.
+        if (player.altFunctionUse == 2)
+            return false;
 
-        ushort wallId = WallID.None;
-        if (itemType != -1)
-        {
-            Item sample = ContentSamples.ItemsByType[itemType];
-            if (sample != null && sample.createWall > -1)
-                wallId = (ushort)sample.createWall;
-        }
+        int itemType = player.GetModPlayer<WallFillPlayer>().SelectedWallItemType;
+        ushort wallId = GetWallIdForItem(itemType);
 
-        int index = Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
-        if (Main.projectile[index].ModProjectile is WallBombProj bomb)
-        {
-            bomb.LoadedWallType = wallId;
-            bomb.SourceItemType = itemType; // Pass the item type so the system knows what to consume
-        }
+        if (wallId == WallID.None)
+            return false;
+
+        SoundEngine.PlaySound(SoundID.Item1, player.Center);
+
+        // The payload rides in ai1/ai2 rather than in fields on the ModProjectile: NewProjectile syncs
+        // ai, plain fields do not, so in multiplayer the bomb would otherwise reach the owning client
+        // with no wall and no source item recorded.
+        Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI, ai1: wallId, ai2: itemType);
 
         return false;
+    }
+
+    /// <summary>Resolves the wall a wall-placing item builds, or <see cref="WallID.None" /> if it is not one.</summary>
+    public static ushort GetWallIdForItem(int itemType)
+    {
+        if (!ContentSamples.ItemsByType.TryGetValue(itemType, out Item? sample) || sample is null)
+            return WallID.None;
+
+        // createWall defaults to -1, but 0 is WallID.None and is just as unusable.
+        return sample.createWall > WallID.None ? (ushort)sample.createWall : WallID.None;
     }
 }
 
 public class WallBombProj : ModProjectile
 {
     public override string Texture => $"Terraria/Images/Projectile_{ProjectileID.Bomb}";
-    private const int RADIUS = 15;
-    private const int FillRadius = 20;
-    public int SourceItemType = -1;
+
+    private const int HITBOX_SIZE = 15;
+    private const int FILL_RADIUS = 20;
+
     public ushort LoadedWallType
     {
         get => (ushort)Projectile.ai[1];
         set => Projectile.ai[1] = value;
     }
+
+    /// <summary>The inventory item the fill pays for walls with.</summary>
+    public int SourceItemType
+    {
+        get => (int)Projectile.ai[2];
+        set => Projectile.ai[2] = value;
+    }
+
     public override void SetStaticDefaults()
     {
-        ProjectileID.Sets.PlayerHurtDamageIgnoresDifficultyScaling[Type] = true;
         ProjectileID.Sets.Explosive[Type] = true;
     }
+
     public override void SetDefaults()
     {
-        Projectile.width = Projectile.height = RADIUS;
+        Projectile.width = Projectile.height = HITBOX_SIZE;
 
-        Projectile.friendly = true;
         Projectile.penetrate = -1;
 
         Projectile.timeLeft = 300;
@@ -181,27 +235,27 @@ public class WallBombProj : ModProjectile
         DrawOffsetX = -2;
         DrawOriginOffsetY = -5;
     }
+
     public override void AI()
     {
-        if (Projectile.owner == Main.myPlayer && Projectile.timeLeft <= 3)
-            BlowUp();
-        
-        else
+        if (Projectile.timeLeft <= 3)
+        {
+            Projectile.tileCollide = false;
+            Projectile.alpha = 255;
+        }
+        else if (Main.rand.NextBool())
         {
             // that dust that appears on it when its rolling
-            if (Main.rand.NextBool())
-            {
-                Dust dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.Smoke, 0f, 0f, 100, default, 1f);
-                dust.scale = 0.1f + Main.rand.Next(5) * 0.1f;
-                dust.fadeIn = 1.5f + Main.rand.Next(5) * 0.1f;
-                dust.noGravity = true;
-                dust.position = Projectile.Center + new Vector2(1, 0).RotatedBy(Projectile.rotation - 2.1f, default) * 10f;
+            Dust dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.Smoke, 0f, 0f, 100, default, 1f);
+            dust.scale = 0.1f + Main.rand.Next(5) * 0.1f;
+            dust.fadeIn = 1.5f + Main.rand.Next(5) * 0.1f;
+            dust.noGravity = true;
+            dust.position = Projectile.Center + new Vector2(1, 0).RotatedBy(Projectile.rotation - 2.1f, default) * 10f;
 
-                dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.Torch, 0f, 0f, 100, default, 1f);
-                dust.scale = 1f + Main.rand.Next(5) * 0.1f;
-                dust.noGravity = true;
-                dust.position = Projectile.Center + new Vector2(1, 0).RotatedBy(Projectile.rotation - 2.1f, default) * 10f;
-            }
+            dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.Torch, 0f, 0f, 100, default, 1f);
+            dust.scale = 1f + Main.rand.Next(5) * 0.1f;
+            dust.noGravity = true;
+            dust.position = Projectile.Center + new Vector2(1, 0).RotatedBy(Projectile.rotation - 2.1f, default) * 10f;
         }
 
         // bomb physics
@@ -224,30 +278,25 @@ public class WallBombProj : ModProjectile
         Projectile.rotation += Projectile.velocity.X * 0.1f;
     }
 
-    public void BlowUp()
-    {
-        Projectile.tileCollide = false;
-        Projectile.alpha = 255;
-    }
-
     public override void OnKill(int timeLeft)
     {
         ExplosionEffects();
 
-        if (Projectile.owner == Main.myPlayer)
-        {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        if (Projectile.owner != Main.myPlayer)
+            return;
 
-            int tileX = (int)(Projectile.Center.X / 16f);
-            int tileY = (int)(Projectile.Center.Y / 16f);
+        Player owner = Main.player[Projectile.owner];
+        if (!owner.active)
+            return;
 
-            List<Point> interior = WallFillSystem.ScanRoomInterior(tileX, tileY, FillRadius);
-
-            if (interior.Count == 0) return;
-
-            WallFillSystem.QueueFill(new Queue<Point>(interior), LoadedWallType, Projectile.owner, SourceItemType);
-        }
+        owner.GetModPlayer<WallFillPlayer>().BeginFill(
+            (int)(Projectile.Center.X / 16f),
+            (int)(Projectile.Center.Y / 16f),
+            LoadedWallType,
+            SourceItemType,
+            FILL_RADIUS);
     }
+
     private void ExplosionEffects()
     {
         for (int i = 0; i < 50; i++)
@@ -289,149 +338,185 @@ public class WallBombProj : ModProjectile
 }
 
 /// <summary>
-/// Scans the enclosed empty space around a point and gradually fills it with a
-/// wall type, a few tiles at a time, instead of all in one frame.
+///     Holds the wall the player has selected and runs at most one room fill for them
 /// </summary>
-public class WallFillSystem : ModSystem
+public class WallFillPlayer : ModPlayer
 {
-    private const int TilesPerStep = 1;
-    private const int StepIntervalTicks = 2;
-    private const bool OverwriteExistingWalls = false;
+    private const int TILES_PER_STEP = 1;
+    private const int STEP_INTERVAL_TICKS = 2;
+    private const bool OVERWRITE_EXISTING_WALLS = false;
+
+    /// <summary>
+    ///     Ceiling on tiles judged per step. Without it a bomb thrown into an already-walled room places
+    ///     nothing, never satisfies TILES_PER_STEP, and drains the whole frontier in a single frame.
+    /// </summary>
+    private const int MAX_SCANS_PER_STEP = 32;
+
+    /// <summary>One dig sound per this many walls; one per wall is a jackhammer at 30 tiles a second.</summary>
+    private const int SOUND_INTERVAL = 4;
+
+    /// <summary>Slots the bomb reads and pays from: the main grid plus coins and ammo, but not the mouse slot.</summary>
+    public const int INVENTORY_SLOTS = 58;
 
     private static readonly Point[] CardinalDirections =
     {
         new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1)
     };
 
-    private class WallFill
+    public int SelectedWallItemType = ItemID.None;
+
+    private WallFill? activeFill;
+
+    public bool HasActiveFill => activeFill is not null;
+
+    private sealed class WallFill
     {
-        public Queue<Point> Points;
+        public Point Origin;
+        public int Radius;
         public ushort WallType;
-        public int TickTimer;
-        public int OwnerIndex;
         public int SourceItemType;
+        public int TickTimer;
+        public int PlacedCount;
+
+        /// <summary>Open tiles waiting to be walled and expanded from, in nearest-first order.</summary>
+        public readonly Queue<Point> Frontier = new();
+
+        /// <summary>Every tile the flood has judged, solid ones included, so none is tested twice.</summary>
+        public readonly HashSet<Point> Reached = new();
     }
 
-    private static readonly List<WallFill> ActiveFills = new();
-
-    public static void QueueFill(Queue<Point> points, ushort wallType, int ownerIndex, int sourceItemType)
+    /// <summary>Starts a fill centred on a tile, replacing whatever fill was running.</summary>
+    public void BeginFill(int originX, int originY, ushort wallType, int sourceItemType, int radius)
     {
-        if (sourceItemType == -1 || wallType == WallID.None) return;
-        ActiveFills.Add(new WallFill { Points = points, WallType = wallType, TickTimer = 0, OwnerIndex = ownerIndex, SourceItemType = sourceItemType });
-    }
+        CancelFill();
 
-    public override void PostUpdateWorld()
-    {
-        for (int i = ActiveFills.Count - 1; i >= 0; i--)
+        if (wallType == WallID.None || sourceItemType <= ItemID.None || radius <= 0)
+            return;
+
+        Point? seed = FindSeed(originX, originY);
+        if (seed is null)
+            return; // buried in solid ground, there is no room here to fill
+
+        var job = new WallFill
         {
-            WallFill job = ActiveFills[i];
+            Origin = new Point(originX, originY),
+            Radius = radius,
+            WallType = wallType,
+            SourceItemType = sourceItemType
+        };
 
-            if (job.Points.Count == 0)
-            {
-                ActiveFills.RemoveAt(i);
+        job.Reached.Add(seed.Value);
+        job.Frontier.Enqueue(seed.Value);
+
+        activeFill = job;
+    }
+
+    public void CancelFill() => activeFill = null;
+
+    public override void PostUpdate()
+    {
+        if (activeFill is null)
+            return;
+
+        // BeginFill only ever runs for the local player, but CancelFill is reachable from a remote
+        // player's item use, so keep the stepping side explicit.
+        if (Player.whoAmI != Main.myPlayer)
+            return;
+
+        if (++activeFill.TickTimer < STEP_INTERVAL_TICKS)
+            return;
+
+        activeFill.TickTimer = 0;
+        StepFill(activeFill);
+    }
+
+    /// <remarks>ModPlayer instances outlive the world in single player, so a fill must not.</remarks>
+    public override void OnEnterWorld() => CancelFill();
+
+    private void StepFill(WallFill job)
+    {
+        int placed = 0;
+        int scanned = 0;
+
+        while (placed < TILES_PER_STEP && scanned++ < MAX_SCANS_PER_STEP && job.Frontier.Count > 0)
+        {
+            Point tile = job.Frontier.Dequeue();
+
+            // Expand before placing. A tile that cannot take a wall (already walled, or walled with
+            // this very wall) still has to pass the wave along, or the flood stops at the first one.
+            Expand(job, tile);
+
+            if (!CanWall(tile.X, tile.Y, job.WallType))
                 continue;
-            }
 
-            Player player = Main.player[job.OwnerIndex];
-
-            job.TickTimer++;
-            if (job.TickTimer < StepIntervalTicks) continue;
-            job.TickTimer = 0;
-
-            int placed = 0;
-            while (placed < TilesPerStep && job.Points.Count > 0)
+            int slot = FindStack(job.SourceItemType);
+            if (slot < 0)
             {
-                // Find the first available stack of the selected item in the inventory
-                int invIndex = System.Array.FindIndex(player.inventory, x => x.type == job.SourceItemType && x.stack > 0);
-
-                if (invIndex == -1)
-                {
-                    ActiveFills.RemoveAt(i); // Stop filling, your out of resources bub!
-                    break;
-                }
-
-                Item loadedItem = player.inventory[invIndex];
-                Point p = job.Points.Dequeue();
-
-                if (TryPlaceWall(p.X, p.Y, job.WallType))
-                {
-                    loadedItem.stack--;
-                    if (loadedItem.stack <= 0) loadedItem.TurnToAir();
-                    placed++;
-                }
+                Main.NewText($"Out of {Lang.GetItemNameValue(job.SourceItemType)}.");
+                CancelFill();
+                return;
             }
+
+            PlaceWall(tile.X, tile.Y, job.WallType);
+
+            Item stack = Player.inventory[slot];
+            if (--stack.stack <= 0)
+                stack.TurnToAir();
+
+            if (job.PlacedCount++ % SOUND_INTERVAL == 0)
+                SoundEngine.PlaySound(SoundID.Dig, new Vector2(tile.X * 16, tile.Y * 16));
+
+            placed++;
+        }
+
+        if (job.Frontier.Count == 0)
+            CancelFill();
+    }
+
+    private static void Expand(WallFill job, Point from)
+    {
+        foreach (Point dir in CardinalDirections)
+        {
+            var next = new Point(from.X + dir.X, from.Y + dir.Y);
+
+            // bleed-out prevention, measured from the blast rather than from the seed
+            if (Math.Abs(next.X - job.Origin.X) > job.Radius || Math.Abs(next.Y - job.Origin.Y) > job.Radius)
+                continue;
+
+            // Solid tiles get recorded too, not just enqueued ones: a boundary tile borders up to four
+            // open tiles, and a set that only remembers open ones tile-tests every wall once per
+            // neighbour. The radius box above already caps how large this can grow.
+            if (!job.Reached.Add(next))
+                continue;
+
+            // Solid tile = the room's boundary. 4-directional only, cuz an 8-directional fill can
+            // squeeze diagonally between two solid tiles that only touch at a corner, which is exactly
+            // the kind of leak this needs to avoid.
+            if (IsOpenTile(next.X, next.Y))
+                job.Frontier.Enqueue(next);
         }
     }
 
-    private static bool TryPlaceWall(int x, int y, ushort wallType)
+    private static bool CanWall(int x, int y, ushort wallType)
     {
-        if (!WorldGen.InWorld(x, y, 1)) return false;
+        if (!WorldGen.InWorld(x, y, 1))
+            return false;
+
         Tile tile = Main.tile[x, y];
-        if (tile.WallType == wallType || (!OverwriteExistingWalls && tile.WallType != WallID.None)) return false;
 
-        WorldGen.PlaceWall(x, y, wallType);
-        if (Main.netMode == NetmodeID.Server) NetMessage.SendTileSquare(-1, x, y, 1);
-        return true;
+        if (tile.WallType == wallType)
+            return false;
+
+        return OVERWRITE_EXISTING_WALLS || tile.WallType == WallID.None;
     }
 
-    public static List<Point> ScanRoomInterior(int originX, int originY, int radius)
+    private static void PlaceWall(int x, int y, ushort wallType)
     {
-        var visited = new HashSet<Point>();
-        var frontier = new Queue<Point>();
+        Main.tile[x, y].WallType = wallType;
+        WorldGen.SquareWallFrame(x, y);
 
-        Point origin = new Point(originX, originY);
-
-        if (!IsOpenTile(origin.X, origin.Y))
-        {
-            Point? seed = FindNearbyOpenTile(origin.X, origin.Y);
-            if (seed == null)
-                return new List<Point>(); // embedded in solid ground/no room here
-
-            origin = seed.Value;
-        }
-
-        visited.Add(origin);
-        frontier.Enqueue(origin);
-
-        // a cap for insurance
-        int maxTiles = (radius * 2 + 1) * (radius * 2 + 1);
-
-        while (frontier.Count > 0 && visited.Count < maxTiles)
-        {
-            Point current = frontier.Dequeue();
-
-            foreach (Point dir in CardinalDirections)
-            {
-                Point next = new Point(current.X + dir.X, current.Y + dir.Y);
-
-                // bleed-out prevention
-                if (Math.Abs(next.X - originX) > radius || Math.Abs(next.Y - originY) > radius)
-                    continue;
-
-                if (visited.Contains(next))
-                    continue;
-
-                // Solid tile = the room's boundary. 4-directional only, cuz
-                // an 8-directional fill can squeeze diagonally between two solid
-                // tiles that only touch at a corner, which is exactly the kind of
-                // leak this needs to avoid.
-                if (!IsOpenTile(next.X, next.Y))
-                    continue;
-
-                visited.Add(next);
-                frontier.Enqueue(next);
-            }
-        }
-
-        var points = new List<Point>(visited);
-        points.Sort((a, b) =>
-        {
-            float da = Vector2.DistanceSquared(a.ToVector2(), origin.ToVector2());
-            float db = Vector2.DistanceSquared(b.ToVector2(), origin.ToVector2());
-            return da.CompareTo(db);
-        });
-
-        return points;
+        if (Main.netMode != NetmodeID.SinglePlayer)
+            NetMessage.SendTileSquare(-1, x, y, 1);
     }
 
     private static bool IsOpenTile(int x, int y)
@@ -443,24 +528,46 @@ public class WallFillSystem : ModSystem
         return !tile.HasTile || !Main.tileSolid[tile.TileType];
     }
 
-    private static Point? FindNearbyOpenTile(int x, int y)
+    /// <summary>The blast lands inside a block often enough that giving up on that would feel broken.</summary>
+    private static Point? FindSeed(int x, int y)
     {
+        if (IsOpenTile(x, y))
+            return new Point(x, y);
+
         foreach (Point dir in CardinalDirections)
         {
             int nx = x + dir.X, ny = y + dir.Y;
             if (IsOpenTile(nx, ny))
                 return new Point(nx, ny);
         }
+
         return null;
     }
 
-    public override void OnWorldUnload()
+    private int FindStack(int itemType)
     {
-        ActiveFills.Clear();
-    }
-}
+        for (int i = 0; i < INVENTORY_SLOTS; i++)
+        {
+            Item item = Player.inventory[i];
+            if (item.type == itemType && item.stack > 0)
+                return i;
+        }
 
-public class WallFillPlayer : ModPlayer
-{
-    public int SelectedWallItemType = -1;
+        return -1;
+    }
+
+    public static int CountInInventory(Player player, int itemType)
+    {
+        if (itemType <= ItemID.None)
+            return 0;
+
+        int total = 0;
+        for (int i = 0; i < INVENTORY_SLOTS; i++)
+        {
+            if (player.inventory[i].type == itemType)
+                total += player.inventory[i].stack;
+        }
+
+        return total;
+    }
 }
