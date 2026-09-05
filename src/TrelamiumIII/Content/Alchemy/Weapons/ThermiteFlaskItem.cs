@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Tiles;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -170,6 +170,9 @@ public class ThermiteBurstProjectile : ModProjectile
     private const float MAX_FALL = 14f;
     private const float AIR_DRAG = 0.992f;
 
+    /// <summary>Pixels of terrain charred by a bounce. Roughly the 3x3 the old overlay pass marked.</summary>
+    private const float SCORCH_RADIUS = 26f;
+
     public override void SetDefaults()
     {
         Projectile.width = Projectile.height = 22;
@@ -194,25 +197,8 @@ public class ThermiteBurstProjectile : ModProjectile
 
         Spin *= BOUNCE;
 
-        int tileX = (int)(Projectile.Center.X / 16f);
-        int tileY = (int)(Projectile.Center.Y / 16f);
+        BurnedCondition.Scorch(Projectile.Center, SCORCH_RADIUS);
 
-        // Scan a 3x3 area around the impact point
-        for (int x = tileX - 1; x <= tileX + 1; x++)
-        {
-            for (int y = tileY - 1; y <= tileY + 1; y++)
-            {
-                if (WorldGen.InWorld(x, y))
-                {
-                    Tile tile = Framing.GetTileSafely(x, y);
-
-                    if (tile.HasTile && Main.tileSolid[tile.TileType])
-                    {
-                        OverlayedTileManager.AddOverlayedTile<BurnOverlay>(x, y);
-                    }
-                }
-            }
-        }
         return false;
     }
 
