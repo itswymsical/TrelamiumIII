@@ -19,7 +19,7 @@ public sealed class GoldMine : Job
         rewards: [
             new JobReward(ItemID.SilverCoin, 50),
             new JobReward(ItemID.SilverBar, 14),
-            new JobReward("TrelamiumIII.VitalTonicItem", 2)
+            new JobReward("TrelamiumIII.StalactiteCannon", 1)
         ],
         NPCID.Merchant) { }
 

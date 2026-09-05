@@ -1,0 +1,5 @@
+The elevator is a custom and dynamic transportation tile/entity.
+The large wheel rotates at the bottom-center left of the structure, and the counterweight moves the strings, which in tandem move all wheels as the elevator is pulled up, or dropped down.
+
+The elevator itself needs to be  an entity that has player aware collision
+

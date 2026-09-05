@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -6,12 +5,11 @@ using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Content.Fungore;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
-using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Misc;
 
-public class StalactiteCannon : ModItem
+public class StalagMagMKI : ModItem
 {
     public override void SetDefaults()
     {
@@ -35,7 +33,7 @@ public class StalactiteCannon : ModItem
         Item.knockBack = 15f;
         Item.shootSpeed = 25f;
         Item.scale = 0.8f;
-        Item.shoot = ModContent.ProjectileType<StalactiteCannonProj>();
+        Item.shoot = ModContent.ProjectileType<StalagMagMKIProj>();
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
@@ -70,7 +68,7 @@ public class StalactiteCannon : ModItem
     }
 }
 
-public class StalactiteCannonProj : ModProjectile
+public class StalagMagMKIProj : ModProjectile
 {
     public override string Texture => AssetReferences.Content.Misc.StalactiteCannon.KEY;
     private enum AIState
@@ -200,7 +198,7 @@ public class StalactiteCannonProj : ModProjectile
     private void FireProjectile(Player owner, Vector2 direction)
     {
         owner.ConsumeItem(ItemID.StoneBlock);
-        var type = ModContent.ProjectileType<StalactiteProj>();
+        var type = ModContent.ProjectileType<StoneBlockProj>();
         var speed = owner.HeldItem.shootSpeed;
         var damage = owner.HeldItem.damage;
         var knockback = owner.HeldItem.knockBack;
@@ -234,7 +232,7 @@ public class StalactiteCannonProj : ModProjectile
     }
 }
 
-public class StalactiteProj : ModProjectile
+public class StoneBlockProj : ModProjectile
 {
     public override string Texture => $"Terraria/Images/Item_{ItemID.StoneBlock}";
 
@@ -336,25 +334,124 @@ public class StalactiteProj : ModProjectile
     }
 }
 
+/// <summary>
+/// adds a modifies a variety of stone resources to be used as ammo for the StalagMag.
+/// </summary>
 public sealed class StoneAmmoItem : GlobalItem
 {
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)
     {
+        if (entity.type == ItemID.StoneBlock)
+            return true;
+        else if (entity.type == ItemID.StoneSlab)
+            return true;
+        else if (entity.type == ItemID.CrimstoneBlock)
+            return true;
+        else if (entity.type == ItemID.EbonstoneBlock)
+            return true;
+        else if (entity.type == ItemID.PearlstoneBlock)
+            return true;
+        else if (entity.type == ItemID.AmberStoneBlock)
+            return true;
+        else if (entity.type == ItemID.CoralstoneBlock)
+            return true;
+        else if (entity.type == ItemID.SunStone)
+            return true;
+        else if (entity.type == ItemID.Sandstone)
+            return true;
+        else if (entity.type == ItemID.SandstoneSlab)
+            return true;
+        else if (entity.type == ItemID.AmethystStoneBlock)
+            return true;
+        else if (entity.type == ItemID.TopazStoneBlock)
+            return true;
+        else if (entity.type == ItemID.SapphireStoneBlock)
+            return true;
+        else if (entity.type == ItemID.EmeraldStoneBlock)
+            return true;
+        else if (entity.type == ItemID.RubyStoneBlock)
+            return true;
+        else if (entity.type == ItemID.DiamondStoneBlock)
+            return true;
+        else if (entity.type == ItemID.AmberStoneBlock)
+            return true;
         return entity.type == ItemID.StoneBlock;
-    }
+    } // shut up
 
     public override void SetDefaults(Item entity)
     {
         base.SetDefaults(entity);
-
+        switch (entity.type)
+        {
+            case ItemID.StoneBlock:
+                entity.damage = 3;
+                entity.knockBack = 7f;
+                entity.shootSpeed = 6f;
+                entity.useTime = entity.useAnimation = 30; // default speed, this will be a speed multiplier by type
+                break;
+            case ItemID.StoneSlab:
+                entity.damage = 3;
+                entity.knockBack = 5f;
+                entity.shootSpeed = 7f;
+                entity.useTime = entity.useAnimation = 15;
+                break;
+            case ItemID.CrimstoneBlock:
+                entity.damage = 5;
+                entity.knockBack = 6f;
+                entity.shootSpeed = 5f;
+                break;
+            case ItemID.EbonstoneBlock:
+                entity.damage = 5;
+                break;
+            case ItemID.PearlstoneBlock:
+                entity.damage = 5;
+                break;
+            case ItemID.AmberStoneBlock:
+                entity.damage = 6;
+                break;
+            case ItemID.CoralstoneBlock:
+                entity.damage = 6;
+                break;
+            case ItemID.SunStone:
+                entity.damage = 7;
+                break;
+            case ItemID.Sandstone:
+                entity.damage = 4;
+                break;
+            case ItemID.SandstoneSlab:
+                entity.damage = 4;
+                break;
+            case ItemID.AmethystStoneBlock:
+                entity.damage = 8;
+                break;
+            case ItemID.TopazStoneBlock:
+                entity.damage = 9;
+                break;
+            case ItemID.SapphireStoneBlock:
+                entity.damage = 10;
+                break;
+            case ItemID.EmeraldStoneBlock:
+                entity.damage = 11;
+                break;
+            case ItemID.RubyStoneBlock:
+                entity.damage = 12;
+                break;
+            case ItemID.DiamondStoneBlock:
+                entity.damage = 13;
+                break;
+            default:
+                entity.damage = 3;
+                entity.knockBack = 7f;
+                entity.shootSpeed = 6f;
+                entity.useTime = entity.useAnimation = 30;
+                break;
+        }
+        // smh lmao, ill redo it later
         entity.DamageType = DamageClass.Ranged;
-        entity.damage = 3;
-        entity.knockBack = 7f;
         entity.noMelee = true;
-        entity.shootSpeed = 6f;
         entity.notAmmo = true;
         entity.ammo = entity.type;
-
+        entity.useTime = entity.useAnimation = 30;
     }
 }
 

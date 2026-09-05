@@ -70,7 +70,7 @@ public static class ActUnits
     /// progress. Measure a few trees in game and move this if it reads wrong.
     /// </para>
     /// </summary>
-    public const int AverageTreeTiles = 12;
+    public const int AverageTreeTiles = 6;
 
     /// <summary>A 2x2 object, which is what a pot is. Named so the number is not a bare 4 at the call site.</summary>
     public const int TwoByTwo = 4;
