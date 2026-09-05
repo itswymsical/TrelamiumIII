@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.ModLoader.IO;
 using Terraria.UI;
 using TrelamiumIII.Core.Jobs.Events;
 using TrelamiumIII.Core.UI.Jobs;
@@ -99,6 +100,32 @@ public abstract class Job
         return UpdateProgress(taskIndex, evt.Amount);
     }
 
+    /// <summary>
+    /// Called for every event this Job sees while it is ongoing, matching or not, before the current set's
+    /// tasks get a look at it. Override for reactions that aren't progress — commentary, hints, bookkeeping.
+    /// </summary>
+    /// <param name="evt">The event that occurred</param>
+    public virtual void OnEvent(GameEvent evt) { }
+
+    /// <summary>
+    /// Called when the last task of a set is finished and the Job moves on to the next one.
+    /// Override to mark the transition — a line from the provider, a cutscene, unlocking something.
+    /// </summary>
+    /// <param name="previousSet">The set that was just completed</param>
+    /// <param name="newSet">The set now underway</param>
+    public virtual void OnSetAdvanced(int previousSet, int newSet) { }
+
+    /// <summary>
+    /// Job-specific state to persist alongside task progress. Base implementation stores nothing.
+    /// </summary>
+    public virtual void SaveCustomData(TagCompound tag) { }
+
+    /// <summary>
+    /// Restores what <see cref="SaveCustomData"/> wrote. <paramref name="tag"/> is empty for saves made
+    /// before the Job started storing anything, so treat every key as optional.
+    /// </summary>
+    public virtual void LoadCustomData(TagCompound tag) { }
+
     public virtual void OnJobStart() { }
 
     public virtual void OnJobComplete(bool giveRewards = true)
@@ -132,7 +159,9 @@ public abstract class Job
                 {
                     if (CurrentSet < TaskList.Count - 1)
                     {
+                        int previousSet = CurrentSet;
                         CurrentSet++;
+                        OnSetAdvanced(previousSet, CurrentSet);
                         return true;
                     }
                     if (TaskList.All(set => set.IsCompleted))

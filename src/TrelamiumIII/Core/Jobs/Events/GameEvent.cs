@@ -49,7 +49,18 @@ public struct GameEvent
     /// </summary>
     public Point? RoomId;
 
-    public static GameEvent HousingChecked(int x, int y, bool isValid, bool isOccupied, Player player, Point? roomId = null)
+    /// <summary>What stopped the room from being usable housing. <see cref="HousingIssue.None"/> when it passed.</summary>
+    public HousingIssue Issue;
+
+    /// <summary>
+    /// True when the player asked for this check from the housing UI, rather than it coming from one of
+    /// vanilla's automatic scans (NPCs re-checking their home, the nightly spawn pass). Anything that talks
+    /// back to the player should require this.
+    /// </summary>
+    public bool IsManualCheck;
+
+    public static GameEvent HousingChecked(int x, int y, bool isValid, bool isOccupied, Player player,
+        Point? roomId = null, HousingIssue issue = HousingIssue.None, bool isManualCheck = false)
     {
         return new GameEvent
         {
@@ -59,7 +70,9 @@ public struct GameEvent
             Player = player,
             Amount = isValid ? 1 : 0,
             IsOccupied = isOccupied,
-            RoomId = roomId
+            RoomId = roomId,
+            Issue = issue,
+            IsManualCheck = isManualCheck
         };
     }
 
@@ -239,6 +252,39 @@ public struct GameEvent
         };
     }
 }
+/// <summary>
+/// Why a housing check came back unusable, at the granularity an NPC would comment on. Ordered from
+/// "there is no room here" to "the room is fine but taken", which is roughly the order the player fixes them in.
+/// </summary>
+public enum HousingIssue
+{
+    /// <summary>The room passed every check.</summary>
+    None,
+
+    /// <summary>The check was started on a solid block, so there was no room to fill in the first place.</summary>
+    SolidTile,
+
+    /// <summary>Under vanilla's 60-tile minimum.</summary>
+    TooSmall,
+
+    /// <summary>The flood fill leaked out or ran past its tile budget: a gap in the walls, or a genuinely huge room.</summary>
+    NotEnclosed,
+
+    NeedsDoor,
+    NeedsLight,
+    NeedsTable,
+    NeedsChair,
+
+    /// <summary>Too much corruption/crimson counted inside the room.</summary>
+    Corrupt,
+
+    /// <summary>Structurally sound and fully furnished, but nothing scored as a spot to stand in.</summary>
+    NoValidSpot,
+
+    /// <summary>A town NPC already lives here.</summary>
+    Occupied
+}
+
 /// <summary>
 /// Enum representing different types of in-game events that can be tracked.
 /// </summary>

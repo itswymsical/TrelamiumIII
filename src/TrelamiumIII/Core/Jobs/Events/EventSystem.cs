@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Terraria.DataStructures;
+using Terraria.Enums;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Core.Jobs.Events;
@@ -18,6 +19,13 @@ public class EventSystem : ModSystem
 
     /// <summary>Scratch set of the tiles in the room vanilla last flood-filled. Rebuilt per room check.</summary>
     private static readonly HashSet<Point> RoomTiles = [];
+
+    /// <summary>
+    /// True while a player-initiated housing check is running. <see cref="WorldGen.MoveTownNPC"/> is the
+    /// housing UI's entry point — both the query button and dragging an NPC onto a room — and it is the only
+    /// caller that reports back to the player, so everything underneath it came from the player asking.
+    /// </summary>
+    private static bool isManualHousingCheck;
     private const int CooldownTicks = 60;
     private const int CooldownPruneInterval = 3600;
     private static int _lastCooldownPrune;
@@ -27,6 +35,7 @@ public class EventSystem : ModSystem
 
         SubscribeToEvents();
         On_WorldGen.StartRoomCheck += HookStartRoomCheck;
+        On_WorldGen.MoveTownNPC += HookMoveTownNPC;
         On_Projectile.ExplodeTiles += HookExplodeTiles;
     }
 
@@ -36,6 +45,7 @@ public class EventSystem : ModSystem
 
         JobTypes.Clear();
         On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
+        On_WorldGen.MoveTownNPC -= HookMoveTownNPC;
         HousingCooldowns.Clear();
         RoomTiles.Clear();
         On_Projectile.ExplodeTiles -= HookExplodeTiles;
@@ -57,6 +67,9 @@ public class EventSystem : ModSystem
         // point only when the room can't be resolved.
         Point roomId = TryScanRoom(out Point resolved, out bool isOccupied) ? resolved : new Point(x, y);
 
+        // Structural failures are already spelled out by vanilla's own reason code.
+        HousingIssue issue = isValid ? HousingIssue.None : TranslateRoomCheckFailure();
+
         // furniture and Biome checks
         if (isValid)
         {
@@ -67,7 +80,11 @@ public class EventSystem : ModSystem
 
             isValid = WorldGen.RoomNeeds(0);
 
-            if (isValid)
+            if (!isValid)
+            {
+                issue = MissingFurniture();
+            }
+            else
             {
                 WorldGen.ScoreRoom(-1, -1);
 
@@ -75,10 +92,17 @@ public class EventSystem : ModSystem
                 // NPC type asking. The room is valid if it passes the score check OR bailed for that reason.
                 isValid = WorldGen.hiScore > 0 || WorldGen.roomOccupied;
                 isOccupied |= WorldGen.roomOccupied;
+
+                if (!isValid)
+                    issue = WorldGen.roomEvil ? HousingIssue.Corrupt : HousingIssue.NoValidSpot;
             }
 
             scratch.Restore();
         }
+
+        // A tenant is the headline problem even when the room itself is spotless.
+        if (isOccupied)
+            issue = HousingIssue.Occupied;
 
         if (Main.LocalPlayer == null || !Main.LocalPlayer.active)
             return isValid;
@@ -94,10 +118,66 @@ public class EventSystem : ModSystem
         }
         HousingCooldowns[roomId] = currentTick;
 
-        var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer, roomId);
+        var evt = GameEvent.HousingChecked(x, y, isValid, isOccupied, Main.LocalPlayer, roomId, issue, isManualHousingCheck);
         BroadcastEvent(evt);
 
         return isValid;
+    }
+
+    /// <summary>
+    /// Marks everything underneath as player-initiated. <see cref="WorldGen.MoveTownNPC"/> is what the housing
+    /// UI calls — it is the code that prints "this housing is missing a chair" and friends — so a room check
+    /// running inside it is one the player asked for, not one of vanilla's background scans.
+    /// </summary>
+    private bool HookMoveTownNPC(On_WorldGen.orig_MoveTownNPC orig, int x, int y, int n)
+    {
+        bool wasManual = isManualHousingCheck;
+        isManualHousingCheck = true;
+
+        try
+        {
+            return orig(x, y, n);
+        }
+        finally
+        {
+            isManualHousingCheck = wasManual;
+        }
+    }
+
+    /// <summary>Maps vanilla's room-check failure reason onto the issues the mod reports back to the player.</summary>
+    private static HousingIssue TranslateRoomCheckFailure() => WorldGen.roomCheckFailureReason switch
+    {
+        TownNPCRoomCheckFailureReason.RoomCheckStartedInASolidTile => HousingIssue.SolidTile,
+        TownNPCRoomCheckFailureReason.RoomIsTooSmall => HousingIssue.TooSmall,
+
+        // Both of these mean the flood fill went somewhere it shouldn't have: out through a gap in the
+        // walls (an empty doorway counts), or on past the 750-tile budget.
+        TownNPCRoomCheckFailureReason.HoleInWallIsTooBig or
+        TownNPCRoomCheckFailureReason.RoomIsTooBig or
+        TownNPCRoomCheckFailureReason.TooCloseToWorldEdge => HousingIssue.NotEnclosed,
+
+        _ => HousingIssue.NoValidSpot
+    };
+
+    /// <summary>
+    /// The first thing <see cref="WorldGen.RoomNeeds"/> found missing, in the order a player would build them.
+    /// Only meaningful straight after that call, before the scratch state is restored.
+    /// </summary>
+    private static HousingIssue MissingFurniture()
+    {
+        if (!WorldGen.roomDoor)
+            return HousingIssue.NeedsDoor;
+
+        if (!WorldGen.roomTorch)
+            return HousingIssue.NeedsLight;
+
+        if (!WorldGen.roomTable)
+            return HousingIssue.NeedsTable;
+
+        if (!WorldGen.roomChair)
+            return HousingIssue.NeedsChair;
+
+        return HousingIssue.NoValidSpot;
     }
 
     /// <summary>
@@ -436,7 +516,7 @@ public class EventSystem : ModSystem
         {
             bool isValid = evt.Amount == 1;
             TrelamiumIII.Instance.Logger.Info
-                ($"EventSystem.HousingChecked() at X:{evt.TileX} Y:{evt.TileY} | Valid: {isValid} | Occupied: {evt.IsOccupied} | Player: ({evt.Player.name})");
+                ($"EventSystem.HousingChecked() at X:{evt.TileX} Y:{evt.TileY} | Room: {evt.RoomId} | Valid: {isValid} | Occupied: {evt.IsOccupied} | Issue: {evt.Issue} | Manual: {evt.IsManualCheck} | Player: ({evt.Player.name})");
         }
         else
         {

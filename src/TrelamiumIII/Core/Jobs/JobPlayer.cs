@@ -32,6 +32,9 @@ public partial class JobPlayer : ModPlayer
 
     private void ProcessEventForJob(Job Job, GameEvent evt)
     {
+        // Ahead of the task loop, so a Job can still tell what its state was before this event credited anything.
+        Job.OnEvent(evt);
+
         var currentSet = Job.CurrentSet;
         if (currentSet < 0 || currentSet >= Job.TaskList.Count)
             return;
@@ -202,6 +205,9 @@ public partial class JobPlayer : ModPlayer
 
         foreach (var Job in Jobs)
         {
+            var custom = new TagCompound();
+            Job.SaveCustomData(custom);
+
             JobData.Add(new TagCompound
             {
                 ["ID"] = Job.ID,
@@ -209,7 +215,8 @@ public partial class JobPlayer : ModPlayer
                 ["Status"] = (int)Job.Status,
                 ["CurrentList"] = Job.CurrentSet,
                 ["Tasks"] = SerializeTasks(Job.TaskList),
-                ["Contributions"] = SerializeContributions(Job)
+                ["Contributions"] = SerializeContributions(Job),
+                ["Custom"] = custom
             });
         }
 
@@ -235,6 +242,7 @@ public partial class JobPlayer : ModPlayer
 
                 DeserializeTasks(Job.TaskList, JobTag.GetList<TagCompound>("Tasks"));
                 DeserializeContributions(Job, JobTag.GetList<int>("Contributions"));
+                Job.LoadCustomData(JobTag.GetCompound("Custom") ?? new TagCompound());
 
                 Jobs.Add(Job);
             }

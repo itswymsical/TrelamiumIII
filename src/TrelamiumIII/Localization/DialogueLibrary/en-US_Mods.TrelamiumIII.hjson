@@ -59,5 +59,30 @@ DialogueLibrary: {
 		}
 
 		HomeForager_Occupied.Line1.Text: Sorry, [speakerName:player]![] It looks like that housing is already occupied.[] Maybe try another one.
+		HomeForager_Repeat.Line1.Text: You already showed me that one![] It's a fine house,[] but the town needs another.
+		# One per way a housing check can come back unusable. Keyed from HousingIssue in HomeForager.
+		HomeForager_NeedsDoor.Line1.Text: So close![] There's no door on that room, so nobody can get in or out.
+		HomeForager_NeedsLight.Line1.Text: It's awfully dark in there![] Hang a torch on the wall, or set a candle down somewhere.
+		HomeForager_NeedsTable.Line1.Text: Nearly![] There's nowhere to set anything down. A table will do, or a workbench in a pinch.
+		HomeForager_NeedsChair.Line1.Text: It needs somewhere to sit![] A chair,[] or a bed if you're feeling generous.
+		HomeForager_SolidTile.Line1.Text: Buddy...[] that's a solid block.
+		HomeForager_TooSmall.Line1.Text: That room is a bit of a shoebox, [speakerName:player]![] Give it a few more blocks of height and width, then try again.
+		HomeForager_NotEnclosed.Line1.Text: Hm.[] Either that room is enormous, or something is letting the outside in.[] Check for gaps, and remember the background needs walls too.
+		HomeForager_Corrupt.Line1.Text: Nobody is going to live there.[] The land itself has turned.[] Find cleaner ground, or clear that out first.
+		HomeForager_NoValidSpot.Line1.Text: Everything is there, but there is nowhere to stand![] Clear the floor a little and give them some space.
+
+		# Fired as each stage of the job is cleared.
+		HomeForager_Set1: {
+			Line1.Text: Look at all that![] That's plenty to build with.
+			Line2.Text: Now put up a proper room for me. Walls all round, a door, a light, a table and a chair.[] Then open the housing menu and point at it,[] and I'll tell you if it will do.
+		}
+
+		HomeForager_Set2.Line1.Text: That'll do nicely![] One more, I think.[] The merchant will want a place of their own.
+		HomeForager_Set3.Line1.Text: You're getting quick at this![] One more empty room,[] and we'll have space for whoever wanders in next.
+
+		HomeForager_Set4: {
+			Line1.Text: Well now.[] That's a town.
+			Line2.Text: Come and talk to me when you've caught your breath,[] and I'll see you paid properly.[] You've earned it.
+		}
 	}
 }
