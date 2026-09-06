@@ -62,7 +62,7 @@ public sealed class HomeForager : Job
         if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck)
             return;
 
-        if (CurrentSet < FirstHousingSet || CurrentSet > LastHousingSet)
+        if (CurrentTaskSet < FirstHousingSet || CurrentTaskSet > LastHousingSet)
             return;
 
         if (evt.Issue != HousingIssue.None)

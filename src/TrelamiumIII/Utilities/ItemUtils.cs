@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TrelamiumIII.Core.Events;
 
 namespace TrelamiumIII.Utilities;
 
@@ -28,7 +29,19 @@ public static class ItemUtils
         }
         return false;
     }
-
+    public static bool IsCopperFurniture(GameEvent evt)
+    {
+        return evt.ItemType == ItemID.CopperPlating || evt.ItemType == ItemID.CopperPlatingWall ||
+            evt.ItemType == ItemID.CopperBrick || evt.ItemType == ItemID.CopperBrickWall ||
+            evt.ItemType == ItemID.CopperChandelier ||
+            evt.ItemType == ItemID.AncientCopperBrick;
+    }
+    public static bool IsCopperTool(GameEvent evt)
+    {
+        return evt.ItemType == ItemID.CopperBow || evt.ItemType == ItemID.CopperBroadsword ||
+            evt.ItemType == ItemID.CopperHammer || evt.ItemType == ItemID.CopperWatch ||
+            evt.ItemType == ItemID.CopperAxe || evt.ItemType == ItemID.CopperPickaxe;
+    }
     public static bool IsGem(this Item item)
     {
         return item.type == ItemID.Amethyst

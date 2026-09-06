@@ -72,7 +72,7 @@ public class StalactiteCannon : ModItem
 
 public class StalactiteCannonProj : ModProjectile
 {
-    public override string Texture => AssetReferences.Content.Misc.StalactiteCannon.KEY;
+    public override string Texture => AssetReferences.Content.Misc.StalagMagMKI.KEY;
     private enum AIState
     {
         Firing,

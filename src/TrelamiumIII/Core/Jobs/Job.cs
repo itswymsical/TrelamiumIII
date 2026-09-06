@@ -43,7 +43,7 @@ public abstract class Job
     /// <summary>
     /// Index of the current task set the player is working on. Jobs can have multiple sets of tasks that need to be completed in order. This tracks which set is currently active.
     /// </summary>
-    public int CurrentSet { get; set; } = 0;
+    public int CurrentTaskSet { get; set; } = 0;
 
     /// <summary>
     /// Tracks items that have already contributed to this Job's progress.
@@ -141,7 +141,7 @@ public abstract class Job
         if (Progress != JobProgress.Ongoing)
             return false;
 
-        var currentSet = TaskList[CurrentSet];
+        var currentSet = TaskList[CurrentTaskSet];
         if (task >= 0 && task < currentSet.Task.Count)
         {
             var obj = currentSet.Task[task];
@@ -157,11 +157,11 @@ public abstract class Job
 
                 if (currentSet.IsCompleted)
                 {
-                    if (CurrentSet < TaskList.Count - 1)
+                    if (CurrentTaskSet < TaskList.Count - 1)
                     {
-                        int previousSet = CurrentSet;
-                        CurrentSet++;
-                        OnSetAdvanced(previousSet, CurrentSet);
+                        int previousSet = CurrentTaskSet;
+                        CurrentTaskSet++;
+                        OnSetAdvanced(previousSet, CurrentTaskSet);
                         return true;
                     }
                     if (TaskList.All(set => set.IsCompleted))
@@ -182,7 +182,7 @@ public abstract class Job
     {
         Progress = JobProgress.Inactive;
         Status = JobStatus.Unlocked;
-        CurrentSet = 0;
+        CurrentTaskSet = 0;
         ContributedItemIds.Clear();
         foreach (var set in TaskList)
         {

@@ -122,6 +122,8 @@ Projectiles: {
 	SaplingMakerProjectile.DisplayName: Sapling Maker Projectile
 	SaplingProjectile.DisplayName: Sapling Projectile
 	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
+	StalagMagMKIProj.DisplayName: Stalag Mag M K I Proj
+	StoneBlockProj.DisplayName: Stone Block Proj
 }
 
 Liquids: {
