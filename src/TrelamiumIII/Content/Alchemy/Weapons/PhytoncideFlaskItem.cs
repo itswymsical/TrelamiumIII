@@ -90,7 +90,7 @@ public class PhytoncideFlaskProjectile : ModProjectile
         Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
                       + Main.rand.NextVector2Circular(0.5f, 0.5f);
 
-        layer.SpawnNode(Projectile.Center, drift, radius: 5f, life: 8f);
+        layer.SpawnNode(Projectile.Center, drift, radius: 5f, life: 8f, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -216,6 +216,6 @@ public class PhytoncideSporeBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
                              + Main.rand.NextVector2Circular(1.5f, 5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: Lifetime * 1.65f);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: Lifetime * 1.65f, owner: Projectile.owner);
     }
 }

@@ -377,8 +377,13 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
 
                 // Locks the wobble to the world rather than the screen, so it boils in place while
                 // the camera pans instead of swimming along with it. Same convention as GasFbm.fx.
+                //
+                // The zoom is the other half of that lock: the field bakes it into its own transform,
+                // so the shader is handed a screen uv and has to undo it before the offset means
+                // anything.
                 effect.Parameters["uWorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
                 effect.Parameters["uAspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
+                effect.Parameters["uZoom"]?.SetValue(Main.GameViewMatrix.Zoom);
 
                 effect.Parameters["uGlow"]?.SetValue(0.7f);
                 effect.Parameters["uLightResponse"]?.SetValue(0);

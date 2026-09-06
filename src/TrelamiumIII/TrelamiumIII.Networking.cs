@@ -1,3 +1,5 @@
+﻿using TrelamiumIII.Content.Liquids;
+using TrelamiumIII.Core.Tiles.Conditions;
 using System.IO;
 using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.ExperientialSystem;
@@ -10,7 +12,7 @@ partial class TrelamiumIII
     internal enum MessageType : byte
     {
         LiquidMergeExplosion,
-        GrantExperience,
+        TileCondition,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -24,11 +26,9 @@ partial class TrelamiumIII
                 int y = reader.ReadInt32();
                 CrudeOilLiquid.ExplosionEffect(x, y);
                 break;
-
-            case MessageType.GrantExperience:
-                ReceiveExperientialGrant(reader);
+            case MessageType.TileCondition:
+                TileConditionSystem.ReceiveApply(reader, whoAmI);
                 break;
-
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);
                 break;

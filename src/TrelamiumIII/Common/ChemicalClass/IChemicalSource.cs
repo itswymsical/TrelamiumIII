@@ -71,12 +71,23 @@ public readonly struct ChemicalReactionEvent
 /// </summary>
 public static class ChemicalReaction
 {
+    /// <remarks>
+    ///     Non-elemental sources are refused outright rather than trusted to leave their
+    ///     <see cref="IChemicalSource.ReactionChance" /> at zero. A reaction is the payoff for
+    ///     having an element, and <see cref="ChemicalDamageType.Solute" /> has none -- it would roll
+    ///     a matchup that is flat, deal a burst that is unmultiplied, and register a reaction state
+    ///     on the target keyed to an element that does not exist. Guarding here means a solute
+    ///     weapon cannot acquire a reaction by having its numbers tuned carelessly.
+    /// </remarks>
     public static void Trigger(
         NPC target,
         IChemicalSource source,
         float playerDamageBonus = 1f,
         Projectile deliveryProjectile = null)
     {
+        if (!ChemicalMatchup.IsElemental(source.ChemicalType))
+            return;
+
         var npcData = target.GetGlobalNPC<ChemicalGlobalNPC>();
         npcData.ApplyReaction(source.ChemicalType);
 

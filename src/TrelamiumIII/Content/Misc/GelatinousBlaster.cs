@@ -1,0 +1,355 @@
+using Terraria.Audio;
+using Terraria.DataStructures;
+using Terraria.GameContent;
+using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core;
+using TrelamiumIII.Core.Components.Items;
+using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Projectiles;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Utilities;
+
+namespace TrelamiumIII.Content.Misc;
+
+/// <summary>
+///     A burst pistol that fires gel. What it hits gets coated; what it misses coats the terrain.
+/// </summary>
+/// <remarks>
+///     <para>
+///         A controlled-damage weapon rather than a ranged one -- see
+///         <see cref="ChemicalDamageClass" />. Six damage a round is not the output; three rounds of
+///         gel across a doorway is. The class exists precisely so this weapon does not have to be
+///         balanced against guns that are trying to do a different job.
+///     </para>
+///     <para>
+///         The generic case of that class, and the reason the generic case exists. Gel is a solute:
+///         it has no element, wins no composition matchup, and rolls no reactions -- it afflicts
+///         steadily and it controls where things can walk. Everything the flasks get for being
+///         chemical, this gets for being <see cref="ChemicalDamageType.Solute" />, without having to
+///         pretend to be an element it is not.
+///     </para>
+///     <para>
+///         Burst rather than automatic, and the two are not interchangeable. A stream of gel would
+///         paint a continuous wall and reduce the weapon to holding the button down; three rounds
+///         and a breath makes each burst a decision about which patch of ground is worth claiming,
+///         which is the play the whole class is built around. See
+///         <see cref="BurstGunProjectile" /> for how the archetype is put together.
+///     </para>
+///     <para>
+///         Held rather than swung, so the item is little more than the stats and the ammunition.
+///         Channelled rather than auto-reusing: one use puts the weapon out and holding the button
+///         keeps it there while it runs its own cadence.
+///     </para>
+/// </remarks>
+public class GelatinousBlaster : ModItem
+{
+    public override void SetDefaults()
+    {
+        Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
+        Item.damage = 6;
+        Item.knockBack = 1.5f;
+
+        Item.width = 44;
+        Item.height = 32;
+
+        // Matches the burst period, so the item's own animation clock keeps step with the weapon's.
+        Item.useTime = Item.useAnimation = GunShotProfile.BurstPistol.BurstPeriod;
+        Item.useStyle = ItemUseStyleID.Shoot;
+        Item.useAmmo = ItemID.Gel;
+
+        Item.rare = ItemRarityID.Blue;
+        Item.value = Item.sellPrice(silver: 44);
+
+        Item.autoReuse = false;
+        Item.noMelee = true;
+        Item.noUseGraphic = true;
+        Item.channel = true;
+        Item.shootSpeed = 11f;
+        Item.scale = 0.9f;
+        Item.shoot = ModContent.ProjectileType<GelatinousBlasterProj>();
+
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        // The same component the flasks carry, on the same delivery path. What makes this weapon
+        // generic rather than elemental is one field: no element, so no matchup and no reaction --
+        // the affliction is the whole of what the gel does to a target, and the coat it leaves is
+        // the whole of what it does to the fight.
+        component.ChemicalType = ChemicalDamageType.Solute;
+        component.ChemicalDamage = 1.5f;
+        component.AfflictionRate = 30f;
+        component.AfflictionDuration = TimeConversion.SetTime(secs: 3);
+        component.ReactionChance = 0f;
+        component.ReactionDamage = 0f;
+    }
+
+    /// <inheritdoc cref="StalagMagMKI.Shoot" />
+    public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
+    {
+        Projectile.NewProjectile(source, player.Center, Vector2.Zero, Item.shoot, damage, knockback, player.whoAmI);
+
+        return false;
+    }
+
+    /// <summary>One weapon out at a time; the held projectile is the weapon.</summary>
+    public override bool CanUseItem(Player player) => player.ownedProjectileCounts[Item.shoot] <= 0;
+
+    /// <summary>
+    ///     The held projectile consumes gel per shot, so the item must not also take a round for
+    ///     the single use that spawned it.
+    /// </summary>
+    public override bool CanConsumeAmmo(Item ammo, Player player) => false;
+
+    public override void AddRecipes()
+    {
+        Recipe recipe = CreateRecipe();
+
+        recipe.AddIngredient(ItemID.Gel, 60);
+        recipe.AddRecipeGroup(RecipeGroupID.Wood, 5);
+        recipe.AddIngredient(ItemID.IllegalGunParts);
+        recipe.AddTile(TileID.Anvils);
+        recipe.Register();
+    }
+}
+
+/// <summary>The blaster in the player's hands: a three-round burst, a gel blob per round.</summary>
+public class GelatinousBlasterProj : BurstGunProjectile
+{
+    public override string Texture => AssetReferences.Content.Misc.GelatinousBlaster.KEY;
+
+    /// <summary>
+    ///     The stock burst pistol, with the muzzle pushed out to clear the longer sprite.
+    /// </summary>
+    /// <remarks>
+    ///     Three rounds two ticks apart and a 36-tick breath, which is the
+    ///     <see cref="GunShotProfile.BurstPistol" /> preset unchanged -- the whole point of the
+    ///     preset is that a weapon of this archetype should not have to restate the cadence to get
+    ///     the feel. Only the two numbers that depend on this particular sprite are overridden.
+    /// </remarks>
+    protected override GunShotProfile Profile => GunShotProfile.BurstPistol with
+    {
+        MuzzleLength = 28f,
+        HoldDistance = 6f,
+    };
+
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+
+        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
+        Projectile.scale = 0.9f;
+    }
+
+    protected override bool CanFireBurst(Player owner) => owner.HasAmmo(owner.HeldItem);
+
+    /// <summary>The last round of the burst coughs out a heavier vent of gel.</summary>
+    /// <remarks>
+    ///     Purely a punctuation mark, and it is worth having: without something at the end, three
+    ///     rounds and a silent pause reads as the weapon having jammed rather than as it having
+    ///     finished.
+    /// </remarks>
+    protected override void OnBurstComplete(Player owner)
+    {
+        SoundEngine.PlaySound(SoundID.Item95 with { Volume = 0.35f, Pitch = 0.6f, MaxInstances = 2 }, Owner.Center);
+
+        MuzzleSpray(Muzzle, Aim, owner.whoAmI, count: 6, speed: 5.5f);
+    }
+
+    protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
+    {
+        owner.ConsumeItem(ItemID.Gel, includeVoidBag: true);
+
+        Item held = owner.HeldItem;
+
+        // Spread is a fixed cone rather than a per-shot random walk, so the weapon is inaccurate in
+        // a way the player can plan around: the blobs land in a patch, and the patch is the point.
+        Vector2 velocity = direction.RotatedByRandom(0.07f) * held.shootSpeed * Main.rand.NextFloat(0.92f, 1.08f);
+
+        Projectile.NewProjectile(
+            Projectile.GetSource_FromThis(),
+            muzzle,
+            velocity,
+            ModContent.ProjectileType<GelBallProj>(),
+            held.damage,
+            held.knockBack,
+            owner.whoAmI
+        );
+
+        SoundEngine.PlaySound(SoundID.Item17 with { Pitch = -0.35f, PitchVariance = 0.3f, MaxInstances = 3 }, muzzle);
+        SoundEngine.PlaySound(SoundID.NPCHit1 with { Volume = 0.4f, Pitch = 0.4f, MaxInstances = 3 }, muzzle);
+
+        MuzzleSpray(muzzle, direction, owner.whoAmI);
+    }
+
+    /// <summary>A short cone of gel wisps off the barrel, in the layer the shot itself uses.</summary>
+    private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, int count = 3, float speed = 4f)
+    {
+        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+            return;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 drift = direction.RotatedByRandom(0.5f) * Main.rand.NextFloat(speed * 0.4f, speed);
+
+            layer.SpawnNode(muzzle, drift, radius: Main.rand.NextFloat(5f, 8f), life: 18f, owner: owner);
+        }
+    }
+}
+
+/// <summary>
+///     A blob of gel in flight. Trails the gel layer behind it and bursts into it on impact.
+/// </summary>
+/// <remarks>
+///     The projectile itself is barely visible and barely matters -- it is a hitbox with a sprite
+///     on it. What the player sees is the <see cref="GelLayer" /> nodes it lays down, which is why
+///     the trail is emitted every tick rather than as a one-off flourish: the metaball field is the
+///     shot, and the sprite is just the part of it that can hurt something.
+/// </remarks>
+public class GelBallProj : ModProjectile
+{
+    /// <summary>Pixels of terrain coated when the blob bursts.</summary>
+    private const float SPLATTER_RADIUS = 28f;
+
+    /// <summary>Nodes thrown out by the burst.</summary>
+    private const int BURST_NODES = 9;
+
+    public override void SetStaticDefaults()
+    {
+        ProjectileID.Sets.TrailCacheLength[Type] = 5;
+        ProjectileID.Sets.TrailingMode[Type] = 2;
+    }
+
+    public override void SetDefaults()
+    {
+        Projectile.width = Projectile.height = 12;
+        Projectile.friendly = true;
+        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
+        Projectile.penetrate = 1;
+        Projectile.timeLeft = 240;
+        Projectile.tileCollide = true;
+        Projectile.aiStyle = -1;
+        Projectile.scale = 1f;
+    }
+
+    public override void AI()
+    {
+        Projectile.velocity.Y += 0.16f;
+        Projectile.velocity.X *= 0.997f;
+
+        Projectile.rotation += Projectile.velocity.X * 0.04f;
+
+        Trail();
+    }
+
+    /// <summary>
+    ///     Lays gel behind the blob, thinning as it travels.
+    /// </summary>
+    /// <remarks>
+    ///     Emitted from a point behind the blob rather than from its centre so the trail reads as
+    ///     something shed rather than as a sphere the projectile is sitting inside.
+    /// </remarks>
+    private void Trail()
+    {
+        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+            return;
+
+        Vector2 behind = Projectile.Center - Projectile.velocity * 0.4f;
+        Vector2 drift = Projectile.velocity * 0.12f + Main.rand.NextVector2Circular(0.6f, 0.6f);
+
+        layer.SpawnNode(
+            behind,
+            drift,
+            radius: Main.rand.NextFloat(6f, 9f),
+            life: Main.rand.NextFloat(16f, 26f),
+            owner: Projectile.owner
+        );
+    }
+
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
+    {
+        target.AddBuff(BuffID.Slow, 120);
+
+        Burst(Projectile.Center, -Projectile.velocity.SafeNormalize(-Vector2.UnitY), Projectile.owner, coatTerrain: false);
+    }
+
+    /// <summary>
+    ///     Bursts against terrain, coating what it hit.
+    /// </summary>
+    /// <remarks>
+    ///     The splash direction is taken from the collision normal that <c>oldVelocity</c> implies
+    ///     rather than from the blob's own heading, so gel that hits a floor spreads sideways and
+    ///     gel that hits a wall runs down it, instead of every impact spraying back the way the
+    ///     shot came.
+    /// </remarks>
+    public override bool OnTileCollide(Vector2 oldVelocity)
+    {
+        var normal = new Vector2(
+            Projectile.velocity.X != oldVelocity.X ? -MathF.Sign(oldVelocity.X) : 0f,
+            Projectile.velocity.Y != oldVelocity.Y ? -MathF.Sign(oldVelocity.Y) : 0f
+        );
+
+        Burst(Projectile.Center, normal.SafeNormalize(-Vector2.UnitY), Projectile.owner, coatTerrain: true);
+
+        Projectile.Kill();
+
+        return false;
+    }
+
+    public override void OnKill(int timeLeft)
+        => SoundEngine.PlaySound(SoundID.NPCHit1 with { Volume = 0.5f, Pitch = 0.5f, MaxInstances = 4 }, Projectile.Center);
+
+    /// <summary>Throws gel outward and, on a terrain hit, coats what is under it.</summary>
+    private static void Burst(Vector2 position, Vector2 outward, int owner, bool coatTerrain)
+    {
+        if (coatTerrain)
+            SlimedCondition.Splatter(position, SPLATTER_RADIUS, intensity: 0.9f, owner: owner);
+
+        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+            return;
+
+        for (int i = 0; i < BURST_NODES; i++)
+        {
+            // Biased along the surface rather than straight out of it: a splash spreads across what
+            // it landed on, and a cone centred on the normal would have it standing up off the wall.
+            Vector2 direction = outward.RotatedByRandom(MathHelper.PiOver2 * 0.9f);
+
+            layer.SpawnNode(
+                position + direction * 4f,
+                direction * Main.rand.NextFloat(1.5f, 4.5f),
+                radius: Main.rand.NextFloat(7f, 12f),
+                life: Main.rand.NextFloat(52f, 66f),
+                owner: owner
+            );
+        }
+    }
+
+    public override bool PreDraw(ref Color lightColor)
+    {
+        Main.instance.LoadProjectile(Projectile.type);
+
+        Texture2D texture = TextureAssets.Projectile[Projectile.type].Value;
+        Vector2 origin = texture.Size() / 2f;
+
+        for (int i = 0; i < Projectile.oldPos.Length; i++)
+        {
+            if (Projectile.oldPos[i] == Vector2.Zero)
+                continue;
+
+            float fade = (Projectile.oldPos.Length - i) / (float)Projectile.oldPos.Length;
+            Vector2 position = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+
+            Main.EntitySpriteDraw(
+                texture, position, null, Projectile.GetAlpha(lightColor) * fade * 0.6f,
+                Projectile.oldRot[i], origin, Projectile.scale * fade, SpriteEffects.None, 0
+            );
+        }
+
+        Main.EntitySpriteDraw(
+            texture, Projectile.Center - Main.screenPosition, null, Projectile.GetAlpha(lightColor),
+            Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0
+        );
+
+        return false;
+    }
+}

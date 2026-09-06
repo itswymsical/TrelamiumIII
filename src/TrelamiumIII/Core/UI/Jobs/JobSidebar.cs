@@ -170,21 +170,21 @@ public class JobSidebar
 
     private void HandleTaskProgression()
     {
-        bool isCurrentSetCompleted = currentJob.CurrentSet < currentJob.TaskList.Count &&
-                                   currentJob.TaskList[currentJob.CurrentSet].IsCompleted;
+        bool isCurrentSetCompleted = currentJob.CurrentTaskSet < currentJob.TaskList.Count &&
+                                   currentJob.TaskList[currentJob.CurrentTaskSet].IsCompleted;
 
-        if (isCurrentSetCompleted && currentJob.CurrentSet < currentJob.TaskList.Count - 1)
+        if (isCurrentSetCompleted && currentJob.CurrentTaskSet < currentJob.TaskList.Count - 1)
         {
-            currentJob.CurrentSet++;
+            currentJob.CurrentTaskSet++;
             Main.LocalPlayer.GetModPlayer<JobPlayer>().NotifyJobUpdate(currentJob);
         }
     }
 
     private void PopulateVisibleTasks()
     {
-        if (currentJob.CurrentSet >= currentJob.TaskList.Count) return;
+        if (currentJob.CurrentTaskSet >= currentJob.TaskList.Count) return;
 
-        var currentSet = currentJob.TaskList[currentJob.CurrentSet];
+        var currentSet = currentJob.TaskList[currentJob.CurrentTaskSet];
         foreach (var task in currentSet.Task)
         {
             if (task.ShouldBeVisible(currentJob))
@@ -814,8 +814,8 @@ public class JobSidebar
 
         if (!showingAvailableJobs &&
             currentJob != null &&
-            currentJob.CurrentSet < currentJob.TaskList.Count &&
-            currentJob.TaskList[currentJob.CurrentSet].IsCompleted)
+            currentJob.CurrentTaskSet < currentJob.TaskList.Count &&
+            currentJob.TaskList[currentJob.CurrentTaskSet].IsCompleted)
         {
             UpdateActiveTasks();
         }
@@ -878,8 +878,8 @@ public class JobSidebar
     {
         if (showingAvailableJobs || currentJob == null) return;
 
-        if (currentJob.CurrentSet < currentJob.TaskList.Count &&
-            currentJob.TaskList[currentJob.CurrentSet].IsCompleted)
+        if (currentJob.CurrentTaskSet < currentJob.TaskList.Count &&
+            currentJob.TaskList[currentJob.CurrentTaskSet].IsCompleted)
         {
             UpdateActiveTasks();
         }

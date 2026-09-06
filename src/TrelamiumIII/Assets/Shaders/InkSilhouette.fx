@@ -63,6 +63,7 @@ sampler2D NoiseSampler = sampler_state
 float2 uFieldTexel;
 float2 uWorldOffset;
 float  uAspect;
+float2 uZoom;
 float  uTime;
 
 float  uWobble;
@@ -105,18 +106,33 @@ float Fbm(float2 p)
     return sum;
 }
 
+// Screen uv -> world position, in units of screen heights. See GasFbm.fx for why the zoom has to
+// be undone here: without it the noise carries a (1 - uZoom) * cameraCentre error that moves with
+// the camera, so the pattern slides across the world whenever the player pans while zoomed.
+float2 WorldUv(float2 uv)
+{
+    float2 aspect = float2(uAspect, 1.0);
+    float2 halfExtent = aspect * 0.5;
+
+    return (uv * aspect - halfExtent) / uZoom + halfExtent + uWorldOffset;
+}
+
 // World-locked wobble offset for a uv. Boils in place while the camera pans, instead of
 // swimming along with the screen.
 float2 Warp(float2 uv)
 {
-    float2 p = (uv * float2(uAspect, 1.0) + uWorldOffset) * uWobbleScale + uWobbleDrift * uTime;
+    float2 p = WorldUv(uv) * uWobbleScale + uWobbleDrift * uTime;
 
     float wx = Fbm(p);
     float wy = Fbm(p + 7.31);
 
     // -0.47 rather than -0.5: the FBM sum sits slightly above centre for the textures this
     // is bound to, and an uncentred warp drifts the whole silhouette off its stamps.
-    return (float2(wx, wy) - 0.47) * uWobble;
+    //
+    // Scaled by uZoom because the result is a displacement in SCREEN uv while uWobble is authored
+    // against the silhouette, which the camera magnifies. Left unscaled, a zoomed-in silhouette
+    // gets a proportionally smaller wobble and visibly stiffens.
+    return (float2(wx, wy) - 0.47) * uWobble * uZoom;
 }
 
 // Coverage at a uv, smeared toward uCenter. The taper gives the trail a bright head and a

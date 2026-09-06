@@ -1,4 +1,5 @@
 ﻿using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -25,17 +26,25 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
     public virtual float ReactionDamage => 0f;
 
     /// <summary>
-    /// automatically checks if the NPC is not friendly, immortal, or doesnt take damage. strip base if you don't care for those checks.
+    /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
     /// </summary>
-    /// <param name="node"></param>
-    /// <param name="npc"></param>
+    /// <remarks>
+    /// Resolved through <see cref="TileConditionSystem"/> rather than constructed here, because
+    /// conditions are flyweights owned by that system -- this is a reference to the registered one,
+    /// not a second copy of it.
+    /// </remarks>
+    protected virtual ChemicalReactionTileCondition? Residue => null;
+
+    protected override bool UsesTileField => Residue is not null;
+
+    /// <summary>
+    /// Applies chemistry. Friendlies, dummies and anything that cannot take damage were already
+    /// filtered by <see cref="GasLayer.CanAffect(NPC)"/> before this was called -- overrides do not
+    /// need to re-check, and more to the point, an override that forgot used to be able to reach
+    /// past a guard that lived here.
+    /// </summary>
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
-        if (npc.friendly) return;
-
-        if (npc.dontTakeDamage)
-            return;
-
         var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
         chem.ApplyAffliction(ChemicalDamage, AfflictionDuration, AfflictionRate, ChemicalType);
 
@@ -75,6 +84,23 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
         }
         base.OnTileContact(ref node, tileX, tileY, tile);
     }
+
+    /// <summary>
+    /// Leaves the layer's residue wherever it has actually pooled.
+    /// </summary>
+    /// <remarks>
+    /// Intensity is carried over from the coverage that cleared the threshold, so a thin film sets
+    /// a faint, short-lived patch and a deep pool sets a strong one. The residue then applies the
+    /// same chemistry the nodes did, through the same <see cref="IChemicalSource"/> path -- the
+    /// puddle outlives the cloud that made it, which is the point.
+    /// <para>
+    /// The owner rides along with it. The puddle spends the rest of its life breathing this same
+    /// layer back out, and those nodes have to know whose they are for the same reason the ones
+    /// that made it did.
+    /// </para>
+    /// </remarks>
+    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
+        => Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner);
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 }

@@ -166,7 +166,11 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
 
         // Locks the wobble to the world, so the outline boils in place while the camera pans instead
         // of swimming along with it. Same convention as GasFbm.fx and MagnetizerField.fx.
+        //
+        // The zoom is the other half of that lock: the field bakes it into its own transform, so the
+        // shader is handed a screen uv and has to undo it before the offset means anything.
         effect.Parameters["uWorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
+        effect.Parameters["uZoom"]?.SetValue(Main.GameViewMatrix.Zoom);
 
         effect.Parameters["uWobble"]?.SetValue(WOBBLE);
         effect.Parameters["uWobbleScale"]?.SetValue(WOBBLE_SCALE);

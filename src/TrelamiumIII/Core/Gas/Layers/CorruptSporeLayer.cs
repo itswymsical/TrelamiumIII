@@ -1,5 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 
@@ -27,6 +29,9 @@ public class CorruptedSporeLayer : ChemicalGasLayer
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
 
+    /// <summary>Spores that settle leave a necrotic film on the surface.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
+
     private Asset<Texture2D> noiseTex;
 
     public override void Load()
@@ -42,7 +47,7 @@ public class CorruptedSporeLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 

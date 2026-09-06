@@ -35,7 +35,7 @@ public partial class JobPlayer : ModPlayer
         // Ahead of the task loop, so a Job can still tell what its state was before this event credited anything.
         Job.OnEvent(evt);
 
-        var currentSet = Job.CurrentSet;
+        var currentSet = Job.CurrentTaskSet;
         if (currentSet < 0 || currentSet >= Job.TaskList.Count)
             return;
 
@@ -206,7 +206,7 @@ public partial class JobPlayer : ModPlayer
                 ["ID"] = Job.ID,
                 ["Progress"] = (int)Job.Progress,
                 ["Status"] = (int)Job.Status,
-                ["CurrentList"] = Job.CurrentSet,
+                ["CurrentList"] = Job.CurrentTaskSet,
                 ["Tasks"] = SerializeTasks(Job.TaskList),
                 ["Contributions"] = SerializeContributions(Job),
                 ["Custom"] = custom
@@ -231,7 +231,7 @@ public partial class JobPlayer : ModPlayer
             {
                 Job.Progress = (JobProgress)JobTag.GetInt("Progress");
                 Job.Status = (JobStatus)JobTag.GetInt("Status");
-                Job.CurrentSet = JobTag.GetInt("CurrentList");
+                Job.CurrentTaskSet = JobTag.GetInt("CurrentList");
 
                 DeserializeTasks(Job.TaskList, JobTag.GetList<TagCompound>("Tasks"));
                 DeserializeContributions(Job, JobTag.GetList<int>("Contributions"));

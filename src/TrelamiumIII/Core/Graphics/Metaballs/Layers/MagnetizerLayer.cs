@@ -172,7 +172,7 @@ public sealed class MagnetizerLayer : MetaballLayer
         // Floored, but not far. Ore in the grip glows a little from being torn apart, and a stream
         // that vanishes in an unlit cave stops telling the player the tool is working -- which is
         // most of what it is there for.
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.38f));
+        Vector3 light = new Vector3(0.38f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
         effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));

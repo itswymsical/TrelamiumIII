@@ -4,7 +4,8 @@ using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Tiles;
+using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
@@ -46,7 +47,7 @@ public class ThermiteLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.55f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
@@ -87,6 +88,15 @@ public class ThermiteLayer : ChemicalGasLayer
             device.Textures[1] = noiseTex.Value;
     }
 
+    /// <summary>Thermite left on a floor keeps burning as a thermal residue.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<ThermalResidueCondition>();
+
+    /// <summary>
+    /// Just over one node's worth, so a spray that merely passes over terrain leaves nothing and
+    /// only thermite that has actually settled starts working on it.
+    /// </summary>
+    protected override float TileFieldThreshold => 1.15f;
+
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
@@ -94,24 +104,37 @@ public class ThermiteLayer : ChemicalGasLayer
         npc.AddBuff(BuffID.OnFire, 120);
     }
 
+    /// <summary>Per-node response only: the node thickens and slows in liquid, nothing else.</summary>
+    /// <remarks>
+    /// The conversions this used to do live in <see cref="OnLiquidField"/> now. Run from here they
+    /// fired once per node per frame, which meant a single invisible tail-end node was enough to
+    /// flash a full tile of water to obsidian -- and three of them did it three times over.
+    /// </remarks>
     protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
     {
+        base.OnLiquidContact(ref node, tileX, tileY, tile);
+
         node.Life *= 0.99f;
-        if (ThermiteFlaskProjectile.shattered)
-        {
-            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
-                TileID.Obsidian, LiquidID.Water, amountLeft: 50);
-        }
-        if (ThermiteFlaskProjectile.shattered)
-        {
-            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
-               (ushort)ModContent.TileType<RustedIronOre>(), LiquidID.Lava, amountLeft: 50);
-        }
-        if (ThermiteFlaskProjectile.shattered)
-        {
-            LiquidUtils.ConvertLiquidIntoTile(ref node, tileX, tileY, tile,
-               TileID.CrispyHoneyBlock, LiquidID.Honey, amountLeft: 50);
-        }
+    }
+
+    /// <summary>
+    /// Boils off a pool the thermite is genuinely sitting in, leaving the appropriate slag.
+    /// </summary>
+    /// <remarks>
+    /// Drain scales with coverage, so a thin film takes its time and a deep pour goes quickly, and
+    /// each pass only removes a slice -- the pool visibly recedes instead of vanishing on the frame
+    /// of contact.
+    /// </remarks>
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
+    {
+        if (!ThermiteFlaskProjectile.shattered)
+            return;
+
+        int drain = (int)MathHelper.Clamp(density * 5f, 3f, 20f);
+
+        LiquidUtils.BoilLiquidIntoTile(tileX, tileY, TileID.Obsidian, LiquidID.Water, drain, amountLeft: 50);
+        LiquidUtils.BoilLiquidIntoTile(tileX, tileY, (ushort)ModContent.TileType<RustedIronOre>(), LiquidID.Lava, drain, amountLeft: 50);
+        LiquidUtils.BoilLiquidIntoTile(tileX, tileY, TileID.CrispyHoneyBlock, LiquidID.Honey, drain, amountLeft: 50);
     }
 
     protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile)

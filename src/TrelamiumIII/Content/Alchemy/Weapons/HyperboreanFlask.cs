@@ -96,7 +96,7 @@ public class HyperboreanFlaskProjectile : ModProjectile
         Vector2 scatter = impactDir * Main.rand.NextFloat(2f, 9f)
                         + Main.rand.NextVector2Circular(1.5f, 1.5f);
 
-        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40);
+        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -181,7 +181,7 @@ public class HyperboreanFlaskBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
                              + Main.rand.NextVector2Circular(1.5f, 1.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80, owner: Projectile.owner);
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)

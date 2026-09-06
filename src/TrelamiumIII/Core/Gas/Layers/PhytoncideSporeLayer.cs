@@ -1,5 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 
@@ -26,6 +28,9 @@ public class PhytoncideSporeLayer : ChemicalGasLayer
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
 
+    /// <summary>Spores that settle leave a caustic film on the surface.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CausticResidueCondition>();
+
     private Asset<Texture2D> noiseTex;
 
     public override void Load()
@@ -41,7 +46,7 @@ public class PhytoncideSporeLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
@@ -74,12 +79,9 @@ public class PhytoncideSporeLayer : ChemicalGasLayer
     {
         base.OnNPCContact(ref node, npc);
 
-        if (npc.friendly)
-            return;
-
-        if (npc.immortal || npc.dontTakeDamage)
-            return;
-
+        // The friendly, dummy and invulnerable checks that used to live here are now in
+        // GasLayer.CanAffect, which runs before the sweep ever reaches this hook. This layer was
+        // the only one making them, which is exactly why the others were setting town NPCs alight.
         npc.AddBuff(BuffID.Poisoned, 30);
     }
     

@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Tiles;
+using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -94,7 +94,7 @@ public class ThermiteFlaskProjectile : ModProjectile
         Vector2 scatter = impactDir * Main.rand.NextFloat(2f, 9f)
                         + Main.rand.NextVector2Circular(1.5f, 0.5f);
 
-        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40);
+        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -170,6 +170,9 @@ public class ThermiteBurstProjectile : ModProjectile
     private const float MAX_FALL = 14f;
     private const float AIR_DRAG = 0.992f;
 
+    /// <summary>Pixels of terrain charred by a bounce. Roughly the 3x3 the old overlay pass marked.</summary>
+    private const float SCORCH_RADIUS = 26f;
+
     public override void SetDefaults()
     {
         Projectile.width = Projectile.height = 22;
@@ -194,25 +197,8 @@ public class ThermiteBurstProjectile : ModProjectile
 
         Spin *= BOUNCE;
 
-        int tileX = (int)(Projectile.Center.X / 16f);
-        int tileY = (int)(Projectile.Center.Y / 16f);
+        BurnedCondition.Scorch(Projectile.Center, SCORCH_RADIUS);
 
-        // Scan a 3x3 area around the impact point
-        for (int x = tileX - 1; x <= tileX + 1; x++)
-        {
-            for (int y = tileY - 1; y <= tileY + 1; y++)
-            {
-                if (WorldGen.InWorld(x, y))
-                {
-                    Tile tile = Framing.GetTileSafely(x, y);
-
-                    if (tile.HasTile && Main.tileSolid[tile.TileType])
-                    {
-                        OverlayedTileManager.AddOverlayedTile<BurnOverlay>(x, y);
-                    }
-                }
-            }
-        }
         return false;
     }
 
@@ -238,6 +224,6 @@ public class ThermiteBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.2f
                              + Main.rand.NextVector2Circular(7.5f, 7.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30, owner: Projectile.owner);
     }
 }

@@ -49,7 +49,7 @@ public sealed class SporeLayer : MetaballLayer
 
         // Floored so the cloud stays legible in an unlit cave; it emits its own light anyway, and
         // spores that vanish into the dark stop communicating that an enemy is infected.
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.3f));
+        Vector3 light = new Vector3(0.3f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
         effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));

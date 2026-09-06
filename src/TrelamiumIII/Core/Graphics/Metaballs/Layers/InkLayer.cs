@@ -79,7 +79,7 @@ public sealed class InkLayer : MetaballLayer
         // ambient light drive it as well would take the rim down with it, and the silhouette would
         // lose its edge in exactly the places this plays -- a night-time arena, or the cavern layer.
         // So the layer lights itself and ignores the room.
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.78f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
         effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));

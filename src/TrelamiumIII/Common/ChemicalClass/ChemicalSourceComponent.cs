@@ -55,6 +55,7 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource
     {
         return ChemicalType switch
         {
+            ChemicalDamageType.Solute => new Color(126, 186, 240),
             ChemicalDamageType.Thermal => new Color(255, 135, 31),
             ChemicalDamageType.Cryonic => new Color(157, 202, 238),
             ChemicalDamageType.Caustic => new Color(93, 173, 63),
@@ -83,19 +84,25 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource
         };
         tooltips.Insert(insertionIndex + 1, chemicalType);
 
-        if (component.ReactionDamage > 0f)
+        // Reaction lines only for something that can actually react. A solute weapon reporting
+        // "0% chemical reaction chance" is stating an absence the player has no way to act on, and
+        // reads as the weapon being broken rather than as it being a different kind of weapon.
+        if (ChemicalMatchup.IsElemental(component.ChemicalType))
         {
-            var reactionDamage = new TooltipLine(Mod, "ReactionDamage",
-                $"deals {component.ReactionDamage:0} [chem:{component.ChemicalType}] reaction damage")
+            if (component.ReactionDamage > 0f)
             {
-                OverrideColor = component.ChemicalColor(),
-            };
-            tooltips.Insert(insertionIndex + 2, reactionDamage);
-        }
+                var reactionDamage = new TooltipLine(Mod, "ReactionDamage",
+                    $"deals {component.ReactionDamage:0} [chem:{component.ChemicalType}] reaction damage")
+                {
+                    OverrideColor = component.ChemicalColor(),
+                };
+                tooltips.Insert(insertionIndex + 2, reactionDamage);
+            }
 
-        var reactionChance = new TooltipLine(Mod, "ReactionChance",
-        $"{component.ReactionChance * 1000}% chemical reaction chance");
-        tooltips.Insert(insertionIndex + 3, reactionChance);
+            var reactionChance = new TooltipLine(Mod, "ReactionChance",
+                $"{component.ReactionChance * 1000}% chemical reaction chance");
+            tooltips.Insert(insertionIndex + 3, reactionChance);
+        }
 
         int insertionIndex2 = tooltips.FindIndex(line => line.Name == "Speed");
         var afflictionDuration = new TooltipLine(Mod, "AfflictionDuration",

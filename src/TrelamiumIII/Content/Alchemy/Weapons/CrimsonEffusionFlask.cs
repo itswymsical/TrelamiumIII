@@ -95,7 +95,7 @@ public class CrimsonEffusionFlaskProjectile : ModProjectile
         Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
                       + Main.rand.NextVector2Circular(0.5f, 0.5f);
 
-        layer.SpawnNode(Projectile.Center, drift, radius: 4f, life: 40f);
+        layer.SpawnNode(Projectile.Center, drift, radius: 4f, life: 40f, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -215,7 +215,7 @@ public class CrimsonEffusionBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.5f
                              + Main.rand.NextVector2Circular(1.5f, 3.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80, owner: Projectile.owner);
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
