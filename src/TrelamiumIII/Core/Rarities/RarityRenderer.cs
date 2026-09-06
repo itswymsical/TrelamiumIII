@@ -7,19 +7,6 @@ namespace TrelamiumIII.Core.Rarities;
 /// <summary>
 ///     Drives every registered <see cref="RarityStyle" />, on every surface an item is shown on.
 /// </summary>
-/// <remarks>
-///     <para>
-///         One global rather than a hook per item. The look belongs to the rarity, so an item that
-///         wants it should have to write nothing beyond <c>Item.rare = ...</c> -- which is the
-///         difference between this and the hand-rolled tooltip overrides it is meant to replace,
-///         where the same forty lines of leaf-drifting code were pasted into three classes and had
-///         already drifted apart between them.
-///     </para>
-///     <para>
-///         Every hook leaves early when nothing is registered or the item has no style, so items
-///         without a rarity style pay one dictionary miss.
-///     </para>
-/// </remarks>
 public sealed class RarityRenderer : GlobalItem
 {
     public override bool InstancePerEntity => true;
@@ -43,8 +30,6 @@ public sealed class RarityRenderer : GlobalItem
         if (!RarityStyles.Any || line.Name != "ItemName")
             return true;
 
-        // A One Drop line carries no text -- vanilla draws the logo itself and leaves Text empty --
-        // so taking it over would silently delete the logo off every yoyo given a rarity style.
         if (line.OneDropLogo)
             return true;
 
