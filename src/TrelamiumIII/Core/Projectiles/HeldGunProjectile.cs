@@ -67,8 +67,31 @@ public abstract class HeldGunProjectile : ModProjectile
         set => Projectile.ai[0] = value;
     }
 
+    /// <summary>
+    ///     Ticks that must elapse after a shot before the next one may go off.
+    /// </summary>
+    /// <remarks>
+    ///     The seam an archetype fires through. A plain gun answers with its fire rate forever; a
+    ///     burst gun answers with its fire rate mid-burst and with its recovery after the last shot
+    ///     of one, which is the entire difference between the two archetypes expressed as a number
+    ///     that changes.
+    /// </remarks>
+    protected virtual int ShotInterval => Profile.UseSpeed;
+
+    /// <summary>Whether the weapon may be put away right now, ammunition and input aside.</summary>
+    /// <remarks>
+    ///     False is how an archetype refuses to be interrupted -- a burst that has started fires all
+    ///     of its rounds whether or not the button is still down.
+    /// </remarks>
+    protected virtual bool CanHolster => true;
+
     /// <summary>Recoil, 0 at rest and 1 at peak.</summary>
-    protected float Recoil => Profile.RecoilAt(TicksSinceShot);
+    /// <remarks>
+    ///     Virtual so an archetype can shape the envelope across a longer pattern than one shot.
+    ///     Overrides should scale the base rather than replace it, or they lose the two-phase curve
+    ///     that everything else in the weapon is keyed to.
+    /// </remarks>
+    protected virtual float Recoil => Profile.RecoilAt(TicksSinceShot);
 
     /// <summary>Unit vector from the holder toward whatever they are aiming at.</summary>
     protected Vector2 Aim { get; private set; } = Vector2.UnitX;
@@ -148,7 +171,13 @@ public abstract class HeldGunProjectile : ModProjectile
     public override bool? CanDamage() => false;
 
     /// <summary>Ready to fire on the frame it appears, rather than after a phantom first cycle.</summary>
-    public override void OnSpawn(IEntitySource source) => TicksSinceShot = Profile.UseSpeed;
+    /// <remarks>
+    ///     Past the recoil length as well as past the interval. The two used to be the same number
+    ///     so the interval alone sufficed; a weapon whose recoil outlasts its cadence would
+    ///     otherwise be drawn mid-kick on the frame it is brought out, having never fired.
+    /// </remarks>
+    public override void OnSpawn(IEntitySource source)
+        => TicksSinceShot = Math.Max(ShotInterval, Profile.RecoilLength);
 
     /// <summary>
     ///     Runs the whole weapon and suppresses the default projectile AI.
@@ -174,9 +203,12 @@ public abstract class HeldGunProjectile : ModProjectile
         Projectile.Center = owner.Center;
         Projectile.timeLeft = 2;
 
+        // Remote copies run the same clock so the recoil animation plays out for them too; it is
+        // capped at the recoil length rather than at the interval, because for a burst weapon the
+        // animation is the longer of the two and stopping at the interval would freeze it mid-kick.
         if (Main.myPlayer == Projectile.owner)
             UpdateCycle(owner);
-        else if (TicksSinceShot < Profile.UseSpeed)
+        else if (TicksSinceShot < Profile.RecoilLength)
             TicksSinceShot++;
 
         HoldWeapon(owner);
@@ -212,20 +244,26 @@ public abstract class HeldGunProjectile : ModProjectile
     /// </summary>
     private void UpdateCycle(Player owner)
     {
-        if (TicksSinceShot < Profile.UseSpeed)
-        {
-            TicksSinceShot++;
+        // Incremented before the gate rather than after it, so a shot lands exactly `interval` ticks
+        // after the last one. Testing first and incrementing in the else branch spends a tick on the
+        // test itself and spaces shots at interval + 1 -- invisible at 45, a fifty percent error at
+        // the two-tick cadence a burst weapon runs.
+        TicksSinceShot++;
 
+        int interval = Math.Max(ShotInterval, 1);
+
+        if (TicksSinceShot < interval)
             return;
-        }
-
-        bool holding = !HoldToKeep || owner.channel;
 
         // Frozen, stoned or webbed keeps the weapon out but stops the cycle, which is what vanilla
         // does to an item use. Killing it instead would make every crowd-control effect also
         // disarm the player until they clicked again.
         if (owner.CCed)
             return;
+
+        // An archetype mid-pattern -- a burst with rounds left -- keeps firing whether or not the
+        // button is still down. Releasing early cancels the next burst, not this one.
+        bool holding = !HoldToKeep || owner.channel || !CanHolster;
 
         if (holding && CanFire(owner))
         {
@@ -234,16 +272,25 @@ public abstract class HeldGunProjectile : ModProjectile
             TicksSinceShot = 0;
             Projectile.netUpdate = true;
 
+            OnShotFired(owner);
+
             return;
         }
 
-        // Out of ammo mid-hold, or the button came up. Either way the cycle has nothing left to do,
-        // so the only question is whether the weapon stays out -- and a cooldown past the end of
-        // the cycle is what keeps a burst from snapping the sprite away the instant it runs dry.
-        if (!holding && TicksSinceShot >= Profile.UseSpeed + Cooldown)
+        // The button came up with nothing left to finish, so the weapon goes away -- after a
+        // cooldown, which is what keeps it from snapping off the screen the instant it runs dry.
+        if (!holding && CanHolster && TicksSinceShot >= interval + Cooldown)
+        {
             Projectile.Kill();
-        else
-            TicksSinceShot++;
+
+            return;
+        }
+
+        // Still held but unable to fire: out of ammo, or waiting on something the weapon owns. Park
+        // the timer at the top of its useful range rather than letting it climb for as long as the
+        // player stands there holding a dry gun.
+        if (TicksSinceShot > interval + Cooldown)
+            TicksSinceShot = interval + Cooldown;
     }
 
     /// <summary>
@@ -303,6 +350,16 @@ public abstract class HeldGunProjectile : ModProjectile
     /// <summary>Whether the weapon may fire this cycle -- ammo, resources, a charge state.</summary>
     /// <remarks>Answering false holds the cycle rather than ending it; the weapon stays out.</remarks>
     protected virtual bool CanFire(Player owner) => true;
+
+    /// <summary>
+    ///     A shot has just gone off. Where an archetype advances its own pattern state.
+    /// </summary>
+    /// <remarks>
+    ///     Runs owner-side, immediately after <see cref="Fire" /> and after the shot timer has been
+    ///     reset, so anything set here is in place before the next tick reads
+    ///     <see cref="ShotInterval" />. That ordering is what lets a burst count its own rounds.
+    /// </remarks>
+    protected virtual void OnShotFired(Player owner) { }
 
     /// <summary>Per-tick hook for anything the weapon does while it is out: idle glow, dust, hum.</summary>
     /// <remarks>Runs on every client, so guard anything that should only happen once.</remarks>

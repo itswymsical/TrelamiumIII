@@ -238,6 +238,7 @@ public sealed class ChemicalTagHandler : ITagHandler
     {
         return type switch
         {
+            ChemicalDamageType.Solute => new Color(126, 186, 240),
             ChemicalDamageType.Thermal => new Color(255, 135, 31),
             ChemicalDamageType.Cryonic => new Color(157, 202, 238),
             ChemicalDamageType.Caustic => new Color(93, 173, 63),

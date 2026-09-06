@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -19,9 +20,14 @@ namespace TrelamiumIII.Core.Gas.Layers;
 ///         the condition.
 ///     </para>
 ///     <para>
-///         Deliberately not a <c>ChemicalGasLayer</c>. Gel is not chemistry -- it afflicts nothing,
-///         rolls no reactions, and belongs to no damage type. Everything it does it does by being
-///         in the way, which is the plain <see cref="GasLayer" /> contract and nothing more.
+///         A <see cref="ChemicalGasLayer" /> carrying <see cref="ChemicalDamageType.Solute" />, which
+///         is the elementless case: it afflicts over time like any other chemical source and rolls
+///         no reactions, because it has no element to react with. That is a deliberate reversal of
+///         an earlier design where gel sat outside the chemical system as a plain
+///         <see cref="GasLayer" />. Outside it, gel had to reimplement contact sweeps, ownership and
+///         residue handoff to do the same job with none of the shared machinery; inside it, a gel
+///         weapon is a chemical weapon whose payload happens to be inert, and every accessory,
+///         tooltip and stat that reads chemistry reads it for free.
 ///     </para>
 ///     <para>
 ///         The palette is copied from <see cref="SlimedCondition" /> on purpose, down to the
@@ -30,10 +36,29 @@ namespace TrelamiumIII.Core.Gas.Layers;
 ///         effects that happen to fire at the same moment.
 ///     </para>
 /// </remarks>
-public class GelLayer : GasLayer
+public class GelLayer : ChemicalGasLayer
 {
     /// <summary>Ticks of <see cref="BuffID.Slow" /> put on anything wading through the airborne gel.</summary>
     private const int SLOW_TICKS = 45;
+
+    /// <summary>Elementless. See <see cref="ChemicalDamageType.Solute" />.</summary>
+    public override ChemicalDamageType ChemicalType => ChemicalDamageType.Solute;
+
+    /// <summary>Low and steady: the cloud is a nuisance, the coat on the floor is the weapon.</summary>
+    public override float ChemicalDamage => 0.25f;
+
+    public override int AfflictionDuration => 90;
+
+    public override float AfflictionRate => 30f;
+
+    /// <summary>
+    ///     No reactions. A solute has no element to react with, and
+    ///     <see cref="ChemicalReaction.Trigger" /> refuses it anyway -- this is the same statement
+    ///     made where a designer reading the layer will see it.
+    /// </summary>
+    public override float ReactionChance => 0f;
+
+    public override float ReactionDamage => 0f;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -64,7 +89,17 @@ public class GelLayer : GasLayer
     /// </remarks>
     protected override float EnclosedLifePenalty => 0.6f;
 
-    /// <summary>Gel sticks where it lands.</summary>
+    /// <summary>
+    ///     Gel sticks where it lands, but not as a <see cref="ChemicalReactionTileCondition" />.
+    /// </summary>
+    /// <remarks>
+    ///     Forced on rather than inherited from a non-null <c>Residue</c>, because what gel leaves
+    ///     behind is <see cref="SlimedCondition" /> -- a metaball sheet with its own shader and its
+    ///     own drag rules, not a chemical stain drawn through the coverage mask. The base class ties
+    ///     the tile field to having a chemical residue; this layer has a residue that simply is not
+    ///     one of those, so it takes the field and does the handoff itself in
+    ///     <see cref="OnTileField" />.
+    /// </remarks>
     protected override bool UsesTileField => true;
 
     /// <summary>
@@ -147,8 +182,14 @@ public class GelLayer : GasLayer
     }
 
     /// <summary>Wading through the cloud itself is sticky, on top of whatever it lands on.</summary>
+    /// <remarks>
+    ///     The base call is what applies the solute affliction; the slow on top of it is this
+    ///     layer's own contribution and the reason anyone would fire gel at a moving target.
+    /// </remarks>
     protected override void OnNPCContact(ref GasNode node, NPC npc)
     {
+        base.OnNPCContact(ref node, npc);
+
         npc.AddBuff(BuffID.Slow, SLOW_TICKS);
 
         npc.velocity.X *= 0.97f;

@@ -1,35 +1,60 @@
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Misc;
 
 /// <summary>
-///     A pistol that fires gel. What it hits gets coated; what it misses coats the terrain.
+///     A burst pistol that fires gel. What it hits gets coated; what it misses coats the terrain.
 /// </summary>
 /// <remarks>
-///     Held rather than swung -- see <see cref="HeldGunProjectile" /> -- so the item itself is
-///     little more than the stats and the ammunition. Channelled rather than auto-reusing: one use
-///     puts the weapon out and holding the button keeps it there while it cycles on its own, which
-///     is what makes the recoil read as a rhythm rather than as a series of unrelated twitches.
+///     <para>
+///         A controlled-damage weapon rather than a ranged one -- see
+///         <see cref="ChemicalDamageClass" />. Six damage a round is not the output; three rounds of
+///         gel across a doorway is. The class exists precisely so this weapon does not have to be
+///         balanced against guns that are trying to do a different job.
+///     </para>
+///     <para>
+///         The generic case of that class, and the reason the generic case exists. Gel is a solute:
+///         it has no element, wins no composition matchup, and rolls no reactions -- it afflicts
+///         steadily and it controls where things can walk. Everything the flasks get for being
+///         chemical, this gets for being <see cref="ChemicalDamageType.Solute" />, without having to
+///         pretend to be an element it is not.
+///     </para>
+///     <para>
+///         Burst rather than automatic, and the two are not interchangeable. A stream of gel would
+///         paint a continuous wall and reduce the weapon to holding the button down; three rounds
+///         and a breath makes each burst a decision about which patch of ground is worth claiming,
+///         which is the play the whole class is built around. See
+///         <see cref="BurstGunProjectile" /> for how the archetype is put together.
+///     </para>
+///     <para>
+///         Held rather than swung, so the item is little more than the stats and the ammunition.
+///         Channelled rather than auto-reusing: one use puts the weapon out and holding the button
+///         keeps it there while it runs its own cadence.
+///     </para>
 /// </remarks>
 public class GelatinousBlaster : ModItem
 {
     public override void SetDefaults()
     {
-        Item.DamageType = DamageClass.Ranged;
+        Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.damage = 6;
         Item.knockBack = 1.5f;
 
         Item.width = 44;
         Item.height = 32;
 
-        Item.useTime = Item.useAnimation = 8;
+        // Matches the burst period, so the item's own animation clock keeps step with the weapon's.
+        Item.useTime = Item.useAnimation = GunShotProfile.BurstPistol.BurstPeriod;
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.useAmmo = ItemID.Gel;
 
@@ -43,6 +68,20 @@ public class GelatinousBlaster : ModItem
         Item.shootSpeed = 11f;
         Item.scale = 0.9f;
         Item.shoot = ModContent.ProjectileType<GelatinousBlasterProj>();
+
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        // The same component the flasks carry, on the same delivery path. What makes this weapon
+        // generic rather than elemental is one field: no element, so no matchup and no reaction --
+        // the affliction is the whole of what the gel does to a target, and the coat it leaves is
+        // the whole of what it does to the fight.
+        component.ChemicalType = ChemicalDamageType.Solute;
+        component.ChemicalDamage = 1.5f;
+        component.AfflictionRate = 30f;
+        component.AfflictionDuration = TimeConversion.SetTime(secs: 3);
+        component.ReactionChance = 0f;
+        component.ReactionDamage = 0f;
     }
 
     /// <inheritdoc cref="StalagMagMKI.Shoot" />
@@ -74,35 +113,48 @@ public class GelatinousBlaster : ModItem
     }
 }
 
-/// <summary>The blaster in the player's hands: a pistol cycle, a gel blob per shot.</summary>
-public class GelatinousBlasterProj : HeldGunProjectile
+/// <summary>The blaster in the player's hands: a three-round burst, a gel blob per round.</summary>
+public class GelatinousBlasterProj : BurstGunProjectile
 {
     public override string Texture => AssetReferences.Content.Misc.GelatinousBlaster.KEY;
 
     /// <summary>
-    ///     A pistol, with the muzzle pushed out to clear the longer sprite.
+    ///     The stock burst pistol, with the muzzle pushed out to clear the longer sprite.
     /// </summary>
     /// <remarks>
-    ///     Everything else is the stock <see cref="GunShotProfile.Pistol" />: the short punch out,
-    ///     the pronounced climb and the quick settle are what make this read as a sidearm rather
-    ///     than a scaled-down cannon, and there is no reason for this weapon to disagree with the
-    ///     preset about any of it.
+    ///     Three rounds two ticks apart and a 36-tick breath, which is the
+    ///     <see cref="GunShotProfile.BurstPistol" /> preset unchanged -- the whole point of the
+    ///     preset is that a weapon of this archetype should not have to restate the cadence to get
+    ///     the feel. Only the two numbers that depend on this particular sprite are overridden.
     /// </remarks>
-    protected override GunShotProfile Profile => GunShotProfile.Pistol with
+    protected override GunShotProfile Profile => GunShotProfile.BurstPistol with
     {
         MuzzleLength = 28f,
         HoldDistance = 6f,
-        UseSpeed = 2,   
     };
 
     public override void SetDefaults()
     {
         base.SetDefaults();
 
+        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.scale = 0.9f;
     }
 
-    protected override bool CanFire(Player owner) => owner.HasAmmo(owner.HeldItem);
+    protected override bool CanFireBurst(Player owner) => owner.HasAmmo(owner.HeldItem);
+
+    /// <summary>The last round of the burst coughs out a heavier vent of gel.</summary>
+    /// <remarks>
+    ///     Purely a punctuation mark, and it is worth having: without something at the end, three
+    ///     rounds and a silent pause reads as the weapon having jammed rather than as it having
+    ///     finished.
+    /// </remarks>
+    protected override void OnBurstComplete(Player owner)
+    {
+        SoundEngine.PlaySound(SoundID.Item95 with { Volume = 0.35f, Pitch = 0.6f, MaxInstances = 2 }, Owner.Center);
+
+        MuzzleSpray(Muzzle, Aim, owner.whoAmI, count: 6, speed: 5.5f);
+    }
 
     protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
     {
@@ -131,14 +183,14 @@ public class GelatinousBlasterProj : HeldGunProjectile
     }
 
     /// <summary>A short cone of gel wisps off the barrel, in the layer the shot itself uses.</summary>
-    private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner)
+    private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, int count = 3, float speed = 4f)
     {
         if (GasSystem.GetLayer<GelLayer>() is not { } layer)
             return;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < count; i++)
         {
-            Vector2 drift = direction.RotatedByRandom(0.5f) * Main.rand.NextFloat(1.5f, 4f);
+            Vector2 drift = direction.RotatedByRandom(0.5f) * Main.rand.NextFloat(speed * 0.4f, speed);
 
             layer.SpawnNode(muzzle, drift, radius: Main.rand.NextFloat(5f, 8f), life: 18f, owner: owner);
         }
@@ -172,7 +224,7 @@ public class GelBallProj : ModProjectile
     {
         Projectile.width = Projectile.height = 12;
         Projectile.friendly = true;
-        Projectile.DamageType = DamageClass.Ranged;
+        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Projectile.penetrate = 1;
         Projectile.timeLeft = 240;
         Projectile.tileCollide = true;
