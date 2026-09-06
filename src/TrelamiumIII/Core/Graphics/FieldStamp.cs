@@ -59,4 +59,16 @@ public static class FieldStamp
     /// </param>
     public static Color Lit(Vector2 worldPosition, float coverage)
         => new Color(1f, Brightness(worldPosition), 0f, 1f) * coverage;
+
+    /// <summary>
+    ///     The vertex colour for a stamp that is not standing anywhere in the world: coverage in red,
+    ///     brightness pinned open in green.
+    /// </summary>
+    /// <remarks>
+    ///     For fields drawn in interface space, where there is no world position to sample and so no
+    ///     light to carry. Passing <see cref="Lit" /> a screen coordinate would sample whatever tile
+    ///     happens to sit at those numbers in world space, which is not merely wrong but wrong in a
+    ///     way that changes as the player walks.
+    /// </remarks>
+    public static Color Flat(float coverage) => new Color(1f, 1f, 0f, 1f) * coverage;
 }

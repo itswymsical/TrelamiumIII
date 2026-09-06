@@ -1,6 +1,7 @@
 ﻿using Terraria.DataStructures;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Projectiles;
+using TrelamiumIII.Core.Tooltips;
 
 namespace TrelamiumIII.Content.Frostbark;
 
@@ -21,7 +22,7 @@ public class Skofnung : ModItem
         // The held projectile owns the swing sound, so the item must not also announce the use.
         Item.UseSound = null;
 
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ModContent.RarityType<CustomRarityTest>();
         Item.value = Item.sellPrice(silver: 22);
         Item.shoot = ModContent.ProjectileType<SkofnungProjectile>();
         Item.autoReuse = false;
@@ -47,8 +48,16 @@ public class SkofnungProjectile : HeldSwordProjectile
     /// <summary>
     ///     The blade in hand. Shared with the item so the two cannot disagree about the tempo.
     /// </summary>
-    public static readonly SwordProfile Swing = SwordProfile.Broadsword with
+    /// <remarks>
+    ///     <see cref="SwordProfile.BladeLength" /> is measured off the sprite, not inherited. The
+    ///     art is 54x54 with the blade corner to corner, which puts the tip about 60 pixels from the
+    ///     grip the profile pivots on; the dagger preset's 30 would have given this sword a hitbox
+    ///     covering half its own blade. Both the drawn length and the reach scale by
+    ///     <see cref="Projectile.scale" /> together, so this number is independent of it.
+    /// </remarks>
+    public static readonly SwordProfile Swing = SwordProfile.Dagger with
     {
+        BladeLength = 60f,
         SwingTicks = 14,
         SwingSound = SoundID.Item1,
     };
@@ -62,6 +71,6 @@ public class SkofnungProjectile : HeldSwordProjectile
     {
         base.SetDefaults();
 
-        Projectile.scale = 0.9f;
+        Projectile.scale = 1.15f;
     }
 }
