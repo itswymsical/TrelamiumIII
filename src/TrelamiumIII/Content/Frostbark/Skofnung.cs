@@ -1,7 +1,6 @@
 ﻿using Terraria.DataStructures;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Projectiles;
-using TrelamiumIII.Core.Tooltips;
 
 namespace TrelamiumIII.Content.Frostbark;
 
@@ -22,7 +21,7 @@ public class Skofnung : ModItem
         // The held projectile owns the swing sound, so the item must not also announce the use.
         Item.UseSound = null;
 
-        Item.rare = ModContent.RarityType<CustomRarityTest>();
+        Item.rare =  ItemRarityID.Blue;
         Item.value = Item.sellPrice(silver: 22);
         Item.shoot = ModContent.ProjectileType<SkofnungProjectile>();
         Item.autoReuse = false;

@@ -28,22 +28,22 @@ public sealed class GoldMine : Job
     [
         new() {
             SaveKey = "copperOre", MaxContributions = 5,
-            SurplusDialogue = "Merchant.GoldMine.SurplusOre",
+            SurplusDialogue = "Merchant.GoldMine_SurplusOre",
             Matches = evt => evt.ItemType == ItemID.CopperOre
         },
         new() {
             SaveKey = "copperBar", MaxContributions = 10,
-            SurplusDialogue = "Merchant.GoldMine.SurplusBars",
+            SurplusDialogue = "Merchant.GoldMine_SurplusBars",
             Matches = evt => evt.ItemType == ItemID.CopperBar
         },
         new() {
             SaveKey = "copperFurn", MaxContributions = 35,
-            SurplusDialogue = "Merchant.GoldMine.SurplusFurniture",
+            SurplusDialogue = "Merchant.GoldMine_SurplusFurniture",
             Matches = evt => ItemUtils.IsCopperFurniture(evt)
         },
         new() {
             SaveKey = "copperTool", MaxContributions = 15,
-            SurplusDialogue = "Merchant.GoldMine.SurplusTools",
+            SurplusDialogue = "Merchant.GoldMine_SurplusTools",
             Matches = evt => ItemUtils.IsCopperTool(evt)
         }
     ];
@@ -65,7 +65,7 @@ public sealed class GoldMine : Job
         rewards: [
             new JobReward(ItemID.SilverCoin, 50),
             new JobReward(ItemID.SilverBar, 14),
-            new JobReward("TrelamiumIII.StalagMagMKI", 1)
+            new JobReward("TrelamiumIII/StalagMagMKI", 1)
         ],
         NPCID.Merchant)
     {
@@ -73,7 +73,12 @@ public sealed class GoldMine : Job
         // impossible; asking for less ends it before the player has seen every category.
         CollectionTask.RequiredCount = CopperMatches.Sum(m => m.MaxContributions);
     }
+    public override void OnJobStart()
+    {
+        base.OnJobStart();
+        DialogueManager.Instance.StartDialogue("Merchant.GoldMine_Greeting");
 
+    }
     public override void Reset()
     {
         base.Reset();
@@ -101,8 +106,8 @@ public sealed class GoldMine : Job
 
     public override void OnSetAdvanced(int previousSet, int newSet)
     {
-        if (newSet == (int)GoldMineTask.CollectCopper)
-            Speak("Merchant.GoldMine.Greeting");
+        //if (newSet == (int)GoldMineTask.CollectCopper)
+        //    Speak("Merchant.GoldMine.Greeting");
     }
 
     /// <summary>

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -7,7 +6,7 @@ using TrelamiumIII.Content.Fungore;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
-using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Rarities.Definitions;
 
 namespace TrelamiumIII.Content.Misc;
 
@@ -26,7 +25,7 @@ public class StalagMagMKI : ModItem
         Item.useAmmo = ItemID.StoneBlock;
         Item.useStyle = ItemUseStyleID.Shoot;
 
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ModContent.RarityType<StalagMagMKRarity>();
 
         Item.autoReuse = false;
         Item.noMelee = true;

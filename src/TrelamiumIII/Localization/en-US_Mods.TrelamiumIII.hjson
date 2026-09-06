@@ -607,12 +607,12 @@ Items: {
 		DisplayName: StalagMag-MK I
 		Tooltip:
 			'''
-			"We Rock. Stone. BOULDER."
-			Fires a variety of stone resources as ammunition, by default;
-			Fires a high-speed stone blocks with insane knockback at your enemies.
+			Fires a variety of stone resources as ammunition, by default:
+			Fires high-speed stone blocks with insane knockback at your enemies.
 			Can also shoot boulders with a certain "piece" installed.
-			Right-click the StalagMag-MK I to swap ammunition types.
+			Right-click to swap ammunition types.
 			'''
+		FlavorText: '''"We Rock. Stone. BOULDER."'''
 	}
 }
 

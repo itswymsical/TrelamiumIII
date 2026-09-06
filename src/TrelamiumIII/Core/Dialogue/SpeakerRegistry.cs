@@ -57,6 +57,15 @@ public static class SpeakerRegistry
 
         Register(new SpeakerProfile
         {
+            Id = "Merchant",
+            TexturePath = Assets.Textures.UI.Dialogue.Portraits.Merchant.KEY,
+            FrameCount = 3,
+            Color = new(100, 150, 200),
+            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Merchant.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
             Id = "NerdySlime",
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
             FrameCount = 1,
