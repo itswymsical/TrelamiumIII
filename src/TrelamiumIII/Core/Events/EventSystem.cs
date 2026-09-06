@@ -2,9 +2,10 @@
 using System.Linq;
 using Terraria.DataStructures;
 using Terraria.Enums;
+using TrelamiumIII.Core.ExperientialSystem.Acts;
 using TrelamiumIII.Core.Jobs;
 
-namespace TrelamiumIII.Core.Jobs.Events;
+namespace TrelamiumIII.Core.Events;
 
 /// <summary>
 /// Large system responsible for managing Jobs and challenges via events. 
@@ -29,6 +30,7 @@ public class EventSystem : ModSystem
     private const int CooldownTicks = 60;
     private const int CooldownPruneInterval = 3600;
     private static int _lastCooldownPrune;
+    private static readonly Dictionary<int, Type> MissionTypes = [];
     public override void Load()
     {
         RegisterJobs();
@@ -42,6 +44,7 @@ public class EventSystem : ModSystem
     public override void Unload()
     {
         UnsubscribeFromEvents();
+
 
         JobTypes.Clear();
         On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
@@ -324,6 +327,7 @@ public class EventSystem : ModSystem
         return null;
     }
 
+
     public static bool IsJobRegistered(int JobId) => JobTypes.ContainsKey(JobId);
     #endregion
 
@@ -501,17 +505,11 @@ public class EventSystem : ModSystem
         var JobPlayer = evt.Player.GetModPlayer<JobPlayer>();
         JobPlayer?.OnGameEvent(evt);
 
+        evt.Player.GetModPlayer<ActTrackerPlayer>().OnGameEvent(evt);
+
         ConditionChecker.OnGameEvent(evt);
-        if (evt.Type == GameEventType.HousingChecked)
-        {
-            bool isValid = evt.Amount == 1;
-            TrelamiumIII.Instance.Logger.Info
-                ($"EventSystem.HousingChecked() at X:{evt.TileX} Y:{evt.TileY} | Room: {evt.RoomId} | Valid: {isValid} | Occupied: {evt.IsOccupied} | Issue: {evt.Issue} | Manual: {evt.IsManualCheck} | Player: ({evt.Player.name})");
-        }
-        else
-        {
-            TrelamiumIII.Instance.Logger.Info($" EventSystem.{evt.Type}() event triggered by player: ({evt.Player.name})");
-        }
+
+        EventLog.Trace(EventLog.Describe(evt));
     }
     #endregion
 }

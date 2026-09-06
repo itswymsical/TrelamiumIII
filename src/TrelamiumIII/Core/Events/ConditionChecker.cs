@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
-namespace TrelamiumIII.Core.Jobs.Events;
+namespace TrelamiumIII.Core.Events;
 
 /// <summary>
 /// Used to check what the player is currently doing, or what they have done over an accumulated period of time.

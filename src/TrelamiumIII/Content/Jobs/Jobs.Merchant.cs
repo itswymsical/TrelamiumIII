@@ -1,9 +1,8 @@
-﻿using Terraria.DataStructures;
+using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Jobs;
@@ -41,7 +40,7 @@ public sealed class GoldMine : Job
         rewards: [
             new JobReward(ItemID.SilverCoin, 50),
             new JobReward(ItemID.SilverBar, 14),
-            new JobReward("TrelamiumIII.VitalTonicItem", 2)
+            new JobReward("TrelamiumIII.StalactiteCannon", 1)
         ],
         NPCID.Merchant){ }
 

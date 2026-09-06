@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.Jobs.Events;
 using TrelamiumIII.Core.UI.World;
 using TrelamiumIII.Utilities;
 

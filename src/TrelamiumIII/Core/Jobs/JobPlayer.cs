@@ -4,7 +4,7 @@ using System.Linq;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
 using TrelamiumIII.Common.Commands;
-using TrelamiumIII.Core.Jobs.Events;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Core.UI.Jobs;
 
