@@ -22,12 +22,12 @@ namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 ///     <para>
 ///         <b>One colour for the whole layer.</b> The composite is a single full-screen draw, so the
 ///         shader gets one palette per frame however many nodes there are -- the same constraint that
-///         makes <see cref="MetaballLayer.SampleAverageLight" /> a layer-wide average. Two players
+///         makes <see cref="MetaballField.SampleAverageLight" /> a layer-wide average. Two players
 ///         mining different ores at once therefore share the newest colour. That is a fair trade for
 ///         one draw call, and it costs nothing in the case that actually happens.
 ///     </para>
 /// </remarks>
-public sealed class MagnetizerLayer : MetaballLayer
+public sealed class MagnetizerLayer : MetaballField
 {
     /// <summary>Inward acceleration per tick while a node is in the grip.</summary>
     private const float PULL = 0.55f;

@@ -150,6 +150,11 @@ ActLang: {
 		Description: Smelt bars of every metal
 	}
 
+	eyeballs: {
+		Name: Eye Puncher
+		Description: kill eyeball creatures
+	}
+
 	planting: {
 		Name: Botanist
 		Description: Plant herbs

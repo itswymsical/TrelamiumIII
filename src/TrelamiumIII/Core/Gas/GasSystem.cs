@@ -8,9 +8,9 @@ public class GasSystem : ModSystem
 {
     public static GasSystem? Instance { get; private set; }
 
-    static readonly List<GasLayer> layers = [];
+    static readonly List<GasField> layers = [];
 
-    public static T GetLayer<T>() where T : GasLayer
+    public static T GetLayer<T>() where T : GasField
     {
         foreach (var layer in layers)
             if (layer is T match) return match;
@@ -21,14 +21,14 @@ public class GasSystem : ModSystem
     {
         Instance = this;
 
-        List<GasLayer> discovered = [];
+        List<GasField> discovered = [];
 
         foreach (Type type in Mod.Code.GetTypes())
         {
-            if (type.IsAbstract || !type.IsSubclassOf(typeof(GasLayer)))
+            if (type.IsAbstract || !type.IsSubclassOf(typeof(GasField)))
                 continue;
 
-            discovered.Add((GasLayer)Activator.CreateInstance(type));
+            discovered.Add((GasField)Activator.CreateInstance(type));
         }
 
         foreach (var layer in discovered.OrderBy(l => l.LoadOrder))
@@ -66,7 +66,7 @@ public class GasSystem : ModSystem
             layer.UpdateGasNodes();
     }
 
-    static void RegisterLayer(GasLayer layer)
+    static void RegisterLayer(GasField layer)
     {
         layer.Load();
         layers.Add(layer);

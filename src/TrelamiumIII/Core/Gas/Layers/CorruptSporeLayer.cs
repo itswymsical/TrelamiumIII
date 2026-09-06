@@ -7,7 +7,7 @@ using Terraria.Audio;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class CorruptedSporeLayer : ChemicalGasLayer
+public class CorruptedSporeLayer : ChemicalGasField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;

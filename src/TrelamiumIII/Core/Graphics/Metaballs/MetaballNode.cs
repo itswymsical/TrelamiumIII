@@ -1,7 +1,7 @@
 namespace TrelamiumIII.Core.Graphics.Metaballs;
 
 /// <summary>
-///     One blob in a <see cref="MetaballLayer" />'s density field.
+///     One blob in a <see cref="MetaballField" />'s density field.
 /// </summary>
 /// <remarks>
 ///     Nodes are simulated, but they are not entities like the gas system so they don't carry damage, or have an owner,
@@ -16,7 +16,7 @@ public struct MetaballNode
     public float MaxLife;
 
     /// <summary>
-    ///     0.0 = buoyoyoyant, 1.0 = dense. <see cref="MetaballLayer" /> interpolates between
+    ///     0.0 = buoyoyoyant, 1.0 = dense. <see cref="MetaballField" /> interpolates between
     ///     its buoyancy and gravity constants across this range.
     /// </summary>
     public float Density;

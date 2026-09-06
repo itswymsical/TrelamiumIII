@@ -21,7 +21,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 ///         state; gameplay drives the look by spawning nodes, never the reverse.
 ///     </para>
 /// </remarks>
-public abstract class MetaballLayer
+public abstract class MetaballField
 {
     protected abstract Asset<Effect> Shader { get; }
 

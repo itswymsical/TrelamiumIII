@@ -7,7 +7,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class IceMistLayer : ChemicalGasLayer
+public class IceMistField : ChemicalGasField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;

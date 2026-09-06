@@ -10,7 +10,7 @@ namespace TrelamiumIII.Core.Gas;
 /// Handles physics, tile collision, surface spreading, entity contact sweeps,
 /// and exposes override hooks for alchemy reactions.
 /// </summary>
-public abstract class GasLayer
+public abstract class GasField
 {
     internal class GasTypeID
     {

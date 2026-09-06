@@ -99,7 +99,7 @@ DialogueLibrary: {
 			Line3.Text: Gather anything that could be made from a copper bar, and bring it back.
 		}
 
-		GoldMine_SurplusBars.Line1.Text: Shiny and beautiful...[] Although...[] seems like we might have enough, seek out furniture or tools.
+		GoldMine_SurplusBars.Line1.Text: Copper bars,[] Shiny and beautiful...[] Although...[] seems like we might have enough, seek out furniture or tools.
 
 		GoldMine_SurplusFurniture: {
 			Line1.Text: tbc

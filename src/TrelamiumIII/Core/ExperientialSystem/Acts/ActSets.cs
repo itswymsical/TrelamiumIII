@@ -96,6 +96,17 @@ public static class ActSets
         NPCID.SmallSkeleton, NPCID.SporeSkeleton, NPCID.BigSkeleton, NPCID.SkeletonTopHat, NPCID.SkeletonAstonaut, NPCID.SkeletonAlien,
         NPCID.CursedSkull, NPCID.GiantCursedSkull
     ];
+
+    public static readonly int[] Eyes =
+    [
+        NPCID.DemonEye, NPCID.DemonEye2, NPCID.EyeballFlyingFish, NPCID.Eyezor,
+            NPCID.EyeofCthulhu, NPCID.CataractEye, NPCID.CataractEye2, NPCID.DemonEyeSpaceship,
+            NPCID.DialatedEye, NPCID.DialatedEye2, NPCID.GreenEye,
+            NPCID.GreenEye2, NPCID.WallofFleshEye, NPCID.WanderingEye,
+            NPCID.SleepyEye, NPCID.SleepyEye2, NPCID.DemonEyeOwl, NPCID.Wraith,
+            NPCID.DemonEye, NPCID.PurpleEye, NPCID.GreenEye, NPCID.DialatedEye,
+            NPCID.Retinazer, NPCID.Spazmatism
+    ];
 }
 
 /// <summary>

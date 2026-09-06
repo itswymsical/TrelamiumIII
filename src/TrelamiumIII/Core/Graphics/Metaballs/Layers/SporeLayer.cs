@@ -2,7 +2,7 @@ using ReLogic.Content;
 
 namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
-public sealed class SporeLayer : MetaballLayer
+public sealed class SporeLayer : MetaballField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 

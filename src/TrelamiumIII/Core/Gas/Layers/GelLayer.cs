@@ -20,11 +20,11 @@ namespace TrelamiumIII.Core.Gas.Layers;
 ///         the condition.
 ///     </para>
 ///     <para>
-///         A <see cref="ChemicalGasLayer" /> carrying <see cref="ChemicalDamageType.Solute" />, which
+///         A <see cref="ChemicalGasField" /> carrying <see cref="ChemicalDamageType.Solute" />, which
 ///         is the elementless case: it afflicts over time like any other chemical source and rolls
 ///         no reactions, because it has no element to react with. That is a deliberate reversal of
 ///         an earlier design where gel sat outside the chemical system as a plain
-///         <see cref="GasLayer" />. Outside it, gel had to reimplement contact sweeps, ownership and
+///         <see cref="GasField" />. Outside it, gel had to reimplement contact sweeps, ownership and
 ///         residue handoff to do the same job with none of the shared machinery; inside it, a gel
 ///         weapon is a chemical weapon whose payload happens to be inert, and every accessory,
 ///         tooltip and stat that reads chemistry reads it for free.
@@ -36,7 +36,7 @@ namespace TrelamiumIII.Core.Gas.Layers;
 ///         effects that happen to fire at the same moment.
 ///     </para>
 /// </remarks>
-public class GelLayer : ChemicalGasLayer
+public class GelLayer : ChemicalGasField
 {
     /// <summary>Ticks of <see cref="BuffID.Slow" /> put on anything wading through the airborne gel.</summary>
     private const int SLOW_TICKS = 45;

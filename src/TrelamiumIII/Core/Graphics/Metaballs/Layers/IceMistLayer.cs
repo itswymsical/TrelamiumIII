@@ -7,7 +7,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 ///     <see cref="SporeLayer" />: it rises rather than settles, and burns off quickly once it stops
 ///     being fed, so a charged swing reads as a puff of breath rather than a lingering cloud.
 /// </summary>
-public sealed class IceMistLayer : MetaballLayer
+public sealed class IceMistLayer : MetaballField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 

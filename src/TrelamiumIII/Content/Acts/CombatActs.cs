@@ -32,3 +32,11 @@ public sealed class UndeadAct : NpcKillAct
 
     protected override int[] Ids => ActSets.Undead;
 }
+
+public sealed class EyeAct : NpcKillAct
+{
+    public override string ID => "act.eyeballs";
+    public override ActCategory Category => ActCategory.Combat;
+    public override int[] Thresholds => ActCurves.Combat;
+    protected override int[] Ids => ActSets.Eyes;
+}

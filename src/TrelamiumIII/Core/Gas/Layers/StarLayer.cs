@@ -7,7 +7,7 @@ using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public sealed class StarLayer : GasLayer
+public sealed class StarLayer : GasField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 

@@ -9,7 +9,7 @@ namespace TrelamiumIII.Core.Gas;
 /// same path as projectile-delivered chemistry, with the layer itself acting
 /// as the IChemicalSource.
 /// </summary>
-public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
+public abstract class ChemicalGasField : GasField, IChemicalSource
 {
     public abstract ChemicalDamageType ChemicalType { get; }
 
@@ -39,7 +39,7 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
 
     /// <summary>
     /// Applies chemistry. Friendlies, dummies and anything that cannot take damage were already
-    /// filtered by <see cref="GasLayer.CanAffect(NPC)"/> before this was called -- overrides do not
+    /// filtered by <see cref="GasField.CanAffect(NPC)"/> before this was called -- overrides do not
     /// need to re-check, and more to the point, an override that forgot used to be able to reach
     /// past a guard that lived here.
     /// </summary>

@@ -10,7 +10,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class ThermiteLayer : ChemicalGasLayer
+public class ThermiteLayer : ChemicalGasField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;

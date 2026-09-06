@@ -7,7 +7,7 @@ using Terraria.Audio;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class BloodLayer : ChemicalGasLayer
+public class BloodLayer : ChemicalGasField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.Bloom.KEY;

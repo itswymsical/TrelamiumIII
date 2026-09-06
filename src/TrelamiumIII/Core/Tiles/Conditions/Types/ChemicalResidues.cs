@@ -90,7 +90,7 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
     /// <summary>No debuff at all: the whole effect is mechanical. See the type remarks.</summary>
     protected override int ContactBuff => -1;
 
-    protected override GasLayer? LingerLayer => GasSystem.GetLayer<IceMistLayer>();
+    protected override GasField? LingerLayer => GasSystem.GetLayer<IceMistField>();
 
     /// <summary>Barely there: frost gives off a thin ground-hugging mist, not a cloud.</summary>
     protected override float LingerRadius => 6f;
@@ -171,7 +171,7 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
     /// <summary>Poison for whatever hostile is standing in it; nothing at all for the thrower.</summary>
     protected override int ContactBuff => BuffID.Poisoned;
 
-    protected override GasLayer? LingerLayer => GasSystem.GetLayer<PhytoncideSporeLayer>();
+    protected override GasField? LingerLayer => GasSystem.GetLayer<PhytoncideSporeLayer>();
 
     protected override Vector3 BodyColor => new(0.24f, 0.34f, 0.06f);
 
@@ -189,7 +189,7 @@ public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 
     protected override int ContactBuff => BuffID.Bleeding;
 
-    protected override GasLayer? LingerLayer => GasSystem.GetLayer<CorruptedSporeLayer>();
+    protected override GasField? LingerLayer => GasSystem.GetLayer<CorruptedSporeLayer>();
 
     protected override Vector3 BodyColor => new(0.26f, 0.04f, 0.10f);
 
@@ -219,7 +219,7 @@ public sealed class SanguineResidueCondition : ChemicalReactionTileCondition
 
     protected override int ContactBuff => BuffID.Bleeding;
 
-    protected override GasLayer? LingerLayer => GasSystem.GetLayer<BloodLayer>();
+    protected override GasField? LingerLayer => GasSystem.GetLayer<BloodLayer>();
 
     /// <summary>Heavier and slower than a spore cloud: blood seeps, it does not billow.</summary>
     protected override int LingerInterval => 22;

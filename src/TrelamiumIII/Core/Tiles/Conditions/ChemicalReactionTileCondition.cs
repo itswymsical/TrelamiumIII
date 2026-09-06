@@ -84,7 +84,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     ///     thing the flask did, delivered by the same nodes with the same ownership. Enemies that
     ///     wander into it are afflicted by the gas exactly as they would be by a fresh throw.
     /// </remarks>
-    protected virtual GasLayer? LingerLayer => null;
+    protected virtual GasField? LingerLayer => null;
 
     /// <summary>Ticks between exhalations, per tile.</summary>
     /// <remarks>

@@ -3,14 +3,14 @@ using Terraria.GameContent;
 namespace TrelamiumIII.Core.Graphics.Metaballs;
 
 /// <summary>
-///     The off-screen surface a <see cref="MetaballLayer" /> sums its blobs into.
+///     The off-screen surface a <see cref="MetaballField" /> sums its blobs into.
 /// </summary>
 /// <remarks>
 ///     Kept at <see cref="PixelScale" /> below screen resolution for two reasons: the field is
 ///     blurry data rather than an image, so it loses nothing to the downscale, and the shader
 ///     quantises its decisions to this grid. One field texel becomes one chunky output pixel.
 /// </remarks>
-internal sealed class MetaballRenderTargetContent(MetaballLayer layer) : ARenderTargetContentByRequest
+internal sealed class MetaballRenderTargetContent(MetaballField layer) : ARenderTargetContentByRequest
 {
     public int PixelScale { get; set; } = 2;
 

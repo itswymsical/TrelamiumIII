@@ -114,7 +114,7 @@ public sealed record GasLook
 ///         Two fields, because the two surfaces are genuinely different systems and pretending
 ///         otherwise is what makes this hard. The tooltip is fed by a <see cref="UiMetaballField" />
 ///         in interface space, composited over the interface. A dropped item is fed into one of the
-///         mod's existing world <see cref="MetaballLayer" />s, which already handle tile collision,
+///         mod's existing world <see cref="MetaballField" />s, which already handle tile collision,
 ///         world lighting and the depth band a cloud in the world belongs in -- none of which a
 ///         tooltip has any use for.
 ///     </para>
@@ -165,7 +165,7 @@ public sealed class MetaballFlair : RarityFlair
     /// <summary>
     ///     The world layer a dropped item feeds, or null to keep the gas on the tooltip.
     /// </summary>
-    public Func<MetaballLayer?>? WorldLayer { get; init; }
+    public Func<MetaballField?>? WorldLayer { get; init; }
 
     /// <summary>Blobs per tick from a dropped item.</summary>
     public float WorldSpawnRate { get; init; } = 0.5f;

@@ -87,7 +87,7 @@ public class HyperboreanFlaskProjectile : ModProjectile
         base.PostAI();
         shattered = false;
 
-        var layer = GasSystem.GetLayer<IceMistLayer>();
+        var layer = GasSystem.GetLayer<IceMistField>();
 
         if (layer == null) return;
 
@@ -166,7 +166,7 @@ public class HyperboreanFlaskBurstProjectile : ModProjectile
 
     public override void AI()
     {
-        var layer = GasSystem.GetLayer<IceMistLayer>();
+        var layer = GasSystem.GetLayer<IceMistField>();
         if (layer == null) return;
 
         float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);

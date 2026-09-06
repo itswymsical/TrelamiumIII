@@ -20,7 +20,7 @@ namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 ///         leaking something that does not care about gravity.
 ///     </para>
 /// </remarks>
-public sealed class InkLayer : MetaballLayer
+public sealed class InkLayer : MetaballField
 {
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -171,7 +171,7 @@ public sealed class InkLayer : MetaballLayer
     ///     <para>
     ///         Takes a bare position and velocity rather than an <see cref="Entity" />, because the
     ///         pieces are particles and not entities, so there is no host for
-    ///         <see cref="MetaballLayer.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
+    ///         <see cref="MetaballField.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
     ///         motion buys the same thing: the node is already travelling with it on the frame it
     ///         appears, instead of being left behind and catching up.
     ///     </para>

@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 namespace TrelamiumIII.Core.Graphics.Metaballs;
 
 /// <summary>
-///     Owns every <see cref="MetaballLayer" /> and drives it through the frame.
+///     Owns every <see cref="MetaballField" /> and drives it through the frame.
 /// </summary>
 /// <remarks>
 ///     The two draw hooks are not interchangeable.
@@ -25,11 +25,11 @@ namespace TrelamiumIII.Core.Graphics.Metaballs;
 /// </remarks>
 public sealed class MetaballSystem : ModSystem
 {
-    private static readonly List<MetaballLayer> layers = [];
+    private static readonly List<MetaballField> layers = [];
 
     private static bool loaded;
 
-    public static T? GetLayer<T>() where T : MetaballLayer
+    public static T? GetLayer<T>() where T : MetaballField
     {
         foreach (var layer in layers)
         {
@@ -42,14 +42,14 @@ public sealed class MetaballSystem : ModSystem
 
     public override void OnModLoad()
     {
-        List<MetaballLayer> discovered = [];
+        List<MetaballField> discovered = [];
 
         foreach (Type type in Mod.Code.GetTypes())
         {
-            if (type.IsAbstract || !type.IsSubclassOf(typeof(MetaballLayer)))
+            if (type.IsAbstract || !type.IsSubclassOf(typeof(MetaballField)))
                 continue;
 
-            discovered.Add((MetaballLayer)Activator.CreateInstance(type));
+            discovered.Add((MetaballField)Activator.CreateInstance(type));
         }
 
         foreach (var layer in discovered)
@@ -102,7 +102,7 @@ public sealed class MetaballSystem : ModSystem
             layer.UpdateNodes();
     }
 
-    private static void RegisterLayer(MetaballLayer layer)
+    private static void RegisterLayer(MetaballField layer)
     {
         layer.Load();
         layers.Add(layer);

@@ -4,10 +4,10 @@ namespace TrelamiumIII.Core.Gas;
 
 public class GasRenderTargetContent : ARenderTargetContentByRequest
 {
-    private readonly GasLayer _layer;
+    private readonly GasField _layer;
     public int PixelScale { get; set; } = 2;
 
-    public GasRenderTargetContent(GasLayer layer)
+    public GasRenderTargetContent(GasField layer)
     {
         _layer = layer;
     }
