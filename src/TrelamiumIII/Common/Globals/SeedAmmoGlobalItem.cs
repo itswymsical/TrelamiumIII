@@ -79,7 +79,8 @@ public sealed class SeedAmmoGlobalItem : GlobalItem
         item.ammo = AmmoID.Dart;
         item.noMelee = true;
         item.shootSpeed = 0.5f;
-
+        item.notAmmo = true;
+ 
         item.damage = seed.Damage;
         item.crit = seed.Crit;
         item.shoot = seed.Projectile();
