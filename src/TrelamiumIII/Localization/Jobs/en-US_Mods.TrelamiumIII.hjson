@@ -55,3 +55,9 @@ Jobs: {
 		}
 	}
 }
+
+Rarities: {
+	Ember: It has not finished burning.
+	Relic: Older than the hands that made it.
+	Sporeborn: Still shedding.
+}

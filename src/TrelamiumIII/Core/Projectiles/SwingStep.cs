@@ -69,6 +69,17 @@ public readonly record struct SwingStep
     /// <summary>Reach multiplier -- a lunge extends, a chop pulls in. Zero means unscaled.</summary>
     public float Reach { get; init; }
 
+    /// <summary>
+    ///     How much of <see cref="SwordProfile.Extend" /> this step spends driving the grip forward.
+    /// </summary>
+    /// <remarks>
+    ///     Zero here means zero, unlike the scale fields above, because not extending is a perfectly
+    ///     ordinary thing for a step to do. A downward strike leans into the target and buys reach
+    ///     for it; the return stroke is a recovery and mostly does not, which is what keeps the pair
+    ///     reading as one committed swing and one wind-back rather than as two identical lunges.
+    /// </remarks>
+    public float Extend { get; init; }
+
     /// <summary>Swing curve for this step. Null takes the profile's.</summary>
     /// <remarks>
     ///     The seam for a finisher that should not move like the strikes before it: two clean draws
@@ -93,10 +104,10 @@ public readonly record struct SwingStep
     public bool Downward => Arc >= 0f;
 
     /// <summary>An overhead slash coming down. The opening half of the default loop.</summary>
-    public static SwingStep Down => new() { Arc = 1f };
+    public static SwingStep Down => new() { Arc = 1f, Extend = 1f };
 
     /// <summary>The same arc coming back up. The closing half of the default loop.</summary>
-    public static SwingStep Up => new() { Arc = -1f };
+    public static SwingStep Up => new() { Arc = -1f, Extend = 0.3f };
 
     /// <summary>
     ///     A lunge: almost no rotation, extra reach, and quick.
@@ -105,7 +116,7 @@ public readonly record struct SwingStep
     ///     Slightly under-damaged on purpose. A thrust ends a combo pointing at the target with the
     ///     weapon already out, so it is the cheapest step to land and should not also be the best.
     /// </remarks>
-    public static SwingStep Thrust => new() { Arc = 0.3f, Speed = 1.35f, Reach = 1.3f, Damage = 0.85f };
+    public static SwingStep Thrust => new() { Arc = 0.3f, Speed = 1.35f, Reach = 1.3f, Damage = 0.85f, Extend = 1.8f };
 
     /// <summary>
     ///     A full turn of the shoulders: twice the arc, slower, and worth landing.
@@ -114,7 +125,7 @@ public readonly record struct SwingStep
     ///     A finisher. The extra arc is what pays for the speed loss -- it sweeps behind the player
     ///     as well as in front, so a spin is the step that answers being surrounded.
     /// </remarks>
-    public static SwingStep Spin => new() { Arc = 2f, Speed = 0.8f, Damage = 1.4f, Knockback = 1.6f };
+    public static SwingStep Spin => new() { Arc = 2f, Speed = 0.8f, Damage = 1.4f, Knockback = 1.6f, Extend = 0.6f };
 
     /// <summary>
     ///     Down, then up. The loop every weapon gets unless it says otherwise.

@@ -593,7 +593,7 @@ Items: {
 		DisplayName: Reward Bag
 		Tooltip: ""
 		PaymentFor: Payment for {0}
-		Contains: "Contains:"
+		Contains: Contains:
 		Empty: Empty
 		RightClickToOpen: Right click to open
 	}

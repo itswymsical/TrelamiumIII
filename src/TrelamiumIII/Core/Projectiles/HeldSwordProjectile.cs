@@ -166,6 +166,16 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
     /// <summary>Where the blade was last tick. The near edge of the swept hitbox.</summary>
     private float previousOffset;
 
+    /// <summary>
+    ///     Where the blade stood when the current phase opened.
+    /// </summary>
+    /// <remarks>
+    ///     What the windup and the link lerp away from, so neither has to assume the blade was at
+    ///     guard when it took over. Resuming a combo a third of the way through a relax picks the
+    ///     blade up from a third of the way through a relax.
+    /// </remarks>
+    private float entryOffset;
+
     /// <summary>Where the arc VFX is anchored. Follows the blade, then stays put to burn out.</summary>
     private float arcOffset;
 
@@ -241,7 +251,9 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         PhaseTimer = 0f;
         ComboIndex = 0;
 
-        bladeOffset = previousOffset = arcOffset = profile.Guard;
+        // The opening strike is the one case that genuinely starts from guard, so the windup has a
+        // real distance to travel rather than the short wind-back a chained strike gets.
+        bladeOffset = previousOffset = arcOffset = entryOffset = profile.Guard;
     }
 
     /// <summary>
@@ -392,8 +404,11 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
                 if (Main.myPlayer != Projectile.owner)
                     break;
 
+                // Straight into the sweep, with no windup: the recover has just spent its whole
+                // length carrying the blade to exactly where the next strike opens, and a windup
+                // from there would be a dead hold at full cock.
                 if (Swinging(owner))
-                    NextStrike();
+                    ChainStrike(owner);
                 else
                     SetPhase(SwingPhase.Link);
 
@@ -410,7 +425,7 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
                 // Pressing again inside the window picks the combo up where it left off; letting it
                 // lapse puts the weapon away, so the next press opens on the first step again.
                 if (Swinging(owner))
-                    NextStrike();
+                    OpenStrike();
                 else if (Elapsed)
                     Projectile.Kill();
                 else
@@ -435,6 +450,8 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
     /// </remarks>
     private void SetPhase(SwingPhase phase)
     {
+        entryOffset = bladeOffset;
+
         Phase = phase;
         PhaseTimer = 0f;
 
@@ -462,13 +479,32 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         OnSwingStart(owner, Step);
     }
 
-    /// <summary>Wrapped at assignment so the synced value stays small and exact.</summary>
-    private void NextStrike()
+    /// <summary>
+    ///     Continues the combo out of a recover, which has already done the winding.
+    /// </summary>
+    private void ChainStrike(Player owner)
     {
-        ComboIndex = (ComboIndex + 1) % profile.ComboLength;
+        AdvanceCombo();
+
+        BeginSwing(owner);
+    }
+
+    /// <summary>
+    ///     Opens a strike from a standing start, which needs its windup.
+    /// </summary>
+    /// <remarks>
+    ///     The path back in from <see cref="SwingPhase.Link" />, where the blade has been relaxing
+    ///     toward guard and is nowhere near cocked.
+    /// </remarks>
+    private void OpenStrike()
+    {
+        AdvanceCombo();
 
         SetPhase(SwingPhase.Windup);
     }
+
+    /// <summary>Wrapped at assignment so the synced value stays small and exact.</summary>
+    private void AdvanceCombo() => ComboIndex = (ComboIndex + 1) % profile.ComboLength;
 
     /// <summary>Ticks the current phase runs for, attack speed and step speed included.</summary>
     private int PhaseTicks => Phase switch
@@ -525,23 +561,30 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
 
     #region pose
 
-    /// <summary>Radians off the aim the sweep begins at, anticipation included.</summary>
+    /// <summary>The step that follows this one. What a recover winds back toward.</summary>
+    private SwingStep NextStep => profile.StepAt(ComboIndex + 1);
+
+    /// <summary>Radians off the aim a step's sweep begins at, anticipation included.</summary>
     /// <remarks>
     ///     The anticipation is subtracted against the sweep, so the windup overshoots the nominal
     ///     start and the swing has that extra ground to cover in the same number of frames.
     /// </remarks>
-    private float SwingFromOffset
+    private float SwingFromOffsetFor(SwingStep step)
     {
-        get
-        {
-            float sweep = profile.Arc * Step.Arc;
+        float sweep = profile.Arc * step.Arc;
 
-            return profile.ArcOffset + Step.Offset - sweep * 0.5f - profile.Anticipation * MathF.Sign(sweep);
-        }
+        return profile.ArcOffset + step.Offset - sweep * 0.5f - profile.Anticipation * MathF.Sign(sweep);
     }
 
-    /// <summary>Radians off the aim the sweep ends at.</summary>
-    private float SwingToOffset => profile.ArcOffset + Step.Offset + profile.Arc * Step.Arc * 0.5f;
+    /// <summary>Radians off the aim a step's sweep ends at.</summary>
+    private float SwingToOffsetFor(SwingStep step)
+        => profile.ArcOffset + step.Offset + profile.Arc * step.Arc * 0.5f;
+
+    /// <inheritdoc cref="SwingFromOffsetFor" />
+    private float SwingFromOffset => SwingFromOffsetFor(Step);
+
+    /// <inheritdoc cref="SwingToOffsetFor" />
+    private float SwingToOffset => SwingToOffsetFor(Step);
 
     /// <summary>World rotation for a facing-space offset.</summary>
     private float AngleOf(float offset) => AimAngle + offset * facing;
@@ -580,15 +623,65 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
     /// </remarks>
     private Vector2 HandFor(float offset)
         => Owner.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, ArmRotationFor(offset))
-           + new Vector2(0f, Owner.gfxOffY);
+           + new Vector2(0f, Owner.gfxOffY)
+           + DirectionOf(offset) * Extension;
 
+    /// <summary>
+    ///     Pixels the grip is pushed along the blade right now. See <see cref="SwordProfile.Extend" />.
+    /// </summary>
+    /// <remarks>
+    ///     Keyed to <see cref="SweptFraction" /> rather than to the clock, so the lean arrives with
+    ///     the blade instead of ahead of it -- under a back-loaded curve the two are most of a swing
+    ///     apart. The recover unwinds it on its own timer, which is what keeps the grip from snapping
+    ///     back into the hand on the frame the sweep ends.
+    /// </remarks>
+    private float Extension
+    {
+        get
+        {
+            float reach = profile.Extend * Step.Extend * TotalScale;
+
+            if (reach == 0f)
+                return 0f;
+
+            return Phase switch
+            {
+                SwingPhase.Swing => reach * EaseQuadOut.Ease(SweptFraction),
+                SwingPhase.Recover => reach * (1f - Progress),
+
+                _ => 0f,
+            };
+        }
+    }
+
+    /// <summary>
+    ///     Where the blade sits this tick.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The recover winds back toward the <i>next</i> step's opening rather than home to
+    ///         guard, and that is the whole of what makes a combo flow. Guard sits on the opposite
+    ///         side of the aim from where a down-slash finishes, so routing every strike through it
+    ///         sent the blade down, back up to guard, down again past where it had just been, and
+    ///         only then up -- a visible double-back between two strikes that are supposed to read as
+    ///         one exchange. Winding straight back is a short move in the direction the blade was
+    ///         already going, because a step's end and the next step's start differ by little more
+    ///         than the anticipation.
+    ///     </para>
+    ///     <para>
+    ///         Guard is therefore only ever reached by <see cref="SwingPhase.Link" />, which is the
+    ///         one place the weapon genuinely has nothing queued. Both phases that can be entered
+    ///         from an arbitrary pose start from <see cref="entryOffset" /> rather than from a fixed
+    ///         angle, so resuming a combo halfway through a relax does not jump.
+    ///     </para>
+    /// </remarks>
     private float OffsetForPhase() => Phase switch
     {
-        SwingPhase.Windup => MathHelper.Lerp(profile.Guard, SwingFromOffset, Eased(profile.WindupEase)),
+        SwingPhase.Windup => MathHelper.Lerp(entryOffset, SwingFromOffset, Eased(profile.WindupEase)),
         SwingPhase.Swing => MathHelper.Lerp(SwingFromOffset, SwingToOffset, Eased(Step.Ease ?? profile.SwingEase)),
-        SwingPhase.Recover => MathHelper.Lerp(SwingToOffset, profile.Guard, Eased(profile.RecoverEase)),
+        SwingPhase.Recover => MathHelper.Lerp(SwingToOffset, SwingFromOffsetFor(NextStep), Eased(profile.RecoverEase)),
 
-        _ => profile.Guard,
+        _ => MathHelper.Lerp(entryOffset, profile.Guard, Eased(profile.RecoverEase)),
     };
 
     private float Eased(EaseFunction ease) => (ease ?? Linear).Ease(Progress);

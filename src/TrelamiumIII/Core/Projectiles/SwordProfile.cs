@@ -184,6 +184,25 @@ public readonly record struct SwordProfile
     /// </remarks>
     public float Anticipation { get; init; }
 
+    /// <summary>
+    ///     Pixels the grip is driven forward along the blade at the far end of a sweep.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The lean into a strike. It moves the grip rather than lengthening the blade, so the
+    ///         sprite, the hitbox and the arc all extend together -- reach bought this way is reach
+    ///         the player can see. Stretching <see cref="BladeLength" /> instead would buy the same
+    ///         pixels and hand them to a hitbox hanging off the end of the drawn weapon.
+    ///     </para>
+    ///     <para>
+    ///         Small on purpose. This is a body committing to a swing, not a lunge; past about a
+    ///         fifth of the blade the grip visibly detaches from the hand it is supposed to be in.
+    ///         <see cref="SwingStep.Extend" /> scales it per step, which is what lets a down-slash
+    ///         lean in and its return stroke not.
+    ///     </para>
+    /// </remarks>
+    public float Extend { get; init; }
+
     /// <summary>Curve of the windup. Wants to decelerate into the top of the arc.</summary>
     public EaseFunction WindupEase { get; init; }
 
@@ -354,6 +373,7 @@ public readonly record struct SwordProfile
         Arc = 2.5f,
         ArcOffset = 0f,
         Anticipation = 0.45f,
+        Extend = 9f,
         WindupEase = EaseCircularOut,
         SwingEase = Snap,
         RecoverEase = EaseQuadOut,
@@ -394,6 +414,7 @@ public readonly record struct SwordProfile
 
         Arc = 1.7f,
         Anticipation = 0.3f,
+        Extend = 6f,
         SwingEase = EaseCircularOut,
 
         Steps = [SwingStep.Down, SwingStep.Up, SwingStep.Thrust],
@@ -428,6 +449,7 @@ public readonly record struct SwordProfile
 
         Arc = 2.9f,
         Anticipation = 0.75f,
+        Extend = 12f,
         SwingEase = Draw,
 
         Steps = [SwingStep.Down, SwingStep.Up, SwingStep.Spin],
@@ -459,6 +481,7 @@ public readonly record struct SwordProfile
 
         Arc = 2.3f,
         Anticipation = 0.6f,
+        Extend = 8f,
         SwingEase = Heavy,
 
         ArcColor = new Color(255, 186, 150),
@@ -493,6 +516,7 @@ public readonly record struct SwordProfile
         Arc = 2.4f,
         ArcOffset = -0.15f,
         Anticipation = 0.95f,
+        Extend = 10f,
         SwingEase = Heavy,
 
         Steps = [SwingStep.Down],
