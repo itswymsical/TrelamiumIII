@@ -12,36 +12,6 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Misc;
 
-/// <summary>
-///     A burst pistol that fires gel. What it hits gets coated; what it misses coats the terrain.
-/// </summary>
-/// <remarks>
-///     <para>
-///         A controlled-damage weapon rather than a ranged one -- see
-///         <see cref="ChemicalDamageClass" />. Six damage a round is not the output; three rounds of
-///         gel across a doorway is. The class exists precisely so this weapon does not have to be
-///         balanced against guns that are trying to do a different job.
-///     </para>
-///     <para>
-///         The generic case of that class, and the reason the generic case exists. Gel is a solute:
-///         it has no element, wins no composition matchup, and rolls no reactions -- it afflicts
-///         steadily and it controls where things can walk. Everything the flasks get for being
-///         chemical, this gets for being <see cref="ChemicalDamageType.Solute" />, without having to
-///         pretend to be an element it is not.
-///     </para>
-///     <para>
-///         Burst rather than automatic, and the two are not interchangeable. A stream of gel would
-///         paint a continuous wall and reduce the weapon to holding the button down; three rounds
-///         and a breath makes each burst a decision about which patch of ground is worth claiming,
-///         which is the play the whole class is built around. See
-///         <see cref="BurstGunProjectile" /> for how the archetype is put together.
-///     </para>
-///     <para>
-///         Held rather than swung, so the item is little more than the stats and the ammunition.
-///         Channelled rather than auto-reusing: one use puts the weapon out and holding the button
-///         keeps it there while it runs its own cadence.
-///     </para>
-/// </remarks>
 public class GelatinousBlaster : ModItem
 {
     public override void SetDefaults()

@@ -13,6 +13,7 @@ partial class TrelamiumIII
     {
         LiquidMergeExplosion,
         TileCondition,
+        GrantExperience,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -28,6 +29,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.TileCondition:
                 TileConditionSystem.ReceiveApply(reader, whoAmI);
+                break;
+            case MessageType.GrantExperience:
+                ReceiveExperientialGrant(reader);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

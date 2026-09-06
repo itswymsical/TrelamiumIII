@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
+using TrelamiumIII.Content.Jobs;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.UI.Jobs;
 
@@ -254,17 +254,11 @@ public abstract class Job
         if (Progress != JobProgress.Ongoing && Status != JobStatus.Unlocked) return;
     }
 
-    private void GiveRewards()
-    {
-        foreach (var reward in Rewards)
-        {
-            var item = reward.GetItem(); // Resolves here if needed
-            if (item != null && item.type > ItemID.None)
-            {
-                Main.LocalPlayer.QuickSpawnItem(new EntitySource_Misc("Job_Reward"), item.type, item.stack);
-            }
-        }
-    }
+    /// <summary>
+    /// Hands the whole payout over as one <see cref="RewardBag"/> rather than as loose items, so a
+    /// full inventory can't scatter half the rewards on the ground unnoticed.
+    /// </summary>
+    private void GiveRewards() => RewardBag.Award(Main.LocalPlayer, this);
 
     /// <summary>
     /// Sets the visibility of a specific task. This can be used to hide tasks until certain conditions are met (e.g. completing a previous task). By default, all tasks are visible.

@@ -20,8 +20,31 @@
   <ItemGroup>
     <Folder Include="Common\Generation\" />
     <Folder Include="Content\Menus\" />
-    <Folder Include="Core\Items\" />
     <Folder Include="Localization\ActLang\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Core\Items\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Core\Items\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Core\Items\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LocalizationCompile Remove="Core\Items\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Remove="Core\Items\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ShaderCompile Remove="Core\Items\**" />
   </ItemGroup>
 
 </Project>

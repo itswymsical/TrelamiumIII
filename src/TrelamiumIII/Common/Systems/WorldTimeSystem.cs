@@ -12,6 +12,7 @@ public class WorldTimeSystem : ModSystem
     private readonly Dictionary<int, int[]> _jobMilestones = new()
     {
         { 1, [ JobID.HomeForager ] },
+        { 3, [ JobID.GoldMine ] },
         // { 7, [ JobID.DryadEaterOfWorldsI, JobID.ArmsDealerGunI ] }
     };
 

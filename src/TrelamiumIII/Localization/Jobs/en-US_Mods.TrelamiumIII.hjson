@@ -51,9 +51,7 @@ Jobs: {
 		Tasks: {
 			Set0.obj0: Speak with Merchant
 			Set1.obj0: Obtain copper objects
-			Set2.obj0: Create suitible housing for the Merchant
-			Set3.obj0: Create an extra housing
-			Set4.obj0: Check in with the Guide
+			Set2.obj0: Check in with the Merchant
 		}
 	}
 }

@@ -592,6 +592,10 @@ Items: {
 	RewardBag: {
 		DisplayName: Reward Bag
 		Tooltip: ""
+		PaymentFor: Payment for {0}
+		Contains: "Contains:"
+		Empty: Empty
+		RightClickToOpen: Right click to open
 	}
 
 	MyconidSeeds: {

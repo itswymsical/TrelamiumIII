@@ -1,5 +1,6 @@
 using TrelamiumIII.Utilities;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.UI.Jobs.Board;
@@ -32,19 +33,11 @@ public class EventItem : GlobalItem
 
     public override bool OnPickup(Item item, Player player)
     {
-        var jobPlayer = player.GetModPlayer<JobPlayer>();
-        bool itemContributed = false;
-
-        // Check each active job for item contribution
-        foreach (var job in jobPlayer.ActiveJobs())
-        {
-            if (JobUtils.CanItemContributeToJob(item, job))
-            {
-                itemContributed = true;
-            }
-        }
-
-        if (itemContributed)
+        // Every ongoing job gets to see the pickup; whether it counts is the job's own call.
+        // Filtering here by item identity used to swallow them: world item slots reuse the same
+        // Item instance forever, so the second copper ore to land in a given slot looked like the
+        // first one being picked up twice and never reached the job.
+        if (player.GetModPlayer<JobPlayer>().ActiveJobs().Any())
         {
             OnItemPickup?.Invoke(item, player);
         }

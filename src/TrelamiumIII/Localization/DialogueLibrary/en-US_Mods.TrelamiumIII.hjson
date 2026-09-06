@@ -89,9 +89,9 @@ DialogueLibrary: {
 	Merchant: {
 		GoldMine: {
 			Greeting: {
-				Line1.Text: I'm hearing word there�ll be a flood of grubby handed 'forest investors' coming through our way[] and I'm not too keen on the way they run their politics!
+				Line1.Text: I'm hearing word there'll be a flood of grubby handed 'forest investors' coming through our way[] and I'm not too keen on the way they run their politics!
 				Line2.Text: They want gold, our resources, to capitalize the area?
-				Line3.Text: There's no way that's gettin� past me![] So we�ll give gold, we'll give �em fool�s gold!
+				Line3.Text: There's no way that's gettin' past me![] So we'll give gold, we'll give 'em fool's gold!
 			}
 
 			SurplusOre: {
@@ -103,6 +103,11 @@ DialogueLibrary: {
 			SurplusBars.Line1.Text: Shiny and beautiful...[] Although...[] seems like we might have enough, seek out furniture or tools.
 
 			SurplusFurniture: {
+				Line1.Text: tbc
+				Line2.Text: tbc
+			}
+
+			SurplusTools: {
 				Line1.Text: tbc
 				Line2.Text: tbc
 			}
