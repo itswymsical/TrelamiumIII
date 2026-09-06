@@ -41,6 +41,7 @@ float OutlineAlpha;
 float3 HighlightColor;  // the bright surface line on upward-facing edges
 float HighlightAlpha;
 
+// Ambient floor under the light recovered from the field, NOT the light itself. See GasFbm.fx.
 float3 WorldLight;
 
 float SampleN(float2 p)
@@ -72,10 +73,20 @@ float2 WorldUv(float2 uv)
     return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
 }
 
+// Coverage in RED, coverage weighted by world brightness in GREEN. See GasFbm.fx for the whole
+// story -- both shaders read the same field encoding.
 float Density(float2 uv)
 {
     float f = tex2D(FieldSampler, uv).r;
     return f * f;
+}
+
+float3 FieldLight(float2 uv)
+{
+    float2 field = tex2D(FieldSampler, uv).rg;
+    float brightness = field.g / max(field.r, 0.0001);
+
+    return max(brightness.xxx, WorldLight);
 }
 
 float4 LiquidPass(float2 uv : TEXCOORD0) : COLOR0
@@ -93,6 +104,9 @@ float4 LiquidPass(float2 uv : TEXCOORD0) : COLOR0
     if (d < Threshold)
         discard;
 
+    // The light the blobs on THIS cell are standing in, not one value for the whole screen.
+    float3 light = FieldLight(cell);
+
     // One-texel neighbor tests against the same erosion. Up-facing edge is the
     // liquid surface (bright line); everything else edged gets the ink outline.
     float2 tx = float2(FieldTexel.x, 0.0);
@@ -100,12 +114,12 @@ float4 LiquidPass(float2 uv : TEXCOORD0) : COLOR0
 
     float upD = Density(cell - ty) - erosion;
     if (upD < Threshold)
-        return float4(HighlightColor * WorldLight * HighlightAlpha, HighlightAlpha);
+        return float4(HighlightColor * light * HighlightAlpha, HighlightAlpha);
 
     float sideMin = min(Density(cell + ty), min(Density(cell - tx), Density(cell + tx))) - erosion;
     if (sideMin < Threshold)
-        return float4(OutlineColor * WorldLight * OutlineAlpha, OutlineAlpha);
-    
+        return float4(OutlineColor * light * OutlineAlpha, OutlineAlpha);
+
     // Interior: depth-past-threshold shade, textured by the FBM, posterized.
     float t = saturate((d - Threshold) / max(1.0 - Threshold, 0.001));
     float shade = saturate(t * (0.55 + 0.9 * fbm));
@@ -115,7 +129,7 @@ float4 LiquidPass(float2 uv : TEXCOORD0) : COLOR0
     color = lerp(color, CoreColor, saturate(shade * 2.0 - 1.0));
 
     float alpha = BodyAlpha * lerp(0.8, 1.0, shade);
-    return float4(color * WorldLight * alpha, alpha);
+    return float4(color * light * alpha, alpha);
 }
 
 technique LiquidFbm

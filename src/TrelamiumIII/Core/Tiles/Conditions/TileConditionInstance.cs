@@ -36,6 +36,19 @@ public struct TileConditionInstance
     public int Age;
 
     /// <summary>
+    ///     The player whose weapon laid this down, or <see cref="NoOwner" />.
+    /// </summary>
+    /// <remarks>
+    ///     Carried so a condition can tell its author apart from everyone else standing in it. The
+    ///     case it exists for is the one every alchemical weapon runs into: a flask leaves a patch
+    ///     that keeps working for twenty seconds, the thrower has to walk through it to follow up,
+    ///     and without an owner the only two options are a residue that hurts the person who made
+    ///     it or one that hurts nobody. Refreshed along with the rest of the slot, so a second
+    ///     player pouring over the same tile takes it over.
+    /// </remarks>
+    public int Owner;
+
+    /// <summary>
     ///     Free content-defined state -- a burn that has charred through to a second stage, a slime
     ///     that has crusted over. The system never reads it.
     /// </summary>
@@ -52,6 +65,11 @@ public struct TileConditionInstance
     ///     re-application of the same live slot, which is what keeps the queue entry valid.
     /// </remarks>
     internal int Serial;
+
+    /// <summary>Terrain nobody marked: world hazards, ambient decay, anything not player-made.</summary>
+    public const int NoOwner = -1;
+
+    public readonly bool IsOwnedBy(Entity entity) => Owner >= 0 && entity is Player player && player.whoAmI == Owner;
 
     public readonly Point Coordinates => new(X, Y);
 

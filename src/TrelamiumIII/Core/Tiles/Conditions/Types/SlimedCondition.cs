@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ReLogic.Content;
+using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -90,9 +91,13 @@ public sealed class SlimedCondition : TileCondition
         float time = (float)Main.timeForVisualEffects / 60f;
         var wobble = new Vector2(MathF.Sin(time * 1.4f + phase) * 1.6f, MathF.Cos(time * 1.1f + phase) * 1.2f);
 
+        // Coverage in red, coverage-weighted brightness in green -- the same field encoding the gas
+        // layers stamp, because this draws through the same shader. Slime coating a lit wall and
+        // slime down a dark shaft should not be the same colour.
+        //
         // Overdriven past white on purpose: the shader thresholds the summed field, and a blob that
         // only just reaches 1.0 at its centre never fuses with its neighbours.
-        Color color = Color.White * (0.55f + 0.45f * instance.Strength) * 1.25f;
+        Color color = FieldStamp.Lit(instance.WorldCenter, (0.55f + 0.45f * instance.Strength) * 1.25f);
 
         spriteBatch.Draw(
             texture,
@@ -116,7 +121,9 @@ public sealed class SlimedCondition : TileCondition
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        effect.Parameters["WorldLight"]?.SetValue(Vector3.Max(AverageScreenLight(), new Vector3(0.25f)));
+        // An ambient floor now, not the light itself -- DrawTile bakes the real per-tile light into
+        // the field and the shader divides it back out.
+        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.25f));
 
         // Lower than the gas layers use: slime should merge into sheets at the first opportunity
         // rather than resolve into separate droplets.
@@ -139,9 +146,18 @@ public sealed class SlimedCondition : TileCondition
         effect.Parameters["OutlineAlpha"]?.SetValue(0.90f);
     }
 
+    /// <summary>
+    ///     Wading through slime costs speed -- unless it is your own.
+    /// </summary>
+    /// <remarks>
+    ///     A gel weapon coats the ground in front of the person firing it, which is exactly the
+    ///     ground they then have to advance across. Dragging the owner turns the coating from a
+    ///     trap into a self-inflicted one, so the author walks over their own sheet at full speed
+    ///     and everyone else wades.
+    /// </remarks>
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
-        if (!draggedThisTick.Add(player))
+        if (instance.IsOwnedBy(player) || !draggedThisTick.Add(player))
             return;
 
         player.velocity.X *= MathHelper.Lerp(1f, PLAYER_DRAG, instance.Strength);
@@ -213,7 +229,10 @@ public sealed class SlimedCondition : TileCondition
     ///     works the splash out for itself. Syncing it instead would put one message on the wire per
     ///     tile of every splash, to say something the receiver already knows.
     /// </remarks>
-    public static void Splatter(Vector2 center, float radius, float intensity = 1f)
+    /// <param name="owner">
+    ///     The player who put it there, so the sheet knows whose boots to let through.
+    /// </param>
+    public static void Splatter(Vector2 center, float radius, float intensity = 1f, int owner = TileConditionInstance.NoOwner)
     {
         int reach = (int)MathF.Ceiling(radius / 16f);
         int centerX = (int)(center.X / 16f);
@@ -230,7 +249,7 @@ public sealed class SlimedCondition : TileCondition
 
                 float falloff = 1f - distance / MathF.Max(radius, 1f);
 
-                TileConditionSystem.Apply<SlimedCondition>(x, y, intensity * MathHelper.Lerp(0.45f, 1f, falloff), sync: false);
+                TileConditionSystem.Apply<SlimedCondition>(x, y, intensity * MathHelper.Lerp(0.45f, 1f, falloff), owner: owner, sync: false);
             }
         }
     }

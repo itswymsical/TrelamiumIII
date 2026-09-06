@@ -28,8 +28,8 @@ public class BloodLayer : ChemicalGasLayer
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
 
-    /// <summary>Blood pools where it lands.</summary>
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
+    /// <summary>Blood pools where it lands, and goes on steaming off the pool.</summary>
+    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<SanguineResidueCondition>();
 
     private Asset<Texture2D> noiseTex;
 
@@ -44,7 +44,7 @@ public class BloodLayer : ChemicalGasLayer
         effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.18f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 

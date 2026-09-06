@@ -2,7 +2,6 @@
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Core.Dialogue;
-using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.Jobs.Events;
 using TrelamiumIII.Utilities;

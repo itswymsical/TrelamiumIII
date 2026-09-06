@@ -47,7 +47,7 @@ public class ThermiteLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.55f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
@@ -125,7 +125,7 @@ public class ThermiteLayer : ChemicalGasLayer
     /// each pass only removes a slice -- the pool visibly recedes instead of vanishing on the frame
     /// of contact.
     /// </remarks>
-    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density)
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
     {
         if (!ThermiteFlaskProjectile.shattered)
             return;

@@ -569,15 +569,13 @@ Items: {
 		Tooltip: ""
 	}
 
-	StalactiteCannon: {
-		DisplayName: StalagMag-MK I
+	GelatinousBlaster: {
+		DisplayName: Gelatinous Blaster
 		Tooltip:
 			'''
-			"We Rock. Stone. BOULDER."
-			Fires a variety of stone resources as ammunition, by default;
-			Fires a high-speed stone blocks with insane knockback at your enemies.
-			Can also shoot boulders with a certain "piece" installed.
-			Right-click the StalagMag-MK I to swap ammunition types.
+			Fires globs of gel that stick to whatever they land on
+			Coated ground slows everything that wades through it -- except you
+			Uses gel for ammunition
 			'''
 	}
 
@@ -647,6 +645,8 @@ Items: {
 		VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
 		VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
 		WallBombProj.DisplayName: Wall Bomb Proj
+		GelatinousBlasterProj.DisplayName: Gelatinous Blaster
+		GelBallProj.DisplayName: Gel Glob
 		StalactiteCannonProj.DisplayName: Stalactite Cannon
 		StalactiteProj.DisplayName: Stalactite
 		EarthShardProj.DisplayName: Earth Shard
@@ -830,7 +830,14 @@ Items: {
 	}
 
 	StalagMagMKI: {
-		DisplayName: Stalag Mag M K I
-		Tooltip: ""
+		DisplayName: StalagMag-MK I
+		Tooltip:
+			'''
+			"We Rock. Stone. BOULDER."
+			Fires a variety of stone resources as ammunition, by default;
+			Fires a high-speed stone blocks with insane knockback at your enemies.
+			Can also shoot boulders with a certain "piece" installed.
+			Right-click the StalagMag-MK I to swap ammunition types.
+			'''
 	}
 }

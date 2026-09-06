@@ -93,9 +93,14 @@ public abstract class ChemicalGasLayer : GasLayer, IChemicalSource
     /// a faint, short-lived patch and a deep pool sets a strong one. The residue then applies the
     /// same chemistry the nodes did, through the same <see cref="IChemicalSource"/> path -- the
     /// puddle outlives the cloud that made it, which is the point.
+    /// <para>
+    /// The owner rides along with it. The puddle spends the rest of its life breathing this same
+    /// layer back out, and those nodes have to know whose they are for the same reason the ones
+    /// that made it did.
+    /// </para>
     /// </remarks>
-    protected override void OnTileField(int tileX, int tileY, Tile tile, float density)
-        => Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f));
+    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
+        => Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner);
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 }

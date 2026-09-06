@@ -56,7 +56,7 @@ public sealed class IceMistLayer : MetaballLayer
 
         // Floored higher than the spore cloud -- ice mist reads as self-lit frost, and the pale
         // palette turns to mud the moment the ambient light drops.
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.45f));
+        Vector3 light = new Vector3(0.45f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
         effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));

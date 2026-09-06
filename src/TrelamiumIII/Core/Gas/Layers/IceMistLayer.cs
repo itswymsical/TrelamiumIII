@@ -45,7 +45,7 @@ public class IceMistLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.22f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
@@ -99,7 +99,7 @@ public class IceMistLayer : ChemicalGasLayer
     /// Moved off the per-node liquid hook for the same reason thermite's conversions were: run
     /// there, one node clipping the surface froze a full tile of water on the frame it touched it.
     /// </remarks>
-    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density)
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
     {
         if (!HyperboreanFlaskProjectile.shattered)
             return;

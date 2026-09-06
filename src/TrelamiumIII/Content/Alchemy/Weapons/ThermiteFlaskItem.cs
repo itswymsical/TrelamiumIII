@@ -94,7 +94,7 @@ public class ThermiteFlaskProjectile : ModProjectile
         Vector2 scatter = impactDir * Main.rand.NextFloat(2f, 9f)
                         + Main.rand.NextVector2Circular(1.5f, 0.5f);
 
-        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40);
+        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -224,6 +224,6 @@ public class ThermiteBurstProjectile : ModProjectile
         Vector2 nodeVelocity = Projectile.velocity * 0.2f
                              + Main.rand.NextVector2Circular(7.5f, 7.5f);
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30, owner: Projectile.owner);
     }
 }

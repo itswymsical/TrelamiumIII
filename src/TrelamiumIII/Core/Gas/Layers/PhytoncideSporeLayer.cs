@@ -46,7 +46,7 @@ public class PhytoncideSporeLayer : ChemicalGasLayer
 
         int stride = Math.Max(1, gasNodes.Count / 16);
 
-        Vector3 light = Vector3.Max(SampleAverageLight(), new Vector3(0.78f));
+        Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 

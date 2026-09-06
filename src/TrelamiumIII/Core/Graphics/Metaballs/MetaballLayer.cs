@@ -392,7 +392,12 @@ public abstract class MetaballLayer
 
     protected virtual void OnEnclosed(ref MetaballNode node) { }
 
-    /// <summary>Stamps every node into the off-screen field target.</summary>
+    /// <summary>Stamps every node into the off-screen field target, carrying its own lighting.</summary>
+    /// <remarks>
+    /// Coverage in red, coverage-weighted brightness in green -- see <see cref="FieldStamp" /> for
+    /// the encoding and for why the light has to ride in the field rather than arrive as a uniform
+    /// at composite time.
+    /// </remarks>
     internal void DrawNodes(SpriteBatch spriteBatch)
     {
         if (radialTexture is null)
@@ -407,7 +412,7 @@ public abstract class MetaballLayer
 
             // Overdriven past white on purpose: the shader thresholds the summed field, and a
             // node that only just reaches 1.0 at its centre never fuses with its neighbours.
-            Color nodeColor = Color.White * node.Alpha * 1.25f;
+            Color nodeColor = FieldStamp.Lit(node.Position, node.Alpha * 1.25f);
 
             spriteBatch.Draw(
                 texture,

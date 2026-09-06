@@ -124,6 +124,8 @@ Projectiles: {
 	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger Projectile
 	StalagMagMKIProj.DisplayName: Stalag Mag M K I Proj
 	StoneBlockProj.DisplayName: Stone Block Proj
+	GelatinousBlasterProj.DisplayName: Gelatinous Blaster Proj
+	GelBallProj.DisplayName: Gel Ball Proj
 }
 
 Liquids: {

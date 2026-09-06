@@ -1,5 +1,6 @@
 ﻿using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -83,6 +84,22 @@ public abstract class GasLayer
         gasNodes.Clear();
     }
 
+    /// <summary>
+    /// Stamps every node into the field target, carrying the light it is standing in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The stamp is not white any more; it follows <see cref="FieldStamp" />, which is where the
+    /// encoding and the reasoning behind it live. The short version: red still sums to exactly the
+    /// coverage it always held, and green now carries that coverage weighted by how lit the node
+    /// is, so the shader can recover brightness per pixel instead of being handed one number for
+    /// the whole screen.
+    /// </para>
+    /// <para>
+    /// The sample costs nothing new -- it was already being taken here and then discarded -- and
+    /// this is the last point in the pipeline that still knows where each blob is.
+    /// </para>
+    /// </remarks>
     internal void DrawNodes(SpriteBatch sb)
     {
         foreach (var node in gasNodes)
@@ -90,15 +107,15 @@ public abstract class GasLayer
             Vector2 screenPos = node.Position - Main.screenPosition;
             float size = node.Radius * 2f;
 
-            Vector3 light = Lighting.GetSubLight(node.Position);
-
-            Color nodeColor = Color.White * node.Alpha;
+            // Overdriven past white on purpose: the shader thresholds the summed field, and a node
+            // that only just reaches 1.0 at its centre never fuses with its neighbours.
+            Color nodeColor = FieldStamp.Lit(node.Position, node.Alpha * 1.25f);
 
             sb.Draw(
                 radialTexture.Value,
                 screenPos,
                 null,
-                nodeColor * 1.25f,
+                nodeColor,
                 0f,
                 radialTexture.Value.Size() / 2f,
                 size / radialTexture.Value.Width,
@@ -108,10 +125,22 @@ public abstract class GasLayer
         }
     }
 
+
     /// <summary>
     /// Spawn a gas node at a world position with explicit physics parameters.
     /// Pass negative density/viscosity to use the layer's defaults.
     /// </summary>
+    /// <param name="owner">
+    /// The player whose weapon put this node here, or <see cref="GasNode.NoOwner" /> for gas the
+    /// world produced by itself.
+    /// </param>
+    /// <remarks>
+    /// Ownership is not about damage credit -- these nodes deal none directly. It is about what the
+    /// gas is allowed to do to the person who fired it, and it survives the node: a cloud that
+    /// pools into a residue hands its owner to the tile, and the residue hands it back to whatever
+    /// it exhales later. Without that chain a thrown flask ends up afflicting the thrower two
+    /// seconds after they walked over their own puddle.
+    /// </remarks>
     public void SpawnNode(
         Vector2 worldPosition,
         Vector2 velocity,
@@ -119,7 +148,8 @@ public abstract class GasLayer
         float life,
         float density = -1f,
         float viscosity = -1f,
-        float temperature = -1f)
+        float temperature = -1f,
+        int owner = GasNode.NoOwner)
     {
 
         gasNodes.Add(new GasNode
@@ -133,6 +163,7 @@ public abstract class GasLayer
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
             Temperature = temperature < 0f ? DefaultTemperature : temperature,
             GasTypeId = GasType,
+            Owner = owner,
             ContactCooldown = Main.rand.Next(0, 20), // stagger initial contact sweeps
         });
     }
@@ -176,8 +207,28 @@ public abstract class GasLayer
     /// </remarks>
     protected virtual int TileFieldInterval => 5;
 
+    /// <summary>
+    /// One tile's worth of accumulated field: how much of the layer is sitting on it, and whose.
+    /// </summary>
+    /// <remarks>
+    /// The owner is the one with the single largest contribution rather than a majority or an
+    /// average, because ownership is not a quantity that can be blended -- a tile is either safe
+    /// for a given player to stand on or it is not. Weighting by contribution means the answer is
+    /// whoever actually put the bulk of the pool there, which is the only reading of "whose puddle
+    /// is this" a player would recognise.
+    /// </remarks>
+    private struct FieldCell
+    {
+        public float Coverage;
+
+        public int Owner;
+
+        /// <summary>The largest single contribution <see cref="Owner" /> has made, for comparison.</summary>
+        public float OwnerWeight;
+    }
+
     /// <summary>Per-tile accumulated node coverage. Rebuilt from scratch each pass.</summary>
-    private readonly Dictionary<Point, float> tileField = [];
+    private readonly Dictionary<Point, FieldCell> tileField = [];
 
     private int tileFieldTimer;
 
@@ -193,10 +244,14 @@ public abstract class GasLayer
     /// asks the question the renderer asks -- is there visibly something here -- so what burns is
     /// what the player can see burning.
     /// </remarks>
-    protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density) { }
+    /// <param name="owner">
+    /// The player who put most of this pool here, or <see cref="GasNode.NoOwner" />. Pass it on to
+    /// anything left behind, so the residue knows who is allowed to walk through it.
+    /// </param>
+    protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density, int owner) { }
 
     /// <inheritdoc cref="OnTileField"/>
-    protected virtual void OnLiquidField(int tileX, int tileY, Tile tile, float density) { }
+    protected virtual void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner) { }
 
     private void UpdateTileField()
     {
@@ -210,18 +265,20 @@ public abstract class GasLayer
 
         AccumulateTileField();
 
-        foreach (KeyValuePair<Point, float> pair in tileField)
+        foreach (KeyValuePair<Point, FieldCell> pair in tileField)
         {
-            if (pair.Value < TileFieldThreshold)
+            FieldCell cell = pair.Value;
+
+            if (cell.Coverage < TileFieldThreshold)
                 continue;
 
             Tile tile = Framing.GetTileSafely(pair.Key.X, pair.Key.Y);
 
             if (tile.LiquidAmount > 0)
-                OnLiquidField(pair.Key.X, pair.Key.Y, tile, pair.Value);
+                OnLiquidField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner);
 
             if (tile.HasTile && Main.tileSolid[tile.TileType])
-                OnTileField(pair.Key.X, pair.Key.Y, tile, pair.Value);
+                OnTileField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner);
         }
     }
 
@@ -266,10 +323,22 @@ public abstract class GasLayer
                         continue;
 
                     float falloff = 1f - distance / radius;
+                    float contribution = alpha * falloff * falloff;
                     var key = new Point(x, y);
 
-                    tileField.TryGetValue(key, out float sum);
-                    tileField[key] = sum + alpha * falloff * falloff;
+                    tileField.TryGetValue(key, out FieldCell cell);
+
+                    cell.Coverage += contribution;
+
+                    // The <= 0 half is not redundant: a default cell reads as owned by player 0,
+                    // so the first contribution has to claim it even if it weighs nothing.
+                    if (cell.OwnerWeight <= 0f || contribution > cell.OwnerWeight)
+                    {
+                        cell.Owner = node.Owner;
+                        cell.OwnerWeight = contribution;
+                    }
+
+                    tileField[key] = cell;
                 }
             }
         }

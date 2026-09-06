@@ -78,7 +78,7 @@ public sealed class TileConditionSystem : ModSystem
         Remove,
     }
 
-    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, bool Sync);
+    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync);
 
     private static readonly List<ConditionState> states = [];
 
@@ -108,6 +108,11 @@ public sealed class TileConditionSystem : ModSystem
     /// </summary>
     /// <param name="intensity">How hard it took, 0..1. Clamped.</param>
     /// <param name="duration">Ticks to last, or a negative value to take the condition's own.</param>
+    /// <param name="owner">
+    ///     The player responsible for the mark, or <see cref="TileConditionInstance.NoOwner" />.
+    ///     Conditions that treat their author differently from everyone else read it back off the
+    ///     instance.
+    /// </param>
     /// <param name="sync">
     ///     Whether to tell the other clients. Leave true for anything a player did; the packet
     ///     handler passes false so a received application is not bounced back out again.
@@ -116,12 +121,12 @@ public sealed class TileConditionSystem : ModSystem
     ///     Whether the application was accepted. A deferred one returns true on the promise, since
     ///     the condition has not been asked yet.
     /// </returns>
-    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, bool sync = true) where T : class, ITileCondition
-        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, sync);
+    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true) where T : class, ITileCondition
+        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync);
 
     /// <inheritdoc cref="Apply{T}" />
-    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, bool sync = true)
-        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, sync);
+    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true)
+        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync);
 
     /// <summary>Lifts <typeparamref name="T" /> from a tile, running its expiry hook.</summary>
     /// <remarks>
@@ -137,7 +142,7 @@ public sealed class TileConditionSystem : ModSystem
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, false));
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false));
             return true;
         }
 
@@ -264,14 +269,14 @@ public sealed class TileConditionSystem : ModSystem
         }
     }
 
-    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, bool sync)
+    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync)
     {
         if (!WorldGen.InWorld(i, j, 1))
             return false;
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, sync));
+            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync));
             return true;
         }
 
@@ -293,6 +298,7 @@ public sealed class TileConditionSystem : ModSystem
             Life = life,
             MaxLife = life,
             Intensity = MathHelper.Clamp(intensity, 0f, 1f),
+            Owner = owner,
 
             // Re-application refreshes the slot rather than replacing it, so the entry the eviction
             // queue is already holding stays the one that matches.
@@ -309,7 +315,7 @@ public sealed class TileConditionSystem : ModSystem
         }
 
         if (sync && Main.netMode != NetmodeID.SinglePlayer)
-            SendApply(state, i, j, instance.Intensity, life);
+            SendApply(state, i, j, instance.Intensity, life, instance.Owner);
 
         return true;
     }
@@ -504,7 +510,7 @@ public sealed class TileConditionSystem : ModSystem
             ConditionState state = states[op.Id];
 
             if (op.Kind == PendingKind.Apply)
-                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Sync);
+                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync);
             else
                 Remove(state, new Point(op.X, op.Y));
         }
@@ -618,7 +624,13 @@ public sealed class TileConditionSystem : ModSystem
         }
     }
 
-    private static void SendApply(ConditionState state, int i, int j, float intensity, float duration, int ignoreClient = -1)
+    /// <summary>
+    ///     255 on the wire: the byte the owner rides in has no room for a signed sentinel, and no
+    ///     player ever occupies that slot.
+    /// </summary>
+    private const byte NO_OWNER_BYTE = 255;
+
+    private static void SendApply(ConditionState state, int i, int j, float intensity, float duration, int owner, int ignoreClient = -1)
     {
         ModPacket packet = ModContent.GetInstance<TrelamiumIII>().GetPacket();
 
@@ -628,6 +640,7 @@ public sealed class TileConditionSystem : ModSystem
         packet.Write((short)j);
         packet.Write((byte)(MathHelper.Clamp(intensity, 0f, 1f) * 255f));
         packet.Write((ushort)Math.Clamp(duration, 0f, ushort.MaxValue));
+        packet.Write(owner is >= 0 and < NO_OWNER_BYTE ? (byte)owner : NO_OWNER_BYTE);
         packet.Send(-1, ignoreClient);
     }
 
@@ -638,17 +651,20 @@ public sealed class TileConditionSystem : ModSystem
         int j = reader.ReadInt16();
         float intensity = reader.ReadByte() / 255f;
         float duration = reader.ReadUInt16();
+        byte ownerByte = reader.ReadByte();
 
         if (id < 0 || id >= states.Count)
             return;
 
+        int owner = ownerByte == NO_OWNER_BYTE ? TileConditionInstance.NoOwner : ownerByte;
+
         ConditionState state = states[id];
 
-        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, sync: false);
+        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false);
 
         // The server is the only one that has heard this, so it is the only one that can tell the
         // rest -- minus the client it came from, which already has it.
         if (Main.netMode == NetmodeID.Server)
-            SendApply(state, i, j, intensity, duration, ignoreClient: whoAmI);
+            SendApply(state, i, j, intensity, duration, owner, ignoreClient: whoAmI);
     }
 }

@@ -11,7 +11,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Misc;
 
-public class StalactiteCannon : ModItem
+public class StalagMagMKI : ModItem
 {
     public override void SetDefaults()
     {
@@ -35,17 +35,22 @@ public class StalactiteCannon : ModItem
         Item.knockBack = 15f;
         Item.shootSpeed = 25f;
         Item.scale = 0.8f;
-        Item.shoot = ModContent.ProjectileType<StalactiteCannonProj>();
+        Item.shoot = ModContent.ProjectileType<StalagMagMKIProj>();
     }
 
+    /// <summary>
+    ///     Puts the weapon in the player's hands. It does the rest itself.
+    /// </summary>
+    /// <remarks>
+    ///     No muzzle offset here any more: the held projectile pins itself to the holder's centre
+    ///     regardless of where it was spawned, so offsetting the spawn only ever moved it for the
+    ///     one frame before its first update. The barrel length that actually matters is
+    ///     <see cref="GunShotProfile.MuzzleLength" />, which is where the shots come from.
+    /// </remarks>
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
     {
-        var muzzleOffset = Vector2.Normalize(new Vector2(velocity.X, velocity.Y)) * 25f;
-        if (Collision.CanHit(position, 0, 0, position + muzzleOffset, 0, 0))
-        {
-            position += muzzleOffset;
-        }
-        Projectile.NewProjectile(source, position, Vector2.Zero, Item.shoot, damage, knockback, player.whoAmI);
+        Projectile.NewProjectile(source, player.Center, Vector2.Zero, Item.shoot, damage, knockback, player.whoAmI);
+
         return false;
     }
 
@@ -70,142 +75,45 @@ public class StalactiteCannon : ModItem
     }
 }
 
-public class StalactiteCannonProj : ModProjectile
+/// <summary>
+///     The StalagMag in the player's hands: a heavy, slow-cycling cannon that shovels stone.
+/// </summary>
+/// <remarks>
+///     All of the recoil, aiming and arm work this used to carry by hand now lives in
+///     <see cref="HeldGunProjectile" />, which was lifted out of this class more or less verbatim.
+///     What is left is what is actually particular to the StalagMag: the numbers in
+///     <see cref="GunShotProfile.Cannon" />, the stone it eats, and the noise it makes.
+/// </remarks>
+public class StalagMagMKIProj : HeldGunProjectile
 {
     public override string Texture => AssetReferences.Content.Misc.StalagMagMKI.KEY;
-    private enum AIState
-    {
-        Firing,
-        Recoil
-    }
 
-    AIState State
-    {
-        get => (AIState)Projectile.ai[0];
-        set => Projectile.ai[0] = (int)value;
-    }
-
-    private Vector2 RecoilOffset
-    {
-        get
-        {
-            if (State != AIState.Recoil)
-                return Vector2.Zero;
-
-            float progress = MathHelper.Clamp(Projectile.ai[1] / RECOIL_DURATION, 0f, 1f);
-            float eased = EaseFunction.EaseCubicOut.Ease(progress);
-
-            float back = MathHelper.Lerp(MAX_RECOIL, 0f, eased);
-            float up = MathHelper.Lerp(MAX_VER_KICK, 0f, eased);
-
-            return -aimDirection * back + PerpendicularUp * up;
-        }
-    }
-
-    private Vector2 PerpendicularUp
-    {
-        get
-        {
-            // Rotate aimDirection -90° (screen space: negative Y is "up")
-            var perp = new Vector2(aimDirection.Y, -aimDirection.X);
-            // Flip so it's always "up" relative to which way the gun is facing
-            return Projectile.spriteDirection == 1 ? perp : -perp;
-        }
-    }
-
-    private Vector2 aimDirection;
-    private const float RECOIL_DURATION = 45f;
-    private const float MAX_RECOIL = 14f;
-    private const float MAX_VER_KICK = 6f;
+    protected override GunShotProfile Profile => GunShotProfile.Cannon;
 
     public override void SetDefaults()
     {
-        Projectile.width = 32;
-        Projectile.height = 32;
-        Projectile.friendly = true;
-        Projectile.penetrate = -1;
-        Projectile.tileCollide = false;
-        Projectile.ignoreWater = true;
-        Projectile.ownerHitCheck = true;
-        Projectile.DamageType = DamageClass.Ranged;
+        base.SetDefaults();
+
         Projectile.scale = .85f;
     }
-    public override bool? CanDamage() => false;
 
-    public override bool PreAI()
-    {
-        var owner = Main.player[Projectile.owner];
-        if (!owner.active || owner.dead)
-        {
-            Projectile.Kill();
-            return false;
-        }
+    protected override bool CanFire(Player owner) => owner.HasAmmo(owner.HeldItem);
 
-        aimDirection = Vector2.Normalize(Main.MouseWorld - owner.Center);
-        Projectile.Center = owner.Center;
-        if (Main.myPlayer == Projectile.owner)
-        {
-            Projectile.direction = Main.MouseWorld.X > owner.Center.X ? 1 : -1;
-            Projectile.netUpdate = true;
-        }
-
-        owner.ChangeDir(Projectile.direction);
-        Projectile.spriteDirection = Projectile.direction;
-        Projectile.rotation = aimDirection.ToRotation();
-
-        if (Main.myPlayer == Projectile.owner)
-        {
-            if (State == AIState.Firing)
-            {
-                if (!owner.channel)
-                {
-                    Projectile.Kill();
-                    return false;
-                }
-
-                if (owner.HasAmmo(owner.HeldItem))
-                {
-                    FireProjectile(owner, aimDirection);
-                }
-                State = AIState.Recoil;
-                Projectile.ai[1] = 0;
-            }
-            else if (State == AIState.Recoil)
-            {
-                Projectile.ai[1]++;
-                if (Projectile.ai[1] >= RECOIL_DURATION)
-                {
-                    State = AIState.Firing;
-                }
-            }
-        }
-
-        SetOwnerAnimation(owner);
-
-        return false;
-    }
-
-    public override bool PreDraw(ref Color lightColor)
-    {
-        var texture = ModContent.Request<Texture2D>(Texture).Value;
-        var origin = new Vector2(texture.Width * 0.15f, texture.Height * 0.55f);
-        var drawPos = Projectile.Center - Main.screenPosition + RecoilOffset;
-        var spriteEffects = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipVertically;
-
-        Main.EntitySpriteDraw(texture, drawPos, null, lightColor, Projectile.rotation, origin, Projectile.scale, spriteEffects, 0);
-
-        return false;
-    }
-
-    private void FireProjectile(Player owner, Vector2 direction)
+    protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
     {
         owner.ConsumeItem(ItemID.StoneBlock);
-        var type = ModContent.ProjectileType<StalactiteProj>();
-        var speed = owner.HeldItem.shootSpeed;
-        var damage = owner.HeldItem.damage;
-        var knockback = owner.HeldItem.knockBack;
 
-        Projectile.NewProjectile(Projectile.GetSource_FromThis(), owner.Center, direction * speed, type, damage, knockback, owner.whoAmI);
+        Item held = owner.HeldItem;
+
+        Projectile.NewProjectile(
+            Projectile.GetSource_FromThis(),
+            muzzle,
+            direction * held.shootSpeed,
+            ModContent.ProjectileType<StoneBlockProj>(),
+            held.damage,
+            held.knockBack,
+            owner.whoAmI
+        );
 
         SoundEngine.PlaySound(Assets.SFX.CannonBoom.Asset with
         {
@@ -214,27 +122,9 @@ public class StalactiteCannonProj : ModProjectile
             MaxInstances = 2,
         }, owner.position);
     }
-
-    private void SetOwnerAnimation(Player owner)
-    {
-        owner.ChangeDir(Projectile.direction);
-        owner.heldProj = Projectile.whoAmI;
-        owner.itemTime = 2;
-        owner.itemAnimation = 2;
-
-        float kickAngle = 0f;
-        if (State == AIState.Recoil)
-        {
-            float progress = MathHelper.Clamp(Projectile.ai[1] / RECOIL_DURATION, 0f, 1f);
-            kickAngle = MathHelper.Lerp(-0.45f, 0f, EaseFunction.EaseCubicOut.Ease(progress));
-        }
-
-        var rot = (owner.Center - Main.MouseWorld).ToRotation() + MathHelper.PiOver2 + kickAngle * Projectile.direction;
-        owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, rot);
-    }
 }
 
-public class StalactiteProj : ModProjectile
+public class StoneBlockProj : ModProjectile
 {
     public override string Texture => $"Terraria/Images/Item_{ItemID.StoneBlock}";
 

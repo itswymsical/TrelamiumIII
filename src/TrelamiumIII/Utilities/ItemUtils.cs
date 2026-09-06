@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using TrelamiumIII.Core.Events;
+using TrelamiumIII.Core.Jobs.Events;
 
 namespace TrelamiumIII.Utilities;
 

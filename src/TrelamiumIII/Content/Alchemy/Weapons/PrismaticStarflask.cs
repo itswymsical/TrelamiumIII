@@ -91,7 +91,7 @@ public class PrismaticStarflaskProjectile : ModProjectile
         Vector2 scatter = impactDir * Main.rand.NextFloat(1f, 2f)
                         + Main.rand.NextVector2Circular(2.5f, 2.5f);
 
-        layer.SpawnNode(Projectile.Center, scatter, radius: 9, life: 40);
+        layer.SpawnNode(Projectile.Center, scatter, radius: 9, life: 40, owner: Projectile.owner);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
@@ -177,7 +177,7 @@ public class PrismaticStarflaskBurstProjectile : ModProjectile
                              + Main.rand.NextVector2Circular(1.5f, 1.5f);
         var dust = Main.dust[Dust.NewDust(Projectile.position, 8, 8, DustID.YellowStarDust, nodeVelocity.X / 2, nodeVelocity.Y, Scale: 0.65f)];
 
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80);
+        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80, owner: Projectile.owner);
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
