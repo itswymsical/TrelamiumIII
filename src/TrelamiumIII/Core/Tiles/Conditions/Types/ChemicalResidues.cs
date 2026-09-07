@@ -221,7 +221,7 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
 ///     Asks for bleeding by name, where it used to inherit it. Corruption working its way into a
 ///     wound is a reading that holds up; necrotic chemistry causing bleeding in general is not, so
 ///     the debuff belongs to this residue rather than to the element -- see
-///     <see cref="ElementProfile.Necrotic" /> and <see cref="SanguineResidueCondition" />.
+///     <see cref="ElementProfile.Necrotic" />.
 /// </remarks>
 public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 {
@@ -248,40 +248,4 @@ public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
     protected override int ContactBuff => BuffID.Bleeding;
 
     protected override GasField? LingerLayer => GasSystem.GetLayer<CorruptedSporeLayer>();
-}
-
-/// <summary>
-///     Blood, pooled where the effusion landed and still steaming off it.
-/// </summary>
-/// <remarks>
-///     <para>
-///         Split out from <see cref="NecroticResidueCondition" />, which both this and the corrupt
-///         spores used to share. That was harmless while a residue was only a palette and a debuff,
-///         and stopped being harmless the moment residues started exhaling their own layer: one
-///         condition cannot breathe out two different gases, and a blood pool venting corrupt spores
-///         is not a thing anybody asked for.
-///     </para>
-///     <para>
-///         It no longer makes anyone bleed, which is the substantive difference between the two now.
-///         A pool of blood on the floor opening a wound in whatever walks through it does not follow
-///         from anything -- the blood is the consequence of an injury, not a cause of one -- and the
-///         necrotic affliction it carries is doing the actual work regardless.
-///     </para>
-/// </remarks>
-public sealed class SanguineResidueCondition : ChemicalReactionTileCondition
-{
-    public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
-
-    /// <summary>Redder and brighter than generic decay: this is fresh, not rotten.</summary>
-    protected override Vector3 BodyColor => new(0.30f, 0.03f, 0.06f);
-
-    /// <inheritdoc cref="BodyColor" />
-    protected override Vector3 EdgeColor => new(0.78f, 0.14f, 0.20f);
-
-    protected override GasField? LingerLayer => GasSystem.GetLayer<BloodLayer>();
-
-    /// <summary>Heavier and slower than a spore cloud: blood seeps, it does not billow.</summary>
-    protected override int LingerInterval => 22;
-
-    protected override float LingerRise => 0.15f;
 }

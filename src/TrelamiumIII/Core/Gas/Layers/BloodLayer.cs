@@ -1,7 +1,6 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 
@@ -28,8 +27,23 @@ public class BloodLayer : ChemicalGasField
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
 
-    /// <summary>Blood pools where it lands, and goes on steaming off the pool.</summary>
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<SanguineResidueCondition>();
+    /// <summary>
+    ///     Leaves nothing on the terrain it lands on.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Blood used to pool into a residue that went on steaming the layer back out, which put
+    ///         it in a loop with itself: the puddle exhaled blood, the blood pooled, and the pooling
+    ///         refreshed the puddle. A splash is a moment, not a place the fight then has to be had
+    ///         in, and a burst that permanently redecorates the floor is not what the flask is for.
+    ///     </para>
+    ///     <para>
+    ///         Null rather than a silent condition, because null is the answer the base actually
+    ///         reads: it switches off <see cref="GasField.UsesTileField" />, so the layer stops
+    ///         paying for the accumulation pass that would work out where to mark.
+    ///     </para>
+    /// </remarks>
+    protected override ChemicalReactionTileCondition? Residue => null;
 
     private Asset<Texture2D> noiseTex;
 

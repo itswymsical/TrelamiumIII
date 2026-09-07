@@ -703,11 +703,26 @@ Items: {
 		Tooltip:
 			'''
 			Fires a variety of stone resources as ammunition, by default:
-			Fires high-speed stone blocks with insane knockback at your enemies.
-			Can also shoot boulders with a certain "piece" installed.
-			Right-click to swap ammunition types.
+			Fires high-speed stone blocks with insane knockback at your enemies.	
+			Can also fire stalagmites that stick into targets
+			Right-click to fire boulders
 			'''
 		FlavorText: '''"We Rock. Stone. BOULDER."'''
+	}
+
+	StoneStalagmite: {
+		DisplayName: Stalagmite
+		Tooltip: StalagMag ammunition
+	}
+
+	EbonstoneStalagmite: {
+		DisplayName: Ebonstone Stalagmite
+		Tooltip: StalagMag ammunition
+	}
+
+	CrimstoneStalagmite: {
+		DisplayName: Crimstone Stalagmite
+		Tooltip: StalagMag ammunition
 	}
 }
 
@@ -771,6 +786,10 @@ Projectiles: {
 	GelBallProj.DisplayName: Gel Glob
 	StalagMagMKIProj.DisplayName: StalagMag-MK I
 	StoneBlockProj.DisplayName: Stalactite
+	BoulderShotProj.DisplayName: Boulder
+	StoneStalagmiteProj.DisplayName: Stalagmite
+	EbonstoneStalagmiteProj.DisplayName: Ebonstone Stalagmite
+	CrimstoneStalagmiteProj.DisplayName: Crimstone Stalagmite
 	EarthShardProj.DisplayName: Earth Shard
 	SkofnungProjectile.DisplayName: Skofnung Projectile
 }

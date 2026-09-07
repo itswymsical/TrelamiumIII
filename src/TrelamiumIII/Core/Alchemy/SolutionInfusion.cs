@@ -21,6 +21,9 @@ public static class ChemicalTypeInfo
         (ChemicalQuality.Kinetic,   "Kinetic",   new Color(190, 120, 230)),
         (ChemicalQuality.Catalytic, "Catalytic", new Color(255, 215, 110)),
         (ChemicalQuality.Inert,     "Inert",     new Color(170, 170, 170)),
+        (ChemicalQuality.Flammable, "Flammable", new Color(255, 135, 31)),
+        (ChemicalQuality.Cryogen, "Cryogen", new Color(157, 202, 238)),
+        (ChemicalQuality.Inhibitor, "Inhibitor", new Color(103, 77, 98)),
     };
 
     public static bool TryGet(ChemicalQuality flag, out string label, out Color color)

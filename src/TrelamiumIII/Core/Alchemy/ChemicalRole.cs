@@ -26,19 +26,6 @@ public enum ChemicalRole
 ///     Which items are solutes, solvents and solutions, and the <see cref="ChemicalQuality" /> each
 ///     one carries.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Roles are read off the recipe registry: anything a recipe produces is a solution,
-///         anything one consumes as its solvent is a solvent, and anything one takes in a component
-///         slot is a solute -- in that order of precedence, for an item that is more than one. Nothing
-///         has to be tagged by hand for the common case, and <see cref="Register" /> exists for the
-///         item that is chemically something without any recipe saying so.
-///     </para>
-///     <para>
-///         The quality is the instance's infusion when it has one (a suffixed bottle of water),
-///         else whatever the almanac says about the type.
-///     </para>
-/// </remarks>
 public static class ChemicalRoles
 {
     private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/";
@@ -168,20 +155,6 @@ public static class ChemicalQualityGlyphs
 ///     Labels every solute, solvent and solution in its tooltip, and marks its inventory slot with
 ///     the glyph of the quality it carries.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The tooltip row sits under the name -- a subtitle, not a stat -- and reads role first,
-///         then each quality with its glyph: "Solvent  Alkaline". The slot glyph is the first
-///         quality's alone, in the bottom-left corner, small enough to stay clear of the sprite. On
-///         a stack it shares that corner with vanilla's count, which is drawn afterwards and so
-///         sits on top.
-///     </para>
-///     <para>
-///         Applies to every item rather than gating on <see cref="GlobalItem.AppliesToEntity" />,
-///         because whether an item has a role is decided by the recipe registry, which does not
-///         exist when that gate is asked. The per-item cost is a dictionary lookup.
-///     </para>
-/// </remarks>
 public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
 {
     /// <summary>Longest edge of the slot glyph, in unscaled slot pixels.</summary>
