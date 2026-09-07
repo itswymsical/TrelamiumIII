@@ -11,7 +11,7 @@ using Terraria.GameContent;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
 /// Holds a few flowers and turns them into passive bonuses while it sits anywhere in the inventory.

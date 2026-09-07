@@ -1,7 +1,7 @@
-﻿using TrelamiumIII.Content.Alchemy;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Terraria.ModLoader.Default.Patreon;
 using TrelamiumIII.Core.NPCs;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
 namespace TrelamiumIII.Content.NPCs.Jungle;
 

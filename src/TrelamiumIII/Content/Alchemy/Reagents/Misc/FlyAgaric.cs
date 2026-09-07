@@ -4,7 +4,7 @@ using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 [LegacyName("FlyAgaric")]
 public class FlyAgaricItem : ModItem

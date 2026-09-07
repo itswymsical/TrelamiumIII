@@ -101,10 +101,36 @@ public abstract class TileCondition : ITileCondition
         if (TextureAssets.Tile[tile.TileType] is not { Value: { } texture })
             return;
 
-        // DrawSloped adds TileOffset, the offscreen-range shift that belongs to the tile render
-        // target's own pass. Neither of our passes runs inside it, so cancel it back out rather
-        // than reimplementing the slope walk to avoid it.
-        TileExtensions.DrawSloped(instance.X, instance.Y, texture, color, -TileExtensions.TileOffset);
+        DrawAsTile(in instance, texture, color);
+    }
+
+    /// <summary>
+    ///     Draws <paramref name="texture" /> in the shape of the tile this instance sits on.
+    /// </summary>
+    /// <remarks>
+    ///     The frame and the slope walk come from the tile underneath, not from the texture, so any
+    ///     tile sheet passed here comes out with the terrain's own silhouette -- the same edges, the
+    ///     same slope, the same half block. Vanilla's standard blocks share a framing layout, which
+    ///     is what lets a condition borrow another block's sprite (ice over dirt, say) and have it
+    ///     land exactly on the shape it is covering.
+    /// </remarks>
+    protected static void DrawAsTile(in TileConditionInstance instance, Texture2D texture, Color color)
+    {
+        // Two corrections, both cancelling something DrawSloped adds for a caller we are not.
+        //
+        // TileOffset is the offscreen-range shift belonging to the tile render target's own pass,
+        // and neither of our passes runs inside it.
+        //
+        // The pixel snap is the one that was visibly wrong. DrawSloped positions against the raw
+        // float Main.screenPosition, while vanilla draws every tile against its truncated integer.
+        // At 1x zoom that is up to a whole pixel of disagreement between a mark and the block it is
+        // supposed to be painted on, and because the fraction changes as the camera moves, the mark
+        // crawls against the terrain rather than sitting still on it.
+        var pixelSnap = new Vector2(
+            Main.screenPosition.X - (int)Main.screenPosition.X,
+            Main.screenPosition.Y - (int)Main.screenPosition.Y);
+
+        TileExtensions.DrawSloped(instance.X, instance.Y, texture, color, pixelSnap - TileExtensions.TileOffset);
     }
 
     /// <summary>Whether the tile is close enough to the camera to be worth spending anything on.</summary>

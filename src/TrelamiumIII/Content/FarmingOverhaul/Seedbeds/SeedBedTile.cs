@@ -3,7 +3,7 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.ObjectData;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
 public abstract class SeedBedTile : ModTile
 {

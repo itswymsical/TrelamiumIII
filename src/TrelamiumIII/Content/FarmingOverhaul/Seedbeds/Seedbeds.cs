@@ -1,6 +1,6 @@
 using TrelamiumIII.Common.Systems;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
 // Items
 public class SeedBedItem_Dirt : SeedBedItem

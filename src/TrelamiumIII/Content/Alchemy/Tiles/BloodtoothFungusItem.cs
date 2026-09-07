@@ -2,7 +2,7 @@
 using Terraria.Enums;
 using Terraria.ObjectData;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Tiles;
 
 [LegacyName("BloodtoothFungus")]
 public class BloodtoothFungusItem : ModItem

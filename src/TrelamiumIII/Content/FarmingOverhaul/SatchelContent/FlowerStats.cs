@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
 /// A player stat a flower can feed. Adding a member here plus one <see cref="FlowerStats"/> entry is

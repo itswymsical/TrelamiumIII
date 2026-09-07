@@ -1,9 +1,8 @@
 using ReLogic.Graphics;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-[LegacyName("InertSolution")]
 public class InertSolutionItem : ModItem
 {
     public override void SetDefaults()
@@ -15,7 +14,6 @@ public class InertSolutionItem : ModItem
     }    
 }
 
-[LegacyName("DeadSolution")]
 public class DeadSolutionItem : ModItem
 {
     public override void SetDefaults()
@@ -27,8 +25,7 @@ public class DeadSolutionItem : ModItem
     }
 }
 
-[LegacyName("ArcaneSolution")]
-public class ArcaneSolutionItem : ModItem
+public class ArcaneSolution : ModItem
 {
     public override void SetDefaults()
     {
@@ -39,7 +36,6 @@ public class ArcaneSolutionItem : ModItem
     }
 }
 
-[LegacyName("MagnoliaSolution")]
 public class MagnoliaSolutionItem : ModItem
 {
     public override void SetDefaults()

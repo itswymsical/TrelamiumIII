@@ -1,7 +1,7 @@
 ﻿using TrelamiumIII.Content.GemPendants;
 using TrelamiumIII.Core.NPCs;
 using System.Collections.Generic;
-using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
 namespace TrelamiumIII.Content.NPCs.Desert;
 

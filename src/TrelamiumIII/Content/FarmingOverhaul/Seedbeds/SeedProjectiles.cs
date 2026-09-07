@@ -4,7 +4,7 @@ using TrelamiumIII.Utilities;
 using Terraria.Audio;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
 // Shared helper so DrawPrimitives isn't duplicated seven times.
 // Each seed passes its own effect params and trails.

@@ -1,26 +1,25 @@
-﻿using ModLiquidLib.Utils;
+using ModLiquidLib.Utils;
 using TrelamiumIII.Content.Liquids;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-[LegacyName("BottledOil")]
-public class BottledOilItem : ModItem
+[LegacyName("BrineBottle")]
+public class BrineBottleItem : ModItem
 {
     public override void SetDefaults()
     {
         base.SetDefaults();
         Item.width = Item.height = 30;
-        Item.value = Item.sellPrice(silver: 2);
-        Item.rare = ItemRarityID.White;
+        Item.rare = ItemRarityID.Blue;
         Item.maxStack = Item.CommonMaxStack;
     }
-
     public override void AddRecipes()
     {
         base.AddRecipes();
+
         CreateRecipe()
             .AddIngredient(ItemID.Bottle)
-            .AddLiquid<CrudeOilLiquid>()
+            .AddLiquid<BrineLiquid>()
             .Register();
     }
 }

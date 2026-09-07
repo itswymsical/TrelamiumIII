@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using TrelamiumIII.Content.FarmingOverhaul;
+using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
 namespace TrelamiumIII.Common.Globals.Items;
 

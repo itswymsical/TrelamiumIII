@@ -2,7 +2,7 @@
 using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 [LegacyName("HarmoniousTonic")]
 public class HarmoniousTonicItem : ModItem

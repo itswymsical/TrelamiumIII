@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
-using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
 namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 

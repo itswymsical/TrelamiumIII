@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
 public abstract class SeedBedItem : ModItem
 {

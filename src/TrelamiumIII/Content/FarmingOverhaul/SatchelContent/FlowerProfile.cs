@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>One stat a flower feeds, per unit of it held in the satchel.</summary>
 public readonly record struct FlowerContribution(FlowerStat Stat, float PerUnit);

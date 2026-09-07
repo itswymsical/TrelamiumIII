@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
 namespace TrelamiumIII.Common.Globals;
 

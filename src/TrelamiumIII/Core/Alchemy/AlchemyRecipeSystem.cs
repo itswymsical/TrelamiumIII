@@ -4,12 +4,15 @@ using TrelamiumIII.Utilities;
 using Terraria.Localization;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 using TrelamiumIII.Content.Alchemy.AlchemyStations;
-using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Common.Globals;
-using TrelamiumIII.Content.FarmingOverhaul;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Alchemy.Brewing;
+using TrelamiumIII.Content.Alchemy.MagnoliaContent;
+using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Reagents.Misc;
+using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 namespace TrelamiumIII.Core.Alchemy;
 
@@ -430,7 +433,7 @@ public class AlchemyRecipeSystem : ModSystem
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, 
             inputType: ModContent.ItemType<InertSolutionItem>(), 
-            outputType: ModContent.ItemType<ArcaneSolutionItem>(),
+            outputType: ModContent.ItemType<ArcaneSolution>(),
             new AlchemyVariant(ItemID.FallenStar));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, 
@@ -501,7 +504,7 @@ public class AlchemyRecipeSystem : ModSystem
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ItemID.BottledWater,
-            outputType: ModContent.ItemType<ArcaneSolutionItem>(),
+            outputType: ModContent.ItemType<ArcaneSolution>(),
             new AlchemyVariant(ItemID.FallenStar));
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,

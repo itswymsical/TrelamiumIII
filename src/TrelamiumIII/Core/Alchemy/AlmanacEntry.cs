@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using Terraria.Localization;
-using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Content.Lodestone;
+using TrelamiumIII.Content.Alchemy.MagnoliaContent;
+using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 namespace TrelamiumIII.Core.Alchemy;
 
@@ -263,7 +266,7 @@ internal static class AlmanacEntryDefinitions
 
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
-            ItemType = ModContent.ItemType<ArcaneSolutionItem>(),
+            ItemType = ModContent.ItemType<ArcaneSolution>(),
             Potency = 1,
             Chemical = ChemicalType.Catalytic,
             Rarity = ItemRarityID.Blue,

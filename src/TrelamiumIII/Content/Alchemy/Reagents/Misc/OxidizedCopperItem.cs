@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 [LegacyName("OxidizedCopper")]
 

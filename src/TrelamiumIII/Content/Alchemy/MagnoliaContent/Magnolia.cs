@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using Terraria.GameContent;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
-using TrelamiumIII.Content.FarmingOverhaul;
+using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
-namespace TrelamiumIII.Content.Alchemy;
+namespace TrelamiumIII.Content.Alchemy.MagnoliaContent;
 
 public class MagnoliaItem : ModItem
 {

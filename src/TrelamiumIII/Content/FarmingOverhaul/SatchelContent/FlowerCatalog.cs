@@ -1,6 +1,6 @@
-using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.MagnoliaContent;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
 /// The satchel's contents, as data. Every flower and bouquet in the mod is declared here; the values

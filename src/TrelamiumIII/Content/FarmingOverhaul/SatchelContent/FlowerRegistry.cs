@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Content.FarmingOverhaul;
+namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
 /// Every flower the satchel accepts and every bouquet it can form. The slot whitelist is this
