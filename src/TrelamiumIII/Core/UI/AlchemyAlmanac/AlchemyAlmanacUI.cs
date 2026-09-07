@@ -160,10 +160,10 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// Infusion the query slot pins onto a material lookup, so a queried "Bottled Water (Inert)"
     /// lists only the recipes keyed to that infusion. None whenever the slot holds anything else.
     /// </summary>
-    private ChemicalType QueryInfusion(int itemType) =>
+    private ChemicalQuality QueryInfusion(int itemType) =>
         !SearchItem.IsAir && SearchItem.type == itemType
             ? SolutionGlobalItem.GetInfusion(SearchItem)
-            : ChemicalType.None;
+            : ChemicalQuality.None;
 
     /// <summary>Discovered recipes that use the given ingredient (honouring a queried infusion).</summary>
     private IEnumerable<AlchemyRecipe> UnlockedUses(int itemType) =>
@@ -823,9 +823,9 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// output) by reconstructing <see cref="DrawVariantRow"/>'s layout. Returns the hovered
     /// item type (0 = none) and the infusion it requires or carries, for suffixed names.
     /// </summary>
-    private int HitTestVariantIcon(Point mouse, out ChemicalType infusion)
+    private int HitTestVariantIcon(Point mouse, out ChemicalQuality infusion)
     {
-        infusion = ChemicalType.None;
+        infusion = ChemicalQuality.None;
 
         if (current.View != ViewMode.Detail) return 0;
         if (current.Category == AlmanacCategory.Notes) return 0;
@@ -1373,7 +1373,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         {
             string header = "Used In";
             var pinned = QueryInfusion(itemType);
-            if (pinned != ChemicalType.None && ChemicalTypeInfo.TryGet(pinned, out string label, out _))
+            if (pinned != ChemicalQuality.None && ChemicalTypeInfo.TryGet(pinned, out string label, out _))
                 header = $"Used In ({label})";
 
             Vector2 hSize = font.MeasureString(header) * HEADER_SCALE;
@@ -1624,26 +1624,26 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // ---- Chemistry chapter: the three type axes + how solutes act on solvents ----
 
-    private static readonly (ChemicalType A, string ADesc, ChemicalType B, string BDesc)[] _chemAxes =
+    private static readonly (ChemicalQuality A, string ADesc, ChemicalQuality B, string BDesc)[] _chemAxes =
     {
-        (ChemicalType.Inert,    "refuses to react; stabilises and dilutes",
-         ChemicalType.Catalytic, "enables and hastens reactions"),
-        (ChemicalType.Alkaline, "binds compounds, neutralises acids",
-         ChemicalType.Acidic,    "breaks other compounds down"),
-        (ChemicalType.Volatile, "unstable; evaporates easily",
-         ChemicalType.Kinetic,   "reacts to release raw energy"),
+        (ChemicalQuality.Inert,    "refuses to react; stabilises and dilutes",
+         ChemicalQuality.Catalytic, "enables and hastens reactions"),
+        (ChemicalQuality.Alkaline, "binds compounds, neutralises acids",
+         ChemicalQuality.Acidic,    "breaks other compounds down"),
+        (ChemicalQuality.Volatile, "unstable; evaporates easily",
+         ChemicalQuality.Kinetic,   "reacts to release raw energy"),
     };
 
-    private static readonly (ChemicalType A, ChemicalType B, string Makes)[] _chemPairings =
+    private static readonly (ChemicalQuality A, ChemicalQuality B, string Makes)[] _chemPairings =
     {
-        (ChemicalType.Catalytic, ChemicalType.Kinetic,  "highly potent brews"),
-        (ChemicalType.Volatile,  ChemicalType.Kinetic,  "dangerous, unstable products"),
-        (ChemicalType.Acidic,    ChemicalType.Volatile, "corrosive agents"),
-        (ChemicalType.Alkaline,  ChemicalType.Volatile, "cleansing utilities"),
+        (ChemicalQuality.Catalytic, ChemicalQuality.Kinetic,  "highly potent brews"),
+        (ChemicalQuality.Volatile,  ChemicalQuality.Kinetic,  "dangerous, unstable products"),
+        (ChemicalQuality.Acidic,    ChemicalQuality.Volatile, "corrosive agents"),
+        (ChemicalQuality.Alkaline,  ChemicalQuality.Volatile, "cleansing utilities"),
     };
 
     /// <summary>Draws one chemical-type name in its badge colour; returns the advance width.</summary>
-    private static float DrawChemName(SpriteBatch sb, ChemicalType flag, Vector2 pos, float scale)
+    private static float DrawChemName(SpriteBatch sb, ChemicalQuality flag, Vector2 pos, float scale)
     {
         ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
         Utils.DrawBorderString(sb, label, pos, color, scale);
@@ -1941,14 +1941,14 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
     }
 
-    private static readonly (ChemicalType Flag, string Label, Color Color)[] _chemMeta =
+    private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _chemMeta =
     {
-        (ChemicalType.Acidic,    "Acidic",    new Color(180, 230,  90)),
-        (ChemicalType.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
-        (ChemicalType.Volatile,  "Volatile",  new Color(255, 160,  70)),
-        (ChemicalType.Kinetic,  "Kinetic",     new Color(180, 255, 128)),
-        (ChemicalType.Catalytic, "Catalytic", new Color(255, 215, 110)),
-        (ChemicalType.Inert,     "Inert",     new Color(170, 170, 170)),
+        (ChemicalQuality.Acidic,    "Acidic",    new Color(180, 230,  90)),
+        (ChemicalQuality.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
+        (ChemicalQuality.Volatile,  "Volatile",  new Color(255, 160,  70)),
+        (ChemicalQuality.Kinetic,  "Kinetic",     new Color(180, 255, 128)),
+        (ChemicalQuality.Catalytic, "Catalytic", new Color(255, 215, 110)),
+        (ChemicalQuality.Inert,     "Inert",     new Color(170, 170, 170)),
     };
 
     // Flag column drives badge matching bitwise (PrincipleType is [Flags] now, so
@@ -1969,7 +1969,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// One centred row of class tags: a badge per chemical flag, then the principle badge(s).
     /// Measured as a whole before drawing so the combined row centres on <paramref name="centerX"/>.
     /// </summary>
-    private static void DrawChemicalBadges(SpriteBatch sb, ChemicalType chem, PrincipleType principle, float centerX, float y)
+    private static void DrawChemicalBadges(SpriteBatch sb, ChemicalQuality chem, PrincipleType principle, float centerX, float y)
     {
         var font = FontAssets.MouseText.Value;
         var px = TextureAssets.MagicPixel.Value;
@@ -2164,7 +2164,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             if (hit > 0)
             {
                 string name = Lang.GetItemNameValue(hit);
-                if (infusion != ChemicalType.None && ChemicalTypeInfo.TryGet(infusion, out string label, out _))
+                if (infusion != ChemicalQuality.None && ChemicalTypeInfo.TryGet(infusion, out string label, out _))
                     name = $"{name} ({label})";
                 Main.instance.MouseText(name, AlmanacEntryRegistry.For(hit).ResolvedRarity);
             }

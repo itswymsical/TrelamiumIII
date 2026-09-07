@@ -47,6 +47,12 @@ namespace TrelamiumIII.Core.Text;
 ///         <item>
 ///             <c>[hand:someone wrote this later]</c> -- switches to the handwriting face mid-line.
 ///         </item>
+///         <item>
+///             <c>[ttblock/type.index:fallback]</c> -- a custom-drawn <see cref="Tooltips.TooltipBlock" />
+///             in an item tooltip. Not written by hand: <see cref="Tooltips.ItemTooltipBlocks" />
+///             emits it for each block an item's <see cref="Tooltips.ITooltipBlockProvider" />s
+///             contribute, and the tag draws as its fallback text anywhere else.
+///         </item>
 ///     </list>
 /// </remarks>
 public sealed class InlineTagSystem : ModSystem
@@ -59,6 +65,9 @@ public sealed class InlineTagSystem : ModSystem
     internal const string REDACTED_TAG = "redacted";
     internal const string HAND_TAG = "hand";
     internal const string KEY_TAG = "key";
+
+    /// <summary>A custom-drawn tooltip block. See <see cref="Tooltips.TooltipBlockTagHandler" />.</summary>
+    internal const string BLOCK_TAG = "ttblock";
 
     /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
     internal const string FORMAT_TAG = Authoring.FormatCodec.TAG;
@@ -73,6 +82,7 @@ public sealed class InlineTagSystem : ModSystem
         REDACTED_TAG,
         HAND_TAG,
         KEY_TAG,
+        BLOCK_TAG,
         FORMAT_TAG,
     ];
 
@@ -90,10 +100,15 @@ public sealed class InlineTagSystem : ModSystem
         ChatManager.Register<RedactedTagHandler>(REDACTED_TAG);
         ChatManager.Register<HandwritingTagHandler>(HAND_TAG);
         ChatManager.Register<HandwritingTagHandler>(KEY_TAG);
+        ChatManager.Register<Tooltips.TooltipBlockTagHandler>(BLOCK_TAG);
         ChatManager.Register<FormatTagHandler>(FORMAT_TAG);
     }
 
-    public override void Unload() => UnregisterTags();
+    public override void Unload()
+    {
+        UnregisterTags();
+        Tooltips.TooltipBlockRegistry.Clear();
+    }
 
     private static void UnregisterTags()
     {
@@ -196,13 +211,11 @@ public sealed class InlineTextureTagHandler : ITagHandler
 /// <summary>Renders a chemical damage type's name and element medallion inline.</summary>
 /// <remarks>
 ///     The tag names a <see cref="ChemicalDamageType" /> rather than a texture path, so the medallion
-///     beside the word is always the one that element actually uses. A type added to the enum later
-///     needs nothing here beyond a sprite of the same name under <c>Assets/Textures/UI/Elements</c>.
+///     beside the word is always the one that element actually uses. Sprite, tint and label all
+///     come from <see cref="ElementDisplay" />, the same place the controller stat rows read them.
 /// </remarks>
 public sealed class ChemicalTagHandler : ITagHandler
 {
-    private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/Elements/";
-
     TextSnippet ITagHandler.Parse(string text, Color baseColor, string options)
     {
         string raw = $"[{InlineTagSystem.CHEMICAL_TAG}:{text}]";
@@ -210,14 +223,11 @@ public sealed class ChemicalTagHandler : ITagHandler
         if (!TryResolveType(text, out ChemicalDamageType type))
             return new TextSnippet(raw, baseColor);
 
-        // The icons are named after their enum member, so the member is the path.
-        string path = ICON_DIRECTORY + type;
-
         return new InlineTextureSnippet(
-            ModContent.HasAsset(path) ? ModContent.Request<Texture2D>(path) : null,
+            ElementDisplay.Icon(type),
             raw,
-            InlineTags.ParseColor(options) ?? LabelColor(type),
-            DisplayName(type)
+            InlineTags.ParseColor(options) ?? ElementDisplay.LabelColor(type),
+            ElementDisplay.DisplayName(type)
         );
     }
 
@@ -228,37 +238,6 @@ public sealed class ChemicalTagHandler : ITagHandler
         return Enum.TryParse(text.Trim(), ignoreCase: true, out type)
             && Enum.IsDefined(type)
             && type != ChemicalDamageType.None;
-    }
-
-    /// <summary>
-    ///     Label tints sampled from the medallions themselves, so the word and the icon beside it
-    ///     read as one element rather than two.
-    /// </summary>
-    private static Color LabelColor(ChemicalDamageType type)
-    {
-        return type switch
-        {
-            ChemicalDamageType.Solute => new Color(126, 186, 240),
-            ChemicalDamageType.Thermal => new Color(255, 135, 31),
-            ChemicalDamageType.Cryonic => new Color(157, 202, 238),
-            ChemicalDamageType.Caustic => new Color(93, 173, 63),
-            ChemicalDamageType.Necrotic => new Color(200, 84, 255),
-            ChemicalDamageType.Kinetic => new Color(245, 229, 88),
-            ChemicalDamageType.Electric => new Color(255, 106, 106),
-            _ => Color.White
-        };
-    }
-
-    /// <summary>
-    ///     The label is localised under <c>ChemicalDamageTypes.{member}</c>, so a translation can name
-    ///     an element in its own words without every tooltip that mentions it having to change.
-    /// </summary>
-    private static string DisplayName(ChemicalDamageType type)
-    {
-        string key = TrelamiumIII.Instance.GetLocalizationKey($"ChemicalDamageTypes.{type}");
-        string value = Language.GetTextValue(key);
-
-        return value == key ? type.ToString() : value;
     }
 }
 

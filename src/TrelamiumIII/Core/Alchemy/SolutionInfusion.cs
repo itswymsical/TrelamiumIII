@@ -8,22 +8,22 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-/// Display metadata per <see cref="ChemicalType"/> flag (shared by the infused-solution
+/// Display metadata per <see cref="ChemicalQuality"/> flag (shared by the infused-solution
 /// tooltip; the almanac badges keep their own table for now).
 /// </summary>
 public static class ChemicalTypeInfo
 {
-    private static readonly (ChemicalType Flag, string Label, Color Color)[] _meta =
+    private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _meta =
     {
-        (ChemicalType.Acidic,    "Acidic",    new Color(180, 230,  90)),
-        (ChemicalType.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
-        (ChemicalType.Volatile,  "Volatile",  new Color(255, 160,  70)),
-        (ChemicalType.Kinetic,   "Kinetic",   new Color(190, 120, 230)),
-        (ChemicalType.Catalytic, "Catalytic", new Color(255, 215, 110)),
-        (ChemicalType.Inert,     "Inert",     new Color(170, 170, 170)),
+        (ChemicalQuality.Acidic,    "Acidic",    new Color(180, 230,  90)),
+        (ChemicalQuality.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
+        (ChemicalQuality.Volatile,  "Volatile",  new Color(255, 160,  70)),
+        (ChemicalQuality.Kinetic,   "Kinetic",   new Color(190, 120, 230)),
+        (ChemicalQuality.Catalytic, "Catalytic", new Color(255, 215, 110)),
+        (ChemicalQuality.Inert,     "Inert",     new Color(170, 170, 170)),
     };
 
-    public static bool TryGet(ChemicalType flag, out string label, out Color color)
+    public static bool TryGet(ChemicalQuality flag, out string label, out Color color)
     {
         foreach (var m in _meta)
         {
@@ -63,16 +63,16 @@ public sealed class InfusionVisual
 /// <summary>Registry of authored <see cref="InfusionVisual"/>s, keyed by (item type, infusion).</summary>
 public static class InfusionVisuals
 {
-    private static readonly Dictionary<(int, ChemicalType), InfusionVisual> _visuals = new();
+    private static readonly Dictionary<(int, ChemicalQuality), InfusionVisual> _visuals = new();
 
-    public static void Register(int itemType, ChemicalType infusion, InfusionVisual visual)
+    public static void Register(int itemType, ChemicalQuality infusion, InfusionVisual visual)
     {
-        if (itemType > 0 && infusion != ChemicalType.None && visual != null)
+        if (itemType > 0 && infusion != ChemicalQuality.None && visual != null)
             _visuals[(itemType, infusion)] = visual;
     }
 
-    public static InfusionVisual Get(int itemType, ChemicalType infusion) =>
-        infusion != ChemicalType.None && _visuals.TryGetValue((itemType, infusion), out var v) ? v : null;
+    public static InfusionVisual Get(int itemType, ChemicalQuality infusion) =>
+        infusion != ChemicalQuality.None && _visuals.TryGetValue((itemType, infusion), out var v) ? v : null;
 
     public static void Clear() => _visuals.Clear();
 }
@@ -88,7 +88,7 @@ public class InfusionVisualsSystem : ModSystem
 }
 
 /// <summary>
-/// Per-instance "infusion" on Bottled Water: a single <see cref="ChemicalType"/> that turns the
+/// Per-instance "infusion" on Bottled Water: a single <see cref="ChemicalQuality"/> that turns the
 /// plain vanilla item into a suffixed solvent.
 /// </summary>
 public class SolutionGlobalItem : GlobalItem
@@ -100,13 +100,13 @@ public class SolutionGlobalItem : GlobalItem
         => entity.type is ItemID.BottledWater or ItemID.BottledHoney;
 
     /// <summary>The infusion on this instance; None = plain water.</summary>
-    public ChemicalType Infusion;
+    public ChemicalQuality Infusion;
 
     /// <summary>The infusion carried by any item (None for non-water and plain instances).</summary>
-    public static ChemicalType GetInfusion(Item item) =>
+    public static ChemicalQuality GetInfusion(Item item) =>
         item is { IsAir: false } && item.TryGetGlobalItem(out SolutionGlobalItem g)
             ? g.Infusion
-            : ChemicalType.None;
+            : ChemicalQuality.None;
 
     // Only identically-infused waters merge (plain and infused never mix in a stack).
     public override bool CanStack(Item destination, Item source) =>
@@ -116,7 +116,7 @@ public class SolutionGlobalItem : GlobalItem
 
     public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
     {
-        if (Infusion == ChemicalType.None) return;
+        if (Infusion == ChemicalQuality.None) return;
         ChemicalTypeInfo.TryGet(Infusion, out string label, out _);
 
         foreach (var line in tooltips)
@@ -129,7 +129,7 @@ public class SolutionGlobalItem : GlobalItem
 
     public override bool PreDrawTooltipLine(Item item, DrawableTooltipLine line, ref int yOffset)
     {
-        if (Infusion == ChemicalType.None || line.Name != "ItemName") return true;
+        if (Infusion == ChemicalQuality.None || line.Name != "ItemName") return true;
         ChemicalTypeInfo.TryGet(Infusion, out _, out Color color);
 
         var font = FontAssets.MouseText.Value;
@@ -222,16 +222,16 @@ public class SolutionGlobalItem : GlobalItem
 
     public override void SaveData(Item item, TagCompound tag)
     {
-        if (Infusion != ChemicalType.None)
+        if (Infusion != ChemicalQuality.None)
             tag["infusion"] = (int)Infusion;
     }
 
     public override void LoadData(Item item, TagCompound tag)
-        => Infusion = (ChemicalType)tag.GetInt("infusion");
+        => Infusion = (ChemicalQuality)tag.GetInt("infusion");
 
     public override void NetSend(Item item, BinaryWriter writer)
         => writer.Write((int)Infusion);
 
     public override void NetReceive(Item item, BinaryReader reader)
-        => Infusion = (ChemicalType)reader.ReadInt32();
+        => Infusion = (ChemicalQuality)reader.ReadInt32();
 }

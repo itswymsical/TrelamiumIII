@@ -41,13 +41,13 @@ public sealed class AlchemyVariant
     /// Required infusion on the solvent instance (suffixed solutions). None = plain solvent
     /// only. Lets the same solvent item type key different recipes per infusion.
     /// </summary>
-    public ChemicalType SolventInfusion { get; init; }
+    public ChemicalQuality SolventInfusion { get; init; }
 
     /// <summary>
     /// Stamp this infusion onto the output (producing e.g. "Bottled Water (Inert)").
     /// Infused outputs are reagents, not potions: brew branding is skipped for them.
     /// </summary>
-    public ChemicalType OutputInfusion { get; init; }
+    public ChemicalQuality OutputInfusion { get; init; }
 
     /// <summary>
     /// One input combination for a shared output. Used with
@@ -176,7 +176,7 @@ public static class AlchemyRecipeRegistry
 
                     // Infused outputs are suffixed solvents (reagents), so stamping
                     // a brew here would wrongly brand e.g. Bottled Water via its healLife.
-                    if (outputInfusion != ChemicalType.None)
+                    if (outputInfusion != ChemicalQuality.None)
                     {
                         if (r.TryGetGlobalItem(out SolutionGlobalItem solution))
                             solution.Infusion = outputInfusion;
@@ -332,21 +332,21 @@ public static class AlchemyRecipeRegistry
         => Resolve(vial, components, mode).Output;
 
     // Tie-break order when solutes share several flags, following the three axes.
-    private static readonly ChemicalType[] _infusionPriority =
+    private static readonly ChemicalQuality[] _infusionPriority =
     [
-        ChemicalType.Inert, ChemicalType.Catalytic,
-        ChemicalType.Alkaline, ChemicalType.Acidic,
-        ChemicalType.Volatile, ChemicalType.Kinetic,
+        ChemicalQuality.Inert, ChemicalQuality.Catalytic,
+        ChemicalQuality.Alkaline, ChemicalQuality.Acidic,
+        ChemicalQuality.Volatile, ChemicalQuality.Kinetic,
     ];
 
     private static Item TryInfusionFallback(Item solvent, List<Item> solutes, AlchemyMode mode)
     {
         if (mode != AlchemyMode.Synthesis) return new Item();
         if (solvent.type is not (ItemID.BottledWater or ItemID.BottledHoney)) return new Item();
-        if (SolutionGlobalItem.GetInfusion(solvent) != ChemicalType.None) return new Item();
+        if (SolutionGlobalItem.GetInfusion(solvent) != ChemicalQuality.None) return new Item();
         if (solutes.Count == 0) return new Item();
 
-        var common = (ChemicalType)~0;
+        var common = (ChemicalQuality)~0;
         foreach (var s in solutes)
             common &= AlmanacEntryRegistry.For(s.type).Chemical;
 

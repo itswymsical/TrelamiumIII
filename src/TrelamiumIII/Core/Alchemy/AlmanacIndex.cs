@@ -49,9 +49,9 @@ public static class AlmanacIndex
     /// Recipes whose solvent or any solute slot requires <paramref name="itemType"/>
     /// WITH the given instance infusion.
     /// </summary>
-    public static IEnumerable<AlchemyRecipe> RecipesUsing(int itemType, ChemicalType infusion)
+    public static IEnumerable<AlchemyRecipe> RecipesUsing(int itemType, ChemicalQuality infusion)
     {
-        if (infusion == ChemicalType.None)
+        if (infusion == ChemicalQuality.None)
         {
             foreach (var r in RecipesUsing(itemType))
                 yield return r;

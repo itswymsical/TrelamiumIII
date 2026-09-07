@@ -2266,11 +2266,11 @@ public class ChemistryRecipeSystem : ModSystem
 
     private static void InfusionRecipes()
     {
-        ReadOnlySpan<ChemicalType> flags =
+        ReadOnlySpan<ChemicalQuality> flags =
         [
-            ChemicalType.Inert, ChemicalType.Catalytic,
-            ChemicalType.Alkaline, ChemicalType.Acidic,
-            ChemicalType.Volatile, ChemicalType.Kinetic,
+            ChemicalQuality.Inert, ChemicalQuality.Catalytic,
+            ChemicalQuality.Alkaline, ChemicalQuality.Acidic,
+            ChemicalQuality.Volatile, ChemicalQuality.Kinetic,
         ];
 
         foreach (var flag in flags)
@@ -2295,7 +2295,7 @@ public class ChemistryRecipeSystem : ModSystem
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ItemID.BottledWater,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { SolventInfusion = ChemicalType.Inert, Potency = 2 });
+            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { SolventInfusion = ChemicalQuality.Inert, Potency = 2 });
     }
 
     /// <summary>

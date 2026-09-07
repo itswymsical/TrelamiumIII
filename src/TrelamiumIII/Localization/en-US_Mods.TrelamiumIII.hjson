@@ -470,6 +470,11 @@ Items: {
 		Tooltip: ""
 	}
 
+	ArcaneSolution: {
+		DisplayName: Arcane Solution
+		Tooltip: ""
+	}
+
 	BaneTonicItem: {
 		DisplayName: Bane Tonic
 		Tooltip: ""
@@ -858,6 +863,28 @@ ChemicalDamageTypes: {
 	Necrotic: Necrotic
 	Kinetic: Kinetic
 	Electric: Electric
+	Reagent: Reagent
+}
+
+# The classification row under a chemical item's name (ChemicalRoleTag): which part it plays at
+# the station, followed by the qualities it carries.
+ChemicalRoles: {
+	Solute: Solute
+	Solvent: Solvent
+	Solution: Solution
+}
+
+# The stat rows a controller weapon shows under its damage line (ChemicalStatsTooltip). Each row
+# starts with the element's medallion, so the formats carry only the number and its unit.
+ChemicalStats: {
+	DamagePerSecond: "{0}/sec"
+	ReactionChance: "{0}%"
+	Duration: "{0}s"
+	# Plain-text stand-ins for readers that cannot draw the rows (search filters, other mods).
+	# {0} element, {1} damage per second, {2} reaction damage, {3} reaction chance, {4} seconds.
+	FallbackReactive: "{1} {0} per second, {2} reaction damage ({3}%), {4}s affliction"
+	# {0} element, {1} damage per second, {2} seconds.
+	FallbackPlain: "{1} {0} per second, {2}s affliction"
 }
 
 DamageClasses.ChemicalDamageClass.DisplayName: controlled damage

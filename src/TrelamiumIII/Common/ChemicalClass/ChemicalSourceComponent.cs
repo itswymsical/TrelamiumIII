@@ -1,5 +1,6 @@
 ﻿using TrelamiumIII.Core.Components.Items;
 using System.Collections.Generic;
+using TrelamiumIII.Core.Text.Tooltips;
 
 namespace TrelamiumIII.Common.ChemicalClass;
 
@@ -9,7 +10,7 @@ namespace TrelamiumIII.Common.ChemicalClass;
 /// a per-instance reaction callback so two items of the same chemical type
 /// can produce entirely different reactions.
 /// </summary>
-public class ChemicalSourceComponent : ItemComponent, IChemicalSource
+public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipBlockProvider
 {
     public ChemicalDamageType ChemicalType = ChemicalDamageType.None;
 
@@ -51,62 +52,13 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);
 
-    private Color ChemicalColor()
+    /// <summary>
+    /// The stat rows under the damage line -- per-second damage, reaction burst, duration -- in
+    /// place of a second damage-type line. See <see cref="ChemicalStatsTooltip"/>.
+    /// </summary>
+    public void AddTooltipBlocks(Item item, List<TooltipBlock> blocks)
     {
-        return ChemicalType switch
-        {
-            ChemicalDamageType.Solute => new Color(126, 186, 240),
-            ChemicalDamageType.Thermal => new Color(255, 135, 31),
-            ChemicalDamageType.Cryonic => new Color(157, 202, 238),
-            ChemicalDamageType.Caustic => new Color(93, 173, 63),
-            ChemicalDamageType.Necrotic => new Color(200, 84, 255),
-            ChemicalDamageType.Kinetic => new Color(245, 229, 88),
-            ChemicalDamageType.Electric => new Color(255, 106, 106),
-            _ => Color.White
-        };
-    }
-
-    // TODO: Localization
-    public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
-    {
-        if (!item.TryGetGlobalItem<ChemicalSourceComponent>(out var component))
-            return;
-
-        if (component.ChemicalType == ChemicalDamageType.None)
-            return;
-
-        int insertionIndex = tooltips.FindIndex(line => line.Name == "Damage");
-
-        var chemicalType = new TooltipLine(Mod, "ChemicalType",
-            $"({component.ChemicalDamage} [chem:{component.ChemicalType}]/sec)")
-        {
-            OverrideColor = component.ChemicalColor(),
-        };
-        tooltips.Insert(insertionIndex + 1, chemicalType);
-
-        // Reaction lines only for something that can actually react. A solute weapon reporting
-        // "0% chemical reaction chance" is stating an absence the player has no way to act on, and
-        // reads as the weapon being broken rather than as it being a different kind of weapon.
-        if (ChemicalMatchup.IsElemental(component.ChemicalType))
-        {
-            if (component.ReactionDamage > 0f)
-            {
-                var reactionDamage = new TooltipLine(Mod, "ReactionDamage",
-                    $"deals {component.ReactionDamage:0} [chem:{component.ChemicalType}] reaction damage")
-                {
-                    OverrideColor = component.ChemicalColor(),
-                };
-                tooltips.Insert(insertionIndex + 2, reactionDamage);
-            }
-
-            var reactionChance = new TooltipLine(Mod, "ReactionChance",
-                $"{component.ReactionChance * 1000}% chemical reaction chance");
-            tooltips.Insert(insertionIndex + 3, reactionChance);
-        }
-
-        int insertionIndex2 = tooltips.FindIndex(line => line.Name == "Speed");
-        var afflictionDuration = new TooltipLine(Mod, "AfflictionDuration",
-            $"deals {component.AfflictionDuration / 60}s of affliction");
-        tooltips.Insert(insertionIndex2 + 1, afflictionDuration);
+        if (ChemicalStatsTooltip.Build(this) is { } block)
+            blocks.Add(block);
     }
 }

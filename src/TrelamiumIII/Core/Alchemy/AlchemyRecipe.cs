@@ -25,7 +25,7 @@ public enum AlchemyMode
 /// <summary>
 /// A single component slot's match rule: either an exact item type, or a
 /// <see cref="AlchemyComponentGroup"/> that accepts any of its members. Optionally,
-/// narrowed to a specific per-instance <see cref="ChemicalType"/> infusion (suffixed
+/// narrowed to a specific per-instance <see cref="ChemicalQuality"/> infusion (suffixed
 /// solutions like "Bottled Water (Inert)"). Implicit conversions let recipes mix
 /// specific ints and groups in the same array.
 /// </summary>
@@ -38,7 +38,7 @@ public readonly struct ComponentMatcher
     /// Required instance infusion. None = the slot only accepts a plain (un-infused) item,
     /// so infused and plain variants of the same item type never cross-match.
     /// </summary>
-    public readonly ChemicalType Infusion;
+    public readonly ChemicalQuality Infusion;
 
     /// <summary>
     /// How many of the solute this slot draws per batch unit. This is the potency dial:
@@ -47,21 +47,21 @@ public readonly struct ComponentMatcher
     /// </summary>
     public readonly int Quantity;
 
-    public ComponentMatcher(int exactType, ChemicalType infusion = ChemicalType.None, int quantity = 1)
+    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int quantity = 1)
     { ExactType = exactType; Group = null; Infusion = infusion; Quantity = Math.Max(1, quantity); }
 
     public ComponentMatcher(AlchemyComponentGroup group, int quantity = 1)
-    { ExactType = 0; Group = group; Infusion = ChemicalType.None; Quantity = Math.Max(1, quantity); }
+    { ExactType = 0; Group = group; Infusion = ChemicalQuality.None; Quantity = Math.Max(1, quantity); }
 
     /// <summary>An exact-type slot that additionally requires the given infusion.</summary>
-    public static ComponentMatcher Infused(int itemType, ChemicalType infusion) => new(itemType, infusion);
+    public static ComponentMatcher Infused(int itemType, ChemicalQuality infusion) => new(itemType, infusion);
 
     /// <summary>
     /// An exact-type slot drawn at <paramref name="quantity"/> potency, i.e. consuming that
     /// many of the item per batch unit. Two variants over the same solute at different
     /// quantities are different recipes, and the heavier one wins when both are affordable.
     /// </summary>
-    public static ComponentMatcher Of(int itemType, int quantity, ChemicalType infusion = ChemicalType.None)
+    public static ComponentMatcher Of(int itemType, int quantity, ChemicalQuality infusion = ChemicalQuality.None)
         => new(itemType, infusion, quantity);
 
     /// <summary>A group slot drawn at <paramref name="quantity"/> potency, whichever member fills it.</summary>
@@ -112,7 +112,7 @@ public sealed class AlchemyRecipe
     /// Required infusion on the solvent instance. None = plain solvent only, so a recipe
     /// keyed to "Bottled Water (Inert)" never fires from plain water and vice versa.
     /// </summary>
-    public ChemicalType SolventInfusion { get; init; }
+    public ChemicalQuality SolventInfusion { get; init; }
 
     /// <summary>
     /// Item type produced by this recipe, used by the Almanac index to group recipes by
