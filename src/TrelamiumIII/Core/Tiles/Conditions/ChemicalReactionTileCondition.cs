@@ -27,22 +27,41 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     public abstract ChemicalDamageType ChemicalType { get; }
 
     /// <summary>
+    ///     The universal definition of whatever element this residue is made of.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Every default below comes from here, which is the point. A residue's element already
+    ///         determines what it should do to something standing in it and roughly what it should
+    ///         look like doing so, and there is no reason for a caustic pool to restate the caustic
+    ///         palette and the caustic affliction rate when it has already said it is caustic.
+    ///     </para>
+    ///     <para>
+    ///         So a residue is now a name, an element, and only the handful of things that make it
+    ///         that residue rather than the generic form of its element. What is left overridden in
+    ///         a subclass is, by construction, the part that is actually distinctive.
+    ///     </para>
+    /// </remarks>
+    protected ElementProfile Element => ElementProfile.For(ChemicalType);
+
+    /// <summary>
     ///     Affliction tick damage from standing in the residue.
     /// </summary>
     /// <remarks>
-    ///     Lower than the cloud that left it by default. The residue is a much larger window of
-    ///     exposure -- it sits there for twenty seconds where the cloud passed in two -- so matching
-    ///     the cloud's rate would make the leftovers hit harder than the weapon.
+    ///     Lower than the cloud that left it. The residue is a much larger window of exposure -- it
+    ///     sits there for twenty seconds where the cloud passed in two -- so matching the cloud's
+    ///     rate would make the leftovers hit harder than the weapon. The element carries that
+    ///     already-reduced figure.
     /// </remarks>
-    public virtual float ChemicalDamage => 0.35f;
+    public virtual float ChemicalDamage => Element.ChemicalDamage;
 
-    public virtual int AfflictionDuration => 60;
+    public virtual int AfflictionDuration => Element.AfflictionDuration;
 
-    public virtual float AfflictionRate => 30f;
+    public virtual float AfflictionRate => Element.AfflictionRate;
 
-    public virtual float ReactionChance => 0.01f;
+    public virtual float ReactionChance => Element.ReactionChance;
 
-    public virtual float ReactionDamage => 0f;
+    public virtual float ReactionDamage => Element.ReactionDamage;
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 
@@ -50,9 +69,9 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     /// <remarks>
     ///     Players are not "anything" -- see <see cref="HarmsPlayers" />.
     /// </remarks>
-    protected virtual int ContactBuff => -1;
+    protected virtual int ContactBuff => Element.ContactBuff;
 
-    protected virtual int ContactBuffTicks => 90;
+    protected virtual int ContactBuffTicks => Element.ContactBuffTicks;
 
     /// <summary>
     ///     Whether the residue is a hazard to players, or only to what they threw it at.
@@ -73,7 +92,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     ///         it.
     ///     </para>
     /// </remarks>
-    protected virtual bool HarmsPlayers => false;
+    protected virtual bool HarmsPlayers => Element.HarmsPlayers;
 
     /// <summary>
     ///     The layer this residue exhales while it sits there, or null for one that just stains.
@@ -114,18 +133,18 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
 
-    protected abstract Vector3 BodyColor { get; }
+    protected virtual Vector3 BodyColor => Element.BodyColor;
 
-    protected abstract Vector3 EdgeColor { get; }
+    protected virtual Vector3 EdgeColor => Element.EdgeColor;
 
-    protected virtual Vector3 EmittedLight => Vector3.Zero;
+    protected virtual Vector3 EmittedLight => Element.EmittedLight;
 
     /// <summary>How much of the mask survives the shader's noise erosion. Higher reads wetter.</summary>
-    protected virtual float Threshold => 0.42f;
+    protected virtual float Threshold => Element.Threshold;
 
-    protected virtual float NoiseScale => 5.5f;
+    protected virtual float NoiseScale => Element.NoiseScale;
 
-    protected virtual Vector2 NoiseDrift => new(0.01f, -0.014f);
+    protected virtual Vector2 NoiseDrift => Element.NoiseDrift;
 
     private Asset<Texture2D>? noiseTexture;
 

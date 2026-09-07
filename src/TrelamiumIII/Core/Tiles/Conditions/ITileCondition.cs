@@ -168,6 +168,18 @@ public interface ITileCondition
     /// <summary>The effect the marks are drawn through, or null to draw them plainly.</summary>
     Asset<Effect>? Shader { get; }
 
+    /// <summary>
+    ///     The effect the stamps are drawn <em>into the field</em> through. Field mode only.
+    /// </summary>
+    /// <remarks>
+    ///     Null for a condition whose field only has to answer "is there coverage here", which the
+    ///     alpha channel already does. Set it when the field has to carry something per tile: a
+    ///     stamp shader can replace the tile sprite's own colour with the draw's tint, which turns
+    ///     the field's three unused colour channels into per-tile storage. See
+    ///     <see cref="Graphics.WorldFieldTarget.StampEffect" />.
+    /// </remarks>
+    Asset<Effect>? StampShader { get; }
+
     void ApplyShaderParameters(Effect effect);
 
     /// <summary>Bind anything the shader samples beyond register s0.</summary>

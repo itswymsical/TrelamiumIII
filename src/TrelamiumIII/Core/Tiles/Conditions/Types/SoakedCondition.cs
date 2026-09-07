@@ -21,7 +21,24 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 /// </remarks>
 public sealed class SoakedCondition : TileCondition
 {
-    private static readonly Color WetTint = new(14, 26, 48);
+    /// <summary>
+    ///     The sheen laid over wet terrain.
+    /// </summary>
+    /// <remarks>
+    ///     Pale, where it used to be near-black, because the blend under it changed. A dark blue
+    ///     alpha-blended over terrain paints something the colour of water; a wet surface is not
+    ///     darker than a dry one, it is shinier. See <see cref="BlendState" />.
+    /// </remarks>
+    private static readonly Color WetTint = new(96, 150, 224);
+
+    /// <summary>How strongly the sheen is laid on, before the tile's own strength.</summary>
+    /// <remarks>
+    ///     Low, and lower than it looks: additive scales the source by its alpha and then adds, so
+    ///     the contribution is the tint times this squared. A sheen tuned until it reads clearly on
+    ///     a dark cave wall is already far too much on lit sand, and the dark wall is the easier of
+    ///     the two to see it on.
+    /// </remarks>
+    private const float SHEEN_ALPHA = 0.34f;
 
     /// <summary>Ticks a player keeps dripping after climbing out.</summary>
     private const int DRIP_TICKS = 300;
@@ -33,6 +50,19 @@ public sealed class SoakedCondition : TileCondition
     public override int MaxTiles => 1500;
 
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Overlay;
+
+    /// <summary>
+    ///     Additive, so the mark reads as light coming off a wet surface rather than as a colour
+    ///     laid over it.
+    /// </summary>
+    /// <remarks>
+    ///     Water on stone does not darken the stone -- it puts a highlight on it, and a highlight is
+    ///     something that only ever brightens. Alpha blending cannot express that: it interpolates
+    ///     toward whatever colour it is given, so the only way to make it read as wet was to pick a
+    ///     near-black blue and accept that lit surfaces went muddy under it. Adding instead means
+    ///     the terrain's own colour survives underneath and only the glints are new.
+    /// </remarks>
+    public override BlendState BlendState => BlendState.Additive;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileWetSheen.Asset;
 
@@ -115,7 +145,7 @@ public sealed class SoakedCondition : TileCondition
     }
 
     public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
-        => DrawSilhouette(in instance, WetTint * (0.62f * instance.Strength));
+        => DrawSilhouette(in instance, WetTint * (SHEEN_ALPHA * instance.Strength));
 
     public override void ApplyShaderParameters(Effect effect)
     {

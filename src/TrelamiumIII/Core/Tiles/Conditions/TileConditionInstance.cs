@@ -55,6 +55,38 @@ public struct TileConditionInstance
     public byte Stage;
 
     /// <summary>
+    ///     The continuous metric behind <see cref="Stage" />. The system never reads it either.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The pair exists because a condition that changes over its life needs both readings and
+    ///         neither substitutes for the other. <see cref="Stage" /> is what rules branch on -- a
+    ///         fire is spreading or it is not -- and stepping it in bands is what stops behaviour
+    ///         flickering on and off across a threshold. This is what the stage is computed from, and
+    ///         what rendering interpolates so the same fire is visibly hotter at the middle of its
+    ///         life than at either end.
+    ///     </para>
+    ///     <para>
+    ///         Distinct from <see cref="Intensity" />, which is fixed at application and says how
+    ///         hard the mark landed, and from <see cref="Fade" />, which only ever falls. This one is
+    ///         free to climb and then drop, which is the shape of a fire and of nothing else the
+    ///         instance already carries.
+    ///     </para>
+    /// </remarks>
+    public float Level;
+
+    /// <summary>
+    ///     Which flavour of the condition this is: the profile it was applied with.
+    /// </summary>
+    /// <remarks>
+    ///     A burn lit by a torch and one lit by thermite are the same condition on the same tile and
+    ///     behave differently -- they climb at different rates, char at different speeds, and only
+    ///     one of them is allowed to consume what it is burning. Conditions are flyweights and hold
+    ///     no per-tile state, so the tile has to carry which set of rules it is running under.
+    /// </remarks>
+    public byte Variant;
+
+    /// <summary>
     ///     Identifies this slot for the eviction queue.
     /// </summary>
     /// <remarks>

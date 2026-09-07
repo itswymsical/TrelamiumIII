@@ -65,6 +65,8 @@ public abstract class TileCondition : ITileCondition
 
     public virtual Asset<Effect>? Shader => null;
 
+    public virtual Asset<Effect>? StampShader => null;
+
     public virtual void ApplyShaderParameters(Effect effect) { }
 
     public virtual void BindAdditionalTextures(GraphicsDevice device) { }

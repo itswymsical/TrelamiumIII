@@ -34,6 +34,26 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
 
     public SamplerState Sampler { get; set; } = SamplerState.PointClamp;
 
+    /// <summary>
+    ///     An effect the accumulation itself is drawn through, or null to stamp sprites as they are.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Distinct from the shader that later reads the finished field, and needed for the same
+    ///         reason a field is: what goes into the surface is not always what a sprite looks like.
+    ///         A coverage mask stamped from tile sprites wants the sprite's <em>alpha</em>, because
+    ///         that is the true silhouette of a slope or a half block, and emphatically does not want
+    ///         its colour -- which is dirt brown or stone grey and would be read back as data.
+    ///     </para>
+    ///     <para>
+    ///         Replacing the sampled colour with the vertex colour is what frees the field's three
+    ///         colour channels to carry something per stamp. That is the whole mechanism behind
+    ///         per-tile heat: the burn does not need a second surface, only permission to stop
+    ///         drawing the block's own pigment into the one it already has.
+    ///     </para>
+    /// </remarks>
+    public Effect? StampEffect { get; set; }
+
     /// <summary>The finished surface, or null until one has been built this session.</summary>
     public RenderTarget2D? Field => IsReady ? GetTarget() : null;
 
@@ -80,7 +100,7 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
             Sampler,
             DepthStencilState.None,
             RasterizerState.CullNone,
-            null,
+            StampEffect,
             ViewMatrix(scale)
         );
 

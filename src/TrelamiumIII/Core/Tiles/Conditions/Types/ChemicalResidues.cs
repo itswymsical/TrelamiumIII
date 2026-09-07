@@ -4,6 +4,11 @@ using TrelamiumIII.Core.Gas.Layers;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
+// Every residue in this file is now mostly its element and a little of itself. Palette, affliction
+// rate, reaction odds, contact debuff and light all come from ElementProfile via the base, so what
+// is written out below is only the part that makes each one distinct from the generic form of the
+// element it is made of -- which layer it breathes, how it moves underfoot, how long it lasts.
+
 /// <summary>
 ///     Thermite that has run off its target and pooled on the terrain, still burning.
 /// </summary>
@@ -11,45 +16,58 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 ///     One of the two residues that is still a hazard to the player who made it. Molten metal on
 ///     the floor is the clearest case there is of an effect that should not be reading a name tag
 ///     before it decides whether to burn someone, and a thermite pool you can wade through is not
-///     a thermite pool.
+///     a thermite pool. It inherits that from <see cref="ElementProfile.Thermal" /> rather than
+///     declaring it, because it is true of thermal chemistry generally and not of this pool alone.
 /// </remarks>
 public sealed class ThermalResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Thermal;
 
-    public override float ChemicalDamage => 0.5f;
-
-    public override float ReactionChance => 0.015f;
-
-    public override float ReactionDamage => 1f;
-
     /// <summary>Shorter than the other residues: thermite is spending itself as it burns.</summary>
     public override float Duration => 9f * 60f;
 
-    protected override int ContactBuff => BuffID.OnFire;
-
-    /// <inheritdoc />
-    protected override bool HarmsPlayers => true;
-
-    protected override Vector3 BodyColor => new(0.52f, 0.14f, 0.02f);
-
-    protected override Vector3 EdgeColor => new(1.00f, 0.62f, 0.16f);
-
-    protected override Vector3 EmittedLight => new(0.34f, 0.16f, 0.03f);
-
-    /// <summary>Churns faster than the rest -- it is molten, not merely wet.</summary>
-    protected override Vector2 NoiseDrift => new(0.014f, -0.032f);
-
     /// <summary>
-    ///     Burns down to char.
+    ///     Draws nothing of its own. <see cref="BurnedCondition" /> is what a thermite pool looks
+    ///     like.
     /// </summary>
     /// <remarks>
-    ///     Handing off on expiry rather than applying both at once keeps the two marks from
-    ///     compositing over each other -- there is molten thermite here, and then there is a scorch
-    ///     where it used to be, which is also the sequence that reads correctly.
+    ///     <para>
+    ///         This residue used to draw itself as a coverage mask with a fixed molten palette and
+    ///         then hand off to a burn on expiry. That split made sense while the burn was a flat
+    ///         char stain with one colour for the whole screen and could not depict anything hot. It
+    ///         no longer is: a burn carries per-tile heat through a blackbody ramp, and running a
+    ///         fire is precisely what it is for. Two masks over the same tiles would only composite
+    ///         two fires on top of each other.
+    ///     </para>
+    ///     <para>
+    ///         So the pair splits by what each is actually good at. The burn is the fire -- the heat
+    ///         curve, the colour, the light, the char left behind. This is the chemistry, which the
+    ///         burn has no notion of: a thermal affliction, a matchup against the target's
+    ///         composition, and a reaction roll, all on the same <see cref="IChemicalSource" /> path
+    ///         a thermite node uses. A pool of the stuff is both things at once and always was.
+    ///     </para>
     /// </remarks>
-    public override void OnExpired(in TileConditionInstance instance)
-        => TileConditionSystem.Apply<BurnedCondition>(instance.X, instance.Y, instance.Intensity * 0.8f, sync: false);
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
+
+    /// <summary>None: the fire on this tile lights it, and two sources would double the glow.</summary>
+    protected override Vector3 EmittedLight => Vector3.Zero;
+
+    /// <summary>
+    ///     Sets the tile alight, at thermite's own ferocity.
+    /// </summary>
+    /// <remarks>
+    ///     Runs on every refresh as well as on the first application, which is what keeps a pool
+    ///     that is still being fed burning at full heat: <see cref="BurnedCondition.OnApplied" />
+    ///     takes incoming heat as a floor rather than a reset, so a live pour stokes the fire under
+    ///     it while one that has stopped being fed is allowed to cool.
+    /// </remarks>
+    public override void OnApplied(ref TileConditionInstance instance)
+        => BurnedCondition.Ignite(instance.X, instance.Y, BurnProfile.Thermal, instance.Intensity, instance.Owner);
+
+    // No expiry handoff any more. It used to light a char where the pool had been, which is what
+    // the burn is already doing from the moment the pool lands -- and re-applying here would now
+    // actively hurt, because a plain Apply carries the default variant and would demote a
+    // still-raging thermite fire to an ordinary one at the moment its chemistry ran out.
 }
 
 /// <summary>Hyperborean frost, settled into a rime on whatever it drained across.</summary>
@@ -64,7 +82,8 @@ public sealed class ThermalResidueCondition : ChemicalReactionTileCondition
 ///         So the patch is slippery, for everything: the player slides across their own frost, and
 ///         so does whatever they threw it at. That reads immediately, costs no health, and turns
 ///         the flask into a control tool rather than a second damage-over-time -- an enemy that
-///         charges across a frozen floor overshoots.
+///         charges across a frozen floor overshoots. The absence of a debuff now lives on
+///         <see cref="ElementProfile.Cryonic" />, since it is true of cold in general.
 ///     </para>
 /// </remarks>
 public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
@@ -85,11 +104,6 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Cryonic;
 
-    public override float ChemicalDamage => 0.28f;
-
-    /// <summary>No debuff at all: the whole effect is mechanical. See the type remarks.</summary>
-    protected override int ContactBuff => -1;
-
     protected override GasField? LingerLayer => GasSystem.GetLayer<IceMistField>();
 
     /// <summary>Barely there: frost gives off a thin ground-hugging mist, not a cloud.</summary>
@@ -98,18 +112,6 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
     protected override int LingerInterval => 24;
 
     protected override float LingerRise => 0.2f;
-
-    protected override Vector3 BodyColor => new(0.58f, 0.74f, 0.92f);
-
-    protected override Vector3 EdgeColor => new(0.90f, 0.98f, 1.00f);
-
-    protected override Vector3 EmittedLight => new(0.05f, 0.09f, 0.14f);
-
-    /// <summary>Nearly still: frost creeps, it does not boil.</summary>
-    protected override Vector2 NoiseDrift => new(0.003f, -0.004f);
-
-    /// <summary>Finer than the others, so rime reads as crystalline rather than as a puddle.</summary>
-    protected override float NoiseScale => 8f;
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
@@ -162,62 +164,61 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
 }
 
 /// <summary>Phytoncide spores, settled as a caustic film that keeps giving off spores.</summary>
+/// <remarks>
+///     Entirely the generic form of its element apart from what it breathes, which is exactly what
+///     the element defaults are for -- a caustic film should look and act like caustic chemistry,
+///     and saying so twice would only create somewhere for the two to disagree.
+/// </remarks>
 public sealed class CausticResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Caustic;
 
-    public override float ChemicalDamage => 0.4f;
-
-    /// <summary>Poison for whatever hostile is standing in it; nothing at all for the thrower.</summary>
-    protected override int ContactBuff => BuffID.Poisoned;
-
     protected override GasField? LingerLayer => GasSystem.GetLayer<PhytoncideSporeLayer>();
-
-    protected override Vector3 BodyColor => new(0.24f, 0.34f, 0.06f);
-
-    protected override Vector3 EdgeColor => new(0.72f, 0.92f, 0.22f);
-
-    protected override Vector3 EmittedLight => new(0.05f, 0.10f, 0.02f);
 }
 
 /// <summary>Corrupt spores, settled as a necrotic film that keeps seeding itself.</summary>
+/// <remarks>
+///     Asks for bleeding by name, where it used to inherit it. Corruption working its way into a
+///     wound is a reading that holds up; necrotic chemistry causing bleeding in general is not, so
+///     the debuff belongs to this residue rather than to the element -- see
+///     <see cref="ElementProfile.Necrotic" /> and <see cref="SanguineResidueCondition" />.
+/// </remarks>
 public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
 
-    public override float ChemicalDamage => 0.3f;
-
     protected override int ContactBuff => BuffID.Bleeding;
 
     protected override GasField? LingerLayer => GasSystem.GetLayer<CorruptedSporeLayer>();
-
-    protected override Vector3 BodyColor => new(0.26f, 0.04f, 0.10f);
-
-    protected override Vector3 EdgeColor => new(0.74f, 0.12f, 0.28f);
-
-    /// <summary>Thicker than the rest, so it holds a wet, clotted edge rather than a crisp one.</summary>
-    protected override float Threshold => 0.36f;
-
-    protected override float NoiseScale => 4.5f;
 }
 
 /// <summary>
 ///     Blood, pooled where the effusion landed and still steaming off it.
 /// </summary>
 /// <remarks>
-///     Split out from <see cref="NecroticResidueCondition" />, which both this and the corrupt
-///     spores used to share. That was harmless while a residue was only a palette and a debuff, and
-///     stopped being harmless the moment residues started exhaling their own layer: one condition
-///     cannot breathe out two different gases, and a blood pool venting corrupt spores is not a
-///     thing anybody asked for. Same chemistry, same reading; different lungs.
+///     <para>
+///         Split out from <see cref="NecroticResidueCondition" />, which both this and the corrupt
+///         spores used to share. That was harmless while a residue was only a palette and a debuff,
+///         and stopped being harmless the moment residues started exhaling their own layer: one
+///         condition cannot breathe out two different gases, and a blood pool venting corrupt spores
+///         is not a thing anybody asked for.
+///     </para>
+///     <para>
+///         It no longer makes anyone bleed, which is the substantive difference between the two now.
+///         A pool of blood on the floor opening a wound in whatever walks through it does not follow
+///         from anything -- the blood is the consequence of an injury, not a cause of one -- and the
+///         necrotic affliction it carries is doing the actual work regardless.
+///     </para>
 /// </remarks>
 public sealed class SanguineResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
 
-    public override float ChemicalDamage => 0.3f;
+    /// <summary>Redder and brighter than generic decay: this is fresh, not rotten.</summary>
+    protected override Vector3 BodyColor => new(0.30f, 0.03f, 0.06f);
 
-    protected override int ContactBuff => BuffID.Bleeding;
+    /// <inheritdoc cref="BodyColor" />
+    protected override Vector3 EdgeColor => new(0.78f, 0.14f, 0.20f);
 
     protected override GasField? LingerLayer => GasSystem.GetLayer<BloodLayer>();
 
@@ -225,13 +226,4 @@ public sealed class SanguineResidueCondition : ChemicalReactionTileCondition
     protected override int LingerInterval => 22;
 
     protected override float LingerRise => 0.15f;
-
-    protected override Vector3 BodyColor => new(0.30f, 0.03f, 0.06f);
-
-    protected override Vector3 EdgeColor => new(0.78f, 0.14f, 0.20f);
-
-    /// <summary>Thicker than the rest, so it holds a wet, clotted edge rather than a crisp one.</summary>
-    protected override float Threshold => 0.36f;
-
-    protected override float NoiseScale => 4.5f;
 }
