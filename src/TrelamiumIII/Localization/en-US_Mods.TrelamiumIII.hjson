@@ -823,6 +823,7 @@ NPCs: {
 	}
 
 	ShinobiNPC.DisplayName: Shinobi
+	TestTerrarian.DisplayName: Test Terrarian
 }
 
 Buffs: {

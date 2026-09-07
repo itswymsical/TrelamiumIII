@@ -1,17 +1,19 @@
 using System.Collections.Generic;
+using System.IO;
 using Terraria.Chat;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.NPCs.Controllers;
+using TrelamiumIII.Core.NPCs.Controllers.Modules;
 using TrelamiumIII.Utilities;
-using static TrelamiumIII.Core.NPCs.Controllers.NPCBehavior;
 
 namespace TrelamiumIII.Core.NPCs.Actors;
 
 /// <summary>
-/// Base class for NPCs rendered using player models. 
+/// Base class for NPCs rendered using player models.
 /// Draws using a dummy Player (same type you see in a wardrobe or character customization screen).
 /// </summary>
 public abstract class WorldNPC : ModNPC
@@ -19,9 +21,15 @@ public abstract class WorldNPC : ModNPC
     public override string Texture => AssetReferences.Core.NPCs.Actors.WorldNPC.KEY;
 
     /// <summary>
+    /// Drives the dummy player's item animation, pose and attacks. Everything the
+    /// vanilla renderer reads is written here, once per tick, from <see cref="PostAI"/>.
+    /// </summary>
+    public PlayerPuppet Puppet { get; private set; }
+
+    /// <summary>
     /// All appearance and equipment state lives here. Mutate this instance.
     /// </summary>
-    public Player? DummyPlayer { get; private set; }
+    public Player? DummyPlayer => Puppet?.Player;
 
     /// <summary>
     /// The tile this NPC considers home. Decoupled from vanilla's
@@ -52,11 +60,18 @@ public abstract class WorldNPC : ModNPC
     }
 
     /// <summary>
-    /// Cached director reference. Resolved lazily on first access.
-    /// Null if no director component is enabled on this NPC.
+    /// Cached director reference, enabled on first access.
+    /// <para>
+    /// A world NPC is not much use without one - every anchor, patrol and combat
+    /// loop runs through it - so this attaches the component rather than waiting to
+    /// be handed one. Override <see cref="UsesDirector"/> to opt out.
+    /// </para>
     /// </summary>
     private NPCDirector _director;
     private bool _directorResolved;
+
+    /// <summary>Set false for actors that drive themselves from <see cref="ModNPC.AI"/>.</summary>
+    protected virtual bool UsesDirector => true;
 
     protected NPCDirector Director
     {
@@ -64,9 +79,7 @@ public abstract class WorldNPC : ModNPC
         {
             if (!_directorResolved)
             {
-                _director = NPC.GetGlobalNPC<NPCDirector>();
-                if (_director != null && !_director.Enabled)
-                    _director = null;
+                _director = UsesDirector && NPC.TryEnable(out NPCDirector attached) ? attached : null;
                 _directorResolved = true;
             }
             return _director;
@@ -83,12 +96,12 @@ public abstract class WorldNPC : ModNPC
     protected virtual bool AutoReturnToAnchor => true;
 
     /// <summary>
-    /// The idle behavior the NPC falls into after returning to anchor.
-    /// Override to customize (add emotes, face player, etc.).
+    /// The module the NPC falls into once it is back at its anchor.
+    /// Override to customise (emotes, facing the player, a work loop).
     /// </summary>
-    protected virtual NPCBehavior CreateAnchorIdleBehavior()
+    protected virtual IBehaviorModule CreateAnchorIdleModule()
     {
-        return new StayBehavior()
+        return new Stay()
             .At(AnchorTile)
             .WithTolerance(2);
     }
@@ -96,9 +109,9 @@ public abstract class WorldNPC : ModNPC
     //  Appearance
 
     /// <summary>
-    /// Returns the item currently held by the dummy. 
+    /// Returns the item currently held by the dummy.
     /// </summary>
-    public Item ActiveWeapon => DummyPlayer.inventory[DummyPlayer.selectedItem];
+    public Item ActiveWeapon => Puppet.HeldItem;
 
     /// <summary>
     /// Checks if the dummy is currently holding a valid, usable weapon.
@@ -230,8 +243,8 @@ public abstract class WorldNPC : ModNPC
     /// </summary>
     public bool IgnoreWorldLighting
     {
-        get => DummyPlayer.socialIgnoreLight;
-        set => DummyPlayer.socialIgnoreLight = value;
+        get => Puppet.IgnoreLighting;
+        set => Puppet.IgnoreLighting = value;
     }
 
     /// <summary>
@@ -269,7 +282,7 @@ public abstract class WorldNPC : ModNPC
     /// </summary>
     public override void SetDefaults()
     {
-        DummyPlayer = new Player();
+        Puppet = new PlayerPuppet(NPC, new Player());
         InitializeDummyPlayer();
 
         InitializeInventory();
@@ -306,7 +319,25 @@ public abstract class WorldNPC : ModNPC
         SetWorldNPCDefaults();
 
         SetAppearanceDefaults();
+    }
 
+    /// <summary>
+    /// Anchors the NPC where it actually spawned.
+    ///
+    /// <para>
+    /// Deliberately not in <see cref="SetDefaults"/>: <see cref="NPC.NewNPC"/> calls
+    /// SetDefaults <em>before</em> assigning position, so the NPC's centre is still
+    /// (0,0) at that point. Anchoring there sends every world NPC walking toward the
+    /// left edge of the world until it wedges itself on terrain and despawns.
+    /// </para>
+    ///
+    /// <para>
+    /// <see cref="LoadData"/> runs after this for persisted NPCs, so a saved anchor
+    /// still wins.
+    /// </para>
+    /// </summary>
+    public override void OnSpawn(IEntitySource source)
+    {
         AnchorTile = NPC.Center.ToTileCoordinates();
     }
 
@@ -314,8 +345,16 @@ public abstract class WorldNPC : ModNPC
     /// Sets up the dummy player with safe defaults so it renders correctly
     /// without interfering with real game systems.
     /// </summary>
+    /// <summary>
+    /// Who this NPC's swings and projectiles may hurt. Harmless by default, so an
+    /// actor that is only ever meant to gesture can't accidentally kill anyone.
+    /// </summary>
+    protected virtual PuppetAllegiance Allegiance => PuppetAllegiance.Harmless;
+
     private void InitializeDummyPlayer()
     {
+        Puppet.Allegiance = Allegiance;
+
         DummyPlayer.direction = -1;
         DummyPlayer.gravDir = 1f;
         DummyPlayer.isDisplayDollOrInanimate = true;
@@ -463,36 +502,34 @@ public abstract class WorldNPC : ModNPC
     public override bool CanGoToStatue(bool toKingStatue) 
         => false;
 
-    public void SyncDummyToNPC()
-    {
-        DummyPlayer.position = NPC.position;
-        DummyPlayer.velocity = NPC.velocity;
-        DummyPlayer.direction = NPC.direction;
-        DummyPlayer.gravDir = 1f;
-        DummyPlayer.gfxOffY = NPC.gfxOffY;
-        DummyPlayer.wet = NPC.wet;
-    }
+    /// <summary>Copies the NPC's physical state onto the dummy player.</summary>
+    public void SyncDummyToNPC() => Puppet.SyncTransform();
+
+    public override void SendExtraAI(BinaryWriter writer) => Puppet.WriteNetState(writer);
+
+    public override void ReceiveExtraAI(BinaryReader reader) => Puppet.ReadNetState(reader);
 
     public int timeAlive;
-    public override bool PreAI()
+
+    /// <summary>
+    /// Despawn bookkeeping. Deliberately not in <see cref="PreAI"/>: an active
+    /// director returns false from its own PreAI, and tModLoader skips
+    /// <see cref="ModNPC.PreAI"/> entirely once a global has vetoed the tick - so a
+    /// timer living there would freeze for as long as the NPC was busy.
+    /// </summary>
+    private void TickDespawn()
     {
-        if (CanDespawn)
-        {
-            timeAlive++;
-            if (timeAlive >= TimeConversion.SetTime(mins: 3) && !IsNpcOnscreen(NPC.Center))
-            {
+        if (!CanDespawn)
+            return;
 
-                NPC.active = false;
-                NPC.netSkip = -1;
-                NPC.life = 0;
-                //if (Main.netMode == NetmodeID.SinglePlayer) Main.NewText(Language.GetTextValue("LegacyMisc.35", NPC.FullName), 50, 125, 255);
-                //else ChatHelper.BroadcastChatMessage(NetworkText.FromKey("LegacyMisc.35", NPC.GetFullNetName()), new Color(50, 125, 255));
+        timeAlive++;
 
-                return false;
-            }
+        if (timeAlive < TimeConversion.SetTime(mins: 3) || IsNpcOnscreen(NPC.Center))
+            return;
 
-        }
-        return true;
+        NPC.active = false;
+        NPC.netSkip = -1;
+        NPC.life = 0;
     }
 
     public override bool ModifyDeathMessage(ref NetworkText customText, ref Color color)
@@ -524,40 +561,42 @@ public abstract class WorldNPC : ModNPC
         NPC.homeTileX = -1;
         NPC.homeTileY = -1;
 
+        TickDespawn();
+
         if (AutoReturnToAnchor)
             TryPushAnchorReturn();
 
-        SyncDummyToNPC();
-        DummyPlayer.PlayerFrame();
+        // Runs last so the pose reflects this tick's final position, and so a module
+        // that started a swing this tick sees its first animation frame immediately.
+        // The one exception is a module in Augment mode, which ticks in the
+        // director's PostAI - and tModLoader runs that after this method. There, the
+        // director updates the puppet once its module has had its say.
+        if (Director is not { TicksInPostAI: true })
+            Puppet.Update();
     }
 
     /// <summary>
-    /// Checks whether the director is idle and the NPC has drifted from
-    /// its anchor. If so, pushes a travel-to-anchor + idle sequence.
+    /// When the director has nothing to do, sends the NPC home: walk back if it has
+    /// drifted, then settle into the idle module.
     /// </summary>
     private void TryPushAnchorReturn()
     {
-        var dir = Director;
-        if (dir == null)
-            return;
+        NPCDirector director = Director;
 
-        // if Director is busy
-        if (dir.HasBehavior)
+        if (director == null || director.HasProgram)
             return;
 
         if (DistanceFromAnchor <= AnchorReturnDistance)
         {
-            dir.SetBehavior(NPC, CreateAnchorIdleBehavior());
+            director.Play(NPC, CreateAnchorIdleModule());
             return;
         }
 
-        // if too far, walk back then idle
-        var anchorWorld = AnchorTile.ToWorldCoordinates();
-        dir.SetBehavior(NPC, new TravelToBehavior(anchorWorld)
-            .WithSpeed(BehaviorMovement.DefaultWalkSpeed)
-            .WithArrival(32f));
-
-        dir.Enqueue(CreateAnchorIdleBehavior());
+        director.Play(NPC, Behavior.Seq(
+            new TravelTo(AnchorTile.ToWorldCoordinates())
+                .WithSpeed(BehaviorMovement.DefaultWalkSpeed)
+                .WithArrival(32f),
+            CreateAnchorIdleModule()));
     }
 
     //  Drawing
@@ -573,14 +612,14 @@ public abstract class WorldNPC : ModNPC
             spriteBatch.End();
             PreparePlayerRender();
 
+            // Every layer runs, the held item included. PlayerDrawSet reads the
+            // weapon from Player.lastVisualizedSelectedItem and its position from
+            // Player.itemLocation - both of which PlayerPuppet.Update wrote this
+            // tick, which is why no hand-rolled item draw is needed here.
             Main.PlayerRenderer.DrawPlayer(
                 Main.Camera, DummyPlayer, DummyPlayer.position,
                 DummyPlayer.fullRotation, DummyPlayer.fullRotationOrigin,
                 shadow: 0f, scale: 1f);
-
-            new PlayerDrawSet();
-
-            // PlayerDrawLayers ???
 
             FinalizePlayerRender();
             spriteBatch.Begin(
@@ -592,8 +631,13 @@ public abstract class WorldNPC : ModNPC
 
         PostDrawWorldNPC(spriteBatch, screenPos, drawColor);
 
-        // Manually draw the item since vanilla layers ignore dummies
-        DrawHeldItem(this, spriteBatch, screenPos, drawColor);
+        if (PuppetDebug.ShowHitboxes)
+        {
+            PuppetDebug.DrawHitbox(spriteBatch, NPC.Hitbox, Color.CornflowerBlue);
+
+            if (Puppet.LastSwingHitbox is { } swing)
+                PuppetDebug.DrawHitbox(spriteBatch, swing, Color.Red);
+        }
     }
 
     /// <summary>
@@ -615,105 +659,15 @@ public abstract class WorldNPC : ModNPC
     protected virtual void PostDrawWorldNPC(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) { }
 
     /// <summary>
-    /// Spawns an item directly into the dummy's active slot.
+    /// Puts an item in the NPC's hand. Pass <see cref="ItemID.None"/> to empty it.
     /// </summary>
-    public void EquipItem(int itemId)
-    {
-        // Always use slot 0 for simplicity
-        DummyPlayer.selectedItem = 0;
-
-        // Initialize the item. If it's 0 (ItemID.None), it safely creates an empty 'Air' item.
-        DummyPlayer.inventory[DummyPlayer.selectedItem] = new Item();
-        if (itemId > 0)
-        {
-            DummyPlayer.inventory[DummyPlayer.selectedItem].SetDefaults(itemId);
-        }
-    }
-
-    private static Rectangle GetItemDrawFrame(int type)
-    {
-        if (Main.dedServ)
-            return Rectangle.Empty;
-
-        Main.instance.LoadItem(type);
-
-        if (ItemID.Sets.IsFood[type])
-            return TextureAssets.Item[type].Frame(1, 3, 0, 1);
-
-        Terraria.DataStructures.DrawAnimation drawAnimation = Main.itemAnimations[type];
-        if (drawAnimation != null)
-        {
-            return drawAnimation.GetFrame(TextureAssets.Item[type].Value, -1);
-        }
-
-        return TextureAssets.Item[type].Frame();
-    }
-
-    private static void DrawHeldItem(WorldNPC worldNpc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-    {
-        Player dummy = worldNpc.DummyPlayer;
-        Item item = dummy.inventory[dummy.selectedItem];
-
-        if (item.IsAir || item.type == ItemID.None) return;
-
-        Texture2D texture = TextureAssets.Item[item.type].Value;
-        Rectangle sourceRect = GetItemDrawFrame(item.type);
-
-        Vector2 drawPos = dummy.itemLocation - screenPos;
-        float rotation = dummy.itemRotation;
-
-        Vector2 origin = new Vector2(
-            dummy.direction == 1 ? 0 : sourceRect.Width,
-            sourceRect.Height
-        );
-
-        SpriteEffects effects = dummy.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-
-        spriteBatch.Draw(
-            texture,
-            drawPos,
-            sourceRect,
-            drawColor,
-            rotation,
-            origin,
-            item.scale,
-            effects,
-            0f
-        );
-    }
+    public void EquipItem(int itemId) => Puppet.Hold(itemId);
 
     /// <summary>
-    /// Equips an item and forcefully starts its use animation on the DummyPlayer.
+    /// Equips an item and swings it, optionally aimed at a world position.
+    /// Returns false if the hand is empty or a swing is already in progress.
     /// </summary>
-    public void StartItemUse(int itemId)
-    {
-        Item item = DummyPlayer.inventory[DummyPlayer.selectedItem];
-        item.SetDefaults(itemId);
-
-        // Initialize timers based on the item's properties
-        DummyPlayer.itemAnimation = item.useAnimation;
-        DummyPlayer.itemAnimationMax = item.useAnimation;
-        DummyPlayer.itemTime = item.useTime;
-    }
-
-    /// <summary>
-    /// Decrements the item animation timers. 
-    /// Should be called every tick by an active behavior utilizing an item.
-    /// </summary>
-    public void UpdateItemTimers()
-    {
-        if (DummyPlayer.itemAnimation > 0)
-            DummyPlayer.itemAnimation--;
-
-        if (DummyPlayer.itemTime > 0)
-            DummyPlayer.itemTime--;
-
-        // Clear the item when the animation completes
-        if (DummyPlayer.itemAnimation == 0 && !DummyPlayer.inventory[DummyPlayer.selectedItem].IsAir)
-        {
-            DummyPlayer.inventory[DummyPlayer.selectedItem].TurnToAir();
-        }
-    }
+    public bool StartItemUse(int itemId, Vector2? aimAt = null) => Puppet.BeginUse(itemId, aimAt);
 
     /// <summary>
     /// Spawns a WorldNPC of type T at the given world position and sets
@@ -904,11 +858,18 @@ public abstract class JobNPC : ModNPC
     }
 
     /// <summary>
-    /// Cached director reference. Resolved lazily on first access.
-    /// Null if no director component is enabled on this NPC.
+    /// Cached director reference, enabled on first access.
+    /// <para>
+    /// A world NPC is not much use without one - every anchor, patrol and combat
+    /// loop runs through it - so this attaches the component rather than waiting to
+    /// be handed one. Override <see cref="UsesDirector"/> to opt out.
+    /// </para>
     /// </summary>
     private NPCDirector _director;
     private bool _directorResolved;
+
+    /// <summary>Set false for actors that drive themselves from <see cref="ModNPC.AI"/>.</summary>
+    protected virtual bool UsesDirector => true;
 
     protected NPCDirector Director
     {
@@ -916,9 +877,7 @@ public abstract class JobNPC : ModNPC
         {
             if (!_directorResolved)
             {
-                _director = NPC.GetGlobalNPC<NPCDirector>();
-                if (_director != null && !_director.Enabled)
-                    _director = null;
+                _director = UsesDirector && NPC.TryEnable(out NPCDirector attached) ? attached : null;
                 _directorResolved = true;
             }
             return _director;
@@ -935,12 +894,12 @@ public abstract class JobNPC : ModNPC
     protected virtual bool AutoReturnToAnchor => true;
 
     /// <summary>
-    /// The idle behavior the NPC falls into after returning to anchor.
-    /// Override to customize (add emotes, face player, etc.).
+    /// The module the NPC falls into once it is back at its anchor.
+    /// Override to customise (emotes, facing the player, a work loop).
     /// </summary>
-    protected virtual NPCBehavior CreateAnchorIdleBehavior()
+    protected virtual IBehaviorModule CreateAnchorIdleModule()
     {
-        return new StayBehavior()
+        return new Stay()
             .At(AnchorTile)
             .WithTolerance(2);
     }
@@ -1008,7 +967,11 @@ public abstract class JobNPC : ModNPC
         NPC.knockBackResist = 0.5f;
         NPC.aiStyle = NPCAIStyleID.Passive;
         NPC.npcSlots = 0f;
+    }
 
+    /// <inheritdoc cref="WorldNPC.OnSpawn"/>
+    public override void OnSpawn(IEntitySource source)
+    {
         AnchorTile = NPC.Center.ToTileCoordinates();
     }
 
@@ -1048,23 +1011,25 @@ public abstract class JobNPC : ModNPC
         => false;
 
     public int timeAlive;
-    public override bool PreAI()
+
+    /// <summary>
+    /// Despawn bookkeeping. Lives outside <see cref="PreAI"/> for the same reason as
+    /// <see cref="WorldNPC"/>'s: a director that vetoes the tick would otherwise stop
+    /// the timer along with the AI.
+    /// </summary>
+    private void TickDespawn()
     {
-        if (AJobAccepted)
-        {
-            timeAlive++;
-            if (timeAlive >= TimeConversion.SetTime(mins: 3) && !IsNpcOnscreen(NPC.Center))
-            {
+        if (!AJobAccepted)
+            return;
 
-                NPC.active = false;
-                NPC.netSkip = -1;
-                NPC.life = 0;
+        timeAlive++;
 
-                return false;
-            }
+        if (timeAlive < TimeConversion.SetTime(mins: 3) || IsNpcOnscreen(NPC.Center))
+            return;
 
-        }
-        return true;
+        NPC.active = false;
+        NPC.netSkip = -1;
+        NPC.life = 0;
     }
 
     public override bool ModifyDeathMessage(ref NetworkText customText, ref Color color)
@@ -1096,37 +1061,34 @@ public abstract class JobNPC : ModNPC
         NPC.homeTileX = -1;
         NPC.homeTileY = -1;
 
+        TickDespawn();
+
         if (AutoReturnToAnchor)
             TryPushAnchorReturn();
     }
 
     /// <summary>
-    /// Checks whether the director is idle and the NPC has drifted from
-    /// its anchor. If so, pushes a travel-to-anchor + idle sequence.
+    /// When the director has nothing to do, sends the NPC home: walk back if it has
+    /// drifted, then settle into the idle module.
     /// </summary>
     private void TryPushAnchorReturn()
     {
-        var dir = Director;
-        if (dir == null)
-            return;
+        NPCDirector director = Director;
 
-        // if Director is busy
-        if (dir.HasBehavior)
+        if (director == null || director.HasProgram)
             return;
 
         if (DistanceFromAnchor <= AnchorReturnDistance)
         {
-            dir.SetBehavior(NPC, CreateAnchorIdleBehavior());
+            director.Play(NPC, CreateAnchorIdleModule());
             return;
         }
 
-        // if too far, walk back then idle
-        var anchorWorld = AnchorTile.ToWorldCoordinates();
-        dir.SetBehavior(NPC, new TravelToBehavior(anchorWorld)
-            .WithSpeed(BehaviorMovement.DefaultWalkSpeed)
-            .WithArrival(32f));
-
-        dir.Enqueue(CreateAnchorIdleBehavior());
+        director.Play(NPC, Behavior.Seq(
+            new TravelTo(AnchorTile.ToWorldCoordinates())
+                .WithSpeed(BehaviorMovement.DefaultWalkSpeed)
+                .WithArrival(32f),
+            CreateAnchorIdleModule()));
     }
 
     /// <summary>

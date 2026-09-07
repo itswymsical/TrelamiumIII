@@ -1,308 +1,286 @@
-using TrelamiumIII.Core.NPCs.Actors;
-using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
-using Terraria;
-using Terraria.GameContent;
-using Terraria.ID;
-using static TrelamiumIII.Core.NPCs.Controllers.NPCBehavior;
+using Microsoft.Xna.Framework.Graphics;
 using TrelamiumIII.Core.Components.NPCs;
+using TrelamiumIII.Core.NPCs.Actors;
 
-namespace  TrelamiumIII.Core.NPCs.Controllers;
+namespace TrelamiumIII.Core.NPCs.Controllers;
 
 /// <summary>
-/// Manages a queue of <see cref="NPCBehavior"/> instances on any NPC, vanilla
-/// or modded. Attach via <c>npc.TryEnable&lt;NPCDirector&gt;</c>, then push
-/// behaviors with <see cref="SetBehavior"/> or <see cref="Enqueue"/>.
+/// An artificial hook into any NPC's AI loop.
 ///
-/// Replaces both <c>DialogueNPCBehavior</c> and <c>WorldNPCComponent</c> with
-/// a single composable system.
+/// <para>
+/// The idea is that an NPC's AI is a box. Normally the game opens that box every
+/// tick and whatever is inside runs. The director puts itself between the two: it
+/// decides when the box runs, pauses its state while something else plays, and
+/// injects behavior of our own on top. The fight stays recognisably itself while
+/// doing things it never did.
+/// </para>
+///
+/// <para>
+/// It works the same for anything with an AI loop. A <see cref="WorldNPC"/> gets a
+/// program that walks, talks and swings items through its <see cref="PlayerPuppet"/>.
+/// A town NPC gets one for a scripted moment - a sparring match with the Guide -
+/// and drops back to vanilla afterwards. A boss gets one that cuts between vanilla
+/// patterns and new ones. Same lever, three uses.
+/// </para>
+///
+/// <para>
+/// Attach with <c>npc.TryEnable&lt;NPCDirector&gt;(out var director)</c>, then hand
+/// it a module tree with <see cref="Play"/>. <see cref="AIDirectorSystem"/> does
+/// both automatically for NPC types registered there.
+/// </para>
 /// </summary>
 public class NPCDirector : NPCComponent
 {
-    private NPCBehavior active;
-    private readonly Queue<NPCBehavior> queue = new();
+    /// <summary>Interrupt stack. The last entry is the module actually running.</summary>
+    private readonly List<IBehaviorModule> interrupts = [];
 
-    // Saved vanilla state. restored when the director releases control.
-    private float savedAI0, savedAI1;
-    private int savedAIStyle;
-    private bool hasControl;
+    private BehaviorContext context;
+    private IBehaviorModule program;
+    private VanillaAIState controlSnapshot;
+    private bool holdingControl;
 
-    // At the top of the class, after the field declarations:
-    private static readonly Dictionary<int, int> HandOutFrames = new()
-    {
-        [NPCID.Guide] = 17,
-    };
-    private const int DefaultHandOutFrame = 0;
+    /// <summary>The module currently running - the topmost interrupt, or the program.</summary>
+    public IBehaviorModule Current => interrupts.Count > 0 ? interrupts[^1] : program;
 
+    /// <summary>The innermost running module, past any composites.</summary>
+    public IBehaviorModule ActiveLeaf => Current?.ActiveLeaf;
 
-    /// <summary>The currently running behavior, or null.</summary>
-    public NPCBehavior Active => active;
+    /// <summary>True when the director is running anything at all.</summary>
+    public bool HasProgram => Current is { State: BehaviorState.Active };
 
-    /// <summary>True when any behavior is active.</summary>
-    public bool HasBehavior => active != null;
-
-    /// <summary>Number of behaviors waiting in the queue.</summary>
-    public int QueueCount => queue.Count;
+    /// <summary>True when an interrupt is playing on top of the main program.</summary>
+    public bool Interrupted => interrupts.Count > 0;
 
     /// <summary>
-    /// Immediately sets a behavior, ending the current one and clearing the queue.
+    /// True when the running module ticks in <see cref="PostAI"/> rather than
+    /// <see cref="PreAI"/>. Player-rendered actors check this so their puppet is
+    /// posed after the module has had its say, not before.
     /// </summary>
-    public void SetBehavior(NPC npc, NPCBehavior behavior)
+    public bool TicksInPostAI => Current is { State: BehaviorState.Active, VanillaAI: VanillaAIMode.Augment };
+
+    /// <summary>Ticks since the director last took control. Reset when control is released.</summary>
+    public int ControlAge { get; private set; }
+
+    // Program control
+
+    /// <summary>
+    /// Replaces the program, dropping any interrupts. This is the ordinary way to
+    /// tell an NPC what to do.
+    /// </summary>
+    public void Play(NPC npc, IBehaviorModule module)
     {
-        EndCurrent(npc);
-        queue.Clear();
-        StartBehavior(npc, behavior);
+        BehaviorContext ctx = ContextFor(npc);
+
+        ClearInterrupts(ctx, canceled: true);
+        EndProgram(ctx, canceled: true);
+
+        program = module;
+
+        if (program == null)
+        {
+            ReleaseControl(npc);
+            return;
+        }
+
+        TakeControl(npc);
+        program.OnEnter(ctx);
+        npc.netUpdate = true;
     }
 
     /// <summary>
-    /// Adds a behavior to the end of the queue. If nothing is active, it
-    /// starts immediately on the next tick.
+    /// Plays <paramref name="module"/> on top of whatever is running. The module
+    /// underneath is paused, not canceled, and resumes when the interrupt ends.
+    /// Use this for reactions: a threat appears, dialogue starts, a phase triggers.
     /// </summary>
-    public void Enqueue(NPCBehavior behavior)
+    public void Interrupt(NPC npc, IBehaviorModule module)
     {
-        queue.Enqueue(behavior);
+        if (module == null)
+            return;
+
+        BehaviorContext ctx = ContextFor(npc);
+
+        TakeControl(npc);
+        interrupts.Add(module);
+        module.OnEnter(ctx);
+        npc.netUpdate = true;
     }
 
-    /// <summary>
-    /// Ends the current behavior and clears the queue. Restores vanilla AI.
-    /// </summary>
-    public void Clear(NPC npc)
+    /// <summary>Cancels the topmost interrupt, resuming whatever was underneath.</summary>
+    public void Resume(NPC npc)
     {
-        EndCurrent(npc);
-        queue.Clear();
+        if (interrupts.Count == 0)
+            return;
 
-        if (hasControl)
-            RestoreVanillaState(npc);
+        BehaviorContext ctx = ContextFor(npc);
+        IBehaviorModule top = interrupts[^1];
+        interrupts.RemoveAt(interrupts.Count - 1);
+        top.OnExit(ctx, canceled: true);
     }
 
-    /// <summary>
-    /// Skips the current behavior and advances to the next queued one.
-    /// If the queue is empty, restores vanilla AI.
-    /// </summary>
-    public void Skip(NPC npc)
+    /// <summary>Stops everything and hands the NPC back to its own AI.</summary>
+    public void Stop(NPC npc)
     {
-        EndCurrent(npc);
-        TryAdvance(npc);
+        BehaviorContext ctx = ContextFor(npc);
+
+        ClearInterrupts(ctx, canceled: true);
+        EndProgram(ctx, canceled: true);
+        ReleaseControl(npc);
     }
 
     // Lifecycle
 
     public override bool PreAI(NPC npc)
     {
-        if (!Enabled) return true;
-
-        // Advance queue if current behavior completed or is null.
-        if (active == null || active.IsComplete)
-        {
-            if (active?.IsComplete == true)
-                EndCurrent(npc);
-
-            TryAdvance(npc);
-        }
-
-        if (active == null)
-            return true; // No behavior, vanilla AI runs.
-
-        // Common visual modifiers.
-        if (active.FaceNearestPlayer)
-            FaceNearestPlayer(npc);
-
-        active.Update(npc);
-
-        // Guard: behavior or external code may have called SetBehavior/Clear
-        // during Update, which would change or null the active reference.
-        if (active == null)
+        if (!Enabled)
             return true;
 
-        // Sync WorldNPC dummy player if applicable.
-        if (npc.ModNPC is WorldNPC worldNpc)
+        IBehaviorModule current = Current;
+        if (current == null)
+            return true;
+
+        // Augment: vanilla runs untouched and we tick afterwards, in PostAI.
+        if (current.VanillaAI == VanillaAIMode.Augment)
+            return true;
+
+        BehaviorContext ctx = ContextFor(npc);
+        VanillaAIMode mode = current.VanillaAI;
+
+        ctx.vanillaRequested = false;
+        Advance(ctx);
+
+        // Drive: the module asked for the box to run, so run it by hand. Doing this
+        // here rather than by returning true keeps the ordering explicit - our
+        // module has already had its say this tick.
+        if (mode == VanillaAIMode.Drive && ctx.vanillaRequested && npc.active)
+            npc.VanillaAI();
+
+        return false;
+    }
+
+    public override void PostAI(NPC npc)
+    {
+        if (!Enabled || !TicksInPostAI)
+            return;
+
+        Advance(ContextFor(npc));
+
+        // ModNPC.PostAI already ran, so the actor skipped its own puppet update and
+        // left it to us - see WorldNPC.PostAI.
+        if (npc.ModNPC is WorldNPC actor)
+            actor.Puppet?.Update();
+    }
+
+    /// <summary>
+    /// Runs one tick of the active module and advances the stack when it ends.
+    /// </summary>
+    private void Advance(BehaviorContext ctx)
+    {
+        NPC npc = ctx.NPC;
+        IBehaviorModule current = Current;
+
+        if (current == null)
+            return;
+
+        ControlAge++;
+
+        current.Tick(ctx);
+
+        // The module may have called Play or Stop on us mid-tick, which swaps the
+        // stack out from under this frame. Bail rather than tearing down a module
+        // that was already replaced.
+        if (!ReferenceEquals(Current, current))
+            return;
+
+        if (current.State == BehaviorState.Active)
+            return;
+
+        current.OnExit(ctx, canceled: false);
+
+        if (interrupts.Count > 0 && ReferenceEquals(interrupts[^1], current))
         {
-            SyncHeldItem(worldNpc);
-            worldNpc.SyncDummyToNPC();
-            worldNpc.DummyPlayer.PlayerFrame();
+            interrupts.RemoveAt(interrupts.Count - 1);
+            return;
         }
 
-        return !active.OverrideVanillaAI;
+        program = null;
+        ReleaseControl(npc);
     }
 
     public override void FindFrame(NPC npc, int frameHeight)
     {
-        if (!Enabled || active == null) return;
-        if (npc.ModNPC is WorldNPC) return;
-
-        // If the behavior is holding an item, force the hand-out frame.
-        if (active.HeldItem is { ItemType: > 0 })
-        {
-            int frame = HandOutFrames.GetValueOrDefault(npc.type, DefaultHandOutFrame);
-            npc.frame.Y = frame * frameHeight;
+        if (!Enabled)
             return;
-        }
 
-        if (active.HeldItem is { ItemType: > 0 } || active.ForceHandOutFrame)
-        {
-            int frame = HandOutFrames.GetValueOrDefault(npc.type, DefaultHandOutFrame);
-            npc.frame.Y = frame * frameHeight;
+        // Player-rendered actors get their frames from Player.PlayerFrame instead.
+        if (npc.ModNPC is WorldNPC)
             return;
-        }
 
-        active.ModifyFrame(npc, frameHeight);
+        if (ActiveLeaf is IFramedModule framed)
+            framed.ModifyFrame(ContextFor(npc), frameHeight);
     }
 
     public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        if (!Enabled || active == null) return;
-        if (active.HeldItem is not { ItemType: > 0 } config) return;
+        if (!Enabled)
+            return;
 
-        if (npc.ModNPC is WorldNPC worldNpc)
-            DrawHeldItemWorldNPC(worldNpc, spriteBatch, screenPos, drawColor, config);
-        else
-            DrawHeldItem(npc, spriteBatch, screenPos, drawColor, config);
+        if (ActiveLeaf is IDrawnModule drawn)
+            drawn.Draw(ContextFor(npc), spriteBatch, screenPos, drawColor);
     }
 
-    private static void DrawHeldItemWorldNPC(WorldNPC worldNpc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, HeldItemConfig config)
+    // Control bookkeeping
+
+    /// <summary>
+    /// Snapshots the vanilla AI pattern the first time the director takes over, so
+    /// <see cref="ReleaseControl"/> can put it back.
+    /// </summary>
+    private void TakeControl(NPC npc)
     {
-        Texture2D texture = TextureAssets.Item[config.ItemType].Value;
+        if (holdingControl)
+            return;
 
-        // itemLocation is set by PlayerFrame when itemAnimation > 0.
-        // It's the world-space position of the player's hand this frame.
-
-        Vector2 offset = config.Offset;
-        if (worldNpc.NPC.spriteDirection == -1)
-            offset.X *= -1;
-
-        Vector2 drawPos = worldNpc.DummyPlayer.Center - screenPos + offset;
-
-        spriteBatch.Draw(
-            texture,
-            drawPos,
-            null,
-            drawColor,
-            config.rotation,
-            texture.Size() * 0.5f,
-            config.Scale,
-            worldNpc.DummyPlayer.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally,
-            0f
-        );
-    }
-    // Internal behavior
-
-    private void StartBehavior(NPC npc, NPCBehavior behavior)
-    {
-        active = behavior;
-
-        if (behavior.OverrideVanillaAI && !hasControl)
-            SaveVanillaState(npc);
-
-        behavior.OnStart(npc);
-        npc.netUpdate = true;
+        controlSnapshot = VanillaAIState.Capture(npc);
+        holdingControl = true;
+        ControlAge = 0;
     }
 
-    private void EndCurrent(NPC npc)
+    private void ReleaseControl(NPC npc)
     {
-        if (active == null) return;
+        if (!holdingControl)
+            return;
 
-        active.OnEnd(npc);
-
-        // Clear held item from WorldNPC when behavior ends.
-        //if (active.HeldItem is { ItemType: > 0 } && npc.ModNPC is WorldNPC worldNpc)
-        //    worldNpc.SetHeldItem(0);
-
-        active = null;
+        controlSnapshot.RestoreAI(npc);
+        holdingControl = false;
+        ControlAge = 0;
     }
 
-    private void TryAdvance(NPC npc)
+    private void EndProgram(BehaviorContext ctx, bool canceled)
     {
-        if (queue.Count > 0)
+        if (program is { State: BehaviorState.Active })
+            program.OnExit(ctx, canceled);
+
+        program = null;
+    }
+
+    private void ClearInterrupts(BehaviorContext ctx, bool canceled)
+    {
+        for (int i = interrupts.Count - 1; i >= 0; i--)
         {
-            StartBehavior(npc, queue.Dequeue());
-        }
-        else if (hasControl)
-        {
-            RestoreVanillaState(npc);
-        }
-    }
-
-    private void SaveVanillaState(NPC npc)
-    {
-        savedAI0 = npc.ai[0];
-        savedAI1 = npc.ai[1];
-        savedAIStyle = npc.aiStyle;
-        hasControl = true;
-    }
-
-    private void RestoreVanillaState(NPC npc)
-    {
-        if (!hasControl) return;
-
-        npc.ai[0] = savedAI0;
-        npc.ai[1] = savedAI1;
-        npc.aiStyle = savedAIStyle;
-        hasControl = false;
-        npc.netUpdate = true;
-    }
-
-    // Visual helpers
-
-    private void SyncHeldItem(WorldNPC worldNpc)
-    {
-        int desired = active?.HeldItem?.ItemType ?? 0;
-        var slot = worldNpc.DummyPlayer.inventory[worldNpc.DummyPlayer.selectedItem];
-
-        if (slot.type != desired)
-            slot.SetDefaults(desired);
-
-        // Sustain itemAnimation so PlayerFrame plays the arm-holding pose.
-        // holdStyle == 0 items only draw their arm during active animation,
-        // so we keep it alive here, after PlayerFrame has already run this tick.
-        if (desired > ItemID.None && slot.holdStyle == 0)
-        {
-            worldNpc.DummyPlayer.itemAnimation = 1;
-            worldNpc.DummyPlayer.itemAnimationMax = 1;
-        }
-    }
-
-    private static void FaceNearestPlayer(NPC npc)
-    {
-        float closest = float.MaxValue;
-        int dir = npc.direction;
-
-        for (int i = 0; i < Main.maxPlayers; i++)
-        {
-            Player p = Main.player[i];
-            if (!p.active || p.dead || p.ghost) continue;
-
-            float dist = Vector2.DistanceSquared(npc.Center, p.Center);
-            if (dist < closest && dist < 400f * 400f)
-            {
-                closest = dist;
-                dir = p.Center.X < npc.Center.X ? -1 : 1;
-            }
+            if (interrupts[i].State == BehaviorState.Active)
+                interrupts[i].OnExit(ctx, canceled);
         }
 
-        npc.direction = dir;
-        npc.spriteDirection = dir;
+        interrupts.Clear();
     }
 
-    private static void DrawHeldItem(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor, HeldItemConfig config)
-    {
-        Texture2D texture = TextureAssets.Item[config.ItemType].Value;
+    /// <summary>
+    /// The per-NPC context. Built lazily because GlobalNPC instances exist before
+    /// their NPC does, and reused thereafter so modules can rely on identity.
+    /// </summary>
+    private BehaviorContext ContextFor(NPC npc)
+        => context ??= new BehaviorContext(npc, this);
 
-        Vector2 offset = config.Offset;
-        if (npc.spriteDirection == -1)
-            offset.X *= -1;
-
-        Vector2 drawPos = npc.Center - screenPos + offset;
-
-        spriteBatch.Draw(
-            texture,
-            drawPos,
-            null,
-            drawColor,
-            config.rotation,
-            texture.Size() * 0.5f,
-            config.Scale,
-            npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally,
-            0f
-        );
-    }
+    public override string ToString()
+        => Current == null ? "NPCDirector (idle)" : $"NPCDirector -> {Current} / {ActiveLeaf}";
 }
