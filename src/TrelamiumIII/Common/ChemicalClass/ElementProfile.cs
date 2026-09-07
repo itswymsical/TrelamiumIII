@@ -69,8 +69,17 @@ public sealed record ElementProfile : IChemicalSource
     /// <summary>Light it gives off, or zero for an element that does not glow.</summary>
     public Vector3 EmittedLight { get; init; }
 
-    /// <summary>How much of a coverage mask survives noise erosion. Higher reads thicker and wetter.</summary>
-    public float Threshold { get; init; } = 0.42f;
+    /// <summary>
+    ///     Where the pool's boundary falls: the summed blob coverage a pixel needs to be inside it.
+    /// </summary>
+    /// <remarks>
+    ///     A metaball cut rather than a coverage level, and the numbers are small because of it. A
+    ///     residue stamps soft blobs that add where they overlap, so the interior of a pool sums well
+    ///     past 1 while its rim tails to nearly nothing -- the cut wants to sit down in that tail.
+    ///     Higher pulls the boundary inward and reads thicker and more viscous; lower lets the pool
+    ///     spread and thin.
+    /// </remarks>
+    public float Threshold { get; init; } = 0.17f;
 
     public float NoiseScale { get; init; } = 5.5f;
 
@@ -116,7 +125,7 @@ public sealed record ElementProfile : IChemicalSource
         BodyColor = new Vector3(0.58f, 0.74f, 0.92f),
         EdgeColor = new Vector3(0.90f, 0.98f, 1.00f),
         EmittedLight = new Vector3(0.05f, 0.09f, 0.14f),
-        Threshold = 0.46f,
+        Threshold = 0.20f,
         NoiseScale = 8f,
         NoiseDrift = new Vector2(0.003f, -0.004f),
     };
@@ -148,7 +157,7 @@ public sealed record ElementProfile : IChemicalSource
         ChemicalDamage = 0.3f,
         BodyColor = new Vector3(0.26f, 0.04f, 0.10f),
         EdgeColor = new Vector3(0.74f, 0.12f, 0.28f),
-        Threshold = 0.36f,
+        Threshold = 0.15f,
         NoiseScale = 4.5f,
     };
 
@@ -179,7 +188,7 @@ public sealed record ElementProfile : IChemicalSource
         BodyColor = new Vector3(0.18f, 0.26f, 0.52f),
         EdgeColor = new Vector3(0.72f, 0.92f, 1.00f),
         EmittedLight = new Vector3(0.10f, 0.14f, 0.24f),
-        Threshold = 0.5f,
+        Threshold = 0.22f,
         NoiseScale = 7f,
         NoiseDrift = new Vector2(0.05f, -0.01f),
     };

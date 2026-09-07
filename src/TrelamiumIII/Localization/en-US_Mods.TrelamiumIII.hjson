@@ -878,7 +878,7 @@ ChemicalRoles: {
 # starts with the element's medallion, so the formats carry only the number and its unit.
 ChemicalStats: {
 	DamagePerSecond: "{0}/sec"
-	ReactionChance: "{0}%"
+	ReactionChance: "{0}% reaction chance"
 	Duration: "{0}s"
 	# Plain-text stand-ins for readers that cannot draw the rows (search filters, other mods).
 	# {0} element, {1} damage per second, {2} reaction damage, {3} reaction chance, {4} seconds.

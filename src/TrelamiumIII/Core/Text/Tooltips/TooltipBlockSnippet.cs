@@ -46,7 +46,14 @@ public sealed class TooltipBlockSnippet : TextSnippet
         if (justCheckingString)
             return true;
 
-        block.Draw(spriteBatch, font, position, color, scale);
+        // The reported size is what the line occupies; the box is as wide as its longest line. A
+        // right-aligned block crosses the difference, so it has to be measured here rather than
+        // folded into the size, which would widen the box by the margin it is trying to fill.
+        float indent = block.Alignment == TooltipAlignment.Right
+            ? Math.Max(0f, TooltipBlockRegistry.TooltipWidth - size.X)
+            : 0f;
+
+        block.Draw(spriteBatch, font, position + new Vector2(indent, 0f), color, scale);
 
         return true;
     }
@@ -67,6 +74,15 @@ internal static class TooltipBlockRegistry
     private static readonly List<TooltipBlock> blocks = [];
     private static int itemType;
 
+    /// <summary>
+    ///     Width of the tooltip being drawn, for blocks that align to its right edge. Set once per
+    ///     tooltip by <see cref="ItemTooltipBlocks.PreDrawTooltip" />, which is the first hook that
+    ///     runs after every line has been measured.
+    /// </summary>
+    internal static float TooltipWidth { get; private set; }
+
+    internal static void SetTooltipWidth(float width) => TooltipWidth = width;
+
     internal static void Publish(int type, List<TooltipBlock> published)
     {
         itemType = type;
@@ -80,10 +96,24 @@ internal static class TooltipBlockRegistry
         return block is not null;
     }
 
+    /// <summary>The published blocks that draw themselves over the tooltip rather than in a line.</summary>
+    internal static IEnumerable<TooltipBlock> Floating(int type)
+    {
+        if (type != itemType)
+            yield break;
+
+        foreach (TooltipBlock block in blocks)
+        {
+            if (block.Placement != TooltipPlacement.Inline)
+                yield return block;
+        }
+    }
+
     internal static void Clear()
     {
         blocks.Clear();
         itemType = 0;
+        TooltipWidth = 0f;
     }
 }
 

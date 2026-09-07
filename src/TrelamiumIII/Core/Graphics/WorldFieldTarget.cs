@@ -101,7 +101,7 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
             DepthStencilState.None,
             RasterizerState.CullNone,
             StampEffect,
-            ViewMatrix(scale)
+            ViewMatrix(scale, width, height)
         );
 
         drawContents(spriteBatch);
@@ -116,14 +116,23 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
     ///     The game view matrix, rebuilt about a surface of a different size.
     /// </summary>
     /// <remarks>
-    ///     <see cref="Main.GameViewMatrix" /> cannot be used directly: it is built for a full-size
-    ///     surface, so its translation would put the zoom pivot off-centre here and the field would
-    ///     drift away from the world it belongs to as the player zoomed.
+    ///     <para>
+    ///         <see cref="Main.GameViewMatrix" /> cannot be used directly: it is built for a
+    ///         full-size surface, so its translation would put the zoom pivot off-centre here and the
+    ///         field would drift away from the world it belongs to as the player zoomed.
+    ///     </para>
+    ///     <para>
+    ///         The target's centre is taken from the target's real dimensions rather than from the
+    ///         screen's over the scale, and the two are not the same number. The surface is sized by
+    ///         a ceiling, so on any resolution the pixel scale does not divide evenly -- an odd width
+    ///         at half scale is enough -- dividing the screen centre instead lands the pivot up to
+    ///         half a target texel off, which is a whole screen pixel of drift at a scale of two.
+    ///     </para>
     /// </remarks>
-    private static Matrix ViewMatrix(int scale)
+    private static Matrix ViewMatrix(int scale, int width, int height)
     {
         Vector2 screenCentre = new Vector2(Main.screenWidth, Main.screenHeight) / 2f;
-        Vector2 targetCentre = screenCentre / scale;
+        Vector2 targetCentre = new Vector2(width, height) / 2f;
 
         return Matrix.CreateTranslation(-screenCentre.X, -screenCentre.Y, 0f)
                * Matrix.CreateScale(Main.GameViewMatrix.Zoom.X / scale, Main.GameViewMatrix.Zoom.Y / scale, 1f)

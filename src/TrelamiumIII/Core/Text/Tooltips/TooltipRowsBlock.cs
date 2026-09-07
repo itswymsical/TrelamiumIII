@@ -18,13 +18,23 @@ public sealed class TooltipRowsBlock : TooltipBlock
 {
     private readonly List<TooltipRow> rows = [];
 
-    public TooltipRowsBlock(TooltipAnchor anchor, string fallbackText)
+    public TooltipRowsBlock(
+        TooltipAnchor anchor,
+        string fallbackText,
+        TooltipAlignment alignment = TooltipAlignment.Left,
+        TooltipPlacement placement = TooltipPlacement.Inline)
     {
         Anchor = anchor;
         FallbackText = fallbackText;
+        Alignment = alignment;
+        Placement = placement;
     }
 
     public override TooltipAnchor Anchor { get; }
+
+    public override TooltipAlignment Alignment { get; }
+
+    public override TooltipPlacement Placement { get; }
 
     public override string FallbackText { get; }
 
@@ -52,8 +62,18 @@ public sealed class TooltipRowsBlock : TooltipBlock
     {
         float rowHeight = font.LineSpacing * scale;
 
+        // Rows are ragged, so a right-aligned block aligns each one to the block's own right edge
+        // rather than indenting them all by the same amount.
+        float blockWidth = Alignment == TooltipAlignment.Right ? MeasureWidth(font, scale) : 0f;
+
         for (int i = 0; i < rows.Count; i++)
-            rows[i].Draw(spriteBatch, font, position + new Vector2(0f, i * rowHeight), color, scale);
+        {
+            float indent = Alignment == TooltipAlignment.Right
+                ? blockWidth - rows[i].Measure(font, scale)
+                : 0f;
+
+            rows[i].Draw(spriteBatch, font, position + new Vector2(indent, i * rowHeight), color, scale);
+        }
     }
 }
 

@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Text.Tooltips;
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-///     The stat rows a controller weapon shows beneath its damage line.
+///     The stat rows a controller weapon shows at the foot of its tooltip.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -14,6 +14,12 @@ namespace TrelamiumIII.Common.ChemicalClass;
 ///         element, this much": affliction damage per second; the reaction burst, with the shift
 ///         key's up-arrow after it (a spike, not a rate) and its odds beside; then how long the
 ///         affliction runs.
+///     </para>
+///     <para>
+///         The rows float in the tooltip's top-right corner rather than taking lines of their own,
+///         so they read as a panel pinned beside the weapon's name and cost the tooltip no height.
+///         Wedged under the damage line they split the vanilla weapon stats in half, and left at the
+///         foot of the tooltip they trailed off into space away from everything they describe.
 ///     </para>
 ///     <para>
 ///         The per-second figure is the real rate -- tick damage times ticks per second -- where the
@@ -31,6 +37,9 @@ public static class ChemicalStatsTooltip
 {
     /// <summary>Vanilla's virtual-keyboard shift key: an up-arrow, for the burst.</summary>
     private const string REACTION_ICON = "Images/UI/VK_Shift";
+
+    /// <summary>The clock that leads the duration row.</summary>
+    private const string DURATION_ICON = $"{nameof(TrelamiumIII)}/Assets/Textures/DurationTooltipIcon";
 
     /// <summary>Dimmed, for the odds beside the burst: a qualifier, not a stat of its own.</summary>
     private static readonly Color OddsColor = new(170, 170, 170);
@@ -57,7 +66,8 @@ public static class ChemicalStatsTooltip
             ? Text("FallbackReactive", element, perSecond, burst, odds, seconds)
             : Text("FallbackPlain", element, perSecond, seconds);
 
-        var block = new TooltipRowsBlock(TooltipAnchor.After("Damage", "ItemName"), fallback);
+        var block = new TooltipRowsBlock(
+            TooltipAnchor.End, fallback, TooltipAlignment.Right, TooltipPlacement.TopRight);
 
         block.Row().Icon(icon).Text(Text("DamagePerSecond", perSecond), color);
 
@@ -73,13 +83,18 @@ public static class ChemicalStatsTooltip
             row.Text(Text("ReactionChance", odds), OddsColor);
         }
 
-        block.Row().Icon(icon).Text(Text("Duration", seconds), color);
+        // Medallion then clock: every row opens with the element, and the clock says which of its
+        // numbers this one is, so the duration is not mistaken for another rate.
+        block.Row().Icon(icon).Icon(DurationIcon).Text(Text("Duration", seconds), color);
 
         return block;
     }
 
     private static Asset<Texture2D> ReactionIcon
         => Main.Assets.Request<Texture2D>(REACTION_ICON, AssetRequestMode.ImmediateLoad);
+
+    private static Asset<Texture2D>? DurationIcon
+        => ModContent.HasAsset(DURATION_ICON) ? ModContent.Request<Texture2D>(DURATION_ICON) : null;
 
     private static string Number(float value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 

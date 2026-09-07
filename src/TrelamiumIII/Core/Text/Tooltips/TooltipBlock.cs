@@ -24,8 +24,17 @@ namespace TrelamiumIII.Core.Text.Tooltips;
 /// </remarks>
 public abstract class TooltipBlock
 {
-    /// <summary>Where in the tooltip the block is inserted.</summary>
+    /// <summary>Whether the block takes lines of its own or floats over the tooltip's margin.</summary>
+    public virtual TooltipPlacement Placement => TooltipPlacement.Inline;
+
+    /// <summary>
+    ///     Where in the tooltip an <see cref="TooltipPlacement.Inline" /> block is inserted. Ignored
+    ///     by a floating block, which occupies no line to be ordered against.
+    /// </summary>
     public virtual TooltipAnchor Anchor => TooltipAnchor.End;
+
+    /// <summary>Which edge of its own width the block's contents are drawn against.</summary>
+    public virtual TooltipAlignment Alignment => TooltipAlignment.Left;
 
     /// <summary>Height in text lines, each one <see cref="DynamicSpriteFont.LineSpacing" /> tall.</summary>
     public abstract int LineCount { get; }
@@ -55,6 +64,35 @@ public abstract class TooltipBlock
     ///     an equality test against black: the shadow passes keep the tooltip's alpha.
     /// </summary>
     public static bool IsShadowPass(Color color) => color is { R: 0, G: 0, B: 0 };
+}
+
+/// <summary>Whether a block occupies tooltip lines of its own, or floats over the margin.</summary>
+/// <remarks>
+///     An inline block is a line like any other, so it reserves its own height and width and can
+///     never overlap anything. A floating block is not a line at all: it is drawn from
+///     <see cref="ItemTooltipBlocks.PostDrawTooltip" /> into the space the longest line already
+///     paid for, which costs the tooltip no extra height. The trade is that it reserves nothing,
+///     so it looks for the topmost run of lines with room to spare before settling.
+/// </remarks>
+public enum TooltipPlacement
+{
+    Inline,
+
+    /// <summary>Floated into the top-right corner, level with the first lines that have room.</summary>
+    TopRight,
+}
+
+/// <summary>Which edge of the tooltip box a block is drawn against.</summary>
+/// <remarks>
+///     Right alignment measures against the finished tooltip's width, which is only known once
+///     every line has been measured -- <see cref="ItemTooltipBlocks.PreDrawTooltip" /> captures it.
+///     A right-aligned block sits in the margin the longest line leaves behind, so a short run of
+///     stats can close a tooltip without a wide empty gap beside it.
+/// </remarks>
+public enum TooltipAlignment
+{
+    Left,
+    Right,
 }
 
 /// <summary>A position in the tooltip, resolved against the lines present when the block is inserted.</summary>

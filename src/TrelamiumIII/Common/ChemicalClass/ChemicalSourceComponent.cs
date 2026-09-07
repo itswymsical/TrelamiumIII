@@ -53,8 +53,8 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
         => ReactionHandler?.Invoke(e);
 
     /// <summary>
-    /// The stat rows under the damage line -- per-second damage, reaction burst, duration -- in
-    /// place of a second damage-type line. See <see cref="ChemicalStatsTooltip"/>.
+    /// The stat rows at the foot of the tooltip -- per-second damage, reaction burst, duration --
+    /// in place of a second damage-type line. See <see cref="ChemicalStatsTooltip"/>.
     /// </summary>
     public void AddTooltipBlocks(Item item, List<TooltipBlock> blocks)
     {
