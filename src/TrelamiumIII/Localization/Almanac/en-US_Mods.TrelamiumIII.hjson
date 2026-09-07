@@ -1,4 +1,32 @@
 Almanac: {
 	FlavorText: {
+		// Conventional chemistry -- raw minerals.
+		Sulfur: Brimstone, scraped off the ash where the world runs hot. Smells like a promise it fully intends to keep.
+		Niter: On its own it does nothing at all. Set it beside something that burns and watch it turn polite company into an argument.
+		RockSalt: Boil the sea and this is what stays behind. Preserves, scours, and puts out fires nobody asked it to.
+		Quicklime: Limestone burnt past caring. Give it water and it gives you heat back, immediately and without discussion.
+		BoneAsh: What is left when you ask a bone the last question. Handle it respectfully; it has already been through enough.
+		Potash: Wood ash, wetted and dried again. The humblest thing in this book and half the book needs it.
+		// Acids.
+		OilofVitriol: Green stone roasted until it weeps. It weeps on you too, if you're careless.
+		AquaFortis: Strong water. It will take apart every metal you own but one, and it is very smug about the exception.
+		SpiritofSalt: Salt persuaded to become a fume. Stays low, finds the corners, and waits there.
+		AquaRegia: Two acids that could not manage it alone. Together they dissolve even gold, which ought to tell you something about company.
+		BlueVitriol: Copper drowned in vitriol and come back blue. Useful, and prettier than it has any need to be.
+		// Alkalis.
+		SlakedLime: Quicklime that has already had its argument with water. Calm now. Puts fires out instead of starting them.
+		CausticLye: It cleans by unmaking. Do not test which of you it considers dirt.
+		FrigorificSalt: Mix these and the bottle pulls the warmth out of your hand. Cold you have to make, rather than find.
+		// Distillates and powders.
+		SpiritofOil: The first and lightest thing off the still, and the most eager to catch. Keep it away from the lamp, kid.
+		Pitch: What sulks in the bottom of the still afterwards. Slow, black, and sticks to whatever it lands on.
+		BlackPowder: Six of niter to one of sulfur to one of coal. Get the ratio wrong and it merely smoulders. Get it right and stand further back.
+		ColdFire: It lights itself. No spark, no flint, only air, and air is everywhere. Store it under water and think about that.
+		// Reagents the book had somehow never listed.
+		BottledOil: Thick, black, and patient. Everything it touches becomes easier to set alight.
+		BrineBottle: Salt water in a bottle. Not glamorous. Boil it down and it is where half the salt line begins.
+		FibrousSlurry: Pulped plant matter. Thickens, binds, and asks for nothing.
+		OxidizedCopper: Copper that has been left alone with the weather too long. The green is the interesting part.
+		RustedNugget: Iron that has been losing an argument with air for a very long time.
 	}
 }

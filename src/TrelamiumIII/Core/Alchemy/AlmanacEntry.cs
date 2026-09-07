@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Terraria.Localization;
 using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Content.Lodestone;
 
 namespace TrelamiumIII.Core.Alchemy;
@@ -210,6 +212,8 @@ internal static class AlmanacEntryDefinitions
         RegisterSolvents();
 
         RegisterIngredients();
+
+        RegisterConventionalReagents();
     }
 
     private static void RegisterSolvents()
@@ -734,5 +738,215 @@ internal static class AlmanacEntryDefinitions
             Principle = PrincipleType.None,
         });
         #endregion
-    } 
+    }
+
+    /// <summary>
+    /// The conventional chemistry line, plus the reagents it was built out of that had no entry
+    /// and so were invisible to the book.
+    /// </summary>
+    /// <remarks>
+    /// Ratings follow the Tria Prima framing in <c>docs/Alchemy/ConventionalReagents.md</c>:
+    /// Aqua Regia caps the Salt line at five stars, Oil of Vitriol sits at four as the hub the
+    /// rest of the tree hangs off. Only the three starter materials are unhidden -- the rest of
+    /// the tree reveals itself through use.
+    /// </remarks>
+    private static void RegisterConventionalReagents()
+    {
+        #region Previously unlisted reagents
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<BottledOilItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Volatile,
+            Principle = PrincipleType.Martial,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<BrineBottleItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Inert | ChemicalType.Alkaline,
+            Principle = PrincipleType.Harmony,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<FibrousSlurryItem>(),
+            Potency = 1,
+            Hidden = false,
+            Chemical = ChemicalType.Inert,
+            Principle = PrincipleType.None,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<OxidizedCopperItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Acidic | ChemicalType.Catalytic,
+            Principle = PrincipleType.Harmony,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<RustedNugget>(),
+            Potency = 2,
+            Chemical = ChemicalType.Acidic,
+            Principle = PrincipleType.Bane | PrincipleType.Martial,
+        });
+        #endregion
+
+        #region Raw minerals
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<SulfurItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Volatile | ChemicalType.Acidic,
+            Principle = PrincipleType.Martial | PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<NiterItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Volatile | ChemicalType.Catalytic,
+            Principle = PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<RockSaltItem>(),
+            Potency = 1,
+            Hidden = false,
+            Chemical = ChemicalType.Inert | ChemicalType.Alkaline,
+            Principle = PrincipleType.Harmony,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<QuicklimeItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Alkaline,
+            Principle = PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<BoneAshItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Inert | ChemicalType.Alkaline,
+            Principle = PrincipleType.Bane | PrincipleType.Vital,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<PotashItem>(),
+            Potency = 1,
+            Hidden = false,
+            Chemical = ChemicalType.Alkaline,
+            Principle = PrincipleType.Harmony,
+        });
+        #endregion
+
+        #region Acids
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<OilOfVitriolItem>(),
+            Potency = 4,
+            Chemical = ChemicalType.Acidic,
+            Principle = PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<AquaFortisItem>(),
+            Potency = 4,
+            Chemical = ChemicalType.Acidic | ChemicalType.Volatile,
+            Principle = PrincipleType.Bane | PrincipleType.Martial,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<SpiritOfSaltItem>(),
+            Potency = 3,
+            Chemical = ChemicalType.Acidic,
+            Principle = PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<AquaRegiaItem>(),
+            Potency = 5,
+            Chemical = ChemicalType.Acidic | ChemicalType.Catalytic,
+            Principle = PrincipleType.Fortune | PrincipleType.Bane,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<BlueVitriolItem>(),
+            Potency = 3,
+            Chemical = ChemicalType.Catalytic,
+            Principle = PrincipleType.Specular,
+        });
+        #endregion
+
+        #region Alkalis
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<SlakedLimeItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Alkaline | ChemicalType.Inert,
+            Principle = PrincipleType.Harmony,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<CausticLyeItem>(),
+            Potency = 3,
+            Chemical = ChemicalType.Alkaline,
+            Principle = PrincipleType.Bane | PrincipleType.Harmony,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<FrigorificSaltItem>(),
+            Potency = 3,
+            Chemical = ChemicalType.Inert | ChemicalType.Volatile,
+            Principle = PrincipleType.Brisk,
+        });
+        #endregion
+
+        #region Distillates and powders
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<SpiritOfOilItem>(),
+            Potency = 3,
+            Chemical = ChemicalType.Volatile,
+            Principle = PrincipleType.Martial,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<PitchItem>(),
+            Potency = 2,
+            Chemical = ChemicalType.Inert,
+            Principle = PrincipleType.None,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<BlackPowderItem>(),
+            Potency = 4,
+            Chemical = ChemicalType.Volatile | ChemicalType.Kinetic,
+            Principle = PrincipleType.Martial,
+        });
+
+        AlmanacEntryRegistry.Register(new AlmanacEntry
+        {
+            ItemType = ModContent.ItemType<ColdFireItem>(),
+            Potency = 5,
+            Chemical = ChemicalType.Volatile | ChemicalType.Catalytic,
+            Principle = PrincipleType.Martial | PrincipleType.Specular,
+        });
+        #endregion
+    }
 }

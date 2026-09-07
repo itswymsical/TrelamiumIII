@@ -6,6 +6,96 @@ Keybinds: {
 JobInfo.NewJob: " seems to have a new task for you."
 
 Items: {
+	SulfurItem: {
+		DisplayName: Sulfur
+		Tooltip: ""
+	}
+
+	NiterItem: {
+		DisplayName: Niter
+		Tooltip: ""
+	}
+
+	RockSaltItem: {
+		DisplayName: Rock Salt
+		Tooltip: ""
+	}
+
+	QuicklimeItem: {
+		DisplayName: Quicklime
+		Tooltip: ""
+	}
+
+	BoneAshItem: {
+		DisplayName: Bone Ash
+		Tooltip: ""
+	}
+
+	PotashItem: {
+		DisplayName: Potash
+		Tooltip: ""
+	}
+
+	OilOfVitriolItem: {
+		DisplayName: Oil of Vitriol
+		Tooltip: ""
+	}
+
+	AquaFortisItem: {
+		DisplayName: Aqua Fortis
+		Tooltip: ""
+	}
+
+	SpiritOfSaltItem: {
+		DisplayName: Spirit of Salt
+		Tooltip: ""
+	}
+
+	AquaRegiaItem: {
+		DisplayName: Aqua Regia
+		Tooltip: ""
+	}
+
+	BlueVitriolItem: {
+		DisplayName: Blue Vitriol
+		Tooltip: ""
+	}
+
+	SlakedLimeItem: {
+		DisplayName: Slaked Lime
+		Tooltip: ""
+	}
+
+	CausticLyeItem: {
+		DisplayName: Caustic Lye
+		Tooltip: ""
+	}
+
+	FrigorificSaltItem: {
+		DisplayName: Frigorific Salt
+		Tooltip: ""
+	}
+
+	SpiritOfOilItem: {
+		DisplayName: Spirit of Oil
+		Tooltip: ""
+	}
+
+	PitchItem: {
+		DisplayName: Pitch
+		Tooltip: ""
+	}
+
+	BlackPowderItem: {
+		DisplayName: Black Powder
+		Tooltip: ""
+	}
+
+	ColdFireItem: {
+		DisplayName: Cold Fire
+		Tooltip: ""
+	}
+
 	AcornLauncherItem: {
 		DisplayName: Acorn Launcher
 		Tooltip: Charges and fires acorns at high velocity

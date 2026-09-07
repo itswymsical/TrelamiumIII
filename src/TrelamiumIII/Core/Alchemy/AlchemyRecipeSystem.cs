@@ -5,6 +5,7 @@ using Terraria.Localization;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 using TrelamiumIII.Content.Alchemy.AlchemyStations;
 using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Common.Globals;
 using TrelamiumIII.Content.FarmingOverhaul;
 using TrelamiumIII.Content.Rusted;
@@ -124,6 +125,9 @@ public class AlchemyRecipeSystem : ModSystem
         // Chemical weapon class content.
         RegisterWeapons();
 
+        // Conventional chemistry: acids, alkalis and distillates refined from raw minerals.
+        RegisterMinerals();
+
         if (ModLoader.TryGetMod("SpiritReforged", out Mod _ ))
         {
             RegisterSpiritReforged();
@@ -138,6 +142,19 @@ public class AlchemyRecipeSystem : ModSystem
 
     private static void PopulateRecipeGroups()
     {
+        AnyAcid.Add(
+            ModContent.ItemType<OilOfVitriolItem>(), ModContent.ItemType<AquaFortisItem>(),
+            ModContent.ItemType<SpiritOfSaltItem>(), ModContent.ItemType<AquaRegiaItem>(),
+            ModContent.ItemType<BlueVitriolItem>());
+
+        AnyAlkali.Add(
+            ModContent.ItemType<SlakedLimeItem>(), ModContent.ItemType<CausticLyeItem>(),
+            ModContent.ItemType<QuicklimeItem>(), ModContent.ItemType<PotashItem>());
+
+        AnyMineralSalt.Add(
+            ModContent.ItemType<RockSaltItem>(), ModContent.ItemType<NiterItem>(),
+            ModContent.ItemType<FrigorificSaltItem>());
+
         Iron.Add(ItemID.IronOre, ItemID.LeadOre);
 
         Silver.Add(ItemID.SilverOre, ItemID.TungstenOre);
@@ -246,6 +263,118 @@ public class AlchemyRecipeSystem : ModSystem
     /// <summary>
     /// The foundational recipes that make most of the other recipes possible.
     /// </summary>
+    /// <summary>
+    /// The conventional chemistry line: acids, alkalis and distillates refined at the station
+    /// from the raw minerals in <c>Content/Alchemy/Reagents/MineralReagents.cs</c>, which are
+    /// themselves roasted out of vanilla materials at a furnace.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Oil of Vitriol is the hub -- four of these recipes draw on it, which is what makes the
+    /// trip to the Underworld for sulfur worth taking.
+    /// </para>
+    /// <para>
+    /// Star ratings for these live on <see cref="AlmanacEntry.Potency"/>, not on
+    /// <see cref="AlchemyVariant.Potency"/>: the latter stamps brew strength onto buff-potion
+    /// outputs and must stay 0 for plain reagents. Design record:
+    /// <c>docs/Alchemy/ConventionalReagents.md</c>.
+    /// </para>
+    /// </remarks>
+    private static void RegisterMinerals()
+    {
+        #region Acids -- the Sulfur line
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<OilOfVitriolItem>(),
+            new AlchemyVariant(
+                ComponentMatcher.Of(ModContent.ItemType<SulfurItem>(), 2),
+                ModContent.ItemType<NiterItem>()));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<OilOfVitriolItem>(),
+            outputType: ModContent.ItemType<AquaFortisItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<NiterItem>(), 2)));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<OilOfVitriolItem>(),
+            outputType: ModContent.ItemType<SpiritOfSaltItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<RockSaltItem>(), 2)));
+
+        // The one that eats gold. Both of the strong acids, and nothing else.
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<AquaFortisItem>(),
+            outputType: ModContent.ItemType<AquaRegiaItem>(),
+            new AlchemyVariant(ModContent.ItemType<SpiritOfSaltItem>()));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<OilOfVitriolItem>(),
+            outputType: ModContent.ItemType<BlueVitriolItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<OxidizedCopperItem>(), 2)));
+
+        #endregion
+
+        #region Alkalis -- the Salt line
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<SlakedLimeItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<QuicklimeItem>(), 2))
+            { OutputStack = 2 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ItemID.BottledWater,
+            outputType: ModContent.ItemType<CausticLyeItem>(),
+            new AlchemyVariant(
+                ComponentMatcher.Of(ModContent.ItemType<PotashItem>(), 2),
+                ModContent.ItemType<QuicklimeItem>()));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<InertSolutionItem>(),
+            outputType: ModContent.ItemType<FrigorificSaltItem>(),
+            new AlchemyVariant(
+                ModContent.ItemType<NiterItem>(),
+                ModContent.ItemType<RockSaltItem>(),
+                ComponentMatcher.Of(ItemID.IceBlock, 5)));
+
+        #endregion
+
+        #region Distillates and powders
+
+        // One barrel of oil splits into the light fraction and the residue. Registered as two
+        // recipes over the same solvent rather than one recipe with two outputs.
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<BottledOilItem>(),
+            outputType: ModContent.ItemType<SpiritOfOilItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<CharcoalItem>(), 2)));
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<BottledOilItem>(),
+            outputType: ModContent.ItemType<PitchItem>(),
+            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<FibrousSlurryItem>(), 2))
+            { OutputStack = 2 });
+
+        // Six parts niter to one of fuel, as it should be.
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<InertSolutionItem>(),
+            outputType: ModContent.ItemType<BlackPowderItem>(),
+            new AlchemyVariant(
+                ComponentMatcher.Of(ModContent.ItemType<NiterItem>(), 6),
+                ModContent.ItemType<SulfurItem>(),
+                ModContent.ItemType<CharcoalItem>())
+            { OutputStack = 4 });
+
+        AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
+            inputType: ModContent.ItemType<InertSolutionItem>(),
+            outputType: ModContent.ItemType<ColdFireItem>(),
+            new AlchemyVariant(
+                ComponentMatcher.Of(ModContent.ItemType<BoneAshItem>(), 2),
+                ModContent.ItemType<CharcoalItem>(),
+                ComponentMatcher.Of(ItemID.SandBlock, 5)));
+
+        #endregion
+    }
+
     private static void RegisterSolutions()
     {
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
@@ -2305,8 +2434,17 @@ public static class AlchemyRecipeGroups
 
     public static readonly AlchemyComponentGroup ShiverthornOrWaterleaf = new("ShiverthornOrWaterleaf");
 
+    // Conventional chemistry. Populated in PopulateRecipeGroups so later recipes can ask for
+    // "any acid" rather than naming each one.
+    public static readonly AlchemyComponentGroup AnyAcid = new("AnyAcid");
+    public static readonly AlchemyComponentGroup AnyAlkali = new("AnyAlkali");
+    public static readonly AlchemyComponentGroup AnyMineralSalt = new("AnyMineralSalt");
+
     public static void Clear()
     {
+        AnyAcid.Clear();
+        AnyAlkali.Clear();
+        AnyMineralSalt.Clear();
         AnyOre.Clear();
         AnyEvilOre.Clear();
         Mushroom.Clear();
