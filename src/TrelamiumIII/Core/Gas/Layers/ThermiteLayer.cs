@@ -1,7 +1,6 @@
 using ReLogic.Content;
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Tiles.Conditions;
@@ -12,6 +11,22 @@ namespace TrelamiumIII.Core.Gas.Layers;
 
 public class ThermiteLayer : ChemicalGasField
 {
+    /// <summary>
+    ///     Pooled coverage a tile of liquid needs before the thermite sitting on it boils it away.
+    /// </summary>
+    /// <remarks>
+    ///     Replaces a <c>ThermiteFlaskProjectile.shattered</c> static that used to gate this. That
+    ///     flag was one <see langword="bool" /> shared by every flask of the type, cleared on every
+    ///     tick of any flask's flight and set by any flask's death, so in practice the first throw
+    ///     of a session switched liquid conversion on and left it on. What it was reaching for is
+    ///     what this says directly: a wisp trailing off a flask still in the air is not enough
+    ///     thermite to flash a pool, and a burst that has actually settled is.
+    /// </remarks>
+    private const float CONVERSION_COVERAGE = 2.5f;
+
+    /// <summary>Pixels of terrain charred where an arm of the burst strikes it.</summary>
+    private const float SCORCH_RADIUS = 26f;
+
     protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;
     protected override int GasType => GasTypeID.Liquid;
@@ -127,7 +142,7 @@ public class ThermiteLayer : ChemicalGasField
     /// </remarks>
     protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
     {
-        if (!ThermiteFlaskProjectile.shattered)
+        if (density < CONVERSION_COVERAGE)
             return;
 
         int drain = (int)MathHelper.Clamp(density * 5f, 3f, 20f);
@@ -141,6 +156,19 @@ public class ThermiteLayer : ChemicalGasField
     {
         node.Viscosity *= 1.01f;
         node.Velocity *= 0.89f;
+    }
+
+    /// <summary>Molten metal chars whatever it lands on, then carries on bouncing.</summary>
+    /// <remarks>
+    ///     Lives on the layer rather than on the flask, which is where the burst projectile used to
+    ///     keep it. Scorching is something thermite does; it should not have to be restated by every
+    ///     future weapon that throws some.
+    /// </remarks>
+    protected override bool OnEmitterBounce(ref GasEmitter emitter, Vector2 normal, int tileX, int tileY)
+    {
+        BurnedCondition.Scorch(emitter.Position, SCORCH_RADIUS, profile: BurnProfile.Thermal);
+
+        return true;
     }
     public override void OnChemicalReaction(in ChemicalReactionEvent e)
     {

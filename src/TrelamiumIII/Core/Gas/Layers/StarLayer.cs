@@ -1,3 +1,4 @@
+using TrelamiumIII.Common.ChemicalClass;
 using ReLogic.Content;
 using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Core.Gas;
@@ -103,9 +104,39 @@ public sealed class StarLayer : GasField
     ///     override is left explicit because every other layer lights itself, and a reader finding
     ///     this one empty should know that is the intent rather than an omission.
     /// </remarks>
-    protected override void ApplyLighting(ref GasNode node) 
+    protected override void ApplyLighting(ref GasNode node)
     {
         Lighting.AddLight(node.Position, TorchID.Rainbow);
+    }
+
+    /// <summary>
+    ///     Not a chemical layer, but the only thing that bursts into it is a chemical weapon.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="GasField" /> defaults its emitter hits to <see cref="DamageClass.Generic" />
+    ///     because it knows nothing about the chemical system, and <see cref="StarLayer" /> is a
+    ///     plain field rather than a <see cref="ChemicalGasField" /> -- it carries no affliction and
+    ///     rolls no reactions. Its arms still have to land as controller damage, though, because the
+    ///     starflask that throws them is a controller weapon and its burst counted as one before.
+    /// </remarks>
+    protected override DamageClass EmitterDamageClass => ModContent.GetInstance<ChemicalDamageClass>();
+
+    /// <summary>Each node the burst lays down throws off a spark.</summary>
+    /// <remarks>
+    ///     What <c>PrismaticStarflaskBurstProjectile.AI</c> did alongside its node spawn. The dust is
+    ///     what gives the field its glitter -- the metaball blobs alone read as a soft cloud, and the
+    ///     sparks are the only part of the effect with hard edges.
+    /// </remarks>
+    protected override void Emit(ref GasEmitter emitter)
+    {
+        base.Emit(ref emitter);
+
+        if (Main.dedServ)
+            return;
+
+        Vector2 drift = emitter.Velocity * emitter.Inheritance;
+
+        Dust.NewDust(emitter.Position, 8, 8, DustID.YellowStarDust, drift.X / 2f, drift.Y, Scale: 0.65f);
     }
 
     protected override void UpdateGasNode(ref GasNode node, int index)

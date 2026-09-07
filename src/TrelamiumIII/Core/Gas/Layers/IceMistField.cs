@@ -2,13 +2,23 @@ using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
-using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 public class IceMistField : ChemicalGasField
 {
+    /// <summary>
+    ///     Pooled coverage a tile of liquid needs before the mist sitting on it freezes over.
+    /// </summary>
+    /// <remarks>
+    ///     Lower than thermite's, in the same proportion the two layers' tile thresholds differ:
+    ///     mist is thin, and a frost that only formed under a dense cloud would almost never appear.
+    ///     Replaces a <c>HyperboreanFlaskProjectile.shattered</c> static -- see
+    ///     <see cref="ThermiteLayer" /> for what was wrong with that.
+    /// </remarks>
+    private const float CONVERSION_COVERAGE = 1.6f;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
     protected override int GasType => GasTypeID.Gas;
@@ -83,6 +93,19 @@ public class IceMistField : ChemicalGasField
     protected override void OnPlayerContact(ref GasNode node, Player player) { }
     protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile) { }
 
+    /// <summary>An arm of the burst that catches something leaves frostburn on it.</summary>
+    /// <remarks>
+    /// What <c>HyperboreanFlaskBurstProjectile.OnHitNPC</c> did. Moved onto the layer because it is
+    /// a property of being hit by flash-frozen mist rather than of the flask that threw it, and
+    /// because the burst carriers it lived on no longer exist.
+    /// </remarks>
+    protected override void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc)
+    {
+        base.OnEmitterHitNPC(ref emitter, npc);
+
+        npc.AddBuff(BuffID.Frostburn, 60);
+    }
+
     /// <summary>Mist that settles leaves a rime on the surface.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CryonicResidueCondition>();
 
@@ -101,7 +124,7 @@ public class IceMistField : ChemicalGasField
     /// </remarks>
     protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
     {
-        if (!HyperboreanFlaskProjectile.shattered)
+        if (density < CONVERSION_COVERAGE)
             return;
 
         int drain = (int)MathHelper.Clamp(density * 4f, 2f, 14f);

@@ -1,14 +1,11 @@
-﻿using System.Runtime.InteropServices;
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
-using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -46,7 +43,7 @@ public class ThermiteFlaskItem : ModItem
     }
 
     private static void DoThermiteSpread(ChemicalReactionEvent e)
-      {
+    {
         var layer = GasSystem.GetLayer<ThermiteLayer>();
         if (layer == null) return;
 
@@ -67,163 +64,46 @@ public class ThermiteFlaskItem : ModItem
     }
 }
 
-public class ThermiteFlaskProjectile : ModProjectile
+/// <summary>
+///     A flask of thermite: vents forward on the way in, then throws molten arms that bounce.
+/// </summary>
+/// <remarks>
+///     The only flask whose burst has weight to it. The arms arc, collide with terrain, bounce twice
+///     and char whatever they touch on the way -- which is what the
+///     <c>ThermiteBurstProjectile</c> this replaces did, minus the projectile slots. The scorch
+///     itself now lives on <see cref="ThermiteLayer" />, because it is a property of thermite rather
+///     than of this particular container.
+/// </remarks>
+public class ThermiteFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.ThermiteFlaskItem.KEY;
-    public static bool shattered;
 
-    public override void SetDefaults()
+    protected override GasField? Field => GasSystem.GetLayer<ThermiteLayer>();
+
+    /// <summary>Pressurised: the thermite is ahead of the glass before the glass arrives.</summary>
+    protected override TrailProfile? Trail => TrailProfile.Vented with
     {
-        Projectile.width = Projectile.height = 18;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = 1;
-        Projectile.timeLeft = 600;
-        Projectile.aiStyle = ProjAIStyleID.ThrownProjectile;
-    }
+        Jitter = new Vector2(1.5f, 0.5f),
+    };
 
-    public override void PostAI()
+    /// <summary>
+    ///     A tight cone of heavy, bouncing arms.
+    /// </summary>
+    /// <remarks>
+    ///     Aimed off the surface it broke against, where the old version aimed at a fixed angle of
+    ///     <c>-PiOver2 + Projectile.direction</c> -- straight up, plus a radian, because a facing
+    ///     index had been added to an angle. Taking the normal instead means thermite thrown at a
+    ///     wall now runs down the wall rather than climbing out of it.
+    /// </remarks>
+    protected override BurstProfile Burst => BurstProfile.Vent with
     {
-        base.PostAI();
-        shattered = false;
-        var layer = GasSystem.GetLayer<ThermiteLayer>();
-        if (layer == null) return;
-
-        Vector2 impactDir = Projectile.oldVelocity.SafeNormalize(Vector2.UnitY);
-
-        Vector2 scatter = impactDir * Main.rand.NextFloat(2f, 9f)
-                        + Main.rand.NextVector2Circular(1.5f, 0.5f);
-
-        layer.SpawnNode(Projectile.Center, scatter, radius: 4, life: 40, owner: Projectile.owner);
-    }
-
-    public override bool OnTileCollide(Vector2 oldVelocity)
-    {
-        Projectile.oldVelocity.Y = -Projectile.oldVelocity.Y;
-
-        return true;
-    }
-
-    public override void OnKill(int timeLeft)
-    {
-        shattered = true;
-
-        SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
-
-        SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
-
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity,
-            Projectile.width, Projectile.height);
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity,
-            Projectile.width, Projectile.height);
-
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
-        Gore.NewGore(Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
-
-        Vector2 impactDir = Projectile.oldVelocity.SafeNormalize(-Vector2.UnitY);
-        Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f).SafeNormalize(-Vector2.UnitY);
-
-        float spread = 2.5f;
-
-        float centre = -MathHelper.PiOver2 + Projectile.direction;
-
-        if (Projectile.owner == Main.myPlayer)
-        {
-            int count = Main.rand.Next(8, 11);
-
-            for (int i = 0; i < count; i++)
-            {
-                float slot = count == 1 ? 0.5f : i / (float)(count - 1);
-                float angle = centre + MathHelper.Lerp(-spread * 0.5f, spread * 0.5f, slot) + Main.rand.NextFloat(-0.06f, 0.06f);
-                float speed = 7f * Main.rand.NextFloat(0.75f, 1.15f);
-
-                Projectile.NewProjectile(
-                    Projectile.GetSource_FromThis(),
-                    Projectile.Center,
-                    angle.ToRotationVector2() * speed,
-                    ModContent.ProjectileType<ThermiteBurstProjectile>(),
-                    Projectile.damage, 0f, Projectile.owner
-                );
-            }
-        }
-    }
-}
-
-public class ThermiteBurstProjectile : ModProjectile
-{
-    public override string Texture => AssetReferences.Assets.Textures.NullTex.KEY;
-
-    public enum SplashType { Core, Body, Droplet }
-
-    public SplashType splashType
-    {
-        get => (SplashType)(int)Projectile.ai[0];
-        set => Projectile.ai[0] = (int)value;
-    }
-    private ref float Bounces => ref Projectile.localAI[0];
-
-    private ref float Spin => ref Projectile.localAI[1];
-
-    private const float BOUNCE = 0.42f;
-    private const int MAX_BOUNCES = 2;
-    private const float GRAVITY = 0.32f;
-    private const float MAX_FALL = 14f;
-    private const float AIR_DRAG = 0.992f;
-
-    /// <summary>Pixels of terrain charred by a bounce. Roughly the 3x3 the old overlay pass marked.</summary>
-    private const float SCORCH_RADIUS = 26f;
-
-    public override void SetDefaults()
-    {
-        Projectile.width = Projectile.height = 22;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = -1;
-        Projectile.timeLeft = 100;
-        Projectile.aiStyle = -1;
-        Projectile.tileCollide = true;
-    }
-
-    public override bool OnTileCollide(Vector2 oldVelocity)
-    {
-        if (++Bounces > MAX_BOUNCES)
-            return true;
-
-        if (Projectile.velocity.X != oldVelocity.X)
-            Projectile.velocity.X = -oldVelocity.X * BOUNCE;
-
-        if (Projectile.velocity.Y != oldVelocity.Y)
-            Projectile.velocity.Y = -oldVelocity.Y * BOUNCE;
-
-        Spin *= BOUNCE;
-
-        BurnedCondition.Scorch(Projectile.Center, SCORCH_RADIUS);
-
-        return false;
-    }
-
-    public override void AI()
-    {
-        Projectile.velocity.Y = MathHelper.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
-        Projectile.velocity.X *= AIR_DRAG;
-
-        Projectile.rotation += Spin;
-
-        var layer = GasSystem.GetLayer<ThermiteLayer>();
-        if (layer == null) return;
-
-        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
-        float radius = splashType switch
-        {
-            SplashType.Core => 6f * progress,
-            SplashType.Body => 3f * progress,
-            SplashType.Droplet => 1.5f * progress,
-            _ => 0f
-        };
-
-        Vector2 nodeVelocity = Projectile.velocity * 0.2f
-                             + Main.rand.NextVector2Circular(7.5f, 7.5f);
-
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 30, owner: Projectile.owner);
-    }
+        AirCount = new FloatRange(8f, 11f),
+        GroundCount = new FloatRange(8f, 11f),
+        AirSpeed = new FloatRange(5.25f, 8.05f),
+        GroundSpeed = new FloatRange(5.25f, 8.05f),
+        Arc = 1.25f,
+        UpwardBias = 0.35f,
+        Core = EmitterProfile.Ballistic with { NodeRadius = 6f },
+        DamageShare = 1f,
+    };
 }

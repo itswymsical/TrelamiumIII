@@ -66,6 +66,17 @@ public abstract class GasField
 
     protected List<GasNode> gasNodes = new();
 
+    /// <summary>
+    /// The layer's ballistic sources: the arms of a burst, in flight, laying nodes behind them.
+    /// </summary>
+    /// <remarks>
+    /// Kept apart from <see cref="gasNodes" /> rather than folded into it, for the reason set out on
+    /// <see cref="GasEmitter" />: these are few and expensive per unit -- they collide, they sweep
+    /// entities, they carry damage -- and the nodes are many and cheap. One list of each keeps both
+    /// costs where they belong.
+    /// </remarks>
+    protected List<GasEmitter> emitters = new();
+
     GasRenderTargetContent _gasTarget;
     Asset<Effect> shader;
     Asset<Texture2D> radialTexture;
@@ -82,6 +93,7 @@ public abstract class GasField
         _gasTarget?.Reset();
         _gasTarget = null;
         gasNodes.Clear();
+        emitters.Clear();
     }
 
     /// <summary>
@@ -168,8 +180,18 @@ public abstract class GasField
         });
     }
 
-    public void UpdateGasNodes()
+    /// <summary>
+    /// Advances the whole layer for one tick: its emitters, then its nodes, then the tile field.
+    /// </summary>
+    /// <remarks>
+    /// Emitters first, and the order is not arbitrary. An emitter that emits this tick should have
+    /// its node simulated this tick too, or every arm of a burst is drawn one frame behind where it
+    /// actually is -- which at burst speeds is several pixels of lag between the trail and its head.
+    /// </remarks>
+    public void Update()
     {
+        UpdateEmitters();
+
         for (int i = gasNodes.Count - 1; i >= 0; i--)
         {
             var node = gasNodes[i];
@@ -183,6 +205,412 @@ public abstract class GasField
 
         UpdateTileField();
     }
+
+    #region Emitters
+
+    /// <summary>Ticks an emitter waits between hits on the same pass. Stands in for local iframes.</summary>
+    private const int EMITTER_HIT_COOLDOWN = 10;
+
+    /// <summary>
+    /// Ticks of vanilla immunity a landed emitter hit puts on its target, per owning player.
+    /// </summary>
+    /// <remarks>
+    /// Matches the ten ticks a friendly projectile grants through <c>Projectile.Damage</c>, which is
+    /// what the burst carriers used to get for free. <see cref="EMITTER_HIT_COOLDOWN" /> is the
+    /// other half of the same guard and is not redundant: this one stops twenty arms of one burst
+    /// from all landing at once, and that one stops a single arm from re-hitting as it crosses a
+    /// large target once the shared window has lapsed.
+    /// </remarks>
+    private const int EMITTER_IMMUNITY = 10;
+
+    /// <summary>Half-width of the square an emitter tests entity overlap with.</summary>
+    /// <remarks>
+    /// The old burst projectiles were 22x22, and the arms were tuned against that reach. A point
+    /// test would be technically purer and would make every one of them miss.
+    /// </remarks>
+    private const int EMITTER_HIT_RADIUS = 11;
+
+    /// <summary>The damage class an emitter's hits are credited to.</summary>
+    /// <remarks>
+    /// A virtual rather than a constant because <see cref="GasField" /> is deliberately ignorant of
+    /// the chemical system -- <see cref="ChemicalGasField" /> is the layer that knows it exists, and
+    /// it is the layer that answers this.
+    /// </remarks>
+    protected virtual DamageClass EmitterDamageClass => DamageClass.Generic;
+
+    /// <summary>Emitters currently in flight.</summary>
+    public int EmitterCount => emitters.Count;
+
+    /// <summary>
+    /// Throws a burst of emitters out of a point.
+    /// </summary>
+    /// <param name="direction">
+    /// The axis the burst opens along: the surface normal for a terrain hit, or the payload's own
+    /// heading for one in open air. Already biased and normalised by the caller.
+    /// </param>
+    /// <param name="grounded">
+    /// Whether this burst hit something. Selects the profile's ground or air parameters, and for a
+    /// <see cref="BurstShape.Fan" /> decides between an arc off the surface and a full circle.
+    /// </param>
+    /// <param name="damage">
+    /// The parent's damage. Scaled by <see cref="BurstProfile.DamageShare" />, so a profile that
+    /// shares nothing produces harmless arms no matter what is passed here.
+    /// </param>
+    /// <remarks>
+    /// Called on every client, because a burst is something everyone has to see. Only the arms
+    /// belonging to the local player will actually deal their damage -- see
+    /// <see cref="GasEmitter.IsLocallyOwned" /> -- so running it everywhere costs a divergent
+    /// scatter pattern and nothing else.
+    /// </remarks>
+    public void SpawnBurst(
+        in BurstProfile profile,
+        Vector2 origin,
+        Vector2 direction,
+        bool grounded,
+        int owner = GasNode.NoOwner,
+        int damage = 0,
+        float knockback = 0f)
+    {
+        Vector2 outward = direction.SafeNormalize(-Vector2.UnitY);
+
+        if (grounded && profile.UpwardBias > 0f && Vector2.Dot(-Vector2.UnitY, outward) >= 0f)
+            outward = Vector2.Lerp(outward, -Vector2.UnitY, profile.UpwardBias).SafeNormalize(outward);
+
+        int count = (grounded ? profile.GroundCount : profile.AirCount).RollCount();
+
+        if (count <= 0)
+            return;
+
+        Vector2 start = origin + (grounded ? outward * profile.OriginOffset : Vector2.Zero);
+        int armDamage = (int)MathF.Round(damage * profile.DamageShare);
+
+        for (int i = 0; i < count; i++)
+        {
+            (Vector2 velocity, float edge) = profile.Shape switch
+            {
+                BurstShape.Fan => FanArm(in profile, outward, grounded, i, count),
+                _ => ScatterArm(in profile, outward, grounded),
+            };
+
+            SpawnEmitter(profile.Select(edge), start, velocity, owner, armDamage, knockback, (byte)i);
+        }
+    }
+
+    /// <summary>
+    /// One arm of a fan: evenly spaced across the arc off a surface, or evenly spaced around the
+    /// circle in open air.
+    /// </summary>
+    /// <remarks>
+    /// The jitter added to each slot is what keeps an even distribution from looking mechanical. It
+    /// is applied to the angle only and not to the slot index, so the arms stay in order and cannot
+    /// bunch up into a gap.
+    /// </remarks>
+    private static (Vector2 Velocity, float Edge) FanArm(in BurstProfile profile, Vector2 outward, bool grounded, int index, int count)
+    {
+        if (!grounded)
+        {
+            float spin = MathHelper.TwoPi * (index / (float)count) + Main.rand.NextFloat(-0.2f, 0.2f);
+            float edge = Main.rand.NextFloat();
+
+            return (spin.ToRotationVector2() * profile.AirSpeed.Roll(), edge);
+        }
+
+        float half = profile.Arc * 0.5f;
+        float slot = (index + Main.rand.NextFloat(0.15f, 0.85f)) / count;
+        float angle = MathHelper.Lerp(-half, half, slot);
+        float fromCentre = half <= 0f ? 0f : MathF.Abs(angle) / half;
+
+        float speed = profile.GroundSpeed.At(fromCentre) * Main.rand.NextFloat(0.85f, 1.15f);
+
+        return (outward.RotatedBy(angle) * speed, fromCentre);
+    }
+
+    /// <summary>One arm of a scatter: somewhere inside the cone, at some speed, unordered.</summary>
+    private static (Vector2 Velocity, float Edge) ScatterArm(in BurstProfile profile, Vector2 outward, bool grounded)
+    {
+        float speed = (grounded ? profile.GroundSpeed : profile.AirSpeed).Roll();
+
+        return (outward.RotatedByRandom(profile.Arc) * speed, Main.rand.NextFloat());
+    }
+
+    /// <summary>Puts a single emitter into the world from a profile.</summary>
+    public void SpawnEmitter(
+        in EmitterProfile profile,
+        Vector2 position,
+        Vector2 velocity,
+        int owner = GasNode.NoOwner,
+        int damage = 0,
+        float knockback = 0f,
+        byte variant = 0)
+    {
+        var emitter = new GasEmitter
+        {
+            Position = position,
+            Velocity = velocity,
+            Life = profile.Lifetime,
+            MaxLife = profile.Lifetime,
+            Gravity = profile.Gravity,
+            Drag = profile.Drag,
+            NodeRadius = profile.NodeRadius,
+            NodeLife = profile.NodeLife,
+            NodeScatter = profile.NodeScatter,
+            Inheritance = profile.Inheritance,
+            Growth = profile.Growth,
+            Interval = Math.Max(profile.Interval, (byte)1),
+            BouncesLeft = profile.Bounces,
+            Restitution = profile.Restitution,
+            TileCollide = profile.TileCollide,
+            Owner = owner,
+            Damage = damage,
+            Knockback = knockback,
+            Variant = variant,
+        };
+
+        OnEmitterSpawn(ref emitter);
+
+        if (emitter.Life > 0f)
+            emitters.Add(emitter);
+    }
+
+    private void UpdateEmitters()
+    {
+        for (int i = emitters.Count - 1; i >= 0; i--)
+        {
+            GasEmitter emitter = emitters[i];
+
+            UpdateEmitter(ref emitter, i);
+
+            if (emitter.Life <= 0f)
+            {
+                OnEmitterExpire(in emitter);
+                emitters.RemoveAt(i);
+                continue;
+            }
+
+            emitters[i] = emitter;
+        }
+    }
+
+    /// <summary>
+    /// One emitter's tick: move it, let it hit something, let it emit, age it.
+    /// </summary>
+    /// <remarks>
+    /// The overridable half of the "projectile" this system replaces. A layer that wants an arm to
+    /// home, split, or change what it emits partway through its life does it here and calls
+    /// <c>base</c> for the rest, exactly as it would in a <see cref="ModProjectile" />'s AI.
+    /// </remarks>
+    protected virtual void UpdateEmitter(ref GasEmitter emitter, int index)
+    {
+        emitter.Velocity.Y += emitter.Gravity;
+        emitter.Velocity *= emitter.Drag;
+
+        if (emitter.TileCollide)
+            MoveEmitterAgainstTiles(ref emitter);
+        else
+            emitter.Position += emitter.Velocity;
+
+        if (emitter.Damage > 0)
+            SweepEmitterContacts(ref emitter);
+
+        if (emitter.Timer > 0)
+            emitter.Timer--;
+        else
+        {
+            Emit(ref emitter);
+            emitter.Timer = (byte)(emitter.Interval - 1);
+        }
+
+        emitter.Life--;
+    }
+
+    /// <summary>
+    /// Lays one node down from an emitter's current position.
+    /// </summary>
+    /// <remarks>
+    /// The growth curve is square-rooted so an arm reaches most of its final size in the first
+    /// third of its life. A linear ramp reads as the burst still inflating when it should already
+    /// be dispersing, which is the difference between a splash and a slowly expanding balloon.
+    /// </remarks>
+    protected virtual void Emit(ref GasEmitter emitter)
+    {
+        float radius = emitter.NodeRadius;
+
+        if (emitter.Growth > 0f)
+            radius *= MathHelper.Lerp(1f - emitter.Growth, 1f, MathF.Sqrt(emitter.Progress));
+
+        if (radius <= 0f || emitter.NodeLife <= 0f)
+            return;
+
+        Vector2 velocity = emitter.Velocity * emitter.Inheritance
+                         + Main.rand.NextVector2Circular(emitter.NodeScatter.X, emitter.NodeScatter.Y);
+
+        SpawnNode(emitter.Position, velocity, radius, emitter.NodeLife, owner: emitter.Owner);
+    }
+
+    /// <summary>
+    /// Moves an emitter, deflecting it off geometry until it runs out of bounces.
+    /// </summary>
+    /// <remarks>
+    /// A point test against the destination tile rather than a swept box. Emitters are small, fast
+    /// and short-lived, and the failure mode of a point test -- clipping a corner at high speed --
+    /// costs a bounce that a player watching a spray of molten metal will never notice missing.
+    /// </remarks>
+    private void MoveEmitterAgainstTiles(ref GasEmitter emitter)
+    {
+        Vector2 destination = emitter.Position + emitter.Velocity;
+
+        int nextX = (int)(destination.X / 16f);
+        int nextY = (int)(destination.Y / 16f);
+
+        if (!IsSolidTile(nextX, nextY))
+        {
+            emitter.Position = destination;
+            return;
+        }
+
+        // Which axis actually carried it into the wall. Probing them separately is what tells a
+        // floor from a wall, and so which component of the velocity to flip.
+        int currentX = (int)(emitter.Position.X / 16f);
+        int currentY = (int)(emitter.Position.Y / 16f);
+
+        var normal = Vector2.Zero;
+
+        if (IsSolidTile(nextX, currentY))
+            normal.X = -MathF.Sign(emitter.Velocity.X);
+
+        if (IsSolidTile(currentX, nextY))
+            normal.Y = -MathF.Sign(emitter.Velocity.Y);
+
+        // A diagonal entry: neither cardinal neighbour is solid, so the corner is what it clipped.
+        if (normal == Vector2.Zero)
+            normal = -emitter.Velocity.SafeNormalize(-Vector2.UnitY);
+
+        if (emitter.BouncesLeft == 0 || !OnEmitterBounce(ref emitter, normal, nextX, nextY))
+        {
+            emitter.Life = 0f;
+            return;
+        }
+
+        emitter.BouncesLeft--;
+
+        if (normal.X != 0f)
+            emitter.Velocity.X = -emitter.Velocity.X * emitter.Restitution;
+
+        if (normal.Y != 0f)
+            emitter.Velocity.Y = -emitter.Velocity.Y * emitter.Restitution;
+
+        emitter.Position += emitter.Velocity;
+    }
+
+    /// <summary>
+    /// Looks for something for a damaging emitter to hit, and hits the first thing it finds.
+    /// </summary>
+    /// <remarks>
+    /// First rather than all, unlike the node sweep. A node is a volume of gas that everything
+    /// standing in it is standing in; an emitter is a thrown object, and a thrown object that
+    /// strikes six enemies in the same tick because they were stacked is not one the damage numbers
+    /// were written for.
+    /// </remarks>
+    private void SweepEmitterContacts(ref GasEmitter emitter)
+    {
+        if (emitter.HitCooldown > 0)
+        {
+            emitter.HitCooldown--;
+            return;
+        }
+
+        var box = new Rectangle(
+            (int)emitter.Position.X - EMITTER_HIT_RADIUS,
+            (int)emitter.Position.Y - EMITTER_HIT_RADIUS,
+            EMITTER_HIT_RADIUS * 2,
+            EMITTER_HIT_RADIUS * 2);
+
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            NPC npc = Main.npc[i];
+
+            if (!npc.active || !CanAffect(npc) || !npc.Hitbox.Intersects(box))
+                continue;
+
+            OnEmitterHitNPC(ref emitter, npc);
+            emitter.HitCooldown = EMITTER_HIT_COOLDOWN;
+
+            return;
+        }
+    }
+
+    /// <summary>Called on a fully built emitter before it enters the list, so it can be adjusted.</summary>
+    /// <remarks>Setting <see cref="GasEmitter.Life" /> to zero here refuses the arm outright.</remarks>
+    protected virtual void OnEmitterSpawn(ref GasEmitter emitter) { }
+
+    /// <summary>Called once the emitter has already left the list.</summary>
+    protected virtual void OnEmitterExpire(in GasEmitter emitter) { }
+
+    /// <summary>
+    /// An emitter has reached terrain and has a bounce left. Return false to end it instead.
+    /// </summary>
+    /// <remarks>
+    /// Where a layer puts what its payload does to whatever it lands on -- scorching the tile,
+    /// splashing, cracking. Runs before the deflection, so the velocity read here is still the one
+    /// the arm arrived with.
+    /// </remarks>
+    protected virtual bool OnEmitterBounce(ref GasEmitter emitter, Vector2 normal, int tileX, int tileY) => true;
+
+    /// <summary>
+    /// A damaging emitter has passed through a target. Defaults to landing its hit.
+    /// </summary>
+    /// <remarks>
+    /// The place a layer adds what its old burst projectile did in <c>OnHitNPC</c> -- a debuff, a
+    /// splash, a reaction roll. Call <c>base</c> to keep the hit itself.
+    /// </remarks>
+    protected virtual void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc) => Strike(in emitter, npc);
+
+    /// <summary>
+    /// Lands an emitter's damage on a target, from the one client entitled to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Ownership is checked here rather than at the sweep so that
+    /// <see cref="OnEmitterHitNPC" /> still runs everywhere. An override that only wants to throw
+    /// dust or play a sound on contact should do that on every client; only the damage has to be
+    /// single-sourced, and only the damage is.
+    /// </para>
+    /// <para>
+    /// Credited to a player when one is on the hook for it, so the hit counts toward loot and aggro
+    /// the way the burst projectile it replaces did. Ownerless gas -- a world hazard, an ambient
+    /// vent -- strikes with no player interaction, exactly as <c>ChemicalReaction.Trigger</c> does.
+    /// </para>
+    /// </remarks>
+    protected void Strike(in GasEmitter emitter, NPC npc)
+    {
+        if (emitter.Damage <= 0 || !emitter.IsLocallyOwned)
+            return;
+
+        bool owned = emitter.Owner >= 0 && emitter.Owner < npc.immune.Length;
+
+        // The arms of one burst have to share immunity, and this is the array vanilla shares it
+        // through. Left out, a burst is not a hit -- it is as many hits as it has arms, all on the
+        // same frame, because SimpleStrikeNPC neither reads nor writes this the way
+        // Projectile.Damage does. The carriers this replaced were plain friendly projectiles with
+        // no local immunity of their own, so this array is exactly what used to gate them.
+        if (owned && npc.immune[emitter.Owner] > 0)
+            return;
+
+        if (owned)
+            npc.immune[emitter.Owner] = EMITTER_IMMUNITY;
+
+        int direction = MathF.Sign(emitter.Velocity.X);
+
+        npc.SimpleStrikeNPC(
+            emitter.Damage,
+            direction == 0 ? 1 : direction,
+            crit: false,
+            emitter.Knockback,
+            EmitterDamageClass,
+            noPlayerInteraction: emitter.Owner < 0);
+    }
+
+    #endregion
 
     /// <summary>
     /// Set true on layers that change the world, to pay for the tile field. Off by default.
@@ -503,22 +931,8 @@ public abstract class GasField
     /// <summary>
     /// Whether this layer's nodes may act on <paramref name="npc"/> at all.
     /// </summary>
-    /// <remarks>
-    /// Checked in the sweep, before any hook runs, rather than at the top of
-    /// <see cref="OnNPCContact"/>. That placement is the whole point: a guard inside an overridable
-    /// hook only holds for as long as every override remembers that calling <c>base</c> is not the
-    /// same as returning when <c>base</c> returns early. Four layers did exactly that -- they
-    /// deferred to the chemical guard and then applied a debuff underneath it regardless -- and
-    /// town NPCs caught fire, poison and frostburn from weapons aimed past them. Filtering here
-    /// means no override can reach a target this says no to.
-    /// <para>
-    /// Matches the strictest check any layer was already making by hand: friendly covers town NPCs
-    /// and critters, immortal covers target dummies, and dontTakeDamage covers everything else that
-    /// is scenery wearing an NPC slot.
-    /// </para>
-    /// </remarks>
     protected virtual bool CanAffect(NPC npc)
-        => !npc.friendly && !npc.dontTakeDamage && !npc.immortal;
+        => !npc.friendly && !npc.dontTakeDamage;
 
     /// <inheritdoc cref="CanAffect(NPC)"/>
     protected virtual bool CanAffect(Player player) => true;

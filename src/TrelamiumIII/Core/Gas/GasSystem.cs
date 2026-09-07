@@ -63,7 +63,7 @@ public class GasSystem : ModSystem
     public override void PostUpdateEverything()
     {
         foreach (var layer in layers)
-            layer.UpdateGasNodes();
+            layer.Update();
     }
 
     static void RegisterLayer(GasField layer)

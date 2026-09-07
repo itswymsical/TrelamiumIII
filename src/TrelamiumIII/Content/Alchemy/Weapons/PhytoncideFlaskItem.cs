@@ -3,6 +3,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Utilities;
 using Terraria.Audio;
@@ -62,160 +63,58 @@ public class PhytoncideFlaskItem : ModItem
     }
 }
 
-public class PhytoncideFlaskProjectile : ModProjectile
+/// <summary>
+///     A flask of phytoncide: barely leaks at all, then opens into a bloom that keeps growing.
+/// </summary>
+/// <remarks>
+///     The only burst in the mod whose arms expand as they travel. Everything else lays a constant
+///     radius and relies on the spread of the fan for its shape; this one starts each arm at a third
+///     of its size and grows it, so the cloud reads as something blooming outward rather than as
+///     something that was already that big and is now moving.
+/// </remarks>
+public class PhytoncideFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PhytoncideFlaskItem.KEY;
 
-    public override void SetDefaults()
+    protected override GasField? Field => GasSystem.GetLayer<PhytoncideSporeLayer>();
+
+    /// <summary>Almost nothing: the spores are sealed until the glass gives.</summary>
+    protected override TrailProfile? Trail => TrailProfile.Shed with
     {
-        Projectile.width = Projectile.height = 18;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = 1;
-        Projectile.timeLeft = 600;
-        Projectile.aiStyle = ProjAIStyleID.ThrownProjectile;
-    }
+        NodeRadius = 5f,
+        NodeLife = 8f,
+    };
 
-    private Vector2 _impactNormal;
-
-    private const float SplashArc = MathHelper.Pi * 0.9f;
-
-    public override void PostAI()
+    protected override BurstProfile Burst => BurstProfile.FlaskShatter with
     {
-        base.PostAI();
+        AirCount = new FloatRange(12f, 16f),
+        GroundCount = new FloatRange(7f, 11f),
+        AirSpeed = new FloatRange(3f, 8f),
+        GroundSpeed = new FloatRange(11.5f, 12f),
 
-        var layer = GasSystem.GetLayer<PhytoncideSporeLayer>();
-        if (layer == null) return;
+        Core = Bloom with { NodeRadius = 28f },
+        Body = Bloom with { NodeRadius = 12f },
+        Droplet = Bloom with { NodeRadius = 7f },
 
-        Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
-                      + Main.rand.NextVector2Circular(0.5f, 0.5f);
+        DamageShare = 1f,
+    };
 
-        layer.SpawnNode(Projectile.Center, drift, radius: 5f, life: 8f, owner: Projectile.owner);
-    }
-
-    public override bool OnTileCollide(Vector2 oldVelocity)
+    /// <summary>
+    ///     A spore arm: thrown hard, slowed hard, seeding a tall column of short-lived nodes.
+    /// </summary>
+    /// <remarks>
+    ///     The heavy drag is what makes the bloom. An arm that kept its speed would draw a long thin
+    ///     streak; one that sheds most of it in the first half-second deposits nearly all its nodes
+    ///     in a small area at the end of a short throw, which is a puff.
+    /// </remarks>
+    private static EmitterProfile Bloom => EmitterProfile.Default with
     {
-        Vector2 normal = Vector2.Zero;
-        if (Math.Abs(Projectile.velocity.X - oldVelocity.X) > 0.01f) normal.X = -Math.Sign(oldVelocity.X);
-        if (Math.Abs(Projectile.velocity.Y - oldVelocity.Y) > 0.01f) normal.Y = -Math.Sign(oldVelocity.Y);
+        NodeLife = 24.75f,
+        NodeScatter = new Vector2(1.5f, 5f),
+        Drag = 0.88f,
 
-        _impactNormal = normal.SafeNormalize(Vector2.Zero);
-        return true;
-    }
-
-    public override void OnKill(int timeLeft)
-    {
-        SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
-        SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
-
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
-
-        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
-        Gore.NewGore(Projectile.GetSource_Death(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
-
-        if (Projectile.owner != Main.myPlayer) return;
-
-        bool hitTile = _impactNormal != Vector2.Zero;
-
-        int count = hitTile ? Main.rand.Next(7, 11) : Main.rand.Next(12, 16);
-
-        Vector2 origin = Projectile.Center + (hitTile ? _impactNormal * 2f : Vector2.Zero);
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 vel;
-            float edge;
-
-            if (hitTile)
-            {
-                Vector2 outward = _impactNormal;
-                Vector2 up = -Vector2.UnitY;
-
-                if (Vector2.Dot(up, outward) >= 0f)
-                    outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
-
-                float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
-                float angle = MathHelper.Lerp(-SplashArc * 0.5f, SplashArc * 0.5f, t);
-                edge = Math.Abs(angle) / (SplashArc * 0.5f);
-
-                float speed = MathHelper.Lerp(11.5f, 12f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
-                vel = outward.RotatedBy(angle) * speed;
-            }
-            else
-            {
-                float angle = MathHelper.TwoPi * ((float)i / count) + Main.rand.NextFloat(-0.2f, 0.2f);
-
-                edge = Main.rand.NextFloat();
-
-                float speed = Main.rand.NextFloat(3f, 8f);
-                vel = angle.ToRotationVector2() * speed;
-            }
-
-            var splash = edge switch
-            {
-                < 0.3f => PhytoncideSporeBurstProjectile.SplashType.Core,
-                < 0.7f => PhytoncideSporeBurstProjectile.SplashType.Body,
-                _ => PhytoncideSporeBurstProjectile.SplashType.Droplet,
-            };
-
-            Projectile.NewProjectile(
-                Projectile.GetSource_FromThis(),
-                origin.X, origin.Y,
-                vel.X, vel.Y,
-                ModContent.ProjectileType<PhytoncideSporeBurstProjectile>(),
-                Projectile.damage, 0f, Projectile.owner,
-                ai0: (float)(int)splash);
-        }
-    }
-}
-
-public class PhytoncideSporeBurstProjectile : ModProjectile
-{
-    public override string Texture => AssetReferences.Assets.Textures.NullTex.KEY;
-
-    public enum SplashType { Core, Body, Droplet }
-
-    public SplashType splashType
-    {
-        get => (SplashType)(int)Projectile.ai[0];
-        set => Projectile.ai[0] = (int)value;
-    }
-
-    /// <summary>Ticks each splash arm seeds nodes for. Drives the expansion curve in <see cref="AI"/>.</summary>
-    private const int Lifetime = 15;
-
-    public override void SetDefaults()
-    {
-        Projectile.width = Projectile.height = 22;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = -1;
-        Projectile.timeLeft = Lifetime;
-        Projectile.aiStyle = -1;
-        Projectile.tileCollide = false;
-    }
-
-    public override void AI()
-    {
-        Projectile.velocity *= 0.88f;
-
-        var layer = GasSystem.GetLayer<PhytoncideSporeLayer>();
-        if (layer == null) return;
-
-        float progress = 1f - Projectile.timeLeft / (float)Lifetime;
-        float grow = MathHelper.Lerp(0.35f, 1f, MathF.Sqrt(progress));
-
-        float radius = splashType switch
-        {
-            SplashType.Core => 28f * grow,
-            SplashType.Body => 12f * grow,
-            SplashType.Droplet => 7f * grow,
-            _ => 0f
-        };
-
-        Vector2 nodeVelocity = Projectile.velocity * 0.5f
-                             + Main.rand.NextVector2Circular(1.5f, 5f);
-
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: Lifetime * 1.65f, owner: Projectile.owner);
-    }
+        // Every arm blooms, not just the core: the rim expanding alongside the middle is what keeps
+        // the cloud one shape instead of a growing centre ringed by fixed dots.
+        Growth = 0.65f,
+    };
 }

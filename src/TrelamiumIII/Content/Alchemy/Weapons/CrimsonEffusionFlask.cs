@@ -3,6 +3,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Utilities;
 using Terraria.Audio;
@@ -68,158 +69,35 @@ public class CrimsonEffusionFlaskItem : ModItem
     }
 }
 
-public class CrimsonEffusionFlaskProjectile : ModProjectile
+/// <summary>
+///     A flask of blood: it dribbles behind itself, then splashes off whatever it breaks against.
+/// </summary>
+/// <remarks>
+///     The clearest case for the fan shape. Blood thrown at a floor should run along the floor, and
+///     the even spacing plus the centre-to-edge speed gradient is what gives the splash a heavy
+///     middle and thin fast outriders rather than a uniform spray.
+/// </remarks>
+public class CrimsonEffusionFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.CrimsonEffusionFlaskItem.KEY;
 
-    public override void SetDefaults()
+    protected override GasField? Field => GasSystem.GetLayer<BloodLayer>();
+
+    protected override BurstProfile Burst => BurstProfile.FlaskShatter with
     {
-        Projectile.width = Projectile.height = 18;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = 1;
-        Projectile.timeLeft = 600;
-        Projectile.aiStyle = ProjAIStyleID.ThrownProjectile;
-    }
-    private Vector2 _impactNormal;
+        AirCount = new FloatRange(20f, 28f),
+        GroundCount = new FloatRange(18f, 24f),
+        AirSpeed = new FloatRange(4.5f, 6f),
 
-    private const float SplashArc = MathHelper.Pi * 0.9f;
+        // Faster at the rim than at the middle: the splash spreads out across the surface instead
+        // of standing up off it, which is what blood does and what frost mist does not.
+        GroundSpeed = new FloatRange(5.5f, 10f),
+        Arc = MathHelper.Pi * 0.45f,
 
-    public override void PostAI()
-    {
-        base.PostAI();
+        Core = EmitterProfile.Default with { NodeRadius = 9f, NodeScatter = new Vector2(1.5f, 3.5f) },
+        Body = EmitterProfile.Default with { NodeRadius = 7f, NodeScatter = new Vector2(1.5f, 3.5f) },
+        Droplet = EmitterProfile.Default with { NodeRadius = 2f, NodeScatter = new Vector2(1.5f, 3.5f) },
 
-        var layer = GasSystem.GetLayer<BloodLayer>();
-        if (layer == null) return;
-
-        Vector2 drift = -Projectile.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(0.4f, 1.2f)
-                      + Main.rand.NextVector2Circular(0.5f, 0.5f);
-
-        layer.SpawnNode(Projectile.Center, drift, radius: 4f, life: 40f, owner: Projectile.owner);
-    }
-
-    public override bool OnTileCollide(Vector2 oldVelocity)
-    {
-        Vector2 normal = Vector2.Zero;
-        if (Math.Abs(Projectile.velocity.X - oldVelocity.X) > 0.01f) normal.X = -Math.Sign(oldVelocity.X);
-        if (Math.Abs(Projectile.velocity.Y - oldVelocity.Y) > 0.01f) normal.Y = -Math.Sign(oldVelocity.Y);
-
-        _impactNormal = normal.SafeNormalize(Vector2.Zero);
-        return true;
-    }
-
-    public override void OnKill(int timeLeft)
-    {
-        SoundEngine.PlaySound(Assets.SFX.Items.SmallFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
-        SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f, PitchRange = (-0.15f, 0.15f) });
-
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
-        Collision.HitTiles(Projectile.position + Projectile.velocity, Projectile.velocity, Projectile.width, Projectile.height);
-
-        Gore.NewGore(Projectile.GetProjectileSource_FromThis(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask);
-        Gore.NewGore(Projectile.GetProjectileSource_FromThis(), Projectile.Center, -Projectile.oldVelocity * 0.2f, GoreID.ToxicFlask2);
-
-        if (Projectile.owner != Main.myPlayer) return;
-
-        bool hitTile = _impactNormal != Vector2.Zero;
-
-        int count = hitTile ? Main.rand.Next(18, 24) : Main.rand.Next(20, 28);
-        Vector2 origin = Projectile.Center + (hitTile ? _impactNormal * 2f : Vector2.Zero);
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 vel;
-            float edge;
-
-            if (hitTile)
-            {
-                //  Tile Splash
-                Vector2 outward = _impactNormal;
-                Vector2 up = -Vector2.UnitY;
-                if (Vector2.Dot(up, outward) >= 0f)
-                    outward = Vector2.Lerp(outward, up, 0.35f).SafeNormalize(outward);
-
-                float t = (i + Main.rand.NextFloat(0.15f, 0.85f)) / count;
-                float arcRange = SplashArc * 0.25f;
-                float angle = MathHelper.Lerp(-arcRange, arcRange, t);
-                edge = Math.Abs(angle) / arcRange;
-
-                float speed = MathHelper.Lerp(5.5f, 10f, edge) * Main.rand.NextFloat(0.85f, 1.15f);
-                vel = outward.RotatedBy(angle) * speed;
-            }
-            else
-            {
-                // Burst
-                float angle = MathHelper.TwoPi * ((float)i / count) + Main.rand.NextFloat(-0.2f, 0.2f);
-                edge = Main.rand.NextFloat();
-
-                float speed = Main.rand.NextFloat(4.5f, 6f);
-                vel = angle.ToRotationVector2() * speed;
-            }
-
-            var splash = edge switch
-            {
-                < 0.3f => CrimsonEffusionBurstProjectile.SplashType.Core,
-                < 0.7f => CrimsonEffusionBurstProjectile.SplashType.Body,
-                _ => CrimsonEffusionBurstProjectile.SplashType.Droplet,
-            };
-
-            Projectile.NewProjectile(
-                Projectile.GetProjectileSource_FromThis(),
-                origin.X, origin.Y,
-                vel.X, vel.Y,
-                ModContent.ProjectileType<CrimsonEffusionBurstProjectile>(),
-                Projectile.damage, 0f, Projectile.owner,
-                ai0: (float)(int)splash);
-        }
-    }
-}
-
-public class CrimsonEffusionBurstProjectile : ModProjectile
-{
-    public override string Texture => AssetReferences.Assets.Textures.NullTex.KEY;
-
-    public enum SplashType { Core, Body, Droplet }
-
-    public SplashType splashType
-    {
-        get => (SplashType)(int)Projectile.ai[0];
-        set => Projectile.ai[0] = (int)value;
-    }
-
-    public override void SetDefaults()
-    {
-        Projectile.width = Projectile.height = 22;
-        Projectile.friendly = true;
-        Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = -1;
-        Projectile.timeLeft = 15;
-        Projectile.aiStyle = -1;
-        Projectile.tileCollide = false;
-    }
-
-    public override void AI()
-    {
-        var layer = GasSystem.GetLayer<BloodLayer>();
-        if (layer == null) return;
-
-        float progress = MathHelper.Lerp(1f, Projectile.timeLeft, 0);
-        float radius = splashType switch
-        {
-            SplashType.Core => 9f * progress,
-            SplashType.Body => 7f * progress,
-            SplashType.Droplet => 2f * progress,
-            _ => 0f
-        };
-
-        Vector2 nodeVelocity = Projectile.velocity * 0.5f
-                             + Main.rand.NextVector2Circular(1.5f, 3.5f);
-
-        layer.SpawnNode(Projectile.Center, nodeVelocity, radius: radius, life: 80, owner: Projectile.owner);
-    }
-
-    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-    {
-        target.AddBuff(BuffID.BloodButcherer, 60);
-    }
+        DamageShare = 1f,
+    };
 }

@@ -39,10 +39,6 @@ public struct GasNode
     /// </summary>
     public int EnclosedTicks;
 
-    public bool Friendly;
-    public int Damage;
-    public float Knockback;
-
     /// <summary>
     /// The player whose weapon produced this node, or <see cref="NoOwner" />.
     /// </summary>

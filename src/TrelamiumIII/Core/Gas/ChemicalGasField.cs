@@ -29,13 +29,33 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Resolved through <see cref="TileConditionSystem"/> rather than constructed here, because
     /// conditions are flyweights owned by that system -- this is a reference to the registered one,
     /// not a second copy of it.
+    /// </para>
+    /// <para>
+    /// Three answers are meaningful and all three are used. A layer that wants its element's
+    /// ordinary behaviour names the residue for that element and inherits everything from
+    /// <see cref="ElementProfile"/>. One that wants its own reading of the element names a bespoke
+    /// condition instead. And one that should leave nothing at all returns null -- which also
+    /// switches off <see cref="GasField.UsesTileField"/>, so a layer that marks no terrain does not
+    /// pay for the accumulation pass that would decide where to mark it.
+    /// </para>
     /// </remarks>
     protected virtual ChemicalReactionTileCondition? Residue => null;
 
     protected override bool UsesTileField => Residue is not null;
+
+    /// <summary>
+    /// Emitter hits are controller damage, like everything else this layer does.
+    /// </summary>
+    /// <remarks>
+    /// The burst projectiles this replaces each declared the class by hand in their own
+    /// <c>SetDefaults</c>, six times over. Answering it once here is what makes an arm of a burst
+    /// count toward the same accessories, stats and tooltips the flask that threw it does.
+    /// </remarks>
+    protected override DamageClass EmitterDamageClass => ModContent.GetInstance<ChemicalDamageClass>();
 
     /// <summary>
     /// Applies chemistry. Friendlies, dummies and anything that cannot take damage were already
