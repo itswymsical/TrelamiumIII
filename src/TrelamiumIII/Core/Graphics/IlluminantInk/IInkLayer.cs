@@ -79,10 +79,19 @@ internal readonly struct InkFrame
 ///     One element of the menu scene, drawn over the nebula ground.
 /// </summary>
 /// <remarks>
-///     Split into two draw calls because the scene batches by blend mode, not by layer: ink
-///     <em>occludes</em> and light <em>adds</em>, and interleaving those per-layer would mean a
-///     <see cref="SpriteBatch" /> restart for every layer instead of two for the whole stack.
-///     A layer implements whichever half it needs and leaves the other empty.
+///     <para>
+///         Split into two draw calls because the scene batches by blend mode, not by layer: ink
+///         <em>occludes</em> and light <em>adds</em>, and interleaving those per-layer would mean a
+///         <see cref="SpriteBatch" /> restart for every layer instead of two for the whole stack.
+///         A layer implements whichever half it needs and leaves the other empty.
+///     </para>
+///     <para>
+///         <see cref="Prepare" /> and <see cref="Composite" /> are the escape hatch for a layer that
+///         cannot be said in sprites: one that sums its own coverage field off-screen and reads it
+///         back through a shader. They are deliberately the exception, because they cost a target
+///         bind and a batch restart apiece -- which is the expense the two-batch split above exists
+///         to avoid -- so a layer that can draw itself with sprites should.
+///     </para>
 /// </remarks>
 internal interface IInkLayer
 {
@@ -92,8 +101,30 @@ internal interface IInkLayer
     /// <summary>Advances simulation by one tick. Never draws.</summary>
     void Update(in InkFrame frame);
 
+    /// <summary>
+    ///     Builds whatever off-screen surface the layer needs, before the scene target is bound.
+    /// </summary>
+    /// <remarks>
+    ///     Runs at the one point in the render where claiming a target is free: the caller has
+    ///     already saved what was bound and has not yet bound its own. A layer that claims one must
+    ///     leave nothing bound when it returns. Empty for a layer that owns no surface.
+    /// </remarks>
+    void Prepare(SpriteBatch spriteBatch, GraphicsDevice device, in InkFrame frame);
+
     /// <summary>Drawn under <see cref="BlendState.AlphaBlend" />, before the light pass.</summary>
     void DrawInk(SpriteBatch spriteBatch, in InkFrame frame);
+
+    /// <summary>
+    ///     Reads a layer's own surface back through its own shader, between the ink and light
+    ///     passes, with no batch open.
+    /// </summary>
+    /// <remarks>
+    ///     Between the two because that is where the result belongs: it occludes the nebula the way
+    ///     <see cref="DrawInk" /> does, and the light pass has to land over it. The layer opens and
+    ///     closes its own batch, since binding a shader wants
+    ///     <see cref="SpriteSortMode.Immediate" /> and both shared passes are deferred.
+    /// </remarks>
+    void Composite(SpriteBatch spriteBatch, in InkFrame frame);
 
     /// <summary>Drawn under <see cref="BlendState.Additive" />, after the ink pass.</summary>
     void DrawLight(SpriteBatch spriteBatch, in InkFrame frame);

@@ -166,13 +166,49 @@ internal static class InkStyle
     public const int StreakLifetime = 190;
 
     // ---- ferrofluid motes -----------------------------------------------------------
+    //
+    // A mote is not a sprite. Each is stamped as a soft blob into a coverage field and the
+    // whole field is cut at a threshold, so two motes that merely drift near each other
+    // cross that threshold in the gap between them and fuse into one silhouette. That is the
+    // only way the material reads correctly: ferrofluid beads that touch become one bead,
+    // and a sprite per mote can show them overlapping but never merging.
 
+    /// <summary>How many motes a settled field holds, before any are burst or merged.</summary>
+    /// <remarks>
+    ///     A target rather than a census. Bursting one raises the count and merging two lowers
+    ///     it, so what is actually held steady is mass -- see <c>InkMoteLayer</c>'s refill.
+    /// </remarks>
     public const int MoteCount = 26;
 
     /// <summary>Cursor attraction radius in pixels -- the reach of the "magnet".</summary>
     public const float MagnetRadius = 260f;
 
-    public const float MagnetForce = 0.34f;
+    public const float MagnetForce = 0.24f;
+
+    /// <summary>
+    ///     Radius of the magnet's core, in pixels: inside it the pull fades back out to nothing.
+    /// </summary>
+    /// <remarks>
+    ///     The falloff from the rim only says how hard a distant mote is pulled. It reaches full
+    ///     strength at the pointer and stays there, so without a core the force drives a mote
+    ///     straight through the cursor, the direction to it flips, and the mote buzzes across it
+    ///     forever. A mote that has arrived should be <em>held</em>, not driven.
+    ///     <para />
+    ///     Small, because motes have to end up close enough together to merge -- this is what sets
+    ///     how tightly a dragged cluster packs, and past roughly 40 the pool spreads out far enough
+    ///     that <see cref="MoteMergeOverlap" /> stops being reached.
+    /// </remarks>
+    public const float MagnetCore = 26f;
+
+    /// <summary>Per-tick velocity multiplier applied at the very centre of the core.</summary>
+    /// <remarks>
+    ///     The other half of settling, and the half that actually does it. Fading the force out
+    ///     stops a mote being driven through the cursor but leaves it coasting through on the
+    ///     momentum it arrived with; this takes that momentum out of the system. Together they put
+    ///     the inner half of the core past critical damping, so a mote slides to a stop there
+    ///     instead of ringing; the outer half is still free enough to let it arrive with weight.
+    /// </remarks>
+    public const float MagnetSettle = 0.78f;
 
     /// <summary>How far a fully magnetised mote stretches toward the cursor.</summary>
     public const float MoteSpikeStretch = 1.2f;
@@ -184,6 +220,155 @@ internal static class InkStyle
     public const float PulseForce = 7.5f;
 
     public const float PulseRadius = 340f;
+
+    /// <summary>Hard ceiling on live motes, however hard the player clicks.</summary>
+    public const int MoteBudget = 170;
+
+    /// <summary>
+    ///     One-in-N chance per tick of drifting a fresh mote in while the field is under mass.
+    /// </summary>
+    /// <remarks>
+    ///     A chance rather than a top-up, so a field emptied by a run of clicks refills over a
+    ///     few seconds instead of snapping back the tick the mass check goes under.
+    /// </remarks>
+    public const int MoteRefillChance = 14;
+
+    // ---- clicking motes apart -------------------------------------------------------
+
+    /// <summary>How far past its own radius a mote still counts as clicked.</summary>
+    public const float MoteHitScale = 1.3f;
+
+    /// <summary>Droplets a clicked mote comes apart into, at its largest.</summary>
+    /// <remarks>
+    ///     A ceiling, not a count: a small mote splits into fewer, because dividing its area any
+    ///     further would put every piece under <see cref="MoteRadiusMin" /> and the burst would
+    ///     read as the mote having simply vanished.
+    /// </remarks>
+    public const int MoteBurstPieces = 6;
+
+    /// <summary>Speed the droplets leave at, before the parent's own momentum.</summary>
+    /// <remarks>
+    ///     Sized against <see cref="MagnetRadius" /> rather than picked for its own sake: under the
+    ///     field's drag this throws a droplet a little over half the magnet's reach, so a burst
+    ///     scatters clear of the pointer and is then drawn back in. Past the reach the droplets
+    ///     escape and the click stops being a loop.
+    /// </remarks>
+    public const float MoteBurstSpeed = 6.5f;
+
+    /// <summary>Ticks a fresh droplet refuses to merge for.</summary>
+    /// <remarks>
+    ///     Without it a burst is invisible: the pieces are born inside each other's merge reach
+    ///     and the cursor that just split them is still pulling, so they would recombine on the
+    ///     next tick or two and the click would read as nothing having happened.
+    /// </remarks>
+    public const int MoteBurstCohesion = 50;
+
+    // ---- gathering motes back together ----------------------------------------------
+
+    /// <summary>
+    ///     How near the pointer a mote has to be, in pixels, before it will merge with a neighbour.
+    /// </summary>
+    /// <remarks>
+    ///     The gate that makes accumulation something the player does rather than something that
+    ///     happens. Ungated, the whole field would slowly collapse into a few large beads on its
+    ///     own; gated on the pointer, motes only pool where the cursor has dragged them.
+    ///     <para />
+    ///     Distance rather than <c>Spike</c>, which is what this used to read. Spike now fades back
+    ///     out inside <see cref="MagnetCore" />, so a mote that had arrived -- the one most likely
+    ///     to have something to merge with -- read as unmagnetised and refused.
+    /// </remarks>
+    public const float MoteMergeReach = 200f;
+
+    /// <summary>Centre distance two motes merge at, as a fraction of their summed radii.</summary>
+    public const float MoteMergeOverlap = 0.62f;
+
+    /// <summary>Ticks a freshly merged mote settles for before it will merge again.</summary>
+    public const int MoteMergeSettle = 12;
+
+    /// <summary>Ceiling on a merged mote's radius, as a multiple of <see cref="MoteRadiusMax" />.</summary>
+    public const float MoteMergeCap = 2.4f;
+
+    // ---- silhouette pass (InkSilhouette.fx) -----------------------------------------
+
+    /// <summary>Screen pixels per field texel.</summary>
+    /// <remarks>
+    ///     The field is blurry data rather than an image, so it loses nothing to the downscale,
+    ///     and the shader snaps its decisions to this grid -- one field texel becomes one chunky
+    ///     output pixel. Deliberately not <see cref="NebulaPixelSize" />: the two grids are
+    ///     different sizes on purpose, so the ink reads as sitting on the nebula rather than as
+    ///     being painted into it.
+    /// </remarks>
+    public const int MoteFieldScale = 2;
+
+    /// <summary>Stamp diameter as a multiple of a mote's radius.</summary>
+    /// <remarks>
+    ///     Past 2 because the threshold cut lands well inside the stamp: at exactly 2 the
+    ///     silhouettes come out visibly smaller than the radii say, and neighbours stop reaching
+    ///     each other. This is the knob for how eagerly motes fuse, together with
+    ///     <see cref="MoteThreshold" />.
+    /// </remarks>
+    public const float MoteStampSpread = 2.9f;
+
+    /// <summary>Coverage level where ink exists.</summary>
+    /// <remarks>
+    ///     Well under 1, which is what makes motes fuse rather than merely overlap: two stamps
+    ///     whose own falloffs have each dropped to a sixth still sum past this in the gap between
+    ///     them, so the cut closes over it. Raise it and the field becomes a heap of discs.
+    /// </remarks>
+    public const float MoteThreshold = 0.30f;
+
+    public const float MoteBodyAlpha = 0.93f;
+
+    /// <summary>Posterise step count for the body shade. Void, mass, rim.</summary>
+    public const float MoteBands = 3f;
+
+    public const float MoteRimAlpha = 0.88f;
+
+    /// <summary>Peak displacement of the silhouette lookup, in UV, and how fine it is.</summary>
+    /// <remarks>
+    ///     Warps the outline rather than the fill. A clean edge reads as a sprite however much is
+    ///     churning inside it, and the edge is the first thing the eye resolves.
+    /// </remarks>
+    public const float MoteWobble = 0.009f;
+
+    public const float MoteWobbleScale = 2.6f;
+
+    public static readonly Vector2 MoteWobbleDrift = new(0.021f, -0.034f);
+
+    /// <summary>Radial reach of the smear toward the singularity, and its tangential slice.</summary>
+    /// <remarks>
+    ///     Small. The motes are adrift, not being drained; this is the hint that the hole has a
+    ///     hold on them, and past roughly 0.1 it stops being a hint and the field visibly streams.
+    /// </remarks>
+    public const float MoteSmear = 0.045f;
+
+    public const float MoteSpin = 0.030f;
+
+    /// <summary>How fast the smear ramps up away from the singularity.</summary>
+    public const float MoteFalloff = 1.5f;
+
+    /// <summary>Sparse ink, dense ink, deepest ink.</summary>
+    /// <remarks>
+    ///     Greyer than <c>InkLayer</c>'s violet palette, because this menu is black and grey and
+    ///     the motes have to sit on the nebula rather than beside it -- the ends are
+    ///     <see cref="InkLow" /> and a step short of <see cref="InkHigh" />.
+    /// </remarks>
+    public static readonly Vector3 MoteShadowColor = new(0.014f, 0.015f, 0.019f);
+
+    public static readonly Vector3 MoteBodyColor = new(0.044f, 0.046f, 0.056f);
+
+    public static readonly Vector3 MoteCoreColor = new(0.13f, 0.135f, 0.155f);
+
+    /// <summary>The meniscus: the rim the shader paints along its own cut.</summary>
+    /// <remarks>
+    ///     This replaces the ring sprite each mote used to carry. A ring per mote outlines every
+    ///     mote, including the ones that have fused, so it drew the seams the whole field exists
+    ///     to hide; a rim found from the cut follows the merged outline instead.
+    /// </remarks>
+    public static readonly Vector3 MoteRimColor = new(0.82f, 0.84f, 0.90f);
+
+    /// <summary>Brightness of the specular glint travelling over a mote's surface.</summary>
+    public const float MoteGlint = 0.34f;
 
     // ---- post chain -----------------------------------------------------------------
 

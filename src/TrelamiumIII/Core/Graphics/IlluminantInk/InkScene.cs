@@ -116,6 +116,11 @@ internal sealed class InkScene
     {
         var restore = device.GetRenderTargets();
 
+        // Before the scene target is claimed, so a layer that sums its own field off-screen can
+        // claim one without stealing this pass's out from under it. See IInkLayer.Prepare.
+        foreach (var layer in stack)
+            layer.Prepare(spriteBatch, device, in frame);
+
         device.SetRenderTarget(targets.Scene);
         device.Clear(Color.Black);
 
@@ -145,6 +150,16 @@ internal sealed class InkScene
         targets.Dispose();
         nebula.Reset();
         post.Reset();
+
+        // A layer that owns a surface says so by being disposable, rather than by a Release on
+        // IInkLayer that every other layer would have to implement empty. Disposing one and then
+        // seeding it again is fine and is what happens on a resolution change: the same contract
+        // InkTargets keeps, where Ensure reallocates after a Dispose.
+        foreach (var layer in stack)
+        {
+            if (layer is IDisposable disposable)
+                disposable.Dispose();
+        }
 
         seeded = false;
         seededWidth = 0;
@@ -179,6 +194,11 @@ internal sealed class InkScene
             layer.DrawInk(spriteBatch, in frame);
 
         spriteBatch.End();
+
+        // Between the two shared passes, with nothing open: each of these runs its own shader, so
+        // each opens and closes a batch of its own.
+        foreach (var layer in stack)
+            layer.Composite(spriteBatch, in frame);
 
         spriteBatch.Begin(
             SpriteSortMode.Deferred,

@@ -74,7 +74,15 @@ internal sealed class StarfieldLayer : IInkLayer
         }
     }
 
+    public void Prepare(SpriteBatch spriteBatch, GraphicsDevice device, in InkFrame frame)
+    {
+    }
+
     public void DrawInk(SpriteBatch spriteBatch, in InkFrame frame)
+    {
+    }
+
+    public void Composite(SpriteBatch spriteBatch, in InkFrame frame)
     {
     }
 
