@@ -16,7 +16,7 @@ public static class AlchemyIngredients
     private static Dictionary<int, AlchemyMode> _solventModes;
     private static List<int> _allIngredients;
 
-    /// <summary>Discard derived caches. Called on mod unload via <see cref="AlchemyRecipeSystem"/>.</summary>
+    /// <summary>Discard derived caches. Called on mod unload via <see cref="ChemistryRecipeSystem"/>.</summary>
     public static void Clear()
     {
         _substances = null;

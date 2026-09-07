@@ -202,13 +202,13 @@ public static class AlmanacEntryRegistry
     }
 }
 /// <summary>
-/// Authored almanac entry metadata (potency / chemical type / rarity) for the outputs we
+/// the almanac entry metadata (potency / chemical type / rarity) for the outputs we
 /// curate. Anything not listed here falls back to <see cref="AlmanacEntryRegistry.For"/>'s
 /// defaults, so this list is meant to grow incrementally as products get fleshed out.
 /// <para>Rarity uses vanilla <c>ItemRarityID</c> values, chosen by the system's own
 /// judgement rather than the item's own <c>Item.rare</c>.</para>
 /// </summary>
-internal static class AlmanacEntryDefinitions
+internal static class AlmanacDefinitions
 {
     public static void Register()
     {
@@ -529,8 +529,6 @@ internal static class AlmanacEntryDefinitions
 
         // Todo: hardmode & special ores
         #endregion
-
-
 
         #region Miscellaneous
 

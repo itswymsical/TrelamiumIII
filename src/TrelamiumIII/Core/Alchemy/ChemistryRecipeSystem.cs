@@ -1,27 +1,25 @@
-using TrelamiumIII.Common.Globals.Items;
-using TrelamiumIII.Content.Lodestone;
-using TrelamiumIII.Utilities;
 using Terraria.Localization;
-using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
-using TrelamiumIII.Content.Alchemy.AlchemyStations;
-using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Common.Globals;
-using TrelamiumIII.Content.Rusted;
-using TrelamiumIII.Core.Alchemy.Brewing;
 using TrelamiumIII.Content.Alchemy.MagnoliaContent;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Alchemy.Tiles;
-using TrelamiumIII.Content.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
+using TrelamiumIII.Content.Lodestone;
+using TrelamiumIII.Content.Rusted;
+using TrelamiumIII.Core.Alchemy.Brewing;
+using TrelamiumIII.Utilities;
+using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-/// The central class for registering recipes and recipe groups for Substrate. 
+/// The central class for registering recipes and recipe groups. Also holds vanilla recipe addons. 
 /// This class is responsible for adding custom recipes, recipe groups, and managing the overall recipe system within the mod and 
 /// Base game potion recipes.
 /// </summary>
-public class AlchemyRecipeSystem : ModSystem
+public class ChemistryRecipeSystem : ModSystem
 {
     #region Terraria Recipe Management
     public override void AddRecipes()
@@ -114,7 +112,7 @@ public class AlchemyRecipeSystem : ModSystem
         base.PostSetupContent();
 
         // Metadata for almanac entry items (chemical type, potency, rarity, etc.)
-        AlmanacEntryDefinitions.Register();
+        AlmanacDefinitions.Register();
 
         // Solvents/Solutions that are used to craft potions: think like "Awkward Potion" and "Mundane Potion" from Minecraft.
         RegisterSolutions();
@@ -285,7 +283,7 @@ public class AlchemyRecipeSystem : ModSystem
     /// </remarks>
     private static void RegisterMinerals()
     {
-        #region Acids -- the Sulfur line
+        #region Acids
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
             inputType: ItemID.BottledWater,
@@ -317,7 +315,7 @@ public class AlchemyRecipeSystem : ModSystem
 
         #endregion
 
-        #region Alkalis -- the Salt line
+        #region Alkalis
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
             inputType: ItemID.BottledWater,

@@ -20,7 +20,7 @@ namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 /// </summary>
 public class FlowerSatchelItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.FarmingOverhaul.FlowerSatchel.KEY;
+    public override string Texture => AssetReferences.Content.FarmingOverhaul.SatchelContent.FlowerSatchel.KEY;
     public const int SLOT_COUNT = 3;
 
     /// <summary>The held flowers. Always <see cref="SLOT_COUNT"/> long and never null-elemented.</summary>
