@@ -115,10 +115,6 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>
     ///     Added to <see cref="Player.lifeRegen" /> per point of severity.
     /// </summary>
-    /// <remarks>
-    ///     That field counts in half a health a second, so one point of severity is exactly one tick
-    ///     of damage as the debuff readout counts them.
-    /// </remarks>
     private const int REGEN_PER_SEVERITY = 2;
 
     /// <summary>Worst strain in the player this frame. Rebuilt from scratch every tick.</summary>

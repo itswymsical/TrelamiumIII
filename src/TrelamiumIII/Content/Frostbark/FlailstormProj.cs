@@ -724,12 +724,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 ///     nothing, and feeds <see cref="IceMistLayer" /> instead, whose thresholded density field is
 ///     what makes several overlapping clouds read as one bank of fog.
 /// </summary>
-/// <remarks>
-///     Spawned with zero damage it only freezes, which is what the wind-up drops on the ring.
-///     Spawned with damage it is a piece of a burst: bigger, shorter-lived, bites once and leaves a
-///     five second freeze. Immunity is static rather than local, so a burst lands as a single hit
-///     however many of its clouds overlap the target.
-/// </remarks>
 public class FrostCloudProj : ModProjectile
 {
     public override string Texture => Assets.Textures.VFX.RadialGradient.KEY;

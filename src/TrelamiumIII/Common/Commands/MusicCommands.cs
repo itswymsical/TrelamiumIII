@@ -8,11 +8,6 @@ namespace TrelamiumIII.Common.Commands;
 /// <summary>
 ///     Drives <see cref="MusicDirector" /> by hand.
 /// </summary>
-/// <remarks>
-///     Layered audio is difficult to verify by playing the game: a crossfade that is a beat out or a
-///     fill that lands in the wrong place needs to be heard several times in a row, and getting a
-///     boss to the right health repeatedly is not a workflow. This makes each transition a keystroke.
-/// </remarks>
 public class MusicCommand : ModCommand
 {
     public override string Command => "music";

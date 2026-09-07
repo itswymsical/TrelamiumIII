@@ -81,10 +81,6 @@ public sealed class EyeGoreParticle : Particle
     /// <summary>
     ///     Draws the body, so the source rect is honoured.
     /// </summary>
-    /// <remarks>
-    ///     Takes the draw over rather than letting the base class do it, because the base resolves its
-    ///     own source the vertical-strip way. Returning false is the documented way to do that.
-    /// </remarks>
     public override bool PreDraw(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, Color lightColor)
     {
         Rectangle source = Cell(texture);

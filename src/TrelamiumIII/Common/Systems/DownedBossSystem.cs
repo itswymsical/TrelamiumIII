@@ -19,12 +19,6 @@ public sealed class DownedBossSystem : ModSystem
     /// <summary>
     ///     Whether the Eye of Cthulhu's wake has already played in this world.
     /// </summary>
-    /// <remarks>
-    ///     Tracked separately from <see cref="NPC.downedBoss1" /> rather than reading it, because by
-    ///     the time a death hook runs vanilla has generally already set its own flag -- so a check
-    ///     against it would report every first kill as a repeat. This is only ever set after the
-    ///     cutscene has been offered, which makes "first" mean what it says.
-    /// </remarks>
     public static bool SeenEyeOfCthulhuWake;
 
     public override void ClearWorld()

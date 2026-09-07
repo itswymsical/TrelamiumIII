@@ -47,13 +47,6 @@ public class SkofnungProjectile : HeldSwordProjectile
     /// <summary>
     ///     The blade in hand. Shared with the item so the two cannot disagree about the tempo.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="SwordProfile.BladeLength" /> is measured off the sprite, not inherited. The
-    ///     art is 54x54 with the blade corner to corner, which puts the tip about 60 pixels from the
-    ///     grip the profile pivots on; the dagger preset's 30 would have given this sword a hitbox
-    ///     covering half its own blade. Both the drawn length and the reach scale by
-    ///     <see cref="Projectile.scale" /> together, so this number is independent of it.
-    /// </remarks>
     public static readonly SwordProfile Swing = SwordProfile.Dagger with
     {
         BladeLength = 60f,

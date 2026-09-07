@@ -13,11 +13,6 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
     /// <summary>
     ///     Resolution divisor for the field.
     /// </summary>
-    /// <remarks>
-    ///     Free at half size, and better than free: the shader quantises every decision to this grid,
-    ///     so one field texel becomes one chunky output pixel, which is the same look the metaball
-    ///     layers get out of the same trick.
-    /// </remarks>
     private const int FIELD_SCALE = 2;
 
     /// <summary>Coverage level where ink exists. Low, so pieces fuse early.</summary>
@@ -46,10 +41,6 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
     /// <summary>
     ///     How fast the smear ramps up away from the focus.
     /// </summary>
-    /// <remarks>
-    ///     Above 1 so the throat itself stays crisp while pieces further out tear badly. A uniform
-    ///     smear reads as the whole image being out of focus rather than as matter being pulled.
-    /// </remarks>
     private const float FALLOFF = 1.4f;
 
     private static WorldFieldTarget? field;
@@ -217,11 +208,6 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
     }
 
     /// <summary>The point the coverage is smeared toward, in 0..1 screen space.</summary>
-    /// <remarks>
-    ///     Through the game view matrix rather than a bare subtraction, so the focus tracks the world
-    ///     under zoom: the same conversion <see cref="InkVortex" /> uses to place its disc, and for
-    ///     the same reason.
-    /// </remarks>
     private static Vector2 FocusUv()
     {
         Vector2 screen = Vector2.Transform(

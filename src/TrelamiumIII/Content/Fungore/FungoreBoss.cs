@@ -99,10 +99,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     The pose he hangs on between clearing the ground and starting to fall.
     /// </summary>
-    /// <remarks>
-    ///     Arms overhead, feet clear -- the airborne half of the jump cycle read as a single held
-    ///     frame. Change the row alone to hang on a different beat of that leap.
-    /// </remarks>
     private const int EMERGE_HOLD_COLUMN = COLUMN_JUMP;
 
     private const int EMERGE_HOLD_ROW = JUMP_RISE;
@@ -120,11 +116,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Ground covered per step of the walk cycle, in pixels.
     /// </summary>
-    /// <remarks>
-    ///     Lower is a faster cadence. This is the number to move if his feet look like they are
-    ///     sliding rather than carrying him -- it is what ties the animation to his actual speed, so
-    ///     the cycle keeps up automatically as the phases quicken.
-    /// </remarks>
     private const float WALK_FRAME_PIXELS = 15f;
 
     private const int WALK_FRAME_MIN = 3;
@@ -153,11 +144,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Chance of a dash punch rather than a step-in, per phase.
     /// </summary>
-    /// <remarks>
-    ///     One in this many. The dash is the most readable thing he does and the most fun to beat,
-    ///     so it wants to come up often -- rare enough to be a surprise is also rare enough to never
-    ///     be learned.
-    /// </remarks>
     private static readonly int[] DashOdds = [4, 2, 2];
 
     /// <summary>Frames of suspended tile collision when dropping through a platform.</summary>
@@ -191,13 +177,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     The climb, the float and the fall are all driven by curves rather than by gravity.
     /// </summary>
-    /// <remarks>
-    ///     A ballistic arc is the obvious way to do this and it reads badly: gravity gives a
-    ///     symmetric parabola, so the launch and the landing carry the same weight, and the top of
-    ///     the arc is the one place the eye has nothing to follow. Splitting it into three eased
-    ///     phases lets each one say something different -- he leaves the ground hard, floats at the
-    ///     top long enough for you to read where he is going, then accelerates into the floor.
-    /// </remarks>
     private const int SUPER_RISE_TICKS = 22;
 
     /// <summary>Apex height above the launch point, in world pixels.</summary>
@@ -227,11 +206,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Failed approaches before he stops trying to walk it and goes under.
     /// </summary>
-    /// <remarks>
-    ///     Deliberately small. The burrow exists because an arena can make him unreachable -- a
-    ///     player on a platform, a pit between them -- and a boss that spends fifteen seconds proving
-    ///     that to itself has already lost the fight's pace.
-    /// </remarks>
     private const int FRUSTRATION_LIMIT = 2;
 
     /// <summary>Ordinary slams between mushrooms.</summary>
@@ -251,10 +225,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Frames of struggling before the cloud goes up.
     /// </summary>
-    /// <remarks>
-    ///     Long enough that the burst reads as the end of the animation rather than as its own event.
-    ///     At 147 BPM this lands the burst a little past bar three of the four-bar death fill.
-    /// </remarks>
     private const int DEATH_TICKS = 199;
 
     /// <summary>Fraction of maximum life at which he stops fighting properly and starts hopping.</summary>
@@ -281,12 +251,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     The reaction window: ground breaking up before anything comes out of it.
     /// </summary>
-    /// <remarks>
-    ///     The entire attack is built around this number. He commits to a spot the moment he goes
-    ///     under, so the tell is not a warning that he is coming -- it is a warning of exactly where,
-    ///     and a second and a half is the difference between a boss you can read and one that simply
-    ///     hits you from off screen.
-    /// </remarks>
     private const int BURROW_TELL_TICKS = 35;
 
     private const int BURROW_TELL_TICKS_MASTER = 20;
@@ -306,11 +270,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Distance at which he stops trying to walk back and simply tunnels.
     /// </summary>
-    /// <remarks>
-    ///     Roughly a screen. Past this the fight is not happening -- he cannot reach them and they
-    ///     cannot see the tells -- and the burrow is the fastest honest way to put the two of them
-    ///     back in the same room.
-    /// </remarks>
     private const float BURROW_RANGE = 900f;
 
     private const int BURROW_RECOVER_TICKS = 40;
@@ -439,11 +398,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     <see cref="StateTimer" /> the current state's fall ended on, or -1 while still airborne.
     /// </summary>
-    /// <remarks>
-    ///     Every airborne state has a variable-length descent -- how far he fell decides it -- so the
-    ///     recovery cannot be a fixed offset on the state clock and has to be measured from the
-    ///     landing instead.
-    /// </remarks>
     private int landTick = -1;
 
     /// <summary>Frames already spent hanging at the top of a super slam. Reset by every leap.</summary>
@@ -458,10 +412,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     <see cref="StateTimer" /> the tunnel finished on, or -1 while still travelling.
     /// </summary>
-    /// <remarks>
-    ///     The one variable-length beat of the burrow -- how long the tunnel takes depends on how far
-    ///     it is -- so everything after it is measured from here rather than from the state clock.
-    /// </remarks>
     private int travelEnd = -1;
 
     /// <summary>Where he committed to coming up. Meaningless until the tunnel ends and fixes it.</summary>
@@ -577,10 +527,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Places him under the floor near whoever he was summoned on, and starts the entrance.
     /// </summary>
-    /// <remarks>
-    ///     Server-side only, like every <see cref="ModNPC.OnSpawn" />: remote clients receive the
-    ///     placement and the state together in the spawn packet and pick the entrance up from there.
-    /// </remarks>
     public override void OnSpawn(IEntitySource source)
     {
         NPC.TargetClosest(false);
@@ -691,12 +637,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     True while a state is driving his vertical motion itself.
     /// </summary>
-    /// <remarks>
-    ///     Gravity is skipped for these, and not only to keep it from fighting the curves:
-    ///     <see cref="MAX_FALL" /> is applied in the same line, and it is well under
-    ///     <see cref="SUPER_DROP_SPEED" /> -- a slam left to share the line with gravity would be
-    ///     quietly capped at terminal velocity and land at a little over half the speed it asked for.
-    /// </remarks>
     private bool DrivesVertical => State switch
     {
         FungoreState.Emerge => StateTimer < EmergeFallTick,
@@ -716,11 +656,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Contact damage for the current pose.
     /// </summary>
-    /// <remarks>
-    ///     Fungore has no separate attack hitboxes: the jab is a lunge and the slam is a body drop, so
-    ///     the thing that hits you is always him. Damage is modulated per pose instead, which keeps
-    ///     the punish windows genuinely safe to stand next to.
-    /// </remarks>
     private int ContactDamage => State switch
     {
         FungoreState.Death => 0,
@@ -784,12 +719,6 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>
     ///     Kicks the title sequence off locally.
     /// </summary>
-    /// <remarks>
-    ///     Driven from <see cref="AI" /> rather than <see cref="OnSpawn" /> because that hook never
-    ///     runs on a multiplayer client -- remote NPCs arrive through the sync path, not through
-    ///     <c>NewNPC</c>. The timer check is what stops a player who joins mid-fight from being shown
-    ///     an entrance for a boss that walked out minutes ago.
-    /// </remarks>
     private void StartIntro()
     {
         if (Main.dedServ || introStarted)
@@ -1055,15 +984,6 @@ public sealed class FungoreBoss : ModNPC
     /// <remarks>
     ///     Server-only: every branch below can roll, and two clients rolling separately would put
     ///     Fungore in two different attacks until the next packet arrived.
-    /// </remarks>
-    /// <summary>
-    ///     What the last stretch of the fight alternates between. B is a burrow, H is a hop.
-    /// </summary>
-    /// <remarks>
-    ///     Rolling per action would give a boss that is unreadable rather than one that is fast: at
-    ///     this tempo the player cannot afford to wait and see, so the choice has to be something
-    ///     they can learn. A pattern is picked at random and then played out in order, which keeps
-    ///     the sequence honest -- once the first beat lands, the next three are already decided.
     /// </remarks>
     private static readonly string[] CRITICAL_PATTERNS =
     [

@@ -3,13 +3,6 @@ using Terraria.ModLoader.Config;
 
 namespace TrelamiumIII.Common.Configs;
 
-/// <summary>
-///     Where the in-game authoring tool writes what it exports.
-/// </summary>
-/// <remarks>
-///     A built <c>.tmod</c> has no idea where the source it came from lives, so the path has to be
-///     supplied. Client-side and unsynced: this is a writing-desk setting, not world state.
-/// </remarks>
 public sealed class AuthoringConfig : ModConfig
 {
     public override ConfigScope Mode => ConfigScope.ClientSide;

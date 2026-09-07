@@ -184,16 +184,6 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
     }
 }
 
-/// <summary>
-///     One kind of debris a wake sheds: which sprite it wears, how many of it, and how it is cut out
-///     of that sprite.
-/// </summary>
-/// <remarks>
-///     <paramref name="Source" /> is null for a sprite that is a single image, and a cell rectangle
-///     for one that is a sheet. It is not optional in the second case:
-///     <see cref="Particle" /> models frames as a vertical strip, so a gore laid out as a GRID drawn
-///     without a source rect renders as a lattice of every sprite on it.
-/// </remarks>
 /// <param name="GoreType">Index into <see cref="TextureAssets.Gore" />.</param>
 /// <param name="Count">How many of this piece the wake sheds.</param>
 /// <param name="Scale">Base scale, before the per-piece jitter.</param>

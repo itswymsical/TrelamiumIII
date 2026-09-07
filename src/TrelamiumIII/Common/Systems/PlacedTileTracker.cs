@@ -8,29 +8,6 @@ namespace TrelamiumIII.Common.Systems;
 ///     Remembers which tiles were put down by hand, so anything that pays out on mining can refuse to
 ///     pay for a block the player carried in and placed themselves.
 /// </summary>
-/// <remarks>
-///     Two consumers, two different needs, so the record is kept at two grades:
-///     <list type="bullet">
-///         <item>
-///             <b>Valuable</b> tiles (<see cref="IsValuable" />) are stored with the type they were
-///             placed as and persisted to world data. The Microlith's bonus drop is worth real items, so
-///             its guard has to survive a relog and has to be exact.
-///         </item>
-///         <item>
-///             <b>Ordinary</b> tiles are held in a bounded, session-only set. The experiential acts track
-///             dirt, snow and tree trunks, which players place by the thousand - persisting those would
-///             put a whole base into the world save to guard payouts worth a fraction of a Threshold.
-///             A place-break loop is defeated within the session either way, because the placement always
-///             precedes the break.
-///         </item>
-///     </list>
-///     <para />
-///     Valuable entries carry their tile type, and <see cref="WasPlacedByPlayer" /> only honours a mark if
-///     the tile is still that type. That makes the set self-healing: a tile removed through a path that
-///     never reaches <see cref="Forget" /> (explosives dropping no item, biome conversion, another mod
-///     calling <see cref="WorldGen.KillTile" /> with <c>noItem</c>) leaves a stale entry that simply stops
-///     matching, rather than permanently blacklisting the coordinate.
-/// </remarks>
 public sealed class PlacedTileTracker : ModSystem
 {
     private static readonly Dictionary<Point16, ushort> PlacedValuables = [];
@@ -65,18 +42,6 @@ public sealed class PlacedTileTracker : ModSystem
     /// <summary>
     ///     Records hand-placed tiles.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="GlobalBlockType.PlaceInWorld" /> would be the tidier hook but it only runs on the
-    ///     placing client. <see cref="WorldGen.PlaceTile" /> runs on
-    ///     whichever side is placing, including the server handling a client's placement packet.
-    ///     <para />
-    ///     Its <c>plr</c> parameter is not a usable filter as it does nothing
-    ///     except affect bathtubs lmao. The <see cref="WorldGen.gen" />
-    ///     guard is what separates a player from world generation, and it is reliable for ore because
-    ///     worldgen builds veins through <see cref="WorldGen.TileRunner" /> and direct tile writes
-    ///     rather than through PlaceTile. Meteorite landings and the like take the same direct-write
-    ///     path, so they stay eligible.
-    /// </remarks>
     private static bool MarkPlacedTile(On_WorldGen.orig_PlaceTile orig, int i, int j, int type,
         bool mute, bool forced, int plr, int style)
     {
