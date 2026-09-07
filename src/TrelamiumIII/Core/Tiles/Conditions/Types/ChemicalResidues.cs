@@ -1,3 +1,5 @@
+using ReLogic.Content;
+using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
@@ -104,7 +106,42 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Cryonic;
 
+    /// <summary>
+    ///     Draws vanilla's breakable ice over the tile, at half opacity, instead of a mask.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         A noise-eroded coverage mask is the right tool for something that seeps, spreads and
+    ///         has no natural boundary. Ice is the opposite: it is a solid with facets, and vanilla
+    ///         already owns a sprite of exactly that, framed on the same layout every standard block
+    ///         uses. Borrowing it costs one draw, matches the tile's own edges and slope for free,
+    ///         and reads unmistakably as ice in a way a blue-tinted blob never quite did.
+    ///     </para>
+    ///     <para>
+    ///         Half opacity is what keeps it a coating rather than a substitution -- the terrain
+    ///         underneath has to stay legible, or a frozen floor looks like someone replaced the
+    ///         blocks.
+    ///     </para>
+    /// </remarks>
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Overlay;
+
+    /// <summary>Plain: the ice sprite is already the effect, and needs nothing done to it.</summary>
+    public override Asset<Effect>? Shader => null;
+
     protected override GasField? LingerLayer => GasSystem.GetLayer<IceMistField>();
+
+    /// <summary>How much of the ice sheet shows through at full strength.</summary>
+    private const float RIME_ALPHA = 0.5f;
+
+    public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+    {
+        Main.instance.LoadTiles(TileID.BreakableIce);
+
+        if (TextureAssets.Tile[TileID.BreakableIce] is not { Value: { } ice })
+            return;
+
+        DrawAsTile(in instance, ice, Color.White * (RIME_ALPHA * instance.Strength));
+    }
 
     /// <summary>Barely there: frost gives off a thin ground-hugging mist, not a cloud.</summary>
     protected override float LingerRadius => 6f;
@@ -173,6 +210,9 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Caustic;
 
+    /// <inheritdoc cref="NecroticResidueCondition.RenderMode" />
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
+
     protected override GasField? LingerLayer => GasSystem.GetLayer<PhytoncideSporeLayer>();
 }
 
@@ -186,6 +226,24 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
 public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
+
+    /// <summary>
+    ///     Marks no terrain. The cloud it breathes is the whole of what the patch looks like.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Spores are not a substance that coats a floor. They hang, they drift, and they are
+    ///         already being drawn -- as gas nodes, in the layer this exhales, through a metaball
+    ///         field built for exactly that. Painting a second mask onto the blocks underneath added
+    ///         a hard-edged stain to an effect whose whole character is that it has no edges, and
+    ///         put a per-tile square outline under a cloud.
+    ///     </para>
+    ///     <para>
+    ///         Nothing mechanical is lost. The chemistry, the contact debuff and the exhalation all
+    ///         run on the tile batch regardless of render mode -- this only declines to draw.
+    ///     </para>
+    /// </remarks>
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
 
     protected override int ContactBuff => BuffID.Bleeding;
 

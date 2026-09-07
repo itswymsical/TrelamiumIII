@@ -128,8 +128,26 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
 
-    /// <summary>Premultiplied alpha, so the field's alpha channel stays linear in the stamp's.</summary>
-    public override BlendState FieldBlend => BlendState.AlphaBlend;
+    /// <summary>
+    ///     Additive, so neighbouring tiles sum into one pool instead of tiling.
+    /// </summary>
+    /// <remarks>
+    ///     The other half of the metaball trick -- see <see cref="DrawTile" />. Blobs have to be able
+    ///     to add past the shader's threshold where they overlap, which is exactly what fills in the
+    ///     gap between two marked tiles and rounds off the outside of the run.
+    /// </remarks>
+    public override BlendState FieldBlend => BlendState.Additive;
+
+    /// <summary>
+    ///     Width of one tile's blob, in tiles.
+    /// </summary>
+    /// <remarks>
+    ///     Above 2 on purpose: each blob has to reach well past its own tile for the sum in between
+    ///     two of them to clear the threshold, and that overlap is the whole reason the result reads
+    ///     as one pool rather than as a row of circles. Too much and a single isolated tile spreads
+    ///     into a puddle bigger than the block it is on.
+    /// </remarks>
+    protected virtual float PoolSpread => 2.4f;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
 
@@ -148,15 +166,26 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     private Asset<Texture2D>? noiseTexture;
 
+    private Asset<Texture2D>? poolTexture;
+
     public override void Load()
     {
         if (Main.dedServ)
             return;
 
         noiseTexture = Assets.Textures.Noise.Turbulence_06.Asset;
+
+        // The same gradient the gas layers stamp their nodes with, which is deliberate: a puddle and
+        // the cloud that left it should be built out of the same shape, or the handoff between them
+        // is visible as a change of material.
+        poolTexture = Assets.Textures.VFX.RadialGradient.Asset;
     }
 
-    public override void Unload() => noiseTexture = null;
+    public override void Unload()
+    {
+        noiseTexture = null;
+        poolTexture = null;
+    }
 
     /// <summary>
     ///     Deposits or refreshes the residue on a tile.
@@ -230,8 +259,55 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         );
     }
 
+    /// <summary>
+    ///     Stamps a soft blob at the tile's centre rather than the tile's own hard outline.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         This is what turns a residue from a stain into a pool. A tile silhouette is a square
+    ///         with a binary edge, so a field built from silhouettes is square no matter what the
+    ///         shader afterwards does to it -- the noise erodes the outline but cannot round a
+    ///         corner that is a step function, and the result reads as blocky because it is.
+    ///     </para>
+    ///     <para>
+    ///         A radial gradient has no edge at all. Summed additively across neighbouring tiles and
+    ///         cut at a threshold, the boundary lands wherever the sum crosses the cut -- which is a
+    ///         smooth curve through the middle of the falloff, bulging where several tiles overlap
+    ///         and pinching where one sits alone. That is a metaball field, and it is the same
+    ///         mechanism the gas layers use to look like liquid.
+    ///     </para>
+    ///     <para>
+    ///         What is given up is the terrain's exact shape: a pool no longer stops precisely at a
+    ///         slope's diagonal. For something wet that is the correct trade -- liquid pools over a
+    ///         slope rather than being cut by it -- and it is why burn and rime, which do want the
+    ///         block's real outline, stamp silhouettes instead.
+    ///     </para>
+    /// </remarks>
     public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
-        => DrawSilhouette(in instance, Color.White * instance.Strength);
+    {
+        if (poolTexture is not { Value: { } blob })
+            return;
+
+        // The same integer snap DrawAsTile applies, and for the same reason: vanilla draws terrain
+        // against a truncated screen position, so anything painted on terrain has to as well or it
+        // crawls by up to a pixel as the camera moves.
+        var pixelSnap = new Vector2(
+            Main.screenPosition.X - (int)Main.screenPosition.X,
+            Main.screenPosition.Y - (int)Main.screenPosition.Y);
+
+        float size = PoolSpread * 16f;
+
+        spriteBatch.Draw(
+            blob,
+            instance.WorldCenter - Main.screenPosition + pixelSnap,
+            null,
+            Color.White * instance.Strength,
+            0f,
+            blob.Size() / 2f,
+            size / blob.Width,
+            SpriteEffects.None,
+            0f);
+    }
 
     public override void ApplyShaderParameters(Effect effect)
     {
@@ -243,7 +319,11 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         effect.Parameters["WorldLight"]?.SetValue(Vector3.Max(AverageScreenLight(), new Vector3(0.2f)));
 
         effect.Parameters["Threshold"]?.SetValue(Threshold);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.8f);
+        // Light, and far lighter than it was when this stamped hard silhouettes. Erosion at that
+        // strength existed to break up a square outline that had no business being square; a
+        // metaball boundary is already a smooth curve, so the noise is only here to keep the rim
+        // from looking machined. Turned up, it shreds the pool into disconnected specks.
+        effect.Parameters["NoiseStrength"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(NoiseScale);
         effect.Parameters["NoiseDrift"]?.SetValue(NoiseDrift);
         effect.Parameters["EdgeWidth"]?.SetValue(0.25f);

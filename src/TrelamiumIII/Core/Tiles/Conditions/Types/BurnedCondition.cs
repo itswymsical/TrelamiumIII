@@ -46,11 +46,44 @@ public sealed class BurnedCondition : TileCondition
     /// </remarks>
     private const float DISSOLVE_FRACTION = 0.25f;
 
+    /// <summary>Heat below which the fire pass fades out and leaves the tile to the char.</summary>
+    private const float FIRE_FADE_HEAT = 0.15f;
+
+    /// <summary>
+    ///     How dark a fully charred block gets.
+    /// </summary>
+    /// <remarks>
+    ///     Short of opaque on purpose. Taken all the way to black the tile stops reading as burnt
+    ///     stone and starts reading as a hole in the terrain, which is a much louder thing to have
+    ///     scattered across a battlefield than scorch marks.
+    /// </remarks>
+    private const float MAX_CHAR = 0.82f;
+
     public override float Duration => BurnProfile.Standard.Duration;
 
     public override int MaxTiles => 1200;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
+    /// <summary>
+    ///     A field for the fire, and a per-tile pass for the char.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The two halves of a burn want opposite geometry, which is why this is the one
+    ///         condition that runs both passes. Flame is continuous: it crosses tile seams, it has to
+    ///         be eroded as one region, and a run of burning blocks should read as one fire. Char is
+    ///         not continuous at all -- it is a specific block that has gone dark.
+    ///     </para>
+    ///     <para>
+    ///         The char was a mask until it was looked at. A black layer composited over terrain
+    ///         reads as a sticker on top of the block rather than as the block itself being burnt,
+    ///         because it lands in the same plane as the fire and shares its eroded, noisy edge.
+    ///         Darkening the tile's own sprite instead is both simpler and truer: the terrain keeps
+    ///         its own outline and detail and just loses its light, which is what scorched stone
+    ///         actually looks like.
+    ///     </para>
+    /// </remarks>
+    public override TileConditionRenderMode RenderMode
+        => TileConditionRenderMode.Field | TileConditionRenderMode.Overlay;
 
     /// <summary>
     ///     Premultiplied alpha, which is the one blend that leaves the field's channels linear in the
@@ -61,6 +94,17 @@ public sealed class BurnedCondition : TileCondition
     public override BlendState FieldBlend => BlendState.AlphaBlend;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileBurnMask.Asset;
+
+    /// <summary>
+    ///     None. The char is a plain darkening of the block, with nothing done to it.
+    /// </summary>
+    /// <remarks>
+    ///     Explicitly null rather than inherited, because the inherited answer is
+    ///     <see cref="Shader" /> and that one reads a finished field out of register s0. Handed a
+    ///     batch of tile sprites it would take each block's own alpha for coverage and run the
+    ///     blackbody ramp over it, which is a second fire drawn on top of the first.
+    /// </remarks>
+    public override Asset<Effect>? OverlayShader => null;
 
     /// <summary>
     ///     Stamps the tile's shape without its colour, so the colour channels are free to carry heat.
@@ -281,26 +325,69 @@ public sealed class BurnedCondition : TileCondition
     ///         times the profile's rate is the whole of it, and the tile is spared a second float.
     ///     </para>
     ///     <para>
-    ///         Coverage is deliberately <em>not</em> <see cref="TileConditionInstance.Strength" />,
-    ///         which is what every other field condition stamps. Strength falls from the moment of
-    ///         application, so a burn drawn with it thins below the shader's erosion threshold and
-    ///         breaks into specks over the same seconds the char is supposed to be creeping across
-    ///         it -- the tile would dissolve before it ever went black. Holding coverage flat until
-    ///         the last quarter of the life puts the sequence back in the order it should read: it
-    ///         burns, it blackens, and only then does the mark recede.
+    ///         Coverage is scaled by heat as well as by the mark's own strength, so the fire fades
+    ///         out as the fire dies rather than sitting there as a cold red stain. That is what
+    ///         hands the tile over to the char pass: by the time the block is fully blackened, the
+    ///         field is contributing nothing to it.
+    ///     </para>
+    ///     <para>
+    ///         Scaling alpha does not corrupt the payload, because the shader recovers heat as
+    ///         <c>r / a</c> and both were scaled by the same number.
     ///     </para>
     /// </remarks>
     public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
     {
-        BurnProfile profile = BurnProfile.Get(instance.Variant);
+        float fire = MathHelper.Clamp(instance.Level / FIRE_FADE_HEAT, 0f, 1f);
 
-        float charProgress = MathHelper.Clamp(instance.Age / 60f * profile.CharRate, 0f, 1f);
-        float coverage = instance.Intensity * MathHelper.Clamp(instance.Fade / DISSOLVE_FRACTION, 0f, 1f);
+        if (fire <= 0f)
+            return;
 
-        var payload = new Color(instance.Level, charProgress, 0f, 1f);
+        var payload = new Color(instance.Level, 0f, 0f, 1f);
 
-        DrawSilhouette(in instance, payload * coverage);
+        DrawSilhouette(in instance, payload * (Coverage(in instance) * fire));
     }
+
+    /// <summary>
+    ///     Darkens the block itself, by however far the char has crept over it.
+    /// </summary>
+    /// <remarks>
+    ///     Black at partial alpha over the tile's own silhouette, which multiplies the terrain down
+    ///     toward nothing while leaving its shape, its slope and its internal detail intact. Capped
+    ///     short of opaque so a burnt block still reads as that block rather than as a hole.
+    /// </remarks>
+    public override void DrawTileOverlay(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+    {
+        float soot = CharProgress(in instance) * Coverage(in instance) * MAX_CHAR;
+
+        if (soot <= 0.004f)
+            return;
+
+        DrawSilhouette(in instance, Color.Black * soot);
+    }
+
+    /// <summary>
+    ///     How much of the tile the mark covers, before anything is done with it.
+    /// </summary>
+    /// <remarks>
+    ///     Deliberately <em>not</em> <see cref="TileConditionInstance.Strength" />, which is what
+    ///     every other condition stamps. Strength falls from the moment of application, so a burn
+    ///     drawn with it thins out over the same seconds the char is supposed to be creeping across
+    ///     it -- the tile would fade before it ever went black. Holding it flat until the last
+    ///     quarter of the life puts the sequence back in the order it should read: it burns, it
+    ///     blackens, and only then does the mark lift.
+    /// </remarks>
+    private static float Coverage(in TileConditionInstance instance)
+        => instance.Intensity * MathHelper.Clamp(instance.Fade / DISSOLVE_FRACTION, 0f, 1f);
+
+    /// <summary>
+    ///     How far the block has blackened, 0..1.
+    /// </summary>
+    /// <remarks>
+    ///     Derived from age rather than stored. Char only ever advances, so elapsed time times the
+    ///     profile's rate is the whole of it, and a burning tile is spared a second float.
+    /// </remarks>
+    private static float CharProgress(in TileConditionInstance instance)
+        => MathHelper.Clamp(instance.Age / 60f * BurnProfile.Get(instance.Variant).CharRate, 0f, 1f);
 
     public override void ApplyShaderParameters(Effect effect)
     {

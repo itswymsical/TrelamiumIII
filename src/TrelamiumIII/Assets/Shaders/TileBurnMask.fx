@@ -1,4 +1,4 @@
-// Composites burning terrain.
+// Composites burning terrain: the fire half of a burn.
 //
 // Split off from TileConditionMask because the two passes want different things out of the same
 // surface. The residues read one channel -- coverage -- and colour the whole field from two
@@ -7,22 +7,20 @@
 //
 // So the field carries per-tile data, stamped through TileSilhouette.fx:
 //
-//   A  coverage   the tile's true silhouette, scaled by how strong the mark is
+//   A  coverage   the tile's true silhouette, scaled by strength and by how hot the tile still is
 //   R  heat       0..1, climbs as the fire takes and falls as it dies
-//   G  char       0..1, only ever advances -- how black the tile has gone
 //
-// Everything is premultiplied, so heat and char are recovered as rgb / a.
+// Both are premultiplied, so heat is recovered as r / a.
 //
-// The pass then does two things in order, which is the order the effect reads in:
+// Heat then drives a blackbody ramp -- ember red, through orange, to a pale yellow-white core --
+// eroded by world-locked FBM so a run of burning blocks is one patch with holes in it rather than a
+// row of identical squares. Cells near the erosion cut become the licking edge.
 //
-//   1. Scorch. Heat drives a blackbody ramp -- ember red, through orange, to a pale yellow-white
-//      core -- eroded by world-locked FBM so a run of burning blocks is one patch with holes in it
-//      rather than a row of identical squares. Cells near the erosion cut become the licking edge.
-//   2. Char. The black mask fades in over the top at whatever rate the tile's profile set, so the
-//      tile visibly burns first and blackens afterwards instead of arriving already sooty.
-//
-// Char never quite reaches 1 while the fire is hot: heat holds the mask back (see CharSuppression),
-// which is what keeps embers glowing through a mostly blackened tile instead of being painted over.
+// The char is NOT here. A black mask composited in this plane reads as a sticker laid over the
+// block, because it shares the fire's eroded edge and sits in the fire's plane; the block itself is
+// darkened by the condition's overlay pass instead, which keeps the terrain's own outline and
+// detail and simply takes its light away. Coverage here fades out with heat, so by the time a tile
+// is fully charred this pass is contributing nothing to it and the handover is invisible.
 
 sampler2D FieldSampler : register(s0);
 
@@ -54,11 +52,8 @@ float3 CoolColor;
 float3 HotColor;
 float3 FlashColor;
 
-float3 CharColor;
-float CharSuppression;  // how much heat holds the char mask back
 float BodyAlpha;
 float EdgeAlpha;
-float3 WorldLight;
 
 float SampleN(float2 p)
 {
@@ -119,12 +114,9 @@ float4 BurnPass(float2 uv : TEXCOORD0) : COLOR0
 
     // Un-premultiply to recover what the stamp actually meant. Guarded because a texel on the
     // feathered rim of a silhouette can carry almost no alpha at all.
-    float2 payload = saturate(field.rg / max(coverage, 0.0039));
+    float heat = saturate(field.r / max(coverage, 0.0039));
 
-    float heat = payload.r;
-    float charProgress = payload.g;
-
-    // World-locked and drifting: the char boils in place while the camera pans across it, instead
+    // World-locked and drifting: the flame boils in place while the camera pans across it, instead
     // of swimming with the screen.
     float2 p = WorldUv(cell) * NoiseScale + NoiseDrift * Time;
     float fbm = Fbm(p);
@@ -145,18 +137,12 @@ float4 BurnPass(float2 uv : TEXCOORD0) : COLOR0
 
     float3 scorch = HeatRamp(rimHeat);
 
-    // Heat holds the char back, so a tile that is still raging keeps its glow no matter how long it
-    // has been alight, and only blackens once the fire in it has actually died down.
-    float soot = saturate(charProgress - heat * CharSuppression);
-
-    float3 color = lerp(scorch, CharColor, soot);
+    // Fire is its own emission and takes none of the room's light -- a burning tile is lit in an
+    // unlit cave. The char that follows it is terrain, and is drawn as terrain by the overlay pass
+    // rather than composited here, so nothing in this pass reads world light at all.
     float alpha = lerp(EdgeAlpha, BodyAlpha, depth);
 
-    // Char is terrain and takes the room's light; the fire is its own emission and does not, so a
-    // burning tile stays lit in an unlit cave while the soot around it does not.
-    color *= lerp(float3(1.0, 1.0, 1.0), WorldLight, soot);
-
-    return float4(color * alpha, alpha);
+    return float4(scorch * alpha, alpha);
 }
 
 technique TileBurnMask

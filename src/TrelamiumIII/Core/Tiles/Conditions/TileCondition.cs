@@ -67,11 +67,16 @@ public abstract class TileCondition : ITileCondition
 
     public virtual Asset<Effect>? StampShader => null;
 
+    public virtual Asset<Effect>? OverlayShader => Shader;
+
     public virtual void ApplyShaderParameters(Effect effect) { }
 
     public virtual void BindAdditionalTextures(GraphicsDevice device) { }
 
     public virtual void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition) { }
+
+    public virtual void DrawTileOverlay(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+        => DrawTile(spriteBatch, in instance, drawPosition);
 
     /// <summary>
     ///     Draws the tile's own sprite in <paramref name="color" />, so the mark takes the exact

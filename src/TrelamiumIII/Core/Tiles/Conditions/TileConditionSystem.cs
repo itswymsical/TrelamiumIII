@@ -261,16 +261,16 @@ public sealed class TileConditionSystem : ModSystem
             if (state.Tiles.Count == 0)
                 continue;
 
-            switch (state.Condition.RenderMode)
-            {
-                case TileConditionRenderMode.Overlay:
-                    DrawOverlay(state, area);
-                    break;
+            TileConditionRenderMode mode = state.Condition.RenderMode;
 
-                case TileConditionRenderMode.Field:
-                    CompositeField(state);
-                    break;
-            }
+            // Field first, then overlay, and a condition may ask for both. The order is the reading:
+            // whatever the field says is the state of the region, and the overlay is what sits on top
+            // of individual tiles within it -- fire across a run of blocks, then the char on each.
+            if (mode.HasFlag(TileConditionRenderMode.Field))
+                CompositeField(state);
+
+            if (mode.HasFlag(TileConditionRenderMode.Overlay))
+                DrawOverlay(state, area);
         }
     }
 
@@ -546,7 +546,7 @@ public sealed class TileConditionSystem : ModSystem
     private static void DrawOverlay(ConditionState state, Rectangle area)
     {
         ITileCondition condition = state.Condition;
-        Effect? effect = condition.Shader?.Value;
+        Effect? effect = condition.OverlayShader?.Value;
 
         if (effect is not null)
             condition.ApplyShaderParameters(effect);
@@ -565,7 +565,7 @@ public sealed class TileConditionSystem : ModSystem
             Main.GameViewMatrix.TransformationMatrix
         );
 
-        DrawBatch(state, area, spriteBatch);
+        DrawBatch(state, area, spriteBatch, overlay: true);
 
         spriteBatch.End();
     }
@@ -577,10 +577,10 @@ public sealed class TileConditionSystem : ModSystem
 
         foreach (ConditionState state in states)
         {
-            if (state.Condition.RenderMode != TileConditionRenderMode.Field || state.Tiles.Count == 0)
+            if (!state.Condition.RenderMode.HasFlag(TileConditionRenderMode.Field) || state.Tiles.Count == 0)
                 continue;
 
-            state.Field ??= new WorldFieldTarget(spriteBatch => DrawBatch(state, VisibleTileArea(), spriteBatch))
+            state.Field ??= new WorldFieldTarget(spriteBatch => DrawBatch(state, VisibleTileArea(), spriteBatch, overlay: false))
             {
                 PixelScale = Math.Max(state.Condition.FieldPixelScale, 1),
                 Blend = state.Condition.FieldBlend,
@@ -629,7 +629,11 @@ public sealed class TileConditionSystem : ModSystem
         spriteBatch.End();
     }
 
-    private static void DrawBatch(ConditionState state, Rectangle area, SpriteBatch spriteBatch)
+    /// <param name="overlay">
+    ///     Which pass this is. A condition running both draws different geometry into each, so the
+    ///     two cannot share an entry point -- see <see cref="ITileCondition.DrawTileOverlay" />.
+    /// </param>
+    private static void DrawBatch(ConditionState state, Rectangle area, SpriteBatch spriteBatch, bool overlay)
     {
         foreach (KeyValuePair<Point, TileConditionInstance> pair in state.Tiles)
         {
@@ -637,8 +641,12 @@ public sealed class TileConditionSystem : ModSystem
                 continue;
 
             TileConditionInstance instance = pair.Value;
+            Vector2 position = instance.WorldPosition - Main.screenPosition;
 
-            state.Condition.DrawTile(spriteBatch, in instance, instance.WorldPosition - Main.screenPosition);
+            if (overlay)
+                state.Condition.DrawTileOverlay(spriteBatch, in instance, position);
+            else
+                state.Condition.DrawTile(spriteBatch, in instance, position);
         }
     }
 

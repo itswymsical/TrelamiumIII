@@ -5,10 +5,11 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 /// <summary>
 ///     Where a condition puts its marks.
 /// </summary>
+[Flags]
 public enum TileConditionRenderMode
 {
     /// <summary>Nothing is drawn. For conditions that are purely mechanical.</summary>
-    None,
+    None = 0,
 
     /// <summary>
     ///     One sprite draw per tile, straight to the screen, in a batch that can carry a shader.
@@ -18,7 +19,7 @@ public enum TileConditionRenderMode
     ///     -- a wet sheen, a glowmask, a decal. Its limit is that a sprite draw only ever sees the
     ///     fragment it is on, so nothing here can know that the tile next door is marked too.
     /// </remarks>
-    Overlay,
+    Overlay = 1,
 
     /// <summary>
     ///     Every tile is stamped into an off-screen field, and the whole field is composited to the
@@ -41,7 +42,7 @@ public enum TileConditionRenderMode
     ///         texture for burn and freeze.
     ///     </para>
     /// </remarks>
-    Field,
+    Field = 2,
 }
 
 /// <summary>
@@ -169,6 +170,19 @@ public interface ITileCondition
     Asset<Effect>? Shader { get; }
 
     /// <summary>
+    ///     The effect the <see cref="TileConditionRenderMode.Overlay" /> pass is drawn through.
+    /// </summary>
+    /// <remarks>
+    ///     Defaults to <see cref="Shader" />, which is correct for a condition running one pass. A
+    ///     condition running both needs them separate: <see cref="Shader" /> is written against a
+    ///     finished field -- it samples coverage from register s0 and reasons about a whole region --
+    ///     and pointing it at a batch of individual tile sprites would have it read a block's own
+    ///     alpha as though it were the field's. Return null for an overlay that wants drawing
+    ///     plainly.
+    /// </remarks>
+    Asset<Effect>? OverlayShader { get; }
+
+    /// <summary>
     ///     The effect the stamps are drawn <em>into the field</em> through. Field mode only.
     /// </summary>
     /// <remarks>
@@ -194,4 +208,24 @@ public interface ITileCondition
     ///     The tile's top-left corner, already in the coordinate space of whichever batch is running.
     /// </param>
     void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition);
+
+    /// <summary>
+    ///     Draws one tile's mark in the <see cref="TileConditionRenderMode.Overlay" /> pass, for a
+    ///     condition that runs both passes.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The render mode is a flag set, so a condition may ask for a field <em>and</em> a
+    ///         per-tile draw, and the two want different geometry. Burn is the case: the fire is a
+    ///         field, because flame has to be continuous across tile seams and eroded as one region,
+    ///         while the char is emphatically per tile -- it is the block itself going dark, not a
+    ///         layer of soot laid over it, and the difference between those two readings is the
+    ///         difference between scorched terrain and a black sticker.
+    ///     </para>
+    ///     <para>
+    ///         Defaults to <see cref="DrawTile" />, so a condition that only ever runs one pass
+    ///         never has to know this exists.
+    ///     </para>
+    /// </remarks>
+    void DrawTileOverlay(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition);
 }
