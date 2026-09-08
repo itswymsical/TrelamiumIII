@@ -601,7 +601,12 @@ public abstract class WorldNPC : ModNPC
 
     //  Drawing
     public sealed override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-        => false;
+    {
+        if (UsePlayerRenderer)
+            return false;
+
+        return true;
+    }
 
     public sealed override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {

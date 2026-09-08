@@ -12,6 +12,9 @@ public sealed class HomeForager : Job
     private const int FirstHousingSet = 1;
     private const int LastHousingSet = 3;
 
+    /// <summary>The last set, whose only task is going back to the Guide to hand the job in.</summary>
+    private const int CheckInSet = 4;
+
     // how often the guide will yap
     private const int CommentCooldown = 180;
 
@@ -81,6 +84,22 @@ public sealed class HomeForager : Job
         DialogueManager.Instance.StartDialogue($"Guide.HomeForager_Set{newSet}");
     }
 
+    /// <summary>
+    /// The hand-in. Once the town is standing, talking to the Guide <em>is</em> the last
+    /// task, so his chat window gives way to the payout line rather than opening on some
+    /// unrelated bit of advice.
+    /// </summary>
+    /// <remarks>
+    /// Only the presentation is taken over. The task still ticks on the NPCChat event
+    /// vanilla raises immediately behind us, so the job completes on this same click and
+    /// the Guide is back to his own chat by the next one.
+    /// </remarks>
+    public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
+    {
+        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").AsScene(),
+        _ => ChatEncounter.None,
+    };
+
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {
         if (evt.Type == GameEventType.HousingChecked && evt.RoomId is Point room)
@@ -109,7 +128,7 @@ public sealed class HomeForager : Job
                 && evt.RoomId is Point room
                 && !creditedRooms.Contains(room);      // and isn't one of the houses already counted
 
-        if (currentSet == 4 && taskIndex == 0)
+        if (currentSet == CheckInSet && taskIndex == 0)
             return evt.Type == GameEventType.NPCChat
                 && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);
 

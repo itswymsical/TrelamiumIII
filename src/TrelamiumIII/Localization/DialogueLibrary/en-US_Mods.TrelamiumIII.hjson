@@ -84,6 +84,12 @@ DialogueLibrary: {
 			Line1.Text: Well now.[] That's a town.
 			Line2.Text: Come and talk to me when you've caught your breath,[] and I'll see you paid properly.[] You've earned it.
 		}
+
+		# The hand-in. Replaces the Guide's chat window for as long as the last set is open.
+		HomeForager_CheckIn: {
+			Line1.Text: There you are.[] Have a look around while you're standing still.
+			Line2.Text: Empty rooms this morning,[] neighbours by the end of the week.[] Here, take this.[] Come and find me when you want more work.
+		}
 	}
 
 	Merchant: {
@@ -109,6 +115,13 @@ DialogueLibrary: {
 		GoldMine_SurplusTools: {
 			Line1.Text: tbc
 			Line2.Text: tbc
+		}
+	}
+
+	Kraken: {
+		Greeting: {
+			Line1.Text: Huh?[] Hello there.
+			Line2.Text: Didn't notice ya standing there.[] It's a bit creepy...
 		}
 	}
 }

@@ -75,6 +75,13 @@ class GuideDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.4f, [new Pause(20), new Pause(16)])
             .Register();
 
+        // The hand-in, played in place of the Guide's chat window while the last set is open.
+        // See HomeForager.GetChatEncounter.
+        Dialogue.Define("Guide.HomeForager_CheckIn")
+            .Line(Speaker, emote: 0, speed: 1.4f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.4f, [new Pause(20), new Pause(16), new Pause(24)])
+            .Register();
+
         Dialogue.Define("Guide.HomeForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.4f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.4f, [new Pause(20), new Pause(16)])
