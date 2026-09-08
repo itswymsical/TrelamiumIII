@@ -123,7 +123,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private int mouseChoice = -1;
 
     private DialogueData? current;
-    private GlyphLayout layout = GlyphLayout.Empty;
+    private TextGlyphLayout layout = TextGlyphLayout.Empty;
 
     /// <summary>Frame each character was revealed on, indexed alongside the line's own characters.</summary>
     private int[] revealedOn = [];
@@ -338,7 +338,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private void Adopt(DialogueData line)
     {
         current = line;
-        layout = GlyphLayout.Build(line.PlainText, Font, TEXT_SCALE, TEXT_WIDTH);
+        layout = TextGlyphLayout.Build(line.PlainText, Font, TEXT_SCALE, TEXT_WIDTH);
         revealedOn = new int[line.PlainText.Length];
 
         // Re-resolved per line: a conversation with two people in it has to move between their heads,

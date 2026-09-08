@@ -7,12 +7,12 @@
 // smoothstep. The silhouette lands on the 2px grid, and a one-texel neighbor test paints a 2px outline along it. 
 // Body shading is posterized into a few bands instead of a smooth gradient.
 //
-//   Threshold      field value where gas exists (after noise erosion)
-//   NoiseStrength  how hard the FBM eats the field edge (0 = clean metaballs)
-//   NoiseScale     FBM frequency; Drift scrolls it, WorldOffset locks it to world
-//   Bands          posterize step count for the body shade (3-4 reads vanilla)
-//   Shadow/Body/CoreColor   sparse -> dense color ramp
-//   OutlineColor/OutlineAlpha  the 2px rim (dark ink or bright glow, per layer)
+//   Threshold      field value where gas exists (after noise erosion) || WARNING: a high threshold will make the noise cover the screen
+//   NoiseStrength  how hard the FBM eats the field edge (0 = clean metaballs) || WARNING: a high threshold will make the noise cover the screen
+//   NoiseScale     FBM frequency; Drift scrolls it, WorldOffset locks it to world || lower = bigger, higher = noisier
+//   Bands          this determines how smooth/how much AA is applied to the nois || anything under 8 looks very sharp so i tend to stay above that
+//   Shadow/Body/CoreColor   yur colors
+//   OutlineColor/OutlineAlpha  the 2px rim
 
 sampler2D FieldSampler : register(s0);
 

@@ -61,7 +61,7 @@ public class CorruptedSporeLayer : ChemicalGasField
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
 
-        effect.Parameters["Bands"]?.SetValue(4f);
+        effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
 
         effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.66f, 0.5f, 0.8f));

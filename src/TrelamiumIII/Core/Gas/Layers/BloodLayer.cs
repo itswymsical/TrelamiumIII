@@ -73,7 +73,7 @@ public class BloodLayer : ChemicalGasField
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
 
-        effect.Parameters["Bands"]?.SetValue(3f);
+        effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.94f);
 
         effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.72f, 0.08f, 0.08f));

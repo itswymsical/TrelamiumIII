@@ -35,9 +35,9 @@ internal readonly struct LaidGlyph(char character, int line, float x, float adva
 ///         keep meaning what they meant.
 ///     </para>
 /// </remarks>
-internal sealed class GlyphLayout
+internal sealed class TextGlyphLayout
 {
-    private GlyphLayout(LaidGlyph[] glyphs, float[] extents, int lineCount, float lineHeight)
+    private TextGlyphLayout(LaidGlyph[] glyphs, float[] extents, int lineCount, float lineHeight)
     {
         Glyphs = glyphs;
         this.extents = extents;
@@ -54,7 +54,7 @@ internal sealed class GlyphLayout
 
     public float LineHeight { get; }
 
-    public static GlyphLayout Empty { get; } = new([], [0f], 0, 0f);
+    public static TextGlyphLayout Empty { get; } = new([], [0f], 0, 0f);
 
     /// <summary>How wide the box has to be to hold the first <paramref name="revealed" /> characters.</summary>
     public float ExtentAfter(int revealed) => extents[Math.Clamp(revealed, 0, extents.Length - 1)];
@@ -68,7 +68,7 @@ internal sealed class GlyphLayout
 
     /// <param name="scale">Font scale, chosen so the drawn size lands on the texel grid.</param>
     /// <param name="maxWidth">Wrap width in texels.</param>
-    public static GlyphLayout Build(string text, DynamicSpriteFont font, float scale, float maxWidth)
+    public static TextGlyphLayout Build(string text, DynamicSpriteFont font, float scale, float maxWidth)
     {
         if (string.IsNullOrEmpty(text))
             return Empty;
@@ -120,7 +120,7 @@ internal sealed class GlyphLayout
             extents[i + 1] = widest;
         }
 
-        return new GlyphLayout(glyphs, extents, line + 1, lineHeight);
+        return new TextGlyphLayout(glyphs, extents, line + 1, lineHeight);
     }
 
     /// <summary>Width of the run starting at <paramref name="start" /> up to the next break.</summary>

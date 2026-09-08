@@ -33,14 +33,11 @@ public readonly struct DialogueAnchor
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         Resolved per line rather than per conversation, because a conversation is not a
-    ///         monologue: a two-hander alternates speakers, and a bubble that stayed pinned to whoever
-    ///         was clicked would put one character's words over another character's head.
+    ///         Resolved per line rather than per conversation, dialogue entries can swap speakers mid conversation..
     ///     </para>
     ///     <para>
-    ///         This is also what lets a dialogue be started from anywhere -- a job step, a world
-    ///         event, a command -- without the caller having to find and hand over the NPC. The line
-    ///         already names its speaker; that name is enough to go looking.
+    ///         This is also what lets a dialogue be started from anywhere: a job step, a world
+    ///         event, etc.
     ///     </para>
     /// </remarks>
     public static DialogueAnchor ForSpeaker(DialogueData? line, DialogueAnchor fallback)
@@ -51,8 +48,6 @@ public readonly struct DialogueAnchor
         if (line.IsPlayer)
             return OnPlayer;
 
-        // The id the sequence was written against, then the name it resolved to -- a speaker may be
-        // authored as "Merchant" and be standing in the world as "Gilbert".
         NPC? match = FindByName(line.SpeakerType) ?? FindByName(line.Speaker);
 
         return match is not null ? OnSpeaker(match) : fallback;
@@ -61,10 +56,6 @@ public readonly struct DialogueAnchor
     /// <summary>
     ///     The nearest active NPC answering to this name, by given name or by type name.
     /// </summary>
-    /// <remarks>
-    ///     Nearest, because a world can hold several of the same townsfolk and the one being talked
-    ///     to is overwhelmingly the one being stood next to.
-    /// </remarks>
     private static NPC? FindByName(string? name)
     {
         if (string.IsNullOrEmpty(name))
@@ -143,7 +134,7 @@ public readonly struct DialogueAnchor
     /// <remarks>
     ///     The panel draws on the UI layer but lives in the world, so it has to be taken through the
     ///     game view transform by hand. Without it the bubble drifts off its speaker the moment the
-    ///     camera zooms -- which the dialogue system does on its own, for scenes.
+    ///     camera zooms, which the dialogue system does on its own for cutscenes.
     /// </remarks>
     public Vector2 ScreenPoint() =>
         Vector2.Transform(WorldPoint() - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);

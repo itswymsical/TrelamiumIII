@@ -724,6 +724,11 @@ Items: {
 		DisplayName: Crimstone Stalagmite
 		Tooltip: StalagMag ammunition
 	}
+
+	VitriolicGel: {
+		DisplayName: Vitriolic Gel
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -792,6 +797,7 @@ Projectiles: {
 	CrimstoneStalagmiteProj.DisplayName: Crimstone Stalagmite
 	EarthShardProj.DisplayName: Earth Shard
 	SkofnungProjectile.DisplayName: Skofnung Projectile
+	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
 }
 
 NPCs: {
