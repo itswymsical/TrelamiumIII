@@ -35,8 +35,8 @@ internal static class AdvancedAlchemyStationLiquid
     {
         [ItemID.BottledWater] = new Color(70, 130, 220),
         [ItemID.BottledHoney] = new Color(255, 160, 30),
-        [ModContent.ItemType<BrineBottleItem>()] = new Color(70, 150, 190),
-        [ModContent.ItemType<BottledOilItem>()] = new Color(34, 35, 35),
+        [Solution.Brine] = new Color(70, 150, 190),
+        [Solution.BottledOil] = new Color(34, 35, 35),
     };
 
     private static readonly Color SaltTint = new(220, 225, 235);
@@ -52,7 +52,7 @@ internal static class AdvancedAlchemyStationLiquid
         float t = Main.GlobalTimeWrappedHourly;
         int w = mask.Width;
         int h = mask.Height;
-        bool isBrine = vialType > 0 && vialType == ModContent.ItemType<BrineBottleItem>();
+        bool isBrine = vialType > 0 && vialType == Solution.Brine;
 
         Color content = ContentColor(vialType);
 

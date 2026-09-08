@@ -1,12 +1,21 @@
 ﻿using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.ObjectData;
+using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Tiles;
 
 [LegacyName("BloodtoothFungus")]
-public class BloodtoothFungusItem : ModItem
+public class BloodtoothFungusItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 4,
+        Chemical = ChemicalQuality.Volatile,
+        Principle = PrincipleType.Martial,
+        Rarity = ItemRarityID.Blue,
+    };
+
     public override void SetDefaults()
     {
         base.SetDefaults();

@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Core.Alchemy.Brewing;
+namespace TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 /// <summary>
 /// Potency-scaled Lucky buff. Vanilla keeps luck as an int <em>tier</em> in <see cref="Player.luckPotion"/>

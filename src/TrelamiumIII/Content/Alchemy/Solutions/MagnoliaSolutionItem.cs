@@ -1,50 +1,25 @@
 using ReLogic.Graphics;
 using Terraria.GameContent;
+using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-public class InertSolutionItem : ModItem
+/// <summary>
+///     The one solution with code of its own -- leaves drift across its name in the tooltip -- so it
+///     keeps a class where the rest of them are instances in <see cref="Solution" />.
+/// </summary>
+public class MagnoliaSolutionItem : SolutionItem
 {
-    public override void SetDefaults()
+    public MagnoliaSolutionItem()
     {
-        base.SetDefaults();
-        Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Gray;
-        Item.maxStack = Item.CommonMaxStack;
-    }    
-}
+        Rare = ItemRarityID.Blue;
 
-public class DeadSolutionItem : ModItem
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Gray;
-        Item.maxStack = Item.CommonMaxStack;
+        Potency = 2;
+        Quality = ChemicalQuality.Alkaline;
+        Principle = PrincipleType.Harmony;
+        AlmanacRarity = ItemRarityID.Green;
     }
-}
 
-public class ArcaneSolution : ModItem
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Blue;
-        Item.maxStack = Item.CommonMaxStack;
-    }
-}
-
-public class MagnoliaSolutionItem : ModItem
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Blue;
-        Item.maxStack = Item.CommonMaxStack;
-    }
     public override bool PreDrawTooltipLine(DrawableTooltipLine line, ref int yOffset)
     {
         if (line.Name == "ItemName")

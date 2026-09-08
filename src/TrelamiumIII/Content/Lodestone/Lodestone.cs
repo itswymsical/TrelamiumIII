@@ -1,10 +1,19 @@
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 using Terraria.DataStructures;
 
 namespace TrelamiumIII.Content.Lodestone;
 
-public class LodestoneItem : ModItem
+public class LodestoneItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 3,
+        Chemical = ChemicalQuality.Kinetic,
+        Principle = PrincipleType.Martial,
+        Rarity = ItemRarityID.Green,
+    };
+
     private const float BASE_MAGNET_RANGE = 95f;
     private const float BASE_MAX_SPEED = 1.7f;
 
