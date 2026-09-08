@@ -10,35 +10,12 @@ namespace TrelamiumIII.Core.Text;
 ///     Rebuilds a font baked by <c>tools/FontBaker</c> into a ReLogic
 ///     <see cref="DynamicSpriteFont" /> that Terraria draws exactly like one of its own.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Terraria's fonts arrive as <c>.xnb</c> compiled by ReLogic's content pipeline, which
-///         does not ship with tModLoader -- only the reader for it does. So there is no way to
-///         author one offline; the font has to be assembled in memory instead, which is what
-///         <see cref="DynamicSpriteFont.SetPages" /> is for.
-///     </para>
-///     <para>
-///         Both <see cref="DynamicSpriteFont.SetPages" /> and <see cref="FontPage" /> are hidden
-///         in the shipped ReLogic assembly. This file compiles and runs only because
-///         <c>build/TrelamiumIII.Publicizer.props</c> publicizes ReLogic and the build emits
-///         <c>IgnoresAccessChecksTo("ReLogic")</c>. Dropping ReLogic from the publicize list
-///         breaks this at build time.
-///     </para>
-/// </remarks>
 public static class BakedFont
 {
     private const string MAGIC = "TDSF";
 
     private const int FORMAT_VERSION = 1;
 
-    /// <summary>
-    ///     Loads the <c>.dsf</c> metric table at <paramref name="path" /> and the atlas pages
-    ///     beside it.
-    /// </summary>
-    /// <param name="path">
-    ///     Mod-relative path without extension, e.g. <c>Common/Fonts/Andika-Regular</c>. Atlas
-    ///     pages are expected at that path suffixed <c>_0</c>, <c>_1</c> and so on.
-    /// </param>
     public static DynamicSpriteFont Load(Mod mod, string path)
     {
         using MemoryStream stream = new(mod.GetFileBytes($"{path}.dsf"));
@@ -58,7 +35,7 @@ public static class BakedFont
         }
 
         reader.ReadString(); // Source face name, kept for diagnostics only.
-        reader.ReadSingle(); // Em size the bake was rasterised at; the atlas already encodes it.
+        reader.ReadSingle(); // Em size the bake was rasterised at. the atlas already encodes it.
 
         int lineSpacing = reader.ReadInt32();
         float characterSpacing = reader.ReadSingle();
@@ -100,7 +77,7 @@ public static class BakedFont
 
             // ReLogic walks the pen X -> draw -> Y + Z, so the three add up to one advance.
             // Splitting it into true bearings rather than dumping the lot into Y is what lets
-            // GetCharacterMetrics -- and so WrappedTextBuilder and ChatManager -- wrap sanely.
+            // GetCharacterMetrics, so WrappedTextBuilder and ChatManager wrap sanely.
             kerning[page].Add(new Vector3(xOffset, width, advance - xOffset - width));
         }
 

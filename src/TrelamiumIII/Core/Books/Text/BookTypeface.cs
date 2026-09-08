@@ -79,13 +79,13 @@ public sealed class BookTypeface(
     ///     body face meant to be read in quantity.
     /// </summary>
     public static BookTypeface Encyclopedia { get; } = new(
-        () => TrelamiumFonts.Regular,
-        () => TrelamiumFonts.Bold,
-        () => TrelamiumFonts.Italic)
+        () => TrelamiumFonts.AndikaRegular,
+        () => TrelamiumFonts.AndikaBold,
+        () => TrelamiumFonts.AndikaItalic)
     {
-        Bold = () => TrelamiumFonts.Bold,
-        Italic = () => TrelamiumFonts.Italic,
-        BoldItalic = () => TrelamiumFonts.BoldItalic,
+        Bold = () => TrelamiumFonts.AndikaBold,
+        Italic = () => TrelamiumFonts.AndikaItalic,
+        BoldItalic = () => TrelamiumFonts.AndikaBoldItalic,
     };
 
     /// <summary>
@@ -95,13 +95,13 @@ public sealed class BookTypeface(
     /// <remarks>
     ///     Paprika carries 353 glyphs against Andika's 606, so it is safe for authored lore but not
     ///     for arbitrary player-facing strings, which fall back to '?' on anything it does not map.
-    ///     Point <c>hand</c> at <see cref="TrelamiumFonts.Italic" /> if marginalia needs to read as a
+    ///     Point <c>hand</c> at <see cref="TrelamiumFonts.AndikaItalic" /> if marginalia needs to read as a
     ///     different pen from the body.
     /// </remarks>
     public static BookTypeface Glossary { get; } = new(
-        () => TrelamiumFonts.Display,
-        () => TrelamiumFonts.Display,
-        () => TrelamiumFonts.Display);
+        () => TrelamiumFonts.PaprikaFont,
+        () => TrelamiumFonts.PaprikaFont,
+        () => TrelamiumFonts.PaprikaFont);
 }
 
 /// <summary>

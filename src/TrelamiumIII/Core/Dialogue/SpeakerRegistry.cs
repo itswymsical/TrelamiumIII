@@ -73,7 +73,7 @@ public static class SpeakerRegistry
             Id = "Sonder",
             Color = new(55, 55, 55),
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sonder.Speech.Asset]),
-            Font = TrelamiumFonts.Speech,
+            Font = TrelamiumFonts.AaarghFont,
         });
 
         Register(new SpeakerProfile

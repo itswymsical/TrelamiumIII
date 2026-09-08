@@ -42,7 +42,7 @@ public interface ISpeakerProfile
     ///   <para>
     ///     Only for faces with the coverage to survive whatever the line holds. A display face set
     ///     on a speaker whose lines interpolate a player's name will render most of that name as
-    ///     the substitution glyph -- see <see cref="Text.TrelamiumFonts.Speech" />.
+    ///     the substitution glyph -- see <see cref="Text.TrelamiumFonts.AaarghFont" />.
     ///   </para>
     /// </remarks>
     DynamicSpriteFont Font { get; }
