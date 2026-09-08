@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TrelamiumIII.Core.Alchemy.Brewing;
+namespace TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 /// <summary>
 /// Applies and describes one kind of brewed effect. Registered per vanilla buff id in

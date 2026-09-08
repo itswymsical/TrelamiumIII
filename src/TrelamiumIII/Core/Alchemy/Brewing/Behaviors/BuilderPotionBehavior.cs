@@ -1,4 +1,6 @@
-﻿namespace TrelamiumIII.Core.Alchemy.Brewing
+﻿using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
+
+namespace TrelamiumIII.Core.Alchemy.Brewing
 {
     public sealed class BuilderPotionBehavior : IEffectBehavior
     {

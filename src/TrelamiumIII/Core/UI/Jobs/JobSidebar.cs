@@ -42,7 +42,7 @@ public class JobSidebar
     private float hoverFadeIn;
 
     private Job currentJob;
-    private List<Task> activeTasks;
+    private List<JobTask> activeTasks;
     private List<Job> activeJobs;
     private List<Job> availableJobs;
 
@@ -106,13 +106,8 @@ public class JobSidebar
     {
         var JobPlayer = Main.LocalPlayer.GetModPlayer<JobPlayer>();
 
-        var sidelineActive = JobPlayer.GetAllJobs()
-            .Where(m => m.Progress == JobProgress.Ongoing);
-        var sidelineAvailable = JobPlayer.GetAllJobs()
-            .Where(m => m.Status == JobStatus.Unlocked && m.Progress != JobProgress.Ongoing);
-
-        activeJobs = [.. sidelineActive];
-        availableJobs = [.. sidelineAvailable];
+        activeJobs = [.. JobPlayer.ActiveJobs()];
+        availableJobs = [.. JobPlayer.AvailableJobs()];
 
         HandleJobListToggling();
 
@@ -159,32 +154,29 @@ public class JobSidebar
 
     private void UpdateActiveTasks()
     {
-        activeTasks = new List<Task>();
+        activeTasks = new List<JobTask>();
 
         if (currentJob == null || currentJob.TaskList.Count == 0 || showingAvailableJobs)
             return;
 
-        HandleTaskProgression();
         PopulateVisibleTasks();
     }
 
-    private void HandleTaskProgression()
-    {
-        bool isCurrentSetCompleted = currentJob.CurrentTaskSet < currentJob.TaskList.Count &&
-                                   currentJob.TaskList[currentJob.CurrentTaskSet].IsCompleted;
-
-        if (isCurrentSetCompleted && currentJob.CurrentTaskSet < currentJob.TaskList.Count - 1)
-        {
-            currentJob.CurrentTaskSet++;
-            Main.LocalPlayer.GetModPlayer<JobPlayer>().NotifyJobUpdate(currentJob);
-        }
-    }
-
+    /// <summary>
+    /// Reads the stage the job says it is on. It does not advance it.
+    /// </summary>
+    /// <remarks>
+    /// This used to increment <see cref="Job.CurrentTaskSet"/> itself when it noticed a finished
+    /// stage -- from inside the draw pass, every frame the sidebar was visible. That made the UI a
+    /// second writer of job state racing <see cref="Job.UpdateProgress"/>, and because it moved the
+    /// index without going through the job, <see cref="Job.OnSetAdvanced"/> was skipped whenever the
+    /// UI won -- silently swallowing the Guide's per-stage dialogue.
+    /// </remarks>
     private void PopulateVisibleTasks()
     {
-        if (currentJob.CurrentTaskSet >= currentJob.TaskList.Count) return;
+        if (currentJob.CurrentSet is not { } currentSet)
+            return;
 
-        var currentSet = currentJob.TaskList[currentJob.CurrentTaskSet];
         foreach (var task in currentSet.Task)
         {
             if (task.ShouldBeVisible(currentJob))
@@ -618,7 +610,7 @@ public class JobSidebar
         }
     }
 
-    private string FormatTaskText(Task task)
+    private string FormatTaskText(JobTask task)
     {
         string status = task.IsCompleted ? CHECKED_CHECKBOX : EMPTY_CHECKBOX;
 
@@ -982,6 +974,19 @@ public class JobSidebarManager : ModSystem
     public void SetNotification(JobSidebar notification)
     {
         currentNotification = notification;
+    }
+
+    /// <summary>
+    /// Puts the sidebar up if it isn't already, seeded with <paramref name="headline"/>.
+    /// </summary>
+    /// <remarks>
+    /// Idempotent, because the caller runs every tick. The panel re-reads the job list itself, so an
+    /// existing one is already showing the right thing and rebuilding it would restart its fade and
+    /// throw away which job the player had paged to.
+    /// </remarks>
+    public void EnsureNotification(Job headline)
+    {
+        currentNotification ??= new JobSidebar(headline);
     }
 
     public void ClearNotification()

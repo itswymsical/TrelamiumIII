@@ -43,8 +43,6 @@ public class RewardBag : ModItem
     private static readonly Color JobLineColor = new(255, 210, 110);
     private static readonly Color HintColor = new(150, 150, 150);
 
-    /// <summary>Job id to name key. See <see cref="JobNameKeyFor"/>.</summary>
-    private static readonly Dictionary<int, string> NameKeyCache = [];
 
     public override void SetStaticDefaults()
         // Researchable would turn one job payout into infinite copies of its rewards.
@@ -87,10 +85,10 @@ public class RewardBag : ModItem
         {
             var item = reward.GetItem();
 
-            // A copy: the JobReward keeps its resolved item as the definition of the reward, and the
-            // bag must not be able to mutate it.
+            // A clone rather than a fresh Item of the same type: a cross-mod reward may carry
+            // per-instance data, and rebuilding it from type and stack alone would drop it.
             if (item is { stack: > 0 } && item.type > ItemID.None)
-                contents.Add(new Item(item.type, item.stack));
+                contents.Add(item.Clone());
         }
 
         if (contents.Count == 0)
@@ -119,6 +117,12 @@ public class RewardBag : ModItem
     /// that genuinely does not fit. Direct placement is the whole point of the bag: a world drop is
     /// exactly the outcome it exists to avoid.
     /// </summary>
+    /// <remarks>
+    /// The popup is raised here rather than left to happen on its own. A vanilla bag spawns its
+    /// contents into the world and lets the ordinary pickup path announce them; this bag deliberately
+    /// bypasses that path to guarantee delivery, and so has to say what it delivered itself. Without
+    /// it a payout landed in silence -- items in the inventory, nothing on screen.
+    /// </remarks>
     public static void GiveOrDrop(Player player, Item item, IEntitySource source)
     {
         // GetItem reaches into one specific player's slots, so it is only meaningful on the client
@@ -129,8 +133,19 @@ public class RewardBag : ModItem
             return;
         }
 
-        var leftover = player.GetItem(player.whoAmI, item, GetItemSettings.NPCEntityToPlayerInventorySettings);
+        // GetItem consumes what it takes out of the instance handed to it, so both the display copy
+        // and the requested count have to be read first.
+        var announced = item.Clone();
+        var requested = item.stack;
 
+        var leftover = player.GetItem(player.whoAmI, item, GetItemSettings.NPCEntityToPlayerInventorySettings);
+        var taken = requested - (leftover.IsAir ? 0 : leftover.stack);
+
+        if (taken > 0)
+            PopupText.NewText(PopupTextContext.RegularItemPickup, announced, taken);
+
+        // Only the part that fit is announced here; the overflow drops and announces itself through
+        // the normal pickup path, so nothing is counted twice.
         if (!leftover.IsAir)
             player.QuickSpawnItem(source, leftover, leftover.stack);
     }
@@ -242,25 +257,12 @@ public class RewardBag : ModItem
     /// Localization key for a job's name, or <see langword="null"/> for a bag with no job behind it.
     /// </summary>
     /// <remarks>
-    /// Cached because <see cref="EventSystem.CreateJob"/> builds an entire Job to answer, and a
-    /// hovered tooltip asks every frame. The <em>key</em> is cached rather than the resolved name so
-    /// a language switch still takes effect.
+    /// This used to build an entire <see cref="Job"/> -- task lists, reward lists and all -- to read
+    /// one string, and cached the result because a hovered tooltip asks every frame. The registry now
+    /// keeps that string from load, so neither the construction nor the cache is needed.
     /// </remarks>
     private static string? JobNameKeyFor(int jobId)
-    {
-        if (jobId == JobID.None)
-            return null;
-
-        if (NameKeyCache.TryGetValue(jobId, out var cached))
-            return cached;
-
-        var nameKey = EventSystem.CreateJob(jobId)?.NameKey;
-
-        if (nameKey is not null)
-            NameKeyCache[jobId] = nameKey;
-
-        return nameKey;
-    }
+        => jobId != JobID.None && EventSystem.TryGetJobInfo(jobId, out var info) ? info.NameKey : null;
     #endregion
 
     #region Serialization & Network
@@ -313,5 +315,4 @@ public class RewardBag : ModItem
     }
     #endregion
 
-    public override void Unload() => NameKeyCache.Clear();
 }

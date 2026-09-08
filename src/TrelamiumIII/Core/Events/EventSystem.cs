@@ -7,14 +7,25 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Core.Events;
 
+/// <summary>A registered job's identity, readable without constructing the job.</summary>
+public readonly record struct JobInfo(string NameKey, string DescriptionKey, int ProviderNPC);
+
 /// <summary>
-/// Large system responsible for managing Jobs and challenges via events. 
-/// Broadcasts events for Job/challenge tracking. 
-/// Also handles some custom events that aren't easily tracked via vanilla hooks (e.g. tile interactions, biome entry).
+/// The event bus. Owns the job registry, subscribes to the <c>Event*</c> globals, and adds the
+/// events vanilla has no hook for -- notably the housing check, reconstructed from
+/// <see cref="WorldGen.StartRoomCheck"/>.
 /// </summary>
 public class EventSystem : ModSystem
 {
     private static readonly Dictionary<int, Type> JobTypes = [];
+
+    /// <summary>
+    /// What a job is, without building one. Answering "what is job 2 called" used to mean running a
+    /// whole <see cref="Job"/> constructor -- task lists, reward lists, and in GoldMine's case a sum
+    /// over its pools -- and then throwing the instance away.
+    /// </summary>
+    private static readonly Dictionary<int, JobInfo> JobMetadata = [];
+
     private static bool isExploding = false;
 
     /// <summary>debounce keyed by canonical room id</summary>
@@ -30,7 +41,7 @@ public class EventSystem : ModSystem
     private const int CooldownTicks = 60;
     private const int CooldownPruneInterval = 3600;
     private static int _lastCooldownPrune;
-    private static readonly Dictionary<int, Type> MissionTypes = [];
+
     public override void Load()
     {
         RegisterJobs();
@@ -45,8 +56,8 @@ public class EventSystem : ModSystem
     {
         UnsubscribeFromEvents();
 
-
         JobTypes.Clear();
+        JobMetadata.Clear();
         On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
         On_WorldGen.MoveTownNPC -= HookMoveTownNPC;
         HousingCooldowns.Clear();
@@ -54,10 +65,7 @@ public class EventSystem : ModSystem
         On_Projectile.ExplodeTiles -= HookExplodeTiles;
     }
 
-    public static IEnumerable<Job> GetAllAvailableJobs(JobPlayer player)
-    {
-        return player.UnlockedJobs();
-    }
+    public static IEnumerable<Job> GetAllAvailableJobs(JobPlayer player) => player.AvailableJobs();
 
     private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
     {
@@ -299,15 +307,27 @@ public class EventSystem : ModSystem
 
     private void RegisterJobs()
     {
-        var Jobs = Mod.Code.GetTypes()
+        var jobTypes = Mod.Code.GetTypes()
             .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Job)));
 
-        foreach (var type in Jobs)
+        foreach (var type in jobTypes)
         {
             try
             {
+                // The one instance built at load: its identity is kept as metadata so nothing has to
+                // construct another just to read a name.
                 var instance = (Job)Activator.CreateInstance(type);
+
+                if (JobTypes.TryGetValue(instance.ID, out var existing))
+                {
+                    TrelamiumIII.Instance.Logger.Error(
+                        $"Job id {instance.ID} is claimed by both {existing.Name} and {type.Name}; ignoring the latter.");
+
+                    continue;
+                }
+
                 JobTypes[instance.ID] = type;
+                JobMetadata[instance.ID] = new JobInfo(instance.NameKey, instance.DescriptionKey, instance.ProviderNPC);
             }
             catch (Exception ex)
             {
@@ -318,17 +338,21 @@ public class EventSystem : ModSystem
         TrelamiumIII.Instance.Logger.Info($"Auto-registered {JobTypes.Count} Jobs");
     }
 
-    public static Job CreateJob(int JobId)
-    {
-        if (JobTypes.TryGetValue(JobId, out var type))
-        {
-            return (Job)Activator.CreateInstance(type);
-        }
-        return null;
-    }
+    /// <summary>
+    /// A fresh, unowned instance of a job. The caller is responsible for giving it a
+    /// <see cref="Job.Context"/> before it does anything -- <see cref="JobPlayer.GetOrCreateJob"/> is
+    /// the path that does.
+    /// </summary>
+    public static Job CreateJob(int jobId)
+        => JobTypes.TryGetValue(jobId, out var type) ? (Job)Activator.CreateInstance(type) : null;
 
+    /// <summary>A registered job's identity, without building one.</summary>
+    public static bool TryGetJobInfo(int jobId, out JobInfo info) => JobMetadata.TryGetValue(jobId, out info);
 
-    public static bool IsJobRegistered(int JobId) => JobTypes.ContainsKey(JobId);
+    public static bool IsJobRegistered(int jobId) => JobTypes.ContainsKey(jobId);
+
+    /// <summary>Every registered job id, in registration order.</summary>
+    public static IEnumerable<int> RegisteredJobIds => JobTypes.Keys;
     #endregion
 
     #region Event Subscriptions
@@ -338,17 +362,16 @@ public class EventSystem : ModSystem
         EventTile.OnTilePlace += OnTilePlace;
         EventTile.OnTileInteract += OnTileInteract;
         EventNPC.OnNPCKill += OnNPCKill;
+        EventNPC.OnNPCHit += OnNPCHit;
         EventNPC.OnNPCChat += OnNPCChat;
         EventItem.OnItemPickup += OnItemPickup;
         EventItem.OnItemCreated += OnItemCraft;
-        //EventItem.OnItemUse += OnItemUse;
         EventItem.OnItemConsume += OnItemConsume;
         EventPlayer.OnBiomeEnter += OnBiomeEnter;
         EventPlayer.OnCaughtFish += OnFishingCatch;
         EventPlayer.OnFishingAttempt += OnFishingAttempt;
 
         EventPlayer.OnTakenDamage += OnTakenDamage;
-        EventPlayer.OnCheckDistance += OnNPCDistCheck;
     }
 
 
@@ -358,16 +381,15 @@ public class EventSystem : ModSystem
         EventTile.OnTilePlace -= OnTilePlace;
         EventTile.OnTileInteract -= OnTileInteract;
         EventNPC.OnNPCKill -= OnNPCKill;
+        EventNPC.OnNPCHit -= OnNPCHit;
         EventNPC.OnNPCChat -= OnNPCChat;
         EventItem.OnItemPickup -= OnItemPickup;
         EventItem.OnItemCreated -= OnItemCraft;
-        //EventItem.OnItemUse -= OnItemUse;
         EventItem.OnItemConsume -= OnItemConsume;
         EventPlayer.OnBiomeEnter -= OnBiomeEnter;
         EventPlayer.OnCaughtFish -= OnFishingCatch;
         EventPlayer.OnFishingAttempt -= OnFishingAttempt;
         EventPlayer.OnTakenDamage -= OnTakenDamage;
-        EventPlayer.OnCheckDistance -= OnNPCDistCheck;
 
     }
     #endregion
@@ -463,12 +485,6 @@ public class EventSystem : ModSystem
         BroadcastEvent(evt);
     }
 
-    private void OnItemUse(Item item, Player player)
-    {
-        var evt = GameEvent.ItemUse(item, player);
-        BroadcastEvent(evt);
-    }
-
     private void OnItemConsume(Item item, Player player)
     {
         var evt = GameEvent.ItemConsume(item, player);
@@ -481,35 +497,22 @@ public class EventSystem : ModSystem
         BroadcastEvent(evt);
     }
 
-    public void OnNPCDistCheck(Player player, NPC npc, float distance)
-    {
-
-        var evt = GameEvent.NPCDistCheck(player, npc, distance);
-        BroadcastEvent(evt);
-    }
 
     #endregion
 
     #region Event Broadcasting
-    public override void PostUpdateEverything()
-    {
-        ConditionChecker.Update();
-    }
-
     private static void BroadcastEvent(GameEvent evt)
     {
-        if (evt.Player == null) return;
+        if (evt.Player == null)
+            return;
 
+        evt.Player.GetModPlayer<JobPlayer>()?.OnGameEvent(evt);
+        evt.Player.GetModPlayer<ActTrackerPlayer>()?.OnGameEvent(evt);
 
-        // Player Jobs (sideline)
-        var JobPlayer = evt.Player.GetModPlayer<JobPlayer>();
-        JobPlayer?.OnGameEvent(evt);
-
-        evt.Player.GetModPlayer<ActTrackerPlayer>().OnGameEvent(evt);
-
-        ConditionChecker.OnGameEvent(evt);
-
-        EventLog.Trace(EventLog.Describe(evt));
+        // Checked before describing, not inside Trace: Describe formats a string and resolves content
+        // names, so calling it unconditionally paid the full cost of a log line the gate then dropped.
+        if (EventLog.Enabled)
+            EventLog.Trace(EventLog.Describe(evt));
     }
     #endregion
 }

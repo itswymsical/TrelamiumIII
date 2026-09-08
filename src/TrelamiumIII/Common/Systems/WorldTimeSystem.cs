@@ -1,73 +1,88 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Systems;
 
+/// <summary>
+/// Counts days in the world, and opens jobs up as the player reaches the day each is gated behind.
+/// </summary>
 public class WorldTimeSystem : ModSystem
 {
     public static int TotalDaysElapsed;
 
-    private readonly Dictionary<int, int[]> _jobMilestones = new()
+    /// <summary>Day the world must have reached for these jobs to be offered.</summary>
+    private static readonly Dictionary<int, int[]> JobMilestones = new()
     {
-        { 1, [ JobID.HomeForager ] },
-        { 3, [ JobID.GoldMine ] },
+        { 1, [JobID.HomeForager] },
+        { 3, [JobID.GoldMine] },
         // { 7, [ JobID.DryadEaterOfWorldsI, JobID.ArmsDealerGunI ] }
     };
 
     public override void PreUpdateWorld()
     {
-        if (Main.dayTime && Main.time == 0.0)
+        if (!Main.dayTime || Main.time != 0.0)
+            return;
+
+        TotalDaysElapsed++;
+        ApplyMilestones();
+    }
+
+    public override void SaveWorldData(TagCompound tag) => tag["TotalDaysElapsed"] = TotalDaysElapsed;
+
+    public override void LoadWorldData(TagCompound tag) => TotalDaysElapsed = tag.GetInt("TotalDaysElapsed");
+
+    /// <summary>
+    /// Unlocks everything the world has reached the day for, not only what it reached it for today.
+    /// </summary>
+    /// <remarks>
+    /// This was keyed on an exact day match, evaluated only at the moment of sunrise. Anyone who
+    /// joined a world already past day 1 -- or who was simply not in it when the day turned -- never
+    /// got HomeForager at all, and had no way to make it appear.
+    /// </remarks>
+    private static void ApplyMilestones()
+    {
+        var due = JobMilestones
+            .Where(milestone => TotalDaysElapsed >= milestone.Key)
+            .SelectMany(milestone => milestone.Value);
+
+        for (var i = 0; i < Main.maxPlayers; i++)
         {
-            TotalDaysElapsed++;
-            CheckDayMilestones();
+            var player = Main.player[i];
+
+            if (player.active)
+                UnlockJobs(player, due);
         }
     }
 
-    public override void SaveWorldData(TagCompound tag)
-    {
-        tag["TotalDaysElapsed"] = TotalDaysElapsed;
-    }
+    /// <summary>
+    /// Catches one player up on every milestone the world has already passed. Called as they enter,
+    /// which is the only moment a player who missed a sunrise can be brought level.
+    /// </summary>
+    public static void ApplyMilestonesTo(Player player)
+        => UnlockJobs(player, JobMilestones
+            .Where(milestone => TotalDaysElapsed >= milestone.Key)
+            .SelectMany(milestone => milestone.Value));
 
-    public override void LoadWorldData(TagCompound tag)
+    private static void UnlockJobs(Player player, IEnumerable<int> jobIds)
     {
-        TotalDaysElapsed = tag.GetInt("TotalDaysElapsed");
-    }
+        var jobPlayer = player.GetModPlayer<JobPlayer>();
 
-    private void CheckDayMilestones()
-    {
-        if (_jobMilestones.TryGetValue(TotalDaysElapsed, out int[] jobsToUnlock))
+        foreach (var jobId in jobIds)
         {
-            for (int i = 0; i < Main.maxPlayers; i++)
-            {
-                Player p = Main.player[i];
-                if (p.active)
-                {
-                    UnlockJobs(p, jobsToUnlock);
-                }
-            }
-        }
-    }
+            var job = jobPlayer.GetOrCreateJob(jobId);
 
-    private void UnlockJobs(Player player, int[] jobs)
-    {
-        var mp = player.GetModPlayer<JobPlayer>();
+            // Only a job still locked is news; one already taken, finished, or deliberately withdrawn
+            // must not be re-offered by a later day rolling over.
+            if (job?.State != JobState.Locked)
+                continue;
 
-        foreach (var jobId in jobs)
-        {
-            var job = mp.GetOrCreateJob(jobId);
+            jobPlayer.UnlockJob(jobId);
 
-            if (job != null && job.Status == JobStatus.Locked)
-            {
-                mp.UnlockJob(job.ID);
-                string npcName = Lang.GetNPCNameValue(job.ProviderNPC);
-                //Main.NewText($"{npcName}" + Mod.GetLocalizationKey("JobInfo.NewJob"), Color.LightBlue);
-                if (job.ID == JobID.HomeForager)
-                {
-                    DialogueManager.Instance.StartDialogue("Guide.HomeForager", zoomIn: false, letterbox: false);
-                }
-            }
+            if (job.ID == JobID.HomeForager && player.whoAmI == Main.myPlayer)
+                DialogueManager.Instance.StartDialogue("Guide.HomeForager");
         }
     }
 }

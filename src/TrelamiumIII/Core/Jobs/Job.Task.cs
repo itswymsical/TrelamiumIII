@@ -1,209 +1,175 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Events;
 
 namespace TrelamiumIII.Core.Jobs;
 
-public class Task(string descriptionKey, int requiredCount = 1)
+/// <summary>
+/// One line of a <see cref="Job"/>'s to-do list: what it asks for, how much of it, and -- crucially --
+/// which events count toward it.
+/// </summary>
+/// <remarks>
+///     <para>
+///         A task decides for itself whether an event counts, via <see cref="Matches"/>. That is the
+///         whole point of the type. The alternative, which this replaced, was a
+///         <c>MatchesEvent(evt, setIndex, taskIndex)</c> on the job: because the job answered on the
+///         task's behalf, every job had to hand-write a <c>switch (set) { case 0: if (task == 0) ... }</c>
+///         routing ladder, and no two jobs wrote it the same way. Tasks that know their own trigger
+///         make that ladder disappear.
+///     </para>
+///     <para>
+///         Tasks own their progress <em>and</em> any bookkeeping that progress depends on -- the rooms
+///         already credited, the pools already filled -- and serialize it themselves through
+///         <see cref="SaveData"/>. State that decides whether an event counts belongs next to the code
+///         that decides it.
+///     </para>
+/// </remarks>
+public abstract class JobTask(string descriptionKey, int requiredCount = 1)
 {
-    public string DescriptionKey { get; set; } = descriptionKey;
+    public string DescriptionKey { get; } = descriptionKey;
 
-    // Resolve description at runtime
+    /// <summary>Resolved at read time, so a language switch takes effect without touching save data.</summary>
     public string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
 
-    public bool IsCompleted { get; set; } = false;
     public int RequiredCount { get; set; } = requiredCount;
-    public int Count { get; set; } = 0;
+
+    public int Count { get; private set; }
+
+    /// <summary>
+    /// Derived rather than stored, which is what makes progress reversible: revoking a delivered item
+    /// drops <see cref="Count"/> back under the requirement and the task genuinely re-opens. A stored
+    /// flag could only ever be set, so a job could take an item back and leave the task ticked.
+    /// </summary>
+    public bool IsCompleted => Count >= RequiredCount;
+
     public bool IsVisible { get; set; } = true;
 
-    public delegate bool VisibilityCondition(Job Job);
-    public VisibilityCondition VisibilityCheck { get; set; } = null;
+    public delegate bool VisibilityCondition(Job job);
 
-    public bool ShouldBeVisible(Job Job)
+    public VisibilityCondition VisibilityCheck { get; set; }
+
+    public bool ShouldBeVisible(Job job) => VisibilityCheck?.Invoke(job) ?? IsVisible;
+
+    /// <summary>Does <paramref name="evt"/> count toward this task? Checks the event type itself.</summary>
+    public abstract bool Matches(GameEvent evt);
+
+    /// <summary>
+    /// How much a matching event is worth. Defaults to the event's own amount, so a stack of ten
+    /// counts as ten; override to cap or flatten it.
+    /// </summary>
+    public virtual int CreditFor(GameEvent evt) => Math.Max(1, evt.Amount);
+
+    /// <summary>
+    /// Applies <paramref name="amount"/> (which may be negative) and reports whether that crossed the
+    /// requirement. Clamped at both ends: progress never goes below zero, and an oversized stack does
+    /// not bank credit against a later revoke.
+    /// </summary>
+    public bool Advance(int amount)
     {
-        if (VisibilityCheck != null)
-            return VisibilityCheck(Job);
+        var wasCompleted = IsCompleted;
 
-        return IsVisible;
+        Count = Math.Clamp(Count + amount, 0, RequiredCount);
+
+        return !wasCompleted && IsCompleted;
     }
 
-    public bool UpdateProgress(int amount = 1)
+    public void Reset()
     {
-        Count += amount;
-        if (Count >= RequiredCount)
-        {
-            IsCompleted = true;
-            Count = RequiredCount;
-            return true;
-        }
-        return false;
+        Count = 0;
+        OnReset();
     }
 
-    public void WriteData(BinaryWriter writer)
-    {
-        writer.Write(DescriptionKey); // Save the key, not resolved text
-        writer.Write(IsCompleted);
-        writer.Write(RequiredCount);
-        writer.Write(Count);
-        writer.Write(IsVisible);
-    }
+    /// <summary>
+    /// Fills the task outright. For debug commands only -- ordinary progress goes through
+    /// <see cref="Job.UpdateProgress"/>, which is what fires the stage and completion hooks.
+    /// </summary>
+    internal void ForceComplete() => Count = RequiredCount;
 
-    public void ReadData(BinaryReader reader)
-    {
-        DescriptionKey = reader.ReadString();
-        IsCompleted = reader.ReadBoolean();
-        RequiredCount = reader.ReadInt32();
-        Count = reader.ReadInt32();
-        IsVisible = reader.ReadBoolean();
-    }
+    /// <summary>Clears bookkeeping a subclass accumulated. Base implementation has none.</summary>
+    protected virtual void OnReset() { }
 
-    public byte[] Serialize()
-    {
-        using MemoryStream ms = new();
-        using (BinaryWriter writer = new(ms))
-        {
-            WriteData(writer);
-        }
-        return ms.ToArray();
-    }
+    /// <summary>
+    /// Persists this task's progress. Subclasses that track more than a count -- which rooms were
+    /// credited, which pools are full -- override and call <c>base</c>.
+    /// </summary>
+    public virtual void SaveData(TagCompound tag) => tag["count"] = Count;
 
-    public void Deserialize(byte[] data)
-    {
-        using MemoryStream ms = new(data);
-        using BinaryReader reader = new(ms);
-        ReadData(reader);
-    }
-}
-
-public class TaskIndexState
-{
-    public List<TaskState> Tasks { get; set; } = [];
-
-    public TagCompound Serialize()
-    {
-        return new TagCompound
-        {
-            ["Task"] = Tasks.Select(obj => obj.Serialize()).ToList()
-        };
-    }
-
-    public static TaskIndexState Deserialize(TagCompound tag)
-    {
-        try
-        {
-            return new TaskIndexState
-            {
-                Tasks = tag.GetList<TagCompound>("Task")
-                    .Select(t => TaskState.Deserialize(t))
-                    .Where(obj => obj != null)
-                    .ToList()
-            };
-        }
-        catch
-        {
-            return new TaskIndexState();
-        }
-    }
-}
-
-public class TaskState
-{
-    public string Description { get; set; }
-    public bool IsCompleted { get; set; }
-    public int RequiredCount { get; set; }
-    public int CurrentCount { get; set; }
-
-    public TagCompound Serialize()
-    {
-        return new TagCompound
-        {
-            ["Description"] = Description,
-            ["IsCompleted"] = IsCompleted,
-            ["RequiredCount"] = RequiredCount,
-            ["Count"] = CurrentCount
-        };
-    }
-
-    public static TaskState Deserialize(TagCompound tag)
-    {
-        try
-        {
-            return new TaskState
-            {
-                Description = tag.GetString("Description"),
-                IsCompleted = tag.GetBool("IsCompleted"),
-                RequiredCount = tag.GetInt("RequiredCount"),
-                CurrentCount = tag.GetInt("Count")
-            };
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    public virtual void LoadData(TagCompound tag)
+        => Count = Math.Clamp(tag.TryGet("count", out int count) ? count : 0, 0, RequiredCount);
 }
 
 /// <summary>
-/// gets a list of tasks for a Job. Jobs typically have serveral task lists that need to be completed.
+/// A stage of a <see cref="Job"/>: every task in it must finish before the job moves to the next one.
 /// </summary>
-/// <param name="tasks"></param>
-public class TaskList(List<Task> tasks)
+public class TaskList(List<JobTask> tasks)
 {
-    /// <summary>
-    /// gets the current task index.
-    /// </summary>
-    public List<Task> Task { get; } = tasks;
-    public bool IsCompleted => Task.All(o => o.IsCompleted);
-    public bool HasCheckedInitialInventory { get; set; } = false;
+    public List<JobTask> Task { get; } = tasks;
+
+    public bool IsCompleted => Task.All(task => task.IsCompleted);
 
     public void Reset()
     {
         foreach (var task in Task)
-        {
-            task.IsCompleted = false;
-            task.Count = 0;
-        }
-        HasCheckedInitialInventory = false;
-    }
-
-    public void WriteData(BinaryWriter writer)
-    {
-        writer.Write(Task.Count);
-        writer.Write(HasCheckedInitialInventory);
-        foreach (var task in Task)
-        {
-            task.WriteData(writer);
-        }
-    }
-
-    public void ReadData(BinaryReader reader)
-    {
-        var count = reader.ReadInt32();
-        HasCheckedInitialInventory = reader.ReadBoolean();
-        Task.Clear();
-        for (var i = 0; i < count; i++)
-        {
-            var task = new Task("", 1);
-            task.ReadData(reader);
-            Task.Add(task);
-        }
-    }
-
-    public byte[] Serialize()
-    {
-        using MemoryStream ms = new();
-        using (BinaryWriter writer = new(ms))
-        {
-            WriteData(writer);
-        }
-        return ms.ToArray();
-    }
-
-    public void Deserialize(byte[] data)
-    {
-        using MemoryStream ms = new(data);
-        using BinaryReader reader = new(ms);
-        ReadData(reader);
+            task.Reset();
     }
 }
+
+#region Common tasks
+/// <summary>Break <paramref name="count"/> tiles of <paramref name="tileType"/>.</summary>
+public sealed class BreakTileTask(string key, int tileType, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.TileBreak && evt.TileType == tileType;
+}
+
+/// <summary>Place <paramref name="count"/> tiles of <paramref name="tileType"/>.</summary>
+public sealed class PlaceTileTask(string key, int tileType, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.TilePlace && evt.TileType == tileType;
+}
+
+/// <summary>Pick up <paramref name="count"/> of <paramref name="itemType"/>.</summary>
+public sealed class PickupItemTask(string key, int itemType, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.ItemPickup && evt.ItemType == itemType;
+}
+
+/// <summary>Craft <paramref name="count"/> of <paramref name="itemType"/>.</summary>
+public sealed class CraftItemTask(string key, int itemType, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.ItemCraft && evt.ItemType == itemType;
+}
+
+/// <summary>Kill <paramref name="count"/> of <paramref name="npcType"/>.</summary>
+public sealed class KillNPCTask(string key, int npcType, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.NPCKill && evt.NPCType == npcType;
+
+    // One kill is one kill; GameEvent.NPCKill carries Amount 1 already, but a future bulk-kill
+    // event should not silently clear a "kill 10" task in one go.
+    public override int CreditFor(GameEvent evt) => 1;
+}
+
+/// <summary>Go and talk to <paramref name="npcType"/>. The bread and butter of a hand-in step.</summary>
+public sealed class TalkToNPCTask(string key, int npcType) : JobTask(key, 1)
+{
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.NPCChat && evt.NPCType == npcType;
+
+    public override int CreditFor(GameEvent evt) => 1;
+}
+
+/// <summary>
+/// An escape hatch for a one-off trigger that does not justify its own type. Prefer a named subclass
+/// when the same shape shows up twice -- a job reads better as <c>BreakTileTask</c> than as a lambda.
+/// </summary>
+public sealed class PredicateTask(string key, Func<GameEvent, bool> matches, int count = 1) : JobTask(key, count)
+{
+    public override bool Matches(GameEvent evt) => matches(evt);
+}
+#endregion

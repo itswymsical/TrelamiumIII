@@ -1,76 +1,89 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Dialogue;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.Jobs;
 
+/// <summary>
+/// The Guide walks the player through their first houses: gather the materials, then build three
+/// rooms he'll actually approve of, then come back.
+/// </summary>
 public sealed class HomeForager : Job
 {
-    /// <summary>First and last set index that asks for a house. Sets in this range credit one house each.</summary>
+    /// <summary>First and last set that asks for a house. Each credits one.</summary>
     private const int FirstHousingSet = 1;
     private const int LastHousingSet = 3;
 
-    /// <summary>The last set, whose only task is going back to the Guide to hand the job in.</summary>
+    /// <summary>The last set: go back to the Guide and hand the job in.</summary>
     private const int CheckInSet = 4;
 
-    // how often the guide will yap
-    private const int CommentCooldown = 180;
+    /// <summary>The Guide is a talker, so he gets a shorter leash than the default.</summary>
+    protected override int SpeechCooldown => 180;
 
-    /// <summary>
-    /// Rooms already credited to this Job. Each housing set needs a house the player hasn't shown before,
-    /// so the same room can't be checked three times to clear all three sets.
-    /// </summary>
-    private readonly HashSet<Point> creditedRooms = [];
+    /// <summary>Kept so <see cref="OnEvent"/> can ask which rooms have already counted.</summary>
+    private readonly ValidHousingTask housingTask;
 
-    private int lastCommentTick;
-
-    public HomeForager() :
-        base(JobID.HomeForager, "HomeForager.Name", "HomeForager.Description",
+    public HomeForager() : base(
+        JobID.HomeForager, "HomeForager.Name", "HomeForager.Description",
         taskList:
         [
             [
-                ("HomeForager.Tasks.Set0.obj0", 10), // trees
-                ("HomeForager.Tasks.Set0.obj1", 25) // stone
+                new BreakTileTask("HomeForager.Tasks.Set0.obj0", TileID.Trees, 40),
+                new PickupItemTask("HomeForager.Tasks.Set0.obj1", ItemID.StoneBlock, 25)
             ],
-
-            [("HomeForager.Tasks.Set1.obj0", 1)], // create housing(s)
-            [("HomeForager.Tasks.Set2.obj0", 1)], // create housing(s)
-            [("HomeForager.Tasks.Set3.obj0", 1)], // create housing(s)
-            [("HomeForager.Tasks.Set4.obj0", 1)], // check in
+            [new ValidHousingTask("HomeForager.Tasks.Set1.obj0")],
+            [new ValidHousingTask("HomeForager.Tasks.Set2.obj0")],
+            [new ValidHousingTask("HomeForager.Tasks.Set3.obj0")],
+            [new TalkToNPCTask("HomeForager.Tasks.Set4.obj0", NPCID.Guide)]
         ],
         rewards:
         [
             new JobReward(ItemID.SilverCoin, 75),
             new JobReward(ItemID.IronBar, 5)
         ],
-        providerNPC: NPCID.Guide) { }
+        providerNPC: NPCID.Guide)
+    {
+        // The three housing sets share one ledger of credited rooms, so showing the same house three
+        // times clears one set, not all of them.
+        var ledger = new HashSet<Point>();
+
+        for (var set = FirstHousingSet; set <= LastHousingSet; set++)
+            ((ValidHousingTask)TaskList[set].Task[0]).ShareLedger(ledger);
+
+        housingTask = (ValidHousingTask)TaskList[FirstHousingSet].Task[0];
+    }
 
     public override void OnJobStart()
     {
-        base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: false, style: DialogueStyle.Projected);
-        MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
+        Context.Play("Guide.HomeForager_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+
+        //if (Context.IsLocal)
+        //    MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
     }
 
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
-        MusicDirector.Stop(1.5f);
+
+        //if (Context.IsLocal)
+        //    MusicDirector.Stop(1.5f);
     }
 
-    public override void Reset()
-    {
-        base.Reset();
-        creditedRooms.Clear();
-        lastCommentTick = 0;
-    }
+    public override void OnSetAdvanced(int previousSet, int newSet)
+        => Context.Play($"Guide.HomeForager_Set{newSet}");
 
+    /// <summary>
+    /// The Guide's running commentary on the player's building. Runs before the task sees the event,
+    /// so a room that reads as already-credited here is genuinely one the player is re-showing.
+    /// </summary>
     public override void OnEvent(GameEvent evt)
     {
+        // Only ever speak to a check the player asked for. Vanilla re-scans housing constantly on its
+        // own -- NPCs revisiting their homes, the nightly spawn pass -- and none of that is the player
+        // asking a question.
         if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck)
             return;
 
@@ -83,82 +96,21 @@ public sealed class HomeForager : Job
             return;
         }
 
-        // A house that passes but has already been counted: the player is showing the same room again.
-        if (evt.RoomId is Point room && creditedRooms.Contains(room))
+        if (evt.RoomId is Point room && housingTask.HasCredited(room))
             Speak("Guide.HomeForager_Repeat");
-    }
-
-    public override void OnSetAdvanced(int previousSet, int newSet)
-    {
-        DialogueManager.Instance.StartDialogue($"Guide.HomeForager_Set{newSet}");
     }
 
     public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
     {
         CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").Projected(),
-        _ => ChatEncounter.Play("Guide.HomeForager_HomeForager_CheckIn").Projected(),
+
+        // Nothing registered for the other sets yet, so the Guide keeps his ordinary greeting. This
+        // used to name "Guide.HomeForager_HomeForager_CheckIn", a key that has never existed --
+        // silently falling through to vanilla chat rather than erroring.
+        _ => ChatEncounter.None
     };
 
-    public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
-    {
-        if (evt.Type == GameEventType.HousingChecked && evt.RoomId is Point room)
-            creditedRooms.Add(room);
-
-        return base.OnMatchedEvent(evt, taskIndex);
-    }
-
-    public override bool MatchesEvent(GameEvent evt, int currentSet, int taskIndex)
-    {
-        // Set 0, Task 0: chop trees
-        if (currentSet == 0)
-        {
-            if (taskIndex == 0)
-                return evt.Type == GameEventType.TileBreak
-                    && evt.TileType.HasValue && evt.TileType == TileID.Trees;
-            else if (taskIndex == 1)
-                return evt.Type == GameEventType.ItemPickup
-                    && evt.ItemType.HasValue && evt.ItemType == ItemID.StoneBlock;
-        }
-
-        if ((currentSet >= FirstHousingSet && currentSet <= LastHousingSet) && taskIndex == 0)
-            return evt.Type == GameEventType.HousingChecked
-                && evt.Amount == 1                     // passed the full housing check
-                && !evt.IsOccupied
-                && evt.RoomId is Point room
-                && !creditedRooms.Contains(room);      // and isn't one of the houses already counted
-
-        if (currentSet == CheckInSet && taskIndex == 0)
-            return evt.Type == GameEventType.NPCChat
-                && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);
-
-        return false;
-    }
-
-    public override void SaveCustomData(TagCompound tag)
-    {
-        // Flattened to x, y, x, y - TagCompound has no Point serializer.
-        var rooms = new List<int>(creditedRooms.Count * 2);
-
-        foreach (var room in creditedRooms)
-        {
-            rooms.Add(room.X);
-            rooms.Add(room.Y);
-        }
-
-        tag["CreditedRooms"] = rooms;
-    }
-
-    public override void LoadCustomData(TagCompound tag)
-    {
-        creditedRooms.Clear();
-
-        var rooms = tag.GetList<int>("CreditedRooms");
-
-        for (int i = 0; i + 1 < rooms.Count; i += 2)
-            creditedRooms.Add(new Point(rooms[i], rooms[i + 1]));
-    }
-
-    /// <summary>Guide line for each way a room can come back unusable.</summary>
+    /// <summary>The Guide's line for each way a room can come back unusable.</summary>
     private static string DialogueFor(HousingIssue issue) => issue switch
     {
         HousingIssue.Occupied => "Guide.HomeForager_Occupied",
@@ -172,19 +124,67 @@ public sealed class HomeForager : Job
         HousingIssue.Corrupt => "Guide.HomeForager_Corrupt",
         _ => "Guide.HomeForager_NoValidSpot"
     };
+}
 
-    /// <summary>Says a line, if the Guide is alive to say it and he hasn't just said one.</summary>
-    private void Speak(string dialogueKey)
+/// <summary>
+/// Build a room that passes a housing check, and hasn't been shown before.
+/// </summary>
+/// <remarks>
+/// The ledger of credited rooms is the task's own state, and can be shared between several instances
+/// so a run of "build another one" sets can't all be cleared by re-checking a single house. It used
+/// to live on the job, which meant the job had to intercept its own task's credit to maintain it.
+/// </remarks>
+public sealed class ValidHousingTask(string key) : JobTask(key, 1)
+{
+    private HashSet<Point> creditedRooms = [];
+
+    /// <summary>Points this task at a ledger shared with its siblings.</summary>
+    public void ShareLedger(HashSet<Point> ledger) => creditedRooms = ledger;
+
+    public bool HasCredited(Point room) => creditedRooms.Contains(room);
+
+    public override bool Matches(GameEvent evt)
+        => evt.Type == GameEventType.HousingChecked
+        && evt.Amount == 1                              // passed the full check
+        && !evt.IsOccupied
+        && evt.RoomId is Point room
+        && !creditedRooms.Contains(room);               // and isn't one already counted
+
+    public override int CreditFor(GameEvent evt)
     {
-        int currentTick = (int)Main.GameUpdateCount;
+        // Recorded here rather than from a job-side hook: the task decided this room counts, so the
+        // task is what remembers it.
+        if (evt.RoomId is Point room)
+            creditedRooms.Add(room);
 
-        if (currentTick - lastCommentTick < CommentCooldown)
-            return;
+        return 1;
+    }
 
-        if (!NPC.AnyNPCs(ProviderNPC))
-            return;
+    protected override void OnReset() => creditedRooms.Clear();
 
-        lastCommentTick = currentTick;
-        DialogueManager.Instance.StartDialogue(dialogueKey);
+    public override void SaveData(TagCompound tag)
+    {
+        base.SaveData(tag);
+
+        // Flattened to x, y, x, y -- TagCompound has no Point serializer.
+        var rooms = new List<int>(creditedRooms.Count * 2);
+
+        foreach (var room in creditedRooms)
+        {
+            rooms.Add(room.X);
+            rooms.Add(room.Y);
+        }
+
+        tag["rooms"] = rooms;
+    }
+
+    public override void LoadData(TagCompound tag)
+    {
+        base.LoadData(tag);
+
+        var rooms = tag.GetList<int>("rooms");
+
+        for (var i = 0; i + 1 < rooms.Count; i += 2)
+            creditedRooms.Add(new Point(rooms[i], rooms[i + 1]));
     }
 }

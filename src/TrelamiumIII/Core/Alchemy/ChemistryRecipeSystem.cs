@@ -10,6 +10,7 @@ using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 using TrelamiumIII.Content.Lodestone;
 using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Alchemy.Brewing;
+using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 using TrelamiumIII.Utilities;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 

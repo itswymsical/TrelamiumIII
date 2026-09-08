@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
@@ -12,189 +13,138 @@ public enum GoldMineTask
 {
     TalkToMerchant = 0,
     CollectCopper = 1,
-    ReturnToMerchant = 2,
+    ReturnToMerchant = 2
 }
 
+/// <summary>
+/// The Merchant wants copper, in variety rather than in bulk: ore, bars, furniture and tools each cap
+/// out, so the player has to go and find a different kind rather than mine one vein forever.
+/// </summary>
 public sealed class GoldMine : Job
 {
-    /// <summary>Ticks between Merchant remarks, so one big haul can't stack up a queue of lines.</summary>
-    private const int SurplusCooldown = 60 * 20;
-
-    /// <summary>
-    /// A family of copper items and how much of it counts. The predicates are mutually exclusive, so
-    /// the first pool that matches is the only one that can.
-    /// </summary>
-    private readonly CollectionMatch[] CopperMatches =
-    [
-        new() {
-            SaveKey = "copperOre", MaxContributions = 10,
-            SurplusDialogue = "Merchant.GoldMine_SurplusOre",
-            Matches = evt => evt.ItemType == ItemID.CopperOre
-        },
-        new() {
-            SaveKey = "copperBar", MaxContributions = 15,
-            SurplusDialogue = "Merchant.GoldMine_SurplusBars",
-            Matches = evt => evt.ItemType == ItemID.CopperBar
-        },
-        new() {
-            SaveKey = "copperFurn", MaxContributions = 35,
-            SurplusDialogue = "Merchant.GoldMine_SurplusFurniture",
-            Matches = evt => ItemUtils.IsCopperFurniture(evt)
-        },
-        new() {
-            SaveKey = "copperTool", MaxContributions = 15,
-            SurplusDialogue = "Merchant.GoldMine_SurplusTools",
-            Matches = evt => ItemUtils.IsCopperTool(evt)
-        }
-    ];
-
-    private string pendingDialogue;
-
-    private int lastSurplusTick = -SurplusCooldown;
-
-    private Task CollectionTask => TaskList[(int)GoldMineTask.CollectCopper].Task[0];
+    private CopperPoolTask CollectionTask => (CopperPoolTask)TaskList[(int)GoldMineTask.CollectCopper].Task[0];
 
     public GoldMine() : base(
         JobID.GoldMine, "GoldMine.Name", "GoldMine.Description",
         taskList:
         [
-            [("GoldMine.Tasks.Set0.obj0", 1)],
-            [("GoldMine.Tasks.Set1.obj0", 1)], // real count comes from the pools below
-            [("GoldMine.Tasks.Set2.obj0", 1)],
+            [new TalkToNPCTask("GoldMine.Tasks.Set0.obj0", NPCID.Merchant)],
+            [new CopperPoolTask("GoldMine.Tasks.Set1.obj0")],
+            [new TalkToNPCTask("GoldMine.Tasks.Set2.obj0", NPCID.Merchant)]
         ],
-        rewards: [
+        rewards:
+        [
             new JobReward(ItemID.SilverCoin, 50),
             new JobReward(ItemID.SilverBar, 14),
             new JobReward("TrelamiumIII/StalagMagMKI", 1)
         ],
-        NPCID.Merchant)
-    {
-        // The pools are the source of truth. Asking for more than they can supply makes the set
-        // impossible; asking for less ends it before the player has seen every category.
-        CollectionTask.RequiredCount = CopperMatches.Sum(m => m.MaxContributions);
-    }
+        providerNPC: NPCID.Merchant)
+    { }
+
     public override void OnJobStart()
-    {
-        base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
-
-    }
-    public override void Reset()
-    {
-        base.Reset();
-
-        foreach (var match in CopperMatches)
-            match.CurrentContributions = 0;
-
-        pendingDialogue = null;
-        lastSurplusTick = -SurplusCooldown;
-    }
-
-    public override void Update()
-    {
-        base.Update();
-
-        if (pendingDialogue == null || Main.dedServ)
-            return;
-
-        // Only speak while the Merchant is alive to say it.
-        if (NPC.AnyNPCs(ProviderNPC))
-            DialogueManager.Instance.StartDialogue(pendingDialogue);
-
-        pendingDialogue = null;
-    }
+        => Context.Play("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
 
     /// <summary>
-    /// Nudges the player off a category they've already maxed out. This runs before the task loop sees
-    /// the event, so a pool that reads full here was full <em>before</em> this pickup - the line for a
-    /// pool that just filled is queued from <see cref="OnMatchedEvent"/> instead.
+    /// Nudges the player off a category they have already maxed out. This runs before the task sees
+    /// the event, so a pool that reads full here was full <em>before</em> this pickup -- the line for
+    /// a pool that has only just filled comes from <see cref="OnTaskAdvanced"/> instead.
     /// </summary>
     public override void OnEvent(GameEvent evt)
     {
-        if (CurrentTaskSet != (int)GoldMineTask.CollectCopper || !IsCollectionEvent(evt))
+        if (CurrentTaskSet != (int)GoldMineTask.CollectCopper)
             return;
+
+        var task = CollectionTask;
 
         // Everything is full; the set is wrapping up on its own, no need to redirect anyone.
-        if (CopperMatches.All(m => m.IsFull))
+        if (task.IsCompleted)
             return;
 
-        var pool = CopperMatches.FirstOrDefault(m => m.Matches(evt));
-
-        if (pool != null && pool.IsFull)
+        if (task.FindPool(evt) is { IsFull: true } pool)
             Speak(pool.SurplusDialogue);
     }
 
-    public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
+    /// <summary>Says its piece when a category fills up, as the player hands over the one that did it.</summary>
+    public override void OnTaskAdvanced(JobTask task, int taskIndex, GameEvent evt)
     {
-        if (CurrentTaskSet != (int)GoldMineTask.CollectCopper || !IsCollectionEvent(evt))
-            return base.OnMatchedEvent(evt, taskIndex);
+        if (task is CopperPoolTask pools && pools.FindPool(evt) is { IsFull: true } pool)
+            Speak(pool.SurplusDialogue);
+    }
+}
 
-        var pool = FindOpenPool(evt);
-        if (pool == null)
-            return false;
+/// <summary>
+/// A gathering task split into capped buckets: each family of item counts for only so much, so the
+/// requirement can't be met by grinding a single one.
+/// </summary>
+public sealed class CopperPoolTask : JobTask
+{
+    /// <summary>
+    /// The pools, in the order they are tested. Mutually exclusive, so the first that matches is the
+    /// only one that can.
+    /// </summary>
+    private readonly CollectionPool[] pools =
+    [
+        new("copperOre", 10, "Merchant.GoldMine_SurplusOre", evt => evt.ItemType == ItemID.CopperOre),
+        new("copperBar", 15, "Merchant.GoldMine_SurplusBars", evt => evt.ItemType == ItemID.CopperBar),
+        new("copperFurn", 25, "Merchant.GoldMine_SurplusFurniture", ItemUtils.IsCopperFurniture),
+        new("copperTool", 3, "Merchant.GoldMine_SurplusTools", ItemUtils.IsCopperTool)
+    ];
+
+    public CopperPoolTask(string key) : base(key)
+    {
+        // The pools are the source of truth. Asking for more than they can supply makes the set
+        // impossible; asking for less ends it before the player has seen every category.
+        RequiredCount = pools.Sum(pool => pool.Max);
+    }
+
+    /// <summary>Copper counts whether it was dug up or crafted -- most copper furniture is never found loose.</summary>
+    private static bool IsCollectionEvent(GameEvent evt)
+        => evt.Type is GameEventType.ItemPickup or GameEventType.ItemCraft;
+
+    /// <summary>The pool this item belongs to, full or not, or null if it isn't copper at all.</summary>
+    public CollectionPool FindPool(GameEvent evt)
+        => IsCollectionEvent(evt) ? pools.FirstOrDefault(pool => pool.Matches(evt)) : null;
+
+    public override bool Matches(GameEvent evt)
+        => FindPool(evt) is { IsFull: false };
+
+    public override int CreditFor(GameEvent evt)
+    {
+        var pool = FindPool(evt);
+
+        if (pool is null || pool.IsFull)
+            return 0;
 
         // A stack only counts for what's left in its pool; the other forty copper ore are the
         // player's problem.
-        var credited = Math.Min(evt.Amount, pool.MaxContributions - pool.CurrentContributions);
-        if (credited <= 0)
-            return false;
+        var credited = Math.Min(Math.Max(1, evt.Amount), pool.Max - pool.Current);
 
-        pool.CurrentContributions += credited;
+        pool.Current += credited;
 
-        if (pool.IsFull)
-            Speak(pool.SurplusDialogue);
-
-        return UpdateProgress(taskIndex, credited);
+        return credited;
     }
 
-    public override bool MatchesEvent(GameEvent evt, int currentSet, int taskIndex)
+    protected override void OnReset()
     {
-        var set = (GoldMineTask)currentSet;
-
-        if (set is GoldMineTask.TalkToMerchant or GoldMineTask.ReturnToMerchant)
-            return evt.Type == GameEventType.NPCChat
-                && evt.NPCType.HasValue && evt.NPCType == ProviderNPC;
-
-        if (set == GoldMineTask.CollectCopper)
-            return IsCollectionEvent(evt) && FindOpenPool(evt) != null;
-
-        return false;
+        foreach (var pool in pools)
+            pool.Current = 0;
     }
 
-    public override void SaveCustomData(TagCompound tag)
+    public override void SaveData(TagCompound tag)
     {
-        foreach (var match in CopperMatches)
-            tag[match.SaveKey] = match.CurrentContributions;
+        base.SaveData(tag);
+
+        foreach (var pool in pools)
+            tag[pool.SaveKey] = pool.Current;
     }
 
-    public override void LoadCustomData(TagCompound tag)
+    public override void LoadData(TagCompound tag)
     {
+        base.LoadData(tag);
+
         // Clamped: a pool's cap may have been retuned since the save was written.
-        foreach (var match in CopperMatches)
-            match.CurrentContributions = Math.Min(tag.GetInt(match.SaveKey), match.MaxContributions);
-    }
-
-    /// <summary>Copper counts whether it was dug up or crafted - most copper furniture is never found loose.</summary>
-    private static bool IsCollectionEvent(GameEvent evt) =>
-        evt.Type is GameEventType.ItemPickup or GameEventType.ItemCraft;
-
-    /// <summary>The pool this item belongs to, or null if it isn't copper or that pool is already full.</summary>
-    private CollectionMatch FindOpenPool(GameEvent evt) =>
-        CopperMatches.FirstOrDefault(m => !m.IsFull && m.Matches(evt));
-
-    /// <summary>Queues a line, unless the Merchant has just said one.</summary>
-    private void Speak(string dialogueKey)
-    {
-        if (string.IsNullOrEmpty(dialogueKey))
-            return;
-
-        var currentTick = (int)Main.GameUpdateCount;
-
-        if (currentTick - lastSurplusTick < SurplusCooldown)
-            return;
-
-        lastSurplusTick = currentTick;
-        pendingDialogue = dialogueKey;
+        foreach (var pool in pools)
+            pool.Current = Math.Clamp(tag.GetInt(pool.SaveKey), 0, pool.Max);
     }
 }
 
@@ -202,16 +152,18 @@ public sealed class GoldMine : Job
 /// One capped bucket of a gathering task: what counts toward it, how much of it counts, and what the
 /// quest giver says once it is full.
 /// </summary>
-public class CollectionMatch
+public sealed class CollectionPool(string saveKey, int max, string surplusDialogue, Func<GameEvent, bool> matches)
 {
-    public string SaveKey { get; set; }
-    public int MaxContributions { get; set; }
-    public int CurrentContributions { get; set; }
+    public string SaveKey { get; } = saveKey;
+
+    public int Max { get; } = max;
+
+    public int Current { get; set; }
 
     /// <summary>Played when this pool fills, and again if the player keeps gathering the same thing.</summary>
-    public string SurplusDialogue { get; set; }
+    public string SurplusDialogue { get; } = surplusDialogue;
 
-    public Func<GameEvent, bool> Matches { get; set; }
+    public bool Matches(GameEvent evt) => matches(evt);
 
-    public bool IsFull => CurrentContributions >= MaxContributions;
+    public bool IsFull => Current >= Max;
 }

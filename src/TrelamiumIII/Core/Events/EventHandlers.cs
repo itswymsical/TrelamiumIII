@@ -9,21 +9,17 @@ using TrelamiumIII.Core.UI.World;
 namespace TrelamiumIII.Core.Events;
 
 /// <summary>
-/// Handles item-based events. Such as item creation, pickup, update (in inventory or equipped), consumption, and use. Broadcasts these events for Job/challenge tracking. Also handles some custom logic for item progress updates and Job indicators on NPCs that provide Jobs.
+/// Raises item events -- creation, pickup, consumption -- onto the <see cref="EventSystem"/> bus.
 /// </summary>
 public class EventItem : GlobalItem
 {
     public delegate void ItemCreatedHandler(Item item, ItemCreationContext context);
     public delegate void ItemPickupHandler(Item item, Player player);
-    public delegate void ItemUpdateHandler(Item item, Player player);
     public delegate void ItemConsumeHandler(Item item, Player player);
-    public delegate void ItemUseHandler(Item item, Player player);
 
     public static event ItemCreatedHandler OnItemCreated;
     public static event ItemPickupHandler OnItemPickup;
-    public static event ItemUpdateHandler OnItemUpdate;
     public static event ItemConsumeHandler OnItemConsume;
-    public static event ItemUseHandler OnItemUse;
 
     public override void OnCreated(Item item, ItemCreationContext context)
     {
@@ -45,11 +41,6 @@ public class EventItem : GlobalItem
         return base.OnPickup(item, player);
     }
 
-    public override bool? UseItem(Item item, Player player)
-    {
-        OnItemUse?.Invoke(item, player);
-        return base.UseItem(item, player);
-    }
     public override bool ConsumeItem(Item item, Player player)
     {
         OnItemConsume?.Invoke(item, player);
@@ -63,48 +54,6 @@ public class EventItem : GlobalItem
         }
         base.RightClick(item, player);
     }
-    public override void UpdateEquip(Item item, Player player)
-    {
-        base.UpdateEquip(item, player);
-
-        var jobPlayer = player.GetModPlayer<JobPlayer>();
-        bool itemContributed = false;
-
-        foreach (var job in jobPlayer.ActiveJobs())
-        {
-            if (JobUtils.CanItemContributeToJob(item, job))
-            {
-                itemContributed = true;
-            }
-        }
-
-        if (itemContributed)
-        {
-            OnItemUpdate?.Invoke(item, player);
-        }
-    }
-
-    public override void UpdateInventory(Item item, Player player)
-    {
-        base.UpdateInventory(item, player);
-
-        var jobPlayer = player.GetModPlayer<JobPlayer>();
-        bool itemContributed = false;
-
-        foreach (var job in jobPlayer.ActiveJobs())
-        {
-            if (JobUtils.CanItemContributeToJob(item, job))
-            {
-                itemContributed = true;
-            }
-        }
-
-        if (itemContributed)
-        {
-            OnItemUpdate?.Invoke(item, player);
-        }
-    }
-
     public override void OnConsumeItem(Item item, Player player)
     {
         base.OnConsumeItem(item, player);
@@ -112,21 +61,17 @@ public class EventItem : GlobalItem
     }
 }
 /// <summary>
-/// Handles NPC-based events. Such as chat, hit, kill, spawn, and catch. Broadcasts these events for Job/challenge tracking. Also handles Job indicators on NPCs that provide Jobs.
+/// Raises NPC events -- chat, hit, kill -- onto the bus, and owns the per-NPC job indicator.
 /// </summary>
 public class EventNPC : GlobalNPC
 {
     public delegate void NPCChatHandler(NPC npc, ref string chat);
     public delegate void NPCKillHandler(NPC npc, DamageClass damage);
     public delegate void NPCHitHandler(NPC npc, int damage);
-    public delegate void NPCSpawnHandler(NPC npc);
-    public delegate void NPCCatchHandler(NPC npc, Player player, Item item, bool failed);
 
     public static event NPCChatHandler OnNPCChat;
     public static event NPCKillHandler OnNPCKill;
     public static event NPCHitHandler OnNPCHit;
-    public static event NPCSpawnHandler OnNPCSpawn;
-    public static event NPCCatchHandler OnNPCCatch;
 
     public override bool InstancePerEntity => true;
     private DamageClass lastDamageClass = DamageClass.Default;
@@ -222,9 +167,6 @@ public class EventNPC : GlobalNPC
         // Grouped rather than first-one-wins: an NPC offering three jobs should surface all three.
         foreach (var job in EventSystem.GetAllAvailableJobs(jobPlayer))
         {
-            if (job.Progress != JobProgress.Inactive)
-                continue;
-
             if (!JobsByNPCType.TryGetValue(job.ProviderNPC, out var jobs))
                 JobsByNPCType[job.ProviderNPC] = jobs = [];
 
@@ -260,31 +202,18 @@ public class EventNPC : GlobalNPC
         }
     }
 
-    public override void OnCaughtBy(NPC npc, Player player, Item item, bool failed)
-    {
-        base.OnCaughtBy(npc, player, item, failed);
-        OnNPCCatch?.Invoke(npc, player, item, failed);
-    }
-
-    public override void OnSpawn(NPC npc, IEntitySource source)
-    {
-        base.OnSpawn(npc, source);
-        OnNPCSpawn?.Invoke(npc);
-    }
 }
 /// <summary>
-/// Handles tile-based events. Such as break, place, contact (stepping on), and interact (right-click). Broadcasts these events for Job/challenge tracking. Also handles some custom logic for tile interactions that may be relevant for Jobs or challenges.
+/// Raises tile events -- break, place, right-click -- onto the bus.
 /// </summary>
 public class EventTile : GlobalTile
 {
     public delegate void TileBreakHandler(int i, int j, int type);
     public delegate void TilePlaceHandler(int i, int j, int type);
-    public delegate void TileContactHandler(int type, Player player);
     public delegate void TileInteractHandler(int i, int j, int type);
 
     public static event TileBreakHandler OnTileBreak;
     public static event TilePlaceHandler OnTilePlace;
-    public static event TileContactHandler OnTileContact;
     public static event TileInteractHandler OnTileInteract;
 
     public override void KillTile(int i, int j, int type, ref bool fail, ref bool effectOnly, ref bool noItem)
@@ -309,16 +238,6 @@ public class EventTile : GlobalTile
         base.PlaceInWorld(i, j, type, item);
     }
 
-    public override void FloorVisuals(int type, Player player)
-    {
-        if (Main.gameMenu)
-            return;
-
-        OnTileContact?.Invoke(type, player);
-
-        base.FloorVisuals(type, player);
-    }
-
     public override void RightClick(int i, int j, int type)
     {
         if (Main.gameMenu)
@@ -329,32 +248,15 @@ public class EventTile : GlobalTile
         base.RightClick(i, j, type);
     }
 
-    // use later for clentaminator Job or purification challenges?
-    public override void OnTileConverted(int i, int j, int fromType, int toType, int conversionType)
-    {
-        if (Main.gameMenu)
-            return;
-
-        base.OnTileConverted(i, j, fromType, toType, conversionType);
-    }
-
-
-    // i think this is for blockswap. not sure if it will be useful but might as well have it ready
-    public override void ReplaceTile(int i, int j, int type, int targetType, int targetStyle)
-    {
-        base.ReplaceTile(i, j, type, targetType, targetStyle);
-    }
 }
 /// <summary>
-/// Handles player-based events. Such as entering biomes, taking damage, using items, and interacting with NPCs. Broadcasts these events for Job/challenge tracking. Also handles some custom logic for tracking time spent in biomes for biome-related Jobs or challenges.
+/// Raises player events -- biome dwell time, damage taken, fishing -- onto the bus.
 /// </summary>
 public class EventPlayer : ModPlayer
 {
     public delegate void BiomeEnterHandler(Player player, int timeSpent);
     public static event BiomeEnterHandler OnBiomeEnter;
 
-    public delegate void NPCDistanceHandler(Player player, NPC npc, float distance);
-    public static event NPCDistanceHandler OnCheckDistance;
 
     public delegate void TakenDamageHandler(Player player, int damage);
     public static event TakenDamageHandler OnTakenDamage;
@@ -388,18 +290,6 @@ public class EventPlayer : ModPlayer
         base.ModifyCaughtFish(fish);
     }
 
-    // for later use
-    public override void OnConsumeAmmo(Item weapon, Item ammo)
-    {
-        base.OnConsumeAmmo(weapon, ammo);
-    }
-
-    // for later use
-    public override void Kill(double damage, int hitDirection, bool pvp, PlayerDeathReason damageSource)
-    {
-        base.Kill(damage, hitDirection, pvp, damageSource);
-    }
-
     private void TrackBiomeTime()
     {
         var current = (Player.zone1, Player.zone2, Player.zone3, Player.zone4, Player.zone5);
@@ -422,10 +312,6 @@ public class EventPlayer : ModPlayer
 
     public int GetContinuousTime() => continuousTime;
 
-    public override void UpdateEquips()
-    {
-        base.UpdateEquips();
-    }
     public override void OnHitByNPC(NPC npc, Player.HurtInfo hurtInfo)
     {
         base.OnHitByNPC(npc, hurtInfo);
@@ -438,39 +324,3 @@ public class EventPlayer : ModPlayer
     }
 }
 
-/// <summary>
-/// Handles projectile-based events. Such as hitting NPCs, colliding with tiles, and exploding. Broadcasts these events for Job/challenge tracking. Also handles some custom logic for tracking projectile damage classes for Jobs or challenges that require using specific types of weapons.
-/// </summary>
-public class EventProjectile : GlobalProjectile
-{
-    public delegate void ProjectileHitNPCHandler(Projectile projectile, NPC target, int damage, bool crit);
-    public delegate void ProjectileTileCollideHandler(Projectile projectile, int tileX, int tileY);
-
-    public static event ProjectileHitNPCHandler OnProjectileHitNPC;
-    public static event ProjectileTileCollideHandler OnProjectileTileCollide;
-
-    public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
-    {
-        base.OnHitNPC(projectile, target, hit, damageDone);
-        OnProjectileHitNPC?.Invoke(projectile, target, damageDone, hit.Crit);
-    }
-
-    public override bool OnTileCollide(Projectile projectile, Vector2 oldVelocity)
-    {
-        var tileX = (int)(projectile.position.X / 16);
-        var tileY = (int)(projectile.position.Y / 16);
-        OnProjectileTileCollide?.Invoke(projectile, tileX, tileY);
-        return base.OnTileCollide(projectile, oldVelocity);
-    }
-
-    // Helper to get projectile damage class
-    public static DamageClass GetProjectileDamageClass(Projectile projectile)
-    {
-        return projectile.DamageType;
-    }
-
-    public override void OnKill(Projectile projectile, int timeLeft)
-    {
-        base.OnKill(projectile, timeLeft);
-    }
-}

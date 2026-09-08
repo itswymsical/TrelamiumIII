@@ -1,4 +1,11 @@
 Jobs: {
+	// Tooltip lines on an item a job has reserved (Core/Jobs/MarkedItem).
+	MarkedItem: {
+		ForJob: Reserved for {0}
+		Generic: Reserved for a job
+		Locked: Cannot be used, sold, or stored
+	}
+
 	// Strings for the in-world job board (Core/UI/Jobs/Board).
 	UI: {
 		ListHeader: Jobs ({0})
@@ -29,7 +36,7 @@ Jobs: {
 
 		Tasks: {
 			Set0: {
-				obj0: Chop down trees
+				obj0: Chop down tree logs
 				obj1: Mine and gather stone blocks
 			}
 

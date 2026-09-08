@@ -19,16 +19,16 @@ public static class JobCommandHelper
         return field != null ? (int)field.GetValue(null) : -1;
     }
 
-    public static Job GetOrCreateJob(int JobId, Player player)
-    {
-        // Try to create Job
-        var Job = EventSystem.CreateJob(JobId);
-        if (Job == null)
-            return null;
-
-        // Get or create from appropriate storage
-        return player.GetModPlayer<JobPlayer>().GetOrCreateJob(JobId);
-    }
+    /// <summary>
+    /// This player's instance of a job, or <see langword="null"/> if no such job is registered.
+    /// </summary>
+    /// <remarks>
+    /// The registry check used to be a full <see cref="EventSystem.CreateJob"/> whose result was
+    /// thrown away -- a whole job constructed, task lists and all, purely to find out whether the id
+    /// existed.
+    /// </remarks>
+    public static Job GetOrCreateJob(int jobId, Player player)
+        => EventSystem.IsJobRegistered(jobId) ? player.GetModPlayer<JobPlayer>().GetOrCreateJob(jobId) : null;
 }
 
 public class UnlockJobCommand : ModCommand
@@ -132,7 +132,7 @@ public class StartJobCommand : ModCommand
             return;
         }
 
-        if (Job.Status != JobStatus.Unlocked)
+        if (Job.State != JobState.Available)
         {
             caller.Reply($"Job '{Job.Name}' is locked. Use /unlockj first", Color.Yellow);
             return;
@@ -209,20 +209,23 @@ public class CompleteJobCommand : ModCommand
             return;
         }
 
-        // Force complete all tasks
+        // Force complete all tasks. The job must also be underway, or Complete() correctly refuses:
+        // an unstarted job has nothing to pay out for.
+        if (Job.State == JobState.Available)
+            caller.Player.GetModPlayer<JobPlayer>().StartJob(JobId);
+
         foreach (var set in Job.TaskList)
         {
-            foreach (var obj in set.Task)
-            {
-                obj.Count = obj.RequiredCount;
-                obj.IsCompleted = true;
-            }
+            foreach (var task in set.Task)
+                task.ForceComplete();
         }
 
-        // Complete via appropriate storage
-        caller.Player.GetModPlayer<JobPlayer>().CompleteJob(JobId);
+        Job.CurrentTaskSet = Job.TaskList.Count - 1;
 
-        caller.Reply($"Completed: {Job.Name}", Color.Green);
+        if (caller.Player.GetModPlayer<JobPlayer>().CompleteJob(JobId))
+            caller.Reply($"Completed: {Job.Name}", Color.Green);
+        else
+            caller.Reply($"Could not complete '{Job.Name}' (state: {Job.State})", Color.Yellow);
     }
 }
 
@@ -239,16 +242,22 @@ public class ListJobsCommand : ModCommand
 
         var jobPlayer = caller.Player.GetModPlayer<JobPlayer>();
         caller.Reply("# All Jobs: ", Color.CornflowerBlue);
-        
-        var allJobs = jobPlayer.ActiveJobs()
-            .Concat(jobPlayer.UnlockedJobs())
-            .Distinct();
+
+        // Materialise every registered job so the listing covers ones this player has never touched,
+        // which are exactly the ones a "locked" filter is asking about.
+        foreach (var registered in EventSystem.RegisteredJobIds.ToList())
+            jobPlayer.GetOrCreateJob(registered);
+
+        // Listing only the active and available ones meant the "locked" and "completed" filters could
+        // never match anything.
+        var allJobs = jobPlayer.GetAllJobs();
 
         var filteredJobs = filter switch
         {
-            "unlocked" => allJobs.Where(j => j.Status == JobStatus.Unlocked),
-            "completed" => allJobs.Where(j => j.Status == JobStatus.Completed),
-            "locked" => allJobs.Where(j => j.Status == JobStatus.Locked),
+            "unlocked" => allJobs.Where(j => j.State == JobState.Available),
+            "completed" => allJobs.Where(j => j.State == JobState.Completed),
+            "locked" => allJobs.Where(j => j.State == JobState.Locked),
+            "active" => allJobs.Where(j => j.State == JobState.Active),
             _ => allJobs
         };
 
@@ -256,11 +265,12 @@ public class ListJobsCommand : ModCommand
         {
             foreach (var job in filteredJobs)
             {
-                var status = job.Status switch
+                var status = job.State switch
                 {
-                    JobStatus.Locked => " - Locked",
-                    JobStatus.Completed => " - Completed",
-                    _ => " - Unlocked"
+                    JobState.Locked => " - Locked",
+                    JobState.Completed => " - Completed",
+                    JobState.Active => " - Active",
+                    _ => " - Available"
                 };
                 caller.Reply($"  {status} {job.ID}: {job.Name}", Color.White);
             }

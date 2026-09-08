@@ -1,9 +1,8 @@
-using Ionic.Zlib;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
-using TrelamiumIII.Common.Commands;
+using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.UI.Jobs;
@@ -11,98 +10,142 @@ using TrelamiumIII.Core.UI.Jobs;
 namespace TrelamiumIII.Core.Jobs;
 
 /// <summary>
-/// Stores Jobs and event handling logic.
+/// One player's jobs: their state, their progress, and the routing of game events into them.
 /// </summary>
 public partial class JobPlayer : ModPlayer
 {
-    private List<Job> Jobs = new();
+    private readonly List<Job> jobs = [];
 
-    #region Event Handling
+    #region Event handling
+    /// <summary>
+    /// Offers an event to every active job. Each job decides internally which of its tasks, if any,
+    /// the event is for.
+    /// </summary>
     public void OnGameEvent(GameEvent evt)
     {
-        // Iterate over a copy to safely handle collection modifications during event processing
-        foreach (var Job in Jobs.ToList())
+        // Snapshot: a job completing mid-dispatch can add or retire others.
+        foreach (var job in jobs.ToArray())
         {
-            if (Job.Progress != JobProgress.Ongoing)
-                continue;
-
-            ProcessEventForJob(Job, evt);
-        }
-    }
-
-    private void ProcessEventForJob(Job Job, GameEvent evt)
-    {
-        // Ahead of the task loop, so a Job can still tell what its state was before this event credited anything.
-        Job.OnEvent(evt);
-
-        var currentSet = Job.CurrentTaskSet;
-        if (currentSet < 0 || currentSet >= Job.TaskList.Count)
-            return;
-
-        var tasks = Job.TaskList[currentSet].Task;
-
-        for (var i = 0; i < tasks.Count; i++)
-        {
-            if (tasks[i].IsCompleted)
-                continue;
-
-            if (Job.MatchesEvent(evt, currentSet, i))
-            {
-                Job.OnMatchedEvent(evt, i);
-            }
+            if (job.State == JobState.Active)
+                job.Handle(evt);
         }
     }
     #endregion
 
-    #region Job Access
-    public Job GetOrCreateJob(int JobId)
+    #region Access
+    /// <summary>
+    /// This player's instance of a job, created on first use. Returns <see langword="null"/> for an
+    /// id nothing is registered under.
+    /// </summary>
+    public Job GetOrCreateJob(int jobId)
     {
-        var existing = Jobs.FirstOrDefault(m => m.ID == JobId);
+        var existing = jobs.FirstOrDefault(job => job.ID == jobId);
+
         if (existing != null)
             return existing;
 
-        // Create new Job instance
-        var Job = EventSystem.CreateJob(JobId);
-        if (Job != null)
-        {
-            Jobs.Add(Job);
-            return Job;
-        }
+        var created = EventSystem.CreateJob(jobId);
 
-        return null;
+        if (created is null)
+            return null;
+
+        created.Context = new JobContext(Player, this);
+        jobs.Add(created);
+
+        return created;
     }
 
     /// <summary>
-    /// Starts a Job the player has taken on.
+    /// Starts a job the player has taken on.
     /// </summary>
-    /// <param name="JobId">The Job to start.</param>
     /// <param name="provider">
-    /// da NPC instance that provided the Job, if known. If not provided, the world is searched for one of the right type.
+    /// The NPC that handed it over, if known. The world is searched for one of the right type otherwise.
     /// </param>
-    public void StartJob(int JobId, NPC? provider = null)
+    public void StartJob(int jobId, NPC provider = null)
     {
-        var job = GetOrCreateJob(JobId);
+        var job = GetOrCreateJob(jobId);
 
-        if (job?.Status != JobStatus.Unlocked)
+        if (job?.State != JobState.Available)
             return;
 
-        job.Progress = JobProgress.Ongoing;
+        job.State = JobState.Active;
         job.OnJobStart();
+
+        EventNPC.InvalidateJobCache();
 
         if (Player.whoAmI != Main.myPlayer)
             return;
 
         NotifyProvider(job, provider);
+        InGameNotificationsTracker.AddNotification(new JobAcceptNotification(job));
+    }
 
-        InGameNotificationsTracker.AddNotification(
-            new JobAcceptNotification(job)
-        );
+    /// <summary>Makes a job visible on its provider's board.</summary>
+    public void UnlockJob(int jobId)
+    {
+        var job = GetOrCreateJob(jobId);
+
+        if (job?.State != JobState.Locked)
+            return;
+
+        job.State = JobState.Available;
+        EventNPC.InvalidateJobCache();
+    }
+
+    /// <summary>Withdraws an offered job. Does not touch one already underway.</summary>
+    public void LockJob(int jobId)
+    {
+        var job = jobs.FirstOrDefault(j => j.ID == jobId);
+
+        if (job?.State != JobState.Available)
+            return;
+
+        job.State = JobState.Locked;
+        EventNPC.InvalidateJobCache();
     }
 
     /// <summary>
-    /// Lets the providing NPC know one of its Jobs was taken.
+    /// Finishes a job that has met its tasks.
     /// </summary>
-    private static void NotifyProvider(Job job, NPC? provider)
+    /// <remarks>
+    /// The notification comes from <see cref="Job.OnJobComplete"/>, which is the one path every
+    /// completion goes through. Raising a second one here -- as this used to, unconditionally, even
+    /// for an id that matched nothing -- double-notified on success and threw on failure.
+    /// </remarks>
+    public bool CompleteJob(int jobId)
+    {
+        var job = jobs.FirstOrDefault(j => j.ID == jobId);
+
+        if (job is null)
+            return false;
+
+        job.Complete();
+        EventNPC.InvalidateJobCache();
+
+        return job.State == JobState.Completed;
+    }
+
+    /// <summary>Jobs currently underway.</summary>
+    public IEnumerable<Job> ActiveJobs() => jobs.Where(job => job.State == JobState.Active);
+
+    /// <summary>Jobs offered but not yet taken.</summary>
+    public IEnumerable<Job> AvailableJobs() => jobs.Where(job => job.State == JobState.Available);
+
+    public IEnumerable<Job> GetAllJobs() => jobs;
+
+    /// <summary>
+    /// Every job the given NPC <em>type</em> is currently offering. The single definition of "this NPC
+    /// has work going", used by the indicator to decide whether to appear and by the board to fill its list.
+    /// </summary>
+    public IEnumerable<Job> AvailableJobsFrom(int npcType) =>
+        jobs.Where(job => job.ProviderNPC == npcType && job.State == JobState.Available);
+
+    public bool HasAvailableJobs() => AvailableJobs().Any();
+
+    public bool NPCHasAvailableJob(int npcType) => AvailableJobsFrom(npcType).Any();
+
+    /// <summary>Lets the providing NPC know one of its jobs was taken.</summary>
+    private static void NotifyProvider(Job job, NPC provider)
     {
         provider ??= FindProviderByType(job.ProviderNPC);
 
@@ -110,9 +153,9 @@ public partial class JobPlayer : ModPlayer
             worldNpc.HasActiveJob = true;
     }
 
-    private static NPC? FindProviderByType(int npcType)
+    private static NPC FindProviderByType(int npcType)
     {
-        for (int i = 0; i < Main.maxNPCs; i++)
+        for (var i = 0; i < Main.maxNPCs; i++)
         {
             var npc = Main.npc[i];
 
@@ -122,228 +165,178 @@ public partial class JobPlayer : ModPlayer
 
         return null;
     }
-
-    public void UnlockJob(int JobId)
-    {
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, Main.LocalPlayer);
-        if (Job == null)
-        {
-            Main.NewText($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        var currentJob = GetOrCreateJob(JobId);
-        if (currentJob?.Status == JobStatus.Locked)
-        {
-            currentJob.Status = JobStatus.Unlocked;
-        }
-    }
-
-    public void LockJob(int JobId)
-    {
-        var Job = GetOrCreateJob(JobId);
-        if (Job?.Status == JobStatus.Unlocked)
-        {
-            Job.Status = JobStatus.Locked;
-        }
-    }
-
-    public void CompleteJob(int JobId)
-    {
-        var Job = Jobs.FirstOrDefault(m => m.ID == JobId);
-        Job?.Complete();
-        InGameNotificationsTracker.AddNotification(new JobCompleteNotification(Job));
-    }
-
-    /// <summary>
-    /// Returns Jobs that are currently in progress. These can be shown in the Job sidebar or journal.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<Job> ActiveJobs() =>
-        Jobs.Where(m => m.Progress == JobProgress.Ongoing);
-
-    /// <summary>
-    /// Returns Jobs that are unlocked but not yet started. These can be shown in NPC dialogue or Job boards.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<Job> UnlockedJobs() =>
-        Jobs.Where(m => m.Status == JobStatus.Unlocked);
-
-    public IEnumerable<Job> GetAllJobs() => Jobs;
-
-    /// <summary>
-    /// Every Job the given NPC type is currently offering: unlocked, and not already underway or done.
-    /// </summary>
-    /// <remarks>
-    /// The single definition of "this NPC has work going", used by the indicator to decide whether to
-    /// appear and by the job board to fill its list. Note this is a <em>type</em>, matching how
-    /// <see cref="Job.ProviderNPC"/> is stored.
-    /// </remarks>
-    public IEnumerable<Job> AvailableJobsFrom(int npcType) =>
-        Jobs.Where(m => m.ProviderNPC == npcType
-                     && m.Status == JobStatus.Unlocked
-                     && m.Progress == JobProgress.Inactive);
-
-    /// <summary>
-    /// Returns true if the player has any Jobs that are unlocked but not yet started.
-    /// </summary>
-    /// <returns></returns>
-    public bool HasAvailableJobs() => UnlockedJobs().Any();
     #endregion
 
     #region Persistence
     public override void SaveData(TagCompound tag)
     {
-        var JobData = new List<TagCompound>();
+        var saved = new List<TagCompound>();
 
-        foreach (var Job in Jobs)
+        foreach (var job in jobs)
         {
             var custom = new TagCompound();
-            Job.SaveCustomData(custom);
+            job.SaveCustomData(custom);
 
-            JobData.Add(new TagCompound
+            saved.Add(new TagCompound
             {
-                ["ID"] = Job.ID,
-                ["Progress"] = (int)Job.Progress,
-                ["Status"] = (int)Job.Status,
-                ["CurrentList"] = Job.CurrentTaskSet,
-                ["Tasks"] = SerializeTasks(Job.TaskList),
-                ["Contributions"] = SerializeContributions(Job),
+                ["ID"] = job.ID,
+                ["State"] = (int)job.State,
+                ["Set"] = job.CurrentTaskSet,
+                ["Tasks"] = SerializeTasks(job),
                 ["Custom"] = custom
             });
         }
 
-        tag["Jobs"] = JobData;
+        tag["Jobs"] = saved;
     }
 
     public override void LoadData(TagCompound tag)
     {
-        Jobs.Clear();
+        jobs.Clear();
 
-        var JobData = tag.GetList<TagCompound>("Jobs");
-
-        foreach (var JobTag in JobData)
+        foreach (var jobTag in tag.GetList<TagCompound>("Jobs"))
         {
-            var JobId = JobTag.GetInt("ID");
-            var Job = EventSystem.CreateJob(JobId);
+            var job = GetOrCreateJob(jobTag.GetInt("ID"));
 
-            if (Job != null)
-            {
-                Job.Progress = (JobProgress)JobTag.GetInt("Progress");
-                Job.Status = (JobStatus)JobTag.GetInt("Status");
-                Job.CurrentTaskSet = JobTag.GetInt("CurrentList");
+            if (job is null)
+                continue;
 
-                DeserializeTasks(Job.TaskList, JobTag.GetList<TagCompound>("Tasks"));
-                DeserializeContributions(Job, JobTag.GetList<int>("Contributions"));
-                Job.LoadCustomData(JobTag.GetCompound("Custom") ?? new TagCompound());
+            job.State = ReadState(jobTag);
+            job.CurrentTaskSet = Math.Clamp(jobTag.GetInt("Set"), 0, Math.Max(0, job.TaskList.Count - 1));
 
-                Jobs.Add(Job);
-            }
+            DeserializeTasks(job, jobTag);
+            job.LoadCustomData(jobTag.GetCompound("Custom") ?? []);
         }
     }
 
-    private List<TagCompound> SerializeTasks(List<TaskList> taskSets)
+    /// <summary>
+    /// Reads the job's state, folding forward the two-enum format that predates <see cref="JobState"/>.
+    /// </summary>
+    /// <remarks>
+    /// Old saves carry <c>Progress {Inactive, Ongoing, Completed}</c> and <c>Status {Locked, Unlocked,
+    /// Completed}</c>. Progress wins where they disagree, because it is the one the dispatcher used to
+    /// consult -- so it describes what the player was actually experiencing.
+    /// </remarks>
+    private static JobState ReadState(TagCompound jobTag)
     {
-        var result = new List<TagCompound>();
+        if (jobTag.TryGet("State", out int state))
+            return (JobState)Math.Clamp(state, (int)JobState.Locked, (int)JobState.Completed);
 
-        foreach (var set in taskSets)
+        var progress = jobTag.TryGet("Progress", out int p) ? p : 0;
+        var status = jobTag.TryGet("Status", out int s) ? s : 0;
+
+        return progress switch
+        {
+            1 => JobState.Active,       // Ongoing
+            2 => JobState.Completed,    // Completed
+            _ => status switch
+            {
+                1 => JobState.Available,  // Unlocked
+                2 => JobState.Completed,  // Completed
+                _ => JobState.Locked
+            }
+        };
+    }
+
+    /// <summary>
+    /// Tasks are stored per set, keyed by description key rather than by position, so inserting a task
+    /// into a set does not silently shift everyone's progress along by one.
+    /// </summary>
+    private static List<TagCompound> SerializeTasks(Job job)
+    {
+        var sets = new List<TagCompound>();
+
+        foreach (var set in job.TaskList)
         {
             var tasks = new List<TagCompound>();
 
-            foreach (var obj in set.Task)
+            foreach (var task in set.Task)
             {
-                tasks.Add(new TagCompound
-                {
-                    ["Desc"] = obj.Description,
-                    ["Done"] = obj.IsCompleted,
-                    ["Count"] = obj.Count,
-                    ["Required"] = obj.RequiredCount
-                });
+                var taskTag = new TagCompound { ["key"] = task.DescriptionKey };
+                task.SaveData(taskTag);
+
+                tasks.Add(taskTag);
             }
 
-            result.Add(new TagCompound { ["Objs"] = tasks });
+            sets.Add(new TagCompound { ["tasks"] = tasks });
         }
 
-        return result;
+        return sets;
     }
 
-     private void DeserializeTasks(List<TaskList> taskSets, IList<TagCompound> savedSets)
+    private static void DeserializeTasks(Job job, TagCompound jobTag)
     {
-        for (var i = 0; i < Math.Min(taskSets.Count, savedSets.Count); i++)
+        var savedSets = jobTag.GetList<TagCompound>("Tasks");
+
+        for (var i = 0; i < Math.Min(job.TaskList.Count, savedSets.Count); i++)
         {
-            var savedObjs = savedSets[i].GetList<TagCompound>("Objs");
-            var currentObjs = taskSets[i].Task;
+            var savedTasks = savedSets[i].GetList<TagCompound>("tasks");
 
-            foreach (var currentObj in currentObjs)
+            // Pre-JobState saves nested tasks under "Objs" with a resolved "Desc"/"Count" pair.
+            var legacy = savedTasks.Count == 0 ? savedSets[i].GetList<TagCompound>("Objs") : null;
+
+            foreach (var task in job.TaskList[i].Task)
             {
-                var match = savedObjs.FirstOrDefault(s =>
-                    s.GetString("Desc") == currentObj.Description);
-
-                if (match != null)
+                if (legacy is not null)
                 {
-                    currentObj.IsCompleted = match.GetBool("Done");
-                    currentObj.Count = match.GetInt("Count");
+                    var match = legacy.FirstOrDefault(t => t.GetString("Desc") == task.Description);
+
+                    if (match != null)
+                        task.LoadData(new TagCompound { ["count"] = match.GetInt("Count") });
+
+                    continue;
                 }
+
+                var saved = savedTasks.FirstOrDefault(t => t.GetString("key") == task.DescriptionKey);
+
+                if (saved != null)
+                    task.LoadData(saved);
             }
-        }
-    }
-
-    private List<int> SerializeContributions(Job job)
-    {
-        return job.GetContributedItemIds();
-    }
-
-    private void DeserializeContributions(Job job, IList<int> contributedIds)
-    {
-        foreach (var itemId in contributedIds)
-        {
-            job.MarkItemAsContributed(itemId);
         }
     }
     #endregion
 
-    #region UI Notifications
-    public void NotifyJobUpdate(Job Job) { }
-    public bool NPCHasAvailableJob(int npcType) =>
-        UnlockedJobs().Any(m => m.ProviderNPC == npcType);
-
-    private bool notificationExists = false;
-
+    #region Upkeep
     public override void OnEnterWorld()
     {
-        base.OnEnterWorld();
+        // Anything gated behind a day this world has already seen is opened here, so a player who
+        // was not present at the sunrise that gated it is not locked out of it permanently.
+        WorldTimeSystem.ApplyMilestonesTo(Player);
 
-        notificationExists = false;
+        RefreshSidebar();
     }
 
     public override void PostUpdate()
     {
-        var allJobs = this.ActiveJobs()
-            .Concat(this.UnlockedJobs());
-
-        foreach (var Job in allJobs)
+        foreach (var job in jobs)
         {
-            Job.Update();
+            if (job.State is JobState.Active or JobState.Available)
+                job.Update();
         }
 
+        if (Player.whoAmI == Main.myPlayer)
+            RefreshSidebar();
+    }
 
-        bool hasJobs = allJobs.Any();
+    /// <summary>
+    /// Puts the sidebar up when there is anything to show and takes it down when there isn't.
+    /// </summary>
+    /// <remarks>
+    /// The sidebar re-reads the job list itself every frame, so it only needs creating once. This used
+    /// to be latched behind a <c>notificationExists</c> flag that never reset on world change.
+    /// </remarks>
+    private void RefreshSidebar()
+    {
+        if (Main.dedServ || JobSidebarManager.Instance is null)
+            return;
 
-        if (hasJobs && !notificationExists)
-        {
-            var currentJob = allJobs.FirstOrDefault();
+        var headline = jobs.FirstOrDefault(job => job.State == JobState.Active)
+                    ?? jobs.FirstOrDefault(job => job.State == JobState.Available);
 
-            if (currentJob != null)
-            {
-                JobSidebarManager.Instance.SetNotification(new JobSidebar(currentJob));
-                notificationExists = true;
-            }
-        }
-        else if (!hasJobs)
-        {
+        if (headline is null)
             JobSidebarManager.Instance.ClearNotification();
-            notificationExists = false;
-        }
+        else
+            JobSidebarManager.Instance.EnsureNotification(headline);
     }
     #endregion
 }

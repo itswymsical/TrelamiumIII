@@ -3,8 +3,14 @@
 namespace TrelamiumIII.Core.Events;
 
 /// <summary>
-/// Struct representing an in-game event that can be used for Job/challenge tracking. Contains relevant information about the event such as type, player involved, and specific details depending on the event type (e.g. tile type for tile events, NPC type for NPC events, etc.). This allows for a flexible and extensible way to track a wide variety of events without needing separate hooks for each one.
+/// One thing that happened, in a shape every listener can read.
 /// </summary>
+/// <remarks>
+/// Deliberately one wide struct rather than a type per event: a task can then be handed any event and
+/// decide for itself whether it cares, without the dispatcher knowing anything about either. The cost
+/// is that most fields are null for most events -- read them only after checking
+/// <see cref="Type"/>.
+/// </remarks>
 public struct GameEvent
 {
     public GameEventType Type;
@@ -33,13 +39,11 @@ public struct GameEvent
     /// </summary>
     public int? seconds;
 
-    // Projectile events
+    /// <summary>Set when a tile was broken by an explosion rather than a tool.</summary>
     public int? ExplosiveType;
-    public int? ProjectileType;
+
     public DamageClass DamageClass;
-    public bool WasCrit;
-    public Vector2? NPCPosition;
-    public AdvancedPopupRequest PopupRequest;
+
     public bool IsOccupied;
 
     // Housing events
@@ -207,17 +211,6 @@ public struct GameEvent
         };
     }
 
-    public static GameEvent ItemUse(Item item, Player player)
-    {
-        return new GameEvent
-        {
-            Type = GameEventType.ItemUse,
-            ItemType = item.type,
-            Item = item,
-            Player = player,
-            Amount = 1
-        };
-    }
     public static GameEvent ItemConsume(Item item, Player player)
     {
         return new GameEvent
@@ -241,16 +234,6 @@ public struct GameEvent
         };
     }
 
-    public static GameEvent NPCDistCheck(Player player, NPC npc, float distance)
-    {
-        return new GameEvent
-        {
-            Type = GameEventType.OnCheckDistance,
-            Player = player,
-            NPC = npc,
-            Amount = (int)distance
-        };
-    }
 }
 /// <summary>
 /// Why a housing check came back unusable, at the granularity an NPC would comment on. Ordered from
@@ -298,12 +281,10 @@ public enum GameEventType
     NPCChat,
     ItemPickup,
     ItemCraft,
-    ItemUse,
     ItemConsume,
     BiomeEnter,
     FishingAttempt,
     CaughtFish,
     TakeDamage,
-    OnCheckDistance,
     HousingChecked
 }

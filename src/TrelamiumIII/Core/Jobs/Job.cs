@@ -10,314 +10,385 @@ using TrelamiumIII.Core.UI.Jobs;
 
 namespace TrelamiumIII.Core.Jobs;
 
-public enum JobProgress { Inactive, Ongoing, Completed }
+/// <summary>
+/// Where a job stands for one player.
+/// </summary>
+/// <remarks>
+/// One field, deliberately. This was two overlapping enums -- <c>JobProgress {Inactive, Ongoing,
+/// Completed}</c> alongside <c>JobStatus {Locked, Unlocked, Completed}</c> -- which meant "completed"
+/// existed twice and could disagree with itself, and every query had to decide which of the two to
+/// trust. Four states cover everything both of them expressed.
+/// </remarks>
+public enum JobState
+{
+    /// <summary>Exists, but the player has no way to see or take it yet.</summary>
+    Locked,
 
-public enum JobStatus { Locked, Unlocked, Completed }
+    /// <summary>Offered. Shows on the provider's board and puts an indicator over their head.</summary>
+    Available,
+
+    /// <summary>Taken and underway.</summary>
+    Active,
+
+    /// <summary>Finished and paid out.</summary>
+    Completed
+}
 
 /// <summary>
-/// A Job represents a quest or task that the player can undertake, 
-/// consisting of one or more sets of tasks (tasks) that must be completed in order. 
-/// Each Job has its own unique ID, name, description, list of tasks, rewards, and provider NPC.
+/// A quest: an ordered chain of task sets, a payout, and the NPC who hands it out.
 /// </summary>
+/// <remarks>
+///     <para>
+///         Every set must finish before the next begins, which is what gives a job stages -- gather,
+///         then build, then report back. The job's own overrides are the <em>narrative</em> layer:
+///         what the provider says as stages turn over, what they say when the player is doing it
+///         wrong. Whether an event counts toward a task is the task's business, not the job's.
+///     </para>
+/// </remarks>
 public abstract class Job
 {
-    #region Properties
-    public int ID { get; set; }
-    public string NameKey { get; private set; }        // Localization key
-    public string DescriptionKey { get; private set; } // Localization key
+    #region Definition
+    public int ID { get; }
 
-    // Resolved at runtime
+    /// <summary>Localization key, resolved on read so a language switch takes effect immediately.</summary>
+    public string NameKey { get; }
+
+    public string DescriptionKey { get; }
+
     public string Name => TrelamiumIII.Instance.GetLocalization($"Jobs.{NameKey}").Value;
+
     public string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
 
-    /// <summary>
-    /// List of task sets, where each set contains one or more tasks that must be completed. The player must complete all tasks in the current set to progress to the next set. This allows for Jobs with multiple stages or phases, where each phase has its own set of tasks. For example, a Job might require the player to first gather resources (set 1), then defeat a boss (set 2), and finally return to the quest giver (set 3). The CurrentSet property tracks which set the player is currently working on, and the Job progresses through the sets as tasks are completed. Each Task contains its own description, required count, and completion status, allowing for detailed tracking of Job progress.
-    /// </summary>
-    public List<TaskList> TaskList { get; protected set; }
-    public List<JobReward> Rewards { get; private set; } // Changed type
-    public int ProviderNPC { get; set; }
+    public List<TaskList> TaskList { get; }
 
-    public JobProgress Progress { get; set; } = JobProgress.Inactive;
+    public List<JobReward> Rewards { get; }
 
-    public JobStatus Status { get; set; } = JobStatus.Locked;
-
-    /// <summary>
-    /// Index of the current task set the player is working on. Jobs can have multiple sets of tasks that need to be completed in order. This tracks which set is currently active.
-    /// </summary>
-    public int CurrentTaskSet { get; set; } = 0;
-
-    /// <summary>
-    /// Tracks items that have already contributed to this Job's progress.
-    /// Stores item instance IDs to prevent duplicate contributions.
-    /// </summary>
-    private HashSet<int> ContributedItemIds { get; set; } = new();
+    /// <summary>NPC <em>type</em> that offers this job, matching how the board and indicator look it up.</summary>
+    public int ProviderNPC { get; }
     #endregion
 
+    #region State
+    public JobState State { get; set; } = JobState.Locked;
+
+    /// <summary>Index into <see cref="TaskList"/> of the stage currently underway.</summary>
+    public int CurrentTaskSet { get; set; }
+
     /// <summary>
-    /// Constructor acts as definition for the Job. 
-    /// When creating a new Job, you provide all the necessary information about its tasks and rewards through the parameters. 
+    /// The player this job belongs to, and everything it is allowed to do to them. Assigned by
+    /// <see cref="JobPlayer"/> the moment the job is created; never null on a job that reached the
+    /// player's list.
     /// </summary>
-    /// <param name="id">ID number.</param>
-    /// <param name="name">Display name.</param>
-    /// <param name="description">Description, appears in UI.</param>
-    /// <param name="taskList">The list/array for all task sets and their nested tasks.</param>
-    /// <param name="rewards">The goods!</param>
-    /// <param name="providerNPC">The provider/comJober of this Job. An indicator will appear above their head when this Job becomes available.</param>
-    protected Job(int id, string nameKey, string descriptionKey, List<List<(string, int)>> taskList,
-           List<JobReward> rewards, int providerNPC)
+    public JobContext Context { get; internal set; }
+
+    /// <summary>The stage underway, or <see langword="null"/> if the index has run off the end.</summary>
+    public TaskList CurrentSet =>
+        CurrentTaskSet >= 0 && CurrentTaskSet < TaskList.Count ? TaskList[CurrentTaskSet] : null;
+    #endregion
+
+    /// <summary>Ticks a job must wait between spoken lines, so one big haul can't queue up a monologue.</summary>
+    protected virtual int SpeechCooldown => 60 * 20;
+
+    private string pendingSpeech;
+
+    /// <summary>
+    /// Earliest tick this job may speak again. A deadline rather than a "last spoke at", so the
+    /// initial value is simply zero -- meaning "may speak now" -- and nothing has to encode "never
+    /// spoken" as a sentinel far in the past.
+    /// </summary>
+    private long nextSpeechTick;
+
+    /// <param name="taskList">Stages, in order. Each stage is the set of tasks that must all finish before the next begins.</param>
+    protected Job(int id, string nameKey, string descriptionKey, List<List<JobTask>> taskList,
+        List<JobReward> rewards, int providerNPC)
     {
         ID = id;
         NameKey = nameKey;
         DescriptionKey = descriptionKey;
-        TaskList = taskList.Select(set =>
-            new TaskList(set.Select(o =>
-                new Task(o.Item1, o.Item2)).ToList())).ToList();
+        TaskList = taskList.Select(set => new TaskList(set)).ToList();
         Rewards = rewards;
         ProviderNPC = providerNPC;
     }
 
-    /// <summary>
-    /// Determines if this Job cares about a specific event for the current task.
-    /// Override in child classes to define event matching logic.
-    /// </summary>
-    /// <param name="evt">The event that occurred</param>
-    /// <param name="currentSet">Current task set index</param>
-    /// <param name="taskIndex">Task index within the set</param>
-    /// <returns>True if this Job should react to the event</returns>
-    public virtual bool MatchesEvent(GameEvent evt, int currentSet, int taskIndex)
-    {
-        return false;
-    }
+    #region Hooks
+    /// <summary>Called once when the player takes the job on.</summary>
+    public virtual void OnJobStart() { }
 
     /// <summary>
-    /// Called when a matching event occurs. Override to customize behavior.
-    /// Default: just increment progress by event amount.
+    /// Every event this job sees while active, before its tasks get a look at it. For reactions that
+    /// aren't progress: commentary, hints, bookkeeping.
     /// </summary>
-    /// <param name="evt">The event that matched</param>
-    /// <param name="taskIndex">Which task to update</param>
-    /// <returns>True if progress was updated</returns>
-    public virtual bool OnMatchedEvent(GameEvent evt, int taskIndex)
-    {
-        return UpdateProgress(taskIndex, evt.Amount);
-    }
-
-    /// <summary>
-    /// Called for every event this Job sees while it is ongoing, matching or not, before the current set's
-    /// tasks get a look at it. Override for reactions that aren't progress (commentary, hints, bookkeeping)
-    /// </summary>
-    /// <param name="evt">The event that occurred</param>
+    /// <remarks>
+    /// Running first is the point -- a job can still tell what its state was <em>before</em> this
+    /// event credited anything, which is what makes "you already showed me that room" possible.
+    /// </remarks>
     public virtual void OnEvent(GameEvent evt) { }
 
     /// <summary>
-    /// Dialogue this Job wants its <see cref="ProviderNPC"/> to open instead of the vanilla
-    /// chat window, asked every time the player talks to one while the Job is ongoing.
-    /// Return <see cref="ChatEncounter.None"/> - the default - to leave the NPC alone.
+    /// Called after <paramref name="task"/> took credit. Override to react to progress; the task has
+    /// already recorded it, and its stage has not yet turned over.
     /// </summary>
-    /// <remarks>
-    /// This is the "the job is talking, not the NPC" case: a briefing on the current set, a
-    /// nudge toward the task that is still open, the hand-in line. Resolved ahead of the
-    /// NPC's own greeting, so whichever set is underway is what gets said.
-    /// </remarks>
-    public virtual ChatEncounter GetChatEncounter(NPC npc, Player player) => ChatEncounter.None;
+    /// <param name="evt">
+    /// What caused the credit, or <see langword="default"/> when the progress came from the job
+    /// itself rather than from an event.
+    /// </param>
+    public virtual void OnTaskAdvanced(JobTask task, int taskIndex, GameEvent evt) { }
 
-    /// <summary>
-    /// Called when the last task of a set is finished and the Job moves on to the next one.
-    /// Override to mark the transition.
-    /// </summary>
-    /// <param name="previousSet">The set that was just completed</param>
-    /// <param name="newSet">The set now underway</param>
+    /// <summary>Called when the last task of a set finishes and the job moves on.</summary>
     public virtual void OnSetAdvanced(int previousSet, int newSet) { }
-
-    /// <summary>
-    /// Job-specific state to persist alongside task progress. Base implementation stores nothing.
-    /// </summary>
-    public virtual void SaveCustomData(TagCompound tag) { }
-
-    /// <summary>
-    /// Restores what <see cref="SaveCustomData"/> wrote. <paramref name="tag"/> is empty for saves made
-    /// before the Job started storing anything, so treat every key as optional.
-    /// </summary>
-    public virtual void LoadCustomData(TagCompound tag) { }
-
-    public virtual void OnJobStart() { }
 
     public virtual void OnJobComplete(bool giveRewards = true)
     {
         if (giveRewards)
-            GiveRewards();
+            RewardBag.Award(Context.Player, this);
 
-        InGameNotificationsTracker.AddNotification(new JobCompleteNotification(this));
+        if (Context.IsLocal)
+            InGameNotificationsTracker.AddNotification(new JobCompleteNotification(this));
     }
 
-    public bool UpdateProgress(int task, int amount)
+    /// <summary>
+    /// Dialogue this job wants its <see cref="ProviderNPC"/> to open instead of the vanilla chat
+    /// window, asked every time the player talks to one while the job is active.
+    /// </summary>
+    /// <remarks>
+    /// This is the "the job is talking, not the NPC" case: a briefing on the current stage, a nudge
+    /// toward what is still open, the hand-in line. Resolved ahead of the NPC's own greeting, so
+    /// whichever stage is underway is what gets said.
+    /// </remarks>
+    public virtual ChatEncounter GetChatEncounter(NPC npc, Player player) => ChatEncounter.None;
+
+    /// <summary>Job-level state to persist. Task progress saves itself; this is for the rest.</summary>
+    public virtual void SaveCustomData(TagCompound tag) { }
+
+    /// <summary>
+    /// Restores what <see cref="SaveCustomData"/> wrote. The tag is empty for saves made before the
+    /// job stored anything, so treat every key as optional.
+    /// </summary>
+    public virtual void LoadCustomData(TagCompound tag) { }
+    #endregion
+
+    #region Progress
+    /// <summary>
+    /// Feeds one event to the current stage's tasks. Returns true if anything took credit.
+    /// </summary>
+    /// <remarks>
+    /// The job's own <see cref="OnEvent"/> runs first, then each unfinished task in the stage is asked
+    /// whether the event is for it. Nothing here knows what any particular task wants -- that is
+    /// exactly the routing ladder this replaced.
+    /// </remarks>
+    internal bool Handle(GameEvent evt)
     {
-        if (Progress != JobProgress.Ongoing)
+        if (State != JobState.Active)
             return false;
 
-        var currentSet = TaskList[CurrentTaskSet];
-        if (task >= 0 && task < currentSet.Task.Count)
-        {
-            var obj = currentSet.Task[task];
-            if (!obj.IsCompleted || amount < 0)
-            {
-                var wasCompleted = obj.UpdateProgress(amount);
-                Main.LocalPlayer.GetModPlayer<JobPlayer>().NotifyJobUpdate(this);
+        OnEvent(evt);
 
-                if (wasCompleted && amount > 0)
-                    SoundEngine.PlaySound(new SoundStyle($"{Assets.SFX.TaskComplete.KEY}") 
-                        with { Volume = 0.75f }, Main.LocalPlayer.position);
-                
+        var set = CurrentSet;
 
-                if (currentSet.IsCompleted)
-                {
-                    if (CurrentTaskSet < TaskList.Count - 1)
-                    {
-                        int previousSet = CurrentTaskSet;
-                        CurrentTaskSet++;
-                        OnSetAdvanced(previousSet, CurrentTaskSet);
-                        return true;
-                    }
-                    if (TaskList.All(set => set.IsCompleted))
-                    {
-                        Complete();
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// ALWAYS call base.Reset() if you're gonna use this.
-    /// </summary>
-    public virtual void Reset()
-    {
-        Progress = JobProgress.Inactive;
-        Status = JobStatus.Unlocked;
-        CurrentTaskSet = 0;
-        ContributedItemIds.Clear();
-        foreach (var set in TaskList)
-        {
-            set.Reset();
-        }
-    }
-
-    #region Contribution Tracking
-    /// <summary>
-    /// Checks if an item has already contributed progress to this Job.
-    /// </summary>
-    /// <param name="itemInstanceId">The unique instance ID of the item</param>
-    /// <returns>True if the item has already contributed, false otherwise</returns>
-    public bool HasItemContributed(int itemInstanceId)
-    {
-        return ContributedItemIds.Contains(itemInstanceId);
-    }
-
-    /// <summary>
-    /// Marks an item as having contributed to this Job's progress.
-    /// Prevents the same item instance from contributing multiple times.
-    /// </summary>
-    /// <param name="itemInstanceId">The unique instance ID of the item</param>
-    public void MarkItemAsContributed(int itemInstanceId)
-    {
-        ContributedItemIds.Add(itemInstanceId);
-    }
-
-    /// <summary>
-    /// Checks if an item should contribute to progress (convenience method combining check + mark).
-    /// </summary>
-    /// <param name="itemInstanceId">The unique instance ID of the item</param>
-    /// <returns>True if item hasn't contributed yet, false if it already has</returns>
-    public bool TryMarkItemContribution(int itemInstanceId)
-    {
-        if (ContributedItemIds.Contains(itemInstanceId))
+        if (set is null)
             return false;
 
-        ContributedItemIds.Add(itemInstanceId);
+        var credited = false;
+
+        // Against a snapshot of the stage index: crediting one task can finish the stage and move the
+        // job on, and the loop must not carry on crediting the stage it has just left.
+        var setIndex = CurrentTaskSet;
+
+        for (var i = 0; i < set.Task.Count && CurrentTaskSet == setIndex; i++)
+        {
+            var task = set.Task[i];
+
+            if (task.IsCompleted || !task.Matches(evt))
+                continue;
+
+            if (UpdateProgress(i, task.CreditFor(evt), evt))
+                credited = true;
+        }
+
+        return credited;
+    }
+
+    /// <summary>
+    /// Applies <paramref name="amount"/> to a task of the current stage, advancing the stage or
+    /// finishing the job if that was the last of it.
+    /// </summary>
+    /// <param name="cause">The event responsible, if there was one. Passed on to <see cref="OnTaskAdvanced"/>.</param>
+    /// <returns>
+    /// True when progress actually moved -- not only when a stage turned over. The old contract
+    /// returned false for every ordinary increment, which made the return value unusable.
+    /// </returns>
+    public bool UpdateProgress(int taskIndex, int amount, GameEvent cause = default)
+    {
+        if (State != JobState.Active || amount == 0)
+            return false;
+
+        var set = CurrentSet;
+
+        if (set is null || taskIndex < 0 || taskIndex >= set.Task.Count)
+            return false;
+
+        var task = set.Task[taskIndex];
+
+        // A finished task still accepts a revoke, which is what re-opens it.
+        if (task.IsCompleted && amount > 0)
+            return false;
+
+        var before = task.Count;
+
+        if (!task.Advance(amount) && task.Count == before)
+            return false;
+
+        if (task.IsCompleted && amount > 0 && Context.IsLocal)
+        {
+            SoundEngine.PlaySound(
+                new SoundStyle($"{Assets.SFX.TaskComplete.KEY}") with { Volume = 0.75f },
+                Context.Player.position);
+        }
+
+        // Before the stage can turn over, so taskIndex still addresses the stage this task is in and
+        // the job hears about the task before it hears about the stage.
+        OnTaskAdvanced(task, taskIndex, cause);
+
+        if (set.IsCompleted)
+            AdvanceSet();
+
         return true;
     }
 
     /// <summary>
-    /// Clears all tracked contributions. Useful for Job reset or testing.
+    /// Moves to the next stage, or finishes the job when there isn't one. The single place the stage
+    /// index moves forward -- the sidebar used to do it too, from inside its draw pass, which meant
+    /// <see cref="OnSetAdvanced"/> was silently skipped whenever the UI got there first.
     /// </summary>
-    public void ClearContributions()
+    private void AdvanceSet()
     {
-        ContributedItemIds.Clear();
+        if (CurrentTaskSet < TaskList.Count - 1)
+        {
+            var previous = CurrentTaskSet;
+
+            CurrentTaskSet++;
+            OnSetAdvanced(previous, CurrentTaskSet);
+
+            return;
+        }
+
+        Complete();
     }
 
-    /// <summary>
-    /// Gets the list of contributed item IDs for serialization.
-    /// </summary>
-    internal List<int> GetContributedItemIds() => new(ContributedItemIds);
-    #endregion
-
+    /// <summary>Finishes the job and pays it out, if every stage really is done.</summary>
     public void Complete()
     {
-        if (Progress == JobProgress.Ongoing && TaskList.All(set => set.IsCompleted))
-        {
-            Progress = JobProgress.Completed;
-            Status = JobStatus.Completed;
-            OnJobComplete();
-        }
+        if (State != JobState.Active || !TaskList.All(set => set.IsCompleted))
+            return;
+
+        State = JobState.Completed;
+        OnJobComplete();
     }
 
+    /// <summary>
+    /// Returns the job to its unstarted state, and offers it again. Always call <c>base.Reset()</c>
+    /// when overriding.
+    /// </summary>
+    /// <remarks>
+    /// Re-offering is deliberate: the only caller is the <c>resetj</c> debug command, and a reset job
+    /// the player cannot then take is of no use to anyone testing one.
+    /// </remarks>
+    public virtual void Reset()
+    {
+        State = JobState.Available;
+        CurrentTaskSet = 0;
+        pendingSpeech = null;
+        nextSpeechTick = 0;
+
+        foreach (var set in TaskList)
+            set.Reset();
+    }
+    #endregion
+
+    #region Speech
+    /// <summary>
+    /// Queues a line from the provider, unless they have just said one.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Queued rather than spoken outright, and drained from <see cref="Update"/>. Speaking
+    ///         from inside event handling put dialogue on whatever thread and whatever frame the event
+    ///         happened to arrive on, including during world load and on the server.
+    ///     </para>
+    ///     <para>
+    ///         Both existing jobs had grown their own private copy of this, with a private cooldown
+    ///         field and subtly different semantics.
+    ///     </para>
+    ///     <para>
+    ///         The comparison is against a deadline, in <see langword="long"/>, rather than
+    ///         <c>now - lastSpoke &lt; cooldown</c>. That subtraction overflows if the "never spoke"
+    ///         sentinel is far enough in the past, wrapping to a negative result that reads as "spoke
+    ///         a moment ago" -- which silently muted every job's dialogue for the whole session.
+    ///     </para>
+    /// </remarks>
+    protected void Speak(string dialogueKey)
+    {
+        if (string.IsNullOrEmpty(dialogueKey))
+            return;
+
+        long now = Main.GameUpdateCount;
+
+        if (now < nextSpeechTick)
+            return;
+
+        nextSpeechTick = now + SpeechCooldown;
+        pendingSpeech = dialogueKey;
+    }
+
+    /// <summary>Per-tick upkeep. Override for polling, and call <c>base.Update()</c>.</summary>
     public virtual void Update()
     {
-        if (Progress != JobProgress.Ongoing && Status != JobStatus.Unlocked) return;
+        if (pendingSpeech is null)
+            return;
+
+        // Only worth saying if the provider is alive to say it.
+        if (Context.IsLocal && NPC.AnyNPCs(ProviderNPC))
+            Context.Play(pendingSpeech);
+
+        pendingSpeech = null;
     }
+    #endregion
 
-    /// <summary>
-    /// Hands the whole payout over as one <see cref="RewardBag"/> rather than as loose items, so a
-    /// full inventory can't scatter half the rewards on the ground unnoticed.
-    /// </summary>
-    private void GiveRewards() => RewardBag.Award(Main.LocalPlayer, this);
-
-    /// <summary>
-    /// Sets the visibility of a specific task. This can be used to hide tasks until certain conditions are met (e.g. completing a previous task). By default, all tasks are visible.
-    /// </summary>
-    /// <param name="setIndex"></param>
-    /// <param name="taskIndex"></param>
-    /// <param name="isVisible"></param>
+    #region Task visibility
+    /// <summary>Hides or shows a task outright.</summary>
     public void SetTaskVisibility(int setIndex, int taskIndex, bool isVisible)
     {
-        if (setIndex >= 0 && setIndex < TaskList.Count &&
-            taskIndex >= 0 && taskIndex < TaskList[setIndex].Task.Count)
-        {
-            TaskList[setIndex].Task[taskIndex].IsVisible = isVisible;
-        }
+        if (TryGetTask(setIndex, taskIndex, out var task))
+            task.IsVisible = isVisible;
     }
 
-    /// <summary>
-    /// Sets a custom visibility condition for a specific task. The condition is a function that takes the current Job state and returns true if the task should be visible. This allows for dynamic visibility based on other tasks or external factors.
-    /// </summary>
-    /// <param name="setIndex"></param>
-    /// <param name="taskIndex"></param>
-    /// <param name="condition"></param>
-    public void SetTaskVisibilityCondition(int setIndex, int taskIndex,
-        Task.VisibilityCondition condition)
+    /// <summary>Makes a task's visibility depend on the job's state at read time.</summary>
+    public void SetTaskVisibilityCondition(int setIndex, int taskIndex, JobTask.VisibilityCondition condition)
     {
-        if (setIndex >= 0 && setIndex < TaskList.Count &&
-            taskIndex >= 0 && taskIndex < TaskList[setIndex].Task.Count)
-        {
-            TaskList[setIndex].Task[taskIndex].VisibilityCheck = condition;
-        }
+        if (TryGetTask(setIndex, taskIndex, out var task))
+            task.VisibilityCheck = condition;
     }
 
-    /// <summary>
-    /// Convenience method to show an task only after a specific dependency task is completed. This sets a visibility condition that checks the completion status of the dependency task. If the dependency task is not completed, the target task will be hidden.
-    /// </summary>
-    /// <param name="setIndex"></param>
-    /// <param name="taskToShow"></param>
-    /// <param name="dependencyTask"></param>
+    /// <summary>Shows a task only once another task in the same set is done.</summary>
     public void ShowTaskAfterCompletion(int setIndex, int taskToShow, int dependencyTask)
     {
-        SetTaskVisibilityCondition(setIndex, taskToShow, (Job) =>
-        {
-            var set = Job.TaskList[setIndex];
-            return dependencyTask >= 0 &&
-                   dependencyTask < set.Task.Count &&
-                   set.Task[dependencyTask].IsCompleted;
-        });
+        SetTaskVisibilityCondition(setIndex, taskToShow,
+            job => job.TryGetTask(setIndex, dependencyTask, out var dependency) && dependency.IsCompleted);
     }
+
+    private bool TryGetTask(int setIndex, int taskIndex, out JobTask task)
+    {
+        task = null;
+
+        if (setIndex < 0 || setIndex >= TaskList.Count)
+            return false;
+
+        var set = TaskList[setIndex];
+
+        if (taskIndex < 0 || taskIndex >= set.Task.Count)
+            return false;
+
+        task = set.Task[taskIndex];
+        return true;
+    }
+    #endregion
 }

@@ -43,7 +43,7 @@ public static class EventLog
                 => $"[Event] {evt.Type} {NpcName(evt.NPCType)} | amount {evt.Amount} | {who}",
 
             GameEventType.ItemCraft or GameEventType.ItemPickup
-            or GameEventType.ItemUse or GameEventType.ItemConsume or GameEventType.CaughtFish
+            or GameEventType.ItemConsume or GameEventType.CaughtFish
                 => $"[Event] {evt.Type} {ItemName(evt.ItemType)} x{evt.Amount} | {who}",
 
             GameEventType.HousingChecked
