@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TrelamiumIII.Core.Components.NPCs;
+using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Behaviors;
@@ -35,6 +36,9 @@ public readonly record struct ChatEncounter
     /// <summary>Music to swap to for the duration, or null to leave it alone.</summary>
     public int? Music { get; init; }
 
+    /// <summary>Which box the line opens in. Defaults to the portrait panel.</summary>
+    public DialogueStyle Style { get; init; }
+
     /// <summary>
     /// Root the speaker in place, face it at the listener and animate a talking loop
     /// until the dialogue closes. Needs an <see cref="NPCDirector"/>; quietly skipped
@@ -52,6 +56,11 @@ public readonly record struct ChatEncounter
 
     /// <summary>With zoom and letterbox.</summary>
     public ChatEncounter AsScene() => this with { ZoomIn = true, Letterbox = true };
+
+    /// <summary>
+    ///     In the pixelated bubble that hangs over the speaker's head, rather than the portrait panel.
+    /// </summary>
+    public ChatEncounter Projected() => this with { Style = DialogueStyle.Projected };
 
     public ChatEncounter WithMusic(int music) => this with { Music = music };
 
@@ -189,7 +198,8 @@ public static class NarrativeChat
             return false;
 
         if (!DialogueManager.Instance.StartDialogue(
-                encounter.DialogueKey, encounter.ZoomIn, encounter.Letterbox, encounter.Music))
+                encounter.DialogueKey, encounter.ZoomIn, encounter.Letterbox, encounter.Music,
+                encounter.Style, DialogueAnchor.OnSpeaker(npc)))
             return false;
 
         if (encounter.RootWhileSpeaking)

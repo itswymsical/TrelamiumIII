@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 
@@ -11,7 +12,7 @@ public sealed class DialogueManager
     public static DialogueManager Instance => instance;
 
     private readonly Dictionary<string, List<string>> cachedLineKeys = new();
-    private DialogueBox activeDialogue = null;
+    private IDialoguePresenter activeDialogue = null;
     private int? currentMusic = null;
     private int previousMusic = -1;
     private bool isZoomedIn = false;
@@ -29,14 +30,27 @@ public sealed class DialogueManager
     public delegate void DialogueEndHandler(string dialogueKey);
     public static event DialogueEndHandler OnDialogueEnd;
 
-    public bool StartDialogue(string dialogueKey, bool zoomIn = false, bool letterbox = false, int? music = null)
+    /// <param name="style">Which box the line opens in. See <see cref="DialogueStyle" />.</param>
+    /// <param name="anchor">
+    ///     What a projected box hangs off. Ignored by the panel box, which owns the bottom of the
+    ///     screen wherever the speaker is standing.
+    /// </param>
+    public bool StartDialogue(
+        string dialogueKey,
+        bool zoomIn = false,
+        bool letterbox = false,
+        int? music = null,
+        DialogueStyle style = DialogueStyle.Panel,
+        DialogueAnchor? anchor = null)
     {
         var queuedDialogue = new QueuedDialogue
         {
             DialogueKey = dialogueKey,
             ZoomIn = zoomIn,
             Letterbox = letterbox,
-            Music = music
+            Music = music,
+            Style = style,
+            Anchor = anchor ?? DialogueAnchor.OnPlayer
         };
 
         // If no dialogue is active, start immediately
@@ -61,7 +75,10 @@ public sealed class DialogueManager
         }
         IsUIHidden = queuedDialogue.Letterbox;
 
-        activeDialogue = DialogueBox.CreateDialogue(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn);
+        activeDialogue = queuedDialogue.Style == DialogueStyle.Projected
+            ? ProjectedDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor)
+            : DialogueBox.CreateDialogue(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn);
+
         if (activeDialogue == null)
         {
             if (queuedDialogue.Letterbox)
@@ -225,4 +242,6 @@ public class QueuedDialogue
     public bool ZoomIn { get; set; }
     public bool Letterbox { get; set; }
     public int? Music { get; set; }
+    public DialogueStyle Style { get; set; }
+    public DialogueAnchor Anchor { get; set; }
 }

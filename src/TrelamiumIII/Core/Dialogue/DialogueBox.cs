@@ -10,7 +10,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Dialogue;
 
-public class DialogueBox : IInGameNotification
+public class DialogueBox : IInGameNotification, IDialoguePresenter
 {
     #region Constants and Fields
     private const float ANIMATION_DURATION = 30f;

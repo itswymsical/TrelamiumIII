@@ -1,0 +1,161 @@
+namespace TrelamiumIII.Core.Dialogue.Projected;
+
+/// <summary>What <see cref="ProjectedSurfaces" /> needs from a box in order to draw its faces.</summary>
+internal interface IProjectedContent
+{
+    /// <summary>Draws the bubble at the surface's origin and returns the region it filled.</summary>
+    Point DrawBubble(PixelCanvas canvas);
+
+    int ChoiceCount { get; }
+
+    /// <summary>Draws one response slot at the canvas origin and returns the region it filled.</summary>
+    Point DrawChoice(PixelCanvas canvas, int index);
+}
+
+/// <summary>
+///     The off-screen faces a projected box is made of, and the one place they are drawn.
+/// </summary>
+/// <remarks>
+///     <para>
+///         Two surfaces, sized once for the largest box this style allows and thereafter sampled by
+///         sub-rectangle. The alternative -- a surface per box, resized as the text grows -- would
+///         reallocate a render target several times a second while a line types, which is the one
+///         thing a graphics device really does not want asked of it mid-frame.
+///     </para>
+///     <para>
+///         Both are drawn during <c>CheckMonoliths</c>, which is where render targets may still be
+///         swapped. Anywhere later in the frame means taking the back buffer away from a scene that is
+///         already half drawn into it.
+///     </para>
+/// </remarks>
+internal sealed class ProjectedSurfaces : IDisposable
+{
+    public const int BUBBLE_WIDTH = PanelStyle.SURFACE_WIDTH;
+    public const int BUBBLE_HEIGHT = PanelStyle.SURFACE_HEIGHT;
+
+    public const int CHOICE_WIDTH = 192;
+    public const int CHOICE_HEIGHT = 32;
+    public const int MAX_CHOICES = 4;
+
+    private readonly Point[] choiceFootprints = new Point[MAX_CHOICES];
+
+    private RenderTarget2D? bubble;
+    private RenderTarget2D? choices;
+
+    private bool requested;
+    private bool disposed;
+
+    /// <summary>The bubble's face, or null until the targets exist.</summary>
+    public Texture2D? Bubble => bubble;
+
+    public Texture2D? Choices => choices;
+
+    /// <summary>The part of <see cref="Bubble" /> the current line actually filled.</summary>
+    public Rectangle BubbleRegion { get; private set; }
+
+    public int ChoicesDrawn { get; private set; }
+
+    public Rectangle ChoiceRegion(int index) =>
+        new(0, index * CHOICE_HEIGHT, choiceFootprints[index].X, choiceFootprints[index].Y);
+
+    /// <summary>Queues target creation. Safe from anywhere; the work happens on the main thread.</summary>
+    public void Initialize()
+    {
+        if (requested || disposed || Main.dedServ)
+            return;
+
+        requested = true;
+
+        Main.QueueMainThreadAction(() =>
+        {
+            if (disposed)
+                return;
+
+            GraphicsDevice device = Main.graphics.GraphicsDevice;
+
+            bubble = new RenderTarget2D(device, BUBBLE_WIDTH, BUBBLE_HEIGHT, false, SurfaceFormat.Color, DepthFormat.None);
+            choices = new RenderTarget2D(device, CHOICE_WIDTH, CHOICE_HEIGHT * MAX_CHOICES, false, SurfaceFormat.Color, DepthFormat.None);
+        });
+    }
+
+    /// <summary>
+    ///     Redraws both faces. Call with no sprite batch open, from a point in the frame where render
+    ///     targets may be swapped.
+    /// </summary>
+    public void Build(IProjectedContent content)
+    {
+        if (disposed || bubble is null || choices is null || Main.gameMenu || Main.dedServ)
+            return;
+
+        GraphicsDevice device = Main.graphics.GraphicsDevice;
+        SpriteBatch spriteBatch = Main.spriteBatch;
+
+        device.SetRenderTarget(bubble);
+        device.Clear(Color.Transparent);
+        Begin(spriteBatch);
+
+        Point used = content.DrawBubble(new PixelCanvas(spriteBatch));
+
+        spriteBatch.End();
+
+        BubbleRegion = new Rectangle(0, 0, Math.Clamp(used.X, 1, BUBBLE_WIDTH), Math.Clamp(used.Y, 1, BUBBLE_HEIGHT));
+
+        ChoicesDrawn = Math.Min(content.ChoiceCount, MAX_CHOICES);
+
+        if (ChoicesDrawn > 0)
+        {
+            device.SetRenderTarget(choices);
+            device.Clear(Color.Transparent);
+            Begin(spriteBatch);
+
+            for (int i = 0; i < ChoicesDrawn; i++)
+            {
+                Point footprint = content.DrawChoice(new PixelCanvas(spriteBatch).At(0, i * CHOICE_HEIGHT), i);
+
+                choiceFootprints[i] = new Point(
+                    Math.Clamp(footprint.X, 1, CHOICE_WIDTH),
+                    Math.Clamp(footprint.Y, 1, CHOICE_HEIGHT));
+            }
+
+            spriteBatch.End();
+        }
+
+        device.SetRenderTarget(null);
+    }
+
+    /// <summary>
+    ///     Point sampling, because everything drawn here is authored on the texel grid and a filtered
+    ///     glyph would put grey along an edge that the magnified surface then blows up to a whole
+    ///     chunky pixel of fringe.
+    /// </summary>
+    private static void Begin(SpriteBatch spriteBatch) =>
+        spriteBatch.Begin(
+            SpriteSortMode.Deferred,
+            BlendState.AlphaBlend,
+            SamplerState.PointClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
+            Matrix.Identity);
+
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+
+        disposed = true;
+
+        // Snapshot into locals before clearing the fields: the queued action runs later, and would
+        // otherwise dispose whatever the fields hold by then rather than what they hold now.
+        RenderTarget2D?[] pending = [bubble, choices];
+
+        bubble = null;
+        choices = null;
+
+        Main.QueueMainThreadAction(() =>
+        {
+            foreach (RenderTarget2D? target in pending)
+                target?.Dispose();
+        });
+    }
+}
