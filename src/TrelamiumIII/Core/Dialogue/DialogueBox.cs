@@ -29,7 +29,6 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     private Vector2 targetPosition;
     private Vector2 startPosition;
 
-    private int charDisplayTimer;
     private int charIndex;
     private float pauseTimer;
 
@@ -38,10 +37,15 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     private DialogueData currentDialogue = null;
     private int currentLineIndex;
 
-    private int voiceCursor;
-
     private readonly DialogueTick revealTick = new();
+    private readonly SpeechVoice voice = new();
     private readonly DialogueRenderContext renderContext = new();
+
+    // Rooting is per line rather than per conversation, so a two-hander faces the player with
+    // whoever is currently saying something. See DialogueBehavior.
+    private Projected.DialogueAnchor speakerAnchor;
+    private NPC rootedSpeaker;
+    private bool roots = true;
 
     // ---- Choice state ----
     private bool awaitingChoice;
@@ -63,13 +67,13 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     #endregion
 
     #region Public Methods
-    public static DialogueBox CreateDialogue(string dialogueKey, bool zoomIn)
+    public static DialogueBox CreateDialogue(string dialogueKey, bool zoomIn, bool roots = true)
     {
         var lines = DialogueBuilder.BuildSequence(dialogueKey);
         if (lines.Count == 0)
             return null;
 
-        var box = new DialogueBox(dialogueKey) { ShouldZoom = zoomIn };
+        var box = new DialogueBox(dialogueKey) { ShouldZoom = zoomIn, roots = roots };
 
         foreach (var line in lines)
             box.dialogueLines.Enqueue(line);
@@ -83,6 +87,47 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         this.dialogueKey = dialogueKey;
         this.DialogueKey = dialogueKey;
     }
+
+    /// <summary>
+    ///     Picks the conversation up from another box, part-way through a line.
+    /// </summary>
+    /// <remarks>
+    ///     No <see cref="NextLine" />: the line is already chosen and part-typed, and dequeuing here
+    ///     would drop it and start the one behind it.
+    /// </remarks>
+    internal static DialogueBox Resume(DialogueHandoff handoff)
+    {
+        var box = new DialogueBox(handoff.Key) { ShouldZoom = handoff.ZoomIn, roots = handoff.Roots };
+
+        foreach (var line in handoff.Remaining)
+            box.dialogueLines.Enqueue(line);
+
+        box.currentDialogue = handoff.Current;
+        box.charIndex = handoff.Current is null
+            ? 0
+            : Math.Clamp(handoff.CharIndex, 0, handoff.Current.PlainText.Length);
+        box.awaitingChoice = handoff.AwaitingChoice;
+        box.selectedChoiceIndex = handoff.SelectedChoice;
+
+        box.RootSpeaker();
+
+        return box;
+    }
+
+    internal DialogueHandoff Capture() => new()
+    {
+        Key = DialogueKey,
+        Current = currentDialogue,
+        Remaining = [.. dialogueLines],
+        CharIndex = charIndex,
+        AwaitingChoice = awaitingChoice,
+        SelectedChoice = selectedChoiceIndex,
+        ZoomIn = ShouldZoom,
+        Roots = roots,
+    };
+
+    /// <summary>The line being spoken, for whoever needs to know who is talking.</summary>
+    internal DialogueData CurrentLine => currentDialogue;
 
     public void Update()
     {
@@ -141,7 +186,9 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
             currentLineIndex++;
 
             // Voice playback is per-line state, don't let it bleed across lines.
-            voiceCursor = 0;
+            voice.Reset();
+
+            RootSpeaker();
         }
         else
         {
@@ -149,6 +196,41 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
             isLastDialogue = true;
             animationProgress = 0f;
         }
+    }
+
+    /// <summary>
+    ///     True while characters are actually arriving. Drives the speaker's mouth.
+    /// </summary>
+    private bool IsVoicing =>
+        !isRemoved && pauseTimer <= 0 && currentDialogue != null && charIndex < currentDialogue.PlainText.Length;
+
+    /// <summary>
+    ///     Hands the line's speaker a talking loop, if it is not already running one.
+    /// </summary>
+    /// <remarks>
+    ///     Only on a change of speaker: a run of lines from the same character stays one behaviour,
+    ///     where re-rooting per line would stack a fresh interrupt and restart the animation
+    ///     mid-sentence. The predicate reads <see cref="rootedSpeaker" />, so this field changing is
+    ///     what releases whoever was talking before.
+    /// </remarks>
+    private void RootSpeaker()
+    {
+        if (!roots)
+            return;
+
+        speakerAnchor = Projected.DialogueAnchor.ForSpeaker(currentDialogue, speakerAnchor);
+
+        NPC speaker = speakerAnchor.Speaker;
+
+        if (ReferenceEquals(speaker, rootedSpeaker))
+            return;
+
+        rootedSpeaker = speaker;
+
+        DialogueBehavior.Root(
+            speaker,
+            stillSpeaking: () => !isRemoved && ReferenceEquals(rootedSpeaker, speaker),
+            voicing: () => IsVoicing);
     }
 
     private void UpdateAnimation()
@@ -165,58 +247,54 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
             return;
         }
 
+        // A box on its way out keeps drawing but stops talking. Without this, one handing its
+        // conversation to another box carries on typing and voicing the same line underneath it.
+        if (isRemoved)
+            return;
+
         if (pauseTimer > 0)
         {
             pauseTimer--;
+            voice.Interrupt();
             return;
         }
 
         if (charIndex < currentDialogue.PlainText.Length)
         {
-            // Gather reveal-time affects covering this glyph (timing / audio).
-            revealTick.Reset(charIndex);
-            var modifiers = currentDialogue.Modifiers;
-            for (int i = 0; i < modifiers.Count; i++)
-                if (modifiers[i].Covers(charIndex))
-                    modifiers[i].Affect.OnReveal(revealTick);
+            voice.Tick();
 
-            charDisplayTimer++;
-            var currentDelay = Math.Max(1, (int)(currentDialogue.BaseDelay / (currentDialogue.Speed * revealTick.SpeedMultiplier)));
-
-            if (charDisplayTimer >= currentDelay)
+            // Loops rather than revealing one glyph: the clock deals in fractional frames, so a fast
+            // line can owe more than one character on the same frame.
+            while (charIndex < currentDialogue.PlainText.Length)
             {
-                charDisplayTimer = 0;
-                charIndex++;
+                // Gather reveal-time affects covering this glyph (timing / audio).
+                revealTick.Reset(charIndex);
+                var modifiers = currentDialogue.Modifiers;
+                for (int i = 0; i < modifiers.Count; i++)
+                    if (modifiers[i].Covers(charIndex))
+                        modifiers[i].Affect.OnReveal(revealTick);
 
-                PlayTypeSound(revealTick);
+                if (!voice.TryReveal(currentDialogue.BaseDelay, currentDialogue.Speed, revealTick.SpeedMultiplier))
+                    break;
+
+                voice.Note(currentDialogue.PlainText[charIndex], revealTick);
+                charIndex++;
 
                 // A Pause affect holds the typewriter after the covered glyph appears.
                 if (revealTick.HoldFrames > 0)
+                {
                     pauseTimer = revealTick.HoldFrames;
+                    break;
+                }
             }
+
+            voice.Play(currentDialogue.Profile, Main.LocalPlayer.position);
         }
         else if (currentDialogue.HasChoices && !awaitingChoice)
         {
             awaitingChoice = true;
             selectedChoiceIndex = 0;
         }
-    }
-
-    private void PlayTypeSound(DialogueTick tick)
-    {
-        if (charIndex > currentDialogue.PlainText.Length)
-            return;
-
-        // A Sound affect overrides the voice for this glyph; otherwise the speaker's voice plays.
-        var sound = tick.Sound ?? currentDialogue.Profile?.Voice.Next(ref voiceCursor);
-        if (!sound.HasValue)
-            return;
-
-        var style = sound.Value;
-        if (tick.Pitch != 1.0f)
-            style = style with { Pitch = tick.Pitch - 1.0f };
-
-        SoundEngine.PlaySound(style, Main.LocalPlayer.position);
     }
 
     private void HandleInput()
@@ -244,7 +322,6 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     {
         var choices = currentDialogue.Choices;
         if (choices.Count == 0) return;
-
 
         int? directionSlot = null;
 
@@ -276,13 +353,15 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     {
         if (PlayerInput.IgnoreMouseInterface) return;
 
+        // A box on its way out takes no clicks, and must not swallow the release latch either -- while
+        // it fades, the click belongs to whatever is replacing it.
+        if (isRemoved) return;
+
         Main.LocalPlayer.mouseInterface = true;
 
-        if (!Main.mouseLeft || !Main.mouseLeftRelease || isLastDialogue && isRemoved) return;
+        if (!Main.mouseLeft || !Main.mouseLeftRelease) return;
 
         Main.mouseLeftRelease = false;
-
-        if (isRemoved) return;
 
         if (awaitingChoice) return; // mouse click handled in DrawChoices via hover
 
@@ -470,7 +549,6 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
 
             // select context color
             var panelAlpha = isSelected ? 0.75f : 0.4f;
-
 
             Utils.DrawSettingsPanel(spriteBatch, new Vector2(slotCenter.X - CHOICE_SLOT_WIDTH / 2f,
                 slotCenter.Y - CHOICE_SLOT_HEIGHT / 1.75f), CHOICE_SLOT_WIDTH, currentDialogue.SpeakerColor * panelAlpha * Opacity);

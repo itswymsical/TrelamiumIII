@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
 
@@ -50,7 +52,14 @@ public sealed class HomeForager : Job
     public override void OnJobStart()
     {
         base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: true);
+        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: false, style: DialogueStyle.Projected);
+        MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
+    }
+
+    public override void OnJobComplete(bool giveRewards = true)
+    {
+        base.OnJobComplete(giveRewards);
+        MusicDirector.Stop(1.5f);
     }
 
     public override void Reset()
@@ -84,20 +93,10 @@ public sealed class HomeForager : Job
         DialogueManager.Instance.StartDialogue($"Guide.HomeForager_Set{newSet}");
     }
 
-    /// <summary>
-    /// The hand-in. Once the town is standing, talking to the Guide <em>is</em> the last
-    /// task, so his chat window gives way to the payout line rather than opening on some
-    /// unrelated bit of advice.
-    /// </summary>
-    /// <remarks>
-    /// Only the presentation is taken over. The task still ticks on the NPCChat event
-    /// vanilla raises immediately behind us, so the job completes on this same click and
-    /// the Guide is back to his own chat by the next one.
-    /// </remarks>
     public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
     {
-        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").AsScene(),
-        _ => ChatEncounter.None,
+        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").Projected(),
+        _ => ChatEncounter.Play("Guide.HomeForager_HomeForager_CheckIn").Projected(),
     };
 
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)

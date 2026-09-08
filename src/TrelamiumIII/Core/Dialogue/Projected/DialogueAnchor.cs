@@ -27,10 +27,90 @@ public readonly struct DialogueAnchor
     public static DialogueAnchor OnSpeaker(NPC? npc) =>
         npc is { active: true } ? new DialogueAnchor(npc.whoAmI, npc.type) : OnPlayer;
 
+    /// <summary>
+    ///     Finds whoever is speaking this line and hangs off them, falling back to
+    ///     <paramref name="fallback" /> when nobody in the world answers to the name.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Resolved per line rather than per conversation, because a conversation is not a
+    ///         monologue: a two-hander alternates speakers, and a bubble that stayed pinned to whoever
+    ///         was clicked would put one character's words over another character's head.
+    ///     </para>
+    ///     <para>
+    ///         This is also what lets a dialogue be started from anywhere -- a job step, a world
+    ///         event, a command -- without the caller having to find and hand over the NPC. The line
+    ///         already names its speaker; that name is enough to go looking.
+    ///     </para>
+    /// </remarks>
+    public static DialogueAnchor ForSpeaker(DialogueData? line, DialogueAnchor fallback)
+    {
+        if (line is null)
+            return fallback;
+
+        if (line.IsPlayer)
+            return OnPlayer;
+
+        // The id the sequence was written against, then the name it resolved to -- a speaker may be
+        // authored as "Merchant" and be standing in the world as "Gilbert".
+        NPC? match = FindByName(line.SpeakerType) ?? FindByName(line.Speaker);
+
+        return match is not null ? OnSpeaker(match) : fallback;
+    }
+
+    /// <summary>
+    ///     The nearest active NPC answering to this name, by given name or by type name.
+    /// </summary>
+    /// <remarks>
+    ///     Nearest, because a world can hold several of the same townsfolk and the one being talked
+    ///     to is overwhelmingly the one being stood next to.
+    /// </remarks>
+    private static NPC? FindByName(string? name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return null;
+
+        NPC? nearest = null;
+        float best = float.MaxValue;
+        Vector2 from = Main.LocalPlayer.Center;
+
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            NPC npc = Main.npc[i];
+
+            if (!npc.active)
+                continue;
+
+            bool named = string.Equals(npc.GivenName, name, StringComparison.OrdinalIgnoreCase)
+                      || string.Equals(npc.TypeName, name, StringComparison.OrdinalIgnoreCase);
+
+            if (!named)
+                continue;
+
+            float distance = Vector2.DistanceSquared(npc.Center, from);
+
+            if (distance >= best)
+                continue;
+
+            best = distance;
+            nearest = npc;
+        }
+
+        return nearest;
+    }
+
     /// <summary>True while this anchor still names a live speaker.</summary>
     public bool HasSpeaker => Speaker is not null;
 
-    private NPC? Speaker
+    /// <summary>
+    ///     The NPC this anchor names, or null if the slot no longer holds them.
+    /// </summary>
+    /// <remarks>
+    ///     Re-resolved on every read rather than cached, which is what makes it safe to hold an
+    ///     anchor across a conversation: a speaker that dies or despawns starts answering null on its
+    ///     own, and anything waiting on it stops waiting.
+    /// </remarks>
+    public NPC? Speaker
     {
         get
         {

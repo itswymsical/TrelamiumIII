@@ -8,6 +8,11 @@ public enum DialogueStyle
 
     /// <summary>The pixelated bubble projected in perspective over its speaker.</summary>
     Projected,
+
+    /// <summary>
+    ///     Whichever of the two suits the distance to the speaker, swapping mid-conversation.
+    /// </summary>
+    Adaptive,
 }
 
 /// <summary>

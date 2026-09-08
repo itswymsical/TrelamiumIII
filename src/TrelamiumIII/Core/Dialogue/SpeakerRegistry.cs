@@ -63,6 +63,26 @@ public static class SpeakerRegistry
             Color = new(100, 150, 200),
             Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Merchant.Speech.Asset]),
         });
+        Register(new SpeakerProfile
+        {
+            Id = "Sonder",
+            Color = new(55, 55, 55),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sonder.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "Calvin",
+            Color = new(255, 214, 95),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Calvin.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "Hypnosa",
+            Color = new(255, 82, 98),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Hypnosa.Speech.Asset]),
+        });
 
         Register(new SpeakerProfile
         {

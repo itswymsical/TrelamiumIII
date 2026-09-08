@@ -45,6 +45,9 @@ public sealed class Talk : Behavior, IFramedBehavior
     private int nextEmote;
     private bool restoreDamage;
 
+    /// <summary>Whether words are coming out this tick. Read by <see cref="ModifyFrame"/>.</summary>
+    private bool speaking = true;
+
     /// <summary>
     /// Talks until <paramref name="stillTalking"/> returns false. Null talks until the
     /// director is told otherwise.
@@ -65,6 +68,17 @@ public sealed class Talk : Behavior, IFramedBehavior
     /// <summary>Make the NPC invulnerable for the conversation. On by default.</summary>
     public bool Invulnerable { get; set; } = true;
 
+    /// <summary>
+    /// When set, the talking frames only advance while this returns true; otherwise the loop
+    /// holds its first frame. Null animates continuously.
+    /// </summary>
+    /// <remarks>
+    /// Wired to the typewriter, this is the difference between an NPC talking and an NPC whose
+    /// mouth is running. A written pause, a hold on a comma, the moment a line finishes and waits
+    /// for the player - all of them are silence, and silence should look like it.
+    /// </remarks>
+    public Func<BehaviorContext, bool> Speaking { get; set; }
+
     /// <summary>Registers a talking frame loop for an NPC type. Call during load.</summary>
     public static void RegisterFrames(int npcType, TalkFrames frames) => FramesByType[npcType] = frames;
 
@@ -73,6 +87,7 @@ public sealed class Talk : Behavior, IFramedBehavior
         frameCounter = 0;
         frameIndex = 0;
         emoteTimer = 0;
+        speaking = true;
         nextEmote = EmoteInterval > 0 ? Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.5f)) : 0;
 
         if (Invulnerable && !ctx.NPC.dontTakeDamage)
@@ -94,7 +109,13 @@ public sealed class Talk : Behavior, IFramedBehavior
             ctx.Face(listener.Center);
 
         TickEmotes(npc);
-        AdvanceFrames(npc);
+
+        speaking = Speaking == null || Speaking(ctx);
+
+        if (speaking)
+            AdvanceFrames(npc);
+        else
+            RestFrame();
 
         if (stillTalking != null && !stillTalking(ctx))
         {
@@ -118,14 +139,36 @@ public sealed class Talk : Behavior, IFramedBehavior
         ctx.NPC.localAI[3] = 30f;
     }
 
+    /// <remarks>
+    /// While nothing is being said the frame is handed back to the NPC's own animation rather than
+    /// held on an entry of the talk loop. Which entry would be the resting one is not knowable from
+    /// here - the Guide's loop is registered as [19, 0], so its idle is the last frame, not the
+    /// first - and the NPC is standing still by then anyway, so its own idle is exactly right.
+    /// </remarks>
     public bool ModifyFrame(BehaviorContext ctx, int frameHeight)
     {
+        if (!speaking)
+            return false;
+
         int[] frames = FramesFor(ctx.NPC.type).Frames;
         if (frames.Length == 0)
             return false;
 
         ctx.NPC.frame.Y = frames[Math.Clamp(frameIndex, 0, frames.Length - 1)] * frameHeight;
         return true;
+    }
+
+    /// <summary>
+    /// Rewinds the loop so speech resumes from its start rather than from wherever it stopped.
+    /// </summary>
+    /// <remarks>
+    /// The counter goes with it, so the first frame after a pause is held for its full duration
+    /// instead of for whatever was left over when the pause began.
+    /// </remarks>
+    private void RestFrame()
+    {
+        frameCounter = 0;
+        frameIndex = 0;
     }
 
     private void AdvanceFrames(NPC npc)

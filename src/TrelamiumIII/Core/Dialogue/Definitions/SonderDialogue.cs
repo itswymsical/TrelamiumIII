@@ -28,7 +28,7 @@ class SonderDialogue : ModDialogue
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_2")
-            .Line(Speaker, emote: 0, speed: 1.4f)
+            .Line(Speaker, emote: 0, speed: 1.4f, new Pause(20))
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_3")

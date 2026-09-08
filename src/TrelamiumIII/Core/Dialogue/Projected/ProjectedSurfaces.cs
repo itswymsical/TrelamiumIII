@@ -33,8 +33,8 @@ internal sealed class ProjectedSurfaces : IDisposable
     public const int BUBBLE_WIDTH = PanelStyle.SURFACE_WIDTH;
     public const int BUBBLE_HEIGHT = PanelStyle.SURFACE_HEIGHT;
 
-    public const int CHOICE_WIDTH = 192;
-    public const int CHOICE_HEIGHT = 32;
+    public const int CHOICE_WIDTH = PanelStyle.CHOICE_SURFACE_WIDTH;
+    public const int CHOICE_HEIGHT = PanelStyle.CHOICE_PITCH;
     public const int MAX_CHOICES = 4;
 
     private readonly Point[] choiceFootprints = new Point[MAX_CHOICES];
@@ -123,20 +123,34 @@ internal sealed class ProjectedSurfaces : IDisposable
         device.SetRenderTarget(null);
     }
 
+    /// <summary>Coverage at which a glyph pixel counts as ink. Lower fattens the text.</summary>
+    private const float INK_THRESHOLD = 0.42f;
+
     /// <summary>
-    ///     Point sampling, because everything drawn here is authored on the texel grid and a filtered
-    ///     glyph would put grey along an edge that the magnified surface then blows up to a whole
-    ///     chunky pixel of fringe.
+    ///     Point sampling and a coverage threshold, which are the same decision made twice.
     /// </summary>
-    private static void Begin(SpriteBatch spriteBatch) =>
+    /// <remarks>
+    ///     Nothing in this surface may carry a partial pixel, because the quad that reads it back
+    ///     magnifies rather than filters: point sampling keeps the shapes' edges exactly where they
+    ///     were placed, and the threshold does the same job for glyphs, which arrive from the font
+    ///     atlas already antialiased and would otherwise contribute their grey fringe as full-size
+    ///     chunky pixels.
+    /// </remarks>
+    private static void Begin(SpriteBatch spriteBatch)
+    {
+        Effect? threshold = Assets.Shaders.GlyphThreshold.Asset.Value;
+
+        threshold?.Parameters["uThreshold"]?.SetValue(INK_THRESHOLD);
+
         spriteBatch.Begin(
-            SpriteSortMode.Deferred,
+            SpriteSortMode.Immediate,
             BlendState.AlphaBlend,
             SamplerState.PointClamp,
             DepthStencilState.None,
             RasterizerState.CullNone,
-            null,
+            threshold,
             Matrix.Identity);
+    }
 
     public void Dispose()
     {

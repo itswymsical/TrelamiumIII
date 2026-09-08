@@ -35,7 +35,7 @@ DialogueLibrary: {
 			Line3.Text: They are not simply background characters in your story;[] They are the main character of their own story.
 		}
 
-		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true. Perchance in more way than one.
+		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true.[] Perchance in more way than one.
 		SonderChoice_3.Line1.Text: Indeed.[] It is a rare and beautiful thing to feel sonder, and I am glad you have experienced it.
 		SonderChoice_4.Line1.Text: I see.[] Well, I hope you will have the opportunity to experience it in the future.
 	}
@@ -108,14 +108,12 @@ DialogueLibrary: {
 		GoldMine_SurplusBars.Line1.Text: Copper bars,[] Shiny and beautiful...[] Although...[] seems like we might have enough, seek out furniture or tools.
 
 		GoldMine_SurplusFurniture: {
-			Line1.Text: tbc
-			Line2.Text: tbc
+			Line1.Text: That's plenty of furniture![] We should be good on that now.[] How's about it some bars?
+			Line2.Text: It might be crazy to say this as a merchant,[] but that stock market can crash![] Heheh...
+			Line3.Text: Those folks won't know what hit 'em.[] If they REALLY think they can economically bully us,[] we'll show 'em a little bit of our own ingenuity.
 		}
 
-		GoldMine_SurplusTools: {
-			Line1.Text: tbc
-			Line2.Text: tbc
-		}
+		GoldMine_SurplusTools.Line1.Text: Handy work on those tools![] but I need a little more than that, friend! Look around for some furniture, or bars.[] That's the kind of stuff that'll get those investors' attention.
 
 		GoldMine_Complete: {
 			Line1.Text: Well,[] that should do it![] Let's see if we can make a deal with those investors.

@@ -62,6 +62,12 @@ public readonly record struct ChatEncounter
     /// </summary>
     public ChatEncounter Projected() => this with { Style = DialogueStyle.Projected };
 
+    /// <summary>
+    ///     In the bubble while the player is near the speaker, handing over to the portrait panel as
+    ///     they walk away and back again if they return.
+    /// </summary>
+    public ChatEncounter Adaptive() => this with { Style = DialogueStyle.Adaptive };
+
     public ChatEncounter WithMusic(int music) => this with { Music = music };
 
     /// <summary>Leave the speaker to whatever it was already doing.</summary>
@@ -192,38 +198,21 @@ public static class NarrativeChat
     /// Plays <paramref name="encounter"/>, rooting the speaker for its duration.
     /// Returns false if the dialogue would not open.
     /// </summary>
+    /// <remarks>
+    /// The speaker is no longer rooted from here. The box does it, per line, through
+    /// <see cref="DialogueBehavior"/> - which is what makes a two-hander face the player with
+    /// whoever is actually talking, and what gives a dialogue opened from a job step or a
+    /// command the same behaviour as one opened by clicking an NPC. All this passes on is
+    /// whether the encounter wanted it at all.
+    /// </remarks>
     public static bool Begin(NPC npc, ChatEncounter encounter)
     {
         if (!encounter.Exists)
             return false;
 
-        if (!DialogueManager.Instance.StartDialogue(
-                encounter.DialogueKey, encounter.ZoomIn, encounter.Letterbox, encounter.Music,
-                encounter.Style, DialogueAnchor.OnSpeaker(npc)))
-            return false;
-
-        if (encounter.RootWhileSpeaking)
-            RootSpeaker(npc, encounter.DialogueKey);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Holds the NPC in a talking loop until its line has been and gone. An interrupt
-    /// rather than a program, so whatever it was doing resumes afterwards.
-    /// <para>
-    /// Queued counts as still talking: a line waiting behind another would otherwise
-    /// end the loop on its first tick and let the speaker wander off before its turn.
-    /// </para>
-    /// </summary>
-    private static void RootSpeaker(NPC npc, string dialogueKey)
-    {
-        if (npc == null || !npc.active || !npc.TryEnable(out NPCDirector director))
-            return;
-
-        // Emote bubbles are the idle-chatter kind; the dialogue box is already talking.
-        director.Interrupt(npc, new Talk(_ => IsPending(new ChatEncounter(dialogueKey)))
-            .WithoutEmotes());
+        return DialogueManager.Instance.StartDialogue(
+            encounter.DialogueKey, encounter.ZoomIn, encounter.Letterbox, encounter.Music,
+            encounter.Style, DialogueAnchor.OnSpeaker(npc), encounter.RootWhileSpeaking);
     }
 
     /// <summary>

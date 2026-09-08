@@ -38,26 +38,31 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private const float GLYPH_FADE_FRAMES = 7f;
 
     /// <summary>Wrap width of the text area, in texels.</summary>
-    private const int TEXT_WIDTH = 230;
+    private const int TEXT_WIDTH = 290;
 
-    private const int MIN_TEXT_WIDTH = 34;
+    /// <summary>Vertical step between response slots, as a multiple of a slot's height.</summary>
+    private const float CHOICE_STEP = 1.34f;
+
+    /// <summary>Sideways drift between response slots, as a fraction of a slot's width.</summary>
+    private const float CHOICE_SKEW = 0.09f;
+
+    private const int MIN_TEXT_WIDTH = 48;
 
     /// <summary>
     ///     Font scale used when drawing into the surface. Never take this below 1.
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The glyph atlas is antialiased, so minifying it samples grey into the middle of every
-    ///         stroke -- and this surface is then magnified by <see cref="PanelStyle.PIXEL" />, which
-    ///         takes each of those grey samples and blows it up into a visible chunk of fringe. Text
-    ///         drawn at half scale and doubled back up does not come out where it started; it comes
-    ///         out soft.
+    ///         At 1 each glyph is copied out of the atlas exactly as it was baked. Below 1 the atlas is
+    ///         minified, which samples away whole rows of a stroke, and the magnification that follows
+    ///         then enlarges what is left -- detail cannot be recovered after it has been dropped.
     ///     </para>
     ///     <para>
-    ///         Sharp pixel text is therefore a small font magnified, never a large one scaled down,
-    ///         which is why the body is set in the item-stack face rather than the tooltip face. At 1
-    ///         each glyph is copied from the atlas exactly as it was baked, and the only thing that
-    ///         happens to it afterwards is being made bigger.
+    ///         Size and resolution are separate dials here and it is worth being clear which is which.
+    ///         What lands on screen is the atlas height times <see cref="PanelStyle.PIXEL" />; what can
+    ///         be read is the atlas height alone. Wanting the same size with more detail therefore
+    ///         means a bigger face and a smaller <c>PIXEL</c>, never a larger scale -- which is exactly
+    ///         the trade this pairs the tooltip face with a magnification under two to make.
     ///     </para>
     /// </remarks>
     private const float TEXT_SCALE = 1f;
@@ -65,14 +70,19 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private const float NAME_SCALE = TEXT_SCALE;
     private const float CHOICE_SCALE = TEXT_SCALE;
 
+    /// <summary>
+    ///     Response slots are drawn smaller than the bubble, so the eye reads the line first.
+    /// </summary>
+    private const float CHOICE_PANEL_SCALE = 0.82f;
+
     /// <summary>How far outside the bubble a click still counts, in screen pixels.</summary>
     private const float HIT_PADDING = 10f;
 
-    private const int CHOICE_PAD_X = 8;
+    private const int CHOICE_PAD_X = 9;
     private const int CHOICE_PAD_Y = 3;
 
     /// <summary>Screen pixels between the tail's point and the speaker's head.</summary>
-    private const float ANCHOR_GAP = 6f;
+    private const float ANCHOR_GAP = 34f;
 
     private static readonly float RestYaw = MathHelper.ToRadians(15f);
     private static readonly float RestPitch = MathHelper.ToRadians(-7f);
@@ -104,11 +114,26 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private readonly Queue<DialogueData> pending = new();
     private readonly ProjectedSurfaces surfaces = new();
     private readonly DialogueTick revealTick = new();
+    private readonly SpeechVoice voice = new();
     private readonly DialogueRenderContext renderContext = new();
     private readonly QuadWarp warp;
     private readonly int seed;
 
+    /// <summary>What the caller asked for, kept as the fallback when a line names nobody present.</summary>
+    private readonly DialogueAnchor requestedAnchor;
+
+    /// <summary>How far each response slot has eased out of the stack, 0 to 1.</summary>
+    private readonly float[] choiceHover = new float[ProjectedSurfaces.MAX_CHOICES];
+
+    /// <summary>Decaying kick applied when a slot is newly picked, for the snap out of the stack.</summary>
+    private readonly float[] choiceKick = new float[ProjectedSurfaces.MAX_CHOICES];
+
     private DialogueAnchor anchor;
+
+    // Written while drawing, where the mouse can actually be tested, and acted on by the next update.
+    private bool mouseConfirm;
+    private bool mouseDismiss;
+    private int mouseChoice = -1;
 
     private DialogueData? current;
     private GlyphLayout layout = GlyphLayout.Empty;
@@ -117,9 +142,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private int[] revealedOn = [];
 
     private int charIndex;
-    private int charTimer;
     private int pauseTimer;
-    private int voiceCursor;
     private int age;
 
     private bool awaitingChoice;
@@ -135,15 +158,29 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private Point choiceSlot;
     private Vector2 panelCentre;
     private Vector2 panelSize;
+    private Vector2 choiceOrigin;
+
+    /// <summary>Whoever is currently held in a talking loop, so the same NPC is not re-rooted.</summary>
+    private NPC? rootedSpeaker;
+
+    /// <summary>Which way round the perspective stands: +1 default, -1 mirrored.</summary>
+    private float facing = 1f;
+
+    /// <summary>Eased <see cref="facing" />, so a flip turns the panel rather than snapping it.</summary>
+    private float facingBlend = 1f;
 
     private KeyboardState previousKeys;
 
     #endregion
 
-    private ProjectedDialogueBox(string dialogueKey, DialogueAnchor anchor)
+    private readonly bool roots;
+
+    private ProjectedDialogueBox(string dialogueKey, DialogueAnchor anchor, bool roots)
     {
         DialogueKey = dialogueKey;
+        requestedAnchor = anchor;
         this.anchor = anchor;
+        this.roots = roots;
 
         seed = Main.rand?.Next(1, 9999) ?? 1;
         warp = QuadWarp.Handmade(seed, 5f);
@@ -152,14 +189,14 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     }
 
     /// <summary>Builds a box for a registered sequence, or null when the key has no lines.</summary>
-    public static ProjectedDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor)
+    public static ProjectedDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor, bool roots = true)
     {
         List<DialogueData> lines = DialogueBuilder.BuildSequence(dialogueKey);
 
         if (lines.Count == 0)
             return null;
 
-        var box = new ProjectedDialogueBox(dialogueKey, anchor) { ShouldZoom = zoomIn };
+        var box = new ProjectedDialogueBox(dialogueKey, anchor, roots) { ShouldZoom = zoomIn };
 
         foreach (DialogueData line in lines)
             box.pending.Enqueue(line);
@@ -170,6 +207,53 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         return box;
     }
+
+    /// <summary>
+    ///     Picks the conversation up from another box, part-way through a line.
+    /// </summary>
+    /// <remarks>
+    ///     Text already on screen when the handover happened is backdated past its own fade, so it is
+    ///     there at full strength the moment this box appears. Only the box itself fades in; the words
+    ///     inside it do not re-type or re-materialise, which would announce the swap.
+    /// </remarks>
+    internal static ProjectedDialogueBox? Resume(DialogueHandoff handoff, DialogueAnchor anchor)
+    {
+        if (handoff.Current is null)
+            return null;
+
+        var box = new ProjectedDialogueBox(handoff.Key, anchor, handoff.Roots) { ShouldZoom = handoff.ZoomIn };
+
+        foreach (DialogueData line in handoff.Remaining)
+            box.pending.Enqueue(line);
+
+        box.Adopt(handoff.Current);
+
+        box.charIndex = Math.Clamp(handoff.CharIndex, 0, handoff.Current.PlainText.Length);
+        box.awaitingChoice = handoff.AwaitingChoice;
+        box.selectedChoice = handoff.SelectedChoice;
+
+        for (int i = 0; i < box.charIndex; i++)
+            box.revealedOn[i] = -(int)GLYPH_FADE_FRAMES - 1;
+
+        ProjectedDialogueSystem.Register(box);
+
+        return box;
+    }
+
+    internal DialogueHandoff Capture() => new()
+    {
+        Key = DialogueKey,
+        Current = current,
+        Remaining = [.. pending],
+        CharIndex = charIndex,
+        AwaitingChoice = awaitingChoice,
+        SelectedChoice = selectedChoice,
+        ZoomIn = ShouldZoom,
+        Roots = roots,
+    };
+
+    /// <summary>The line being spoken, for whoever needs to know who is talking.</summary>
+    internal DialogueData? CurrentLine => current;
 
     public string DialogueKey { get; }
 
@@ -187,7 +271,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     ///     It also ends up larger on screen than the tooltip face did at half scale, because a small
     ///     font doubled is bigger than a large font halved and doubled.
     /// </remarks>
-    private static DynamicSpriteFont Font => FontAssets.ItemStack.Value;
+    private static DynamicSpriteFont Font => FontAssets.MouseText.Value;
 
     /// <summary>The speaker's colour, dimmed to the second outline behind the shape.</summary>
     private Color Ghost => current is null ? Color.Gray : current.SpeakerColor * 0.55f;
@@ -216,6 +300,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         if (!closing)
             UpdateInput();
+
+        UpdateChoiceMotion();
 
         previousKeys = Main.keyState;
     }
@@ -249,16 +335,35 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             return;
         }
 
-        current = pending.Dequeue();
-        layout = GlyphLayout.Build(current.PlainText, Font, TEXT_SCALE, TEXT_WIDTH);
-        revealedOn = new int[current.PlainText.Length];
+        Adopt(pending.Dequeue());
+    }
+
+    /// <summary>Sets this line up to be typed. Shared by the queue and by a handover.</summary>
+    private void Adopt(DialogueData line)
+    {
+        current = line;
+        layout = GlyphLayout.Build(line.PlainText, Font, TEXT_SCALE, TEXT_WIDTH);
+        revealedOn = new int[line.PlainText.Length];
+
+        // Re-resolved per line: a conversation with two people in it has to move between their heads,
+        // and a line started from somewhere that never named an NPC can still find its own speaker.
+        anchor = DialogueAnchor.ForSpeaker(line, requestedAnchor);
+
+        // Snapped rather than eased. A box has to open already facing the right way; easing from
+        // whatever the last speaker needed would have it swing round as it arrives.
+        UpdateFacing(snap: true);
+
+        RootSpeaker();
+
+        Array.Clear(choiceHover);
+        Array.Clear(choiceKick);
 
         charIndex = 0;
-        charTimer = 0;
         pauseTimer = 0;
-        voiceCursor = 0;
         awaitingChoice = false;
         selectedChoice = 0;
+
+        voice.Reset();
 
         choiceSlot = MeasureChoiceSlot();
     }
@@ -271,6 +376,11 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             presence = MathF.Min(presence + 1f / OPEN_FRAMES, 1f);
     }
 
+    /// <remarks>
+    ///     Loops rather than revealing at most one character. The clock deals in fractional frames, so
+    ///     a fast line can owe more than one character on the same frame, and each is costed against
+    ///     its own affects -- a <c>Slow</c> span midway through a line slows only itself.
+    /// </remarks>
     private void UpdateTyping()
     {
         if (current is null)
@@ -279,6 +389,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         if (pauseTimer > 0)
         {
             pauseTimer--;
+            voice.Interrupt();
             return;
         }
 
@@ -290,54 +401,78 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             return;
         }
 
-        // Reveal-time affects covering this glyph: timing, pitch, one-shot sounds.
-        revealTick.Reset(charIndex);
+        voice.Tick();
 
-        IReadOnlyList<LineModifier> modifiers = current.Modifiers;
-        for (int i = 0; i < modifiers.Count; i++)
+        while (charIndex < current.PlainText.Length)
         {
-            if (modifiers[i].Covers(charIndex))
-                modifiers[i].Affect.OnReveal(revealTick);
+            // Reveal-time affects covering this glyph: timing, pitch, one-shot sounds.
+            revealTick.Reset(charIndex);
+
+            IReadOnlyList<LineModifier> modifiers = current.Modifiers;
+            for (int i = 0; i < modifiers.Count; i++)
+            {
+                if (modifiers[i].Covers(charIndex))
+                    modifiers[i].Affect.OnReveal(revealTick);
+            }
+
+            if (!voice.TryReveal(current.BaseDelay, current.Speed, revealTick.SpeedMultiplier))
+                break;
+
+            revealedOn[charIndex] = age;
+            voice.Note(current.PlainText[charIndex], revealTick);
+            charIndex++;
+
+            // A Pause affect holds the typewriter after the covered glyph appears.
+            if (revealTick.HoldFrames > 0)
+            {
+                pauseTimer = revealTick.HoldFrames;
+                break;
+            }
         }
 
-        charTimer++;
-
-        int delay = Math.Max(1, (int)(current.BaseDelay / (current.Speed * revealTick.SpeedMultiplier)));
-
-        if (charTimer < delay)
-            return;
-
-        charTimer = 0;
-        revealedOn[charIndex] = age;
-        charIndex++;
-
-        PlayVoice();
-
-        if (revealTick.HoldFrames > 0)
-            pauseTimer = revealTick.HoldFrames;
-    }
-
-    private void PlayVoice()
-    {
-        // Silence on whitespace. At this typing speed a voice firing on the gaps between words reads
-        // as a stutter rather than as speech.
-        if (current is null || char.IsWhiteSpace(current.PlainText[charIndex - 1]))
-            return;
-
-        SoundStyle? sound = revealTick.Sound ?? current.Profile?.Voice.Next(ref voiceCursor);
-
-        if (!sound.HasValue)
-            return;
-
-        SoundStyle style = sound.Value;
-
-        if (revealTick.Pitch != 1f)
-            style = style with { Pitch = revealTick.Pitch - 1f };
-
-        SoundEngine.PlaySound(style, Main.LocalPlayer.position);
+        voice.Play(current.Profile, Main.LocalPlayer.position);
     }
 
     private bool LineFinished => current is not null && charIndex >= current.PlainText.Length;
+
+    /// <summary>
+    ///     True while characters are actually arriving. Drives the speaker's mouth.
+    /// </summary>
+    /// <remarks>
+    ///     A held pause, a finished line waiting on the player, and a box on its way out are all
+    ///     silence. Only the stretch where the typewriter is running counts.
+    /// </remarks>
+    private bool IsVoicing => !closing && pauseTimer <= 0 && !LineFinished;
+
+    /// <summary>
+    ///     Hands the line's speaker a talking loop, if it is not already running one.
+    /// </summary>
+    /// <remarks>
+    ///     Rooting only on a change of speaker, rather than on every line, keeps a run of lines from
+    ///     the same character as one uninterrupted behaviour -- re-rooting each time would stack a
+    ///     fresh interrupt on top of the last and restart the animation mid-sentence.
+    ///     <para>
+    ///         The predicate reads <see cref="rootedSpeaker" /> rather than the NPC it was given, so
+    ///         when the conversation moves on this field changing is what releases the old speaker.
+    ///     </para>
+    /// </remarks>
+    private void RootSpeaker()
+    {
+        if (!roots)
+            return;
+
+        NPC? speaker = anchor.Speaker;
+
+        if (ReferenceEquals(speaker, rootedSpeaker))
+            return;
+
+        rootedSpeaker = speaker;
+
+        DialogueBehavior.Root(
+            speaker,
+            stillSpeaking: () => !closing && ReferenceEquals(rootedSpeaker, speaker),
+            voicing: () => IsVoicing);
+    }
 
     #endregion
 
@@ -345,14 +480,24 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     /// <remarks>
     ///     Only the chat box shuts the whole thing down -- it eats the same keys, and a player typing
-    ///     "1" into it should not be answering an NPC with their first response. The mouse gate is
-    ///     narrower than that and belongs on the mouse alone: gating the keybind on it too meant a
-    ///     player holding an item could not advance the conversation at all.
+    ///     "1" into it should not be answering an NPC with their first response. While a box is open
+    ///     the chat cannot be opened at all (see <see cref="ProjectedDialogueSystem" />), so Enter is
+    ///     free to be the advance key it wants to be.
     /// </remarks>
     private void UpdateInput()
     {
         if (Main.drawingPlayerChat)
+        {
+            ClearMouseIntent();
             return;
+        }
+
+        if (mouseDismiss)
+        {
+            ClearMouseIntent();
+            EndConversation();
+            return;
+        }
 
         if (awaitingChoice)
         {
@@ -360,29 +505,17 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             return;
         }
 
-        if (KeybindsSystem.FFDialogueKeybind?.JustPressed == true)
-        {
+        bool clicked = mouseConfirm;
+        ClearMouseIntent();
+
+        if (clicked || Pressed(Keys.Enter) || KeybindsSystem.FFDialogueKeybind?.JustPressed == true)
             Advance();
-            return;
-        }
+    }
 
-        if (!MouseOverBubble())
-            return;
-
-        // Claimed while the cursor is over the bubble, so the click that advances a line does not
-        // also swing whatever the player is holding.
-        Main.LocalPlayer.mouseInterface = true;
-
-        if (Main.mouseLeft && Main.mouseLeftRelease)
-        {
-            Main.mouseLeftRelease = false;
-            Advance();
-        }
-        else if (Main.mouseRight && Main.mouseRightRelease)
-        {
-            Main.mouseRightRelease = false;
-            EndConversation();
-        }
+    private void ClearMouseIntent()
+    {
+        mouseConfirm = false;
+        mouseDismiss = false;
     }
 
     private void Advance()
@@ -434,23 +567,13 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             }
         }
 
-        int hovered = HoveredChoice(count);
+        if (mouseChoice >= 0 && mouseChoice < count)
+            Select(mouseChoice);
 
-        if (hovered >= 0)
-        {
-            Select(hovered);
+        bool clicked = mouseConfirm;
+        ClearMouseIntent();
 
-            Main.LocalPlayer.mouseInterface = true;
-
-            if (Main.mouseLeft && Main.mouseLeftRelease)
-            {
-                Main.mouseLeftRelease = false;
-                Confirm();
-                return;
-            }
-        }
-
-        if (Pressed(Keys.Enter) || KeybindsSystem.FFDialogueKeybind?.JustPressed == true)
+        if (clicked || Pressed(Keys.Enter) || KeybindsSystem.FFDialogueKeybind?.JustPressed == true)
             Confirm();
     }
 
@@ -460,7 +583,28 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             return;
 
         selectedChoice = index;
+        choiceKick[index] = 1f;
+
         SoundEngine.PlaySound(SoundID.MenuTick);
+    }
+
+    /// <summary>
+    ///     Eases each slot toward or away from the front of the stack.
+    /// </summary>
+    /// <remarks>
+    ///     Two values per slot rather than one. The hover is a plain ease, which is what carries the
+    ///     slot out and holds it there; the kick is a decaying impulse on top, which is what makes it
+    ///     arrive rather than merely end up. A single eased value can only ever glide.
+    /// </remarks>
+    private void UpdateChoiceMotion()
+    {
+        for (int i = 0; i < choiceHover.Length; i++)
+        {
+            float target = awaitingChoice && i == selectedChoice ? 1f : 0f;
+
+            choiceHover[i] = MathHelper.Lerp(choiceHover[i], target, 0.28f);
+            choiceKick[i] = MathF.Max(choiceKick[i] - 0.055f, 0f);
+        }
     }
 
     private void Confirm()
@@ -490,26 +634,66 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     private bool Pressed(Keys key) => Main.keyState.IsKeyDown(key) && !previousKeys.IsKeyDown(key);
 
+    /// <summary>
+    ///     Reads the mouse against the panel and records what it wants, for the next update to act on.
+    /// </summary>
     /// <remarks>
-    ///     Padded, because the target is a small quad standing at an angle: its silhouette on screen
-    ///     is narrower than the panel looks, and its edges are the part a player aims at.
+    ///     <para>
+    ///         Called while drawing, which is where every other piece of interactive UI in this mod
+    ///         tests the cursor, and the reason clicking the box did nothing when this lived in the
+    ///         update: by the time a mod's UI update runs, the release latch this depends on has
+    ///         already been spent for the frame. Vanilla's own in-game notifications hit-test from
+    ///         their draw for the same reason.
+    ///     </para>
+    ///     <para>
+    ///         Recording intent rather than acting on it keeps every state change in the update, so a
+    ///         click never advances a line halfway through the frame that is drawing it.
+    ///     </para>
+    ///     <para>
+    ///         Padded, because the target is a small quad standing at an angle: its silhouette on
+    ///         screen is narrower than the panel looks, and its edges are what a player aims at.
+    ///     </para>
     /// </remarks>
-    private bool MouseOverBubble() =>
-        !PlayerInput.IgnoreMouseInterface
-        && PanelCamera.Contains(BubblePlacement(), Main.MouseScreen, HIT_PADDING);
-
-    private int HoveredChoice(int count)
+    private void HandleMouse()
     {
-        if (PlayerInput.IgnoreMouseInterface)
-            return -1;
+        mouseChoice = -1;
 
-        for (int i = 0; i < count; i++)
+        if (closing || Main.drawingPlayerChat || PlayerInput.IgnoreMouseInterface)
+            return;
+
+        if (awaitingChoice)
         {
-            if (PanelCamera.Contains(ChoicePlacement(i), Main.MouseScreen, HIT_PADDING))
-                return i;
+            for (int i = 0; i < surfaces.ChoicesDrawn; i++)
+            {
+                if (!PanelCamera.Contains(ChoicePlacement(i), Main.MouseScreen, HIT_PADDING))
+                    continue;
+
+                mouseChoice = i;
+                break;
+            }
+
+            if (mouseChoice < 0)
+                return;
+        }
+        else if (!PanelCamera.Contains(BubblePlacement(), Main.MouseScreen, HIT_PADDING))
+        {
+            return;
         }
 
-        return -1;
+        // Claimed while the cursor is over the panel, so the click that advances a line does not also
+        // swing whatever the player is holding.
+        Main.LocalPlayer.mouseInterface = true;
+
+        if (Main.mouseLeft && Main.mouseLeftRelease)
+        {
+            Main.mouseLeftRelease = false;
+            mouseConfirm = true;
+        }
+        else if (!awaitingChoice && Main.mouseRight && Main.mouseRightRelease)
+        {
+            Main.mouseRightRelease = false;
+            mouseDismiss = true;
+        }
     }
 
     #endregion
@@ -549,12 +733,59 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         Point content = new((int)MathF.Round(smoothedSize.X), (int)MathF.Ceiling(smoothedSize.Y));
 
+        UpdateFacing();
+
         // Two passes: the first sizes the bubble so the anchor can be compared against its centre,
         // the second rebuilds it with the tail actually leaning at the speaker.
         geometry = PanelStyle.Measure(content, nameWidth, nameHeight, 0f);
         PlacePanel();
         geometry = PanelStyle.Measure(content, nameWidth, nameHeight, TailAim());
         PlacePanel();
+        PlaceChoices();
+    }
+
+    /// <summary>
+    ///     Puts the response stack below the bubble's lower right, moved as a whole if it will not fit.
+    /// </summary>
+    /// <remarks>
+    ///     Shifting the column rather than clamping each slot into the window. Clamped individually,
+    ///     slots that overran the bottom would all pile onto the same edge and stop being a list at
+    ///     the exact moment there were enough of them to need reading as one.
+    /// </remarks>
+    private void PlaceChoices()
+    {
+        if (current is null || !current.HasChoices)
+            return;
+
+        Point footprint = PanelStyle.ChoiceFootprint(choiceSlot);
+        Vector2 size = new Vector2(footprint.X, footprint.Y) * Scale * CHOICE_PANEL_SCALE;
+        int count = Math.Min(current.Choices.Count, ProjectedSurfaces.MAX_CHOICES);
+
+        const float EDGE = 14f;
+
+        // The stack cascades away from the bubble on whichever side the panel is turned toward, so it
+        // mirrors with the perspective rather than always trailing off to the right.
+        Vector2 origin = panelCentre + new Vector2(
+            panelSize.X * 0.34f * facingBlend,
+            panelSize.Y * 0.5f + size.Y * 0.8f);
+
+        float skew = (count - 1) * size.X * CHOICE_SKEW * facingBlend;
+
+        // Measured from both ends, because the skew can now run in either direction and the trailing
+        // slot is not reliably the rightmost one.
+        float left = MathF.Min(origin.X, origin.X + skew) - size.X * 0.5f;
+        float right = MathF.Max(origin.X, origin.X + skew) + size.X * 0.5f;
+        float bottom = origin.Y + (count - 1) * size.Y * CHOICE_STEP + size.Y * 0.5f;
+
+        origin.Y -= MathF.Max(bottom - (Main.screenHeight - EDGE), 0f);
+        origin.X -= MathF.Max(right - (Main.screenWidth - EDGE), 0f);
+        origin.X += MathF.Max(EDGE - left, 0f);
+
+        // Only after pulling it in, so a stack too tall for the window sits against the top rather
+        // than being pushed back off the bottom by its own correction.
+        origin.Y = MathF.Max(origin.Y, size.Y * 0.5f + EDGE);
+
+        choiceOrigin = origin;
     }
 
     private int NamePlateWidth()
@@ -577,18 +808,54 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         // One width for every slot. Ragged buttons read as a list of different things rather than as
         // a set of answers to the same question.
-        int width = Math.Min(
-            (int)MathF.Ceiling(widest) + CHOICE_PAD_X * 2,
-            ProjectedSurfaces.CHOICE_WIDTH - PanelStyle.MARGIN - PanelStyle.BORDER);
+        Point room = PanelStyle.MaxChoiceContent();
 
-        int height = (int)MathF.Ceiling(Font.LineSpacing * CHOICE_SCALE) + CHOICE_PAD_Y * 2;
-
-        return new Point(width, height);
+        return new Point(
+            Math.Min((int)MathF.Ceiling(widest) + CHOICE_PAD_X * 2, room.X),
+            Math.Min((int)MathF.Ceiling(Font.LineSpacing * CHOICE_SCALE) + CHOICE_PAD_Y * 2, room.Y));
     }
 
     private float Scale => PanelStyle.PIXEL * Main.UIScale;
 
     /// <summary>Puts the surface's used region on screen with its tail just clear of the speaker.</summary>
+    /// <summary>
+    ///     Decides which way round the perspective stands, from where the speaker is relative to the
+    ///     player.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         A fixed yaw only ever looks right from one side. Standing to the speaker's left, a panel
+    ///         converging away to the right reads as a plane hanging in the scene; walk past them and
+    ///         the same panel is now turned away from the viewer, which reads as a mistake. Mirroring
+    ///         it keeps the convergence agreeing with where the player actually is.
+    ///     </para>
+    ///     <para>
+    ///         Compared in screen space rather than world space. What has to agree is where the two
+    ///         appear, and under the dialogue system's own zoom those are not the same comparison.
+    ///     </para>
+    ///     <para>
+    ///         The deadband is what stops a speaker standing on top of the player flipping the panel
+    ///         back and forth with every idle step, and the blend is eased rather than switched so the
+    ///         flip is the panel turning through edge-on -- which is the one moment a plane in space
+    ///         can change which way it faces without looking like it teleported.
+    ///     </para>
+    /// </remarks>
+    private void UpdateFacing(bool snap = false)
+    {
+        const float DEADBAND = 28f;
+
+        Vector2 player = Vector2.Transform(
+            Main.LocalPlayer.Center - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
+
+        float offset = anchor.ScreenPoint().X - player.X;
+
+        // Outside the band only: inside it, whichever side it was on last is still the better guess.
+        if (MathF.Abs(offset) > DEADBAND)
+            facing = offset < 0f ? -1f : 1f;
+
+        facingBlend = snap ? facing : MathHelper.Lerp(facingBlend, facing, 0.12f);
+    }
+
     private void PlacePanel()
     {
         panelSize = new Vector2(geometry.Used.X, geometry.Used.Y) * Scale;
@@ -677,9 +944,13 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         {
             Center = panelCentre,
             Size = panelSize * MathHelper.Lerp(0.74f, 1f, entrance),
-            Yaw = RestYaw + settle * EntryYaw + MathF.Sin(time * 0.7f) * 0.022f,
+
+            // Everything with a handedness is scaled by the blend, so a flip passes through zero --
+            // the panel squares up to the viewer at the halfway point and carries on turning. The
+            // idle drift is left alone: it is symmetric noise and has no side to be on.
+            Yaw = (RestYaw + settle * EntryYaw) * facingBlend + MathF.Sin(time * 0.7f) * 0.022f,
             Pitch = RestPitch + MathF.Sin(time * 0.53f) * 0.016f,
-            Roll = RestRoll + settle * 0.12f,
+            Roll = (RestRoll + settle * 0.12f) * facingBlend,
             Depth = settle * ENTRY_DEPTH * PanelCamera.Distance,
             Warp = warp,
             FarShade = 0.22f,
@@ -697,36 +968,41 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private QuadPlacement ChoicePlacement(int index)
     {
         Point footprint = PanelStyle.ChoiceFootprint(choiceSlot);
-        Vector2 size = new Vector2(footprint.X, footprint.Y) * Scale;
-
-        bool selected = index == selectedChoice;
+        Vector2 size = new Vector2(footprint.X, footprint.Y) * Scale * CHOICE_PANEL_SCALE;
 
         // Staggered so a slot lands after the one above it, and after the bubble has settled.
         float arrival = Math.Clamp((presence - 0.55f) / 0.45f - index * 0.22f, 0f, 1f);
         float eased = arrival * arrival * (3f - 2f * arrival);
 
-        Vector2 origin = panelCentre + new Vector2(panelSize.X * 0.34f, panelSize.Y * 0.5f + size.Y * 0.8f);
+        float hover = choiceHover[index];
+        float kick = choiceKick[index];
+
+        // The impulse decays, so the overshoot happens once on arrival and does not idle-wobble.
+        float lunge = hover + kick * kick * 0.35f;
 
         // The step down has to clear the slot's own height plus the room its tilt and its selected
         // scale-up take, or the stack reads as overlapping cards rather than as a list.
-        Vector2 centre = origin + new Vector2(
-            index * size.X * 0.09f + (selected ? -size.X * 0.06f : 0f),
-            index * size.Y * 1.34f);
+        // Skew, lunge and the entrance slide all run along the panel's own handedness, so a mirrored
+        // stack steps out to the left and arrives from the left.
+        Vector2 centre = choiceOrigin + new Vector2(
+            (index * size.X * CHOICE_SKEW - lunge * size.X * 0.11f) * facingBlend,
+            index * size.Y * CHOICE_STEP);
 
-        centre += new Vector2(60f, 0f) * (1f - eased);
+        centre += new Vector2(60f * facingBlend, 0f) * (1f - eased);
 
         float distance = PanelCamera.Distance;
 
         return new QuadPlacement
         {
-            Center = new Vector2(
-                OnScreen(centre.X, size.X * 0.5f, Main.screenWidth),
-                OnScreen(centre.Y, size.Y * 0.5f, Main.screenHeight)),
-            Size = size * MathHelper.Lerp(0.8f, selected ? 1.06f : 1f, eased),
-            Yaw = RestYaw * (selected ? 0.55f : 1.15f),
+            Center = centre,
+            Size = size * MathHelper.Lerp(0.8f, 1f + lunge * 0.075f, eased),
+
+            // Turns to face the reader as it comes forward, which is most of why the motion reads as
+            // the slot stepping out rather than merely sliding sideways.
+            Yaw = (RestYaw * MathHelper.Lerp(1.15f, 0.45f, hover) - kick * 0.06f) * facingBlend,
             Pitch = RestPitch * 0.6f,
-            Roll = RestRoll * (index % 2 == 0 ? 1f : -0.7f),
-            Depth = distance * ((selected ? -CHOICE_LIFT : index * CHOICE_STEP_DEPTH)
+            Roll = (RestRoll * (index % 2 == 0 ? 1f : -0.7f) + kick * kick * 0.05f) * facingBlend,
+            Depth = distance * (MathHelper.Lerp(index * CHOICE_STEP_DEPTH, -CHOICE_LIFT, lunge)
                                 + (1f - eased) * CHOICE_ENTRY_DEPTH),
             Warp = QuadWarp.Handmade(seed + index * 31, 3f),
             FarShade = 0.2f,
@@ -750,6 +1026,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         if (current is null || presence <= 0f || surfaces.Bubble is null || quad is null || !quad.Ready)
             return;
+
+        HandleMouse();
 
         GraphicsDevice device = Main.graphics.GraphicsDevice;
         Color tint = Color.White * presence;

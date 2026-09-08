@@ -26,10 +26,12 @@ public abstract class MineralReagentItem : ModItem
 
 public class SulfurItem : MineralReagentItem
 {
+    public override string Texture => AssetReferences.Content.Alchemy.Reagents.Sulfur.KEY;
     public override void SetDefaults()
     {
         base.SetDefaults();
         Item.value = Item.sellPrice(copper: 40);
+        Item.DefaultToPlaceableTile(ModContent.TileType<SulfurTile>());
     }
 
     public override void AddRecipes()
@@ -40,6 +42,26 @@ public class SulfurItem : MineralReagentItem
             .AddIngredient(ItemID.AshBlock, 10)
             .AddTile(TileID.Furnaces)
             .Register();
+    }
+}
+
+public class SulfurTile : ModTile
+{
+    public override void SetStaticDefaults()
+    {
+        Main.tileSolid[Type] = true;
+        Main.tileMergeDirt[Type] = true;
+
+        Main.tileMerge[TileID.Stone][Type] = true;
+        Main.tileMerge[Type][TileID.Stone] = true;
+
+        Main.tileBlockLight[Type] = true;
+
+        DustType = DustID.GreenMoss;
+        MineResist = 0.25f;
+        HitSound = SoundID.Dig;
+
+        AddMapEntry(new Color(94, 64, 56));
     }
 }
 

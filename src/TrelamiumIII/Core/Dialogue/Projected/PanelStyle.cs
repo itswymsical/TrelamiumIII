@@ -59,37 +59,43 @@ internal static class PanelStyle
     ///     landing on fractional boundaries and varying in size across the panel. That is what makes
     ///     it read as a pixelated object in the scene rather than a pixelated overlay on the screen.
     /// </remarks>
-    public const float PIXEL = 2f;
+    public const float PIXEL = 1.75f;
 
     /// <summary>
     ///     The surface a bubble is drawn into, in texels. Sized once for the largest box this style
     ///     allows; anything smaller is sampled out of the corner of it.
     /// </summary>
-    public const int SURFACE_WIDTH = 320;
+    public const int SURFACE_WIDTH = 400;
 
-    public const int SURFACE_HEIGHT = 256;
+    public const int SURFACE_HEIGHT = 384;
 
-    public const int BORDER = 2;
+    /// <summary>One row of the response atlas, in texels. A slot has to fit inside this with its
+    /// ghost and border, or the row below would be sampled into the bottom of it.</summary>
+    public const int CHOICE_PITCH = 64;
+
+    public const int CHOICE_SURFACE_WIDTH = 288;
+
+    public const int BORDER = 3;
 
     /// <summary>How far behind, and up-left, the second outline sits.</summary>
-    public const int GHOST = 3;
+    public const int GHOST = 4;
 
-    public const int CHAMFER = 3;
+    public const int CHAMFER = 4;
 
-    public const int PAD_X = 7;
-    public const int PAD_Y = 5;
+    public const int PAD_X = 10;
+    public const int PAD_Y = 7;
 
     /// <summary>Room reserved at the top and left of the surface for the ghost to hang into.</summary>
     public const int MARGIN = BORDER + GHOST;
 
     // Stubby rather than long: a narrow tail tapering over a long run reads as a spike stuck to the
     // panel, where a wide one over a short run reads as part of the same shape.
-    public const int TAIL_WIDTH = 15;
+    public const int TAIL_WIDTH = 22;
 
-    public const int TAIL_LENGTH = 13;
+    public const int TAIL_LENGTH = 19;
 
-    public const int NAME_PAD_X = 5;
-    public const int NAME_GAP = 2;
+    public const int NAME_PAD_X = 7;
+    public const int NAME_GAP = 3;
 
     public static readonly Color Fill = new(10, 10, 12);
     public static readonly Color Border = new(244, 244, 240);
@@ -214,4 +220,17 @@ internal static class PanelStyle
 
     /// <summary>The surface region a choice slot of this size occupies, ghost and border included.</summary>
     public static Point ChoiceFootprint(Point size) => new(MARGIN + size.X + BORDER, MARGIN + size.Y + BORDER);
+
+    /// <summary>
+    ///     The largest label area a response slot may claim before its footprint stops fitting one row
+    ///     of the atlas.
+    /// </summary>
+    /// <remarks>
+    ///     The footprint is the label plus the ghost margin plus the border, and it is the footprint
+    ///     the quad samples. Sizing the label against the row directly is what put the bottom border
+    ///     of every slot outside the region it was read back from -- the slots were not clipped by the
+    ///     screen, they were clipped by their own atlas row.
+    /// </remarks>
+    public static Point MaxChoiceContent() =>
+        new(CHOICE_SURFACE_WIDTH - MARGIN - BORDER, CHOICE_PITCH - MARGIN - BORDER);
 }

@@ -41,7 +41,8 @@ public sealed class DialogueManager
         bool letterbox = false,
         int? music = null,
         DialogueStyle style = DialogueStyle.Panel,
-        DialogueAnchor? anchor = null)
+        DialogueAnchor? anchor = null,
+        bool root = true)
     {
         var queuedDialogue = new QueuedDialogue
         {
@@ -50,7 +51,8 @@ public sealed class DialogueManager
             Letterbox = letterbox,
             Music = music,
             Style = style,
-            Anchor = anchor ?? DialogueAnchor.OnPlayer
+            Anchor = anchor ?? DialogueAnchor.OnPlayer,
+            Root = root
         };
 
         // If no dialogue is active, start immediately
@@ -75,9 +77,15 @@ public sealed class DialogueManager
         }
         IsUIHidden = queuedDialogue.Letterbox;
 
-        activeDialogue = queuedDialogue.Style == DialogueStyle.Projected
-            ? ProjectedDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor)
-            : DialogueBox.CreateDialogue(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn);
+        activeDialogue = queuedDialogue.Style switch
+        {
+            DialogueStyle.Projected =>
+                ProjectedDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor, queuedDialogue.Root),
+            DialogueStyle.Adaptive =>
+                AdaptiveDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor, queuedDialogue.Root),
+            _ =>
+                DialogueBox.CreateDialogue(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Root),
+        };
 
         if (activeDialogue == null)
         {
@@ -244,4 +252,7 @@ public class QueuedDialogue
     public int? Music { get; set; }
     public DialogueStyle Style { get; set; }
     public DialogueAnchor Anchor { get; set; }
+
+    /// <summary>Hold the line's speaker facing the player while they talk.</summary>
+    public bool Root { get; set; } = true;
 }
