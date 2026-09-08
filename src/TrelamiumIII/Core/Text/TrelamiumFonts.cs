@@ -36,6 +36,18 @@ public static class TrelamiumFonts
     /// </remarks>
     public static DynamicSpriteFont Display { get; private set; } = null!;
 
+    /// <summary>
+    ///     Aaargh. A hand-drawn face for speech -- the one that suits a bubble.
+    /// </summary>
+    /// <remarks>
+    ///     Coverage is 122 glyphs against Andika's 606, so this is for authored lines and nothing
+    ///     else. Anything that can carry a player's name, a mod's item name, or a translation into a
+    ///     script it has never heard of falls back to '?' for most of the string. Line spacing lands
+    ///     at 30px, the same as vanilla's tooltip face, so it drops into the dialogue boxes without
+    ///     changing their metrics.
+    /// </remarks>
+    public static DynamicSpriteFont Speech { get; private set; } = null!;
+
     internal static void Load(Mod mod)
     {
         if (Main.dedServ) return;
@@ -45,6 +57,7 @@ public static class TrelamiumFonts
         Bold = BakedFont.Load(mod, $"{DIRECTORY}/Andika-Bold");
         BoldItalic = BakedFont.Load(mod, $"{DIRECTORY}/Andika-BoldItalic");
         Display = BakedFont.Load(mod, $"{DIRECTORY}/Paprika-Regular");
+        Speech = BakedFont.Load(mod, $"{DIRECTORY}/Aaargh");
     }
 
     internal static void Unload()
@@ -54,5 +67,6 @@ public static class TrelamiumFonts
         Bold = null!;
         BoldItalic = null!;
         Display = null!;
+        Speech = null!;
     }
 }

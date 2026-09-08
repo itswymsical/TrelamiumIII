@@ -100,6 +100,7 @@ public class NiterItem : MineralReagentItem
 /// </summary>
 public class RockSaltItem : MineralReagentItem
 {
+    public override string Texture => AssetReferences.Content.Alchemy.Reagents.RockSalt.KEY;
     public override void SetDefaults()
     {
         base.SetDefaults();

@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using ReLogic.Graphics;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -19,6 +20,15 @@ public sealed class SpeakerProfile : ISpeakerProfile
     public int FrameCount { get; init; } = 1;
     public Color Color { get; init; } = new(180, 180, 180);
     public VoiceProfile Voice { get; init; } = VoiceProfile.Default;
+
+    /// <summary>
+    ///   Null leaves the box to pick, which is the right answer for most speakers.
+    /// </summary>
+    /// <remarks>
+    ///   Held rather than requested by path: a baked font is assembled once at load and there is
+    ///   nothing to look up per line, unlike the portrait below.
+    /// </remarks>
+    public DynamicSpriteFont Font { get; init; }
 
     private Asset<Texture2D> portrait;
     public Asset<Texture2D> Portrait =>

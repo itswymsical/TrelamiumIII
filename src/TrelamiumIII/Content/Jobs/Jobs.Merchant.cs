@@ -104,12 +104,6 @@ public sealed class GoldMine : Job
         pendingDialogue = null;
     }
 
-    public override void OnSetAdvanced(int previousSet, int newSet)
-    {
-        //if (newSet == (int)GoldMineTask.CollectCopper)
-        //    Speak("Merchant.GoldMine.Greeting");
-    }
-
     /// <summary>
     /// Nudges the player off a category they've already maxed out. This runs before the task loop sees
     /// the event, so a pool that reads full here was full <em>before</em> this pickup - the line for a

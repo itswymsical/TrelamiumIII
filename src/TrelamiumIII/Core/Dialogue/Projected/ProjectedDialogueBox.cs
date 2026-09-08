@@ -49,22 +49,9 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private const int MIN_TEXT_WIDTH = 48;
 
     /// <summary>
-    ///     Font scale used when drawing into the surface. Never take this below 1.
+    ///     Font scale used when drawing into the surface. Never take this below 1; see
+    ///     <see cref="Font" /> for why.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         At 1 each glyph is copied out of the atlas exactly as it was baked. Below 1 the atlas is
-    ///         minified, which samples away whole rows of a stroke, and the magnification that follows
-    ///         then enlarges what is left -- detail cannot be recovered after it has been dropped.
-    ///     </para>
-    ///     <para>
-    ///         Size and resolution are separate dials here and it is worth being clear which is which.
-    ///         What lands on screen is the atlas height times <see cref="PanelStyle.PIXEL" />; what can
-    ///         be read is the atlas height alone. Wanting the same size with more detail therefore
-    ///         means a bigger face and a smaller <c>PIXEL</c>, never a larger scale -- which is exactly
-    ///         the trade this pairs the tooltip face with a magnification under two to make.
-    ///     </para>
-    /// </remarks>
     private const float TEXT_SCALE = 1f;
 
     private const float NAME_SCALE = TEXT_SCALE;
@@ -262,16 +249,25 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     public bool ShouldBeRemoved => closing && presence <= 0f;
 
     /// <summary>
-    ///     The item-stack face, not the tooltip face the panel box uses.
+    ///     The face the current line is set in: the speaker's own, or the box's default.
     /// </summary>
     /// <remarks>
-    ///     It is baked at roughly two thirds the size, which is the whole reason it is here: at
-    ///     <see cref="TEXT_SCALE" /> of 1 it lands on the texel grid small enough to be magnified
-    ///     rather than needing to be shrunk, and comes out the far side of the pixelation crisp.
-    ///     It also ends up larger on screen than the tooltip face did at half scale, because a small
-    ///     font doubled is bigger than a large font halved and doubled.
+    ///     <para>
+    ///         Read from the line rather than fixed, so a speaker carrying a
+    ///         <see cref="ISpeakerProfile.Font" /> is set in it. Safe to vary per line because
+    ///         everything measured from a font -- the wrapped layout, the plate, the response slots,
+    ///         the panel's own dimensions -- is rebuilt whenever the line changes.
+    ///     </para>
+    ///     <para>
+    ///         Never take the drawing scale below 1 whatever face lands here: the atlas is
+    ///         antialiased, minifying samples rows out of the strokes, and the magnification that
+    ///         follows cannot put back detail that was dropped. Size and resolution are separate
+    ///         dials -- what lands on screen is the atlas height times <see cref="PanelStyle.PIXEL" />,
+    ///         what can be read is the atlas height alone -- so a bigger face with a smaller
+    ///         <c>PIXEL</c> is how you buy legibility, never a larger scale.
+    ///     </para>
     /// </remarks>
-    private static DynamicSpriteFont Font => FontAssets.MouseText.Value;
+    private DynamicSpriteFont Font => current?.Profile?.Font ?? FontAssets.MouseText.Value;
 
     /// <summary>The speaker's colour, dimmed to the second outline behind the shape.</summary>
     private Color Ghost => current is null ? Color.Gray : current.SpeakerColor * 0.55f;

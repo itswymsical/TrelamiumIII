@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Terraria.Audio;
+using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.UI;
@@ -128,6 +129,45 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
 
     /// <summary>The line being spoken, for whoever needs to know who is talking.</summary>
     internal DialogueData CurrentLine => currentDialogue;
+
+    /// <summary>
+    ///     The face the current line is set in: the speaker's own, or the tooltip face.
+    /// </summary>
+    /// <remarks>
+    ///     Everything measured from it is recomputed per frame from the live line, so a conversation
+    ///     that changes speaker changes face mid-conversation without anything to invalidate.
+    /// </remarks>
+    private DynamicSpriteFont Font => currentDialogue?.Profile?.Font ?? FontAssets.MouseText.Value;
+
+    /// <summary>
+    ///     One glyph with a one-pixel outline, in a font of this box's choosing.
+    /// </summary>
+    /// <remarks>
+    ///     Replaces <c>Utils.DrawBorderString</c>, which is hard-wired to vanilla's tooltip face and
+    ///     so cannot honour a speaker's own. The anchor matches what that used: left edge, and a
+    ///     third of the way down the line box.
+    /// </remarks>
+    private static void DrawGlyph(
+        SpriteBatch spriteBatch, DynamicSpriteFont font, string text, Vector2 position, Color color, float scale)
+    {
+        Vector2 origin = font.MeasureString(text) * new Vector2(0f, 0.3f);
+        Color border = Color.Black * (color.A / 255f);
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector2 offset = i switch
+            {
+                0 => new Vector2(-1f, 0f),
+                1 => new Vector2(1f, 0f),
+                2 => new Vector2(0f, -1f),
+                _ => new Vector2(0f, 1f),
+            };
+
+            spriteBatch.DrawString(font, text, position + offset, border, 0f, origin, scale, SpriteEffects.None, 0f);
+        }
+
+        spriteBatch.DrawString(font, text, position, color, 0f, origin, scale, SpriteEffects.None, 0f);
+    }
 
     public void Update()
     {
@@ -447,13 +487,13 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
         var textPosition = panelRectangle.TopLeft() + new Vector2(15f, 32f);
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f);
+        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
 
         var globalCharIndex = 0;
 
         for (var i = 0; i < wrappedText.Length; i++)
         {
-            var linePos = textPosition + new Vector2(-2f, i * FontAssets.MouseText.Value.LineSpacing);
+            var linePos = textPosition + new Vector2(-2f, i * Font.LineSpacing);
             var charOffset = 0;
 
             foreach (var c in wrappedText[i])
@@ -469,8 +509,8 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
 
                 charPos += renderContext.Offset;
 
-                Utils.DrawBorderString(spriteBatch, c.ToString(), charPos, renderContext.Color * Opacity, .98f, anchorx: 0f, anchory: 0.3f);
-                charOffset += (int)FontAssets.MouseText.Value.MeasureString(c.ToString()).X;
+                DrawGlyph(spriteBatch, Font, c.ToString(), charPos, renderContext.Color * Opacity, .98f);
+                charOffset += (int)Font.MeasureString(c.ToString()).X;
                 globalCharIndex++;
             }
         }
@@ -596,14 +636,20 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         return new Rectangle(0, safeFrame * frameHeight, frameWidth, frameHeight);
     }
 
+    /// <remarks>
+    ///     Measured with the same font the text is drawn in. It used to take its line height from the
+    ///     item-stack face while <see cref="DrawText" /> laid the lines out with the tooltip face, so
+    ///     a panel was sized about ten pixels per line short of what it was holding and anything past
+    ///     two lines ran out of the bottom of it.
+    /// </remarks>
     private Vector2 CalculateSize()
     {
         if (currentDialogue == null) return new Vector2(PANEL_WIDTH + 18, 120);
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f);
+        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
         var lineCount = wrappedText.Length;
-        var textHeight = FontAssets.ItemStack.Value.LineSpacing * lineCount;
+        var textHeight = Font.LineSpacing * lineCount;
 
         var panelHeight = textHeight + 52f;
         return new Vector2(PANEL_WIDTH, Math.Max(panelHeight, 120));
@@ -616,16 +662,16 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         return currentPosition - new Vector2(0f, panelSize.Y * 0.65f);
     }
 
-    private static string[] WrapText(string text, float maxWidth)
+    private static string[] WrapText(string text, float maxWidth, DynamicSpriteFont font)
     {
         List<string> lines = [];
         StringBuilder currentLine = new();
-        var spaceWidth = FontAssets.MouseText.Value.MeasureString(" ").X;
+        var spaceWidth = font.MeasureString(" ").X;
 
         foreach (var word in text.Split(' '))
         {
-            var wordWidth = FontAssets.MouseText.Value.MeasureString(word).X;
-            if (currentLine.Length > 0 && FontAssets.MouseText.Value.MeasureString(currentLine.ToString()).X + wordWidth + spaceWidth > maxWidth)
+            var wordWidth = font.MeasureString(word).X;
+            if (currentLine.Length > 0 && font.MeasureString(currentLine.ToString()).X + wordWidth + spaceWidth > maxWidth)
             {
                 lines.Add(currentLine.ToString());
                 currentLine.Clear();
