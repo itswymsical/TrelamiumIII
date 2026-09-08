@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TrelamiumIII.Content.NPCs.Testing;
-using TrelamiumIII.Core.NPCs.Actors;
+using TrelamiumIII.Core.NPCs;
+using TrelamiumIII.Core.NPCs.Combat;
 
 namespace TrelamiumIII.Common.Commands;
 

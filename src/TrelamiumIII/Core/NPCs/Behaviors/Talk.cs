@@ -1,37 +1,33 @@
 using System.Collections.Generic;
 using Terraria.GameContent.UI;
 
-namespace TrelamiumIII.Core.NPCs.Controllers.Modules;
+namespace TrelamiumIII.Core.NPCs.Behaviors;
 
 /// <summary>Which frames a sprite-based NPC cycles through while it talks.</summary>
-public class DialogueFrameConfig
+public class TalkFrames
 {
-    public int[] TalkingFrames { get; set; } = [0, 1];
+    public int[] Frames { get; set; } = [0, 1];
 
-    public int TalkingFrameSpeed { get; set; } = 8;
+    public int FrameSpeed { get; set; } = 8;
 }
 
 /// <summary>
 /// Roots the NPC in place, faces the nearest player and animates a talking loop.
 ///
 /// <para>
-/// Runs until something cancels it - normally the dialogue system closing the
-/// conversation - or until <see cref="Duration"/> ticks elapse. While it runs the
-/// NPC takes no damage, so a conversation can't be ended by a stray arrow.
+/// Runs until its predicate goes false - normally the dialogue system closing the
+/// conversation - or until <see cref="Duration"/> ticks elapse. The NPC takes no
+/// damage meanwhile, so a stray arrow can't end a scene.
 /// </para>
 /// </summary>
-public sealed class Talk : BehaviorModule, IFramedModule
+public sealed class Talk : Behavior, IFramedBehavior
 {
-    private static readonly Dictionary<int, DialogueFrameConfig> FrameConfigs = new()
+    private static readonly Dictionary<int, TalkFrames> FramesByType = new()
     {
-        [NPCID.Guide] = new DialogueFrameConfig
-        {
-            TalkingFrames = [19, 0],
-            TalkingFrameSpeed = 10,
-        },
+        [NPCID.Guide] = new TalkFrames { Frames = [19, 0], FrameSpeed = 10 },
     };
 
-    private static readonly DialogueFrameConfig Default = new();
+    private static readonly TalkFrames Default = new();
 
     private static readonly int[] DefaultEmotes =
     [
@@ -50,8 +46,8 @@ public sealed class Talk : BehaviorModule, IFramedModule
     private bool restoreDamage;
 
     /// <summary>
-    /// Talks until <paramref name="stillTalking"/> returns false. Pass null to talk
-    /// until the director is told otherwise.
+    /// Talks until <paramref name="stillTalking"/> returns false. Null talks until the
+    /// director is told otherwise.
     /// </summary>
     public Talk(Func<BehaviorContext, bool> stillTalking = null)
     {
@@ -70,17 +66,14 @@ public sealed class Talk : BehaviorModule, IFramedModule
     public bool Invulnerable { get; set; } = true;
 
     /// <summary>Registers a talking frame loop for an NPC type. Call during load.</summary>
-    public static void RegisterFrameConfig(int npcType, DialogueFrameConfig config)
-        => FrameConfigs[npcType] = config;
+    public static void RegisterFrames(int npcType, TalkFrames frames) => FramesByType[npcType] = frames;
 
     protected override void Begin(BehaviorContext ctx)
     {
         frameCounter = 0;
         frameIndex = 0;
         emoteTimer = 0;
-        nextEmote = EmoteInterval > 0
-            ? Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.5f))
-            : 0;
+        nextEmote = EmoteInterval > 0 ? Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.5f)) : 0;
 
         if (Invulnerable && !ctx.NPC.dontTakeDamage)
         {
@@ -93,12 +86,8 @@ public sealed class Talk : BehaviorModule, IFramedModule
     {
         NPC npc = ctx.NPC;
 
-        npc.velocity.X *= 0.8f;
-        if (Math.Abs(npc.velocity.X) < 0.1f)
-            npc.velocity.X = 0f;
-
-        npc.ai[0] = 0f;
-        npc.ai[1] = 300f;
+        BehaviorMovement.Decelerate(npc);
+        BehaviorMovement.PinTownIdle(npc);
 
         Player listener = ctx.NearestPlayer();
         if (listener != null)
@@ -131,7 +120,7 @@ public sealed class Talk : BehaviorModule, IFramedModule
 
     public bool ModifyFrame(BehaviorContext ctx, int frameHeight)
     {
-        int[] frames = ConfigFor(ctx.NPC.type).TalkingFrames;
+        int[] frames = FramesFor(ctx.NPC.type).Frames;
         if (frames.Length == 0)
             return false;
 
@@ -141,23 +130,17 @@ public sealed class Talk : BehaviorModule, IFramedModule
 
     private void AdvanceFrames(NPC npc)
     {
-        DialogueFrameConfig config = ConfigFor(npc.type);
-        if (config.TalkingFrames.Length == 0)
-            return;
-
-        if (++frameCounter < config.TalkingFrameSpeed)
+        TalkFrames frames = FramesFor(npc.type);
+        if (frames.Frames.Length == 0 || ++frameCounter < frames.FrameSpeed)
             return;
 
         frameCounter = 0;
-        frameIndex = (frameIndex + 1) % config.TalkingFrames.Length;
+        frameIndex = (frameIndex + 1) % frames.Frames.Length;
     }
 
     private void TickEmotes(NPC npc)
     {
-        if (EmoteInterval <= 0)
-            return;
-
-        if (++emoteTimer < nextEmote)
+        if (EmoteInterval <= 0 || ++emoteTimer < nextEmote)
             return;
 
         EmoteBubble.NewBubble(Main.rand.Next(EmotePool ?? DefaultEmotes), new WorldUIAnchor(npc), 120);
@@ -165,8 +148,8 @@ public sealed class Talk : BehaviorModule, IFramedModule
         nextEmote = Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.5f));
     }
 
-    private static DialogueFrameConfig ConfigFor(int npcType)
-        => FrameConfigs.TryGetValue(npcType, out DialogueFrameConfig config) ? config : Default;
+    private static TalkFrames FramesFor(int npcType)
+        => FramesByType.TryGetValue(npcType, out TalkFrames frames) ? frames : Default;
 
     public Talk For(int ticks) { Duration = ticks; return this; }
     public Talk WithEmotes(int interval, int[] pool = null) { EmoteInterval = interval; EmotePool = pool; return this; }

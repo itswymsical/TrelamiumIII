@@ -1,12 +1,65 @@
 using Terraria.GameContent.UI;
 
-namespace TrelamiumIII.Core.NPCs.Controllers.Modules;
+namespace TrelamiumIII.Core.NPCs.Behaviors;
+
+/// <summary>Stands still for a fixed number of ticks. The glue between real behaviours.</summary>
+public sealed class Wait : Behavior
+{
+    private readonly int ticks;
+
+    public Wait(int ticks)
+    {
+        this.ticks = ticks;
+    }
+
+    protected override void Run(BehaviorContext ctx)
+    {
+        BehaviorMovement.Decelerate(ctx.NPC);
+
+        if (Age + 1 >= ticks)
+            Finish();
+    }
+}
+
+/// <summary>Runs a callback once and finishes. For one-shot effects inside a sequence.</summary>
+public sealed class Do : Behavior
+{
+    private readonly Action<BehaviorContext> action;
+
+    public Do(Action<BehaviorContext> action)
+    {
+        this.action = action;
+    }
+
+    protected override void Run(BehaviorContext ctx)
+    {
+        action?.Invoke(ctx);
+        Finish();
+    }
+}
+
+/// <summary>Ticks a callback until it returns true.</summary>
+public sealed class Until : Behavior
+{
+    private readonly Func<BehaviorContext, bool> tick;
+
+    public Until(Func<BehaviorContext, bool> tick)
+    {
+        this.tick = tick;
+    }
+
+    protected override void Run(BehaviorContext ctx)
+    {
+        if (tick == null || tick(ctx))
+            Finish();
+    }
+}
 
 /// <summary>
-/// Stands still, bleeding off velocity. Optionally emits emote bubbles.
+/// Stands around, bleeding off velocity, optionally emoting.
 /// Runs forever unless given a duration.
 /// </summary>
-public sealed class Idle : BehaviorModule
+public sealed class Idle : Behavior
 {
     private static readonly int[] DefaultEmotes =
     [
@@ -31,24 +84,15 @@ public sealed class Idle : BehaviorModule
     protected override void Begin(BehaviorContext ctx)
     {
         emoteTimer = 0;
-        nextEmote = EmoteInterval > 0
-            ? Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.8f))
-            : 0;
+        nextEmote = EmoteInterval > 0 ? Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.8f)) : 0;
     }
 
     protected override void Run(BehaviorContext ctx)
     {
         NPC npc = ctx.NPC;
 
-        npc.velocity.X *= 0.8f;
-        if (Math.Abs(npc.velocity.X) < 0.1f)
-            npc.velocity.X = 0f;
-
-        // Pin vanilla town AI to its "standing around" state so a released NPC
-        // doesn't immediately wander off mid-conversation.
-        npc.ai[0] = 0f;
-        npc.ai[1] = 300f;
-
+        BehaviorMovement.Decelerate(npc);
+        BehaviorMovement.PinTownIdle(npc);
         BehaviorMovement.ApplyTerrainCollision(npc);
 
         TickEmotes(npc);
@@ -59,15 +103,10 @@ public sealed class Idle : BehaviorModule
 
     private void TickEmotes(NPC npc)
     {
-        if (EmoteInterval <= 0)
+        if (EmoteInterval <= 0 || ++emoteTimer < nextEmote)
             return;
 
-        if (++emoteTimer < nextEmote)
-            return;
-
-        int[] pool = EmotePool ?? DefaultEmotes;
-        EmoteBubble.NewBubble(Main.rand.Next(pool), new WorldUIAnchor(npc), 120);
-
+        EmoteBubble.NewBubble(Main.rand.Next(EmotePool ?? DefaultEmotes), new WorldUIAnchor(npc), 120);
         emoteTimer = 0;
         nextEmote = Main.rand.Next(EmoteInterval, (int)(EmoteInterval * 1.8f));
     }
@@ -83,19 +122,62 @@ public sealed class Idle : BehaviorModule
 }
 
 /// <summary>
-/// Walks to a world position and finishes on arrival. Jumps ledges and gaps on the
-/// way, and teleports if it has been stuck for too long.
+/// Holds a spot. Drift past the tolerance - knockback, a shove, a bad landing - and
+/// the NPC walks back, climbing anything in the way. Runs forever.
 /// </summary>
-public sealed class TravelTo : BehaviorModule
+public sealed class Stay : Behavior
+{
+    /// <summary>Anchor in tile coordinates. Defaults to wherever the NPC stood at entry.</summary>
+    public Point? AnchorTile { get; set; }
+
+    /// <summary>Tiles of slack before walking back.</summary>
+    public int Tolerance { get; set; } = 2;
+
+    public float Speed { get; set; } = BehaviorMovement.DefaultWalkSpeed;
+
+    protected override void Begin(BehaviorContext ctx) => AnchorTile ??= ctx.NPC.Center.ToTileCoordinates();
+
+    protected override void Run(BehaviorContext ctx)
+    {
+        NPC npc = ctx.NPC;
+        Point anchor = AnchorTile.Value;
+        Point current = npc.Center.ToTileCoordinates();
+
+        if (Math.Abs(current.X - anchor.X) > Tolerance)
+        {
+            BehaviorMovement.WalkTowardX(npc, anchor.ToWorldCoordinates().X, Speed);
+
+            // Without this the NPC grinds against the first ledge between it and home.
+            if (!BehaviorMovement.TryJump(npc))
+                BehaviorMovement.TryGapJump(npc);
+        }
+        else
+        {
+            BehaviorMovement.Decelerate(npc);
+        }
+
+        BehaviorMovement.ApplyTerrainCollision(npc);
+    }
+
+    public Stay At(Point tile) { AnchorTile = tile; return this; }
+    public Stay At(Vector2 worldPosition) { AnchorTile = worldPosition.ToTileCoordinates(); return this; }
+    public Stay WithTolerance(int tiles) { Tolerance = tiles; return this; }
+    public Stay WithSpeed(float speed) { Speed = speed; return this; }
+}
+
+/// <summary>
+/// Walks to a world position and finishes on arrival, jumping ledges and gaps on the
+/// way. Teleports if it has made no progress for long enough, so a script can't stall
+/// forever on bad terrain.
+/// </summary>
+public sealed class WalkTo : Behavior
 {
     private int stuckTimer;
 
-    public TravelTo(Vector2 worldPosition)
+    public WalkTo(Vector2 worldPosition)
     {
         Target = worldPosition;
     }
-
-    public TravelTo(Point tile) : this(tile.ToWorldCoordinates()) { }
 
     public Vector2 Target { get; }
 
@@ -143,73 +225,16 @@ public sealed class TravelTo : BehaviorModule
         Finish();
     }
 
-    public TravelTo WithSpeed(float speed) { Speed = speed; return this; }
-    public TravelTo WithArrival(float pixels) { ArrivalDistance = pixels; return this; }
-    public TravelTo WithStuckTimeout(int ticks) { StuckTimeout = ticks; return this; }
+    public WalkTo WithSpeed(float speed) { Speed = speed; return this; }
+    public WalkTo WithArrival(float pixels) { ArrivalDistance = pixels; return this; }
+    public WalkTo WithStuckTimeout(int ticks) { StuckTimeout = ticks; return this; }
 }
 
 /// <summary>
-/// Holds a position. Drift past the tolerance - knockback, a shove, a bad landing -
-/// and the NPC walks back. Runs forever.
+/// Trails an entity, keeping roughly <see cref="Distance"/> pixels away. Teleports
+/// when left far enough behind that walking would never catch up.
 /// </summary>
-public sealed class Stay : BehaviorModule
-{
-    /// <summary>Anchor in tile coordinates. Defaults to wherever the NPC stood at entry.</summary>
-    public Point? AnchorTile { get; set; }
-
-    /// <summary>Tiles of slack before walking back.</summary>
-    public int Tolerance { get; set; } = 2;
-
-    public float Speed { get; set; } = BehaviorMovement.DefaultWalkSpeed;
-
-    protected override void Begin(BehaviorContext ctx)
-    {
-        AnchorTile ??= ctx.NPC.Center.ToTileCoordinates();
-    }
-
-    protected override void Run(BehaviorContext ctx)
-    {
-        NPC npc = ctx.NPC;
-        Point anchor = AnchorTile.Value;
-        Point current = npc.Center.ToTileCoordinates();
-
-        if (Math.Abs(current.X - anchor.X) > Tolerance)
-        {
-            npc.direction = Math.Sign(anchor.X - current.X);
-            npc.spriteDirection = npc.direction;
-
-            const float acceleration = 0.1f;
-            if (npc.velocity.X < Speed && npc.direction == 1)
-                npc.velocity.X += acceleration;
-            else if (npc.velocity.X > -Speed && npc.direction == -1)
-                npc.velocity.X -= acceleration;
-
-            // Without this the NPC grinds against the first ledge or doorframe
-            // between it and home, forever.
-            if (!BehaviorMovement.TryJump(npc))
-                BehaviorMovement.TryGapJump(npc);
-        }
-        else
-        {
-            npc.velocity.X *= 0.9f;
-            if (Math.Abs(npc.velocity.X) < 0.1f)
-                npc.velocity.X = 0f;
-        }
-
-        BehaviorMovement.ApplyTerrainCollision(npc);
-    }
-
-    public Stay At(Point tile) { AnchorTile = tile; return this; }
-    public Stay At(Vector2 worldPosition) { AnchorTile = worldPosition.ToTileCoordinates(); return this; }
-    public Stay WithTolerance(int tiles) { Tolerance = tiles; return this; }
-    public Stay WithSpeed(float speed) { Speed = speed; return this; }
-}
-
-/// <summary>
-/// Trails an entity, keeping roughly <see cref="Distance"/> pixels away.
-/// Teleports when left far enough behind that walking would never catch up.
-/// </summary>
-public sealed class Follow : BehaviorModule
+public sealed class Follow : Behavior
 {
     private const int StuckThreshold = 30;
 
@@ -218,19 +243,10 @@ public sealed class Follow : BehaviorModule
     private float lastJumpX;
     private int stuckTicks;
 
-    /// <summary>Follows an arbitrary entity, re-resolved every tick.</summary>
     public Follow(Func<BehaviorContext, Entity> target)
     {
         resolveTarget = target;
     }
-
-    /// <summary>Follows a specific player by index.</summary>
-    public Follow(int playerIndex)
-        : this(_ => Main.player[playerIndex]) { }
-
-    /// <summary>Follows whichever player is closest, re-evaluated each tick.</summary>
-    public static Follow NearestPlayer(float searchRange = 2000f)
-        => new(ctx => ctx.NearestPlayer(searchRange));
 
     /// <summary>How close to get before standing still.</summary>
     public float Distance { get; set; } = 80f;
@@ -262,15 +278,13 @@ public sealed class Follow : BehaviorModule
             return;
         }
 
-        float horizontal = Math.Abs(target.Center.X - npc.Center.X);
-
         if (Vector2.Distance(npc.Center, target.Center) > TeleportThreshold)
         {
             TeleportNear(npc, target);
             return;
         }
 
-        if (horizontal <= Distance)
+        if (Math.Abs(target.Center.X - npc.Center.X) <= Distance)
         {
             BehaviorMovement.Decelerate(npc);
             ctx.Face(target.Center);
@@ -299,8 +313,8 @@ public sealed class Follow : BehaviorModule
     }
 
     /// <summary>
-    /// Mid-air with no horizontal progress means the jump went into a wall.
-    /// Flip around rather than pinballing off it forever.
+    /// Mid-air with no horizontal progress means the jump went into a wall. Turn
+    /// around rather than pinballing off it forever.
     /// </summary>
     private void TrackStuck(NPC npc)
     {
@@ -365,10 +379,27 @@ public sealed class Follow : BehaviorModule
     public Follow Once() { FinishOnArrival = true; return this; }
 }
 
-/// <summary>Snaps to a position and finishes immediately.</summary>
-public sealed class Blink : BehaviorModule
+/// <summary>
+/// Turns to face the nearest player every tick and nothing else. Usually reached
+/// through <see cref="BehaviorExtensions.FacingNearestPlayer"/> instead.
+/// </summary>
+public sealed class FacePlayer : Behavior
 {
-    public Blink(Vector2 worldPosition)
+    public float Range { get; set; } = 400f;
+
+    protected override void Run(BehaviorContext ctx)
+    {
+        Player player = ctx.NearestPlayer(Range);
+
+        if (player != null)
+            ctx.Face(player.Center);
+    }
+}
+
+/// <summary>Snaps to a position and finishes.</summary>
+public sealed class Teleport : Behavior
+{
+    public Teleport(Vector2 worldPosition)
     {
         Target = worldPosition;
     }
@@ -405,24 +436,5 @@ public sealed class Blink : BehaviorModule
         }
     }
 
-    public Blink WithDust(bool dust) { SpawnDust = dust; return this; }
-}
-
-/// <summary>
-/// Turns to face the nearest player every tick, and nothing else. Meant to sit in a
-/// <see cref="Parallel"/> alongside a module that does the real work.
-/// </summary>
-public sealed class FaceNearestPlayer : BehaviorModule
-{
-    public float Range { get; set; } = 400f;
-
-    protected override void Run(BehaviorContext ctx)
-    {
-        Player player = ctx.NearestPlayer(Range);
-
-        if (player != null)
-            ctx.Face(player.Center);
-    }
-
-    public FaceNearestPlayer WithRange(float pixels) { Range = pixels; return this; }
+    public Teleport WithDust(bool dust) { SpawnDust = dust; return this; }
 }

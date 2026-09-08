@@ -1,29 +1,26 @@
 using System.Collections.Generic;
-using TrelamiumIII.Content.Misc;
 using TrelamiumIII.Core.NPCs.Actors;
-using TrelamiumIII.Core.NPCs.Controllers;
-using TrelamiumIII.Core.NPCs.Controllers.Modules;
+using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Core.NPCs.Combat;
 
 namespace TrelamiumIII.Content.NPCs.Testing;
 
 /// <summary>
-/// A world NPC that exists only to exercise the puppet and director in-game.
+/// A world NPC that exists only to exercise the actor and behaviour systems in game.
 ///
 /// <para>
-/// Every mode below maps to one thing that can break: whether an idle weapon
-/// renders, whether a swing poses the arm, whether a projectile leaves the right
-/// hand at the right angle, whether the combat loop closes distance and disengages,
-/// whether the NPC finds its way home. Cycle modes with the chat button, or drive it
-/// from <c>/wnpc</c>.
+/// Every mode below maps to one thing that can break: whether an idle weapon renders,
+/// whether a swing poses the arm, whether a projectile leaves the right hand at the
+/// right angle, whether a fight closes distance and disengages, whether the NPC finds
+/// its way home. Cycle modes by talking to it, or drive it from <c>/wnpc</c>.
 /// </para>
 ///
 /// <para>
-/// Never spawns naturally - <see cref="SpawnChance"/> is zero and it neither
-/// despawns nor persists, so a test subject stays exactly where it was put and
-/// leaves nothing behind in the world file.
+/// Never spawns naturally, never despawns, never persists - a subject stays where it
+/// was put and leaves nothing in the world file.
 /// </para>
 /// </summary>
-public class TestTerrarian : WorldNPC
+public class TestTerrarian : TerrarianNPC
 {
     public enum TestMode
     {
@@ -33,48 +30,49 @@ public class TestTerrarian : WorldNPC
         /// <summary>Stand holding a drawn sword. Checks the idle held-item render.</summary>
         Armed,
 
-        /// <summary>Swing a sword at the nearest player on a loop. Checks use-style pose and arm compositing.</summary>
+        /// <summary>Swing a sword on a loop. Checks use-style pose and arm compositing.</summary>
         Swing,
 
-        /// <summary>Cast a staff at the nearest player. Checks projectile origin, aim and damage flags.</summary>
+        /// <summary>Cast a staff at you. Checks projectile origin, aim rotation and flags.</summary>
         Cast,
 
-        /// <summary>Full combat loop against hostile NPCs. Checks approach, strike range and disengage.</summary>
+        /// <summary>Fight hostile NPCs. Checks approach, strike range and disengage.</summary>
         Fight,
 
-        /// <summary>Turns on you with a sword. Checks that melee hitboxes actually land on a player.</summary>
+        /// <summary>Turns on you with a sword. Checks melee hitboxes landing on a player.</summary>
         Hostile,
 
-        /// <summary>Turns on you with a bow. Checks ammo pick, projectile ownership and hostile flags.</summary>
+        /// <summary>Turns on you with a bow. Checks ammo pick, ownership and retreat.</summary>
         HostileRanged,
 
-        /// <summary>Trail the nearest player. Checks pathing, ledge jumps and gap jumps.</summary>
+        /// <summary>Trail you. Checks pathing, ledge jumps and gap jumps.</summary>
         Follow,
 
         /// <summary>Talking loop. Checks the dialogue pose and emote timing.</summary>
         Talk,
 
-        /// <summary>Walk to the anchor from wherever it is. Checks travel and arrival.</summary>
+        /// <summary>Walk home from wherever it is. Checks travel and arrival.</summary>
         GoHome,
     }
 
     private const int MeleeWeapon = ItemID.CopperBroadsword;
-    private const int RangedWeapon = ItemID.AmberStaff;
+    private const int StaffWeapon = ItemID.AmberStaff;
     private const int BowWeapon = ItemID.WoodenBow;
 
-    /// <summary>True while a mode has flipped the NPC to an enemy, so it can be flipped back.</summary>
+    /// <summary>True while a mode has flipped the subject to an enemy.</summary>
     private bool turnedHostile;
 
-    /// <summary>Current test mode. The idle selector re-reads this every tick, so it can change live.</summary>
+    /// <summary>The script re-reads this every tick, so modes can change live.</summary>
     public TestMode Mode { get; set; } = TestMode.Idle;
 
     public override bool CanDespawn => false;
 
     public override bool Persistent => false;
 
-    protected override PuppetAllegiance Allegiance => PuppetAllegiance.Ally;
-
     public override List<string> SetNPCNameList() => ["Test Subject"];
+
+    /// <summary>Never spawns on its own; use <c>/wnpc spawn</c>.</summary>
+    public override float SpawnChance(NPCSpawnInfo spawnInfo) => 0f;
 
     protected override void SetWorldNPCDefaults()
     {
@@ -97,13 +95,19 @@ public class TestTerrarian : WorldNPC
 
         NPC.HitSound = SoundID.PlayerHit;
         NPC.DeathSound = SoundID.PlayerKilled;
+
+        // Combat is opt-in: a world NPC has no attacks until something arms it.
+        Puppet.ArmWith(PuppetAllegiance.Ally);
     }
 
-    /// <summary>Never spawns on its own; spawn it with <c>/wnpc</c>.</summary>
-    public override float SpawnChance(NPCSpawnInfo spawnInfo) => 0f;
-
     public override string GetChat()
-        => $"Mode: {Mode}. Anchor: {AnchorTile.X}, {AnchorTile.Y}. Holding: {(HasValidWeapon ? ActiveWeapon.Name : "nothing")}.";
+        => $"Mode: {Mode}. Anchor: {AnchorTile.X}, {AnchorTile.Y}. Holding: {HeldItemName()}.";
+
+    private string HeldItemName()
+    {
+        Item held = Puppet.HeldItem;
+        return held.IsAir ? "nothing" : held.Name;
+    }
 
     public override void SetChatButtons(ref string button, ref string button2)
     {
@@ -126,158 +130,137 @@ public class TestTerrarian : WorldNPC
 
     /// <summary>
     /// One selector, re-evaluated every tick, so switching modes swaps the running
-    /// module immediately instead of waiting for the current one to finish.
+    /// behaviour immediately instead of waiting for the current one to finish.
     /// </summary>
-    protected override IBehaviorModule CreateAnchorIdleModule() => new Selector()
-        .When(_ => Mode == TestMode.Armed, ArmedModule)
-        .When(_ => Mode == TestMode.Swing, SwingModule)
-        .When(_ => Mode == TestMode.Cast, CastModule)
-        .When(_ => Mode == TestMode.Fight, FightModule)
-        .When(_ => Mode == TestMode.Hostile, HostileMeleeModule)
-        .When(_ => Mode == TestMode.HostileRanged, HostileRangedModule)
-        .When(_ => Mode == TestMode.Follow, FollowModule)
-        .When(_ => Mode == TestMode.Talk, TalkModule)
-        .When(_ => Mode == TestMode.GoHome, GoHomeModule)
-        .Otherwise(IdleModule);
+    protected override IBehavior BuildScript() => Behavior.Select()
+        .When(_ => Mode == TestMode.Armed, Armed)
+        .When(_ => Mode == TestMode.Swing, Swing)
+        .When(_ => Mode == TestMode.Cast, Cast)
+        .When(_ => Mode == TestMode.Fight, FightHostiles)
+        .When(_ => Mode == TestMode.Hostile, HostileMelee)
+        .When(_ => Mode == TestMode.HostileRanged, HostileRanged)
+        .When(_ => Mode == TestMode.Follow, FollowPlayer)
+        .When(_ => Mode == TestMode.Talk, TalkForever)
+        .When(_ => Mode == TestMode.GoHome, GoHome)
+        .Otherwise(Idle);
 
-    private IBehaviorModule IdleModule()
+    private IBehavior Idle()
     {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
+        Stance(hostile: false, presenting: false);
         Puppet.Hold(ItemID.None);
 
-        return new Stay().At(AnchorTile).WithTolerance(2);
+        return Behavior.Stay(AnchorTile);
     }
 
-    private IBehaviorModule HostileMeleeModule()
+    private IBehavior Armed()
     {
-        BecomeHostile();
-        Puppet.PresentHeldItem = true;
+        Stance(hostile: false, presenting: true);
+        Puppet.Hold(MeleeWeapon);
 
-        return AttackWith.Players(MeleeWeapon, 700f)
+        return Behavior.Stay(AnchorTile).FacingNearestPlayer();
+    }
+
+    private IBehavior Swing()
+    {
+        Stance(hostile: false, presenting: false);
+
+        // Ally allegiance can't hurt players, so this is pure animation even though it
+        // swings straight at you.
+        return Behavior.Loop(() => Behavior.Sequence(
+            Fight.Use(MeleeWeapon, ctx => ctx.NearestPlayer(600f)?.Center),
+            Behavior.Wait(24)));
+    }
+
+    private IBehavior Cast()
+    {
+        Stance(hostile: false, presenting: false);
+
+        return Behavior.Loop(() => Behavior.Sequence(
+            Fight.Use(StaffWeapon, ctx => ctx.NearestPlayer(800f)?.Center).Requiring(),
+            Behavior.Wait(40)));
+    }
+
+    private IBehavior FightHostiles()
+    {
+        Stance(hostile: false, presenting: true);
+
+        return Fight.With(MeleeWeapon, 500f)
+            .WithRanges(preferred: 40f, strike: 64f)
+            .WithCooldown(18)
+            .Standing();
+    }
+
+    private IBehavior HostileMelee()
+    {
+        Stance(hostile: true, presenting: true);
+
+        return Fight.WithAgainstPlayers(MeleeWeapon, 700f)
             .WithRanges(preferred: 36f, strike: 60f)
             .WithCooldown(14)
             .WithSpeed(2.75f)
             .Standing();
     }
 
-    private IBehaviorModule HostileRangedModule()
+    private IBehavior HostileRanged()
     {
-        BecomeHostile();
-        Puppet.PresentHeldItem = false;
-        Puppet.SetAmmo(ItemID.WoodenArrow);
+        Stance(hostile: true, presenting: false);
+        Puppet.Combat.SetAmmo(ItemID.WoodenArrow);
 
-        // Holds its distance and shoots, which is what separates a ranged stance from
-        // a melee one: preferred range is where it wants to stand, strike range is
-        // how far the weapon reaches.
-        return AttackWith.Players(BowWeapon, 800f)
+        // Preferred range is where it wants to stand, strike range is how far the
+        // weapon reaches, retreat range is how close it lets you get.
+        return Fight.WithAgainstPlayers(BowWeapon, 800f)
             .WithRanges(preferred: 220f, strike: 600f)
             .WithRetreat(140f)
             .WithCooldown(30)
             .Standing();
     }
 
+    private IBehavior FollowPlayer()
+    {
+        Stance(hostile: false, presenting: false);
+        Puppet.Hold(ItemID.None);
+
+        return Behavior.FollowNearestPlayer().WithDistance(64f).WithSpeed(2.5f);
+    }
+
+    private IBehavior TalkForever()
+    {
+        Stance(hostile: false, presenting: false);
+        Puppet.Hold(ItemID.None);
+
+        return Behavior.Talk().WithEmotes(90);
+    }
+
+    private IBehavior GoHome()
+    {
+        Stance(hostile: false, presenting: false);
+
+        return Behavior.Sequence(
+            Behavior.WalkTo(AnchorTile).WithArrival(24f),
+            Behavior.Do(_ => Mode = TestMode.Idle));
+    }
+
     /// <summary>
-    /// Flips the subject to an enemy: its attacks can hurt players, and players can
-    /// hurt it back. The base class makes a non-despawning world NPC immortal, which
-    /// would otherwise make a fight one-sided and untestable.
+    /// Sets up the subject for a mode.
+    ///
+    /// <para>
+    /// Going hostile flips it off <c>friendly</c> and <c>immortal</c> so a fight has
+    /// two sides - a non-despawning world NPC is invulnerable by default, which would
+    /// make a hostile mode untestable.
+    /// </para>
     /// </summary>
-    private void BecomeHostile()
+    private void Stance(bool hostile, bool presenting)
     {
-        if (turnedHostile)
+        Puppet.PresentHeldItem = presenting;
+
+        if (hostile == turnedHostile)
             return;
 
-        turnedHostile = true;
-        Puppet.Allegiance = PuppetAllegiance.Enemy;
+        turnedHostile = hostile;
 
-        NPC.friendly = false;
-        NPC.immortal = false;
-        NPC.dontTakeDamageFromHostiles = false;
-    }
-
-    private void BecomeFriendly()
-    {
-        if (!turnedHostile)
-            return;
-
-        turnedHostile = false;
-        Puppet.Allegiance = Allegiance;
-
-        NPC.friendly = true;
-        NPC.immortal = true;
-        NPC.dontTakeDamageFromHostiles = true;
-    }
-
-    private IBehaviorModule ArmedModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = true;
-        Puppet.Hold(MeleeWeapon);
-
-        return new Parallel(
-            new Stay().At(AnchorTile).WithTolerance(2),
-            new FaceNearestPlayer().WithRange(400f))
-        { RequireAll = false };
-    }
-
-    private IBehaviorModule SwingModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
-
-        // Ally allegiance can't hurt players, so this is a pure animation test even
-        // though it swings straight at you.
-        return Behavior.Forever(() => Behavior.Seq(
-            new UseItem(MeleeWeapon, ctx => ctx.NearestPlayer(600f)?.Center),
-            Behavior.Pause(24)));
-    }
-
-    private IBehaviorModule CastModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
-
-        return Behavior.Forever(() => Behavior.Seq(
-            new UseItem(RangedWeapon, ctx => ctx.NearestPlayer(800f)?.Center).Requiring(),
-            Behavior.Pause(40)));
-    }
-
-    private IBehaviorModule FightModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = true;
-
-        return AttackWith.Hostiles(MeleeWeapon, 500f)
-            .WithRanges(preferred: 40f, strike: 64f)
-            .WithCooldown(18)
-            .Standing();
-    }
-
-    private IBehaviorModule FollowModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
-        Puppet.Hold(ItemID.None);
-
-        return Follow.NearestPlayer().WithDistance(64f).WithSpeed(2.5f);
-    }
-
-    private IBehaviorModule TalkModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
-        Puppet.Hold(ItemID.None);
-
-        return new Talk().WithEmotes(90);
-    }
-
-    private IBehaviorModule GoHomeModule()
-    {
-        BecomeFriendly();
-        Puppet.PresentHeldItem = false;
-
-        return Behavior.Seq(
-            new TravelTo(AnchorTile.ToWorldCoordinates()).WithArrival(24f),
-            Behavior.Once(_ => Mode = TestMode.Idle));
+        Puppet.Combat.Allegiance = hostile ? PuppetAllegiance.Enemy : PuppetAllegiance.Ally;
+        NPC.friendly = !hostile;
+        NPC.immortal = !hostile;
+        NPC.dontTakeDamageFromHostiles = !hostile;
     }
 }

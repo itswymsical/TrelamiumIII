@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Core.NPCs.Actors;
+namespace TrelamiumIII.Core.NPCs.Combat;
 
 /// <summary>
 /// Visualises what a puppet's attacks actually cover.

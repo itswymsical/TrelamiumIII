@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.NPCs.Controllers;
-using TrelamiumIII.Core.NPCs.Controllers.Modules;
+using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Core.NPCs.Behaviors;
 
 namespace TrelamiumIII.Core.Dialogue;
 

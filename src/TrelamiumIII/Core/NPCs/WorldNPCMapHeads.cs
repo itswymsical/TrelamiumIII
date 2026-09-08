@@ -5,7 +5,7 @@ using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.ModLoader;
 
-namespace  TrelamiumIII.Core.NPCs.Actors;
+namespace TrelamiumIII.Core.NPCs;
 
 /// <summary>
 /// Manages player-rendered map heads for all active WorldNPCs.
@@ -154,9 +154,13 @@ public class WorldNPCMapSystem : ModSystem, INeedRenderTargetContent
             return true;
         }
 
-        // Player head render target path.
+        // Player head render target path. Only an actor drawn from a backing player
+        // has a head to render; a sprite-based world NPC must name a MapHeadTexture.
+        if (worldNpc is not Actors.TerrarianNPC actor)
+            return false;
+
         var content = GetOrCreate(npcIndex);
-        content.UsePlayer(worldNpc.DummyPlayer);
+        content.UsePlayer(actor.DummyPlayer);
         content.UseColor(Color.White);
         content.Request();
         _dirty = true;

@@ -1,6 +1,6 @@
 using Terraria.DataStructures;
 
-namespace TrelamiumIII.Core.NPCs.Actors;
+namespace TrelamiumIII.Core.NPCs.Combat;
 
 /// <summary>
 /// Records which NPC fired a projectile.
@@ -29,7 +29,7 @@ public sealed class PuppetProjectile : GlobalProjectile
     internal static int FiringNPC = -1;
 
     /// <summary>Allegiance of the NPC currently firing. Decides friendly/hostile flags.</summary>
-    internal static PuppetAllegiance FiringAllegiance = PuppetAllegiance.Harmless;
+    internal static PuppetAllegiance FiringAllegiance = PuppetAllegiance.Ally;
 
     public override bool InstancePerEntity => true;
 
@@ -37,7 +37,7 @@ public sealed class PuppetProjectile : GlobalProjectile
     public int OwnerNPC { get; private set; } = -1;
 
     /// <summary>Which side this projectile was fired for.</summary>
-    public PuppetAllegiance Allegiance { get; private set; } = PuppetAllegiance.Harmless;
+    public PuppetAllegiance Allegiance { get; private set; } = PuppetAllegiance.Ally;
 
     /// <summary>True when an NPC fired this and that NPC is still alive.</summary>
     public bool HasLivingOwner => OwnerNPC >= 0 && OwnerNPC < Main.maxNPCs && Main.npc[OwnerNPC].active;
@@ -73,23 +73,9 @@ public sealed class PuppetProjectile : GlobalProjectile
         projectile.npcProj = true;
         projectile.noDropItem = true;
 
-        switch (allegiance)
-        {
-            case PuppetAllegiance.Ally:
-                projectile.friendly = true;
-                projectile.hostile = false;
-                break;
-
-            case PuppetAllegiance.Enemy:
-                projectile.friendly = false;
-                projectile.hostile = true;
-                break;
-
-            default:
-                projectile.friendly = false;
-                projectile.hostile = false;
-                break;
-        }
+        bool ally = allegiance == PuppetAllegiance.Ally;
+        projectile.friendly = ally;
+        projectile.hostile = !ally;
     }
 
     /// <summary>An NPC's own shots should not hit itself.</summary>

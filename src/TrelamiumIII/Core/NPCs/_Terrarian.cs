@@ -1,6 +1,6 @@
 ﻿using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
-using TrelamiumIII.Core.NPCs.Controllers;
+using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Trading;
 using TrelamiumIII.Utilities.Extensions;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ namespace TrelamiumIII.Core.NPCs;
 /// <summary>
 /// This class acts as the "wandering World NPC" template.
 /// </summary>
-public abstract class Villager : WorldNPC
+public abstract class Villager : TerrarianNPC
 {
     public override bool CanDespawn => true;
 
@@ -35,14 +35,13 @@ public abstract class Villager : WorldNPC
     public virtual bool UsesTradingSystem { get; set;  } = true;
     private static T Pick<T>(T[] source) => source[Main.rand.Next(source.Length)];
 
-    public sealed override void SetDefaults()
+    protected override void SetWorldNPCDefaults()
     {
-        base.SetDefaults();
-        if (UsesTradingSystem)
-        {
-            InitializeTrades();
-            SetTradeInventory();
-        }
+        if (!UsesTradingSystem)
+            return;
+
+        InitializeTrades();
+        SetTradeInventory();
     }
 
     public override string GetChat() => Main.rand.Next(11) switch

@@ -2,7 +2,7 @@ using System;
 using Terraria;
 using Terraria.ID;
 
-namespace TrelamiumIII.Core.NPCs.Controllers;
+namespace TrelamiumIII.Core.NPCs.Behaviors;
 
 /// <summary>
 /// Shared movement utilities for NPC behaviors. Matches vanilla AI_007_TownEntities
@@ -202,4 +202,18 @@ public static class BehaviorMovement
     /// which the engine sets when tile collision zeroes vertical movement.
     /// </summary>
     public static bool IsOnGround(NPC npc) => npc.velocity.Y == 0f;
+
+    /// <summary>
+    /// Pins vanilla town AI to its "standing around" state.
+    /// <para>
+    /// A released NPC picks up from whatever is in these slots, so behaviours that
+    /// hold an NPC still set them - otherwise it wanders off the instant the director
+    /// hands it back, mid-conversation.
+    /// </para>
+    /// </summary>
+    public static void PinTownIdle(NPC npc)
+    {
+        npc.ai[0] = 0f;
+        npc.ai[1] = 300f;
+    }
 }

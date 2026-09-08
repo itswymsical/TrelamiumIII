@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
 
-namespace  TrelamiumIII.Core.NPCs.Actors;
+namespace TrelamiumIII.Core.NPCs;
 
 /// <summary>
 /// Saves and restores <see cref="WorldNPC"/>. Can be disabled by setting <see cref="WorldNPC.Persistent"/> to false.
@@ -35,22 +35,6 @@ public class WorldNPCPersistenceSystem : ModSystem
                 };
                 worldNpc.SaveData(entry);
                 entries.Add(entry);
-            }
-            else if (npc.ModNPC is JobNPC jobNpc)
-            {
-                if (!jobNpc.Persistent)
-                    continue;
-
-                var entry2 = new TagCompound
-                {
-                    ["mod"] = jobNpc.Mod.Name,
-                    ["name"] = jobNpc.Name,
-                    ["x"] = npc.position.X,
-                    ["y"] = npc.position.Y,
-                };
-                jobNpc.SaveData(entry2);
-                entries.Add(entry2);
-
             }
         }
         tag[SaveKey] = entries;
@@ -91,8 +75,6 @@ public class WorldNPCPersistenceSystem : ModSystem
 
             if (Main.npc[idx].ModNPC is WorldNPC spawned)
                 spawned.LoadData(entry);
-            if (Main.npc[idx].ModNPC is JobNPC jSpawn)
-                jSpawn.LoadData(entry);      
         }
     }
 }
