@@ -3,12 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Rusted
 {
     [LegacyName("Rusted Nugget")]
-    public class RustedNugget : ModItem
+    public class RustedNugget : ModItem, IAlmanacDefined
     {
+        AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+        {
+            Potency = 2,
+            Chemical = ChemicalQuality.Acidic,
+            Principle = PrincipleType.Bane | PrincipleType.Martial,
+        };
+
         public override void SetStaticDefaults()
         {
             Item.ResearchUnlockCount = 100;

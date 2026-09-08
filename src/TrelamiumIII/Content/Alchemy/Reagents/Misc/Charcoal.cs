@@ -1,8 +1,16 @@
+using TrelamiumIII.Core.Alchemy;
+
 namespace TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 [LegacyName("Charcoal")]
-public class CharcoalItem : ModItem
+public class CharcoalItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 1,
+        Chemical = ChemicalQuality.Kinetic,
+    };
+
     public override void SetDefaults()
     {
         base.SetDefaults();

@@ -56,7 +56,7 @@ public class TradeOffer
 
     public bool IsUnlocked => Conditions.All(c => c.IsMet()) && UsesRemaining != 0;
 
-    public bool InStock(Actors.WorldNPC npc)
+    public bool InStock(WorldNPC npc)
         => npc.HasCarriedItem(Output.ItemId, Output.Stack);
 
     public bool PlayerCanAfford(Player player)
@@ -70,10 +70,10 @@ public class TradeOffer
         return true;
     }
 
-    public bool CanExecute(Player player, Actors.WorldNPC npc)
+    public bool CanExecute(Player player, WorldNPC npc)
         => IsUnlocked && InStock(npc) && PlayerCanAfford(player);
 
-    public bool DoTrade(Player player, Actors.WorldNPC npc)
+    public bool DoTrade(Player player, WorldNPC npc)
     {
         if (!CanExecute(player, npc))
             return false;

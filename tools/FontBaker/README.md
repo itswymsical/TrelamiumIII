@@ -19,7 +19,7 @@ font loading at compile time.**
 From the repository root:
 
 ```bash
-dotnet run --project tools/FontBaker -- --out src/TrelamiumIII/Common/Fonts --size 22 src/TrelamiumIII/Common/Fonts/Andika-Regular.ttf src/TrelamiumIII/Common/Fonts/Andika-Italic.ttf src/TrelamiumIII/Common/Fonts/Andika-Bold.ttf src/TrelamiumIII/Common/Fonts/Andika-BoldItalic.ttf src/TrelamiumIII/Common/Fonts/Paprika-Regular.ttf
+dotnet run --project tools/FontBaker -- --out src/TrelamiumIII/Common/Fonts --size 22 src/TrelamiumIII/Common/Fonts/Andika-Regular.ttf src/TrelamiumIII/Common/Fonts/Andika-Italic.ttf src/TrelamiumIII/Common/Fonts/Andika-Bold.ttf src/TrelamiumIII/Common/Fonts/Andika-BoldItalic.ttf src/TrelamiumIII/Common/Fonts/Paprika-Regular.ttf src/TrelamiumIII/Common/Fonts/Aaargh.ttf
 ```
 
 Each face produces `<name>.dsf` (metrics) and `<name>_0.png` (atlas). The `.ttf` sources are
@@ -31,13 +31,20 @@ bake input only — `build.txt` keeps them out of the `.tmod`.
 | --- | --- | --- |
 | Andika Regular / Italic / Bold / Bold Italic | 606 | Body copy. Wide Latin coverage. |
 | Paprika Regular | 353 | Display only — titles and chapter heads. |
+| Aaargh | 122 | Speech only — a hand-drawn face for dialogue bubbles. |
 
-Both are SIL Open Font License 1.1 but under different copyright holders, so their licenses ship
-separately as `OFL-Andika.txt` and `OFL-Paprika.txt`. Do not merge them into one `OFL.txt`.
+All are SIL Open Font License 1.1 but under different copyright holders, so their licenses ship
+separately as `OFL-Andika.txt`, `OFL-Paprika.txt` and `OFL-Aaargh.txt`. Do not merge them into one
+`OFL.txt`.
 
 The baker reports how many requested codepoints a face did not map, which is the quickest read on
-whether a face is safe for arbitrary player-facing text. Paprika leaves 292 unmapped and should be
-kept to strings you control.
+whether a face is safe for arbitrary player-facing text. Paprika leaves 292 unmapped and Aaargh
+leaves 523; both should be kept to strings you control. Aaargh is reachable per character through
+`ISpeakerProfile.Font`, which makes it easy to point at a line that interpolates a player's name —
+don't.
+
+Aaargh measures a 30px line box at size 22, the same as vanilla's tooltip face, so it drops into
+either dialogue box without changing their metrics.
 
 Run with `--help` for the full option list.
 

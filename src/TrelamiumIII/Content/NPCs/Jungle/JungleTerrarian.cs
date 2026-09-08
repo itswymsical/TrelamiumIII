@@ -184,16 +184,16 @@ public class JungleTerrarian : Villager
         new(() => AddInvItem(ItemID.JungleYoyo),
             Trade().ForCoins(Item.buyPrice(gold : 1, silver : 50)).Grants(ItemID.JungleYoyo)),
 
-        new(() => AddInvItem(ModContent.ItemType<MartialTonicItem>(), 5),
+        new(() => AddInvItem(Solution.MartialTonic, 5),
             Trade().For(ItemID.Ruby, 2)
-                            .Grants(ModContent.ItemType<MartialTonicItem>())),
+                            .Grants(Solution.MartialTonic)),
 
-        new(() => AddInvItem(ModContent.ItemType<BaneTonicItem>(), 5),
+        new(() => AddInvItem(Solution.BaneTonic, 5),
             Trade().For(ItemID.Stinger, 3)
-                            .Grants(ModContent.ItemType<BaneTonicItem>())),
+                            .Grants(Solution.BaneTonic)),
 
-        new(() => AddInvItem(ModContent.ItemType<VitalTonicItem>(), 12),
+        new(() => AddInvItem(Solution.VitalTonic, 12),
             Trade().For(ItemID.JungleSpores, 8)
-                            .Grants(ModContent.ItemType<VitalTonicItem>(), 2)),
+                            .Grants(Solution.VitalTonic, 2)),
     ];
 }

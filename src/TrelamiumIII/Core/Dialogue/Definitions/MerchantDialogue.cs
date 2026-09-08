@@ -23,15 +23,18 @@
             .Register();
 
         Dialogue.Define("Merchant.GoldMine_SurplusFurniture")
-            .Line(Speaker, emote: 0, speed: 1.2f)
-            .Line(Speaker, emote: 0, speed: 1.2f)
-            .Line(Speaker, emote: 0, speed: 1.2f)
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(20)])
             .Register();
 
         Dialogue.Define("Merchant.GoldMine_SurplusTools")
-            .Line(Speaker, emote: 0, speed: 1.2f)
-            .Line(Speaker, emote: 0, speed: 1.2f)
-            .Line(Speaker, emote: 0, speed: 1.2f)
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(20)])
+            .Register();
+
+        Dialogue.Define("Merchant.GoldMine_Complete")
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20)])
             .Register();
     }
 }

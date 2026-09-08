@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
 
@@ -11,6 +13,9 @@ public sealed class HomeForager : Job
     /// <summary>First and last set index that asks for a house. Sets in this range credit one house each.</summary>
     private const int FirstHousingSet = 1;
     private const int LastHousingSet = 3;
+
+    /// <summary>The last set, whose only task is going back to the Guide to hand the job in.</summary>
+    private const int CheckInSet = 4;
 
     // how often the guide will yap
     private const int CommentCooldown = 180;
@@ -47,7 +52,14 @@ public sealed class HomeForager : Job
     public override void OnJobStart()
     {
         base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: true);
+        DialogueManager.Instance.StartDialogue("Guide.HomeForager_Greeting", zoomIn: true, letterbox: false, style: DialogueStyle.Projected);
+        MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
+    }
+
+    public override void OnJobComplete(bool giveRewards = true)
+    {
+        base.OnJobComplete(giveRewards);
+        MusicDirector.Stop(1.5f);
     }
 
     public override void Reset()
@@ -81,6 +93,12 @@ public sealed class HomeForager : Job
         DialogueManager.Instance.StartDialogue($"Guide.HomeForager_Set{newSet}");
     }
 
+    public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
+    {
+        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").Projected(),
+        _ => ChatEncounter.Play("Guide.HomeForager_HomeForager_CheckIn").Projected(),
+    };
+
     public override bool OnMatchedEvent(GameEvent evt, int taskIndex)
     {
         if (evt.Type == GameEventType.HousingChecked && evt.RoomId is Point room)
@@ -109,7 +127,7 @@ public sealed class HomeForager : Job
                 && evt.RoomId is Point room
                 && !creditedRooms.Contains(room);      // and isn't one of the houses already counted
 
-        if (currentSet == 4 && taskIndex == 0)
+        if (currentSet == CheckInSet && taskIndex == 0)
             return evt.Type == GameEventType.NPCChat
                 && evt.NPCType.HasValue && (evt.NPCType == this.ProviderNPC);
 

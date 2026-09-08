@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 

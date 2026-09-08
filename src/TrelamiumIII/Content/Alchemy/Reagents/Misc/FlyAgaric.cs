@@ -2,13 +2,21 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 [LegacyName("FlyAgaric")]
-public class FlyAgaricItem : ModItem
+public class FlyAgaricItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 2,
+        Chemical = ChemicalQuality.Catalytic,
+        Principle = PrincipleType.Harmony,
+    };
+
     public override void SetDefaults()
     {
         base.SetDefaults();

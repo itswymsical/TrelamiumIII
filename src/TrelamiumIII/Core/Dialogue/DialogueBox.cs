@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Terraria.Audio;
+using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.UI;
@@ -10,7 +11,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Dialogue;
 
-public class DialogueBox : IInGameNotification
+public class DialogueBox : IInGameNotification, IDialoguePresenter
 {
     #region Constants and Fields
     private const float ANIMATION_DURATION = 30f;
@@ -29,7 +30,6 @@ public class DialogueBox : IInGameNotification
     private Vector2 targetPosition;
     private Vector2 startPosition;
 
-    private int charDisplayTimer;
     private int charIndex;
     private float pauseTimer;
 
@@ -38,10 +38,15 @@ public class DialogueBox : IInGameNotification
     private DialogueData currentDialogue = null;
     private int currentLineIndex;
 
-    private int voiceCursor;
-
     private readonly DialogueTick revealTick = new();
+    private readonly SpeechVoice voice = new();
     private readonly DialogueRenderContext renderContext = new();
+
+    // Rooting is per line rather than per conversation, so a two-hander faces the player with
+    // whoever is currently saying something. See DialogueBehavior.
+    private Projected.DialogueAnchor speakerAnchor;
+    private NPC rootedSpeaker;
+    private bool roots = true;
 
     // ---- Choice state ----
     private bool awaitingChoice;
@@ -63,13 +68,13 @@ public class DialogueBox : IInGameNotification
     #endregion
 
     #region Public Methods
-    public static DialogueBox CreateDialogue(string dialogueKey, bool zoomIn)
+    public static DialogueBox CreateDialogue(string dialogueKey, bool zoomIn, bool roots = true)
     {
         var lines = DialogueBuilder.BuildSequence(dialogueKey);
         if (lines.Count == 0)
             return null;
 
-        var box = new DialogueBox(dialogueKey) { ShouldZoom = zoomIn };
+        var box = new DialogueBox(dialogueKey) { ShouldZoom = zoomIn, roots = roots };
 
         foreach (var line in lines)
             box.dialogueLines.Enqueue(line);
@@ -82,6 +87,86 @@ public class DialogueBox : IInGameNotification
     {
         this.dialogueKey = dialogueKey;
         this.DialogueKey = dialogueKey;
+    }
+
+    /// <summary>
+    ///     Picks the conversation up from another box, part-way through a line.
+    /// </summary>
+    /// <remarks>
+    ///     No <see cref="NextLine" />: the line is already chosen and part-typed, and dequeuing here
+    ///     would drop it and start the one behind it.
+    /// </remarks>
+    internal static DialogueBox Resume(DialogueHandoff handoff)
+    {
+        var box = new DialogueBox(handoff.Key) { ShouldZoom = handoff.ZoomIn, roots = handoff.Roots };
+
+        foreach (var line in handoff.Remaining)
+            box.dialogueLines.Enqueue(line);
+
+        box.currentDialogue = handoff.Current;
+        box.charIndex = handoff.Current is null
+            ? 0
+            : Math.Clamp(handoff.CharIndex, 0, handoff.Current.PlainText.Length);
+        box.awaitingChoice = handoff.AwaitingChoice;
+        box.selectedChoiceIndex = handoff.SelectedChoice;
+
+        box.RootSpeaker();
+
+        return box;
+    }
+
+    internal DialogueHandoff Capture() => new()
+    {
+        Key = DialogueKey,
+        Current = currentDialogue,
+        Remaining = [.. dialogueLines],
+        CharIndex = charIndex,
+        AwaitingChoice = awaitingChoice,
+        SelectedChoice = selectedChoiceIndex,
+        ZoomIn = ShouldZoom,
+        Roots = roots,
+    };
+
+    /// <summary>The line being spoken, for whoever needs to know who is talking.</summary>
+    internal DialogueData CurrentLine => currentDialogue;
+
+    /// <summary>
+    ///     The face the current line is set in: the speaker's own, or the tooltip face.
+    /// </summary>
+    /// <remarks>
+    ///     Everything measured from it is recomputed per frame from the live line, so a conversation
+    ///     that changes speaker changes face mid-conversation without anything to invalidate.
+    /// </remarks>
+    private DynamicSpriteFont Font => currentDialogue?.Profile?.Font ?? FontAssets.MouseText.Value;
+
+    /// <summary>
+    ///     One glyph with a one-pixel outline, in a font of this box's choosing.
+    /// </summary>
+    /// <remarks>
+    ///     Replaces <c>Utils.DrawBorderString</c>, which is hard-wired to vanilla's tooltip face and
+    ///     so cannot honour a speaker's own. The anchor matches what that used: left edge, and a
+    ///     third of the way down the line box.
+    /// </remarks>
+    private static void DrawGlyph(
+        SpriteBatch spriteBatch, DynamicSpriteFont font, string text, Vector2 position, Color color, float scale)
+    {
+        Vector2 origin = font.MeasureString(text) * new Vector2(0f, 0.3f);
+        Color border = Color.Black * (color.A / 255f);
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector2 offset = i switch
+            {
+                0 => new Vector2(-1f, 0f),
+                1 => new Vector2(1f, 0f),
+                2 => new Vector2(0f, -1f),
+                _ => new Vector2(0f, 1f),
+            };
+
+            spriteBatch.DrawString(font, text, position + offset, border, 0f, origin, scale, SpriteEffects.None, 0f);
+        }
+
+        spriteBatch.DrawString(font, text, position, color, 0f, origin, scale, SpriteEffects.None, 0f);
     }
 
     public void Update()
@@ -141,7 +226,9 @@ public class DialogueBox : IInGameNotification
             currentLineIndex++;
 
             // Voice playback is per-line state, don't let it bleed across lines.
-            voiceCursor = 0;
+            voice.Reset();
+
+            RootSpeaker();
         }
         else
         {
@@ -149,6 +236,41 @@ public class DialogueBox : IInGameNotification
             isLastDialogue = true;
             animationProgress = 0f;
         }
+    }
+
+    /// <summary>
+    ///     True while characters are actually arriving. Drives the speaker's mouth.
+    /// </summary>
+    private bool IsVoicing =>
+        !isRemoved && pauseTimer <= 0 && currentDialogue != null && charIndex < currentDialogue.PlainText.Length;
+
+    /// <summary>
+    ///     Hands the line's speaker a talking loop, if it is not already running one.
+    /// </summary>
+    /// <remarks>
+    ///     Only on a change of speaker: a run of lines from the same character stays one behaviour,
+    ///     where re-rooting per line would stack a fresh interrupt and restart the animation
+    ///     mid-sentence. The predicate reads <see cref="rootedSpeaker" />, so this field changing is
+    ///     what releases whoever was talking before.
+    /// </remarks>
+    private void RootSpeaker()
+    {
+        if (!roots)
+            return;
+
+        speakerAnchor = Projected.DialogueAnchor.ForSpeaker(currentDialogue, speakerAnchor);
+
+        NPC speaker = speakerAnchor.Speaker;
+
+        if (ReferenceEquals(speaker, rootedSpeaker))
+            return;
+
+        rootedSpeaker = speaker;
+
+        DialogueBehavior.Root(
+            speaker,
+            stillSpeaking: () => !isRemoved && ReferenceEquals(rootedSpeaker, speaker),
+            voicing: () => IsVoicing);
     }
 
     private void UpdateAnimation()
@@ -165,58 +287,54 @@ public class DialogueBox : IInGameNotification
             return;
         }
 
+        // A box on its way out keeps drawing but stops talking. Without this, one handing its
+        // conversation to another box carries on typing and voicing the same line underneath it.
+        if (isRemoved)
+            return;
+
         if (pauseTimer > 0)
         {
             pauseTimer--;
+            voice.Interrupt();
             return;
         }
 
         if (charIndex < currentDialogue.PlainText.Length)
         {
-            // Gather reveal-time affects covering this glyph (timing / audio).
-            revealTick.Reset(charIndex);
-            var modifiers = currentDialogue.Modifiers;
-            for (int i = 0; i < modifiers.Count; i++)
-                if (modifiers[i].Covers(charIndex))
-                    modifiers[i].Affect.OnReveal(revealTick);
+            voice.Tick();
 
-            charDisplayTimer++;
-            var currentDelay = Math.Max(1, (int)(currentDialogue.BaseDelay / (currentDialogue.Speed * revealTick.SpeedMultiplier)));
-
-            if (charDisplayTimer >= currentDelay)
+            // Loops rather than revealing one glyph: the clock deals in fractional frames, so a fast
+            // line can owe more than one character on the same frame.
+            while (charIndex < currentDialogue.PlainText.Length)
             {
-                charDisplayTimer = 0;
-                charIndex++;
+                // Gather reveal-time affects covering this glyph (timing / audio).
+                revealTick.Reset(charIndex);
+                var modifiers = currentDialogue.Modifiers;
+                for (int i = 0; i < modifiers.Count; i++)
+                    if (modifiers[i].Covers(charIndex))
+                        modifiers[i].Affect.OnReveal(revealTick);
 
-                PlayTypeSound(revealTick);
+                if (!voice.TryReveal(currentDialogue.BaseDelay, currentDialogue.Speed, revealTick.SpeedMultiplier))
+                    break;
+
+                voice.Note(currentDialogue.PlainText[charIndex], revealTick);
+                charIndex++;
 
                 // A Pause affect holds the typewriter after the covered glyph appears.
                 if (revealTick.HoldFrames > 0)
+                {
                     pauseTimer = revealTick.HoldFrames;
+                    break;
+                }
             }
+
+            voice.Play(currentDialogue.Profile, Main.LocalPlayer.position);
         }
         else if (currentDialogue.HasChoices && !awaitingChoice)
         {
             awaitingChoice = true;
             selectedChoiceIndex = 0;
         }
-    }
-
-    private void PlayTypeSound(DialogueTick tick)
-    {
-        if (charIndex > currentDialogue.PlainText.Length)
-            return;
-
-        // A Sound affect overrides the voice for this glyph; otherwise the speaker's voice plays.
-        var sound = tick.Sound ?? currentDialogue.Profile?.Voice.Next(ref voiceCursor);
-        if (!sound.HasValue)
-            return;
-
-        var style = sound.Value;
-        if (tick.Pitch != 1.0f)
-            style = style with { Pitch = tick.Pitch - 1.0f };
-
-        SoundEngine.PlaySound(style, Main.LocalPlayer.position);
     }
 
     private void HandleInput()
@@ -244,7 +362,6 @@ public class DialogueBox : IInGameNotification
     {
         var choices = currentDialogue.Choices;
         if (choices.Count == 0) return;
-
 
         int? directionSlot = null;
 
@@ -276,13 +393,15 @@ public class DialogueBox : IInGameNotification
     {
         if (PlayerInput.IgnoreMouseInterface) return;
 
+        // A box on its way out takes no clicks, and must not swallow the release latch either -- while
+        // it fades, the click belongs to whatever is replacing it.
+        if (isRemoved) return;
+
         Main.LocalPlayer.mouseInterface = true;
 
-        if (!Main.mouseLeft || !Main.mouseLeftRelease || isLastDialogue && isRemoved) return;
+        if (!Main.mouseLeft || !Main.mouseLeftRelease) return;
 
         Main.mouseLeftRelease = false;
-
-        if (isRemoved) return;
 
         if (awaitingChoice) return; // mouse click handled in DrawChoices via hover
 
@@ -368,13 +487,13 @@ public class DialogueBox : IInGameNotification
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
         var textPosition = panelRectangle.TopLeft() + new Vector2(15f, 32f);
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f);
+        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
 
         var globalCharIndex = 0;
 
         for (var i = 0; i < wrappedText.Length; i++)
         {
-            var linePos = textPosition + new Vector2(-2f, i * FontAssets.MouseText.Value.LineSpacing);
+            var linePos = textPosition + new Vector2(-2f, i * Font.LineSpacing);
             var charOffset = 0;
 
             foreach (var c in wrappedText[i])
@@ -390,8 +509,8 @@ public class DialogueBox : IInGameNotification
 
                 charPos += renderContext.Offset;
 
-                Utils.DrawBorderString(spriteBatch, c.ToString(), charPos, renderContext.Color * Opacity, .98f, anchorx: 0f, anchory: 0.3f);
-                charOffset += (int)FontAssets.MouseText.Value.MeasureString(c.ToString()).X;
+                DrawGlyph(spriteBatch, Font, c.ToString(), charPos, renderContext.Color * Opacity, .98f);
+                charOffset += (int)Font.MeasureString(c.ToString()).X;
                 globalCharIndex++;
             }
         }
@@ -471,7 +590,6 @@ public class DialogueBox : IInGameNotification
             // select context color
             var panelAlpha = isSelected ? 0.75f : 0.4f;
 
-
             Utils.DrawSettingsPanel(spriteBatch, new Vector2(slotCenter.X - CHOICE_SLOT_WIDTH / 2f,
                 slotCenter.Y - CHOICE_SLOT_HEIGHT / 1.75f), CHOICE_SLOT_WIDTH, currentDialogue.SpeakerColor * panelAlpha * Opacity);
 
@@ -518,14 +636,20 @@ public class DialogueBox : IInGameNotification
         return new Rectangle(0, safeFrame * frameHeight, frameWidth, frameHeight);
     }
 
+    /// <remarks>
+    ///     Measured with the same font the text is drawn in. It used to take its line height from the
+    ///     item-stack face while <see cref="DrawText" /> laid the lines out with the tooltip face, so
+    ///     a panel was sized about ten pixels per line short of what it was holding and anything past
+    ///     two lines ran out of the bottom of it.
+    /// </remarks>
     private Vector2 CalculateSize()
     {
         if (currentDialogue == null) return new Vector2(PANEL_WIDTH + 18, 120);
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f);
+        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
         var lineCount = wrappedText.Length;
-        var textHeight = FontAssets.ItemStack.Value.LineSpacing * lineCount;
+        var textHeight = Font.LineSpacing * lineCount;
 
         var panelHeight = textHeight + 52f;
         return new Vector2(PANEL_WIDTH, Math.Max(panelHeight, 120));
@@ -538,16 +662,16 @@ public class DialogueBox : IInGameNotification
         return currentPosition - new Vector2(0f, panelSize.Y * 0.65f);
     }
 
-    private static string[] WrapText(string text, float maxWidth)
+    private static string[] WrapText(string text, float maxWidth, DynamicSpriteFont font)
     {
         List<string> lines = [];
         StringBuilder currentLine = new();
-        var spaceWidth = FontAssets.MouseText.Value.MeasureString(" ").X;
+        var spaceWidth = font.MeasureString(" ").X;
 
         foreach (var word in text.Split(' '))
         {
-            var wordWidth = FontAssets.MouseText.Value.MeasureString(word).X;
-            if (currentLine.Length > 0 && FontAssets.MouseText.Value.MeasureString(currentLine.ToString()).X + wordWidth + spaceWidth > maxWidth)
+            var wordWidth = font.MeasureString(word).X;
+            if (currentLine.Length > 0 && font.MeasureString(currentLine.ToString()).X + wordWidth + spaceWidth > maxWidth)
             {
                 lines.Add(currentLine.ToString());
                 currentLine.Clear();

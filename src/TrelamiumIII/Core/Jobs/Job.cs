@@ -4,6 +4,7 @@ using Terraria.Audio;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
 using TrelamiumIII.Content.Jobs;
+using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.UI.Jobs;
 
@@ -106,6 +107,18 @@ public abstract class Job
     /// </summary>
     /// <param name="evt">The event that occurred</param>
     public virtual void OnEvent(GameEvent evt) { }
+
+    /// <summary>
+    /// Dialogue this Job wants its <see cref="ProviderNPC"/> to open instead of the vanilla
+    /// chat window, asked every time the player talks to one while the Job is ongoing.
+    /// Return <see cref="ChatEncounter.None"/> - the default - to leave the NPC alone.
+    /// </summary>
+    /// <remarks>
+    /// This is the "the job is talking, not the NPC" case: a briefing on the current set, a
+    /// nudge toward the task that is still open, the hand-in line. Resolved ahead of the
+    /// NPC's own greeting, so whichever set is underway is what gets said.
+    /// </remarks>
+    public virtual ChatEncounter GetChatEncounter(NPC npc, Player player) => ChatEncounter.None;
 
     /// <summary>
     /// Called when the last task of a set is finished and the Job moves on to the next one.

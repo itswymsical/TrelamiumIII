@@ -26,6 +26,18 @@ public sealed class VoiceProfile
     private readonly SoundStyle[] sounds;
     public VoiceMode Mode { get; }
 
+    /// <summary>
+    ///   Frames between the beats this voice may play on. 1 is every frame, which is the old
+    ///   behaviour; larger values space the speech out and are what stop samples overlapping.
+    /// </summary>
+    /// <remarks>
+    ///   Read as a tempo, not a delay. Characters typed between two beats collapse into the single
+    ///   hit on the later one, so raising this thins the speech out rather than slowing the typing
+    ///   down, and the ticks stay evenly spaced however unevenly the letters arrive. Roughly: 3 is
+    ///   chattery, 4 is conversational, 6 and up is deliberate.
+    /// </remarks>
+    public int Subdivision { get; init; } = 4;
+
     public VoiceProfile(VoiceMode mode, params SoundStyle[] sounds)
     {
         Mode = mode;

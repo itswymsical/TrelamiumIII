@@ -27,12 +27,12 @@ public sealed class GoldMine : Job
     private readonly CollectionMatch[] CopperMatches =
     [
         new() {
-            SaveKey = "copperOre", MaxContributions = 5,
+            SaveKey = "copperOre", MaxContributions = 10,
             SurplusDialogue = "Merchant.GoldMine_SurplusOre",
             Matches = evt => evt.ItemType == ItemID.CopperOre
         },
         new() {
-            SaveKey = "copperBar", MaxContributions = 10,
+            SaveKey = "copperBar", MaxContributions = 15,
             SurplusDialogue = "Merchant.GoldMine_SurplusBars",
             Matches = evt => evt.ItemType == ItemID.CopperBar
         },
@@ -76,7 +76,7 @@ public sealed class GoldMine : Job
     public override void OnJobStart()
     {
         base.OnJobStart();
-        DialogueManager.Instance.StartDialogue("Merchant.GoldMine_Greeting");
+        DialogueManager.Instance.StartDialogue("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
 
     }
     public override void Reset()
@@ -102,12 +102,6 @@ public sealed class GoldMine : Job
             DialogueManager.Instance.StartDialogue(pendingDialogue);
 
         pendingDialogue = null;
-    }
-
-    public override void OnSetAdvanced(int previousSet, int newSet)
-    {
-        //if (newSet == (int)GoldMineTask.CollectCopper)
-        //    Speak("Merchant.GoldMine.Greeting");
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Terraria.Audio;
+using Terraria.GameContent;
+using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -46,6 +48,9 @@ public static class SpeakerRegistry
         // Register one profile per speaking character. Portraits are vertical emote sheets
         // (92x92 per frame) under Assets/Textures/UI/Dialogue/Characters.
         //
+        // Font is optional and defaults to the box's own. Set it only on characters whose lines you
+        // author end to end -- TrelamiumFonts.Speech covers 122 glyphs, so a line that interpolates
+        // a player's name or gets translated will come out mostly as substitution marks.
         Register(new SpeakerProfile
         {
             Id = "Guide",
@@ -62,6 +67,27 @@ public static class SpeakerRegistry
             FrameCount = 3,
             Color = new(100, 150, 200),
             Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Merchant.Speech.Asset]),
+        });
+        Register(new SpeakerProfile
+        {
+            Id = "Sonder",
+            Color = new(55, 55, 55),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sonder.Speech.Asset]),
+            Font = TrelamiumFonts.Speech,
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "Calvin",
+            Color = new(255, 214, 95),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Calvin.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "Hypnosa",
+            Color = new(255, 82, 98),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Hypnosa.Speech.Asset]),
         });
 
         Register(new SpeakerProfile

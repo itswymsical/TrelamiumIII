@@ -5,7 +5,7 @@ using Terraria.ModLoader.IO;
 using Terraria.UI;
 using TrelamiumIII.Common.Commands;
 using TrelamiumIII.Core.Events;
-using TrelamiumIII.Core.NPCs.Actors;
+using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.UI.Jobs;
 
 namespace TrelamiumIII.Core.Jobs;
@@ -106,8 +106,8 @@ public partial class JobPlayer : ModPlayer
     {
         provider ??= FindProviderByType(job.ProviderNPC);
 
-        if (provider is { active: true } && provider.ModNPC is JobNPC jobNPC)
-            jobNPC.AJobAccepted = true;
+        if (provider is { active: true } && provider.ModNPC is WorldNPC worldNpc)
+            worldNpc.HasActiveJob = true;
     }
 
     private static NPC? FindProviderByType(int npcType)

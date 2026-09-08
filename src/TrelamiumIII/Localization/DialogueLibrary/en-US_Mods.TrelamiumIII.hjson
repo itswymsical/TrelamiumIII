@@ -35,7 +35,7 @@ DialogueLibrary: {
 			Line3.Text: They are not simply background characters in your story;[] They are the main character of their own story.
 		}
 
-		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true. Perchance in more way than one.
+		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true.[] Perchance in more way than one.
 		SonderChoice_3.Line1.Text: Indeed.[] It is a rare and beautiful thing to feel sonder, and I am glad you have experienced it.
 		SonderChoice_4.Line1.Text: I see.[] Well, I hope you will have the opportunity to experience it in the future.
 	}
@@ -84,6 +84,12 @@ DialogueLibrary: {
 			Line1.Text: Well now.[] That's a town.
 			Line2.Text: Come and talk to me when you've caught your breath,[] and I'll see you paid properly.[] You've earned it.
 		}
+
+		# The hand-in. Replaces the Guide's chat window for as long as the last set is open.
+		HomeForager_CheckIn: {
+			Line1.Text: There you are.[] Have a look around while you're standing still.
+			Line2.Text: Empty rooms this morning,[] neighbours by the end of the week.[] Here, take this.[] Come and find me when you want more work.
+		}
 	}
 
 	Merchant: {
@@ -102,13 +108,23 @@ DialogueLibrary: {
 		GoldMine_SurplusBars.Line1.Text: Copper bars,[] Shiny and beautiful...[] Although...[] seems like we might have enough, seek out furniture or tools.
 
 		GoldMine_SurplusFurniture: {
-			Line1.Text: tbc
-			Line2.Text: tbc
+			Line1.Text: That's plenty of furniture![] We should be good on that now.[] How's about it some bars?
+			Line2.Text: It might be crazy to say this as a merchant,[] but that stock market can crash![] Heheh...
+			Line3.Text: Those folks won't know what hit 'em.[] If they REALLY think they can economically bully us,[] we'll show 'em a little bit of our own ingenuity.
 		}
 
-		GoldMine_SurplusTools: {
-			Line1.Text: tbc
-			Line2.Text: tbc
+		GoldMine_SurplusTools.Line1.Text: Handy work on those tools![] but I need a little more than that, friend! Look around for some furniture, or bars.[] That's the kind of stuff that'll get those investors' attention.
+
+		GoldMine_Complete: {
+			Line1.Text: Well,[] that should do it![] Let's see if we can make a deal with those investors.
+			Line2.Text: Thanks for your help, [speakerName:player]![] Come on back and I'll have your little somethin' ready.
+		}
+	}
+
+	Kraken: {
+		Greeting: {
+			Line1.Text: Huh?[] Hello there.
+			Line2.Text: Didn't notice ya standing there.[] It's a bit creepy...
 		}
 	}
 }

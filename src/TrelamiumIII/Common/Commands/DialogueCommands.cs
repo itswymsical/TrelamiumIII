@@ -5,6 +5,7 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Dialogue.Projected;
 
 namespace TrelamiumIII.Common.Commands;
 
@@ -53,7 +54,7 @@ public class DialogueCommand : ModCommand
     {
         if (args.Length < 2)
         {
-            caller.Reply("Usage: /dialogue play <Category.Conversation>", Color.Yellow);
+            caller.Reply("Usage: /dialogue play <Category.Conversation> [projected|adaptive]", Color.Yellow);
             return;
         }
 
@@ -84,11 +85,50 @@ public class DialogueCommand : ModCommand
             }
         }
 
-        bool started = DialogueManager.Instance.StartDialogue(query);
+        string mode = args.Length > 2 ? args[2] : string.Empty;
+
+        DialogueStyle style = DialogueStyle.Panel;
+
+        if (mode.StartsWith("proj", StringComparison.OrdinalIgnoreCase))
+            style = DialogueStyle.Projected;
+        else if (mode.StartsWith("adapt", StringComparison.OrdinalIgnoreCase))
+            style = DialogueStyle.Adaptive;
+
+        bool started = DialogueManager.Instance.StartDialogue(
+            query,
+            style: style,
+            anchor: style == DialogueStyle.Panel ? null : DialogueAnchor.OnSpeaker(NearestNPC(caller.Player)));
+
         if (started)
-            caller.Reply($"Started: {query}", Color.Green);
+            caller.Reply($"Started: {query} ({style.ToString().ToLower()})", Color.Green);
         else
             caller.Reply($"Failed to start \"{query}\" (missing Line1.Text?).", Color.Red);
+    }
+
+    /// <summary>
+    ///     The town NPC nearest the caller, so a projected box has something to hang off while it is
+    ///     being looked at. Null falls the box back to hovering over the player.
+    /// </summary>
+    private static NPC NearestNPC(Player player)
+    {
+        NPC nearest = null;
+        float best = 900f * 900f;
+
+        foreach (NPC npc in Main.npc)
+        {
+            if (!npc.active || !npc.friendly && !npc.townNPC)
+                continue;
+
+            float distance = Vector2.DistanceSquared(npc.Center, player.Center);
+
+            if (distance >= best)
+                continue;
+
+            best = distance;
+            nearest = npc;
+        }
+
+        return nearest;
     }
 
     private static void StopDialogue(CommandCaller caller)
@@ -141,7 +181,7 @@ public class DialogueCommand : ModCommand
     private static void ShowHelp(CommandCaller caller)
     {
         caller.Reply($" [i:{ItemID.Sign}] Dialogue Commands [i:{ItemID.Sign}]", new Color(255, 215, 0));
-        caller.Reply($"/dialogue play <key>  - Start a dialogue (partial match ok)", Color.White);
+        caller.Reply("/dialogue play <key> [projected|adaptive] - Start a dialogue (partial match ok)", Color.White);
         caller.Reply("/dialogue stop         - Force-end the active dialogue", Color.White);
         caller.Reply("/dialogue list [filter]- List dialogue keys, optional substring filter", Color.White);
         caller.Reply("/dialogue help         - Show this help", Color.White);

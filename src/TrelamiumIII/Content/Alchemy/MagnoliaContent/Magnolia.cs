@@ -6,13 +6,23 @@ using Terraria.ObjectData;
 using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 
 namespace TrelamiumIII.Content.Alchemy.MagnoliaContent;
 
-public class MagnoliaItem : ModItem
+public class MagnoliaItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 4,
+        Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Catalytic,
+        Principle = PrincipleType.Harmony | PrincipleType.Vital,
+        Rarity = ItemRarityID.Green,
+        Hidden = false,
+    };
+
     public override void SetStaticDefaults()
     {
         base.SetStaticDefaults();

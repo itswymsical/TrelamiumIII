@@ -192,21 +192,21 @@ public class DesertTerrarian : Villager
             Trade().ForCoins(Item.buyPrice(gold: 2))
                             .Grants(ModContent.ItemType<AmberPendantItem>())),
 
-        new(() => AddInvItem(ModContent.ItemType<BriskTonicItem>(), 5),
+        new(() => AddInvItem(Solution.BriskTonic, 5),
             Trade().For(ItemID.Sapphire, 3)
-                            .Grants(ModContent.ItemType<BriskTonicItem>())),
+                            .Grants(Solution.BriskTonic)),
 
-        new(() => AddInvItem(ModContent.ItemType<HarmoniousTonicItem>(), 5),
+        new(() => AddInvItem(Solution.HarmoniousTonic, 5),
             Trade().For(ItemID.CopperOre, 8)
-                            .Grants(ModContent.ItemType<HarmoniousTonicItem>())),
+                            .Grants(Solution.HarmoniousTonic)),
 
-        new(() => AddInvItem(ModContent.ItemType<BaneTonicItem>(), 12),
+        new(() => AddInvItem(Solution.BaneTonic, 12),
             Trade().For(ItemID.EbonsandBlock, 20)
-                            .Grants(ModContent.ItemType<BaneTonicItem>(), 2)),
+                            .Grants(Solution.BaneTonic, 2)),
 
-        new(() => AddInvItem(ModContent.ItemType<BaneTonicItem>(), 12),
+        new(() => AddInvItem(Solution.BaneTonic, 12),
             Trade().For(ItemID.CrimsandBlock, 20)
-                            .Grants(ModContent.ItemType<BaneTonicItem>(), 2)),
+                            .Grants(Solution.BaneTonic, 2)),
     ];
 }
 

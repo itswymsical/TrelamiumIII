@@ -1,9 +1,18 @@
+using TrelamiumIII.Core.Alchemy;
+
 namespace TrelamiumIII.Content.Alchemy.Reagents.Misc;
 
 [LegacyName("OxidizedCopper")]
 
-public class OxidizedCopperItem : ModItem
+public class OxidizedCopperItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Potency = 2,
+        Chemical = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
+        Principle = PrincipleType.Harmony,
+    };
+
     public override void SetStaticDefaults()
     {
         base.SetStaticDefaults();

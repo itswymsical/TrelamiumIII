@@ -801,6 +801,7 @@ NPCs: {
 		Bestiary: A fruiting body grown large enough to walk. What it buried itself to escape, nobody asked; what it comes back up for is louder.
 	}
 
+	KrakenNPC.DisplayName: Kraken
 	EyeOfCthulhu.Epithet: The Watcher
 	FungoreSporeSac.DisplayName: Spore Sac
 	DesertTerrarian.DisplayName: Desert Villager
@@ -823,6 +824,7 @@ NPCs: {
 	}
 
 	ShinobiNPC.DisplayName: Shinobi
+	TestTerrarian.DisplayName: Test Terrarian
 }
 
 Buffs: {

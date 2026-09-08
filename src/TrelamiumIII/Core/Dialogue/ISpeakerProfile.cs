@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using ReLogic.Graphics;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -24,4 +25,25 @@ public interface ISpeakerProfile
 
     /// <summary>Voice played while typing this speaker's lines.</summary>
     VoiceProfile Voice { get; }
+
+    /// <summary>
+    ///   Typeface this speaker's lines are set in, or null to use the box's own.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     A character's handwriting, in effect: the same words in a different face read as a
+    ///     different voice, and it costs nothing at the point of use because every box already
+    ///     lays each line out from scratch.
+    ///   </para>
+    ///   <para>
+    ///     Line spacing comes with it. A face with taller leading gives that speaker a taller box,
+    ///     which is correct and is worth knowing before setting something extreme here.
+    ///   </para>
+    ///   <para>
+    ///     Only for faces with the coverage to survive whatever the line holds. A display face set
+    ///     on a speaker whose lines interpolate a player's name will render most of that name as
+    ///     the substitution glyph -- see <see cref="Text.TrelamiumFonts.Speech" />.
+    ///   </para>
+    /// </remarks>
+    DynamicSpriteFont Font { get; }
 }
