@@ -116,6 +116,11 @@ DialogueLibrary: {
 			Line1.Text: tbc
 			Line2.Text: tbc
 		}
+
+		GoldMine_Complete: {
+			Line1.Text: Well,[] that should do it![] Let's see if we can make a deal with those investors.
+			Line2.Text: Thanks for your help, [speakerName:player]![] Come on back and I'll have your little somethin' ready.
+		}
 	}
 
 	Kraken: {
