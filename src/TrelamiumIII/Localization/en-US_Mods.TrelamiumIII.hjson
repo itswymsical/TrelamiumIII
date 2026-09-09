@@ -849,6 +849,7 @@ NPCs: {
 
 	ShinobiNPC.DisplayName: Shinobi
 	TestTerrarian.DisplayName: Test Terrarian
+	SophieNPC.DisplayName: Sophie
 }
 
 Buffs: {

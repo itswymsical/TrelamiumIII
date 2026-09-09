@@ -40,6 +40,21 @@ DialogueLibrary: {
 		SonderChoice_4.Line1.Text: I see.[] Well, I hope you will have the opportunity to experience it in the future.
 	}
 
+	Sophie: {
+		Greeting: {
+			Line1: {
+				Text: Oh,[] hey there![] Didn't notice you sneak by.[] Anything I can do for ya?
+				Choice1.Text: Nah, nothin' in particular.
+				Choice2.Text: I'm a bit lost.
+				Choice3.Text: Nope, I just like staring.
+			}
+		}
+
+		GreetingAnswer1.Line1.Text: ah[]...[]well the name's sophie.
+		GreetingAnswer2.Line1.Text: Lost?[]I think you're joking.
+		GreetingAnswer3.Line1.Text: Alright kid,[] get lost already.
+	}
+
 	NerdySlime: {
 		Greeting.Line1.Text: Hello, [speakerName:player]! [] I have a task for you!
 
