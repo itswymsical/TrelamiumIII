@@ -24,7 +24,7 @@ public sealed class SalmonAct : FishingAct
 
 public sealed class EvilFishAct : FishingAct
 {
-    private readonly HashSet<int> EviiiiilFish = [ItemID.CrimsonTigerfish, ItemID.Ebonkoi, ItemID.Hemopiranha];
+    public readonly HashSet<int> EviiiiilFish = [ItemID.CrimsonTigerfish, ItemID.Ebonkoi, ItemID.Hemopiranha];
 
     private bool EvilFih(int fish)
         => EviiiiilFish.Contains(fish);
@@ -46,7 +46,7 @@ public sealed class JellyfishingAct : FishingAct
 
 public sealed class GeneralFishingAct : FishingAct
 {
-    private readonly HashSet<int> BasicFish = [ItemID.Tuna, ItemID.Bass, ItemID.Shrimp, ItemID.AtlanticCod, 
+    public readonly HashSet<int> BasicFish = [ItemID.Tuna, ItemID.Bass, ItemID.Shrimp, ItemID.AtlanticCod, 
         ItemID.Trout, ItemID.SpecularFish, ItemID.RockLobster, ItemID.RedSnapper, ItemID.NeonTetra, ItemID.Flounder, ItemID.CrimsonTigerfish];
 
     private bool IsBasicFishy(int fish) 
@@ -61,7 +61,7 @@ public sealed class GeneralFishingAct : FishingAct
 
 public sealed class HallowFishAct : FishingAct
 {
-    private readonly HashSet<int> HallowFih = [ItemID.Prismite, ItemID.PrincessFish, ItemID.ChaosFish];
+    public readonly HashSet<int> HallowFih = [ItemID.Prismite, ItemID.PrincessFish, ItemID.ChaosFish];
 
     private bool IsHallowFih(int fish)
         => HallowFih.Contains(fish);
@@ -75,9 +75,11 @@ public sealed class HallowFishAct : FishingAct
 
 public sealed class GoldenCarpAct : FishingAct
 {
+    public static readonly int[] LeGoldenCarp = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+
     public override string ID => "act.goldencarp";
     public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
+    public override int[] Thresholds => LeGoldenCarp;
     public override float ExpMultiplier => 1.25f;
     protected override bool FishCaught(int fish) => fish == ItemID.GoldenCarp;
 }

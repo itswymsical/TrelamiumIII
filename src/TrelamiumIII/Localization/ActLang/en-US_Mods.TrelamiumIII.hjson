@@ -195,12 +195,12 @@ ActLang: {
 		Name: Fisher of Salmon
 		Description: Reel in Salmon
 	}
-	
+
 	evilfish: {
 		Name: Fisher of Souls
 		Description: Reel in evil fish
 	}
-	
+
 	basicfish: {
 		Name: Apprentice Fisherman
 		Description: Reel in common fish
@@ -214,7 +214,7 @@ ActLang: {
 	hallowfish: {
 		Name: Divine Fishery
 		Description: Reel in Hallow biome fish
-	}	
+	}
 
 	goldencarp: {
 		Name: Luckiest Fisherman

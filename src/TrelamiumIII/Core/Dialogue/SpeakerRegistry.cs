@@ -78,16 +78,17 @@ public static class SpeakerRegistry
 
         Register(new SpeakerProfile
         {
-            Id = "Calvin",
+            Id = "Signia",
             Color = new(255, 214, 95),
-            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Calvin.Speech.Asset]),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Signia.Speech.Asset]),
         });
 
         Register(new SpeakerProfile
         {
-            Id = "Hypnosa",
-            Color = new(255, 82, 98),
-            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Hypnosa.Speech.Asset]),
+            Id = "Sophie",
+            Color = new(158, 85, 153),
+            Font = TrelamiumFonts.AndikaBold,
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
         });
 
         Register(new SpeakerProfile
@@ -96,7 +97,6 @@ public static class SpeakerRegistry
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
             FrameCount = 1,
             Color = new(100, 150, 200),
-            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Sophie.Asset]),
         });
     }
 
