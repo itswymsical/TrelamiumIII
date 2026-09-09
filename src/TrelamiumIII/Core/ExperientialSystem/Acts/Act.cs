@@ -295,6 +295,24 @@ public abstract class PredicateAct : Act
     public sealed override bool Matches(in GameEvent evt) => evt.Type == Listens && Test(evt);
 }
 
+public abstract class TileInteractAct : PredicateAct
+{
+    protected sealed override GameEventType Listens => GameEventType.TileInteract;
+
+    protected abstract bool TestTile(int tileType);
+
+    protected sealed override bool Test(in GameEvent evt) => evt.TileType is int type && type >= 0 && TestTile(type);
+}
+
+public abstract class FishingAct : PredicateAct
+{
+    protected sealed override GameEventType Listens => GameEventType.CaughtFish;
+
+    protected abstract bool FishCaught(int type);
+
+    protected sealed override bool Test(in GameEvent evt) => evt.ItemType is int type && type >= 0 && FishCaught(type);
+}
+
 /// <summary>A <see cref="PredicateAct"/> driven by which tile was broken.</summary>
 public abstract class TileBreakPredicateAct : PredicateAct
 {

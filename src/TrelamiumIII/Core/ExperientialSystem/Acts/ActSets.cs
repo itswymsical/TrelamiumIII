@@ -133,6 +133,9 @@ public static class ActCurves
     /// <summary>Crafting, where one action often yields a whole stack.</summary>
     public static readonly int[] Craft = [30, 90, 200, 400, 700, 1150, 1750, 2600, 3800, 5200];
 
+    public static readonly int[] Fishing = [10, 25, 40, 60, 85, 110, 175, 225, 360, 500];
+
+
     /// <summary>Ordinary enemy kills, counted per family.</summary>
     public static readonly int[] Combat = [20, 50, 110, 210, 380, 620, 950, 1400, 2000, 2800];
 

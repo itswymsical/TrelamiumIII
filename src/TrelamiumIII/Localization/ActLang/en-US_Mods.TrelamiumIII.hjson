@@ -130,6 +130,31 @@ ActLang: {
 		Description: Obstruct snow and ice
 	}
 
+	evilbiomes: {
+		Name: Cleanser of Evil
+		Description: Obstruct evil biome blocks
+	}
+
+	hellblocks: {
+		Name: Incinerator
+		Description: Obstruct underworld blocks
+	}
+
+	jungleblocks: {
+		Name: Amazon Architect
+		Description: Obstruct jungle blocks
+	}
+
+	stoneblocks: {
+		Name: Bedrock
+		Description: Obstruct different types of stone
+	}
+
+	foliagecutter: {
+		Name: Grass Cutter
+		Description: Cut grass and vine tiles
+	}
+
 	lumber: {
 		Name: Lumberjack
 		Description: Fell tree trunks
@@ -158,5 +183,36 @@ ActLang: {
 	planting: {
 		Name: Botanist
 		Description: Plant herbs
+	}
+
+	# MOTHAFUCKIN FIIIIIISH
+	bassfish: {
+		Name: Fisher of Bass
+		Description: Reel in Bass
+	}
+
+	salmon: {
+		Name: Fisher of Salmon
+		Description: Reel in Salmon
+	}
+	
+	evilfish: {
+		Name: Fisher of Souls
+		Description: Reel in evil fish
+	}
+	
+	basicfish: {
+		Name: Apprentice Fisherman
+		Description: Reel in common fish
+	}
+	
+	hallowfish: {
+		Name: Divine Fishery
+		Description: Reel in Hallow biome fish
+	}	
+
+	goldencarp: {
+		Name: Luckiest Fisherman
+		Description: Reel in Golden Carp
 	}
 }
