@@ -50,7 +50,7 @@ DialogueLibrary: {
 			}
 		}
 
-		GreetingAnswer1.Line1.Text: ah[]...[]well the name's sophie.
+		GreetingAnswer1.Line1.Text: ah[]...[]well the name's Sophie.
 		GreetingAnswer2.Line1.Text: Lost?[]I think you're joking.
 		GreetingAnswer3.Line1.Text: Alright kid,[] get lost already.
 	}

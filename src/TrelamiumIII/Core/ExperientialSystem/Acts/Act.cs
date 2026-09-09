@@ -12,7 +12,9 @@ public enum ActCategory
     Exploration,
     Crafting,
     Fishing,
-    Building
+    Building,
+
+    Collection
 }
 
 /// <summary>
@@ -295,6 +297,15 @@ public abstract class PredicateAct : Act
     public sealed override bool Matches(in GameEvent evt) => evt.Type == Listens && Test(evt);
 }
 
+public abstract class FishingCrateAct : PredicateAct
+{
+    protected sealed override GameEventType Listens => GameEventType.CaughtFish;
+
+    protected abstract bool CrateType(int itemID);
+
+    protected sealed override bool Test(in GameEvent evt) => evt.ItemType is int type && type >= 0 && CrateType(type);
+}
+
 public abstract class TileInteractAct : PredicateAct
 {
     protected sealed override GameEventType Listens => GameEventType.TileInteract;
@@ -304,13 +315,13 @@ public abstract class TileInteractAct : PredicateAct
     protected sealed override bool Test(in GameEvent evt) => evt.TileType is int type && type >= 0 && TestTile(type);
 }
 
-public abstract class FishingAct : PredicateAct
+public abstract class FishingAct : SetAct
 {
     protected sealed override GameEventType Listens => GameEventType.CaughtFish;
 
-    protected abstract bool FishCaught(int type);
+    protected virtual bool FishCaught(int type)  => false;
+    protected sealed override int IdOf(in GameEvent evt) => evt.ItemType ?? -1;
 
-    protected sealed override bool Test(in GameEvent evt) => evt.ItemType is int type && type >= 0 && FishCaught(type);
 }
 
 /// <summary>A <see cref="PredicateAct"/> driven by which tile was broken.</summary>
@@ -346,7 +357,11 @@ public abstract class ItemCraftAct : SetAct
     protected sealed override GameEventType Listens => GameEventType.ItemCraft;
     protected sealed override int IdOf(in GameEvent evt) => evt.ItemType ?? -1;
 }
-
+public abstract class ItemPickupAct : SetAct
+{
+    protected sealed override GameEventType Listens => GameEventType.ItemPickup;
+    protected sealed override int IdOf(in GameEvent evt) => evt.ItemType ?? -1;
+}
 /// <summary>
 /// Localized display names for <see cref="ActCategory"/>. The category is shown next to the act name in
 /// the milestone tracker, so the bare enum name would have been the one untranslated string on that panel.

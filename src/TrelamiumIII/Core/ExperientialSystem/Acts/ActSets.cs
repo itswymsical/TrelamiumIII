@@ -1,3 +1,5 @@
+using TrelamiumIII.Content.Alchemy.MagnoliaContent;
+
 namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 
 /// <summary>
@@ -68,7 +70,7 @@ public static class ActSets
 
     public static readonly int[] HerbTiles =
     [
-        TileID.ImmatureHerbs, TileID.MatureHerbs, TileID.BloomingHerbs
+        TileID.ImmatureHerbs, TileID.MatureHerbs, TileID.BloomingHerbs, ModContent.TileType<MagnoliaTile>()
     ];
 
     public static readonly int[] Slimes =
@@ -106,6 +108,51 @@ public static class ActSets
             NPCID.SleepyEye, NPCID.SleepyEye2, NPCID.DemonEyeOwl, NPCID.Wraith,
             NPCID.DemonEye, NPCID.PurpleEye, NPCID.GreenEye, NPCID.DialatedEye,
             NPCID.Retinazer, NPCID.Spazmatism
+    ];
+
+    // FIH BELOW
+    public static readonly int[] AllFish =
+    [
+        ItemID.Tuna, ItemID.Bass, ItemID.Shrimp, ItemID.AtlanticCod,ItemID.Trout, ItemID.SpecularFish, 
+        ItemID.RockLobster, ItemID.RedSnapper, ItemID.NeonTetra, ItemID.Flounder, ItemID.CrimsonTigerfish
+    ];
+
+    public static readonly int[] CommonFish =
+    [
+        ItemID.AtlanticCod, ItemID.CrimsonTigerfish, ItemID.NeonTetra, ItemID.RedSnapper, ItemID.SpecularFish, 
+        ItemID.Tuna, ItemID.Salmon, 
+        ItemID.Bass, ItemID.Trout, ItemID.RockLobster, ItemID.RedSnapper, ItemID.Flounder, ItemID.CrimsonTigerfish
+    ];
+
+    public static readonly int[] UncommonFish =
+    [
+        ItemID.ArmoredCavefish, ItemID.Damselfish, ItemID.DoubleCod, ItemID.Ebonkoi, ItemID.FrostMinnow, ItemID.Hemopiranha,
+            ItemID.Honeyfin, ItemID.PrincessFish, ItemID.Shrimp, ItemID.VariegatedLardfish
+    ];
+
+    public static readonly int[] RareFish =
+    [
+        ItemID.BlueJellyfish, ItemID.GreenJellyfish, ItemID.PinkJellyfish, ItemID.Obsidifish, ItemID.Prismite, ItemID.Stinkfish
+    ];
+
+    public static readonly int[] JellyFih =
+    [
+        ItemID.BlueJellyfish, ItemID.GreenJellyfish, ItemID.PinkJellyfish
+    ];
+
+    public static readonly int[] EvilBiomeFish =
+    [
+        ItemID.Hemopiranha, ItemID.CrimsonTigerfish, ItemID.Ebonkoi
+    ];
+
+    public static readonly int[] HallowFish =
+    [
+        ItemID.Prismite, ItemID.ChaosFish, ItemID.PrincessFish
+    ];
+
+    public static readonly int[] LegendaryFish =
+    [
+        ItemID.ChaosFish, ItemID.FlarefinKoi, ItemID.GoldenCarp
     ];
 }
 

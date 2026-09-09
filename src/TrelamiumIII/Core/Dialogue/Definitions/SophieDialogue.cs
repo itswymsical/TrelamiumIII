@@ -14,7 +14,7 @@ class SophieDialogue : ModDialogue
     protected override void Register()
     {
         Dialogue.Define("Sophie.Greeting")
-            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(14), new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(14), new Pause(20), new Pause(22)])
                 .Choice("Sophie.GreetingAnswer1")
                 .Choice("Sophie.GreetingAnswer2")
                 .Choice("Sophie.GreetingAnswer3")

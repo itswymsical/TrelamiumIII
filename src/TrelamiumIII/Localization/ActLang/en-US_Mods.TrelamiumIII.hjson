@@ -186,29 +186,10 @@ ActLang: {
 	}
 
 	# MOTHAFUCKIN FIIIIIISH
-	bassfish: {
-		Name: Fisher of Bass
-		Description: Reel in Bass
-	}
-
-	salmon: {
-		Name: Fisher of Salmon
-		Description: Reel in Salmon
-	}
-
+	
 	evilfish: {
 		Name: Fisher of Souls
 		Description: Reel in evil fish
-	}
-
-	basicfish: {
-		Name: Apprentice Fisherman
-		Description: Reel in common fish
-	}
-
-	jellyfishing: {
-		Name: At the bottom of the...bikini?
-		Description: Reel in jellyfish
 	}
 
 	hallowfish: {
@@ -216,8 +197,70 @@ ActLang: {
 		Description: Reel in Hallow biome fish
 	}
 
-	goldencarp: {
-		Name: Luckiest Fisherman
-		Description: Reel in Golden Carp
+	jellyfishing: {
+		Name: At the bottom of the...bikini?
+		Description: Reel in jellyfish
+	}
+
+	hellfishing: {
+		Name: Magma Reels
+		Description: Reel in underworld fish
+	}
+
+	commonfish: {
+		Name: Apprentice Fisherman
+		Description: Reel in common fish
+	}
+
+	uncommonfish: {
+		Name: Journeyman Fisherman
+		Description: Reel in uncommon fish
+	}
+
+	rarefish: {
+		Name: Masterful Fisherman
+		Description: Reel in rare fish
+	}
+
+	legendfish: {
+		Name: Legendary Fisherman
+		Description: Reel in extremely rare fish
+	}
+
+	phmcrates: {
+		Name: King of Crates
+		Description: Reel in crates
+	}
+
+	hmcrates: {
+		Name: Lord of Crates
+		Description: Reel in crates during hardmode
+	}
+
+	icefish: {
+		Name: Tundra Pescatarian
+		Description: Reel in tundra fish
+	}
+
+	junglefish: {
+		Name: Wildland Reels
+		Description: Reel in jungle fish
+	}
+
+	# LOOTING
+	
+	heartpickup: {
+		Name: Rejuvenation
+		Description: pick up hearts
+	}
+
+	manapickup: {
+		Name: Conjuring Catharsis
+		Description: pick up mana stars
+	}
+
+	coins: {
+		Name: Capitalism
+		Description: Obtain coins via any source
 	}
 }
