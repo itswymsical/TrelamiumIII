@@ -2,6 +2,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Misc;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
@@ -10,7 +11,7 @@ using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.KingSlime;
 
 public class GelatinousBlaster : ModItem
 {
@@ -86,7 +87,7 @@ public class GelatinousBlaster : ModItem
 /// <summary>The blaster in the player's hands: a three-round burst, a gel blob per round.</summary>
 public class GelatinousBlasterProj : BurstGunProjectile
 {
-    public override string Texture => AssetReferences.Content.Misc.GelatinousBlaster.KEY;
+    public override string Texture => AssetReferences.Content.KingSlime.GelatinousBlaster.KEY;
 
     /// <summary>
     ///     The stock burst pistol, with the muzzle pushed out to clear the longer sprite.
@@ -129,7 +130,6 @@ public class GelatinousBlasterProj : BurstGunProjectile
     protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
     {
         owner.ConsumeItem(ItemID.Gel, includeVoidBag: true);
-
         Item held = owner.HeldItem;
 
         // Spread is a fixed cone rather than a per-shot random walk, so the weapon is inaccurate in

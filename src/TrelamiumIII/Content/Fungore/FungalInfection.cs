@@ -335,7 +335,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
         if (damage <= 0 || Main.netMode == NetmodeID.MultiplayerClient)
             return;
 
-        if (npc.dontTakeDamage || npc.immortal || npc.life <= 0)
+        if (npc.dontTakeDamage || npc.life <= 0)
             return;
 
         if (infectingPlayer >= 0 && infectingPlayer < Main.maxPlayers && Main.player[infectingPlayer].active)

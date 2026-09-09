@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Content.Alchemy.Reagents;
 
 namespace TrelamiumIII.Common.Generation;
 
@@ -10,17 +11,20 @@ public class OrePass : GenPass
 {
     public OrePass() : base("Ores", 150f) { }
 
-
-    // depthPeak      the Y fraction (0=top, 1=bottom) where this ore is most common
-    // depthRange     how far above/below the peak the ore still generates (falloff width)
-    // baseThreshold  noise value the tile must exceed to place ore (higher = rarer)
-    // noiseFreq      how tightly the noise clusters (higher = smaller, more frequent pockets)
-    // veinSize       passed to WorldGen.TileRunner as the strength/size argument
-    // veinSteps      TileRunner step count (length of each vein)
-    // hostTiles      which tile types this ore can replace
-    // biomeEnrich    pairs of (hostTile, thresholdReduction). When a biome tile is
-    //                 nearby, the threshold drops by that amount, making ore richer there.
-
+ 
+    /// <summary>
+    /// what defines an ore chunk for the gen pass
+    /// </summary>
+    /// <param name="TileType"></param>
+    /// <param name="DepthPeak">the Y fraction (0=top, 1=bottom) where this ore is most common</param>
+    /// <param name="DepthRange">how far above/below the peak the ore still generates (falloff width)</param>
+    /// <param name="BaseThreshold">noise value the tile must exceed to place ore (higher = rarer)</param>
+    /// <param name="NoiseFreq">how tightly the noise clusters (higher = smaller, more frequent pockets)</param>
+    /// <param name="Density">denisty, duh</param>
+    /// <param name="VeinSize">passed to WorldGen.TileRunner as the strength/size argument</param>
+    /// <param name="VeinSteps">TileRunner step count (length of each vein)</param>
+    /// <param name="HostTiles">which tile types this ore can replace</param>
+    /// <param name="BiomeEnrich">pairs of (hostTile, thresholdReduction). When a biome tile is nearby, the threshold drops by that amount, making ore richer there.</param>
     private readonly record struct OreProfile(
         int TileType,
         float DepthPeak,
@@ -151,6 +155,16 @@ public class OrePass : GenPass
             HostTiles: [TileID.Stone, TileID.Granite, TileID.Marble],
             BiomeEnrich: [(TileID.Granite, 0.14f), (TileID.Marble, 0.14f)]
         );
+
+        yield return new OreProfile(
+            TileType: ModContent.TileType<SulfurTile>(),
+            DepthPeak: 0.40f, DepthRange: 0.35f,
+            BaseThreshold: 0.76f, NoiseFreq: 0.044f,
+            Density: 0.11f,
+            VeinSize: 5, VeinSteps: 9,
+            HostTiles: [TileID.Stone, TileID.Ash],
+            BiomeEnrich: [(TileID.Stone, 0.14f), (TileID.Ash, 0.14f)]
+        );
     }
 
     protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
@@ -208,7 +222,7 @@ public class OrePass : GenPass
         }
     }
 
-    // Helpers ---
+    // Helpers
     private static bool IsHostTile(int x, int y, int[] hostTiles)
     {
         if (!WorldGen.InWorld(x, y)) return false;

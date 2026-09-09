@@ -710,6 +710,18 @@ Items: {
 		FlavorText: '''"We Rock. Stone. BOULDER."'''
 	}
 
+	StalagMagMKII: {
+		DisplayName: StalagMag-MK II
+		Tooltip:
+			'''
+			Fires a variety of stone resources as ammunition, by default:
+			Fires high-speed stone blocks with insane knockback at your enemies.	
+			Can also fire stalagmites that stick into targets
+			Right-click to fire boulders
+			'''
+		FlavorText: '''"Now Bigger and Boulder!"'''
+	}
+
 	StoneStalagmite: {
 		DisplayName: Stalagmite
 		Tooltip: StalagMag ammunition
@@ -727,7 +739,11 @@ Items: {
 
 	VitriolicGel: {
 		DisplayName: Vitriolic Gel
-		Tooltip: ""
+		Tooltip:
+			'''
+			A verdant gel loaded with vitriol, highly caustic!
+			Can be used as ammunition
+			'''
 	}
 }
 
@@ -798,6 +814,8 @@ Projectiles: {
 	EarthShardProj.DisplayName: Earth Shard
 	SkofnungProjectile.DisplayName: Skofnung Projectile
 	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
+	StalagMagMKIIProj.DisplayName: Stalag Mag M K I I Proj
+	GelBallProjectile.DisplayName: Gel Ball Projectile
 }
 
 NPCs: {

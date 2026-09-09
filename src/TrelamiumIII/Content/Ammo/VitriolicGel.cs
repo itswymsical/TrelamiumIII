@@ -2,7 +2,9 @@
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Alchemy;
+using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Ammo;
 
@@ -23,14 +25,25 @@ public class VitriolicGel : ModItem, IChemicalRoleDefined, IAlmanacDefined
     {
         Item.ammo = ItemID.Gel;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
+        Item.width = Item.height = 30;
+
         Item.damage = 3;
         Item.knockBack = 0.75f;
         Item.noMelee = true;
+        Item.crit = 4;
         Item.shootSpeed = 7f;
         Item.consumable = true;
         Item.maxStack = Item.CommonMaxStack;
         Item.shoot = ModContent.ProjectileType<VitriolicGelProj>();
         Item.color = Color.YellowGreen;
+
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        component.ChemicalType = ChemicalDamageType.Caustic;
+        component.ChemicalDamage = 3f;
+        component.AfflictionRate = 50;
+        component.AfflictionDuration = TimeConversion.SetTime(secs: 5);
     }
 }
 

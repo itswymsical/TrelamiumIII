@@ -461,7 +461,7 @@ public sealed class FungoreBoss : ModNPC
 
         NPC.damage = 14;
         NPC.defense = 8;
-        NPC.lifeMax = 955;
+        NPC.lifeMax = 932;
 
         NPC.knockBackResist = 0f;
         NPC.aiStyle = -1;

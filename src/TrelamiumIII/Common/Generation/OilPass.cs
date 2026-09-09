@@ -7,7 +7,7 @@ namespace TrelamiumIII.Common.Generation;
 
 public class OilPass : GenPass
 {
-    public OilPass() : base("[Substrate] Oil Deposits", 150f) { }
+    public OilPass() : base("[T3] Oil Deposits", 150f) { }
 
     protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
     {
@@ -54,7 +54,7 @@ public class OilPass : GenPass
 
                     if (dist <= radius)
                     {
-                        byte amount = (byte)WorldGen.genRand.Next(160, 220);
+                        byte amount = 255; // (byte)WorldGen.genRand.Next(160, 220)
                         WorldGen.PlaceLiquid(worldX, worldY, 
                             (byte)LiquidLoader.LiquidType<CrudeOilLiquid>(), amount);
                     }

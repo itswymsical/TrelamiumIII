@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ReLogic.Content;
+using Terraria.DataStructures;
 using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
@@ -116,24 +117,16 @@ public sealed class SlimedCondition : TileCondition
     {
         ApplyFieldFrameParameters(effect);
 
-        // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
-        // and the asset is still null on the frames before it finishes loading.
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        // An ambient floor now, not the light itself -- DrawTile bakes the real per-tile light into
-        // the field and the shader divides it back out.
         effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.25f));
 
-        // Lower than the gas layers use: slime should merge into sheets at the first opportunity
-        // rather than resolve into separate droplets.
         effect.Parameters["Threshold"]?.SetValue(0.13f);
         effect.Parameters["NoiseScale"]?.SetValue(1.1f);
 
-        // Barely eroded. Gas has a ragged edge; slime has a taut, wobbling one.
         effect.Parameters["NoiseStrength"]?.SetValue(0.14f);
 
-        // Creeps downward, so the coat looks like it is slowly sliding off what it is stuck to.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.006f, 0.022f));
 
         effect.Parameters["Bands"]?.SetValue(4f);
@@ -146,15 +139,6 @@ public sealed class SlimedCondition : TileCondition
         effect.Parameters["OutlineAlpha"]?.SetValue(0.90f);
     }
 
-    /// <summary>
-    ///     Wading through slime costs speed -- unless it is your own.
-    /// </summary>
-    /// <remarks>
-    ///     A gel weapon coats the ground in front of the person firing it, which is exactly the
-    ///     ground they then have to advance across. Dragging the owner turns the coating from a
-    ///     trap into a self-inflicted one, so the author walks over their own sheet at full speed
-    ///     and everyone else wades.
-    /// </remarks>
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
         if (instance.IsOwnedBy(player) || !draggedThisTick.Add(player))
@@ -195,7 +179,8 @@ public sealed class SlimedCondition : TileCondition
         {
             instance.Life = 0f;
             TileConditionSystem.Apply<BurnedCondition>(instance.X, instance.Y, 0.9f, sync: false);
-
+            //Projectile.NewProjectile(new EntitySource_Misc("Chemical Reaction"),
+            //instance.WorldPosition, Vector2.Zero, ProjectileID.InfernoHostileBlast, 10, 4);
             return;
         }
 

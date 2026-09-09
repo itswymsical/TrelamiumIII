@@ -3,10 +3,12 @@ using System.IO;
 using System.Linq;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.Enums;
 using Terraria.GameContent.UI;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Jobs;
 
@@ -142,7 +144,13 @@ public class RewardBag : ModItem
         var taken = requested - (leftover.IsAir ? 0 : leftover.stack);
 
         if (taken > 0)
-            PopupText.NewText(PopupTextContext.RegularItemPickup, announced, taken);
+            PopupText.NewText(new AdvancedPopupRequest
+            {
+                Text = $"{announced.Name} ({requested})",
+                DurationInFrames = 90,
+                Velocity = new Vector2(0f, -4f),
+                Color = RarityColorUtil.GetPopupRarityColor(announced.rare)
+            }, player.Center);
 
         // Only the part that fit is announced here; the overflow drops and announces itself through
         // the normal pickup path, so nothing is counted twice.
