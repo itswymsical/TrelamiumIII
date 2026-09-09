@@ -46,7 +46,7 @@ public sealed class RarityStyle
     public LocalizedText? Flavor { get; init; }
 
     /// <summary>Colour of the flavour line. Defaults to a dimmed <see cref="Color" />.</summary>
-    public Color? FlavorColor { get; init; }
+    public Color? FlavorColor { get; init; } = new Color(240, 75, 75);
 
     /// <summary>
     ///     The decorations, drawn in order. Earlier entries sit further back on every surface.

@@ -16,7 +16,6 @@ public abstract class BaseMyconidRarity : FlavorRarity
         Color = RarityColor,
         Glow = new Color(255, 240, 200),
         Flavor = ItemFlavorText,
-        FlavorColor = Color.Red,
         Flairs =
         [
             new GhostNameFlair
@@ -56,7 +55,7 @@ public sealed class MyconidRarity : BaseMyconidRarity { }
 public sealed class GirthquakeRarity : BaseMyconidRarity
 {
     protected override LocalizedText ItemFlavorText =>
-        Language.GetOrRegister("Mods.TrelamiumIII.Rarities.Girthquake", () => "\"All this girth gonna make things quake!\"");
+        Language.GetOrRegister("Mods.TrelamiumIII.Rarities.Girthquake", () => "\"The bigger the girth, the bigger the boom.\"");
 }
 
 public sealed class SporeclotRarity : BaseMyconidRarity

@@ -7,8 +7,8 @@ Rarities: {
 	Ember: It has not finished burning.
 	Relic: Shinyyyy.
 	Sporeborn: Still shedding.
-	Girthquake: '''"All this girth gonna make things quake!"'''
-	Sporclot: '''"Splorch!"'''
+	Girthquake: '''"The bigger the girth, the bigger the boom."'''
+	Sporeclot: '''"Splorch!"'''
 }
 
 JobInfo.NewJob: " seems to have a new task for you."

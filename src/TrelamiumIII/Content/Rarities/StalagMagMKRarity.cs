@@ -26,8 +26,7 @@ public class StalagMagMKRarity : FlavorRarity
                 To = new Color(240, 220, 255),
             },
         ],
-
-        FlavorColor = new Color(240, 75, 75),
+        //FlavorColor = new Color(240, 75, 75),
         Flavor = Language.GetOrRegister("Mods.TrelamiumIII.Items.StalagMagMKI.FlavorText", () => "\"We Rock. Stone. BOULDER.\""),
     };
 }
