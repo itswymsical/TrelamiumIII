@@ -60,7 +60,7 @@ public static class ChemicalStatsTooltip
         string perSecond = Number(source.AfflictionRate > 0f ? source.ChemicalDamage * 60f / source.AfflictionRate : 0f);
         string seconds = Number(source.AfflictionDuration / 60f);
         string burst = Number(source.ReactionDamage);
-        string odds = Number(Math.Clamp(source.ReactionChance, 0f, 1f) * 100f);
+        string odds = Number(Math.Clamp(source.ReactionChance, 0f, 1f) * 1000f);
 
         string fallback = reacts
             ? Text("FallbackReactive", element, perSecond, burst, odds, seconds)

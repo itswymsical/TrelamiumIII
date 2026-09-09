@@ -11,12 +11,9 @@ namespace TrelamiumIII.Core.Gas;
 /// </summary>
 public abstract class ChemicalGasField : GasField, IChemicalSource
 {
+    public const int CosmeticOwnerID = -999;
     public abstract ChemicalDamageType ChemicalType { get; }
 
-    /// <summary>
-    /// Affliction tick damage from a single gas contact, before composition matchup.
-    /// Gas applies continuously while the node remains in contact (this obviously does less damage).
-    /// </summary>
     public virtual float ChemicalDamage => 0.5f;
 
     public virtual int AfflictionDuration => 60;
@@ -28,21 +25,6 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// <summary>
     /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Resolved through <see cref="TileConditionSystem"/> rather than constructed here, because
-    /// conditions are flyweights owned by that system -- this is a reference to the registered one,
-    /// not a second copy of it.
-    /// </para>
-    /// <para>
-    /// Three answers are meaningful and all three are used. A layer that wants its element's
-    /// ordinary behaviour names the residue for that element and inherits everything from
-    /// <see cref="ElementProfile"/>. One that wants its own reading of the element names a bespoke
-    /// condition instead. And one that should leave nothing at all returns null -- which also
-    /// switches off <see cref="GasField.UsesTileField"/>, so a layer that marks no terrain does not
-    /// pay for the accumulation pass that would decide where to mark it.
-    /// </para>
-    /// </remarks>
     protected virtual ChemicalReactionTileCondition? Residue => null;
 
     protected override bool UsesTileField => Residue is not null;
@@ -68,8 +50,32 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
         var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
         chem.ApplyAffliction(ChemicalDamage, AfflictionDuration, AfflictionRate, ChemicalType);
 
+        // Track the original layer directly
+        var afflicted = npc.GetGlobalNPC<AfflictedNPC>();
+        afflicted.AddCling(this, AfflictionDuration);
+
         if (Main.rand.NextFloat() < ReactionChance)
             ChemicalReaction.Trigger(npc, this);
+    }
+
+    public void SpawnClingNode(Vector2 position, Vector2 velocity, float radius, float life)
+    {
+        SpawnNode(position, velocity, radius, life, owner: CosmeticOwnerID);
+    }
+
+    protected override void UpdateGasNode(ref GasNode node, int index)
+    {
+        if (node.Owner == CosmeticOwnerID)
+        {
+            node.Velocity.Y += MathHelper.Lerp(-BuoyancyForce, GravityScale, node.Density);
+            node.Velocity *= MathHelper.Lerp(Drag, Drag * 0.96f, node.Viscosity);
+
+            node.Position += node.Velocity;
+            node.Life -= LifeDecay;
+            return;
+        }
+
+        base.UpdateGasNode(ref node, index);
     }
 
     protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
@@ -108,19 +114,18 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// <summary>
     /// Leaves the layer's residue wherever it has actually pooled.
     /// </summary>
-    /// <remarks>
-    /// Intensity is carried over from the coverage that cleared the threshold, so a thin film sets
-    /// a faint, short-lived patch and a deep pool sets a strong one. The residue then applies the
-    /// same chemistry the nodes did, through the same <see cref="IChemicalSource"/> path -- the
-    /// puddle outlives the cloud that made it, which is the point.
-    /// <para>
-    /// The owner rides along with it. The puddle spends the rest of its life breathing this same
-    /// layer back out, and those nodes have to know whose they are for the same reason the ones
-    /// that made it did.
-    /// </para>
-    /// </remarks>
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
-        => Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner);
+    {
+        if (owner == CosmeticOwnerID) return;
+
+        Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner);
+    }
+
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
+    {
+        if (owner == CosmeticOwnerID) return;
+        base.OnLiquidField(tileX, tileY, tile, density, owner);
+    }
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 }
