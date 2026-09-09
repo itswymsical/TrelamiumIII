@@ -110,7 +110,7 @@ public sealed class RelicRarity : FlavorRarity
     {
         Color = RarityColor,
         Glow = new Color(255, 240, 200),
-        Flavor = Language.GetOrRegister("Mods.TrelamiumIII.Rarities.Relic", () => "Older than the hands that made it."),
+        Flavor = Language.GetOrRegister("Mods.TrelamiumIII.Rarities.Relic", () => "Shinyyy."),
 
         Flairs =
         [

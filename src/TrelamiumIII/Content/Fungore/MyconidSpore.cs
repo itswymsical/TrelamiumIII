@@ -4,6 +4,7 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.Localization;
 using Terraria.ObjectData;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 
 namespace TrelamiumIII.Content.Fungore;
@@ -16,7 +17,7 @@ public class MyconidSpore : ModItem
         Item.maxStack = Item.CommonMaxStack;
         Item.useStyle = ItemUseStyleID.HoldUp;
         Item.useTime = Item.useAnimation = 30;
-        Item.rare = ItemRarityID.Gray;
+        Item.rare = ModContent.RarityType<MyconidRarity>();
     }
     public override bool CanUseItem(Player player) => !NPC.AnyNPCs(ModContent.NPCType<FungoreBoss>());
 

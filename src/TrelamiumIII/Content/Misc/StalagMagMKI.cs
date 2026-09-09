@@ -3,10 +3,10 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Content.Fungore;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
-using TrelamiumIII.Core.Rarities.Definitions;
 
 namespace TrelamiumIII.Content.Misc;
 

@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
@@ -16,7 +17,7 @@ public class SporeclotSac : ModItem
         Item.damage = 9;
         Item.DamageType = DamageClass.Ranged;
         Item.crit = 2;
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ModContent.RarityType<SporeclotRarity>();
         Item.width = Item.height = 22;
         Item.value = Item.buyPrice(silver: 2, copper: 30);
 

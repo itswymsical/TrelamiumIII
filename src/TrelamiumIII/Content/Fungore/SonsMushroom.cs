@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Content.Rarities;
 
 namespace TrelamiumIII.Content.Fungore;
 
@@ -52,6 +53,7 @@ public sealed class SonsMushroom : GlobalItem
 
         mushroom.SetDefaults(ItemID.Mushroom);
         mushroom.stack = stack;
+        mushroom.rare = ModContent.RarityType<MyconidRarity>();
 
         if (mushroom.TryGetGlobalItem(out SonsMushroom son))
             son.Bless(mushroom);

@@ -1,7 +1,8 @@
 using Terraria.Localization;
+using TrelamiumIII.Core.Rarities;
 using TrelamiumIII.Core.Rarities.Flairs;
 
-namespace TrelamiumIII.Core.Rarities.Definitions;
+namespace TrelamiumIII.Content.Rarities;
 
 /// <summary>
 ///     The smallest custom rarity that still does something: a colour and one text treatment.

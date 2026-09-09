@@ -33,7 +33,7 @@ public abstract class RarityFlair
     ///     The blend the renderer opens for this flair's draws. Consecutive flairs asking for the
     ///     same blend share one batch.
     /// </summary>
-    public virtual BlendState Blend => BlendState.Additive;
+    public virtual BlendState Blend { get; set; } = BlendState.Additive;
 
     /// <summary>
     ///     Whether this flair takes over drawing the name glyphs, rather than decorating around them.

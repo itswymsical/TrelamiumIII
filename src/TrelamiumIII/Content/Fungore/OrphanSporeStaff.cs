@@ -2,6 +2,7 @@ using ReLogic.Content;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 using TrelamiumIII.Utilities;
@@ -32,7 +33,7 @@ public class OrphanSporeStaff : ModItem
 
         Item.useStyle = ItemUseStyleID.Swing;
         Item.UseSound = SoundID.Item44;
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ModContent.RarityType<MyconidRarity>();
 
         Item.value = Item.sellPrice(silver: 1, copper: 75);
 

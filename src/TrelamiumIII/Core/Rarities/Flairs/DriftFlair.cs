@@ -66,7 +66,7 @@ public sealed class DriftFlair : RarityFlair
 
     private Asset<Texture2D>? texture;
 
-    public override BlendState Blend => BlendState.Additive;
+    public override BlendState Blend { get; set; } = BlendState.Additive;
 
     public override void Unload() => texture = null;
 

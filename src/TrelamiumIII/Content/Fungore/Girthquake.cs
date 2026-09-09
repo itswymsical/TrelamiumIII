@@ -3,6 +3,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Graphics.CameraModifiers;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Shockwaves;
 using TrelamiumIII.Utilities;
@@ -19,7 +20,7 @@ public class Girthquake : ModItem
         Item.crit = 21;
         Item.knockBack = 16f;
         Item.DamageType = DamageClass.Melee;
-        Item.rare = ItemRarityID.Blue;
+        Item.rare = ModContent.RarityType<GirthquakeRarity>();
         Item.value = Item.sellPrice(silver: 5);
 
         Item.useStyle = ItemUseStyleID.Shoot;

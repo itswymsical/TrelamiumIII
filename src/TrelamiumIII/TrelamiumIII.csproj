@@ -17,4 +17,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Core\Rarities\Definitions\" />
+  </ItemGroup>
+
 </Project>
