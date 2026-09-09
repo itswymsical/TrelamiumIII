@@ -205,7 +205,12 @@ ActLang: {
 		Name: Apprentice Fisherman
 		Description: Reel in common fish
 	}
-	
+
+	jellyfishing: {
+		Name: At the bottom of the...bikini?
+		Description: Reel in jellyfish
+	}
+
 	hallowfish: {
 		Name: Divine Fishery
 		Description: Reel in Hallow biome fish
