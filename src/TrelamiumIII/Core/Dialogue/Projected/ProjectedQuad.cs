@@ -1,12 +1,6 @@
 namespace TrelamiumIII.Core.Dialogue.Projected;
 
 /// <summary>Per-corner offsets, in panel-local pixels, that take a rectangle off true.</summary>
-/// <remarks>
-///     Kept on the mesh rather than baked into the surface. A panel that grows a texel at a time
-///     cannot have wonk drawn into it -- the crooked edge would slide along the shape as the box
-///     stretched -- but the same offsets applied to the four corners of the quad hold their character
-///     at any size, and stay crisp because nothing has been rasterised to get them.
-/// </remarks>
 public readonly struct QuadWarp(Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft)
 {
     public readonly Vector2 TopLeft = topLeft;
@@ -36,22 +30,22 @@ public readonly struct QuadWarp(Vector2 topLeft, Vector2 topRight, Vector2 botto
 /// <summary>Where a quad sits in the projected scene.</summary>
 public struct QuadPlacement()
 {
-    /// <summary>Centre on the z = 0 plane, in raw screen pixels.</summary>
+    /// <summary>Centre on the z = 0 plane</summary>
     public Vector2 Center = Vector2.Zero;
 
-    /// <summary>Size on the z = 0 plane, in raw screen pixels, before any rotation foreshortens it.</summary>
+    /// <summary>Size on the z = 0 plane</summary>
     public Vector2 Size = Vector2.Zero;
 
-    /// <summary>Turn about the vertical. The main source of the projected look.</summary>
+    /// <summary>Turn about the vertical.</summary>
     public float Yaw = 0f;
 
     /// <summary>Tilt about the horizontal.</summary>
     public float Pitch = 0f;
 
-    /// <summary>Lean in the picture plane. A degree or two stops the box reading as a UI element.</summary>
+    /// <summary>Lean in the picture plane.</summary>
     public float Roll = 0f;
 
-    /// <summary>Push away from the camera. Negative brings a quad forward, so it reads as selected.</summary>
+    /// <summary>Push away from the camera.</summary>
     public float Depth = 0f;
 
     public QuadWarp Warp = QuadWarp.None;
@@ -66,16 +60,7 @@ public struct QuadPlacement()
 /// <remarks>
 ///     <para>
 ///         Set up so that one world unit on the z = 0 plane is exactly one screen pixel: the distance
-///         is solved from the field of view rather than picked, which is what lets everything else in
-///         this system work in plain screen coordinates and still come out the far side of a
-///         perspective divide the size it asked for. A panel with no rotation and no depth is
-///         pixel-identical to a sprite.
-///     </para>
-///     <para>
-///         The field of view is then the one dial on how hard the illusion reads. It does not change
-///         the size of anything at rest -- the distance moves to compensate -- only how violently a
-///         tilted panel converges. Wide is dramatic and starts to fish-eye; narrow flattens toward an
-///         orthographic skew, which reads as a sheared sprite rather than a plane in space.
+///         is solved from the field of view rather than picked. The field of view is then the one dial on how hard the illusion reads.
 ///     </para>
 /// </remarks>
 public static class PanelCamera
@@ -88,11 +73,6 @@ public static class PanelCamera
     /// <summary>
     ///     Looks down +Z from behind the plane, with up inverted.
     /// </summary>
-    /// <remarks>
-    ///     Inverting up is what puts panel space the same way round as screen space -- +Y down, +X
-    ///     right -- so a layout worked out in screen pixels does not have to be flipped on its way
-    ///     into the mesh, and a tail pointing "down" at a speaker points down.
-    /// </remarks>
     public static Matrix View =>
         Matrix.CreateLookAt(new Vector3(0f, 0f, -Distance), Vector3.Zero, new Vector3(0f, -1f, 0f));
 
@@ -110,7 +90,7 @@ public static class PanelCamera
         }
     }
 
-    /// <summary>Panel space is centred on the screen; this is the offset that puts a point there.</summary>
+    /// <summary>Panel space is centred on the screen</summary>
     public static Vector3 ToPanelSpace(Vector2 screenPoint, float depth) =>
         new(screenPoint.X - Main.screenWidth * 0.5f, screenPoint.Y - Main.screenHeight * 0.5f, depth);
 
@@ -120,7 +100,7 @@ public static class PanelCamera
         * Matrix.CreateRotationZ(placement.Roll)
         * Matrix.CreateTranslation(ToPanelSpace(placement.Center, placement.Depth));
 
-    /// <summary>The quad's four corners in panel-local space, clockwise from the top left.</summary>
+    /// <summary>The quad's four corners in panel-local space: clockwise from the top left.</summary>
     public static void LocalCorners(in QuadPlacement placement, Span<Vector3> corners)
     {
         Vector2 half = placement.Size * 0.5f;
@@ -161,9 +141,6 @@ public static class PanelCamera
     /// <param name="padding">Grows the quad before testing, in its own local pixels.</param>
     public static bool Contains(in QuadPlacement placement, Vector2 point, float padding = 0f)
     {
-        // A quad with no size collapses to a point, and every point-in-triangle test against a
-        // degenerate triangle passes. Without this a box would answer "hit" everywhere on the frame
-        // before it has been laid out.
         if (placement.Size.X <= 0f || placement.Size.Y <= 0f)
             return false;
 
@@ -199,20 +176,6 @@ public static class PanelCamera
 /// <summary>
 ///     Draws panel surfaces as flat quads standing in the projected scene.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Must be called with no sprite batch open: it issues raw primitives and sets its own blend,
-///         depth, rasteriser and sampler states. <see cref="Begin" /> and <see cref="End" /> bracket a
-///         run of quads so the several a single box draws -- the bubble and its choices -- pay for
-///         that once.
-///     </para>
-///     <para>
-///         Subdivided rather than two triangles. Perspective-correct texturing does not need it, the
-///         hardware does that from w on its own, but a warped quad does: with the corners pulled off
-///         true the shape is a bilinear patch, and splitting it down one diagonal would crease the
-///         texture along that diagonal. The grid spreads the warp instead of hiding a seam in it.
-///     </para>
-/// </remarks>
 public sealed class ProjectedQuad : IDisposable
 {
     private const int COLUMNS = 12;
@@ -254,8 +217,7 @@ public sealed class ProjectedQuad : IDisposable
 
         disposed = true;
 
-        // Snapshot before clearing the field: the queued action runs later, by which point a lambda
-        // reading the field would dispose nothing.
+        // Snapshot before clearing the field
         BasicEffect? pending = effect;
         effect = null;
 
@@ -274,9 +236,7 @@ public sealed class ProjectedQuad : IDisposable
         previousRasterizer = device.RasterizerState;
         previousSampler = device.SamplerStates[0];
 
-        // Premultiplied, because that is what a sprite batch left in the surface. Point sampling is
-        // the whole aesthetic: the surface is magnified several times over by the time it reaches the
-        // screen, and anything else would smear the texel grid back into a blur.
+        // Premultiplied, because that is what a sprite batch left in the surface.
         device.BlendState = BlendState.AlphaBlend;
         device.DepthStencilState = DepthStencilState.None;
         device.RasterizerState = RasterizerState.CullNone;
@@ -300,7 +260,7 @@ public sealed class ProjectedQuad : IDisposable
     }
 
     /// <param name="source">Region of <paramref name="texture" /> the quad is cut from.</param>
-    /// <param name="tint">Premultiplied, so multiplying it through fades the quad as one object.</param>
+    /// <param name="tint">Premultiplied so multiplying it through fades the quad as one object.</param>
     public void Draw(GraphicsDevice device, Texture2D texture, Rectangle source, in QuadPlacement placement, Color tint)
     {
         if (!Ready || placement.Size.X <= 0f || placement.Size.Y <= 0f)
@@ -367,7 +327,6 @@ public sealed class ProjectedQuad : IDisposable
         }
     }
 
-    /// <summary>Winding is a pure function of the grid size, so it is written once at construction.</summary>
     private void BuildIndices()
     {
         int cursor = 0;

@@ -7,18 +7,16 @@
 /// <para> Female Styles:</para>
 /// <para> 4 = FemaleDefault, 5 = FemaleShirt, 6 = FemaleShirt2, 7 = FemaleLabcoat, 9 = FemaleDress</para>
 /// </summary>
-public enum PlayerClothingStyleID
+public static class PlayerClothingStyleID
 {
-    MaleDefault = 0,
-    MaleShirt = 1,
-    MaleShirt2 = 2,
-    MaleLabcoat = 3,
-    MaleDress = 8,
-
-    FemaleDefault = 4,
-    FemaleShirt = 5,
-    FemaleShirt2 = 6,
-    FemaleLabcoat = 7,
-    FemaleDress = 9,
-
+    public const int MaleDefault = 0;
+    public const int MaleShirt = 1;
+    public const int MaleShirt2 = 2;
+    public const int MaleLabcoat = 3;
+    public const int MaleDress = 8;
+    public const int FemaleDefault = 4;
+    public const int FemaleShirt = 5;
+    public const int FemaleShirt2 = 6;
+    public const int FemaleLabcoat = 7;
+    public const int FemaleDress = 9;
 }

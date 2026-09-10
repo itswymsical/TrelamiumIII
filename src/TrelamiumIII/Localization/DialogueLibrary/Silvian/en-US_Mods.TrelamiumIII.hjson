@@ -1,0 +1,71 @@
+DialogueLibrary: {
+	Silvian: {
+		Greeting: {
+			Line1: {
+				Text: Greetings![] The name's Silvian, how 'bout yours?
+				Choice1.Text: "[speakerName:player], howdy!"
+				Choice2.Text: John Terraria.
+				Choice3.Text: ...
+			}
+		}
+
+		Greeting_True: {
+			Line1: {
+				Text: Pleasure to meet ya,[] [speakerName:player].[] Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
+				Choice1.Text: Trying to find my way around.
+				Choice2.Text: Here for trouble.
+				Choice3.Text: Speedrunning.
+				Choice4.Text: ...
+			}
+		}
+
+		Greeting_Lie: {
+			Line1.Text: Pleasure to meet ya,[] John.[] Or whatever your name is.
+
+			Line2: {
+				Text: Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
+				Choice1.Text: finding my way around.
+				Choice2.Text: Here for trouble.
+				Choice3.Text: Speedrunning.
+				Choice4.Text: ...
+			}
+		}
+
+		Greeting_Silent: {
+			Line1.Text: Not too much of a talker,[] eh? []Not to worry.[] I ain't in it to pry.
+
+			Line2: {
+				Text: Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
+				Choice1.Text: Trying to find my way around.
+				Choice2.Text: Here for trouble.
+				Choice3.Text: Speedrunning.
+				Choice4.Text: ...
+			}
+		}
+
+		Lost_Exploring: {
+			Line1.Text: I see,[] I see.
+			Line2.Text: Well then,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
+			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+		}
+
+		Lost_Trouble: {
+			Line1.Text: I see,[] I see.[] You're new around here,[] so I'll cut you some slack.
+			Line2.Text: But [best know that kinda talkin' isn't met too nicely here].
+			Line3.Text: .....
+			Line4.Text: In any case![] You seem like the fiesty type.[] Say,[] how's a job sound?[] It'll be worth your while...!
+		}
+
+		Lost_Speedrunning: {
+			Line1.Text: I have no clue what that means, but it sounds alright!
+			Line2.Text: Hey,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
+			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+		}
+
+		Lost_Silent: {
+			Line1.Text: Hehe...[] I see, I see.[] No worries!
+			Line2.Text: Hey,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
+			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+		}
+	}
+}

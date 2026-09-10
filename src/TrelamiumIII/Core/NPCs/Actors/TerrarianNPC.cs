@@ -40,8 +40,6 @@ public abstract class TerrarianNPC : WorldNPC
         InitializeDummyPlayer();
 
         base.SetDefaults();
-
-        SetAppearanceDefaults();
     }
 
     /// <summary>Hair, skin, clothes, equipment. Called once the puppet exists.</summary>
@@ -60,6 +58,7 @@ public abstract class TerrarianNPC : WorldNPC
         DummyPlayer.ghost = false;
         DummyPlayer.active = true;
         DummyPlayer.whoAmI = Main.maxPlayers;
+        SetAppearanceDefaults();
     }
 
     public override void PostAI()
@@ -147,13 +146,13 @@ public abstract class TerrarianNPC : WorldNPC
     //   armor[3..9]   accessories             armor[13..19] their vanity slots
 
     /// <summary>Sets head armour or vanity. 0 clears it.</summary>
-    public void SetHeadSlot(int itemId, bool vanity = false) => SetArmorSlot(vanity ? 10 : 0, itemId);
+    public void SetHeadSlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 10 : 0, itemId);
 
     /// <summary>Sets body armour or vanity. 0 clears it.</summary>
-    public void SetBodySlot(int itemId, bool vanity = false) => SetArmorSlot(vanity ? 11 : 1, itemId);
+    public void SetBodySlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 11 : 1, itemId);
 
     /// <summary>Sets leg armour or vanity. 0 clears it.</summary>
-    public void SetLegSlot(int itemId, bool vanity = false) => SetArmorSlot(vanity ? 12 : 2, itemId);
+    public void SetLegSlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 12 : 2, itemId);
 
     /// <summary>Sets an accessory in slot 0-6, or its vanity counterpart.</summary>
     public void SetAccessory(int slotIndex, int itemId, bool vanity = false)

@@ -107,6 +107,7 @@ public class TundraTerrarian : Villager
             !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow
             ? 0.15f : 0f;
     }
+
     protected override void SetAppearanceDefaults()
     {
         base.SetAppearanceDefaults();

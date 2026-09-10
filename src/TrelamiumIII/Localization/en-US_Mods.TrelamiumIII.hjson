@@ -858,6 +858,9 @@ NPCs: {
 	ShinobiNPC.DisplayName: Shinobi
 	TestTerrarian.DisplayName: Test Terrarian
 	SophieNPC.DisplayName: Sophie
+	WanderingEmployer.DisplayName: Wandering Employer
+	Silva.DisplayName: Silva
+	Silvian.DisplayName: Silvian
 }
 
 Buffs: {

@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Folder Include="Core\Rarities\Definitions\" />
+    <Folder Include="Localization\DialogueLibrary\Silvian\" />
   </ItemGroup>
 
 </Project>
