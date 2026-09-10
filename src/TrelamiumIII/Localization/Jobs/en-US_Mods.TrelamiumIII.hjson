@@ -18,15 +18,19 @@ Jobs: {
 		ConfirmAccept: Accept
 		ConfirmBack: Back
 	}
-
-	NerdySlimeI: {
-		Name: Nerdy Slime's Sublime Task!
-		Description: "'Help me build a quantum relocator!'"
+	
+	SilvianBotany1: {
+		Name: Botanist job i dont have a name for yet
+		Description: "'It'll be worth the rewarddd! Trust me!'"
 
 		Tasks: {
-			Set0.obj0: Chat with Nerdy Slime
-			Set1.obj0: eat a blueberry bandaid
-			Set2.obj0: Return to Slime
+			Set0.obj0: Brief with Silvian (let the dialogue play out)
+			Set1: { 
+				obj0: Collect Dayblooms
+				obj1: Collect Blinkroot
+				obj2: Collect Sunflower
+			}
+			Set2.obj0: Return to Silvian
 		}
 	}
 

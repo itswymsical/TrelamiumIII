@@ -13,18 +13,8 @@ namespace TrelamiumIII.Core.Dialogue.Projected;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The same conversation as <see cref="DialogueBox" />, presented the other way round. That
-///         one is a panel: it owns the bottom of the screen, holds a fixed width, and the world is
-///         something happening behind it. This one is an object in the scene -- it hangs off its
-///         speaker, grows to the shape of what is being said, and is drawn small and chunky enough
-///         that it reads as a thing rather than as an interface.
-///     </para>
-///     <para>
-///         Three ideas carry that. The panel is authored on a coarse texel grid and magnified with
-///         point sampling, so it is pixel art at whatever size it ends up. It is drawn as a textured
-///         quad through a real perspective camera rather than blitted, so its far edge genuinely
-///         converges instead of being sheared. And it is measured to its content every frame, so the
-///         box arrives at the width of the sentence in it as the sentence arrives.
+///         Does exactly what <see cref="DialogueBox" /> does, but obviously is projected.
+///         This is an object in the scene that anchors to an entity (speaker) and grows the dialogue box with text.
 ///     </para>
 /// </remarks>
 public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent, IDisposable
@@ -79,8 +69,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private static readonly float EntryYaw = MathHelper.ToRadians(-38f);
 
     // Depths are fractions of the camera's distance rather than pixel amounts. The distance is solved
-    // from the screen height, so a fixed push would be half the scene at 720p and a third of it at
-    // 1440p -- the same animation reading as a different one per resolution.
+    // from the screen height, so a fixed push would be half the scene at 720p and a third of it at 1440p.
 
     /// <summary>How far back the box starts, as a fraction of the camera's distance.</summary>
     private const float ENTRY_DEPTH = 0.46f;
@@ -91,7 +80,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     /// <summary>How far back a response slot arrives from.</summary>
     private const float CHOICE_ENTRY_DEPTH = 0.3f;
 
-    /// <summary>Stagger between slots in the stack, so each has its own plane to sit in.</summary>
+    /// <summary>Stagger between slots in the stack so each has its own plane to sit in.</summary>
     private const float CHOICE_STEP_DEPTH = 0.016f;
 
     #endregion
@@ -106,7 +95,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private readonly QuadWarp warp;
     private readonly int seed;
 
-    /// <summary>What the caller asked for, kept as the fallback when a line names nobody present.</summary>
+    /// <summary>What the caller asked for. kept as the fallback when a line names no present entity.</summary>
     private readonly DialogueAnchor requestedAnchor;
 
     /// <summary>How far each response slot has eased out of the stack, 0 to 1.</summary>
@@ -117,7 +106,6 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     private DialogueAnchor anchor;
 
-    // Written while drawing, where the mouse can actually be tested, and acted on by the next update.
     private bool mouseConfirm;
     private bool mouseDismiss;
     private int mouseChoice = -1;

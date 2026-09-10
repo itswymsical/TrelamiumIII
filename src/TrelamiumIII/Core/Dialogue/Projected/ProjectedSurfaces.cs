@@ -13,19 +13,13 @@ internal interface IProjectedContent
 }
 
 /// <summary>
-///     The off-screen faces a projected box is made of, and the one place they are drawn.
+///     This is the renderer and where the off-screen faces a projected box are handled.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Two surfaces, sized once for the largest box this style allows and thereafter sampled by
-///         sub-rectangle. The alternative -- a surface per box, resized as the text grows -- would
-///         reallocate a render target several times a second while a line types, which is the one
-///         thing a graphics device really does not want asked of it mid-frame.
-///     </para>
-///     <para>
-///         Both are drawn during <c>CheckMonoliths</c>, which is where render targets may still be
-///         swapped. Anywhere later in the frame means taking the back buffer away from a scene that is
-///         already half drawn into it.
+///         There are two surfaces, sized once for the largest box this style allows and thereafter sampled by
+///         sub-rectangle. The alternative is a surface per box and resized as the text grows, but that would
+///         reallocate an RT several times a second while a line types, so no.
 ///     </para>
 /// </remarks>
 internal sealed class ProjectedSurfaces : IDisposable
@@ -50,7 +44,7 @@ internal sealed class ProjectedSurfaces : IDisposable
 
     public Texture2D? Choices => choices;
 
-    /// <summary>The part of <see cref="Bubble" /> the current line actually filled.</summary>
+    /// <summary>The part of <see cref="Bubble" /> the current line fills.</summary>
     public Rectangle BubbleRegion { get; private set; }
 
     public int ChoicesDrawn { get; private set; }

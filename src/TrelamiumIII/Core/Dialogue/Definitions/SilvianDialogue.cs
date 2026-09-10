@@ -69,5 +69,18 @@ class SilvianDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(18), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
             .Register();
+
+        Dialogue.Define("Silvian.BotanyJob1_Greeting")
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(18), new Pause(18)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(16)])
+            .Register();
+
+        Dialogue.Define("Silvian.BotanyJob1_Complete")
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(16), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(18)])
+            .Register();
     }
 }

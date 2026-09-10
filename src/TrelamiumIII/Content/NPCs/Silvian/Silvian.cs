@@ -5,7 +5,7 @@ using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Utilities.Extensions;
 
-namespace TrelamiumIII.Content.NPCs;
+namespace TrelamiumIII.Content.NPCs.Silvian;
 
 [LegacyName("Silva")]
 public class Silvian : TerrarianNPC, INarrativeSpeaker

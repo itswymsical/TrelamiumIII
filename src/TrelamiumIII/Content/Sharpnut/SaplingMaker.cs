@@ -8,7 +8,8 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Sharpnut;
 
-public class SaplingMakerItem : ModItem
+[LegacyName("SaplingMakerItem")]
+public class SaplingMaker : ModItem
 {
     public override void SetDefaults()
     {
@@ -28,15 +29,6 @@ public class SaplingMakerItem : ModItem
         Item.noUseGraphic =
             Item.channel = Item.noMelee = true;
         Item.shoot = ModContent.ProjectileType<SaplingMakerProjectile>();
-    }
-
-    public override void AddRecipes()
-    {
-        var recipe = CreateRecipe();
-        recipe.AddIngredient(ItemID.Acorn, 8);
-        recipe.AddIngredient(ItemID.Wood, 20);
-        recipe.AddTile(TileID.Anvils);
-        recipe.Register();
     }
 }
 

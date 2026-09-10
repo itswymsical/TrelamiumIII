@@ -67,5 +67,16 @@ DialogueLibrary: {
 			Line2.Text: Hey,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
 			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
 		}
+		BotanyJob1_Greeting: {
+			Line1.Text: Decided to take the offer?[] Fantastic, my friend.
+			Line2.Text: I'll keep it easy on ya,[] I just need some herbs for my garden.[] Harvest's getting pretty low and I could use extra picking hands.
+			Line3.Text: I need some dayblooms, blinkroots, and sunflowers.[] You shouldn't have a problem with the sunnies, blinkroots might be a bit of a hassle though.
+			Line4.Text: Forage around until you find them![] I'll be here if you need me.
+		}
+		BotanyJob1_Complete: {
+			Line1.Text: Back already?[] Hehe,[] you're a fast one![] Can't be upset about that.
+			Line2.Text: As promised,[] here's your reward, pal.
+			Line3.Text: I'll be needing some extra hands again soon,[] so keep in touch.
+		}
 	}
 }

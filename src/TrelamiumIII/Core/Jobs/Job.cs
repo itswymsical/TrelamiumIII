@@ -13,12 +13,6 @@ namespace TrelamiumIII.Core.Jobs;
 /// <summary>
 /// Where a job stands for one player.
 /// </summary>
-/// <remarks>
-/// One field, deliberately. This was two overlapping enums -- <c>JobProgress {Inactive, Ongoing,
-/// Completed}</c> alongside <c>JobStatus {Locked, Unlocked, Completed}</c> -- which meant "completed"
-/// existed twice and could disagree with itself, and every query had to decide which of the two to
-/// trust. Four states cover everything both of them expressed.
-/// </remarks>
 public enum JobState
 {
     /// <summary>Exists, but the player has no way to see or take it yet.</summary>
@@ -39,7 +33,7 @@ public enum JobState
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Every set must finish before the next begins, which is what gives a job stages -- gather,
+///         Every set must finish before the next begins, which is what gives a job stages: gather,
 ///         then build, then report back. The job's own overrides are the <em>narrative</em> layer:
 ///         what the provider says as stages turn over, what they say when the player is doing it
 ///         wrong. Whether an event counts toward a task is the task's business, not the job's.
