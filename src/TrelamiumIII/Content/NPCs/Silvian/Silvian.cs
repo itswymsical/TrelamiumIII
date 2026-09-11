@@ -54,7 +54,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         return ChatEncounter.None; // todo: batch of "banter" dialogue
     }
 
-    private ChatEncounter Banters()
+    private static ChatEncounter Banters()
     {
         int randomChoice = Main.rand.Next(3);
 
