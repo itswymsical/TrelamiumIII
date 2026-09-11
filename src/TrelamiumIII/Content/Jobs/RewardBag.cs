@@ -146,7 +146,7 @@ public class RewardBag : ModItem
         if (taken > 0)
             PopupText.NewText(new AdvancedPopupRequest
             {
-                Text = $"{announced.Name} ({requested})",
+                Text = requested > 1 ? $"{announced.Name} ({requested})" : announced.Name,
                 DurationInFrames = 90,
                 Velocity = new Vector2(0f, -4f),
                 Color = RarityColorUtil.GetPopupRarityColor(announced.rare)

@@ -38,7 +38,7 @@ namespace TrelamiumIII.Content.NPCs.Silvian;
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
-        Context.Play("Silvian.BotanyJob1_Greeting", style: DialogueStyle.Projected);
+        Context.Play("Silvian.BotanyJob1_Complete", style: DialogueStyle.Projected);
     }
 
     //public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
