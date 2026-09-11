@@ -11,10 +11,17 @@ public sealed class DialogueSequence
     public string Key { get; }
     public IReadOnlyList<LineSpec> Lines { get; }
 
-    public DialogueSequence(string key, IReadOnlyList<LineSpec> lines)
+    /// <summary>
+    ///   Run when a conversation that passed through this sequence is played to its end. See
+    ///   <see cref="Dialogue.OnComplete"/>.
+    /// </summary>
+    public Action? OnComplete { get; }
+
+    public DialogueSequence(string key, IReadOnlyList<LineSpec> lines, Action? onComplete = null)
     {
         Key = key;
         Lines = lines;
+        OnComplete = onComplete;
     }
 }
 
@@ -50,4 +57,7 @@ public sealed class ChoiceSpec
 
     /// <summary>Callback run when chosen, before any branch starts.</summary>
     public Action OnSelected { get; init; }
+
+    /// <summary>Discards the conversation's pending completion actions. See <see cref="Dialogue.Choice"/>.</summary>
+    public bool Dead { get; init; }
 }

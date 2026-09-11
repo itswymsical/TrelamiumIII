@@ -92,7 +92,8 @@ public static class DialogueBuilder
             {
                 Text = ProcessText(raw).text,
                 BranchKey = specs[i].BranchKey ?? string.Empty,
-                OnSelected = specs[i].OnSelected
+                OnSelected = specs[i].OnSelected,
+                Dead = specs[i].Dead
             });
         }
 
@@ -239,6 +240,12 @@ public class ChoiceData
     /// branch starts. A choice may branch, run a callback, or both.
     /// </summary>
     public Action OnSelected { get; init; }
+
+    /// <summary>
+    /// When chosen, the conversation's pending completion actions are discarded -- this is the answer
+    /// that means "no". See <see cref="Dialogue.Choice"/>.
+    /// </summary>
+    public bool Dead { get; init; }
 }
 
 public class DialogueData

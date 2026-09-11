@@ -218,7 +218,9 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     internal DialogueHandoff Capture() => new()
     {
         Key = DialogueKey,
-        Current = current,
+
+        // A box on its way out has nothing left to hand over; see DialogueBox.Capture.
+        Current = closing ? null : current,
         Remaining = [.. pending],
         CharIndex = charIndex,
         AwaitingChoice = awaitingChoice,
@@ -235,6 +237,10 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     public bool ShouldZoom { get; private init; }
 
     public bool ShouldBeRemoved => closing && presence <= 0f;
+
+    public bool Completed { get; private set; }
+
+    public ChoiceData? Chosen { get; private set; }
 
     /// <summary>
     ///     The face the current line is set in: the speaker's own, or the box's default.
@@ -315,7 +321,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     {
         if (pending.Count == 0)
         {
-            Close();
+            Finish();
             return;
         }
 
@@ -513,10 +519,13 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         if (pending.Count > 0)
             NextLine();
         else
-            Close();
+            Finish();
     }
 
-    /// <summary>Drops what is left of the conversation, rather than advancing through it.</summary>
+    /// <summary>
+    ///     Drops what is left of the conversation, rather than advancing through it. Counts as cut off,
+    ///     so nothing waiting on the conversation completing fires.
+    /// </summary>
     private void EndConversation()
     {
         pending.Clear();
@@ -605,14 +614,21 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         choice.OnSelected?.Invoke();
 
-        // Queued before closing so the manager starts the branch the moment this box is dropped, and
-        // in this box's own style and anchor -- a branch is the same conversation continuing, and
-        // would otherwise answer a bubble over the speaker's head with a panel along the bottom of
-        // the screen.
-        if (!string.IsNullOrEmpty(choice.BranchKey))
-            DialogueManager.Instance.StartDialogue(
-                choice.BranchKey, style: DialogueStyle.Projected, anchor: anchor);
+        // Recorded rather than started here. The manager opens the branch the moment this box is
+        // dropped, in the conversation's own style, anchor and music -- a branch is the same
+        // conversation continuing, and would otherwise answer a bubble over the speaker's head with a
+        // panel along the bottom of the screen, in silence.
+        Finish(choice);
+    }
 
+    /// <summary>Closes the box as the end of what it had to say, rather than as it being cut off.</summary>
+    private void Finish(ChoiceData? choice = null)
+    {
+        if (closing)
+            return;
+
+        Completed = true;
+        Chosen = choice;
         Close();
     }
 

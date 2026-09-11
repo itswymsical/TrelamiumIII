@@ -1,3 +1,5 @@
+using TrelamiumIII.Core.Jobs;
+
 namespace TrelamiumIII.Core.Dialogue.Definitions;
 
 /// <summary>
@@ -17,7 +19,8 @@ class SilvianDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.4f, new Pause(16))
                 .Choice("Silvian.Greeting_True")
                 .Choice("Silvian.Greeting_Lie")
-                .Choice("Silvian.Greeting_Silent")
+                .Choice("Silvian.Greeting_Silent", dead: true)
+                .UnlockJob(JobID.SilvianBotany1)
             .Register();
 
         Dialogue.Define("Silvian.Greeting_True")

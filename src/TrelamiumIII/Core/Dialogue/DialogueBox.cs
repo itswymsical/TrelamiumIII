@@ -62,6 +62,8 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     #region Properties
     public bool ShouldZoom { get; set; }
     public bool ShouldBeRemoved => isRemoved && animationProgress >= ANIMATION_DURATION;
+    public bool Completed { get; private set; }
+    public ChoiceData? Chosen { get; private set; }
     public float Opacity => isRemoved
         ? 1f - animationProgress / ANIMATION_DURATION
         : MathHelper.Clamp(animationProgress / ANIMATION_DURATION, 0f, 1f);
@@ -118,7 +120,10 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
     internal DialogueHandoff Capture() => new()
     {
         Key = DialogueKey,
-        Current = currentDialogue,
+
+        // A box on its way out has nothing left to hand over. Resuming its last line in another box
+        // would re-ask a question the player already answered, and lose the answer.
+        Current = isRemoved ? null : currentDialogue,
         Remaining = [.. dialogueLines],
         CharIndex = charIndex,
         AwaitingChoice = awaitingChoice,
@@ -232,9 +237,8 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         }
         else
         {
-            isRemoved = true;
             isLastDialogue = true;
-            animationProgress = 0f;
+            Finish();
         }
     }
 
@@ -354,7 +358,7 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
             else if (dialogueLines.Count > 0)
                 NextLine();
             else
-                Close();
+                Finish();
         }
     }
 
@@ -377,13 +381,21 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         var choice = currentDialogue.Choices[selectedChoiceIndex];
         SoundEngine.PlaySound(SoundID.MenuOpen);
 
-        // Run the choice's callback, then branch if it specifies one.
         choice.OnSelected?.Invoke();
 
-        // Queue the branch before closing so EndDialogue fires it immediately.
-        if (!string.IsNullOrEmpty(choice.BranchKey))
-            DialogueManager.Instance.StartDialogue(choice.BranchKey);
+        // Recorded rather than started here: the manager opens the branch once this box is dropped,
+        // carrying the conversation's music, zoom and style into it instead of opening it bare.
+        Finish(choice);
+    }
 
+    /// <summary>Closes the box as the end of what it had to say, rather than as it being cut off.</summary>
+    private void Finish(ChoiceData? choice = null)
+    {
+        if (isRemoved)
+            return;
+
+        Completed = true;
+        Chosen = choice;
         Close();
     }
     #endregion
@@ -410,7 +422,7 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         else if (dialogueLines.Count > 0)
             NextLine();
         else
-            Close();
+            Finish();
     }
 
     private void SetupPositions(Vector2 bottomAnchorPosition)
@@ -570,7 +582,9 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
             var isHovered = slotRect.Contains(Main.MouseScreen.ToPoint());
             var isSelected = i == selectedChoiceIndex;
 
-            if (isHovered)
+            // A box on its way out takes no clicks. The choices keep drawing through the fade, and a
+            // second click there would confirm again: the callback re-runs and the answer is replaced.
+            if (isHovered && !isRemoved)
             {
                 if (i != selectedChoiceIndex)
                 {

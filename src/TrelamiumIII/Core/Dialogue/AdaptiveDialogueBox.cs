@@ -73,6 +73,11 @@ public sealed class AdaptiveDialogueBox : IDialoguePresenter
 
     public bool ShouldBeRemoved => active.ShouldBeRemoved && fading is null;
 
+    // Never the fading box's: that one was handed off mid-conversation, not finished.
+    public bool Completed => active.Completed;
+
+    public ChoiceData? Chosen => active.Chosen;
+
     public void Update()
     {
         if (fading is not null)

@@ -4,9 +4,9 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.NPCs.Silvian;
 
- public sealed class NerdySlimeI : Job
+ public sealed class SilvianBotany1 : Job
 {
-    public NerdySlimeI() : base(
+    public SilvianBotany1() : base(
         JobID.SilvianBotany1, "SilvianBotany1.Name", "SilvianBotany1.Description",
         taskList:
         [
@@ -33,11 +33,17 @@ namespace TrelamiumIII.Content.NPCs.Silvian;
         providerNPC: ModContent.NPCType<Silvian>())
     { }
 
-    public override void OnJobStart() => Context.Play("Silvian.BotanyJob1_Greeting", zoomIn: true, letterbox: true);
+    public override void OnJobStart() => Context.Play("Silvian.BotanyJob1_Greeting", zoomIn: true, style: DialogueStyle.Projected);
 
-    public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
+    public override void OnJobComplete(bool giveRewards = true)
     {
-        2 => ChatEncounter.Play("Silvian.BotanyJob1_Complete"),
-        _ => ChatEncounter.None
-    };
+        base.OnJobComplete(giveRewards);
+        Context.Play("Silvian.BotanyJob1_Greeting", style: DialogueStyle.Projected);
+    }
+
+    //public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
+    //{
+    //    2 => ChatEncounter.Play("Silvian.BotanyJob1_Complete"),
+    //    _ => ChatEncounter.None
+    //};
 }

@@ -114,6 +114,11 @@ Items: {
 		Tooltip: Deals hefty knockback and can be charged up to blast several acorns
 	}
 
+	SaplingMaker: {
+		DisplayName: Sapling Maker
+		Tooltip: ""
+	}
+
 	SharpnutDaggerItem: {
 		DisplayName: Sharpnut Dagger
 		Tooltip:

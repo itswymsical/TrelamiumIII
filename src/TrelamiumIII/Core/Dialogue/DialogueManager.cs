@@ -13,6 +13,9 @@ public sealed class DialogueManager
 
     private readonly Dictionary<string, List<string>> cachedLineKeys = new();
     private IDialoguePresenter activeDialogue = null;
+
+    /// <summary>The conversation <see cref="activeDialogue" /> belongs to. Set whenever it is.</summary>
+    private Conversation? conversation;
     private int? currentMusic = null;
     private int previousMusic = -1;
     private bool isZoomedIn = false;
@@ -77,15 +80,7 @@ public sealed class DialogueManager
         }
         IsUIHidden = queuedDialogue.Letterbox;
 
-        activeDialogue = queuedDialogue.Style switch
-        {
-            DialogueStyle.Projected =>
-                ProjectedDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor, queuedDialogue.Root),
-            DialogueStyle.Adaptive =>
-                AdaptiveDialogueBox.Create(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Anchor, queuedDialogue.Root),
-            _ =>
-                DialogueBox.CreateDialogue(queuedDialogue.DialogueKey, queuedDialogue.ZoomIn, queuedDialogue.Root),
-        };
+        activeDialogue = Present(queuedDialogue.DialogueKey, queuedDialogue);
 
         if (activeDialogue == null)
         {
@@ -96,6 +91,10 @@ public sealed class DialogueManager
             }
             return false;
         }
+
+        conversation = new Conversation(queuedDialogue);
+        conversation.Enter(queuedDialogue.DialogueKey);
+
         OnDialogueStart?.Invoke(queuedDialogue.DialogueKey);
         if (queuedDialogue.Music.HasValue)
         {
@@ -103,6 +102,44 @@ public sealed class DialogueManager
             currentMusic = queuedDialogue.Music.Value;
             Main.musicBox2 = queuedDialogue.Music.Value;
         }
+
+        return true;
+    }
+
+    /// <summary>Opens <paramref name="dialogueKey" /> in the box <paramref name="presentation" /> asks for.</summary>
+    private static IDialoguePresenter? Present(string dialogueKey, QueuedDialogue presentation) => presentation.Style switch
+    {
+        DialogueStyle.Projected =>
+            ProjectedDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root),
+        DialogueStyle.Adaptive =>
+            AdaptiveDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root),
+        _ =>
+            DialogueBox.CreateDialogue(dialogueKey, presentation.ZoomIn, presentation.Root),
+    };
+
+    /// <summary>
+    ///     Carries the conversation into the branch the player chose, presented the way the
+    ///     conversation was opened.
+    /// </summary>
+    /// <remarks>
+    ///     Music, letterbox and zoom are left exactly as they stand rather than torn down and set up
+    ///     again. The branch is the same conversation continuing: a restart would drop the track back
+    ///     to the biome's, flash the bars, and bounce the camera out and back in between two lines.
+    /// </remarks>
+    private bool ContinueInto(string branchKey)
+    {
+        IDialoguePresenter? branch = Present(branchKey, conversation!.Opening);
+
+        if (branch == null)
+        {
+            TrelamiumIII.Instance?.Logger?.Warn(
+                $"Dialogue '{conversation.Opening.DialogueKey}': branch '{branchKey}' has no lines - ending the conversation there.");
+            return false;
+        }
+
+        activeDialogue = branch;
+        conversation.Enter(branchKey);
+        OnDialogueStart?.Invoke(branchKey);
 
         return true;
     }
@@ -153,9 +190,39 @@ public sealed class DialogueManager
         }
     }
 
+    /// <summary>
+    ///     Drops the box that just finished, then either carries its conversation into the branch the
+    ///     player chose or brings the conversation to a close.
+    /// </summary>
     private void EndDialogue()
     {
-        string completedDialogueKey = activeDialogue?.DialogueKey;
+        IDialoguePresenter finished = activeDialogue;
+        string completedDialogueKey = finished.DialogueKey;
+
+        // The abandoned check covers a box that had already been answered when it was force-ended:
+        // its own outcome still reads as a finish, but the conversation is not going anywhere.
+        bool completed = finished.Completed && conversation is { Abandoned: false };
+        ChoiceData? chosen = completed ? finished.Chosen : null;
+
+        activeDialogue = null;
+
+        // Fire the event after clearing activeDialogue
+        if (!string.IsNullOrEmpty(completedDialogueKey))
+        {
+            OnDialogueEnd?.Invoke(completedDialogueKey);
+        }
+
+        if (chosen is not null)
+        {
+            if (chosen.Dead)
+                conversation!.Kill();
+
+            if (!string.IsNullOrEmpty(chosen.BranchKey) && ContinueInto(chosen.BranchKey))
+                return;
+        }
+
+        Conversation? ended = conversation;
+        conversation = null;
 
         Letterbox.Hide();
         IsUIHidden = false;
@@ -172,16 +239,12 @@ public sealed class DialogueManager
             isZoomedIn = false;
         }
 
-        activeDialogue = null;
+        // After the teardown, so an action that opens a dialogue of its own opens it clean.
+        if (completed)
+            ended?.Complete();
 
-        // Fire the event after clearing activeDialogue
-        if (!string.IsNullOrEmpty(completedDialogueKey))
-        {
-            OnDialogueEnd?.Invoke(completedDialogueKey);
-        }
-
-        // Check if there's a queued dialogue to start
-        if (dialogueQueue.Count > 0)
+        // Check if there's a queued dialogue to start. A completion action may already have opened one.
+        if (!IsAnyActive() && dialogueQueue.Count > 0)
         {
             var nextDialogue = dialogueQueue.Dequeue();
             StartDialogueInternal(nextDialogue);
@@ -197,11 +260,17 @@ public sealed class DialogueManager
     }
 
     /// <summary>
-    /// Checks if a specific dialogue key is currently active
+    /// Checks if a specific dialogue key is currently active: on screen, or the dialogue that opened
+    /// the conversation now playing one of its branches.
     /// </summary>
+    /// <remarks>
+    /// The second half is what stops an NPC clicked mid-branch from queueing its whole greeting again
+    /// behind the answer it is already giving.
+    /// </remarks>
     public bool IsDialogueActive(string dialogueKey)
     {
-        return activeDialogue?.DialogueKey == dialogueKey;
+        return activeDialogue?.DialogueKey == dialogueKey
+            || conversation?.Opening.DialogueKey == dialogueKey;
     }
 
     /// <summary>
@@ -236,12 +305,52 @@ public sealed class DialogueManager
         dialogueQueue.Clear();
         if (activeDialogue != null)
         {
+            // Cut off, not finished: no branch opens behind it and nothing waiting on it fires.
+            conversation?.Abandon();
             activeDialogue.Close();
         }
     }
 
     public bool IsAnyActive() => activeDialogue != null;
     public void ClearCache() => cachedLineKeys.Clear();
+
+    /// <summary>
+    ///     A dialogue and every branch the player takes out of it, played as one piece.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         What a branch inherits from its parent lives here rather than on the box, because the box
+    ///         is replaced at every branch and this is not. The opening dialogue's presentation carries
+    ///         through every branch, so the conversation keeps its track, its camera and its bars; and
+    ///         completion actions wait for whichever branch the conversation actually ends on, rather
+    ///         than firing as the parent hands over.
+    ///     </para>
+    ///     <para>
+    ///         Actions accumulate as the conversation passes through sequences, so a branch can add its
+    ///         own on top of what its parent promised. A dead choice discards what has accumulated up to
+    ///         it -- the answer that means "no" -- but not what a later branch adds after it.
+    ///     </para>
+    /// </remarks>
+    private sealed class Conversation(QueuedDialogue opening)
+    {
+        /// <summary>The dialogue that opened the conversation, and the presentation every branch inherits.</summary>
+        public QueuedDialogue Opening { get; } = opening;
+
+        /// <summary>Force-ended. An abandoned conversation neither branches nor completes.</summary>
+        public bool Abandoned { get; private set; }
+
+        private Action? onComplete;
+
+        /// <summary>Picks up the completion actions of a sequence the conversation has reached.</summary>
+        public void Enter(string dialogueKey) => onComplete += DialogueRegistry.Get(dialogueKey)?.OnComplete;
+
+        /// <summary>The player took a dead choice: whatever was promised up to here is off.</summary>
+        public void Kill() => onComplete = null;
+
+        public void Abandon() => Abandoned = true;
+
+        public void Complete() => onComplete?.Invoke();
+    }
 }
 
 public class QueuedDialogue

@@ -6,23 +6,12 @@ using TrelamiumIII.Core.Events;
 namespace TrelamiumIII.Core.Jobs;
 
 /// <summary>
-/// One line of a <see cref="Job"/>'s to-do list: what it asks for, how much of it, and -- crucially --
+/// One line of a <see cref="Job"/>'s to-do list: what it asks for, how much of it, and crucially
 /// which events count toward it.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         A task decides for itself whether an event counts, via <see cref="Matches"/>. That is the
-///         whole point of the type. The alternative, which this replaced, was a
-///         <c>MatchesEvent(evt, setIndex, taskIndex)</c> on the job: because the job answered on the
-///         task's behalf, every job had to hand-write a <c>switch (set) { case 0: if (task == 0) ... }</c>
-///         routing ladder, and no two jobs wrote it the same way. Tasks that know their own trigger
-///         make that ladder disappear.
-///     </para>
-///     <para>
-///         Tasks own their progress <em>and</em> any bookkeeping that progress depends on -- the rooms
-///         already credited, the pools already filled -- and serialize it themselves through
-///         <see cref="SaveData"/>. State that decides whether an event counts belongs next to the code
-///         that decides it.
+///         A task decides for itself whether an event counts, via <see cref="Matches"/>. Tasks own their progress and any bookkeeping that progress depends on.
 ///     </para>
 /// </remarks>
 public abstract class JobTask(string descriptionKey, int requiredCount = 1)
@@ -81,7 +70,7 @@ public abstract class JobTask(string descriptionKey, int requiredCount = 1)
     }
 
     /// <summary>
-    /// Fills the task outright. For debug commands only -- ordinary progress goes through
+    /// Fills the task outright. For debug commands only! ordinary progress goes through
     /// <see cref="Job.UpdateProgress"/>, which is what fires the stage and completion hooks.
     /// </summary>
     internal void ForceComplete() => Count = RequiredCount;
@@ -90,8 +79,8 @@ public abstract class JobTask(string descriptionKey, int requiredCount = 1)
     protected virtual void OnReset() { }
 
     /// <summary>
-    /// Persists this task's progress. Subclasses that track more than a count -- which rooms were
-    /// credited, which pools are full -- override and call <c>base</c>.
+    /// Persists this task's progress. Subclasses that track more than a count, which rooms were
+    /// credited, which pools are full. override and call <c>base</c>.
     /// </summary>
     public virtual void SaveData(TagCompound tag) => tag["count"] = Count;
 

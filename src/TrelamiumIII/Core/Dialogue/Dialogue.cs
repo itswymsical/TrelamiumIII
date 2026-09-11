@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -13,13 +14,21 @@ namespace TrelamiumIII.Core.Dialogue;
 ///       .Line("Guide", emote: 0, speed: 1.1f)
 ///           .Choice(branch: "LostKeep.Answer_Lie")
 ///           .Choice(onSelected: () => Flag = true)
+///           .Choice(branch: "LostKeep.Answer_Refuse", dead: true)
+///       .UnlockJob(JobID.LostKeep)
 ///       .Register();
 ///   </code>
+///   <para>
+///   A choice's branch continues the same conversation: it keeps the music, zoom, letterbox, style
+///   and anchor the conversation was opened with, and <see cref="OnComplete"/> waits for whichever
+///   branch the conversation actually ends on.
+///   </para>
 /// </summary>
 public sealed class Dialogue
 {
     private readonly string key;
     private readonly List<LineSpec> lines = [];
+    private Action? onComplete;
 
     // The line currently being assembled, held open so Choice() can attach before the next Line().
     private string pendingSpeaker;
@@ -51,15 +60,39 @@ public sealed class Dialogue
     }
 
     /// <summary>Adds a response option to the most recent line. Provide a branch, a callback, or both.</summary>
-    public Dialogue Choice(string branch = null, Action onSelected = null)
+    /// <param name="dead">
+    ///   Marks this answer as the one that goes nowhere: choosing it discards the conversation's pending
+    ///   <see cref="OnComplete"/> actions, so nothing promised before it fires when the conversation
+    ///   ends. The branch still plays, and can add completion actions of its own.
+    /// </param>
+    public Dialogue Choice(string branch = null, Action onSelected = null, bool dead = false)
     {
         if (!hasPending)
             throw new InvalidOperationException($"Dialogue '{key}': Choice() called before any Line().");
 
         pendingChoices ??= [];
-        pendingChoices.Add(new ChoiceSpec { BranchKey = branch, OnSelected = onSelected });
+        pendingChoices.Add(new ChoiceSpec { BranchKey = branch, OnSelected = onSelected, Dead = dead });
         return this;
     }
+
+    /// <summary>
+    ///   Runs <paramref name="action"/> once the conversation this sequence is part of has been played
+    ///   to its end, through whichever branches the player takes out of it -- not when this sequence's
+    ///   own lines run out. Dismissing the conversation, or taking a <c>dead</c> choice, discards it.
+    /// </summary>
+    /// <remarks>
+    ///   Can be called more than once. Actions run in the order they were added, the opening
+    ///   sequence's before any branch's.
+    /// </remarks>
+    public Dialogue OnComplete(Action action)
+    {
+        onComplete += action;
+        return this;
+    }
+
+    /// <summary>Offers a job on its provider's board once the conversation is played through.</summary>
+    public Dialogue UnlockJob(int jobId) =>
+        OnComplete(() => Main.LocalPlayer.GetModPlayer<JobPlayer>().UnlockJob(jobId));
 
     private void Flush()
     {
@@ -81,7 +114,7 @@ public sealed class Dialogue
     public DialogueSequence Build()
     {
         Flush();
-        return new DialogueSequence(key, lines);
+        return new DialogueSequence(key, lines, onComplete);
     }
 
     /// <summary>Finalizes the sequence and adds it to the <see cref="DialogueRegistry"/>.</summary>
