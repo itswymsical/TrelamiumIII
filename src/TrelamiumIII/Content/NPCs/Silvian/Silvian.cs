@@ -45,9 +45,9 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == this.Type && j.State == JobState.Active))
             return ChatEncounter.None; // let the jobs handle dialogue
 
-        if (!SilvianSystem.firstEncounter)
+        if (!SilvianSystem.firstChatHappened)
         {
-            SilvianSystem.firstEncounter = true;
+            SilvianSystem.firstChatHappened = true;
             return ChatEncounter.Play("Silvian.Greeting").Projected().WithMusic(Assets.Music.HomeForagerMusic.Slot);
         }
 
@@ -79,23 +79,23 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
 public class SilvianSystem : ModSystem
 {
-    public static bool firstEncounter;
+    public static bool firstChatHappened;
 
     public override void ClearWorld()
     {
-        firstEncounter = false;
+        firstChatHappened = false;
     }
 
     public override void SaveWorldData(TagCompound tag)
     {
-        if (firstEncounter)
+        if (firstChatHappened)
         {
-            tag[nameof(firstEncounter)] = true;
+            tag[nameof(firstChatHappened)] = true;
         }
     }
 
     public override void LoadWorldData(TagCompound tag)
     {
-        firstEncounter = tag.ContainsKey(nameof(firstEncounter));
+        firstChatHappened = tag.ContainsKey(nameof(firstChatHappened));
     }
 }

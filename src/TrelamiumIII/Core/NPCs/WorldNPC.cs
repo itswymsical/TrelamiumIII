@@ -4,6 +4,7 @@ using Terraria.Localization;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Core.NPCs.Housing;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.NPCs;
@@ -54,6 +55,18 @@ public abstract class WorldNPC : ModNPC
     public void SetAnchorTile(Point tile) => AnchorTile = tile;
 
     public void SetAnchorTile(Vector2 worldPosition) => SetAnchorTile(worldPosition.ToTileCoordinates());
+
+    // Housing
+
+    /// <summary>
+    /// The place reserved for this NPC's type, if the world has one. Reserved
+    /// through <see cref="WorldNPCHousing"/>; nothing else may be housed there.
+    /// A homed NPC anchors to <see cref="NPCHome.Anchor"/> when it spawns and
+    /// never despawns.
+    /// </summary>
+    public NPCHome Home => WorldNPCHousing.TryGetHome(Type, out NPCHome home) ? home : null;
+
+    public bool HasHome => Home != null;
 
     // Script
 
@@ -180,7 +193,7 @@ public abstract class WorldNPC : ModNPC
     /// so a saved anchor still wins.
     /// </para>
     /// </summary>
-    public override void OnSpawn(IEntitySource source) => AnchorTile = NPC.Center.ToTileCoordinates();
+    public override void OnSpawn(IEntitySource source) => AnchorTile = Home?.Anchor ?? NPC.Center.ToTileCoordinates();
 
     public override void PostAI()
     {
@@ -221,7 +234,7 @@ public abstract class WorldNPC : ModNPC
     /// </summary>
     private void TickDespawn()
     {
-        if (!CanDespawn || HasActiveJob)
+        if (!CanDespawn || HasActiveJob || HasHome)
             return;
 
         timeAlive++;
@@ -257,7 +270,8 @@ public abstract class WorldNPC : ModNPC
 
     public override void ModifyHoverBoundingBox(ref Rectangle boundingBox) => boundingBox.Inflate(18, 44);
 
-    // Housing prevention
+    // Housing prevention. A world NPC never takes vanilla housing, even its own
+    // reserved home - the home is expressed through the anchor instead.
 
     public override bool CheckConditions(int left, int right, int top, int bottom) => false;
 

@@ -3,6 +3,7 @@ using Terraria.DataStructures;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
+using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Utilities;
 
@@ -67,8 +68,6 @@ public class GrottoPass : GenPass
 
     // Argie's lab
     private const string ArgieLab = "Assets/Structures/ArgiesLab";
-    private const int labWidth = 45;
-    private const int labHeight = 32;
     private const int ArgieNodeRadius = 48;
     private const float ArgieCenterZone = 0.15f;
 
@@ -162,11 +161,32 @@ public class GrottoPass : GenPass
         progress.Message = "Tracing cave walls...";
         PlaceEdgeWalls(biomeMask, progress, 0.70, 0.78);
 
-        // 9. Spread woodgrass (0.82 to 1)
+        // 8. Spread woodgrass (0.78 to 0.95)
         progress.Message = "Spreading mold...";
-        SpreadGrass(biomeMask, progress, 0.78, 1);
+        SpreadGrass(biomeMask, progress, 0.78, 0.95);
+
+        // 9. Argie's lab, last so no carve or wall pass touches it (0.95 to 1)
+        progress.Message = "Furnishing the lab...";
+        PlaceArgieLab(argieNode);
 
         progress.Value = 1.0;
+    }
+
+    /// <summary>
+    /// Stands the lab on the floor of Argie's node: bottom-centre on the first solid
+    /// tile below the node's centre. Protected from digging; reserve it as a home
+    /// with <c>placed.ReserveFor&lt;ArgieNPC&gt;()</c> once she exists.
+    /// </summary>
+    private static void PlaceArgieLab(Node node)
+    {
+        int floorY = node.Y;
+        while (WorldGen.InWorld(node.X, floorY + 1) && !WorldGen.SolidTile(node.X, floorY + 1))
+            floorY++;
+
+        if (!Structures.TryPlace(ArgieLab, new Point(node.X, floorY), StructureAnchor.BottomCenter, out PlacedStructure placed))
+            return;
+
+        StructureProtectionSystem.ArgieLabArea = placed.Area;
     }
 
     private BiomeMask BiomeBlob(int originX, int originY, int width, int height, FastNoiseLite noise, FastNoiseLite roughNoise,
