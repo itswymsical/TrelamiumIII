@@ -88,7 +88,7 @@ public class EventNPC : GlobalNPC
     private JobIndicator? jobIndicator;
 
     /// <summary>
-    /// Forces the Job indicator cache to rebuild on the next AI tick.
+    /// Forces the Job indicator cache to rebuild on the next NPC tick.
     /// Call this when Jobs are accepted, completed, or unlocked.
     /// </summary>
     public static void InvalidateJobCache() => lastCacheRefreshTick = -1;
@@ -104,9 +104,14 @@ public class EventNPC : GlobalNPC
         OnNPCChat?.Invoke(npc, ref chat);
     }
 
-    public override void AI(NPC npc)
+    /// <remarks>
+    /// PostAI rather than AI. An NPC running an <c>NPCDirector</c> script vetoes its tick from PreAI,
+    /// and tModLoader then skips every AI hook -- globals included -- while still running PostAI.
+    /// From AI, a director-driven provider (any <c>WorldNPC</c>, e.g. Silvian) never got an indicator.
+    /// </remarks>
+    public override void PostAI(NPC npc)
     {
-        base.AI(npc);
+        base.PostAI(npc);
 
         if (!npc.friendly)
             return;
