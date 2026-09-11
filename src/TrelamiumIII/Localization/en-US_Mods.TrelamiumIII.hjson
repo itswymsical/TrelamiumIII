@@ -758,6 +758,131 @@ Items: {
 			Can be used as ammunition
 			'''
 	}
+
+	SpruceBathtubItem: {
+		DisplayName: Spruce Bathtub Item
+		Tooltip: ""
+	}
+
+	SpruceBedItem: {
+		DisplayName: Spruce Bed Item
+		Tooltip: ""
+	}
+
+	SpruceBookcaseItem: {
+		DisplayName: Spruce Bookcase Item
+		Tooltip: ""
+	}
+
+	SpruceCandelabraItem: {
+		DisplayName: Spruce Candelabra Item
+		Tooltip: ""
+	}
+
+	SpruceChairItem: {
+		DisplayName: Spruce Chair Item
+		Tooltip: ""
+	}
+
+	SpruceChandelierItem: {
+		DisplayName: Spruce Chandelier Item
+		Tooltip: ""
+	}
+
+	SpruceChestItem: {
+		DisplayName: Spruce Chest Item
+		Tooltip: ""
+	}
+
+	SpruceDoorItem: {
+		DisplayName: Spruce Door Item
+		Tooltip: ""
+	}
+
+	SpruceDresserItem: {
+		DisplayName: Spruce Dresser Item
+		Tooltip: ""
+	}
+
+	SpruceLampItem: {
+		DisplayName: Spruce Lamp Item
+		Tooltip: ""
+	}
+
+	SpruceLanternItem: {
+		DisplayName: Spruce Lantern Item
+		Tooltip: ""
+	}
+
+	SprucePianoItem: {
+		DisplayName: Spruce Piano Item
+		Tooltip: ""
+	}
+
+	SprucePlatformItem: {
+		DisplayName: Spruce Platform Item
+		Tooltip: ""
+	}
+
+	SpruceShingles: {
+		DisplayName: Spruce Shingles
+		Tooltip: ""
+	}
+
+	SpruceSinkItem: {
+		DisplayName: Spruce Sink Item
+		Tooltip: ""
+	}
+
+	SpruceSofaItem: {
+		DisplayName: Spruce Sofa Item
+		Tooltip: ""
+	}
+
+	SpruceTableItem: {
+		DisplayName: Spruce Table Item
+		Tooltip: ""
+	}
+
+	SpruceWoodItem: {
+		DisplayName: Spruce Wood Item
+		Tooltip: ""
+	}
+
+	SpruceWorkBenchItem: {
+		DisplayName: Spruce Work Bench Item
+		Tooltip: ""
+	}
+
+	CopperPipeItem: {
+		DisplayName: Copper Pipe Item
+		Tooltip: ""
+	}
+
+	OxidizedCopperPlatingItem: {
+		DisplayName: Oxidized Copper Plating Item
+		Tooltip: ""
+	}
+
+	SmoothCopperPlatingItem: {
+		DisplayName: Smooth Copper Plating Item
+		Tooltip: ""
+	}
+
+	WattleFenceItem: {
+		DisplayName: Wattle Fence Item
+		Tooltip: ""
+	}
+
+	WoodWickerBlockItem: {
+		DisplayName: Wood Wicker Block Item
+		Tooltip: ""
+	}
+
+	WoodWickerWallItem: {
+		DisplayName: Wood Wicker Wall Item
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -769,6 +894,8 @@ Tiles: {
 	AlchemyStationTile.MapEntry: Alchemy Station
 	MagnoliaTile.MapEntry: Magnolia
 	MyconidSporeTile.MapEntry: Myconid Spore Tile
+	SpruceChestTile.MapEntry: Spruce Chest Tile
+	SpruceDresserTile.MapEntry: Spruce Dresser Tile
 }
 
 Projectiles: {

@@ -94,8 +94,8 @@ BookLibrary: {
 			}
 
 			Ch5: {
-				Title: Ch. 5 | Reverie
-				Opening: I have called these last years a reverie in letters to men who wrote to ask after my health, and I chose the word because it was pleasant, and because it allowed them to stop asking. A reverie is a soft thing. A man in a reverie is a man who will presently come out of one.[p]I looked the word up in October. I do not know why; I had used it forty times by then without curiosity, which is the condition I have been in for most of my life. It is from the old French, and the old French did not mean daydreaming. It meant delirium. It meant raving, and wandering, and a mind gone out of its own house and not returning.[p]So I have done it again. I took the pleasant sense of a word and built on it, exactly as I did at twenty-six, and this time the other sense has come and sat down opposite me and will not be corrected. I am writing this while I can still tell you which of the two I mean.
+				Title: Ch. 5 | TrelamiumIII
+				Opening: I have called these last years a TrelamiumIII in letters to men who wrote to ask after my health, and I chose the word because it was pleasant, and because it allowed them to stop asking. A TrelamiumIII is a soft thing. A man in a TrelamiumIII is a man who will presently come out of one.[p]I looked the word up in October. I do not know why; I had used it forty times by then without curiosity, which is the condition I have been in for most of my life. It is from the old French, and the old French did not mean daydreaming. It meant delirium. It meant raving, and wandering, and a mind gone out of its own house and not returning.[p]So I have done it again. I took the pleasant sense of a word and built on it, exactly as I did at twenty-six, and this time the other sense has come and sat down opposite me and will not be corrected. I am writing this while I can still tell you which of the two I mean.
 				Second: The forty pages are done. You may stop believing me.[p]I withdraw the Illuminance. I want to be precise about the grounds, because I am not withdrawing it for being false - I could not find it false, and if you have read the preceding chapters you will understand by now that this was never a virtue of the doctrine but its central defect. I withdraw it for being the wrong name for a true thing.[p]There *is* something. I was not deluded about that, and I have been informed by well-meaning correspondents that I was, and I find their kindness harder to bear than the accusation. There is something. I described its outline for thirty years with great care and considerable skill. What I got wrong was every single question of what it is, where it lives, whose it is, and which way round it faces.
 				Third: I saw it in the November before last, at about four in the afternoon, in the room at the back that takes the western light.[p]She was sitting as she sat. I had come in with a letter in my hand and I looked up, and what was in the chair was a shape with light behind it, and I knew it immediately and intimately and in every particular, the way you know your own handwriting on a paper you do not remember writing.[p]I had been drawing that shape since I was twenty-six. I had drawn it from behind. I knew the contour of it better than any living man and I had never once seen the front, and the front was in my house, in the good chair, in the light I had chosen the house for.[p]I wrote in the second chapter that I did not find the Illuminance. I have never written anything truer and I did not know what I was writing. I did not find it.[p]It found her.
 				Excerpt: '''"No diminution in the fifth year. The instance holds." - from my own paper, 1806'''
@@ -158,8 +158,8 @@ LoreGlossary: {
 		Definition: A fixed sum of money paid to a person for services rendered, often in a scholarly or religious context.
 	}
 
-	Reverie: {
-		Term: reverie
+	TrelamiumIII: {
+		Term: TrelamiumIII
 		Definition: A pleasant absence of mind. From the old French resverie: delirium, raving, the wandering of a mind out of its own house. Laine took the later sense.
 	}
 

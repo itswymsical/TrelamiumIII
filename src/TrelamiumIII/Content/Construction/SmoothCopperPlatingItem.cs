@@ -1,0 +1,25 @@
+namespace TrelamiumIII.Content.Construction;
+
+public class SmoothCopperPlatingItem : ModItem
+{
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+
+        Item.value = Item.sellPrice(copper: 4);
+
+        Item.DefaultToPlaceableTile(ModContent.TileType<CopperPlatingTile>());
+        Item.width = Item.height = 16;
+
+        Item.rare = ItemRarityID.White;
+    }
+    public override void AddRecipes()
+    {
+        base.AddRecipes();
+
+        CreateRecipe(4)
+        .AddIngredient(ItemID.CopperBar)
+        .AddTile(TileID.HeavyWorkBench)
+        .Register();
+    }
+}

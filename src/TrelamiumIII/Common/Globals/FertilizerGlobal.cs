@@ -6,7 +6,7 @@ using Terraria.GameContent.Metadata;
 using Terraria.Localization;
 using Terraria.ObjectData;
 
-namespace TrelamiumIII.Common.Globals.Tiles;
+namespace TrelamiumIII.Common.Globals;
 
 /// <summary> Applies the effects of fertilizer to <see cref="CustomTree"/> saplings. </summary>
 internal class FertilizerGlobalProjectile : GlobalProjectile

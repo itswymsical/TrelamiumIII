@@ -7,13 +7,13 @@ using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Common.Subworlds.Realms;
 
-public class ReverieRealm : SubworldRealm
+public class TrelamiumIIIRealm : SubworldRealm
 {
     public override int Width => 720;
-    public override string Name => "Reverie";
+    public override string Name => "TrelamiumIII";
     public override int Height => 256;
 
-    public override List<GenPass> Tasks => [ new ReverieDunesPass() ];
+    public override List<GenPass> Tasks => [ new TrelamiumIIIDunesPass() ];
     public override bool ShouldSave => false;
     public override bool NormalUpdates => true;
     public override bool NoPlayerSaving => false;
@@ -27,7 +27,7 @@ public class ReverieRealm : SubworldRealm
         }
         catch (Exception ex)
         {
-            TrelamiumIII.Instance?.Logger.Error($"Error in ReverieRealm.SetStaticDefaults: {ex.Message}");
+            TrelamiumIII.Instance?.Logger.Error($"Error in TrelamiumIIIRealm.SetStaticDefaults: {ex.Message}");
             OtherworldTitle = null;
         }
     }
@@ -69,9 +69,9 @@ public class ReverieRealm : SubworldRealm
     public override void OnEnter() => SubworldSystem.hideUnderworld = true;  
 }
 
-public class ReverieDunesPass : GenPass
+public class TrelamiumIIIDunesPass : GenPass
 {
-    public ReverieDunesPass() : base("[T3] Dunes", 247.43f) { }
+    public TrelamiumIIIDunesPass() : base("[T3] Dunes", 247.43f) { }
 
     protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
     {
