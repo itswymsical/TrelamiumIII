@@ -9,15 +9,8 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Lore;
 
 /// <summary>
-///     A lore book on screen.
+///     A lore book on screen. Content is flowed once on open, in the current language; the cover faces page one, then two pages per spread.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Content is built and flowed once, when the book is opened, so pagination reflects the
-///         language that is current at that moment. Pages then pair up into spreads: the cover faces
-///         the first page, and every spread after that holds two.
-///     </para>
-/// </remarks>
 public sealed class BasicBookUI : BookUI
 {
     public const int PAGE_WIDTH = 290;
@@ -86,10 +79,7 @@ public sealed class BasicBookUI : BookUI
         book.BeginShowing();
     }
 
-    /// <summary>
-    ///     Spread 0 shows the cover beside the first page; every later spread holds two pages, so a
-    ///     book of <c>n</c> pages needs one spread plus half of what is left.
-    /// </summary>
+    /// <summary>Spread 0 is the cover plus page one; every later spread holds two pages.</summary>
     protected override int SpreadCount =>
         pages.Count <= 1 ? 1 : 1 + (pages.Count - 1 + 1) / 2;
 
@@ -188,10 +178,7 @@ public sealed class BasicBookUI : BookUI
         new(96, 106, 52),
     ];
 
-    /// <summary>
-    ///     Names a bookmark by the chapter it falls in, so a strip of tabs reads as places in the book
-    ///     rather than as three numbers.
-    /// </summary>
+    /// <summary>Names a bookmark by the chapter it falls in.</summary>
     private string BookmarkLabel(int page)
     {
         ContentsEntry? chapter = content.Contents.ChapterAt(page);
@@ -199,10 +186,7 @@ public sealed class BasicBookUI : BookUI
         return chapter is not null ? chapter.Title : PageLabel(page);
     }
 
-    /// <summary>
-    ///     The whole of what a tab stands for. A tab is only wide enough for a fragment of a chapter
-    ///     title, so the name has to be readable somewhere, and hovering is where.
-    /// </summary>
+    /// <summary>The full chapter name on hover, since a tab only fits a fragment.</summary>
     private string BookmarkTooltip(int page)
     {
         ContentsEntry? chapter = content.Contents.ChapterAt(page);

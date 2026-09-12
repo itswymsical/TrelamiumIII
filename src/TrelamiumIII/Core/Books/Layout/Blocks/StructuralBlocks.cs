@@ -4,9 +4,7 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Layout.Blocks;
 
-/// <summary>
-///     A chapter or section heading, optionally underscored by a rule.
-/// </summary>
+/// <summary>A chapter or section heading, optionally ruled underneath.</summary>
 public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
 {
     /// <summary>Gap between the heading's baseline and its rule.</summary>
@@ -107,13 +105,7 @@ public sealed class SpacerBlock(float height) : BookBlock
     public override void Draw(SpriteBatch spriteBatch, in BlockRect rect, BookPageContext context) { }
 }
 
-/// <summary>
-///     Forces everything after it onto a fresh page.
-/// </summary>
-/// <remarks>
-///     The composer treats this as a signal rather than as content, so it occupies no height and can
-///     never itself be orphaned at the top of a page.
-/// </remarks>
+/// <summary>Forces what follows onto a fresh page; takes no height, so it can't be orphaned.</summary>
 public sealed class PageBreakBlock : BookBlock
 {
     protected override float MeasureCore(float width) => 0f;

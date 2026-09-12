@@ -7,10 +7,7 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.Jobs;
 
-/// <summary>
-/// The Guide walks the player through their first houses: gather the materials, then build three
-/// rooms he'll actually approve of, then come back.
-/// </summary>
+/// <summary>The Guide walks the player through gathering materials, building three approved rooms, then checking in.</summary>
 public sealed class HomeForager : Job
 {
     /// <summary>First and last set that asks for a house. Each credits one.</summary>
@@ -76,14 +73,11 @@ public sealed class HomeForager : Job
         => Context.Play($"Guide.HomeForager_Set{newSet}");
 
     /// <summary>
-    /// The Guide's running commentary on the player's building. Runs before the task sees the event,
-    /// so a room that reads as already-credited here is genuinely one the player is re-showing.
+    /// The Guide's building commentary. Runs before the task sees the event, so "already credited" means a re-shown room.
     /// </summary>
     public override void OnEvent(GameEvent evt)
     {
-        // Only ever speak to a check the player asked for. Vanilla re-scans housing constantly on its
-        // own -- NPCs revisiting their homes, the nightly spawn pass -- and none of that is the player
-        // asking a question.
+        // Manual checks only: vanilla re-scans housing constantly on its own.
         if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck)
             return;
 
@@ -104,9 +98,7 @@ public sealed class HomeForager : Job
     {
         CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").Projected(),
 
-        // Nothing registered for the other sets yet, so the Guide keeps his ordinary greeting. This
-        // used to name "Guide.HomeForager_HomeForager_CheckIn", a key that has never existed --
-        // silently falling through to vanilla chat rather than erroring.
+        // Nothing registered for the other sets yet, so the Guide keeps his ordinary greeting.
         _ => ChatEncounter.None
     };
 
@@ -127,13 +119,9 @@ public sealed class HomeForager : Job
 }
 
 /// <summary>
-/// Build a room that passes a housing check, and hasn't been shown before.
+/// Build a room that passes a housing check and hasn't been shown before. The credited-rooms ledger can be shared
+/// across sibling tasks, so re-checking one house can't clear several sets.
 /// </summary>
-/// <remarks>
-/// The ledger of credited rooms is the task's own state, and can be shared between several instances
-/// so a run of "build another one" sets can't all be cleared by re-checking a single house. It used
-/// to live on the job, which meant the job had to intercept its own task's credit to maintain it.
-/// </remarks>
 public sealed class ValidHousingTask(string key) : JobTask(key, 1)
 {
     private HashSet<Point> creditedRooms = [];
@@ -152,8 +140,6 @@ public sealed class ValidHousingTask(string key) : JobTask(key, 1)
 
     public override int CreditFor(GameEvent evt)
     {
-        // Recorded here rather than from a job-side hook: the task decided this room counts, so the
-        // task is what remembers it.
         if (evt.RoomId is Point room)
             creditedRooms.Add(room);
 

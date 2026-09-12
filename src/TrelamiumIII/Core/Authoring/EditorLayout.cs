@@ -3,40 +3,15 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     Wraps the edit buffer to a column and answers the geometry questions a caret asks: where an
-///     offset sits, and which offset a point lands on.
+///     Wraps the buffer and answers caret geometry. Metrics are per index (letters can differ in face and size) and pre-scaled; advances
+///     follow <see cref="ReLogic.Graphics.DynamicSpriteFont.MeasureString" /> exactly, and each line has its own height.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Metrics arrive per <em>index</em>, not per character value, because two identical letters
-///         in the same buffer may be set at different sizes or in different faces. Everything the
-///         provider returns is already scaled, so this class never learns what a font is and every
-///         coordinate it reports is in drawn pixels.
-///     </para>
-///     <para>
-///         Character advances accumulate with the same recurrence
-///         <see cref="ReLogic.Graphics.DynamicSpriteFont.MeasureString" /> uses -- leading bearing
-///         clamped on the first glyph of a line, then spacing plus the previous glyph's trailing
-///         bearing before each subsequent one. Anything approximate here shows up immediately as a
-///         caret that drifts along a line.
-///     </para>
-///     <para>
-///         Line height is no longer a constant. A line is as tall as the tallest thing on it, which
-///         means a line's height depends on where it happened to wrap. Heights are therefore stored
-///         per line and positions are accumulated rather than multiplied.
-///     </para>
-/// </remarks>
 public sealed class EditorLayout
 {
-    /// <summary>
-    ///     One character's contribution, already scaled to drawn pixels.
-    /// </summary>
-    /// <param name="Left">Leading bearing.</param>
-    /// <param name="Width">Ink width.</param>
-    /// <param name="Right">Trailing bearing.</param>
-    /// <param name="Spacing">Extra advance before this glyph when it is not first on its line.</param>
-    /// <param name="Ascent">Distance from this glyph's line-box top down to its baseline.</param>
-    /// <param name="Descent">Distance from its baseline down to the bottom of its line box.</param>
+    /// <summary>One character's metrics, in drawn pixels.</summary>
+    /// <param name="Spacing">Extra advance before this glyph when it isn't first on its line.</param>
+    /// <param name="Ascent">Line-box top down to this glyph's baseline.</param>
+    /// <param name="Descent">Baseline down to the bottom of its line box.</param>
     public readonly record struct CharMetrics(
         float Left,
         float Width,
@@ -46,14 +21,8 @@ public sealed class EditorLayout
         float Descent);
 
     /// <summary>
-    ///     Supplies metrics for the character at an offset.
+    ///     Metrics for offsets 0 through text length. The last has no glyph, so answer with the format newly typed text would get.
     /// </summary>
-    /// <remarks>
-    ///     Called for offsets from 0 up to and including the text length. The last of those is the
-    ///     position after the final character, which has no glyph; a caller answers it with whatever
-    ///     newly typed text would be set in, so an empty buffer and an empty trailing line still get
-    ///     a line height and a caret of the right size.
-    /// </remarks>
     public delegate CharMetrics MetricsProvider(int index);
 
     /// <summary>A visual line: a half-open range of the source text, and how tall it turned out.</summary>
@@ -169,14 +138,7 @@ public sealed class EditorLayout
         Emit(lineStart, text.Length - lineStart, true);
     }
 
-    /// <summary>
-    ///     How far a line reaches above and below its baseline.
-    /// </summary>
-    /// <remarks>
-    ///     Taken as the maximum of each separately rather than of the total heights. A line holding
-    ///     small text with deep descenders and large text with tall ascenders needs room for both
-    ///     extremes at once, which the larger of the two totals would not necessarily give.
-    /// </remarks>
+    /// <summary>Max ascent and max descent taken separately, so mixed sizes on one line fit both extremes.</summary>
     private (float Ascent, float Descent) Extent(int start, int length)
     {
         // An empty line still occupies its height, measured at the position the caret would sit.
@@ -202,26 +164,13 @@ public sealed class EditorLayout
     private float Width(int start, int end) => prefix[end] - prefix[start];
 
     /// <summary>
-    ///     Width of the text between two offsets, without asking which line they belong to.
+    ///     Width between two offsets without resolving their line; <see cref="XOf" /> would put a soft-wrap end on the next line.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="XOf" /> resolves its own line first, which is wrong for a selection highlight:
-    ///     the offset at a soft wrap resolves to the line below, so measuring the end of a highlighted
-    ///     line through it returns a position on the next line and the band draws backwards. A caller
-    ///     that already knows the line measures against it directly.
-    /// </remarks>
     public float WidthOfRange(int start, int end) =>
         Width(Math.Clamp(start, 0, text.Length), Math.Clamp(end, 0, text.Length));
 
     /// <summary>Index of the visual line holding an offset.</summary>
-    /// <remarks>
-    ///     The two kinds of break resolve the end-of-line caret differently. A soft break shares its
-    ///     offset with the line below -- the next line starts at exactly that index -- and the caret
-    ///     belongs to the line it wrapped onto. A hard break does not: the newline occupies the offset,
-    ///     the next line starts past it, and a caret sitting there is at the end of this line with
-    ///     nowhere else to be. Treating both the same puts the caret a whole line away from the click
-    ///     every time a paragraph ends.
-    /// </remarks>
+    /// <remarks>At a soft break the offset belongs to the line below; at a hard break it stays at the end of this line.</remarks>
     public int LineOf(int index)
     {
         for (int i = 0; i < lines.Count; i++)
@@ -250,14 +199,7 @@ public sealed class EditorLayout
     /// <summary>Height of the caret at an offset: the height of the line it sits on.</summary>
     public float CaretHeight(int index) => LineAt(LineOf(index)).Height;
 
-    /// <summary>
-    ///     Where a character draws vertically within its line, so mixed sizes share a baseline.
-    /// </summary>
-    /// <remarks>
-    ///     Top-aligning boxes of different heights would hang large text from the same ceiling as
-    ///     small text and leave their baselines apart, which reads as one word floating above the
-    ///     line. Offsetting by the difference in ascent puts every baseline in the same place.
-    /// </remarks>
+    /// <summary>Vertical offset within the line, by ascent difference, so mixed sizes share a baseline.</summary>
     public float BaselineOffset(int index)
     {
         Line line = LineAt(LineOf(index));
@@ -304,14 +246,7 @@ public sealed class EditorLayout
         return best;
     }
 
-    /// <summary>
-    ///     Caret one visual line up or down, holding <paramref name="desiredX" /> across the move.
-    /// </summary>
-    /// <remarks>
-    ///     The x is passed in rather than read from the current offset so a run of up-presses through
-    ///     a short line does not permanently pull the caret left -- the same reason every editor keeps
-    ///     a sticky column.
-    /// </remarks>
+    /// <summary>Caret one visual line up or down, holding <paramref name="desiredX" /> so short lines don't pull the caret left.</summary>
     public int MoveVertical(int index, int direction, float desiredX)
     {
         int line = LineOf(index) + Math.Sign(direction);

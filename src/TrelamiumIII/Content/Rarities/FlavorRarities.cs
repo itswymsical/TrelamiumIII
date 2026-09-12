@@ -7,12 +7,8 @@ using TrelamiumIII.Core.Rarities.Flairs;
 namespace TrelamiumIII.Content.Rarities;
 
 /// <summary>
-///     Something pulled out of a fire and never quite allowed to go out.
+///     Something pulled out of a fire. Reference example of a characterisation rarity: flame, a heated-metal name, a flavour line.
 /// </summary>
-/// <remarks>
-///     The reference example for a rarity that is a piece of characterisation rather than a power
-///     tier: flame boiling off the tooltip, a name that reads as heated metal, and a flavour line.
-/// </remarks>
 public sealed class EmberRarity : FlavorRarity
 {
     public override Color RarityColor => new(255, 150, 60);
@@ -53,14 +49,7 @@ public sealed class EmberRarity : FlavorRarity
     };
 }
 
-/// <summary>
-///     Fungal, damp, and quietly releasing something into the air.
-/// </summary>
-/// <remarks>
-///     Shows the world half of <see cref="MetaballFlair" />: dropped on the ground this keeps
-///     smoking, by feeding the same <see cref="SporeLayer" /> the Fungore fight uses rather than
-///     standing up a second cloud system of its own.
-/// </remarks>
+/// <summary>Fungal and damp; dropped on the ground it keeps smoking, via the Fungore fight's <see cref="SporeLayer" />.</summary>
 public sealed class SporebornRarity : FlavorRarity
 {
     public override Color RarityColor => new(150, 195, 95);
@@ -95,13 +84,7 @@ public sealed class SporebornRarity : FlavorRarity
     };
 }
 
-/// <summary>
-///     Old, deliberate, and polished by more hands than yours.
-/// </summary>
-/// <remarks>
-///     The no-metaball case: a shader on the sprite and drifting motes, which is most of what a
-///     rarity needs and costs no render target at all.
-/// </remarks>
+/// <summary>Old and polished. The no-metaball case: a sprite shader and drifting motes, with no render target.</summary>
 public sealed class RelicRarity : FlavorRarity
 {
     public override Color RarityColor => new(220, 190, 120);

@@ -9,10 +9,8 @@ using TrelamiumIII.Core.UI.AlchemyStation;
 namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
-/// Draws the Advanced Alchemy Station as one composite, anchored to the top-left tile of the base.
-/// All offsets are in "composite space": pixel coordinates inside the 220x120 "FullImage.png" reference.
-/// Nothing renders by default except the base: chamber, pipes, components, heat plate, and contents
-/// appear only as their entity flags / slot items light up.
+/// Draws the Advanced Alchemy Station as one composite from the base's top-left tile. Offsets are in composite space
+/// (pixels in the 220x120 FullImage.png reference); only the base always draws, the rest follows entity state.
 /// </summary>
 public static class AdvancedAlchemyStationRenderer
 {
@@ -36,9 +34,7 @@ public static class AdvancedAlchemyStationRenderer
     private static readonly Vector2 ComponentItemOffset = new(15, 38);
     private const float ComponentItemScale = 0.7f;
 
-    // Component UI slot centre (relative to the cylinder top-left): hung over the TOP of the cylinder, separate
-    // from where the tile draws the held item (ComponentItemOffset, lower down). Slots are also spread an extra
-    // few px apart so they don't touch.
+    // Component UI slot centre, relative to the cylinder top-left: above the cylinder, apart from the drawn item.
     private static readonly Vector2 ComponentSlotOffset = new(15, 4);
     private const float ComponentSlotSpacingExtra = 2f;
 
@@ -49,9 +45,7 @@ public static class AdvancedAlchemyStationRenderer
     private static readonly Vector2 CompositeToCell = new(2, -88);
 
     /// <summary>
-    /// World-space offset (from the base origin tile's top-left, in pixels) the UI panel anchors to: the
-    /// output column horizontally, but the top of the chamber vertically, so the panel floats clear above the
-    /// machine instead of overlapping the chamber.
+    /// UI panel anchor as a world offset from the base origin tile: the output column at the chamber's top, clear of the machine.
     /// </summary>
     public static Vector2 UiAnchorWorldOffset => new(CompositeToCell.X + BaseEdgeOutputOffset.X, CompositeToCell.Y + ChamberOffset.Y);
 
@@ -67,7 +61,6 @@ public static class AdvancedAlchemyStationRenderer
     private const int HeatPlateFrames = 3;
     private const int HeatPlateTicksPerFrame = 8;
 
-    // lazily-cached textures
     private static Asset<Texture2D>? _base, _chamberBack, _pipes, _chamber, _chamberOverlay,
         _component, _heatPlate;
 
@@ -81,25 +74,19 @@ public static class AdvancedAlchemyStationRenderer
         Vector2 c = cell + CompositeToCell; // composite (0,0) in screen space
         Color light = Lighting.GetColor(originI, originJ);
 
-        // While this station's world-overlay UI is open, its slots draw the component/output items themselves,
-        // so the tile suppresses its own copies to avoid double-drawing.
+        // While this station's UI is open its slots draw the items, so the tile skips its own copies.
         bool uiOpen = AlchemyStationSystem.Visible && AlchemyStationSystem.BoundStation == new Point16(originI, originJ);
 
-        // The base is the only thing that always draws (it's the host tile).
         Blit(sb, GetTex(ref _base, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Base.KEY), c + BaseOffset, light);
 
-        // Chamber assembly: chamber-back + (liquid behind) + chamber body + pipes.
-        // While brewing the chamber rocks (eased tilt) and vibrates (~1px) — soft at first, rougher near
-        // completion. The back, fluid, and glass move as one rigid body about the pivot. Pipes stay
-        // anchored to the components and don't move.
+        // While brewing, the chamber back, fluid and glass rock and vibrate as one rigid body about the pivot, harder near
+        // completion. Pipes stay anchored to the components.
         if (entity != null && entity.HasChamber)
         {
             ChamberMotion motion = BuildChamberMotion(c, entity.IsBrewing, entity.BrewProgress);
 
             BlitRocked(sb, GetTex(ref _chamberBack, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_ChamberBack.KEY), c + ChamberBackOffset, motion, light);
 
-            // Procedural fluid: reuses the ChamberLiquidOverlay capsule as the liquid's shape, tinted by the
-            // vial and animated by brew state. Drawn behind the glass and rocked with the same motion.
             if (!entity.Vial[0].IsAir)
                 AdvancedAlchemyStationLiquid.Draw(sb,
                     GetTex(ref _chamberOverlay, AssetReferences.Content.Alchemy.AlchemyStations.ChamberLiquidOverlay.KEY),
@@ -109,8 +96,7 @@ public static class AdvancedAlchemyStationRenderer
             Blit(sb, GetTex(ref _pipes, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Pipes.KEY), c + PipesOffset, light);
         }
 
-        // Component housings (independent of chamber). The held component item is drawn BEHIND each cylinder
-        // so the glass tube overlays it, and slightly downscaled to fit inside the housing.
+        // Held items are drawn behind each cylinder, slightly downscaled, so the glass overlays them.
         for (int k = 0; k < AdvancedAlchemyStationEntity.ComponentSocketCount; k++)
         {
             if (entity == null || !entity.ComponentPresent[k]) continue;
@@ -124,7 +110,6 @@ public static class AdvancedAlchemyStationRenderer
             Blit(sb, GetTex(ref _component, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Component.KEY), compTL, light);
         }
 
-        // Heat plate sits on the base under the chamber; animate while brewing.
         if (entity != null && entity.HasChamber)
         {
             int frame = entity.IsBrewing
@@ -134,12 +119,10 @@ public static class AdvancedAlchemyStationRenderer
             BlitFrame(sb, GetTex(ref _heatPlate, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_HeatPlate.KEY),
                 c + HeatPlateOffset, heatPlateSrc, light);
 
-            // Brew progress bar, drawn on the machine just beneath the heat plate (world space → pinned + zoomed).
             if (entity.IsBrewing)
                 DrawProgressBar(sb, c + HeatPlateBarOffset, HeatPlateFrameWidth, entity.BrewProgress, light);
         }
 
-        // Output item on the base edge, beneath the spout — driven by the UI's output slot (preview/result).
         if (entity != null && !entity.Output[0].IsAir && !uiOpen)
             BlitItem(sb, entity.Output[0], c + BaseEdgeOutputOffset, light);
     }
@@ -150,7 +133,6 @@ public static class AdvancedAlchemyStationRenderer
         const int height = 3;
         progress = MathHelper.Clamp(progress, 0f, 1f);
 
-        // Track + fill, dimmed by tile lighting so the bar sits in the world consistently with the machine.
         sb.Draw(pixel, pos, null, MulRgb(new Color(20, 20, 24), light) * 0.85f, 0f, Vector2.Zero, new Vector2(width, height), SpriteEffects.None, 0f);
         sb.Draw(pixel, pos, null, MulRgb(new Color(170, 230, 120), light), 0f, Vector2.Zero, new Vector2(width * progress, height), SpriteEffects.None, 0f);
     }
@@ -164,14 +146,12 @@ public static class AdvancedAlchemyStationRenderer
     private static void BlitFrame(SpriteBatch sb, Texture2D tex, Vector2 pos, Rectangle src, Color color)
         => sb.Draw(tex, pos, src, color, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
 
-    /// <summary>Draws a sprite under the chamber's rock+vibration transform (rigid rotation about the pivot).</summary>
     private static void BlitRocked(SpriteBatch sb, Texture2D tex, Vector2 screenTopLeft, ChamberMotion m, Color color)
         => sb.Draw(tex, m.Place(screenTopLeft), null, color, m.Angle, Vector2.Zero, 1f, SpriteEffects.None, 0f);
 
     /// <summary>
-    /// Builds the chamber's brewing motion: a ~1px vibration plus a gentle eased tilt (rock), both
-    /// smooth-stepped via <see cref="EaseFunction"/> and ramping soft → rough with brew progress. When not
-    /// brewing the assembly is still, but the pivot is always supplied so the liquid composites consistently.
+    /// Chamber brewing motion: ~1px vibration plus an eased tilt, ramping with progress. Still when idle, but the pivot is
+    /// always set so the liquid composites consistently.
     /// </summary>
     private static ChamberMotion BuildChamberMotion(Vector2 c, bool brewing, float progress)
     {
@@ -242,9 +222,8 @@ public static class AdvancedAlchemyStationRenderer
 }
 
 /// <summary>
-/// The chamber's rock (tilt rotation about <see cref="Pivot"/>) and vibration (<see cref="Shake"/>) for one
-/// frame. <see cref="Place"/> maps any unrotated screen top-left into the rocked+shaken frame, so a sprite
-/// drawn there with rotation <see cref="Angle"/> and a zero origin rotates rigidly about the shared pivot.
+/// One frame of chamber tilt about <see cref="Pivot"/> plus <see cref="Shake"/>. Draw at <see cref="Place"/> with
+/// rotation <see cref="Angle"/> and a zero origin to rotate rigidly about the shared pivot.
 /// </summary>
 internal readonly struct ChamberMotion(Vector2 pivot, float angle, Vector2 shake)
 {

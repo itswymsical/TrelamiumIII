@@ -1,64 +1,32 @@
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-///     A <see cref="ModItem" /> that carries its own almanac entry, instead of being listed by hand in
-///     <see cref="AlmanacDefinitions" />.
+///     A <see cref="ModItem" /> carrying its own almanac entry; <see cref="AlmanacDefinitions.Register" /> collects it and stamps <see cref="AlmanacEntry.ItemType" />.
 /// </summary>
-/// <remarks>
-///     Collected once at <c>PostSetupContent</c>, in <see cref="AlmanacDefinitions.Register" />. The
-///     item's type is stamped onto the entry there, so implementations leave
-///     <see cref="AlmanacEntry.ItemType" /> alone. <see cref="AlmanacDefinitions" /> is left holding
-///     only the vanilla items, which have no class of ours to put this on.
-/// </remarks>
 public interface IAlmanacDefined
 {
     AlmanacEntry AlmanacEntry { get; }
 }
 
-/// <summary>
-///     A <see cref="ModItem" /> that states what it is at the station, rather than leaving
-///     <see cref="ChemicalRoles.Of(int)" /> to infer it from the recipes it happens to appear in.
-///     An authored role wins over the inferred one.
-/// </summary>
+/// <summary>A <see cref="ModItem" /> that states its station role, winning over <see cref="ChemicalRoles.Of(int)" />'s inference.</summary>
 public interface IChemicalRoleDefined
 {
     ChemicalRole ChemicalRole { get; }
 }
 
 /// <summary>
-///     An item that exists to be dissolved, poured or bottled. It has no behaviour of its own -- only
-///     a role at the station and the almanac data that goes with it -- so the item <em>is</em> its
-///     data, and one class serves all of them.
+///     A behaviourless alchemy item that is just data. Most are <see cref="SoluteItem" />-style instances registered by name from a table;
+///     no parameterless constructor keeps tModLoader from autoloading the shared class. Items that need code subclass a role class.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Two ways to use this. Most of them are one instance of <see cref="SoluteItem" /> and co.,
-///         registered by name from a table (see <c>Reagent</c> and <c>Solution</c>); the constructor
-///         taking a name is what makes that possible, and having no parameterless constructor is what
-///         keeps tModLoader from autoloading the shared class as an item of its own.
-///     </para>
-///     <para>
-///         An item that needs real code of its own -- a custom tooltip, a use effect -- subclasses one
-///         of the role classes instead and autoloads under its own class name, setting these fields in
-///         its constructor.
-///     </para>
-/// </remarks>
 public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefined
 {
     [CloneByReference]
     private readonly string? nameOverride;
 
-    /// <param name="name">
-    ///     The internal name, for an instance sharing its class with other items. <c>null</c> for a
-    ///     subclass, which takes its class name the usual way.
-    /// </param>
+    /// <param name="name">Internal name for an instance sharing its class; null for a subclass, which uses its class name.</param>
     protected ChemicalItem(string? name) => nameOverride = name;
 
-    /// <summary>
-    ///     Every <c>Item</c> gets its own copy of this, and the default way of making one is the
-    ///     parameterless constructor -- which the shared classes deliberately do not have, and which
-    ///     would in any case hand back an item with none of the data below. Copy the loaded one.
-    /// </summary>
+    /// <summary>Clones the loaded instance, since the shared classes have no parameterless constructor.</summary>
     protected override bool CloneNewInstances => true;
 
     #region Item defaults
@@ -84,11 +52,7 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
     [CloneByReference]
     public Action<ModItem>? Recipes;
 
-    /// <summary>
-    ///     Internal names this item used to go by, so items in old saves still resolve. The attribute
-    ///     form (<c>[LegacyName]</c>) is per-class and so is no use to instances sharing one; these are
-    ///     registered per instance instead, by whichever table loads the item.
-    /// </summary>
+    /// <summary>Former internal names for old saves, registered per instance since <c>[LegacyName]</c> is per class.</summary>
     [CloneByReference]
     public string[]? LegacyNames;
 
@@ -122,11 +86,7 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
 
     public override string Name => nameOverride ?? base.Name;
 
-    /// <summary>
-    ///     <see cref="TexturePath" /> when set. Otherwise the class path, which only works for a
-    ///     subclass -- instances sharing a class would all land on the same sprite, so a table
-    ///     registering them fills this in first.
-    /// </summary>
+    /// <summary><see cref="TexturePath" /> when set, else the class path (only valid for subclasses).</summary>
     public override string Texture => TexturePath ?? base.Texture;
 
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
@@ -181,11 +141,7 @@ public class SolutionItem(string? name = null) : ChemicalItem(name)
 public static class ChemicalItems
 {
     /// <summary>
-    ///     Adds one item to <paramref name="mod" /> and hands back its type, for the table's static
-    ///     accessor. Falls back to <paramref name="fallbackTexture" /> when the item named no sprite of
-    ///     its own -- instances sharing a class have no class path to fall back on -- and registers
-    ///     whatever <see cref="ChemicalItem.LegacyNames" /> it carries, now that there is an identity
-    ///     to hang them on.
+    ///     Adds an item and returns its type, falling back to <paramref name="fallbackTexture" /> and registering its legacy names.
     /// </summary>
     public static int Add(Mod mod, ChemicalItem item, string fallbackTexture)
     {

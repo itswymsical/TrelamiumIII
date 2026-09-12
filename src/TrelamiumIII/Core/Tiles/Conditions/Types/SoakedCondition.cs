@@ -5,42 +5,12 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 /// <summary>
 ///     Terrain that water has been on: darkened, glistening, and hostile to fire.
 /// </summary>
-/// <remarks>
-///     <para>
-///         This one is an overlay rather than a field, because a wet surface is genuinely a per-tile
-///         thing. There is no silhouette to fuse and no region to erode -- the mark is exactly the
-///         tile, and the interesting variation is within it, which is where a shader on the sprite
-///         batch does more than a screen-space pass would. It is the cheap end of the three modes and
-///         the right one here.
-///     </para>
-///     <para>
-///         It also seeds itself, which is the other thing this demonstrates: a condition does not
-///         have to wait to be applied by content. Anyone who has been in water tracks it for a while
-///         afterwards.
-///     </para>
-/// </remarks>
 public sealed class SoakedCondition : TileCondition
 {
-    /// <summary>
-    ///     The sheen laid over wet terrain.
-    /// </summary>
-    /// <remarks>
-    ///     Pale, where it used to be near-black, because the blend under it changed. A dark blue
-    ///     alpha-blended over terrain paints something the colour of water; a wet surface is not
-    ///     darker than a dry one, it is shinier. See <see cref="BlendState" />.
-    /// </remarks>
     private static readonly Color WetTint = new(96, 150, 224);
 
-    /// <summary>How strongly the sheen is laid on, before the tile's own strength.</summary>
-    /// <remarks>
-    ///     Low, and lower than it looks: additive scales the source by its alpha and then adds, so
-    ///     the contribution is the tint times this squared. A sheen tuned until it reads clearly on
-    ///     a dark cave wall is already far too much on lit sand, and the dark wall is the easier of
-    ///     the two to see it on.
-    /// </remarks>
     private const float SHEEN_ALPHA = 0.34f;
 
-    /// <summary>Ticks a player keeps dripping after climbing out.</summary>
     private const int DRIP_TICKS = 300;
 
     private const int DRIP_INTERVAL = 5;
@@ -51,28 +21,12 @@ public sealed class SoakedCondition : TileCondition
 
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Overlay;
 
-    /// <summary>
-    ///     Additive, so the mark reads as light coming off a wet surface rather than as a colour
-    ///     laid over it.
-    /// </summary>
-    /// <remarks>
-    ///     Water on stone does not darken the stone -- it puts a highlight on it, and a highlight is
-    ///     something that only ever brightens. Alpha blending cannot express that: it interpolates
-    ///     toward whatever colour it is given, so the only way to make it read as wet was to pick a
-    ///     near-black blue and accept that lit surfaces went muddy under it. Adding instead means
-    ///     the terrain's own colour survives underneath and only the glints are new.
-    /// </remarks>
     public override BlendState BlendState => BlendState.Additive;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileWetSheen.Asset;
 
     private Asset<Texture2D>? noiseTexture;
 
-    /// <summary>How much longer each player is still wet enough to leave a trail.</summary>
-    /// <remarks>
-    ///     Terraria has a flag for being in water and none for having just got out, which is the
-    ///     state that actually leaves marks on the floor.
-    /// </remarks>
     private readonly int[] dripTicks = new int[Main.maxPlayers];
 
     public override void Load()
@@ -85,18 +39,9 @@ public sealed class SoakedCondition : TileCondition
 
     public override void Unload() => noiseTexture = null;
 
-    /// <summary>Water lands on anything solid, wet or burnt, and the burn loses.</summary>
     public override void OnApplied(ref TileConditionInstance instance)
         => TileConditionSystem.Remove<BurnedCondition>(instance.X, instance.Y);
 
-    /// <summary>
-    ///     Tracks who is dripping and lays a trail under them.
-    /// </summary>
-    /// <remarks>
-    ///     Applied without a packet. Every client already simulates every player, wet flag included,
-    ///     so each one works out the same trail from state it has -- and syncing would mean a message
-    ///     every few ticks per swimmer for the whole time they drip.
-    /// </remarks>
     public override void UpdateGlobal()
     {
         for (int i = 0; i < Main.maxPlayers; i++)
@@ -130,7 +75,7 @@ public sealed class SoakedCondition : TileCondition
         if (Main.dedServ || !OnScreen(in instance) || !Main.rand.NextBool(900))
             return;
 
-        // Only from a tile with air under it -- a drip needs somewhere to fall.
+        // Only from a tile with air under it
         if (Framing.GetTileSafely(instance.X, instance.Y + 1).HasTile)
             return;
 
@@ -154,7 +99,7 @@ public sealed class SoakedCondition : TileCondition
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        // In texture space, so the sample runs over the tile sheet rather than the world. Adjacent
+        // In texture space so the sample runs over the tile sheet rather than the world. Adjacent
         // tiles on different frames therefore catch the light differently, which is the point.
         effect.Parameters["NoiseScale"]?.SetValue(4.5f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.014f, 0.024f));
@@ -162,11 +107,9 @@ public sealed class SoakedCondition : TileCondition
         effect.Parameters["SheenColor"]?.SetValue(new Vector3(0.58f, 0.76f, 1.00f));
         effect.Parameters["SheenStrength"]?.SetValue(0.85f);
 
-        // Sharp: a few tight glints read as a wet surface, a broad wash reads as blue paint.
         effect.Parameters["SheenSharpness"]?.SetValue(7f);
     }
 
-    /// <summary>Standing on wet ground puts a player out.</summary>
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
         if (instance.Strength < 0.25f)
@@ -176,7 +119,6 @@ public sealed class SoakedCondition : TileCondition
         player.ClearBuff(BuffID.OnFire3);
     }
 
-    /// <inheritdoc cref="OnPlayerContact" />
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)
     {
         if (instance.Strength < 0.25f)
@@ -189,7 +131,6 @@ public sealed class SoakedCondition : TileCondition
         }
     }
 
-    /// <summary>Standing water keeps it topped up; lava boils it off outright.</summary>
     public override void OnLiquidContact(ref TileConditionInstance instance, int liquidType, int amount)
     {
         if (liquidType == LiquidID.Lava)
@@ -201,8 +142,6 @@ public sealed class SoakedCondition : TileCondition
         instance.Life = instance.MaxLife;
     }
 
-    /// <summary>Soaks everything solid within <paramref name="radius" /> pixels.</summary>
-    /// <inheritdoc cref="SlimedCondition.Splatter" path="/remarks" />
     public static void Douse(Vector2 center, float radius, float intensity = 1f)
     {
         int reach = (int)MathF.Ceiling(radius / 16f);

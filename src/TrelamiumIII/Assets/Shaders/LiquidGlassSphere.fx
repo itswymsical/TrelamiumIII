@@ -104,8 +104,6 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
 
     float2 basis = (dir * radius) / uAspect;
 
-    // Dispersion rides the bending itself, so it is absent through the flat middle and
-    // obvious through the bevel -- the same place a real lens fringes.
     float disp = uDispersion * (core + bevel);
 
     // Frost widens toward the rim so the middle stays legible. The bands sweep around the

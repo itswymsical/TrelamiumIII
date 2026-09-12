@@ -11,13 +11,8 @@ public sealed class SeedAmmoGlobalItem : GlobalItem
 {
     public const string TOOLTIP_KEY = $"{TrelamiumIII.NAME_PREFIX}Seed Ammo Tooltips";
 
-    /// <summary>
-    ///     Everything that varies from one herb seed to the next.
-    /// </summary>
-    /// <remarks>
-    ///     The two content lookups are deferred behind delegates because the table is built at
-    ///     static init, which runs before this mod's own types have ids to hand out.
-    /// </remarks>
+    /// <summary>Per-seed ammo stats.</summary>
+    /// <remarks>Content lookups are delegates because this table is built at static init, before mod types have ids.</remarks>
     private readonly record struct SeedAmmo(
         int Damage,
         int Crit,
@@ -95,8 +90,7 @@ public sealed class SeedAmmoGlobalItem : GlobalItem
 
         int soil = seed.FavouriteSoil();
 
-        // Soil name pulled off the item rather than written into the line, so renaming a bed cannot
-        // leave seven seed tooltips pointing at a name that no longer exists.
+        // Soil name comes from the item, so renaming a bed can't leave tooltips stale.
         string text = Mod.GetLocalizationValue($"SeedAmmo.{seed.EffectKey}")
                       + '\n'
                       + Mod.GetLocalizationValue("SeedAmmo.FavouriteSoil", soil, Lang.GetItemNameValue(soil));

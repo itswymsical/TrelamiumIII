@@ -166,7 +166,6 @@ public class VitriolicGelLayer : ChemicalGasField
 
     protected override int GasType => GasTypeID.Liquid;
 
-    /// <summary>Heavy and sluggish: gel arcs and lands, it does not billow.</summary>
     protected override float DefaultDensity => 0.95f;
 
     protected override float DefaultViscosity => 0.72f;

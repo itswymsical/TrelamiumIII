@@ -12,8 +12,6 @@ namespace TrelamiumIII.Content.Frostbark;
 
 public class BorealHewerProj : ModProjectile, IDrawPrimitive
 {
-    // The axe in flight is the same sprite as the item, so it shares the asset rather than
-    // duplicating it.
     public override string Texture => AssetReferences.Content.Frostbark.BorealHewerItem.KEY;
 
     public int MaxStickies => 1;
@@ -42,7 +40,6 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     Vector2[]? _trailPositions;
     VertexTrail? _trail;
 
-    /// <summary>Whether the axe is travelling rather than buried in something.</summary>
     private bool InFlight => !stickingToNPC && !stickingToTile && Projectile.velocity != Vector2.Zero;
 
     public override void SetStaticDefaults()
@@ -71,11 +68,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         base.SetDefaults();
     }
 
-    /// <summary>
-    ///     Seeds the whole trail history on the throw. Without it the ribbon spends its first
-    ///     fifteen ticks growing out of a tail padded at the spawn point, and an axe this fast has
-    ///     already crossed half a screen by then.
-    /// </summary>
+    /// <summary>Seeds the whole trail history so the ribbon doesn't spend fifteen ticks growing out of the spawn point.</summary>
     public override void OnSpawn(IEntitySource source)
     {
         _trailCache ??= new TrailPositionCache(TRAIL_POINTS);
@@ -172,13 +165,11 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
         if (shakeTimer > 0)
         {
-            // Update the shake offset instead of the actual position
             shakeOffset = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-2f, 2f));
             shakeTimer--;
         }
         else
         {
-            // Reset shake offset when shaking is done
             shakeOffset = Vector2.Zero;
 
             var directionToPlayer = player.Center - Projectile.Center;
@@ -210,7 +201,6 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
             offset = target.Center - Projectile.Center + Projectile.velocity * 0.75f;
 
-            // Stop the projectile's movement when sticking to NPC
             Projectile.velocity = Vector2.Zero;
 
             stickingToNPC = true;
@@ -261,12 +251,10 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
         var drawOrigin = new Vector2(texture.Width * 0.5f, Projectile.height * 0.5f);
 
-        // Apply the shake offset to the drawing position, not the actual position
         for (var k = 0; k < Projectile.oldPos.Length; k++)
         {
             var drawPos = Projectile.oldPos[k] - Main.screenPosition + drawOrigin + new Vector2(0f, Projectile.gfxOffY);
 
-            // Apply shake offset only to the current position (k==0), not to trail positions
             if (k == 0 && shakeTimer > 0)
                 drawPos += shakeOffset;
 
@@ -327,17 +315,12 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         _trail.Positions = _trailPositions;
     }
 
-    /// <summary>
-    ///     Frost shed off the blade in flight. Thin on purpose: the ribbon is the axe's main read,
-    ///     and mist heavy enough to compete with it just smears the arc.
-    /// </summary>
+    /// <summary>Thin frost shed in flight, so it doesn't compete with the ribbon.</summary>
     private void TrailMist()
     {
         if (!InFlight || !Main.rand.NextBool(2))
             return;
 
-        // Thrown off the back of the swing rather than dropped on the axe, so the fog reads as
-        // something being torn loose by the spin.
         Vector2 back = -Projectile.velocity.SafeNormalize(Vector2.Zero);
 
         MetaballSystem.GetLayer<IceMistLayer>()?.SpawnNode(

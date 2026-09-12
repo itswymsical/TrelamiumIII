@@ -52,7 +52,7 @@ public class CrudeOilLiquid : ModLiquid
                     }
                 }
 
-                // We then call the same method dry bombs call for removing liquid
+                // Same liquid removal dry bombs use.
                 DelegateMethods.v2_1 = new Vector2(liquidX, y);
                 DelegateMethods.f_1 = 3.5f;
                 Utils.PlotTileArea(liquidX, y, DelegateMethods.SpreadDry);

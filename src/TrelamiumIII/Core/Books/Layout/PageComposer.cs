@@ -16,10 +16,7 @@ public readonly record struct PageMetrics(int Width, int Height, float MarginX, 
 }
 
 /// <summary>A block placed at a definite spot on a definite page.</summary>
-/// <param name="SourceIndex">
-///     Position in the book's block list. Kept so a block moved to another page after the fact can
-///     have its anchor corrected.
-/// </param>
+/// <param name="SourceIndex">Position in the book's block list, so a block moved to another page can have its anchor corrected.</param>
 public readonly record struct PlacedBlock(BookBlock Block, BlockRect Rect, int SourceIndex);
 
 /// <summary>One composed page: what sits in the flow, and what lies over it.</summary>
@@ -35,34 +32,14 @@ public sealed class ComposedBook
 {
     public required List<ComposedPage> Pages { get; init; }
 
-    /// <summary>
-    ///     Page each source block first landed on, indexed by its position in the block list, or -1
-    ///     if it never placed. A block split across a break reports the page its head is on.
-    /// </summary>
+    /// <summary>Page each source block first landed on (a split block's head), or -1 if it never placed.</summary>
     public required int[] BlockPages { get; init; }
 }
 
-/// <summary>
-///     Flows a book's blocks onto pages.
-/// </summary>
-/// <remarks>
-///     <para>
-///         Page count is an output, never an input. Nothing an author writes says which page anything
-///         lands on, so a longer translation grows the book instead of overrunning it.
-///     </para>
-///     <para>
-///         The pass is a single greedy walk: take the next block, ask whether it fits in what is left
-///         of the page, and either place it, break it, or start a new page. Blocks are measured
-///         against the column width and cache that measurement, so the repeated asks are cheap.
-///     </para>
-/// </remarks>
+/// <summary>Flows blocks onto pages in one greedy pass. Page count is an output, so a longer translation grows the book.</summary>
 public static class PageComposer
 {
-    /// <summary>
-    ///     Guard against a block that reports a height no page could hold. Placing it anyway and
-    ///     letting it clip is the lesser evil: an infinite loop of empty pages is not recoverable, and
-    ///     a clipped figure is visible enough to get reported.
-    /// </summary>
+    /// <summary>Guard against a block no page can hold: it's placed and clipped rather than looping forever.</summary>
     private const int MAX_PAGES = 512;
 
     public static ComposedBook Compose(
@@ -194,15 +171,7 @@ public static class PageComposer
         anchors[sourceIndex] ??= (pageIndex, rect);
     }
 
-    /// <summary>
-    ///     Lifts the run of keep-with-next blocks off the end of a page so they can follow the block
-    ///     that is being pushed past them.
-    /// </summary>
-    /// <remarks>
-    ///     Does nothing when the run is the whole page. Moving it then would only reproduce the same
-    ///     arrangement one page later while leaving a blank page behind -- and, since the block being
-    ///     pushed still would not fit, would do it again on every page after that.
-    /// </remarks>
+    /// <summary>Lifts trailing keep-with-next blocks off a page to follow the pushed block; skipped if they're the whole page.</summary>
     private static void CarryKeepWithNext(List<PlacedBlock> placed, List<PlacedBlock> carried)
     {
         carried.Clear();
@@ -270,8 +239,7 @@ public static class PageComposer
     {
         foreach (BookDecoration decoration in decorations)
         {
-            // An unwritten sticky note is no note at all; drawing it would leave blank paper stuck to
-            // the page.
+            // An empty sticky note would draw as blank paper.
             if (decoration.Content.IsEmpty)
                 continue;
 

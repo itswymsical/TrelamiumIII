@@ -4,10 +4,7 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 /// <summary>
-/// A potion's brew: its guiding <see cref="PrincipleType"/> plus the list of effects it applies. v1
-/// recipes stamp a single effect, but the list shape is what lets recipes "intermix" several (the
-/// augmentation "add/combine" case). Reference type, so <see cref="BrewGlobalItem"/> must deep-Clone
-/// it; equality is structural so only identical brews stack.
+/// A potion's principle and its list of effects. Reference type, so <see cref="BrewGlobalItem"/> deep-clones it; equality is structural.
 /// </summary>
 public sealed class PotionBrew
 {
@@ -35,10 +32,7 @@ public sealed class PotionBrew
 }
 
 /// <summary>
-/// Ids for brewed effects that do NOT ride a vanilla buff. Negative so they can never collide with
-/// real <see cref="BuffID"/> values. They live in the same effect list
-/// but are consumed item-side at use time instead of ticking on <see cref="AlchemyEffectPlayer"/>:
-/// e.g. Restoration scales the item's heal in <see cref="BrewGlobalItem.GetHealLife"/>.
+/// Effect ids that don't ride a vanilla buff; negative so they never collide. Consumed item-side at use, e.g. Restoration.
 /// </summary>
 public static class VirtualBuff
 {
@@ -47,9 +41,7 @@ public static class VirtualBuff
 }
 
 /// <summary>
-/// Per-effect knobs that don't fit the common (potency/duration/strength) shape. 
-/// Kept a small value type so effects copy by value, compare structurally (for
-/// stacking) and serialize cheaply.
+/// Per-effect knobs outside potency/duration/strength; a small value type so effects copy, compare and serialize cheaply.
 /// </summary>
 public readonly record struct EffectParams(int MaxOreTier = 0)
 {
@@ -58,9 +50,7 @@ public readonly record struct EffectParams(int MaxOreTier = 0)
 }
 
 /// <summary>
-/// One brewed effect instance on a potion. A value type, so a <see cref="PotionBrew"/>'s list of these
-/// copies/compares by value. Rides a vanilla <see cref="BaseBuff"/> for its icon + timer; the actual
-/// magnitude/behaviour is owned by the matching <see cref="IEffectBehavior"/>.
+/// One brewed effect: rides <see cref="BaseBuff"/> for icon and timer, while its <see cref="IEffectBehavior"/> owns the behaviour.
 /// </summary>
 public readonly record struct AlchemicalEffect(
     int BaseBuff,          // vanilla BuffID this rides on (icon + timer)
@@ -70,9 +60,7 @@ public readonly record struct AlchemicalEffect(
     EffectParams Params = default);
 
 /// <summary>
-/// Fluent authoring for a recipe's brew. A recipe stamps a base effect from
-/// its potency, then optionally runs one of these to boost, re-gate, or combine further effects. The
-/// resolved effect list is what gets stored on the item (augmentations aren't persisted as layers).
+/// Fluent brew authoring: boost, re-gate or combine effects onto a recipe's base effect. Only the resolved list is stored.
 /// </summary>
 public sealed class BrewBuilder
 {
@@ -99,11 +87,7 @@ public sealed class BrewBuilder
         return this;
     }
 
-    /// <summary>
-    /// Combine another brewed effect onto the potion ("intermix"). <paramref name="durationTicks"/>
-    /// is the base time fed to the potency curve; omitted, it falls back to the potion's own buff
-    /// time, or 60s for items with none (heal potions).
-    /// </summary>
+    /// <summary>Combines another effect onto the potion; <paramref name="durationTicks"/> defaults to the potion's buff time, or 60 s.</summary>
     public BrewBuilder Add(int baseBuff, int potency, int durationTicks = 0)
     {
         int baseDur = durationTicks > 0 ? durationTicks
@@ -114,12 +98,7 @@ public sealed class BrewBuilder
     }
 }
 
-/// <summary>
-/// Maps a recipe's potency tier to a concrete brewed <see cref="AlchemicalEffect"/>.
-/// Duration scales off the potion's own vanilla buff time; per-effect params
-/// (e.g. Spelunker's ore-tier gate) come from the buff's <see cref="IEffectBehavior"/>. Placeholder
-/// curve; tune freely.
-/// </summary>
+/// <summary>Maps potency to a concrete <see cref="AlchemicalEffect"/>, scaling duration off the potion's buff time. Placeholder curve.</summary>
 public static class BrewTuning
 {
     public static AlchemicalEffect Create(int baseBuff, int baseDurationTicks, int potency)
@@ -133,10 +112,7 @@ public static class BrewTuning
         return new AlchemicalEffect(baseBuff, potency, duration, strengthPercent, pars);
     }
 
-    /// <summary>
-    /// Brewed effect for a restorative (healLife/healMana) potion: no buff to ride, so duration is 0
-    /// and StrengthPercent scales the instant heal instead (same p1=80..p5=120 curve).
-    /// </summary>
+    /// <summary>Restorative brew: no buff, so duration is 0 and StrengthPercent scales the instant heal (p1=80..p5=120).</summary>
     public static AlchemicalEffect CreateRestoration(int potency)
     {
         potency = Math.Clamp(potency, 1, 5);
@@ -144,11 +120,7 @@ public static class BrewTuning
     }
 }
 
-/// <summary>
-/// Rewrites a buff's hover description to reflect the brewed instance.
-/// <see cref="GlobalBuff.ModifyBuffText"/> wraps the
-/// vanilla buff-tooltip code, so it works for vanilla buffs without an IL edit.
-/// </summary>
+/// <summary>Rewrites a buff's hover text for the brewed instance via <see cref="GlobalBuff.ModifyBuffText"/>, no IL edit needed.</summary>
 public class BrewBuffText : GlobalBuff
 {
     public override void ModifyBuffText(int type, ref string buffName, ref string buffTip, ref int rare)

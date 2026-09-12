@@ -43,6 +43,9 @@ public abstract class WorldPanel : UIState, IWorldUI
     /// <summary>False once the close fade has finished; <see cref="WorldUISystem" /> drops it then.</summary>
     public bool IsActive { get; private set; } = true;
 
+    /// <summary>True from the close request until the fade finishes and the panel retires.</summary>
+    protected bool IsClosing => _closing;
+
     public override void OnInitialize()
     {
         _body = new PanelBody(this)

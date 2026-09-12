@@ -28,7 +28,6 @@ public class CrudeOilBucketItem : ModItem
         Item.useStyle = ItemUseStyleID.Swing;
 	}
 
-	//It's recommended that you look at ExampleLiquidBucket to see how buckets work
 	public override void HoldItem(Player player) {
 		LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<CrudeOilLiquid>());
 	}

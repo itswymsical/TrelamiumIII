@@ -164,7 +164,6 @@ public class SaplingMakerProjectile : ModProjectile
 
             player.ChangeDir(Math.Sign(mouseDir.X));
 
-            // Force launch after max charge hold time or if player stops channeling
             bool shouldForceLaunch = SpinningStateTimer >= MAX_CHARGE_HOLD_TIME && ChargeLevel >= MAX_CHARGE_LEVEL;
 
             if (!player.channel || shouldForceLaunch)
@@ -192,11 +191,9 @@ public class SaplingMakerProjectile : ModProjectile
     {
         SpinningStateTimer++;
 
-        // Check for charge level sound
         if (ChargeLevel > (int)((SpinningStateTimer - 1f) / CHARGE_INTERVAL))
             SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing, Projectile.position);
 
-        // Calculate spinning position using polar coordinates
         float spinSpeed = MathHelper.Lerp(2f, 5f, ChargeLevel / (float)MAX_CHARGE_LEVEL);
         float angle = MathHelper.TwoPi * spinSpeed * SpinningStateTimer / 60f * player.direction;
         var offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle) * 0.8f) * player.direction;
@@ -255,7 +252,6 @@ public class SaplingMakerProjectile : ModProjectile
         var targetVel = Vector2.Normalize(toPlayer) * MAX_FORCED_RETRACT_SPEED * meleeSpeed;
         Projectile.velocity = Vector2.Lerp(Projectile.velocity * 0.98f, targetVel, FORCED_RETRACT_ACCEL * meleeSpeed / 60f);
 
-        // Check overshoot using dot product
         var futurePos = Projectile.Center + Projectile.velocity;
         if (Vector2.Dot(Vector2.Normalize(toPlayer), Vector2.Normalize(mountedCenter - futurePos)) < 0f)
         {
@@ -288,7 +284,6 @@ public class SaplingMakerProjectile : ModProjectile
             _ => 0.3f
         };
 
-        // Handle X collision
         if (MathF.Abs(oldVelocity.X - Projectile.velocity.X) > 0.1f)
         {
             if (MathF.Abs(oldVelocity.X) > 4f) impactIntensity = 1;
@@ -296,7 +291,6 @@ public class SaplingMakerProjectile : ModProjectile
             CollisionCounter++;
         }
 
-        // Handle Y collision
         if (MathF.Abs(oldVelocity.Y - Projectile.velocity.Y) > 0.1f)
         {
             if (MathF.Abs(oldVelocity.Y) > 4f) impactIntensity = 1;
@@ -409,11 +403,9 @@ public class SaplingMakerProjectile : ModProjectile
         DrawChain();
         DrawAfterImages(lightColor);
 
-        // Draw main projectile
         Main.EntitySpriteDraw(texture, drawPos, null, drawColor, Projectile.rotation,
             drawOrigin, Projectile.scale, spriteEffects, 0);
 
-        // Draw charge flash when fully charged and spinning
         if (CurrentAIState == AIState.Spinning && ChargeLevel >= MAX_CHARGE_LEVEL)
         {
             float flashCycle = (Main.GameUpdateCount % 30) / 30f;
@@ -454,7 +446,6 @@ public class SaplingMakerProjectile : ModProjectile
         {
             var chainColor = Lighting.GetColor((int)(chainPos.X / 16), (int)(chainPos.Y / 16));
 
-            // Enhance color for charged segments near projectile
             if (segmentCount < 2 && ChargeLevel > 0)
                 chainColor = Color.Lerp(Color.White, new Color(139, 69, 19), ChargeLevel * 0.3f);
             else if (segmentCount < 4 && ChargeLevel > 0)

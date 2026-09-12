@@ -6,9 +6,7 @@ using Terraria.ModLoader;
 
 namespace TrelamiumIII.Content.Hairs;
 
-/// <summary>
-/// since its the guide hair and pre-colored, when setting hair color just use the default gray
-/// </summary>
+/// <summary>Pre-coloured, so use the default gray when setting hair colour.</summary>
 public class GuideHair : ModHair
 {
 	public override Gender RandomizedCharacterCreationGender => Gender.Female;

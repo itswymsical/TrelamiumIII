@@ -7,12 +7,8 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Common.Globals;
 
 /// <summary>
-/// A special item that is used to store solutes/reagents in a container "empty bottle".
-/// <para>
-/// Has a right-click function that grants the result output from the <see cref="AlchemyStationUI"/>, 
-/// and returns an empty bottle, that which was required to "brew" the solute/reagent.
-/// </para>
-/// This is for cases when the player needs to make a new reagent (such as <see cref="OxidizedIronItem"/>), but there is no *true* solvent required.
+/// Stores a solute/reagent in an empty bottle; right-clicking yields the stored item and refunds the bottle.
+/// For recipes like <see cref="OxidizedIronItem"/> that need a container but no true solvent.
 /// </summary>
 public class ContainerBottleItem : GlobalItem
 {
@@ -31,8 +27,7 @@ public class ContainerBottleItem : GlobalItem
         if (destination.TryGetGlobalItem(out ContainerBottleItem destBottle) &&
             source.TryGetGlobalItem(out ContainerBottleItem sourceBottle))
         {
-            // Only allow stacking if both bottles hold the exact same item type
-            // (This also naturally allows empty bottles [-1] to stack with other empty bottles [-1])
+            // Stacks only with the same stored type; empty bottles (-1) stack with each other.
             return destBottle.StoredItemType == sourceBottle.StoredItemType;
         }
         return base.CanStack(destination, source);
@@ -46,10 +41,8 @@ public class ContainerBottleItem : GlobalItem
 
     public override void RightClick(Item item, Player player)
     {
-        // 1. Give the player the stored solute
         player.QuickSpawnItem(player.GetSource_OpenItem(item.type), StoredItemType);
 
-        // 2. Refund the empty bottle
         player.QuickSpawnItem(player.GetSource_OpenItem(item.type), ItemID.Bottle);
     }
 

@@ -48,7 +48,6 @@ public class AcornLauncherItem : ModItem
 
     public override bool CanUseItem(Player player)
     {
-        // This allows the weapon to turn the player
         return player.ownedProjectileCounts[ModContent.ProjectileType<AcornLauncherProjectile>()] <= 0;
     }
     public override bool CanConsumeAmmo(Item ammo, Player player)
@@ -165,7 +164,6 @@ public class AcornLauncherProjectile : ModProjectile
 
         Projectile.NewProjectile(Projectile.GetSource_FromThis(), owner.Center, direction * speed, type, damage, knockback, owner.whoAmI);
 
-        // Play shoot sound
         SoundEngine.PlaySound(Assets.SFX.Snap.Asset with
         {
             Volume = 1f,

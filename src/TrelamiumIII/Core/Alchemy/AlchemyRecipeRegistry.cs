@@ -12,9 +12,7 @@ public sealed class AlchemyVariant
     /// <summary>Stack size of the produced item before the player's output-count multiplier.</summary>
     public int OutputStack { get; init; } = 1;
 
-    /// <summary>
-    /// Optional override for output construction.
-    /// </summary>
+    /// <summary>Optional override for output construction.</summary>
     public Func<Item> CustomOutput { get; init; }
 
     /// <summary>Brew potency (1-5) stamped onto buff-potion outputs. 0 = no brew (plain item).</summary>
@@ -26,10 +24,7 @@ public sealed class AlchemyVariant
     /// <summary>Override the brewed duration, in seconds. 0 = use the curve.</summary>
     public int DurationSeconds { get; init; }
 
-    /// <summary>
-    /// Override the brewed duration, in ticks. pairs with <see cref="TimeConversion.SetTime(int, int, int)"/>.
-    /// Takes precedence over <see cref="DurationSeconds"/>. 0 = unset.
-    /// </summary>
+    /// <summary>Brewed duration override in ticks; wins over <see cref="DurationSeconds"/>. 0 = unset.</summary>
     public int DurationTicks { get; init; }
 
     /// <summary>Override a gated effect's max ore tier (Spelunker). 0 = use the potency default.</summary>
@@ -38,23 +33,15 @@ public sealed class AlchemyVariant
     /// <summary>Optional augmentation pass: boost, re-gate, or combine further effects onto the brew.</summary>
     public Action<BrewBuilder>? Augment { get; init; }
 
-    /// <summary>
-    /// Required infusion on the solvent instance (suffixed solutions). None = plain solvent
-    /// only. Lets the same solvent item type key different recipes per infusion.
-    /// </summary>
+    /// <summary>Required solvent infusion; None means plain solvent only, so one solvent type can key different recipes.</summary>
     public ChemicalQuality SolventInfusion { get; init; }
 
-    /// <summary>
-    /// Stamp this infusion onto the output (producing e.g. "Bottled Water (Inert)").
-    /// Infused outputs are reagents, not potions: brew branding is skipped for them.
-    /// </summary>
+    /// <summary>Infusion stamped onto the output. Infused outputs are reagents, so they skip brew branding.</summary>
     public ChemicalQuality OutputInfusion { get; init; }
 
     /// <summary>
-    /// One input combination for a shared output. Used with
-    /// <see cref="AlchemyRecipeRegistry.RegisterVariants"/>.
-    /// <para>Each component is a <see cref="ComponentMatcher"/> and carries its own quantity/
-    /// a plain item type draws one, <c>ComponentMatcher.Of(type, 5)</c> draws five.</para>
+    /// One input combination for a shared output (see <see cref="AlchemyRecipeRegistry.RegisterVariants"/>). Each component carries
+    /// its own quantity: a plain item type draws one, <c>ComponentMatcher.Of(type, 5)</c> draws five.
     /// </summary>
     public AlchemyVariant(params ComponentMatcher[] components)
     {
@@ -63,12 +50,8 @@ public sealed class AlchemyVariant
 }
 
 /// <summary>
-/// A resolved brew: the recipe that fired, the item it produces, and what each solute slot
-/// gives up per batch unit. Costs are aligned to the station's own slot array, so the UI can
-/// gate the batch counter, draw each slot's potency, and consume exactly what was asked for.
-/// <para>When nothing matched but a solute was merely under-stacked, <see cref="Found"/> is
-/// false while <see cref="Shortfall"/> and <see cref="ComponentCosts"/> still describe the
-/// requirement.</para>
+/// A resolved brew: recipe, output, and each slot's cost per batch unit (aligned to the station's slots). When only a stack is short,
+/// <see cref="Found"/> is false but <see cref="Shortfall"/> and <see cref="ComponentCosts"/> still describe the requirement.
 /// </summary>
 public sealed class AlchemyResolution
 {
@@ -90,10 +73,7 @@ public sealed class AlchemyResolution
     public int CostFor(int index) =>
         index >= 0 && index < ComponentCosts.Length ? ComponentCosts[index] : 0;
 
-    /// <summary>
-    /// How many batch units the slotted ingredients can pay for. The solvent is one per unit
-    /// (a bottle in, a bottle out); solutes go by their recipe cost.
-    /// </summary>
+    /// <summary>Batch units the slotted ingredients can pay for: one solvent per unit, solutes by recipe cost.</summary>
     public int MaxBatches(Item solvent, Item[] components)
     {
         if (!Found || solvent is null || solvent.IsAir) return 1;
@@ -109,10 +89,7 @@ public sealed class AlchemyResolution
     }
 }
 
-/// <summary>
-/// Central registry of all alchemy recipes. Recipes are added via <see cref="Register"/> /
-/// <see cref="RegisterVariants"/>.
-/// </summary>
+/// <summary>Central registry of alchemy recipes, added via <see cref="Register"/> or <see cref="RegisterVariants"/>.</summary>
 public static class AlchemyRecipeRegistry
 {
     private static readonly List<AlchemyRecipe> _recipes = new();
@@ -132,16 +109,10 @@ public static class AlchemyRecipeRegistry
         _outputTypes.Clear();
     }
 
-    /// <summary>
-    /// True when some registered alchemy recipe produces this item type. Lets the recipe system take
-    /// over a crafting route only where it actually offers a replacement.
-    /// </summary>
+    /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
-    /// <summary>
-    /// Bulk-register many input combinations that share the same (mode, vial, output) target.
-    /// Cuts down on boilerplate when one product has several valid component sets.
-    /// </summary>
+    /// <summary>Registers several input combinations that share one (mode, vial, output) target.</summary>
     public static void RegisterVariants(
         AlchemyMode mode,
         int inputType,
@@ -184,11 +155,8 @@ public static class AlchemyRecipeRegistry
                         return r;
                     }
 
-                    // Brand buff AND restorative potions with a brewed instance, then apply any
-                    // explicit per-recipe overrides (strength / duration). Heal potions have no
-                    // buffType; they get a virtual Restoration effect instead. An explicit variant
-                    // potency wins; unset, it's inferred from the almanac ratings of the parts
-                    // (resolved lazily here because entries register after recipes).
+                    // Brand buff and restorative potions (heals get a virtual Restoration effect), then apply overrides. Explicit
+                    // potency wins; otherwise it's inferred lazily from almanac ratings, which register after recipes.
                     if (r.buffType > 0 || r.healLife > 0 || r.healMana > 0)
                     {
                         int pot = potency > 0 ? potency : AutoPotency(inputType, comps);
@@ -213,11 +181,7 @@ public static class AlchemyRecipeRegistry
         }
     }
 
-    /// <summary>
-    /// Potency inferred from almanac ratings when a variant doesn't set one.
-    /// <para>This is only the automatic baseline. an explicit <see cref="AlchemyVariant.Potency"/>
-    /// always takes precedence, since each effect should be balanced by hand.</para>
-    /// </summary>
+    /// <summary>Baseline potency inferred from almanac ratings; an explicit <see cref="AlchemyVariant.Potency"/> always wins.</summary>
     public static int AutoPotency(int solventType, ComponentMatcher[] components)
     {
         if (components.Length == 0) return 0;
@@ -247,19 +211,12 @@ public static class AlchemyRecipeRegistry
         return count == 0 ? 0 : sum / count;
     }
 
-    /// <summary>
-    /// Resolve the vial & solute slots into a brew, with the mode taken from the vial.
-    /// </summary>
+    /// <summary>Resolves the vial and solute slots into a brew, with the mode taken from the vial.</summary>
     public static AlchemyResolution Resolve(Item vial, Item[] components)
         => Resolve(vial, components, AlchemyIngredients.GetModeForSolvent(vial));
 
     /// <summary>
-    /// Resolve as <see cref="Resolve(Item, Item[])"/>, but with an explicit mode override
-    /// (used by the alchemy mode cycle button).
-    /// <para>Among the recipes that fit, the one drawing the most solute wins, so stacking an
-    /// ingredient higher reaches the stronger product rather than being change left on the
-    /// counter. Registration order breaks ties, which keeps quantity-free recipes behaving
-    /// exactly as they did before.</para>
+    /// As <see cref="Resolve(Item, Item[])"/> with an explicit mode. The fitting recipe drawing the most solute wins; ties go to registration order.
     /// </summary>
     public static AlchemyResolution Resolve(Item vial, Item[] components, AlchemyMode mode)
     {
@@ -301,9 +258,8 @@ public static class AlchemyRecipeRegistry
             bestCosts = costs.ToArray();
         }
 
-        // No matching recipe: no output. Products like Inert Solution must be authored as
-        // explicit recipes rather than being a catch-all for any junk combination.
-        // (Steeping fallback parked below with the rest of the infusion front-end.)
+        // No match, no output: products like Inert Solution need explicit recipes, not a catch-all. (The steeping fallback is
+        // parked below with the rest of the infusion front-end.)
         var output = best?.CreateOutput?.Invoke() ?? new Item();
         if (output.IsAir)
         {
@@ -322,9 +278,7 @@ public static class AlchemyRecipeRegistry
         };
     }
 
-    /// <summary>
-    /// The output item alone, for callers that don't care what it costs. Air when nothing matches.
-    /// </summary>
+    /// <summary>Just the output item; air when nothing matches.</summary>
     public static Item ResolveOutput(Item vial, Item[] components)
         => Resolve(vial, components).Output;
 
@@ -367,11 +321,7 @@ public static class AlchemyRecipeRegistry
 
 
 /// <summary>
-/// Slot whitelists for the Alchemy Station. Derived entirely from
-/// <see cref="AlchemyRecipeRegistry"/>: any vial type referenced by a registered recipe
-/// becomes a valid vial in its recipe's mode, and any item type referenced by a
-/// component matcher (or member of a referenced <see cref="AlchemyComponentGroup"/>)
-/// becomes a valid component.
+/// Alchemy Station slot whitelists, derived from <see cref="AlchemyRecipeRegistry"/>: every vial and component any recipe references.
 /// </summary>
 public static class AlchemyIngredients
 {
@@ -387,10 +337,7 @@ public static class AlchemyIngredients
         _allIngredients = null;
     }
 
-    /// <summary>
-    /// Resolves which mode a vial activates. Returns <see cref="AlchemyMode.None"/>
-    /// for empty items or items with no recipes consuming them as a vial.
-    /// </summary>
+    /// <summary>The mode a vial activates, or <see cref="AlchemyMode.None"/> for empty items or items no recipe uses as a vial.</summary>
     public static AlchemyMode GetModeForSolvent(Item vial)
     {
         if (vial == null || vial.IsAir) return AlchemyMode.None;
@@ -430,10 +377,7 @@ public static class AlchemyIngredients
     }
 
     /// <summary>
-    /// All distinct item types referenced as a vial or component by any registered recipe,
-    /// sorted by display name. Backing list for the Almanac's Ingredients index, undiscovered
-    /// <see cref="AlmanacEntry.Hidden"/> entries stay in the list and render there as "?"
-    /// (see <see cref="AlmanacDiscoverySystem.IsIngredientVisible"/>).
+    /// Every item type used as a vial or component, sorted by name. Undiscovered hidden entries stay listed and render as "?".
     /// </summary>
     public static IReadOnlyList<int> AllIngredientTypes
     {
@@ -449,8 +393,7 @@ public static class AlchemyIngredients
 
         foreach (var recipe in AlchemyRecipeRegistry.All)
         {
-            // First mode wins.
-            // Conflicting registrations would be a recipe-data bug, not something to silently merge.
+            // First mode wins; conflicting registrations are a data bug, not something to merge.
             vialModes.TryAdd(recipe.SolventType, recipe.Mode);
 
             foreach (var matcher in recipe.Components)
@@ -483,45 +426,28 @@ public enum AlchemyMode
 {
     None,
 
-    /// <summary>
-    /// for modifying existing items, such as reforging or enchanting.
-    /// </summary>
+    /// <summary>Modifying existing items, such as reforging or enchanting.</summary>
     Augmentation,
 
-    /// <summary>
-    /// for making potions and elixirs.
-    /// </summary>
+    /// <summary>Making potions and elixirs.</summary>
     Synthesis,
 
-    /// <summary>
-    /// for making utilities and weapons.
-    /// </summary>
+    /// <summary>Making utilities and weapons.</summary>
     Alchemy
 }
 
 /// <summary>
-/// A single component slot's match rule: either an exact item type, or a
-/// <see cref="AlchemyComponentGroup"/> that accepts any of its members. Optionally,
-/// narrowed to a specific per-instance <see cref="ChemicalQuality"/> infusion (suffixed
-/// solutions like "Bottled Water (Inert)"). Implicit conversions let recipes mix
-/// specific ints and groups in the same array.
+/// One component slot's rule: an exact type or an <see cref="AlchemyComponentGroup"/>, optionally requiring an infusion. Ints and groups convert implicitly.
 /// </summary>
 public readonly struct ComponentMatcher
 {
     public readonly int ExactType;
     public readonly AlchemyComponentGroup Group;
 
-    /// <summary>
-    /// Required instance infusion. None = the slot only accepts a plain (un-infused) item,
-    /// so infused and plain variants of the same item type never cross-match.
-    /// </summary>
+    /// <summary>Required instance infusion; None accepts only plain items, so infused and plain variants never cross-match.</summary>
     public readonly ChemicalQuality Infusion;
 
-    /// <summary>
-    /// How many of the solute this slot draws per batch unit. This is the potency dial:
-    /// the station reads it as a stack requirement, and the front end shows it as
-    /// "potency N" on the solute. Always at least 1.
-    /// </summary>
+    /// <summary>Units drawn per batch unit (the potency dial, shown as "potency N"). Always at least 1.</summary>
     public readonly int Quantity;
 
     public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int quantity = 1)
@@ -534,9 +460,7 @@ public readonly struct ComponentMatcher
     public static ComponentMatcher Infused(int itemType, ChemicalQuality infusion) => new(itemType, infusion);
 
     /// <summary>
-    /// An exact-type slot drawn at <paramref name="quantity"/> potency, i.e. consuming that
-    /// many of the item per batch unit. Two variants over the same solute at different
-    /// quantities are different recipes, and the heavier one wins when both are affordable.
+    /// An exact-type slot drawing <paramref name="quantity"/> per batch unit; the heavier variant wins when both are affordable.
     /// </summary>
     public static ComponentMatcher Of(int itemType, int quantity, ChemicalQuality infusion = ChemicalQuality.None)
         => new(itemType, infusion, quantity);
@@ -549,73 +473,43 @@ public readonly struct ComponentMatcher
         Group != null ? Group.Contains(itemType) : itemType == ExactType;
 
     /// <summary>
-    /// Full instance match: type/group plus the slot's required infusion. Deliberately
-    /// stack-blind. Quantity is checked by <see cref="AlchemyRecipe.TryMatch"/>, which needs
-    /// to tell "wrong solute" apart from "not enough of the right one".
+    /// Type/group plus infusion match. Stack-blind on purpose: <see cref="AlchemyRecipe.TryMatch"/> checks quantity separately.
     /// </summary>
     public bool Matches(Item item) =>
         Matches(item.type) && SolutionGlobalItem.GetInfusion(item) == Infusion;
 
-    /// <summary>
-    /// Lower = more specific. Exact-type matchers are 1; group matchers equal the group size.
-    /// Used by the matcher to claim specific items before falling back to broad groups.
-    /// </summary>
+    /// <summary>Lower is more specific: 1 for exact types, the group size for groups.</summary>
     public int Specificity => Group != null ? Group.Count : 1;
 
     public static implicit operator ComponentMatcher(int itemType) => new(itemType);
     public static implicit operator ComponentMatcher(AlchemyComponentGroup group) => new(group);
 }
 
-/// <summary>
-/// A slot holding the right solute but not enough of it. Reported by
-/// <see cref="AlchemyRecipe.TryMatch"/> so the station can name what's missing instead of
-/// silently previewing nothing.
-/// </summary>
+/// <summary>A slot with the right solute but too few of it, so the station can name what's missing.</summary>
 public readonly record struct AlchemyShortfall(int ItemType, int Have, int Required)
 {
     public bool Exists => ItemType > 0;
 }
 
-/// <summary>
-/// One alchemy recipe: a (mode, vial, components) -> output mapping.
-/// Components are unordered and matched by multiset equality.
-/// </summary>
+/// <summary>One recipe: (mode, vial, components) to output, with components matched as an unordered multiset.</summary>
 public sealed class AlchemyRecipe
 {
     public AlchemyMode Mode { get; init; }
     public int SolventType { get; init; }
 
-    /// <summary>
-    /// Required infusion on the solvent instance. None = plain solvent only, so a recipe
-    /// keyed to "Bottled Water (Inert)" never fires from plain water and vice versa.
-    /// </summary>
+    /// <summary>Required solvent infusion; None means plain solvent only.</summary>
     public ChemicalQuality SolventInfusion { get; init; }
 
-    /// <summary>
-    /// Item type produced by this recipe, used by the Almanac index to group recipes by
-    /// output without invoking <see cref="CreateOutput"/>. <c>0</c> means the type is only
-    /// known after invoking the factory (rare and only for fully dynamic recipes).
-    /// </summary>
+    /// <summary>Output type for indexing without invoking <see cref="CreateOutput"/>; 0 only for fully dynamic recipes.</summary>
     public int OutputItemType { get; init; }
 
-    /// <summary>
-    /// Required component slots (1–3). Each slot is a <see cref="ComponentMatcher"/>: an
-    /// exact item type or a <see cref="AlchemyComponentGroup"/>, plus the quantity it draws.
-    /// Order does not matter; duplicates are allowed (e.g. {Mushroom, Mushroom, Daybloom}).
-    /// </summary>
+    /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own quantity.</summary>
     public ComponentMatcher[] Components { get; init; } = Array.Empty<ComponentMatcher>();
 
-    /// <summary>
-    /// Factory invoked when this recipe is selected. Lets the recipe build dynamic outputs
-    /// (custom stack size, modded prefix, augmented potion stats, etc.) instead of being
-    /// limited to a single item type.
-    /// </summary>
+    /// <summary>Output factory, for dynamic results like custom stacks, prefixes or augmented potion stats.</summary>
     public Func<Item> CreateOutput { get; init; }
 
-    /// <summary>
-    /// Total solute units consumed per batch unit. Ranks competing matches so a heavier stack
-    /// of the same solutes reaches the heavier recipe (10 blood orbs make what 5 cannot).
-    /// </summary>
+    /// <summary>Solute units consumed per batch unit; ranks matches so a heavier stack reaches the heavier recipe.</summary>
     public int TotalQuantity
     {
         get
@@ -627,12 +521,8 @@ public sealed class AlchemyRecipe
     }
 
     /// <summary>
-    /// True if the solvent instance and the station's solute slots satisfy this recipe,
-    /// stacks included.
-    /// <para><paramref name="slotCosts"/> is filled with how many units each slot gives up per
-    /// batch unit (0 for slots this recipe leaves alone). On a stacks-only failure it holds the
-    /// requirement that went unmet, so the station can show the gap; on any other failure it is
-    /// cleared.</para>
+    /// Whether the solvent and slots satisfy this recipe, stacks included. <paramref name="slotCosts"/> gets each slot's per-unit cost;
+    /// on a stacks-only failure it holds the unmet requirement, otherwise it's cleared.
     /// </summary>
     public bool TryMatch(Item solvent, Item[] slots, Span<int> slotCosts, out AlchemyShortfall shortfall)
     {
@@ -669,11 +559,7 @@ public sealed class AlchemyRecipe
         return false;
     }
 
-    /// <summary>
-    /// Claims one slot per matcher, most-specific matcher first so an exact-type matcher takes
-    /// its target before a group that would also accept it sweeps it up. Writes each claimed
-    /// slot's per-unit cost, which doubles as the "already claimed" marker (costs are never 0).
-    /// </summary>
+    /// <summary>Claims a slot per matcher, most specific first; each claimed slot's cost (never 0) doubles as its claimed marker.</summary>
     private bool Assign(Item[] slots, Span<int> slotCosts, bool requireStack)
     {
         // Insertion sort: these arrays are 1–3 long, so this beats allocating a comparison.
@@ -714,12 +600,7 @@ public sealed class AlchemyRecipe
         return true;
     }
 
-    /// <summary>
-    /// Whether <paramref name="a"/> gets to pick a slot before <paramref name="b"/>.
-    /// Narrower matchers go first, so an exact type isn't swallowed by a group that also accepts
-    /// it. Among equals the hungrier one goes first: two slots of one solute at different
-    /// quantities would otherwise let a light matcher take the big stack and starve a heavy one.
-    /// </summary>
+    /// <summary>Narrower matchers pick first; among equals the hungrier one does, so a light matcher can't starve a heavy one.</summary>
     private static bool ClaimsFirst(ComponentMatcher a, ComponentMatcher b) =>
         a.Specificity != b.Specificity
             ? a.Specificity < b.Specificity

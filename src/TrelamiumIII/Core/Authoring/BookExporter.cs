@@ -4,14 +4,7 @@ using System.Text;
 
 namespace TrelamiumIII.Core.Authoring;
 
-/// <summary>
-///     Turns an <see cref="AuthoredBook" /> into the two files a lore book is made of: the hjson the
-///     words live in, and the C# definition that declares the structure.
-/// </summary>
-/// <remarks>
-///     Pure string generation, no file system and no game state, so the output can be checked without
-///     launching anything.
-/// </remarks>
+/// <summary>Turns an <see cref="AuthoredBook" /> into its hjson and C# definition. Pure string generation, so it's testable.</summary>
 public static class BookExporter
 {
     /// <summary>The library file is tab-indented; matching it keeps diffs to the words that changed.</summary>
@@ -19,14 +12,7 @@ public static class BookExporter
 
     #region Localization
 
-    /// <summary>
-    ///     The book's localization entries, nested to match the dotted book key.
-    /// </summary>
-    /// <remarks>
-    ///     Emits only this book's subtree. Merging it into the existing library file is the caller's
-    ///     job -- rewriting the whole file from the editor would discard every book that is not
-    ///     currently open.
-    /// </remarks>
+    /// <summary>The book's localization subtree, nested by its dotted key. Merging it into the library file is the caller's job.</summary>
     public static string ToHjson(AuthoredBook book)
     {
         var output = new StringBuilder();
@@ -39,9 +25,8 @@ public static class BookExporter
 
         int depth = path.Length + 1;
 
-        // Collected before emitting so a key is written exactly once. A book almost always opens
-        // with .Heading("Title"), which reads the very key the book title lives under; emitting both
-        // in sequence produces a duplicate key, and hjson keeps only the last of those.
+        // Collected first so each key is written once: a leading .Heading("Title") reads the title's own key, and hjson keeps
+        // only the last of a duplicate.
         List<string> order = [];
         Dictionary<string, (string Text, bool IsChapter)> entries = new(StringComparer.Ordinal);
 
@@ -105,15 +90,7 @@ public static class BookExporter
         output.Append(' ').Append(value).Append('\n');
     }
 
-    /// <summary>
-    ///     Whether a value cannot be written bare.
-    /// </summary>
-    /// <remarks>
-    ///     An unquoted hjson value runs to the end of the line, so anything with a newline needs a
-    ///     block string. So does anything whose first character would otherwise start a structure or
-    ///     a quoted string, and anything with significant leading or trailing space, which a bare
-    ///     value silently loses.
-    /// </remarks>
+    /// <summary>Whether a value can't be written bare: newlines, a structural first character, or significant edge whitespace.</summary>
     private static bool NeedsBlockString(string value)
     {
         if (value.Length == 0) return false;

@@ -8,29 +8,20 @@ namespace TrelamiumIII.Core.Projectiles;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The reason a gun is a projectile at all is that Terraria's item use styles cannot do any
-///         of this. <c>ItemUseStyleID.Shoot</c> holds a sprite at a fixed angle for the length of
-///         the animation and has no notion of the weapon moving independently of the arm, so recoil
-///         has to be faked by the item's <c>HoldStyle</c> or not done. Spawning a projectile that
-///         pins itself to the holder and paints the weapon itself buys a full transform to play
-///         with -- position, rotation and origin all animatable per frame, and a composite arm
+///         A projectile because Terraria's item use styles can't do this: <c>ItemUseStyleID.Shoot</c>
+///         holds a sprite at a fixed angle with no notion of the weapon moving independently of the
+///         arm. A projectile pinned to the holder gets a full per-frame transform and a composite arm
 ///         driven from the same clock.
 ///     </para>
 ///     <para>
-///         What a subclass supplies is the shot and the numbers: a <see cref="GunShotProfile" />
-///         describing how the weapon moves, and a <see cref="Fire" /> body spawning whatever comes
-///         out of the barrel. Everything between those -- the aim, the cadence, the two-phase
-///         recoil, the arm, the draw, the netcode -- is here and identical across weapons, which is
-///         the point of having a base at all.
+///         Subclasses supply a <see cref="GunShotProfile" /> and a <see cref="Fire" /> body. Aim,
+///         cadence, recoil, arm, draw and netcode are shared here.
 ///     </para>
 ///     <para>
-///         Aim is carried in <see cref="Entity.velocity" /> rather than an ai slot, and the reason
-///         is netcode. Velocity is part of the standard projectile sync, so remote clients get the
-///         aim for free and every one of them draws the weapon pointing where its holder is
-///         actually pointing it. The temptation is to read <see cref="Main.MouseWorld" /> in the
-///         draw and animation code, which works perfectly on the machine holding the mouse and has
-///         every other player's gun tracking *your* cursor. Nothing here touches the mouse outside
-///         the <see cref="Main.myPlayer" /> branch.
+///         Aim is carried in <see cref="Entity.velocity" /> rather than an ai slot because velocity is
+///         part of the standard projectile sync, so remote clients draw the weapon where its holder is
+///         pointing. Never read <see cref="Main.MouseWorld" /> outside the
+///         <see cref="Main.myPlayer" /> branch, or every other player's gun tracks *your* cursor.
 ///     </para>
 /// </remarks>
 public abstract class HeldGunProjectile : ModProjectile
@@ -39,9 +30,8 @@ public abstract class HeldGunProjectile : ModProjectile
     ///     Cosine of the angle the aim may drift before the change is worth a packet.
     /// </summary>
     /// <remarks>
-    ///     Syncing every tick, which is the obvious thing to do and what this replaced, is a packet
-    ///     per frame per player holding a gun. A cursor that has not meaningfully moved does not
-    ///     need announcing, and a cursor that has will cross this within a frame or two.
+    ///     Syncing every tick would be a packet per frame per player holding a gun; a meaningful cursor
+    ///     move crosses this within a frame or two.
     /// </remarks>
     private const float AIM_SYNC_TOLERANCE = 0.9995f;
 
@@ -71,10 +61,8 @@ public abstract class HeldGunProjectile : ModProjectile
     ///     Ticks that must elapse after a shot before the next one may go off.
     /// </summary>
     /// <remarks>
-    ///     The seam an archetype fires through. A plain gun answers with its fire rate forever; a
-    ///     burst gun answers with its fire rate mid-burst and with its recovery after the last shot
-    ///     of one, which is the entire difference between the two archetypes expressed as a number
-    ///     that changes.
+    ///     The seam an archetype fires through: a plain gun always answers with its fire rate, a burst
+    ///     gun with its fire rate mid-burst and its recovery after the last shot.
     /// </remarks>
     protected virtual int ShotInterval => Profile.UseSpeed;
 
@@ -172,9 +160,8 @@ public abstract class HeldGunProjectile : ModProjectile
 
     /// <summary>Ready to fire on the frame it appears, rather than after a phantom first cycle.</summary>
     /// <remarks>
-    ///     Past the recoil length as well as past the interval. The two used to be the same number
-    ///     so the interval alone sufficed; a weapon whose recoil outlasts its cadence would
-    ///     otherwise be drawn mid-kick on the frame it is brought out, having never fired.
+    ///     Past the recoil length as well as the interval, so a weapon whose recoil outlasts its
+    ///     cadence isn't drawn mid-kick on the frame it is brought out.
     /// </remarks>
     public override void OnSpawn(IEntitySource source)
         => TicksSinceShot = Math.Max(ShotInterval, Profile.RecoilLength);

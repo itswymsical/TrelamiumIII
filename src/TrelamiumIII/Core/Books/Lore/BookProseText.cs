@@ -3,20 +3,8 @@ using Terraria.Localization;
 namespace TrelamiumIII.Core.Books.Lore;
 
 /// <summary>
-///     Resolves a book's prose out of localization.
+///     Resolves prose from <c>LoreLibrary.{book}.{name}</c> when a book opens. Keys are named, so reordering blocks can't shuffle translations.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Keys live under <c>LoreLibrary.{book}.{name}</c>, and every text-bearing block names its
-///         own. Named keys rather than positional ones is deliberate: a book's blocks get reordered
-///         and inserted between constantly, and an index-keyed translation would silently shuffle
-///         onto the wrong blocks the first time that happened.
-///     </para>
-///     <para>
-///         Resolution happens when a book is opened, not when it is defined, so a language change
-///         takes effect on the next reading without any invalidation of its own.
-///     </para>
-/// </remarks>
 public sealed class BookProseText(string bookKey)
 {
     public string BookKey => bookKey;

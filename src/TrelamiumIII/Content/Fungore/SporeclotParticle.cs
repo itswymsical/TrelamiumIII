@@ -41,10 +41,7 @@ internal sealed class SporeclotParticle : Particle
 
     public override int FadeOutTicks => 25;
 
-    /// <summary>
-    ///     Long-lived enough to still be lying there once the fight moves on, which is the whole
-    ///     reason it is worth being able to kick them.
-    /// </summary>
+    /// <summary>Long-lived enough to still be lying around after the fight moves on, so players can kick them.</summary>
     public override bool PlayerCollide => true;
 
     private int spawnedSpores;

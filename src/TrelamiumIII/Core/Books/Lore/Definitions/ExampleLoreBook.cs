@@ -3,18 +3,12 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
-/// <summary>
-///     Template showing the shape of a lore book: structure and presentation live here, the words live
-///     in <c>Localization/LoreLibrary</c>.
-/// </summary>
+/// <summary>Template lore book: structure and presentation here, words in <c>Localization/LoreLibrary</c>.</summary>
 public sealed class ExampleLoreBook : ModLoreBook
 {
     public override string Key => "Example.FirstAccount";
 
-    /// <summary>
-    ///     The book's typeface, and the bottom of the cascade. Everything below is set in Andika
-    ///     unless a section or an element says otherwise.
-    /// </summary>
+    /// <summary>The book's typeface and the bottom of the cascade: everything is Andika unless a section or element says otherwise.</summary>
     protected override BookTypeface? Typeface => BookTypeface.Encyclopedia;
 
     protected override void Build(BookBuilder book) => book

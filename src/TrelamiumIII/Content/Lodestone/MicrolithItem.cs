@@ -33,10 +33,7 @@ public class MicrolithItem : ModItem
     }
 }
 
-/// <summary>
-///     Tracks whether the Microlith is equipped this tick. Reset every frame and set again from
-///     <see cref="MicrolithItem.UpdateAccessory" />, so unequipping takes effect immediately.
-/// </summary>
+/// <summary>Whether the Microlith is equipped this tick; reset each frame, so unequipping applies immediately.</summary>
 public class MicrolithPlayer : ModPlayer
 {
     public bool MicrolithEquipped;
@@ -44,11 +41,7 @@ public class MicrolithPlayer : ModPlayer
     public override void ResetEffects() => MicrolithEquipped = false;
 }
 
-/// <summary>
-///     Drives <see cref="HarvestNotificationManager" />'s expiry sweep. Without this the manager
-///     keeps handing already-expired notifications back to <see cref="HarvestNotification.AddToStack" />,
-///     which resurrects a counter the vanilla tracker has already dropped.
-/// </summary>
+/// <summary>Drives the notification expiry sweep, so expired entries can't be stacked onto and resurrected.</summary>
 public class MicrolithNotificationSystem : ModSystem
 {
     public override void PostUpdateWorld()
@@ -60,10 +53,7 @@ public class MicrolithNotificationSystem : ModSystem
             HarvestNotificationManager.UpdateNotifications();
     }
 
-    /// <remarks>
-    ///     The list is static, so without this a notification outlives the world that produced it and
-    ///     the next world starts out able to stack onto an entry no tracker is drawing.
-    /// </remarks>
+    /// <remarks>The list is static, so notifications would otherwise outlive their world.</remarks>
     public override void ClearWorld() => HarvestNotificationManager.Clear();
 }
 
@@ -75,10 +65,7 @@ public class MicrolithGlobalTile : GlobalTile
     {
         base.Drop(i, j, type);
 
-        // Drop resolves on the server in multiplayer, where Main.LocalPlayer is the dummy player 255
-        // and never has the accessory equipped. GetPlayerForTile is tModLoader's documented answer for
-        // attributing a tile operation to whoever caused it, and returns the local player in single
-        // player.
+        // Drops resolve on the server in multiplayer, where LocalPlayer is dummy 255; GetPlayerForTile finds who caused it.
         Player player = WorldGen.GetPlayerForTile(i, j);
         if (player is null || !player.active)
             return;
@@ -91,9 +78,7 @@ public class MicrolithGlobalTile : GlobalTile
         if (!Main.tileSolid[type] || !PlacedTileTracker.IsValuable(type))
             return;
 
-        // The block has to have been found, not carried in. Without this any single ore block can be
-        // placed and re-mined indefinitely for a net gain. Released either way -- the tile is on its
-        // way out, so keeping the mark would only leave the set to grow.
+        // Only found blocks pay, or ore could be placed and re-mined forever. The mark is released either way.
         bool wasPlacedByPlayer = PlacedTileTracker.WasPlacedByPlayer(i, j);
         PlacedTileTracker.Forget(i, j);
 
@@ -116,12 +101,7 @@ public class MicrolithGlobalTile : GlobalTile
         PlayHarvestFeedback(i, j, player, itemType, extraItems);
     }
 
-    /// <remarks>
-    ///     Runs from <see cref="Drop" /> rather than <see cref="KillTile" />. The KillTile hook fires
-    ///     <i>before</i> drops resolve -- its <c>fail</c> and <c>noItem</c> parameters exist precisely
-    ///     to influence them -- so a flag set during Drop and read in KillTile lands one tile late,
-    ///     playing the previous break's effects on the next block mined.
-    /// </remarks>
+    /// <remarks>Runs from <see cref="Drop" />, not <see cref="KillTile" />, which fires before drops resolve and would lag a tile behind.</remarks>
     private static void PlayHarvestFeedback(int i, int j, Player player, int itemType, int count)
     {
         // Dust, sound and the popup are all local presentation. On a server there is no one to show
@@ -154,9 +134,7 @@ public class MicrolithGlobalTile : GlobalTile
             case TileID.Diamond: return ItemID.Diamond;
         }
 
-        // Style has to come from the tile, not default to 0. A multi-style ore -- modded ores sharing
-        // one tile type, most obviously -- otherwise always pays out as whichever variant sits at
-        // style 0.
+        // Style comes from the tile, or multi-style ores always pay out as style 0.
         Tile tile = Framing.GetTileSafely(i, j);
         int style = tile.TileFrameX / 18;
 
@@ -198,13 +176,11 @@ public class HarvestNotification : IInGameNotification
         Count += additionalCount;
         timer = 0; // Reset timer
 
-        // Small bounce effect when adding
         scale = 1.4f;
     }
 
     public void DrawInGame(SpriteBatch spriteBatch, Vector2 bottomAnchorPosition)
     {
-        // Calculate fade
         float alpha = 1f;
         if (timer > DURATION - FADE_TIME)
         {
@@ -213,7 +189,6 @@ public class HarvestNotification : IInGameNotification
 
         Vector2 drawPos = bottomAnchorPosition + new Vector2(30, yOffset);
 
-        // Draw item texture
         if (TextureAssets.Item[ItemType]?.Value is Texture2D itemTexture)
         {
             var itemColor = color * alpha;
@@ -223,14 +198,12 @@ public class HarvestNotification : IInGameNotification
                 itemOrigin, scale * 0.8f, SpriteEffects.None, 0f);
         }
 
-        // Draw count text
         string countText = $"x{Count}";
         var font = FontAssets.MouseText.Value;
         var textSize = font.MeasureString(countText);
         var textPos = drawPos + new Vector2(-32, -textSize.Y * 0.5f);
         var textColor = new Color(204, 181, 72) * alpha;
 
-        // Text outline
         for (int i = -1; i <= 1; i += 2)
         {
             for (int j = -1; j <= 1; j += 2)
@@ -246,7 +219,6 @@ public class HarvestNotification : IInGameNotification
 
     public void PushAnchor(ref Vector2 positionAnchorBottom)
     {
-        // Push anchor up by consistent notification height for better stacking
         positionAnchorBottom.Y -= 30f; // Fixed height per notification
     }
 
@@ -254,10 +226,8 @@ public class HarvestNotification : IInGameNotification
     {
         timer++;
 
-        // Smooth scale back to normal
         scale = MathHelper.Lerp(scale, 1f, 0.1f);
 
-        // Float upward only during fade period
         if (timer > DURATION - FADE_TIME)
         {
             yOffset -= 0.5f;
@@ -271,10 +241,7 @@ public static class HarvestNotificationManager
 
     public static void ShowHarvestNotification(int itemType, int count)
     {
-        // ShouldBeRemoved is the same predicate InGameNotificationsTracker prunes on, and its sweep
-        // can run before ours. Testing it here rather than trusting the list closes the window where
-        // an expired entry is still present: stacking onto one would reset a timer on a notification
-        // the vanilla tracker has already dropped, and the pickup would show nothing at all.
+        // Prune first: vanilla's tracker may already have dropped an expired entry, and stacking onto it would show nothing.
         UpdateNotifications();
 
         var existing = ActiveNotifications.FirstOrDefault(n => n.ItemType == itemType);

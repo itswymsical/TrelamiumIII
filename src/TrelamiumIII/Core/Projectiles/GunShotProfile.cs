@@ -7,28 +7,21 @@ namespace TrelamiumIII.Core.Projectiles;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This is the half of a held gun that has nothing to do with what it shoots. Two weapons
-///         that fire the same projectile can feel completely unalike, and all of the difference
-///         lives here -- how far the body snaps back, how fast it comes home, how hard the muzzle
-///         climbs, how far back the arm is thrown, where the barrel ends. Pulling it out into a
-///         value means a new weapon is a preset and a <see cref="HeldGunProjectile.Fire" /> body,
-///         rather than another copy of the same recoil arithmetic with different constants buried
-///         in it.
+///         The half of a held gun that has nothing to do with what it shoots: how far the body snaps
+///         back, how fast it returns, how hard the muzzle climbs, how far the arm is thrown, where the
+///         barrel ends. A new weapon is a preset and a <see cref="HeldGunProjectile.Fire" /> body
+///         rather than another copy of the recoil arithmetic.
 ///     </para>
 ///     <para>
-///         The recoil itself is two eased phases rather than one, and that is the part worth
-///         understanding. A single ease from full kick back to rest -- which is what hand-rolled
-///         recoil usually is -- has the gun at maximum displacement on the frame of the shot and
-///         monotonically settling afterwards, so the punch is something the player is told about
-///         after the fact. Splitting off a short <see cref="SnapTicks" /> window that eases *out*
-///         to the peak gives the weapon a windup of two or three frames that reads as the shot
-///         happening, and only then the long settle. Set <see cref="SnapTicks" /> to zero to get
-///         the old single-phase behaviour, which is right for something with no mechanism to speak
-///         of.
+///         Recoil is two eased phases. A single ease from full kick to rest puts the gun at maximum
+///         displacement on the frame of the shot, so the punch reads as after the fact. A short
+///         <see cref="SnapTicks" /> window easing *out* to the peak gives a two- or three-frame windup
+///         that reads as the shot happening, then the long settle. Set <see cref="SnapTicks" /> to
+///         zero for single-phase recoil.
 ///     </para>
 ///     <para>
 ///         A record struct so presets compose: start from <see cref="Pistol" /> and adjust with a
-///         <see langword="with" /> expression rather than restating twelve fields.
+///         <see langword="with" /> expression.
 ///     </para>
 /// </remarks>
 public readonly record struct GunShotProfile
@@ -41,11 +34,9 @@ public readonly record struct GunShotProfile
     ///     <see cref="UseSpeed" /> is".
     /// </summary>
     /// <remarks>
-    ///     Separate from the fire rate because a burst weapon breaks the assumption that tied them
-    ///     together. At two ticks between shots the recoil would have to complete in two ticks --
-    ///     which is to say it would be a single frame of displacement and then nothing, invisible at
-    ///     any frame rate. The animation wants to outlast the cadence and settle across the recovery
-    ///     instead, so the two numbers have to be allowed to disagree.
+    ///     Separate from the fire rate for burst weapons: at two ticks between shots the recoil would
+    ///     be a single invisible frame. The animation needs to outlast the cadence and settle across
+    ///     the recovery.
     /// </remarks>
     public int RecoilTicks { get; init; }
 
@@ -97,11 +88,9 @@ public readonly record struct GunShotProfile
     ///     Shots in one burst. Read only by <see cref="BurstGunProjectile" />; 0 or 1 is not a burst.
     /// </summary>
     /// <remarks>
-    ///     The burst fields live on the profile rather than on the archetype class because the shape
-    ///     of a burst -- three shots two ticks apart, then a long breath -- is a description of the
-    ///     firing cycle in exactly the sense the rest of this type is. Keeping them here is what lets
-    ///     a preset like <see cref="BurstPistol" /> describe a whole archetype in one value instead
-    ///     of half here and half in a class declaration.
+    ///     Burst fields live on the profile rather than the archetype class because a burst's shape is
+    ///     part of the firing cycle, which lets a preset like <see cref="BurstPistol" /> describe the
+    ///     whole archetype in one value.
     /// </remarks>
     public int BurstSize { get; init; }
 

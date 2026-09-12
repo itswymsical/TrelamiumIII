@@ -8,30 +8,23 @@ namespace TrelamiumIII.Core.Projectiles;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Burst fire is not "a fast gun with pauses in it", and the difference is what this class
-///         exists to encode. Three properties make it its own archetype:
+///         Three properties make burst fire its own archetype rather than a fast gun with pauses:
 ///         <list type="bullet">
 ///             <item><b>The burst is committed.</b> Once the first round leaves, all of them do.
-///             Releasing the button cancels the next burst, never the current one, so the player
-///             is choosing when to spend a burst rather than metering a stream.</item>
+///             Releasing the button cancels the next burst, never the current one.</item>
 ///             <item><b>Recovery is the balance lever, not fire rate.</b> Sustained output is
-///             <c>BurstSize / BurstPeriod</c> and the recovery dominates that fraction, which means
-///             the inside of the burst can be as fast as it looks without the weapon being
-///             oppressive. A two-tick cadence with a 36-tick breath is under two shots a second
-///             sustained.</item>
+///             <c>BurstSize / BurstPeriod</c> and the recovery dominates it, so the burst itself can
+///             be as fast as it looks. A two-tick cadence with a 36-tick breath is under two shots a
+///             second sustained.</item>
 ///             <item><b>Recoil climbs across the burst.</b> Each round resets the recoil timer, so
-///             without a rising ceiling three shots produce three identical twitches and the burst
-///             reads as a stutter. Scaling the ceiling from
-///             <see cref="GunShotProfile.BurstClimb" /> up to full over the burst gives the
-///             staircase that makes the three rounds read as one event, and the profile's longer
+///             without a rising ceiling the burst reads as a stutter. The ceiling scales from
+///             <see cref="GunShotProfile.BurstClimb" /> to full, and the longer
 ///             <see cref="GunShotProfile.RecoilTicks" /> lets the settle play out across the
-///             recovery so the weapon is visibly recomposing rather than idle.</item>
+///             recovery.</item>
 ///         </list>
 ///     </para>
 ///     <para>
-///         Everything else -- aim, arm, draw, netcode -- is <see cref="HeldGunProjectile" />'s. This
-///         class adds a counter and three overrides, which is the amount of code the archetype is
-///         actually worth.
+///         Everything else -- aim, arm, draw, netcode -- is <see cref="HeldGunProjectile" />'s.
 ///     </para>
 /// </remarks>
 public abstract class BurstGunProjectile : HeldGunProjectile
@@ -67,11 +60,9 @@ public abstract class BurstGunProjectile : HeldGunProjectile
     ///     A committed burst finishes before the weapon may be put away -- unless it cannot finish.
     /// </summary>
     /// <remarks>
-    ///     The second half of that is not a nicety. Commitment alone means a burst interrupted by
-    ///     the magazine running out is a burst that never completes, and a weapon that never
-    ///     completes its burst never becomes holsterable: the player is left holding a dry gun that
-    ///     will not go away no matter what they press. Asking the same side-effect-free question the
-    ///     firing path asks lets the weapon admit it is stuck and lower.
+    ///     Without the escape, a burst interrupted by an empty magazine never completes and the player
+    ///     is stuck holding a dry gun that won't lower. Asks the same side-effect-free question the
+    ///     firing path does.
     /// </remarks>
     protected override bool CanHolster => !MidBurst || !CanFireBurst(Owner);
 
@@ -113,17 +104,14 @@ public abstract class BurstGunProjectile : HeldGunProjectile
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         Sealed, and the reason matters. The counter has to be reopened at exactly one moment:
-    ///         after the recovery interval has elapsed and before the round that follows it is
-    ///         counted. This hook is that moment -- the base class only asks it once the interval
-    ///         gate has passed and immediately before firing -- and there is no other. Put the reset
-    ///         a tick earlier and the recovery is skipped, a tick later and it never ends.
+    ///         Sealed because the counter must reopen at exactly one moment: after the recovery
+    ///         interval and before the next round is counted. The base only calls this once the
+    ///         interval gate has passed, immediately before firing. A tick earlier skips the recovery;
+    ///         a tick later never ends it.
     ///     </para>
     ///     <para>
-    ///         Weapons therefore override <see cref="CanFireBurst" /> instead. Leaving
-    ///         <see cref="HeldGunProjectile.CanFire" /> open would mean any subclass that forgot to
-    ///         call base -- the normal way to write an ammo check -- silently welded the weapon into
-    ///         permanent recovery, which is a bug that looks like bad tuning.
+    ///         Weapons override <see cref="CanFireBurst" /> instead, so an ammo check that forgets to
+    ///         call base can't weld the weapon into permanent recovery.
     ///     </para>
     /// </remarks>
     protected sealed override bool CanFire(Player owner)

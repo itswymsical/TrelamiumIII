@@ -98,8 +98,7 @@ public class SporeclotSacProj : ModProjectile
 
     public override void OnSpawn(IEntitySource source)
     {
-        // Spin scales with how hard it was thrown, and turns the way it was thrown, so a lobbed
-        // sac lolls over and a hard throw whips.
+        // Spin scales with and follows the throw, so a lob lolls and a hard throw whips.
         float speed = Projectile.velocity.Length();
 
         spinRate = MathHelper.Clamp(speed * 0.022f, 0.08f, 0.26f);
@@ -144,9 +143,7 @@ public class SporeclotSacProj : ModProjectile
             spinRate = Math.Min(spinRate + 0.003f, MAX_SPIN);
         }
 
-        // Spin is continuous for the whole flight rather than aligned to the velocity: the sac is
-        // a lumpy ball, so there is no leading edge for it to point along, and a fixed orientation
-        // on a round sprite reads as a bug.
+        // Continuous spin rather than velocity-aligned: a lumpy ball has no leading edge to point along.
         Projectile.rotation += spinRate * spinDirection;
     }
 
@@ -196,11 +193,7 @@ public class SporeclotSacProj : ModProjectile
         Projectile.tileCollide = false;
     }
 
-    /// <summary>
-    ///     Starts the fall-away. The sac stops being a projectile at this point -- it is only a
-    ///     sprite finishing its animation, and <see cref="Projectile.timeLeft" /> is cut to match
-    ///     so it cannot outlive it.
-    /// </summary>
+    /// <summary>Starts the fall-away; from here it's only a sprite finishing its animation, with timeLeft cut to match.</summary>
     private void BeginDeath()
     {
         if (dying)
@@ -260,15 +253,11 @@ public class SporeclotSacProj : ModProjectile
 
     public override void OnKill(int timeLeft)
     {
-        // Covers the paths that do not rupture on impact -- a sac sloughing off a host, or one
-        // that simply ran out of time. Thrown from where the sprite actually is, since the
-        // fall-away animation has carried it away from Projectile.Center by now.
+        // Covers sacs that slough off a host or time out. Thrown from DrawPosition, since the fall-away has moved the sprite.
         Rupture(DrawPosition, Vector2.Zero);
     }
 
-    /// <summary>
-    ///     Breaks the sac into husk, chunks and shards. Runs at most once per sac.
-    /// </summary>
+    /// <summary>Breaks the sac into husk, chunks and shards. Runs at most once per sac.</summary>
     private void Rupture(Vector2 position, Vector2 inheritedVelocity)
     {
         if (ruptured)
@@ -302,9 +291,7 @@ public class SporeclotSacProj : ModProjectile
         }
     }
 
-    /// <summary>
-    ///     Caps how many sacs one host can wear, dropping the one closest to expiring.
-    /// </summary>
+    /// <summary>Caps how many sacs one host can wear, dropping the one closest to expiring.</summary>
     protected void RemoveStackProjectiles(NPC target)
     {
         int count = 0;
@@ -342,10 +329,7 @@ public class SporeclotSacProj : ModProjectile
     /// <summary>Progress through the fall-away animation, 0 to 1.</summary>
     private float DeathProgress => dying ? Math.Min(deathTimer / (float)DEATH_TICKS, 1f) : 0f;
 
-    /// <summary>
-    ///     Where the sprite actually is. During the fall-away that diverges from
-    ///     <see cref="Projectile.Center" />, which stays frozen where the sac detached.
-    /// </summary>
+    /// <summary>Where the sprite is; during the fall-away it diverges from the frozen <see cref="Projectile.Center" />.</summary>
     private Vector2 DrawPosition
     {
         get

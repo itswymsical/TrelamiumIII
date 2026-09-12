@@ -13,21 +13,9 @@ public enum TextCase
 }
 
 /// <summary>
-///     An editable string with a caret, a selection and an undo history.
+///     An editable string with caret, selection and undo, in character offsets only (no fonts or drawing) so it's testable.
+///     <see cref="EditorLayout" /> supplies any visual geometry.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Deliberately knows nothing about fonts, wrapping or drawing. Everything here is expressed
-///         in character offsets, so it can be exercised without a graphics device -- which is the only
-///         way an editor's edge cases (selection direction, undo coalescing, word jumps over
-///         punctuation) get tested at all.
-///     </para>
-///     <para>
-///         Anything needing visual geometry -- caret up and down a wrapped line, Home and End -- takes
-///         the line bounds as arguments and stays out of here. <see cref="EditorLayout" /> supplies
-///         them.
-///     </para>
-/// </remarks>
 public sealed class TextBuffer
 {
     /// <summary>Snapshots rather than diffs. A block is a paragraph, not a novel.</summary>
@@ -46,32 +34,15 @@ public sealed class TextBuffer
     private StringBuilder text = new();
 
     /// <summary>
-    ///     One format per character, always exactly as long as <see cref="text" />.
+    ///     One format per character, always as long as the text. A parallel array keeps edits simple; runs are rebuilt on serialise.
     /// </summary>
-    /// <remarks>
-    ///     A parallel array rather than a list of styled runs. Runs make every edit a
-    ///     boundary-remapping problem -- split this one, merge those two, coalesce the result --
-    ///     whereas here an insert or a delete is simply the same splice applied twice. Runs are
-    ///     recovered by grouping equal neighbours when the text is serialised or drawn, which is the
-    ///     only place they are actually needed.
-    /// </remarks>
     private readonly List<CharFormat> formats = [];
 
-    /// <summary>
-    ///     The paragraph settings each character belongs to, again exactly as long as the text.
-    /// </summary>
-    /// <remarks>
-    ///     Stored per character rather than per paragraph for the same reason the character formats
-    ///     are: a paragraph's identity moves with every edit, so any structure keyed by position needs
-    ///     resyncing after each one, whereas a parallel array is spliced by the same code that splices
-    ///     the text. Every character of a paragraph holds the same value, which is redundant and
-    ///     cheap -- and it means a merge is a range overwrite rather than a bookkeeping problem.
-    /// </remarks>
+    /// <summary>Paragraph settings per character, always as long as the text, so splices and merges need no bookkeeping.</summary>
     private readonly List<ParagraphFormat> paragraphs = [];
 
     /// <summary>
-    ///     Caret offset the last typed character landed at, or -1 when the last edit was not typing.
-    ///     Lets a run of keystrokes collapse into one undo step.
+    ///     Caret offset of the last typed character, or -1 if the last edit wasn't typing; collapses keystrokes into one undo step.
     /// </summary>
     private int typingRunEnd = -1;
 
@@ -83,15 +54,7 @@ public sealed class TextBuffer
     /// <summary>The per-character formatting, for serialising back out to tags.</summary>
     public IReadOnlyList<CharFormat> Formats => formats;
 
-    /// <summary>
-    ///     Formatting the next typed character will take, when the writer set it with nothing selected.
-    /// </summary>
-    /// <remarks>
-    ///     Toggling bold with a selection formats that selection. Toggling it with none is a statement
-    ///     about what comes next, which has to be held somewhere until a character arrives to wear it.
-    ///     Cleared by any caret move, matching what every editor does -- a pending style that survived
-    ///     a click would surprise the writer several words later.
-    /// </remarks>
+    /// <summary>Format armed for the next typed character when set with no selection; cleared by any caret move.</summary>
     public CharFormat? Pending { get; private set; }
 
     public string Text => text.ToString();
@@ -151,10 +114,7 @@ public sealed class TextBuffer
     public CharFormat FormatAt(int index) =>
         index >= 0 && index < formats.Count ? formats[index] : CharFormat.Inherit;
 
-    /// <summary>
-    ///     The formatting the toolbar should show as current: the selection's first character, or the
-    ///     one the caret would inherit from.
-    /// </summary>
+    /// <summary>The format the toolbar shows: the selection's first character, or what the caret would inherit.</summary>
     public CharFormat ActiveFormat =>
         Pending ?? (HasSelection ? FormatAt(SelectionStart) : InheritedFormat());
 
@@ -171,9 +131,7 @@ public sealed class TextBuffer
         return true;
     }
 
-    /// <summary>
-    ///     Applies a formatting change to the selection, or arms it for the next keystroke.
-    /// </summary>
+    /// <summary>Applies a format change to the selection, or arms it for the next keystroke.</summary>
     public void ApplyFormat(Func<CharFormat, CharFormat> change)
     {
         if (!HasSelection)
@@ -191,14 +149,7 @@ public sealed class TextBuffer
         typingRunEnd = -1;
     }
 
-    /// <summary>
-    ///     What newly typed text inherits when nothing is armed.
-    /// </summary>
-    /// <remarks>
-    ///     The character to the left, so typing on the end of a bold word stays bold. At the very
-    ///     start there is nothing to the left, so the character to the right is used instead rather
-    ///     than dropping to unformatted and breaking the run the writer is typing into.
-    /// </remarks>
+    /// <summary>What typed text inherits: the character to the left, or at the very start the one to the right.</summary>
     private CharFormat InheritedFormat()
     {
         if (HasSelection) return FormatAt(SelectionStart);
@@ -238,16 +189,7 @@ public sealed class TextBuffer
         return paragraphs[Math.Clamp(index, 0, paragraphs.Count - 1)];
     }
 
-    /// <summary>
-    ///     Settings of the final paragraph while it holds no characters to carry them.
-    /// </summary>
-    /// <remarks>
-    ///     The one gap in storing paragraph settings per character: a paragraph of zero length has no
-    ///     characters, so it has nowhere to keep them. That is not an edge case -- it is the paragraph
-    ///     you are standing in every time you press Return at the end of the text, and the one you
-    ///     then want to make a heading. Only the last paragraph can be empty and unmarked, since an
-    ///     empty paragraph anywhere else is still terminated by a mark that can hold its settings.
-    /// </remarks>
+    /// <summary>Settings of an empty final paragraph, which has no characters to hold them (e.g. right after Return at the end).</summary>
     private ParagraphFormat trailing = ParagraphFormat.Body;
 
     /// <summary>Every paragraph in reading order. Always at least one.</summary>
@@ -270,14 +212,7 @@ public sealed class TextBuffer
         yield return new Paragraph(start, length, index, length == 0 ? trailing : ParagraphAt(start));
     }
 
-    /// <summary>
-    ///     Settings of the paragraph an offset falls in, including the unmarked trailing one.
-    /// </summary>
-    /// <remarks>
-    ///     <see cref="ParagraphAt" /> reads the parallel array directly and clamps, which lands on the
-    ///     previous paragraph's last character when asked about an empty trailing paragraph. Insertions
-    ///     resolve their owner through here instead so text typed into a fresh heading is a heading.
-    /// </remarks>
+    /// <summary>Settings of the paragraph at an offset, including the empty trailing one that <see cref="ParagraphAt" /> misses.</summary>
     private ParagraphFormat OwningFormatAt(int index)
     {
         foreach (Paragraph paragraph in Paragraphs())
@@ -299,9 +234,7 @@ public sealed class TextBuffer
         return new Paragraph(0, text.Length, 0, ParagraphAt(0));
     }
 
-    /// <summary>
-    ///     Applies a change to every paragraph the selection touches, or to the caret's own.
-    /// </summary>
+    /// <summary>Applies a change to every paragraph the selection touches, or to the caret's own.</summary>
     public void ApplyParagraph(Func<ParagraphFormat, ParagraphFormat> change)
     {
         PushUndo();
@@ -327,13 +260,7 @@ public sealed class TextBuffer
         typingRunEnd = -1;
     }
 
-    /// <summary>
-    ///     Splits the paragraph at the caret, both halves keeping its settings.
-    /// </summary>
-    /// <remarks>
-    ///     Pressing Return in the middle of a heading gives two headings, which is what the writer
-    ///     asked for. Changing one of them afterwards is a separate act.
-    /// </remarks>
+    /// <summary>Splits the paragraph at the caret; both halves keep its settings.</summary>
     public void SplitParagraph()
     {
         ParagraphFormat owning = OwningFormatAt(HasSelection ? SelectionStart : Caret);
@@ -355,20 +282,9 @@ public sealed class TextBuffer
     }
 
     /// <summary>
-    ///     Merges the paragraph at the caret into the one before it, if the caret is at its start.
+    ///     Merges into the previous paragraph when the caret is at a paragraph start, taking the following paragraph's settings.
+    ///     False when there's nothing to merge.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         The combined paragraph takes the <em>following</em> paragraph's settings, because the
-    ///         mark that survives the deletion is the following one and a mark is what carries a
-    ///         paragraph's formatting. It is the rule Word follows and it is the only self-consistent
-    ///         one: the alternative leaves the surviving mark describing formatting nothing has.
-    ///     </para>
-    ///     <para>
-    ///         Returns false when there is nothing to merge, so the caller can fall back to an
-    ///         ordinary backspace.
-    ///     </para>
-    /// </remarks>
     public bool MergeParagraphBackwards()
     {
         if (HasSelection || Caret == 0 || text[Caret - 1] != '\n') return false;
@@ -401,10 +317,7 @@ public sealed class TextBuffer
     #region Editing
 
     /// <summary>Types text at the caret, replacing the selection.</summary>
-    /// <param name="coalesce">
-    ///     True for single keystrokes, which merge into the previous undo step so one Ctrl+Z does not
-    ///     undo one letter. False for pastes and anything programmatic.
-    /// </param>
+    /// <param name="coalesce">True for keystrokes, which merge into the previous undo step; false for pastes.</param>
     public void Insert(string value, bool coalesce = false)
     {
         if (value.Length == 0) return;
@@ -419,12 +332,8 @@ public sealed class TextBuffer
 
         if (!continuesRun) PushUndo();
 
-        // Both resolved before the text moves. The character format has to be read before the
-        // selection goes, since a replacement takes the formatting of what it replaced rather than of
-        // whatever ends up left of the collapsed caret. The paragraph has to be read before the
-        // insert, because growing the text turns an empty trailing paragraph into a non-empty one and
-        // the settings of an empty trailing paragraph live off to the side -- resolving afterwards
-        // finds a paragraph that no longer looks empty and falls back to the mark above it.
+        // Resolve both before the text changes: a replacement takes the replaced text's format, and growing an empty
+        // trailing paragraph would hide its off-side settings.
         CharFormat applied = Pending ?? InheritedFormat();
         ParagraphFormat owning = OwningFormatAt(HasSelection ? SelectionStart : Caret);
 
@@ -519,11 +428,7 @@ public sealed class TextBuffer
         typingRunEnd = -1;
     }
 
-    /// <summary>
-    ///     Left or right by one character. An unextended move with a selection collapses to its edge
-    ///     rather than stepping, which is what every editor does and what stops an arrow key from
-    ///     losing the selection boundary.
-    /// </summary>
+    /// <summary>Moves one character; an unextended move with a selection collapses to its edge instead.</summary>
     public void MoveByChar(int direction, bool extend)
     {
         if (HasSelection && !extend)
@@ -562,14 +467,7 @@ public sealed class TextBuffer
         typingRunEnd = -1;
     }
 
-    /// <summary>
-    ///     Recases the selection, or the word under the caret when nothing is selected.
-    /// </summary>
-    /// <remarks>
-    ///     Falling back to the word is what makes this usable from a hotkey mid-sentence, and it is
-    ///     what every word processor does with Shift+F3. The selection is preserved across the change
-    ///     so the shortcut can be pressed repeatedly to cycle.
-    /// </remarks>
+    /// <summary>Recases the selection, or the word under the caret, keeping the selection so the hotkey can cycle.</summary>
     public void ChangeCase(TextCase mode)
     {
         if (!HasSelection) SelectWordAt(Caret);
@@ -591,10 +489,8 @@ public sealed class TextBuffer
 
         PushUndo();
 
-        // Recasing is length-preserving for every casing here, but not guaranteed to be across all
-        // cultures, so the formats are only carried through one-to-one when the lengths agree. When
-        // they do not, the whole replacement takes the formatting the range opened with -- losing
-        // detail inside the range rather than letting the two arrays drift out of step.
+        // Formats carry one-to-one only when recasing preserved length (not guaranteed across cultures); otherwise the
+        // whole range takes its opening format.
         if (result.Length == end - start)
         {
             text.Remove(start, end - start);

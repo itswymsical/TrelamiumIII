@@ -21,10 +21,7 @@ public sealed class QuenchBehavior : IEffectBehavior
 }
 
 /// <summary>
-/// Owns our subscription to SpiritReforged's <c>BuffPlayer.ModifyBuffTime</c>. That type is
-/// <see langword="internal"/> to their assembly and we build without a reference to it, so the event and
-/// its delegate type are resolved by name; failure degrades to "brews behave like the stock potion"
-/// rather than throwing on every <c>AddBuff</c>.
+/// Subscribes to SpiritReforged's internal <c>BuffPlayer.ModifyBuffTime</c> by reflection; on failure brews act like the stock potion.
 /// </summary>
 internal static class QuenchHook
 {
@@ -33,11 +30,7 @@ internal static class QuenchHook
     private static int _quenchBuff;
     private static float _vanillaBonus;
 
-    /// <summary>
-    /// Subscribe the rescaling handler. Must be called from PostSetupContent, not Load: their
-    /// <c>QuenchPotion.Load</c> subscribes <c>QuenchifyBuff</c>, and a multicast delegate invokes in
-    /// subscription order, so subscribing later is exactly what puts us downstream of their multiply.
-    /// </summary>
+    /// <summary>Subscribes the rescaler. Call from PostSetupContent: subscribing after their Load puts us after their multiply.</summary>
     public static bool TryHook(int quenchBuffType, float vanillaBonus)
     {
         if (_handler is not null) return true;

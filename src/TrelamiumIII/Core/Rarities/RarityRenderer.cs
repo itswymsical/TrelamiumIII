@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
 using Terraria.UI.Chat;
+using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.Rarities;
 
@@ -27,6 +28,13 @@ public sealed class RarityRenderer : GlobalItem
 
     public override bool PreDrawTooltipLine(Item item, DrawableTooltipLine line, ref int yOffset)
     {
+        // A projected panel has taken this tooltip over and is drawing every line onto its own face,
+        // in perspective. Vanilla asks this hook before it checks whether anything refused the
+        // tooltip, so drawing here regardless is what puts a second copy of the name -- halo and all
+        // -- back at the flat position the tooltip would have had.
+        if (ProjectedTooltip.OwnsFrame)
+            return false;
+
         if (!RarityStyles.Any || line.Name != "ItemName")
             return true;
 

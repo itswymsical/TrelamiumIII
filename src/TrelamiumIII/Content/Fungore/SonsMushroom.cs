@@ -7,18 +7,9 @@ using TrelamiumIII.Content.Rarities;
 namespace TrelamiumIII.Content.Fungore;
 
 /// <summary>
-///     A mushroom that came from your son, and is therefore worth more than a mushroom.
+///     A mushroom from your son. Stored on the item instance, so it stays a mushroom everywhere (including
+///     <see cref="MyclobutanilPlayer" />'s surge) but heals more. Save, network and creation all go through <see cref="Bless" />.
 /// </summary>
-/// <remarks>
-///     The gift rides on the item instance rather than on an item type of its own, so it stays a
-///     mushroom everywhere that matters -- <see cref="MyclobutanilPlayer" />'s surge included -- and
-///     differs only in what it heals and what it is called.
-///     <para>
-///         Everything the flag implies is applied through <see cref="Bless" />, and the save, network
-///         and creation paths all go through it, so a mushroom that arrives from a world file or from
-///         another client ends up identical to one grown on the spot.
-///     </para>
-/// </remarks>
 public sealed class SonsMushroom : GlobalItem
 {
     /// <summary>Against the vanilla mushroom's fifteen.</summary>
@@ -31,10 +22,7 @@ public sealed class SonsMushroom : GlobalItem
 
     public override bool InstancePerEntity => true;
 
-    /// <summary>
-    ///     The type is only known once the item has run its defaults, so the check has to wait for
-    ///     late instantiation.
-    /// </summary>
+    /// <summary>Needs late instantiation: the type is only known once the item has run its defaults.</summary>
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)
         => lateInstantiation && MyclobutanilMushroom.Mushrooms.Contains(entity.type);
 
@@ -66,8 +54,7 @@ public sealed class SonsMushroom : GlobalItem
     {
         FromSon = true;
 
-        // Written onto the instance rather than handled through GetHealLife, so the number on the
-        // tooltip is the number that gets healed without the two being derived separately.
+        // Set on the instance rather than via GetHealLife, so the tooltip shows exactly what is healed.
         item.healLife = HEAL_LIFE;
 
         item.SetNameOverride(displayName.Value);

@@ -17,6 +17,11 @@ Jobs: {
 		ConfirmPrompt: Take this job?
 		ConfirmAccept: Accept
 		ConfirmBack: Back
+		// The card that stands up over a hovered job indicator.
+		HoverOne: Job available
+		HoverMany: "{0} jobs available"
+		HoverMore: +{0} more
+		HoverHint: More info
 	}
 
 	SilvianBotany1: {

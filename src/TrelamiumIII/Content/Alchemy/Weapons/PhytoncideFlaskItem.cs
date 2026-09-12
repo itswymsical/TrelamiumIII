@@ -50,8 +50,7 @@ public class PhytoncideFlaskItem : ModItem
     {
         PhytoncideBloomGlobalNPC.BloomWithBurst(e.Target);
 
-        // Lifesteal needs somebody to credit, and only projectile-delivered reactions carry an
-        // owner; one rolled by a drifting cloud has none.
+        // Only projectile-delivered reactions have an owner to credit; cloud-rolled ones don't.
         if (e.DeliveryProjectile is not { } proj) return;
         if (proj.owner < 0 || proj.owner >= Main.maxPlayers) return;
 
@@ -63,22 +62,13 @@ public class PhytoncideFlaskItem : ModItem
     }
 }
 
-/// <summary>
-///     A flask of phytoncide: barely leaks at all, then opens into a bloom that keeps growing.
-/// </summary>
-/// <remarks>
-///     The only burst in the mod whose arms expand as they travel. Everything else lays a constant
-///     radius and relies on the spread of the fan for its shape; this one starts each arm at a third
-///     of its size and grows it, so the cloud reads as something blooming outward rather than as
-///     something that was already that big and is now moving.
-/// </remarks>
+/// <summary>A flask of phytoncide: barely leaks, then opens into a bloom whose arms grow as they travel.</summary>
 public class PhytoncideFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PhytoncideFlaskItem.KEY;
 
     protected override GasField? Field => GasSystem.GetLayer<PhytoncideSporeLayer>();
 
-    /// <summary>Almost nothing: the spores are sealed until the glass gives.</summary>
     protected override TrailProfile? Trail => TrailProfile.Shed with
     {
         NodeRadius = 5f,
@@ -99,22 +89,14 @@ public class PhytoncideFlaskProjectile : ChemicalProjectile
         DamageShare = 1f,
     };
 
-    /// <summary>
-    ///     A spore arm: thrown hard, slowed hard, seeding a tall column of short-lived nodes.
-    /// </summary>
-    /// <remarks>
-    ///     The heavy drag is what makes the bloom. An arm that kept its speed would draw a long thin
-    ///     streak; one that sheds most of it in the first half-second deposits nearly all its nodes
-    ///     in a small area at the end of a short throw, which is a puff.
-    /// </remarks>
+    /// <summary>A spore arm: thrown hard and slowed hard, so its nodes pile up at the end of a short throw as a puff.</summary>
     private static EmitterProfile Bloom => EmitterProfile.Default with
     {
         NodeLife = 24.75f,
         NodeScatter = new Vector2(1.5f, 5f),
         Drag = 0.88f,
 
-        // Every arm blooms, not just the core: the rim expanding alongside the middle is what keeps
-        // the cloud one shape instead of a growing centre ringed by fixed dots.
+        // Every arm grows, not just the core, so the cloud stays one shape.
         Growth = 0.65f,
     };
 }

@@ -4,21 +4,10 @@ namespace TrelamiumIII.Core.Books.Lore;
 
 public abstract class ModLoreBook : ILoadable
 {
-    /// <summary>
-    ///     Registry key, and the localization scope: everything this book reads lives under
-    ///     <c>LoreLibrary.{Key}</c>. Must not contain spaces -- the <c>/lorebook</c> command reads a
-    ///     single word.
-    /// </summary>
+    /// <summary>Registry key and localization scope (<c>LoreLibrary.{Key}</c>). No spaces: <c>/lorebook</c> reads one word.</summary>
     public abstract string Key { get; }
 
-    /// <summary>
-    ///     The whole book's typeface. Null leaves it on Terraria's own fonts.
-    /// </summary>
-    /// <remarks>
-    ///     Applied before <see cref="Build" /> runs, so it is the bottom of the cascade: a
-    ///     <see cref="BookBuilder.Section" /> overrides it for a run of blocks, and a
-    ///     <see cref="Layout.BlockStyle.Typeface" /> overrides both for one element.
-    /// </remarks>
+    /// <summary>The whole book's typeface (null for vanilla fonts), overridden by sections and then by element styles.</summary>
     protected virtual BookTypeface? Typeface => null;
 
     /// <summary>Declares the book's blocks. Called once, at load.</summary>

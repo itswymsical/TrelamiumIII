@@ -10,24 +10,20 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Frostbark;
 
-/// <summary>
-///     A slow flail that picks up a gear every revolution, laying a ring of freezing fog as it goes
-///     and detonating on impact once it is wound all the way up.
-/// </summary>
+/// <summary>A slow flail that gains a gear each revolution, laying freezing fog, and detonates on impact at full wind-up.</summary>
 public class FlailstormProj : ModProjectile, IDrawPrimitive
 {
     #region Configuration & Constants
 
     private const string CHAIN_TEXTURE_PATH = AssetReferences.Content.Frostbark.FlailstormChain.KEY;
 
-    // One charge level per completed revolution. CHARGE_SCALE is what a full charge multiplies
-    // damage and knockback by, so the item's numbers are the floor and these are the ceiling:
-    // 10 damage becomes 25, 4.6 knockback becomes 11.5.
+    // One charge level per revolution. CHARGE_SCALE is the full-charge multiplier on damage and knockback, so the
+    // item's numbers are the floor.
     private const int MAX_CHARGE_LEVEL = 4;
     private const float CHARGE_SCALE = 1.15f;
     private const float MAX_CRIT = 45f;
 
-    // Radians per tick. Stepped by charge level -- this is the gear change the weapon is named for.
+    // Radians per tick. Stepped by charge level. this is the gear change the weapon is named for.
     private const float BASE_SPIN_SPEED = 0.070f;
     private const float MAX_SPIN_SPEED = 0.250f;
 
@@ -104,9 +100,8 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     private bool FullyCharged => ChargeLevel >= MAX_CHARGE_LEVEL;
     private float ChargeMultiplier => MathHelper.Lerp(1f, CHARGE_SCALE, ChargeProgress);
 
-    // Only the swing rate steps per level. Everything else grows off ChargeProgress, which is
-    // continuous -- so the gear change is the one thing that reads as a step instead of the whole
-    // ring popping outward at once.
+    // Only swing rate steps per level; everything else grows continuously off ChargeProgress, so the gear change is
+    // the one visible step.
     private float SpinSpeed => MathHelper.Lerp(BASE_SPIN_SPEED, MAX_SPIN_SPEED, ChargeLevel / (float)MAX_CHARGE_LEVEL);
     private float SpinRadius => BASE_SPIN_RADIUS + ChargeProgress * SPIN_RADIUS_GROWTH;
     private float HitRadius => BASE_HIT_RADIUS + ChargeProgress * HIT_RADIUS_GROWTH;
@@ -241,8 +236,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         Projectile.Center = mountedCenter + OrbitOffset() + new Vector2(0f, player.gfxOffY);
         Projectile.velocity = Vector2.Zero;
 
-        // Faster spin, faster hits -- otherwise the extra swing speed would be visible and nothing
-        // more, because a ring hitting on the same cooldown does the same damage per second.
+        // Faster spin means faster hits; otherwise extra swing speed would be purely visual.
         Projectile.localNPCHitCooldown = (int)MathHelper.Lerp(BASE_SPIN_HIT_COOLDOWN, MIN_SPIN_HIT_COOLDOWN, ChargeProgress);
 
         RingMist();
@@ -291,7 +285,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         var targetVel = Vector2.Normalize(toPlayer) * MAX_FORCED_RETRACT_SPEED * meleeSpeed;
         Projectile.velocity = Vector2.Lerp(Projectile.velocity * 0.98f, targetVel, FORCED_RETRACT_ACCEL * meleeSpeed / 60f);
 
-        // Overshoot check by dot product
         var futurePos = Projectile.Center + Projectile.velocity;
         if (Vector2.Dot(Vector2.Normalize(toPlayer), Vector2.Normalize(mountedCenter - futurePos)) < 0f)
         {
@@ -314,12 +307,10 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     #region Frost
 
-    // Payout for a completed revolution: a step of swing speed, and a couple of harmless
-    // frostburn fields left standing on the ring.
+    // A revolution pays out a step of swing speed and a couple of harmless frostburn fields.
     private void OnRevolutionComplete(Vector2 mountedCenter)
     {
-        // Past the top rung the ring keeps turning and keeps damaging, but stops paying out --
-        // otherwise holding forever would carpet the screen in fields.
+        // Past the top rung the ring keeps damaging but stops paying out, or holding would carpet the screen in fields.
         if ((int)(SpinAngle / MathHelper.TwoPi) > MAX_CHARGE_LEVEL)
             return;
 
@@ -331,8 +322,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         if (Main.myPlayer != Projectile.owner)
             return;
 
-        // Spaced round the orbit rather than dropped in a clump at the head, so the fields stand in
-        // the ring the player just drew.
+        // Spaced round the orbit, so the fields stand in the ring the player drew.
         for (int i = 0; i < FIELDS_PER_REVOLUTION; i++)
         {
             var position = mountedCenter + OrbitOffset(MathHelper.TwoPi * i / FIELDS_PER_REVOLUTION);
@@ -353,7 +343,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
             return;
 
         // Full charged damage per cloud. The clouds share one static immunity, so overlapping them
-        // cannot multiply it -- see FrostCloudProj.
+        // cant multiply it
         int damage = (int)(Projectile.damage * CHARGE_SCALE);
         float knockback = Projectile.knockBack * CHARGE_SCALE;
 
@@ -377,8 +367,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
         for (int i = 0; i < count; i++)
         {
-            // Behind the head only. Fog ahead of it would read as the ring being drawn by something
-            // other than the weapon.
+            // Behind the head only, so the ring reads as drawn by the weapon.
             var position = mountedCenter + OrbitOffset(Main.rand.NextFloat(0f, TrailArc));
 
             mist.SpawnNode(position + Main.rand.NextVector2Circular(4f, 4f), Vector2.Zero,
@@ -387,7 +376,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         }
     }
 
-    /// <summary>Frost shed off the head in flight. Thin -- the head and chain are the read here.</summary>
     private void TrailMist()
     {
         if (CurrentAIState == AIState.Spinning || !Main.rand.NextBool(2))
@@ -400,7 +388,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
             life: Main.rand.NextFloat(18f, 32f));
     }
 
-    /// <summary>The flash of fog a burst goes off inside, ahead of the clouds carrying it outward.</summary>
     private static void BurstMist(Vector2 position)
     {
         if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
@@ -533,8 +520,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     #region Drawing & Rendering
 
-    // Walked backwards from the head through the same OrbitOffset that positions it -- that shared
-    // derivation is what makes the trail track the radial exactly and close into a real circle.
     private void UpdateTrail(Vector2 mountedCenter, float gfxOffY)
     {
         if (CurrentAIState != AIState.Spinning)
@@ -563,8 +548,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     private Color TrailColor(float factor)
     {
-        // Squared, so the bright core stays gathered at the head -- which is what tells the player
-        // which way the thing is turning.
         var color = Color.Lerp(TrailEdgeColor, TrailCoreColor, factor * factor);
 
         return color * MathHelper.Lerp(0.4f, 1f, ChargeProgress) * MathHelper.Lerp(0.2f, 1f, factor);
@@ -686,8 +669,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     #region Helper Methods
 
     /// <summary>
-    ///     Head position <paramref name="behind" /> radians back along the orbit, relative to the
-    ///     player. The one description of the orbit -- the head and the trail both read it.
+    ///     Head position <paramref name="behind" /> radians back along the orbit, relative to the player. Shared by head and trail.
     /// </summary>
     private Vector2 OrbitOffset(float behind = 0f)
     {
@@ -719,11 +701,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     #endregion
 }
 
-/// <summary>
-///     A standing volume of freezing fog. The projectile is the field, not the picture -- it draws
-///     nothing, and feeds <see cref="IceMistLayer" /> instead, whose thresholded density field is
-///     what makes several overlapping clouds read as one bank of fog.
-/// </summary>
 public class FrostCloudProj : ModProjectile
 {
     public override string Texture => Assets.Textures.VFX.RadialGradient.KEY;
@@ -737,10 +714,8 @@ public class FrostCloudProj : ModProjectile
     private const int LINGER_FROSTBURN = 90;
     private const int BURST_FROSTBURN = 5 * 60;
 
-    /// <summary>Ticks from spawn a burst cloud deals damage for.</summary>
     private const int BITE_TICKS = 20;
 
-    /// <summary>Ticks between re-freezes of something loitering in the field.</summary>
     private const int REFREEZE_INTERVAL = 30;
 
     private const int SWELL_TICKS = 12;
@@ -752,7 +727,6 @@ public class FrostCloudProj : ModProjectile
     private int FrostburnTicks => Damaging ? BURST_FROSTBURN : LINGER_FROSTBURN;
     private int Age => Lifetime - Projectile.timeLeft;
 
-    /// <summary>0 at spawn, 1 at full size, back to 0 at death.</summary>
     private float Envelope => MathHelper.Clamp(Age / (float)SWELL_TICKS, 0f, 1f)
                             * MathHelper.Clamp(Projectile.timeLeft / (float)FADE_TICKS, 0f, 1f);
 
@@ -771,8 +745,6 @@ public class FrostCloudProj : ModProjectile
         Projectile.timeLeft = BURST_LIFETIME;
     }
 
-    // Assigned here rather than in SetDefaults because damage -- which is what picks the profile --
-    // is not set until the projectile exists.
     public override void OnSpawn(Terraria.DataStructures.IEntitySource source)
         => Projectile.timeLeft = Lifetime;
 
@@ -791,8 +763,6 @@ public class FrostCloudProj : ModProjectile
         Lighting.AddLight(Projectile.Center, 0.14f * Envelope, 0.24f * Envelope, 0.34f * Envelope);
     }
 
-    // Frostburn on everything standing in the field. Separate from OnHitNPC: a lingering cloud never
-    // hits anything, and a burst cloud stops biting long before it fades.
     private void Freeze()
     {
         if (Main.myPlayer != Projectile.owner || Age % REFREEZE_INTERVAL != 0)
@@ -823,8 +793,6 @@ public class FrostCloudProj : ModProjectile
 
         for (int i = 0; i < count; i++)
         {
-            // Inset, because a blob has its own radius on top of this one -- the drawn fog should
-            // promise slightly less than the field delivers, never more.
             var offset = Main.rand.NextVector2Circular(1f, 1f) * Radius * 0.62f * envelope;
 
             mist.SpawnNode(Projectile.Center + offset,
@@ -834,7 +802,6 @@ public class FrostCloudProj : ModProjectile
         }
     }
 
-    /// <summary>A cloud is a volume, not the square hitbox <see cref="Projectile.Resize" /> gives it.</summary>
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
     {
         float radius = Radius * Envelope;
@@ -850,6 +817,5 @@ public class FrostCloudProj : ModProjectile
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
         => modifiers.HitDirectionOverride = Math.Sign(target.Center.X - Projectile.Center.X);
 
-    /// <summary>The mist layer draws this. There is nothing else to put on the screen.</summary>
     public override bool PreDraw(ref Color lightColor) => false;
 }

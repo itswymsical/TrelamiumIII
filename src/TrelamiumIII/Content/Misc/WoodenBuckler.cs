@@ -41,9 +41,7 @@ public class WoodenBucklerPlayer : ModPlayer
     public const int DashDuration = 35;
 
     public const float DashVelocity = 8.5f;
-    /// <summary>
-    /// indicates there is no current dash direction
-    /// </summary>
+    /// <summary>-1 when there is no dash direction.</summary>
     public int DashDir = -1;
 
     public int DashDelay = 0;
@@ -129,7 +127,6 @@ public class WoodenBucklerPlayer : ModPlayer
 
         Item buckler = BucklerStats();
 
-        // Safety check: if they somehow dashed but don't have the item.
         if (buckler == null) return;
 
         for (int i = 0; i < Main.maxNPCs; i++)

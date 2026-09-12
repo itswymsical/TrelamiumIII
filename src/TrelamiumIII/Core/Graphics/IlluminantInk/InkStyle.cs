@@ -4,15 +4,10 @@ namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 ///     Every art-direction knob for the Illuminant Ink menu, gathered in one place.
 /// </summary>
 /// <remarks>
-///     The old renderer scattered its magic numbers across the draw calls that used them, which
-///     meant retuning the look was a hunt. Nothing below is referenced more than a handful of
-///     times; the point is that the whole palette can be read top to bottom without opening a
-///     layer.
-///     <para />
 ///     Distances that describe the scene are in <em>half-height units</em>: the same
 ///     aspect-corrected space <c>InkNebula.fx</c> works in, where <c>0.5</c> is half the screen
 ///     height. That keeps the singularity the same apparent size on every monitor, and lets the
-///     shader and the C# layers agree on where the horizon is without converting between them.
+///     shader and the C# layers agree on where the horizon is without converting.
 /// </remarks>
 internal static class InkStyle
 {
@@ -44,15 +39,10 @@ internal static class InkStyle
     ///     the exposure control for the whole nebula.
     /// </summary>
     /// <remarks>
-    ///     Set to a texture's true median this normalises the field. Measured medians:
-    ///     <c>FbmNoise2</c> 0.682, <c>FbmNoiseBright</c> 0.571. The value here sits well
-    ///     above the median of the texture actually bound, which pushes the field down its
-    ///     range and holds the ink dark -- so it is an art choice rather than a
-    ///     normalisation, and it is the first dial to reach for to change how bright the
-    ///     nebula reads overall.
-    ///     <para />
-    ///     If a different noise texture is bound, expect to re-tune by eye rather than to
-    ///     plug in that texture's median: what matters is where this sits relative to it.
+    ///     Measured medians: <c>FbmNoise2</c> 0.682, <c>FbmNoiseBright</c> 0.571. Sitting well
+    ///     above the bound texture's median pushes the field down its range and holds the ink
+    ///     dark, so this is an art choice rather than a normalisation, and the first dial for
+    ///     overall brightness. If a different noise texture is bound, re-tune by eye.
     /// </remarks>
     public const float NebulaPivot = 0.782f;
 
@@ -61,13 +51,10 @@ internal static class InkStyle
     /// </summary>
     /// <remarks>
     ///     Scaled by resolution where it is used (see <see cref="InkFrame.PixelSize" />) so
-    ///     the ink reads equally chunky on a 4K panel as on a 1080p one, the same way
-    ///     Terraria scales its own menu. A fixed pixel count would shrink to nothing at high
-    ///     resolutions.
+    ///     the ink reads equally chunky at 4K and 1080p.
     ///     <para />
-    ///     Applies to the nebula only. The starfield and motes stay crisp on purpose --
-    ///     quantising point-like sprites to the same grid makes them flicker between cells
-    ///     as they drift.
+    ///     Nebula only. The starfield and motes stay crisp on purpose -- quantising point-like
+    ///     sprites makes them flicker between cells as they drift.
     /// </remarks>
     public const float NebulaPixelSize = 3.5f;
 
@@ -168,10 +155,8 @@ internal static class InkStyle
     // ---- ferrofluid motes -----------------------------------------------------------
     //
     // A mote is not a sprite. Each is stamped as a soft blob into a coverage field and the
-    // whole field is cut at a threshold, so two motes that merely drift near each other
-    // cross that threshold in the gap between them and fuse into one silhouette. That is the
-    // only way the material reads correctly: ferrofluid beads that touch become one bead,
-    // and a sprite per mote can show them overlapping but never merging.
+    // whole field is cut at a threshold, so two motes that drift near each other cross that
+    // threshold in the gap and fuse into one silhouette -- a sprite per mote could only overlap.
 
     /// <summary>How many motes a settled field holds, before any are burst or merged.</summary>
     /// <remarks>
@@ -189,24 +174,19 @@ internal static class InkStyle
     ///     Radius of the magnet's core, in pixels: inside it the pull fades back out to nothing.
     /// </summary>
     /// <remarks>
-    ///     The falloff from the rim only says how hard a distant mote is pulled. It reaches full
-    ///     strength at the pointer and stays there, so without a core the force drives a mote
-    ///     straight through the cursor, the direction to it flips, and the mote buzzes across it
-    ///     forever. A mote that has arrived should be <em>held</em>, not driven.
+    ///     The rim falloff only governs distant motes; the pull is full strength at the pointer, so
+    ///     without a core a mote is driven straight through the cursor and buzzes across it forever.
     ///     <para />
-    ///     Small, because motes have to end up close enough together to merge -- this is what sets
-    ///     how tightly a dragged cluster packs, and past roughly 40 the pool spreads out far enough
-    ///     that <see cref="MoteMergeOverlap" /> stops being reached.
+    ///     Small, because it sets how tightly a dragged cluster packs -- past roughly 40 the pool
+    ///     spreads far enough that <see cref="MoteMergeOverlap" /> stops being reached.
     /// </remarks>
     public const float MagnetCore = 26f;
 
     /// <summary>Per-tick velocity multiplier applied at the very centre of the core.</summary>
     /// <remarks>
-    ///     The other half of settling, and the half that actually does it. Fading the force out
-    ///     stops a mote being driven through the cursor but leaves it coasting through on the
-    ///     momentum it arrived with; this takes that momentum out of the system. Together they put
-    ///     the inner half of the core past critical damping, so a mote slides to a stop there
-    ///     instead of ringing; the outer half is still free enough to let it arrive with weight.
+    ///     Fading the force stops a mote being driven through the cursor, but it would still coast
+    ///     through on its arrival momentum; this removes it. Together they over-damp the inner half
+    ///     of the core so a mote slides to a stop instead of ringing.
     /// </remarks>
     public const float MagnetSettle = 0.78f;
 
@@ -269,13 +249,10 @@ internal static class InkStyle
     ///     How near the pointer a mote has to be, in pixels, before it will merge with a neighbour.
     /// </summary>
     /// <remarks>
-    ///     The gate that makes accumulation something the player does rather than something that
-    ///     happens. Ungated, the whole field would slowly collapse into a few large beads on its
-    ///     own; gated on the pointer, motes only pool where the cursor has dragged them.
-    ///     <para />
-    ///     Distance rather than <c>Spike</c>, which is what this used to read. Spike now fades back
-    ///     out inside <see cref="MagnetCore" />, so a mote that had arrived -- the one most likely
-    ///     to have something to merge with -- read as unmagnetised and refused.
+    ///     Ungated, the whole field would slowly collapse into a few large beads on its own; gated on
+    ///     the pointer, motes only pool where the cursor has dragged them. Uses distance rather than
+    ///     <c>Spike</c>, which fades out inside <see cref="MagnetCore" /> and would refuse the motes
+    ///     that have arrived.
     /// </remarks>
     public const float MoteMergeReach = 200f;
 

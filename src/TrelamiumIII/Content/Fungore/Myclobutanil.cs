@@ -34,9 +34,6 @@ public class Myclobutanil : ModItem
 
 public class MyclobutanilMushroom : GlobalItem
 {
-    /// <summary>
-    ///     What counts as a mushroom. More will be added to the list, eventually.
-    /// </summary>
     public static readonly HashSet<int> Mushrooms = [ItemID.Mushroom, ModContent.ItemType<FlyAgaricItem>()];
 
     public override void OnConsumeItem(Item item, Player player)
@@ -57,11 +54,7 @@ public class MyclobutanilPlayer : ModPlayer
 
     public const int MUSHROOM_SICKNESS = 25 * 60;
 
-    /// <summary>
-    ///     Added to <see cref="Player.lifeRegen" /> during the surge. That field counts in half a
-    ///     health per second, so 30 is fifteen a second and about forty-five over the window, against
-    ///     the mushroom's own fifteen.
-    /// </summary>
+    /// <summary>Added to <see cref="Player.lifeRegen" /> (half-HP-per-second units), so 30 is 15 HP/s during the surge.</summary>
     public const int SURGE_REGEN = 30;
 
     public bool Dosed;

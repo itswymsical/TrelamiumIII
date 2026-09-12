@@ -10,27 +10,9 @@ using static TrelamiumIII.Utilities.EaseFunction;
 namespace TrelamiumIII.Content.Fungore;
 
 /// <summary>
-///     A sac pushed up out of the ground by a slam, which swells and then lets go.
+///     A sac pushed up by a slam that swells, then releases gas. An NPC so the player can kill it early, which releases
+///     nothing. The gas deals no damage: contact is an overlap test that adds infection stacks without i-frames.
 /// </summary>
-/// <remarks>
-///     <para>
-///         <b>An NPC rather than a projectile, so it can be killed.</b> That is the entire point of
-///         the design: the sac is area denial with a long fuse, and a fuse the player can cut is a
-///         far better mechanic than one they can only walk around. It has no defence and very little
-///         life -- clearing one should cost a moment of attention, not a rotation.
-///     </para>
-///     <para>
-///         <b>Destroying it early releases nothing.</b> Letting go is what the growth was building
-///         toward, so a sac that never finished has nothing to give; the reward for the shot is that
-///         the gas simply never happens.
-///     </para>
-///     <para>
-///         <b>The gas deals no damage.</b> Contact is an overlap test with its own cooldown rather
-///         than NPC contact damage. Going through that path would have meant inheriting immunity
-///         frames, and immunity frames are exactly wrong for a saturating debuff -- standing in it
-///         has to keep costing something, and the cost is the stack count.
-///     </para>
-/// </remarks>
 public sealed class FungoreSporeSac : ModNPC
 {
     /// <summary>Frames from a sprout to full size, and the window the player has to pop it.</summary>
@@ -49,15 +31,7 @@ public sealed class FungoreSporeSac : ModNPC
 
     private const float FULL_SCALE = 1.1f;
 
-    /// <summary>
-    ///     Pulses per second, empty and full.
-    /// </summary>
-    /// <remarks>
-    ///     The whole tell is in the rate. A sac that swells and then sits there gives the player one
-    ///     piece of information -- where -- and they have to guess at when; one that beats faster the
-    ///     closer it gets to going off is a countdown they can read from across the arena without
-    ///     ever looking directly at it.
-    /// </remarks>
+    /// <summary>Pulses per second, empty and full: the beat speeds up as a countdown to release.</summary>
     private const float PULSE_RATE_MIN = 1.6f;
 
     private const float PULSE_RATE_MAX = 8.5f;
@@ -92,24 +66,11 @@ public sealed class FungoreSporeSac : ModNPC
     /// <summary>Cooldown on stacking. One value, because only the local player is ever infected here.</summary>
     private int infectCooldown;
 
-    /// <summary>
-    ///     Accumulated pulse angle.
-    /// </summary>
-    /// <remarks>
-    ///     Carried forward rather than computed from the age, because the rate changes as it fills:
-    ///     feeding a moving frequency into a sine of absolute time makes the phase jump every frame,
-    ///     and the sac stutters instead of beating.
-    /// </remarks>
+    /// <summary>Accumulated pulse angle, integrated because the rate changes and sin(rate * time) would jump.</summary>
     private float pulsePhase;
 
-    /// <summary>
-    ///     Plants one on the first floor under <paramref name="near" />.
-    /// </summary>
-    /// <remarks>
-    ///     "Marks a tile" only in the sense that it picks one -- the world is never written to. A
-    ///     slam that changed terrain would leave the arena a different shape after every fight.
-    /// </remarks>
-    /// <returns>Whether a floor was found to plant it on.</returns>
+    /// <summary>Plants one on the first floor under <paramref name="near" />, without modifying the world.</summary>
+    /// <returns>Whether a floor was found.</returns>
     public static bool Plant(Vector2 near)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -155,14 +116,12 @@ public sealed class FungoreSporeSac : ModNPC
         NPC.knockBackResist = 0f;
         NPC.aiStyle = -1;
 
-        // Planted. Nothing moves it, and it should not be pushed out of the tile it grew on.
         NPC.noGravity = true;
         NPC.noTileCollide = true;
 
         NPC.friendly = false;
 
-        // Neither a threat to the spawn budget nor worth money -- it is a hazard the boss made, not
-        // an enemy that wandered in.
+        // A boss-made hazard: doesn't count toward spawns or drop money.
         NPC.dontCountMe = true;
         NPC.npcSlots = 0f;
         NPC.value = 0f;
@@ -173,15 +132,7 @@ public sealed class FungoreSporeSac : ModNPC
         NPC.timeLeft = GROW_TICKS + LINGER_TICKS + 60;
     }
 
-    /// <summary>
-    ///     Fixed figures per difficulty rather than a multiplier.
-    /// </summary>
-    /// <remarks>
-    ///     This hook runs after vanilla has already adjusted life for the difficulty, so assigning
-    ///     here is the last word. A sac is a timer the player is racing, and how many shots it takes
-    ///     to beat that timer is the whole balance of the mechanic -- worth stating outright rather
-    ///     than leaving to whatever the difficulty multiplier happens to be.
-    /// </remarks>
+    /// <summary>Fixed life per difficulty, assigned after vanilla scaling: shots-to-kill is the mechanic's whole balance.</summary>
     public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment)
     {
         NPC.lifeMax = Main.masterMode ? LIFE_MASTER : LIFE_EXPERT;
@@ -263,8 +214,7 @@ public sealed class FungoreSporeSac : ModNPC
 
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_Boom.Asset with { Volume = 0.75f, Pitch = 0.2f }, centre);
 
-        // The sac is gone; what is left is gas. Untargetable so homing weapons and minions do not
-        // spend the rest of the fight shooting at a cloud they cannot remove.
+        // Untargetable once it's gas, so homing weapons and minions don't waste the fight on it.
         NPC.dontTakeDamage = true;
         NPC.chaseable = false;
 
@@ -288,8 +238,7 @@ public sealed class FungoreSporeSac : ModNPC
         if (Age % 4 != 0)
             return;
 
-        // Kept topped up rather than spawned once. A single burst thins out in a couple of seconds
-        // and the hitbox would outlive the thing the player is reading it from.
+        // Topped up rather than spawned once, or the visible cloud would thin out before the hitbox ends.
         SporeLayer.Trail(
             NPC.Center + Main.rand.NextVector2Circular(GAS_RADIUS * 0.75f, GAS_RADIUS * 0.5f),
             new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(-0.6f, 0.1f)),
@@ -297,14 +246,7 @@ public sealed class FungoreSporeSac : ModNPC
         );
     }
 
-    /// <summary>
-    ///     Saturates anyone standing in the cloud, on a cooldown.
-    /// </summary>
-    /// <remarks>
-    ///     Every client runs this for itself, and applies only to the player it owns. Buffs on the
-    ///     local player sync themselves, and the stack count is a client-side quantity that drives a
-    ///     shader -- there is nothing here the server needs to arbitrate.
-    /// </remarks>
+    /// <summary>Stacks infection on the local player while in the cloud. Runs per client; nothing needs server arbitration.</summary>
     private void Infect()
     {
         if (Main.dedServ)
@@ -343,8 +285,6 @@ public sealed class FungoreSporeSac : ModNPC
             return;
         }
 
-        // Cut down before it could let go. It comes apart and leaves nothing behind, which is the
-        // whole reward for having spent the shots.
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.5f }, NPC.Center);
 
         Debris(NPC.Center, count: 5, force: 3.2f, scale: Growth);
@@ -380,20 +320,15 @@ public sealed class FungoreSporeSac : ModNPC
 
         Texture2D texture = TextureAssets.Npc[Type].Value;
 
-        // Overshoots and settles: it pushes up out of the ground rather than inflating evenly, which
-        // is what makes it read as something growing instead of something being scaled.
         float growth = Growth;
         float scale = MathHelper.Lerp(SPAWN_SCALE, FULL_SCALE, BloomEase.Ease(growth));
 
-        // Volume-preserving, roughly: wider as it flattens, taller as it draws in. A sac that only
-        // changed size reads as a scale keyframe; one that changes shape reads as something with
-        // pressure inside it.
+        // Roughly volume-preserving squash and stretch, so it reads as pressurised rather than just scaled.
         float beat = MathF.Sin(pulsePhase) * PULSE_DEPTH * growth;
 
         var pulse = new Vector2(1f + beat, 1f - beat * 0.65f) * scale;
 
-        // Anchored at the base, so it sits on the tile it was planted on however far the pulse
-        // stretches it.
+        // Base-anchored, so it stays on its tile however the pulse stretches it.
         var origin = new Vector2(texture.Width * 0.5f, texture.Height);
 
         spriteBatch.Draw(

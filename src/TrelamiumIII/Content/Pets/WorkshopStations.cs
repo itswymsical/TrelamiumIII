@@ -3,21 +3,14 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Content.Pets;
 
 /// <summary>
-///     What counts as a crafting station, worked out from scanning <see cref="ModSystem.PostAddRecipes"/>.
+///     Crafting stations, derived in <see cref="ModSystem.PostAddRecipes"/>: a tile is one exactly when some recipe requires it.
 /// </summary>
-/// <remarks>
-///     Derived rather than listed: a tile is a station exactly when some recipe asks you to stand
-///     next to it. That covers every modded station for free, and keeps anything that would sit in a
-///     slot doing nothing out of one.
-/// </remarks>
 public sealed class CraftingStationRegistry : ModSystem
 {
     private static readonly HashSet<int> stations = [];
 
     /// <summary>
-    ///     Vanilla stations that stand in for a lesser one. Terraria applies these inside the pass
-    ///     that scans the tiles around the player, which is a pass a carried station never goes
-    ///     through, so the workshop has to apply them itself.
+    ///     Vanilla stations that stand in for lesser ones. Vanilla applies these only when scanning nearby tiles, so the workshop does it itself.
     /// </summary>
     private static readonly Dictionary<int, int[]> StandsInFor = new()
     {
@@ -55,14 +48,8 @@ public sealed class CraftingStationRegistry : ModSystem
     /// <summary>Whether this item places something a recipe would want you standing next to.</summary>
     public static bool IsStation(Item item) => !item.IsAir && item.createTile > NO_TILE && stations.Contains(item.createTile);
 
-    /// <summary>
-    ///     Marks <paramref name="player" /> as standing next to <paramref name="tileType" />, and
-    ///     next to everything that tile counts as.
-    /// </summary>
-    /// <param name="record">
-    ///     Collects every tile actually switched on. The caller has to be able to switch exactly
-    ///     these back off again, and the equivalences mean that is not just the tile passed in.
-    /// </param>
+    /// <summary>Marks <paramref name="player" /> as next to <paramref name="tileType" /> and everything it counts as.</summary>
+    /// <param name="record">Collects every tile switched on, so the caller can switch exactly those back off.</param>
     public static void Provide(Player player, int tileType, HashSet<int> record)
     {
         if (tileType <= NO_TILE || tileType >= TileLoader.TileCount)
@@ -99,29 +86,17 @@ public sealed class CraftingStationRegistry : ModSystem
     }
 }
 
-/// <summary>
-///     Tracks the player's workshop and hands its contents to the crafting system.
-/// </summary>
+/// <summary>Tracks the player's workshop and hands its contents to the crafting system.</summary>
 public sealed class WorkshopPlayer : ModPlayer
 {
-    /// <summary>
-    ///     The workshop driving the pet and the panel, or null. Found once a frame rather than
-    ///     stored, so dropping it or handing it over takes effect immediately.
-    /// </summary>
+    /// <summary>The workshop driving the pet and panel, or null. Found each frame, so dropping it applies immediately.</summary>
     public Item? ActiveWorkshop { get; private set; }
 
     public override void ResetEffects() => ActiveWorkshop = FindWorkshop();
 
     public override void PostUpdate() => KeepStationPets();
 
-    /// <summary>
-    ///     Puts a pet on the ground for every station in the workshop.
-    /// </summary>
-    /// <remarks>
-    ///     Only spawns. Each pet works out for itself when it has been swapped out of its slot or
-    ///     lost its apparition and goes quietly, which means a slot changing needs no bookkeeping
-    ///     here and a pet that somehow outlives its cause still cleans itself up.
-    /// </remarks>
+    /// <summary>Spawns a pet for every station; pets retire themselves when swapped out or orphaned.</summary>
     private void KeepStationPets()
     {
         if (Main.myPlayer != Player.whoAmI)
@@ -175,16 +150,9 @@ public sealed class WorkshopPlayer : ModPlayer
     }
 
     /// <summary>
-    ///     The cursor tell and the right-click that opens the panel.
+    ///     Cursor tell and right-click to open the panel. Handled here rather than in the pet's AI, because <see cref="Player.mouseInterface" />
+    ///     and <see cref="Player.noThrow" /> must be set before this update's item check. Local only.
     /// </summary>
-    /// <remarks>
-    ///     Handled from the player rather than from the pet's own AI, because
-    ///     <see cref="Player.mouseInterface" /> and <see cref="Player.noThrow" /> have to be set
-    ///     before the same update reaches the item check that reads them. Projectiles update after
-    ///     every player has already been through it, so a pet setting these for itself would suppress
-    ///     the swing one frame too late and let the first right-click through.
-    ///     <para>Local only: a panel belongs to whoever is looking at it.</para>
-    /// </remarks>
     public override void PreUpdate()
     {
         if (Main.dedServ || Player.whoAmI != Main.myPlayer)
@@ -238,9 +206,7 @@ public sealed class WorkshopPlayer : ModPlayer
     /// <summary>Slots close enough to count, kept so range can be sticky rather than a hard edge.</summary>
     private readonly HashSet<int> inReach = [];
 
-    /// <summary>
-    ///     Switches the workshop's stations back off, exactly the ones it switched on.
-    /// </summary>
+    /// <summary>Switches off exactly the stations the workshop switched on.</summary>
     public void ClearStations()
     {
         foreach (int tile in provided)
@@ -250,14 +216,7 @@ public sealed class WorkshopPlayer : ModPlayer
         }
     }
 
-    /// <summary>
-    ///     Marks the player as standing next to every station whose pet has caught up with them.
-    /// </summary>
-    /// <remarks>
-    ///     Measured against each station's own pet rather than against the apparition, so being able
-    ///     to use a furnace means the furnace is actually stood next to you. A station whose pet is
-    ///     off hopping over a hill does not count until it arrives.
-    /// </remarks>
+    /// <summary>Marks the player as next to every station whose own pet has caught up with them.</summary>
     public void ApplyStations()
     {
         previouslyProvided.Clear();
@@ -294,9 +253,7 @@ public sealed class WorkshopPlayer : ModPlayer
             if (station.IsAir || station.type != (int)pet.ai[0])
                 continue;
 
-            // Sticky: harder to lose than to gain. A station bouncing along beside a running player
-            // would otherwise cross a single hard edge over and over, and every crossing changes the
-            // recipe list and throws away whatever the player had selected.
+            // Sticky range: a single hard edge would flicker and reset the selected recipe.
             float limit = inReach.Contains(slot)
                 ? WorkshopStationPet.STATION_RANGE_KEEP
                 : WorkshopStationPet.STATION_RANGE;
@@ -318,28 +275,9 @@ public sealed class WorkshopPlayer : ModPlayer
 }
 
 /// <summary>
-///     Splices the workshop's stations into the pass that decides what the player is stood next to.
+///     Lifts the workshop's stations out before vanilla's adjacency pass and restores them after, so its before/after comparison
+///     doesn't see them vanish every frame and rebuild the recipe list (resetting the selection). Rebuilds only on real changes.
 /// </summary>
-/// <remarks>
-///     <para>
-///         That pass snapshots last frame's adjacency, clears it, rescans the tiles physically
-///         around the player, and rebuilds the recipe list if the two differ. A carried station is
-///         not a tile it can find, so simply writing the stations afterwards makes them look, to
-///         that comparison, like they vanish and reappear on every single frame. It rebuilds the
-///         recipe list constantly, from a version that does not contain them.
-///     </para>
-///     <para>
-///         Which is worse than it sounds, because rebuilding resets the player's selected recipe to
-///         the top of the list and can only put it back if the recipe they had picked is still in
-///         it. Scrolling onto a station's recipe would immediately throw the selection back to the
-///         last one the surrounding tiles could make.
-///     </para>
-///     <para>
-///         So the stations are lifted out before the pass and put back after it. The pass then sees
-///         a world without them on both sides of its comparison, stays quiet, and the recipe list is
-///         rebuilt here instead, only when the set of stations genuinely changed.
-///     </para>
-/// </remarks>
 public sealed class WorkshopAdjacencySystem : ModSystem
 {
     public override void Load() => On_Player.AdjTiles += SpliceStations;

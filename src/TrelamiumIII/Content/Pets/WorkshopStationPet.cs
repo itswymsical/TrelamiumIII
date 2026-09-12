@@ -6,10 +6,7 @@ using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Content.Pets;
 
-/// <summary>
-///     How a given station carries itself. Chosen from the tile, so two anvils behave alike and a
-///     modded one that reads as an anvil is treated as one.
-/// </summary>
+/// <summary>How a station carries itself, chosen from its tile so modded equivalents behave alike.</summary>
 public enum StationPersona
 {
     /// <summary>An ordinary little hop.</summary>
@@ -23,29 +20,17 @@ public enum StationPersona
 }
 
 /// <summary>
-///     One station out of the workshop, up and walking around under its own power. Drawn with the
-///     real tile's sprite, animation and all.
+///     A workshop station walking around, drawn with its real tile sprite. Decoration only: crafting uses the slots, so it runs unsynced.
 /// </summary>
-/// <remarks>
-///     These are decoration. The crafting adjacency comes off the slots in
-///     <see cref="PossessedWorkshop" />, never off whether a pet happens to be alive, so their whole
-///     state machine can run locally and out of sync without costing anything.
-/// </remarks>
 public class WorkshopStationPet : ModProjectile
 {
     #region tuning
 
-    /// <summary>
-    ///     How close this station has to be before it counts as one you are standing at. Generous
-    ///     enough that a station keeping pace always counts.
-    /// </summary>
+    /// <summary>How close a station must be to count as one you're standing at.</summary>
     public const float STATION_RANGE = 180f;
 
     /// <summary>
-    ///     How far it has to get before it stops counting. Deliberately looser than
-    ///     <see cref="STATION_RANGE" />: one hard edge would have a station bouncing along beside a
-    ///     running player cross it repeatedly, and every crossing rebuilds the recipe list and loses
-    ///     whatever the player had selected.
+    ///     Distance before it stops counting. Looser than <see cref="STATION_RANGE" />, so crossing the edge doesn't keep resetting recipes.
     /// </summary>
     public const float STATION_RANGE_KEEP = 260f;
 
@@ -185,10 +170,7 @@ public class WorkshopStationPet : ModProjectile
         Relax();
     }
 
-    /// <summary>
-    ///     Works out what this pet is on the first tick, and checks every tick after that it is still
-    ///     something the workshop is carrying.
-    /// </summary>
+    /// <summary>Works out what this pet is on the first tick, then checks each tick that the workshop still carries it.</summary>
     private bool Resolve(Player owner)
     {
         // The apparition is what is carrying these. Without it they have nothing to be. Counted
@@ -251,10 +233,7 @@ public class WorkshopStationPet : ModProjectile
         return IsAnvil(tileType) ? StationPersona.Stomp : StationPersona.Hop;
     }
 
-    /// <summary>
-    ///     Anvils of any make, including modded ones, which declare themselves by standing in for the
-    ///     vanilla anvil rather than by being it.
-    /// </summary>
+    /// <summary>Anvils of any make, including modded ones that stand in for the vanilla anvil.</summary>
     private static bool IsAnvil(int tileType)
     {
         if (tileType is TileID.Anvils or TileID.MythrilAnvil)
@@ -272,10 +251,7 @@ public class WorkshopStationPet : ModProjectile
         return false;
     }
 
-    /// <summary>
-    ///     Rides whichever sibling is broad enough to sit on. A bottle and a workbench that turn up
-    ///     together end up travelling together.
-    /// </summary>
+    /// <summary>Rides whichever sibling station is broad enough to sit on.</summary>
     private bool TryPerch()
     {
         if (FindSurface() is not { } host || host.ModProjectile is not WorkshopStationPet mount || mount.sprite is null)
@@ -283,9 +259,7 @@ public class WorkshopStationPet : ModProjectile
 
         Projectile.velocity = Vector2.Zero;
 
-        // Ridden off the host's *drawn* top rather than its hitbox top. The host squashes about its
-        // base, so its lid drops as it lands -- against the hitbox the passenger would hang in the
-        // air every time the thing underneath it bounced.
+        // Ridden off the host's drawn top, not its hitbox: the host squashes about its base, so the lid drops on landing.
         float lid = host.Bottom.Y - mount.sprite.Height * mount.squish.Y;
 
         // Fanned out a little by slot, so two of the same rider do not stack into one sprite.
@@ -330,10 +304,7 @@ public class WorkshopStationPet : ModProjectile
 
         float delta = goal.X - Projectile.Center.X;
 
-        // Arrival is judged on the horizontal alone. A station stood on the ground is always a good
-        // twenty pixels below the player's centre, and against a straight-line distance that gap
-        // alone can clear the slack -- so it would hop back and forth over a spot it was already
-        // standing on, forever, while the player did nothing.
+        // Arrival is horizontal only: a grounded station is always ~20px below the player's centre and would hop in place forever.
         float reach = Math.Abs(delta);
 
         Projectile.velocity.Y = Math.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
@@ -430,10 +401,7 @@ public class WorkshopStationPet : ModProjectile
     {
         int tileY = (int)(Projectile.Bottom.Y / 16f);
 
-        // Swept across the whole footprint rather than down the centre column alone. A furnace is
-        // three tiles wide, and a platform run it is half-overhanging is still somewhere it can
-        // stand -- checking only the middle had wide stations refusing to come down at the end of a
-        // walkway.
+        // Swept across the whole footprint, so wide stations can land on platforms they half-overhang.
         int left = (int)(Projectile.Left.X / 16f);
         int right = (int)(Projectile.Right.X / 16f);
 
@@ -455,18 +423,8 @@ public class WorkshopStationPet : ModProjectile
     }
 
     /// <summary>
-    ///     Whether a tile is something a station could come down onto.
+    ///     Whether a station could land on this tile. Unlike <see cref="WorldGen.SolidTile(int, int, bool)" />, platforms count.
     /// </summary>
-    /// <remarks>
-    ///     Deliberately not <see cref="WorldGen.SolidTile(int, int, bool)" />, which excludes
-    ///     anything <see cref="Main.tileSolidTop" /> -- platforms, most notably. A pet that had
-    ///     given up and taken off would then never find a floor over a platform, so it hovered
-    ///     beside the player indefinitely instead of landing and resuming its hop.
-    ///     <para>
-    ///         <see cref="Collision.TileCollision" /> already stops the fall on platforms, so this
-    ///         only ever needed to agree with it about what counts as ground.
-    ///     </para>
-    /// </remarks>
     private static bool IsStandable(int tileX, int tileY)
     {
         Tile tile = Framing.GetTileSafely(tileX, tileY);

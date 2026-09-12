@@ -3,9 +3,8 @@ using TrelamiumIII.Content.Alchemy.MagnoliaContent;
 namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
-/// The satchel's contents, as data. Every flower and bouquet in the mod is declared here; the values
-/// are per unit held (each slot's stack counts up to
-/// <see cref="Content.Accessories.Miscellaneous.SatchelPlayer.MAX_STACK_PER_SLOT"/>).
+/// The satchel's contents as data: every flower and bouquet is declared here, with values per unit held
+/// (capped per slot at <see cref="Content.Accessories.Miscellaneous.SatchelPlayer.MAX_STACK_PER_SLOT"/>).
 /// </summary>
 public class FlowerCatalogSystem : ModSystem
 {
@@ -62,10 +61,8 @@ public class FlowerCatalogSystem : ModSystem
     }
 
     /// <summary>
-    /// Flowers from other mods. Each call resolves by name and quietly does nothing when that mod
-    /// isn't installed.
-    /// <para>A bouquet may name a cross-mod flower too: <see cref="FlowerRegistry.PruneUnformable"/>
-    /// drops the whole bouquet when a member can't resolve, so it never half-forms.</para>
+    /// Flowers from other mods, resolved by name and silently skipped when the mod isn't installed. Bouquets naming a
+    /// missing flower are dropped whole by <see cref="FlowerRegistry.PruneUnformable"/>.
     /// </summary>
     private static void RegisterCrossModFlowers()
     {

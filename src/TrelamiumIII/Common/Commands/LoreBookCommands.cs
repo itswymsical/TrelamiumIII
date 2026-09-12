@@ -4,7 +4,6 @@ using TrelamiumIII.Core.Books.Lore;
 
 namespace TrelamiumIII.Common.Commands;
 
-/// <summary>Opens a registered lore book, for checking layout without hunting down the item.</summary>
 public class LoreBookCommand : ModCommand
 {
     public override string Command => "lorebook";

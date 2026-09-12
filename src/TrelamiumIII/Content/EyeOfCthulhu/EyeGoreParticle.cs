@@ -4,9 +4,7 @@ using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
 
-/// <summary>
-///     How a piece of the remains is currently behaving.
-/// </summary>
+/// <summary>How a piece of the remains is currently behaving.</summary>
 public enum GoreDrift
 {
     /// <summary>Ordinary debris: gravity, tile collision, settles and fades.</summary>
@@ -19,14 +17,10 @@ public enum GoreDrift
     Drawn,
 }
 
-/// <summary>
-///     One piece of the Eye of Cthulhu, wearing the gore sprite the base game threw for it.
-/// </summary>
+/// <summary>One piece of the Eye of Cthulhu, wearing the gore sprite the base game threw for it.</summary>
 public sealed class EyeGoreParticle : Particle
 {
-    /// <summary>
-    ///     Fallback sprites, used only when no vanilla gore was available to adopt.
-    /// </summary>
+    /// <summary>Fallback sprites, used only when no vanilla gore was available to adopt.</summary>
     public override string[] Textures => ["Images/Gore_6", "Images/Gore_7", "Images/Gore_8"];
 
     /// <summary>Tighter than the sprite, so a settling chunk beds into a corner instead of hovering.</summary>
@@ -42,10 +36,7 @@ public sealed class EyeGoreParticle : Particle
 
     public override int FadeOutTicks => 30;
 
-    /// <summary>
-    ///     Off. The pieces are lit by the bloom they carry, and the cutscene plays at night in an
-    ///     arena where world light would drag them toward black just as they become the subject.
-    /// </summary>
+    /// <summary>Off: the pieces carry their own bloom, and world light would darken them in the night arena.</summary>
     public override bool UseLighting => false;
 
     public override bool HasGlow => true;
@@ -71,16 +62,12 @@ public sealed class EyeGoreParticle : Particle
 
     private Asset<Texture2D>? haloTexture;
 
-    /// <summary>
-    ///     The sub-rectangle of the sprite this piece wears, or null for the whole texture.
-    /// </summary>
+    /// <summary>The sprite sub-rectangle this piece wears, or null for the whole texture.</summary>
     public Rectangle? SourceRect { get; set; }
 
     private Rectangle Cell(Texture2D texture) => SourceRect ?? texture.Bounds;
 
-    /// <summary>
-    ///     Draws the body, so the source rect is honoured.
-    /// </summary>
+    /// <summary>Overridden so the source rect is honoured.</summary>
     public override bool PreDraw(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, Color lightColor)
     {
         Rectangle source = Cell(texture);
@@ -121,27 +108,19 @@ public sealed class EyeGoreParticle : Particle
         Bleed();
     }
 
-    /// <summary>
-    ///     Lifted and bobbing. The piece keeps a little of whatever momentum it had so the takeover
-    ///     eases in rather than snapping it to a new motion.
-    /// </summary>
+    /// <summary>Lifted and bobbing, keeping some prior momentum so the takeover eases in.</summary>
     private void UpdateFloat()
     {
         phase += 0.045f;
 
-        // Rises slowly and sways on its own phase. Two incommensurate rates so a cluster never
-        // settles into one synchronised pulse.
+        // Two incommensurate rates, so a cluster never syncs into one pulse.
         Velocity.Y += MathF.Sin(phase) * 0.012f - 0.014f;
         Velocity.X += MathF.Cos(phase * 0.73f) * 0.010f;
 
-        // Turns lazily rather than holding the spin it landed with.
         RotationVelocity = MathHelper.Lerp(RotationVelocity, MathF.Sin(phase * 0.5f) * 0.012f, 0.05f);
     }
 
-    /// <summary>
-    ///     Wound inward. Angle and radius are integrated rather than lerped toward a target, so the
-    ///     piece traces a spiral instead of sliding along a straight line to the centre.
-    /// </summary>
+    /// <summary>Wound inward. Angle and radius are integrated, not lerped, so the piece spirals.</summary>
     private void UpdateDrawn()
     {
         Vector2 offset = Position - VortexCenter;
@@ -155,22 +134,18 @@ public sealed class EyeGoreParticle : Particle
 
         float progress = MathHelper.Clamp(VortexProgress, 0f, 1f);
 
-        // Same Keplerian shape the menu's infalling streaks use: the closer in, the faster round,
-        // so the piece winds up hard at the throat instead of coasting in at a constant rate.
+        // Keplerian: faster the closer in, so the piece winds up hard at the throat.
         float safeRadius = MathF.Max(vortexRadius, 12f);
         vortexAngle += MathHelper.Lerp(0.9f, 2.6f, progress) * 24f / (safeRadius * MathF.Sqrt(safeRadius));
         vortexRadius = MathF.Max(vortexRadius - MathHelper.Lerp(0.7f, 3.4f, progress), 0f);
 
         Vector2 target = VortexCenter + vortexAngle.ToRotationVector2() * vortexRadius;
 
-        // Velocity is derived from where it needs to be, not added to, so the spiral is exact and
-        // cannot be knocked off course by leftover drag.
+        // Derived rather than accumulated, so leftover drag can't knock the spiral off course.
         Velocity = target - Position;
 
-        // Spin tracks the wind-in, and tightens with it.
         RotationVelocity = MathHelper.Lerp(0.05f, 0.3f, progress);
 
-        // Swallowed once it reaches the throat.
         if (vortexRadius <= 10f)
             Kill();
     }
@@ -183,8 +158,6 @@ public sealed class EyeGoreParticle : Particle
         if (envelope <= 0f)
             return;
 
-        // Heavier while the vortex has it: a piece being torn away should visibly leak more than one
-        // hanging still.
         float intensity = Drift == GoreDrift.Drawn ? 0.95f : 0.55f;
 
         InkLayer.Shroud(Position, Velocity, intensity * envelope);
@@ -192,8 +165,7 @@ public sealed class EyeGoreParticle : Particle
         if (Drift == GoreDrift.Drawn && Velocity.LengthSquared() > 9f)
             InkLayer.Trail(Position, Velocity, 11f);
 
-        // Sparks are occasional on purpose. The bloom carries the Fallen Star read continuously; the
-        // sparks are punctuation, and at every-tick they stop being legible as individual glints.
+        // Occasional on purpose: every-tick sparks stop reading as individual glints.
         if (Main.rand.NextFloat() < 0.16f * envelope)
         {
             Vector2 offset = Main.rand.NextVector2Circular(14f, 14f);
@@ -216,7 +188,6 @@ public sealed class EyeGoreParticle : Particle
         if (envelope <= 0f)
             return;
 
-        // Breathes, and on the piece's own phase so a cluster shimmers unevenly.
         float pulse = 0.82f + 0.18f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2.4f + phase);
 
         if (haloTexture is { Value: { } halo })
@@ -261,9 +232,7 @@ public sealed class EyeGoreParticle : Particle
         }
     }
 
-    /// <summary>
-    ///     Stamps this piece into a coverage field as flat white.
-    /// </summary>
+    /// <summary>Stamps this piece into a coverage field as flat white.</summary>
     public void StampCoverage(SpriteBatch spriteBatch)
     {
         if (ResolveTexture() is not { } texture)
@@ -285,14 +254,10 @@ public sealed class EyeGoreParticle : Particle
         );
     }
 
-    /// <summary>How much of the field one piece contributes. See StampCoverage.</summary>
     private const float COVERAGE_STRENGTH = 0.7f;
 
     private const float COVERAGE_SPREAD = 1.45f;
-    /// <summary>
-    ///     Copies stamped around the sprite. Six reads as a continuous bloom; three reads as three
-    ///     ghosts, because at that count the eye still resolves each one.
-    /// </summary>
+    /// <summary>Copies stamped around the sprite; at three or fewer the eye resolves them as separate ghosts.</summary>
     private const int BLOOM_COPIES = 6;
 
     /// <summary>Offset of each copy from the sprite centre, in pixels before <see cref="Particle.Scale" />.</summary>
@@ -309,10 +274,7 @@ public sealed class EyeGoreParticle : Particle
 
     private const float HALO_STRENGTH = 0.5f;
 
-    /// <summary>
-    ///     Cold violet, the same end of the palette <see cref="InkLayer" /> rims its silhouette with,
-    ///     so the bloom and the gas read as one material rather than two effects layered up.
-    /// </summary>
+    /// <summary>Cold violet, matching <see cref="InkLayer" />'s rim so the bloom and gas read as one material.</summary>
     private static readonly Color BloomColor = new(150, 142, 224);
 
     private static readonly Color HaloColor = new(74, 62, 150);

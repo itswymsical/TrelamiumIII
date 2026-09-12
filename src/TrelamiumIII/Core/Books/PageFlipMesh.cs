@@ -4,23 +4,9 @@ using Terraria.GameContent;
 namespace TrelamiumIII.Core.Books;
 
 /// <summary>
-///     The curling page. Draws one turning leaf as a deformed grid, textured with the page coming off
-///     the top on its front face and the page underneath on its back.
+///     Draws a turning leaf as a deformed grid, textured front and back. Needs no sprite batch open and the target bound; triangles
+///     are split by whether they've swung past a right angle, so both faces texture differently without a depth buffer.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Must be called with no sprite batch open and the destination render target already bound:
-///         it issues raw primitives, and sets its own blend, depth and rasteriser states.
-///     </para>
-///     <para>
-///         The curl is a cylinder whose sweep is eased by <c>sqrt(u)</c>, so the leading edge lifts
-///         early and the spine end stays put, and whose upper corner leads slightly ahead of the
-///         lower one. Triangles are sorted into two index lists by whether the middle of the quad has
-///         swung past a right angle, which is what lets the two faces carry different textures without
-///         a depth buffer -- the front list is everything still facing the reader, the back list is
-///         everything that has turned over.
-///     </para>
-/// </remarks>
 public sealed class PageFlipMesh : IDisposable
 {
     private const int COLS = 64;
@@ -69,8 +55,7 @@ public sealed class PageFlipMesh : IDisposable
         Main.QueueMainThreadAction(() => pending?.Dispose());
     }
 
-    /// <param name="front">The leaf being turned, as seen while it lifts.</param>
-    /// <param name="back">What is printed on its reverse. Null falls back to blank parchment.</param>
+    /// <param name="back">What is printed on the reverse; null falls back to blank parchment.</param>
     /// <param name="spineX">Pivot, in the composite target's space.</param>
     /// <param name="progress">0 flat at the source, 1 flat at the destination.</param>
     /// <param name="backward">False turns right to left; true turns left to right.</param>

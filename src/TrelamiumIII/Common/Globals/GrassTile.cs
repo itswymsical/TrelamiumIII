@@ -10,19 +10,11 @@ namespace TrelamiumIII.Common.Globals.Tiles;
 public abstract class GrassTile : ModTile
 {
     protected virtual int DirtType => TileID.Dirt;
-    /// <summary>
-    /// Chance for the grass to spread in a random update. Lower values mean higher chance.
-    /// </summary>
+    /// <summary>Spread chance per random update; lower values spread more often.</summary>
     public virtual int spreadChance => 2;
 
-    /// <summary>
-    /// Whether plants can grow on this grass.
-    /// </summary>
     public virtual bool CanGrowPlants => true;
 
-    /// <summary>
-    /// The plant types that can grow on this grass.
-    /// </summary>
     public virtual List<int> PlantTypes => [TileID.Plants];
     protected void AllowAnchor(params int[] types)
     {

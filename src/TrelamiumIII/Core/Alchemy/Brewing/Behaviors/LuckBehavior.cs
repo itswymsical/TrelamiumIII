@@ -1,15 +1,8 @@
 namespace TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 /// <summary>
-/// Potency-scaled Lucky buff. Vanilla keeps luck as an int <em>tier</em> in <see cref="Player.luckPotion"/>
-/// (3/2/1 by remaining buff time, local player only), which <c>Player.RecalculateLuck</c> turns into
-/// <c>tier * <see cref="PerTier"/></c>. <see cref="Player.luck"/> is a cache that recalculation assigns
-/// wholesale, not a per-tick accumulator, so there is nothing for <see cref="Apply"/> to nudge: the
-/// rescale lands in <see cref="AlchemyEffectPlayer.ModifyLuck"/>, the hook vanilla calls at the very end
-/// of that recalculation.
-/// <para>Vanilla encodes strength as duration -- the three Luck Potions are one buff at 5/10/15 minutes.
-/// That ladder is left intact, so duration still picks the opening tier and the buff still decays;
-/// StrengthPercent only scales the magnitude, letting a strong brew fall from a higher peak.</para>
+/// Potency-scaled Lucky buff. Vanilla stores a tier (<see cref="Player.luckPotion"/>) that RecalculateLuck turns into luck, so the rescale
+/// happens in <see cref="AlchemyEffectPlayer.ModifyLuck"/>. Duration still picks the tier and decays it; strength scales magnitude.
 /// </summary>
 public sealed class LuckBehavior : IEffectBehavior
 {

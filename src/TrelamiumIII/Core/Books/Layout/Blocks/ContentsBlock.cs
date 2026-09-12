@@ -20,22 +20,8 @@ public sealed class ContentsEntry
 }
 
 /// <summary>
-///     A book's chapter list, shared between the block that draws it and the pass that resolves it.
+///     A book's chapter list, shared by reference: the block sizes itself from the entry count, and page numbers are filled in after composing.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Held by reference on purpose. A table of contents cannot know its page numbers until the
-///         book has been composed, but composing needs to know how tall the table is -- which is the
-///         circular dependency that usually forces a second layout pass.
-///     </para>
-///     <para>
-///         It comes apart because the two halves depend on different things. The table's height
-///         depends only on how many chapters there are, which is known before anything is measured;
-///         only the numbers printed in it depend on where the chapters landed. So the block measures
-///         and places itself in the ordinary flow, and the numbers are written into this object
-///         afterwards, by which point nothing about the layout can change.
-///     </para>
-/// </remarks>
 public sealed class BookContents
 {
     public List<ContentsEntry> Entries { get; } = [];
@@ -55,9 +41,7 @@ public sealed class BookContents
     }
 }
 
-/// <summary>
-///     Draws a book's table of contents: chapter titles, dot leaders, page numbers, each row a jump.
-/// </summary>
+/// <summary>A table of contents: titles, dot leaders and page numbers, each row a jump.</summary>
 public sealed class ContentsBlock : BookBlock
 {
     /// <summary>Breathing room between contents rows, on top of the line itself.</summary>
@@ -106,10 +90,7 @@ public sealed class ContentsBlock : BookBlock
     private float HeaderHeight =>
         string.IsNullOrEmpty(header) ? 0f : BookText.LineHeight(Style.FaceFor(BookFont.Display), Style.Scale) + HEADER_GAP;
 
-    /// <summary>
-    ///     Derived from the style rather than fixed, so restyling the contents cannot leave the rows
-    ///     shorter than the text sitting in them.
-    /// </summary>
+    /// <summary>Derived from the style, so restyling can't make rows shorter than their text.</summary>
     private float RowHeight => BookText.LineHeight(Style.Face, Style.Scale) + ROW_PADDING;
 
     protected override float MeasureCore(float width) => HeaderHeight + RowCount * RowHeight;

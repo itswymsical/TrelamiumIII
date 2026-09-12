@@ -27,6 +27,9 @@ public sealed class DialogueManager
 
     public bool IsUIHidden { get; private set; }
 
+    /// <summary>True while a conversation is holding the camera pulled in. Other zooms should defer to it.</summary>
+    public bool IsZoomedIn => isZoomedIn;
+
     public delegate void DialogueStartHandler(string dialogueKey);
     public static event DialogueStartHandler OnDialogueStart;
 

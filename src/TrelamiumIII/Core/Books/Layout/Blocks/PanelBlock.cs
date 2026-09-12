@@ -4,23 +4,10 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Layout.Blocks;
 
-/// <summary>
-///     A bordered container holding other blocks: an aside, a boxed warning, a table of readings.
-/// </summary>
-/// <remarks>
-///     Panels never split. An aside that runs across a page break stops reading as an aside, so one
-///     that does not fit moves whole to the next page. Keep them short enough that a page can hold them.
-/// </remarks>
+/// <summary>A bordered container of other blocks. Never splits; one that doesn't fit moves whole to the next page.</summary>
 public sealed class PanelBlock : BookBlock
 {
-    /// <summary>
-    ///     Children that actually have something in them, resolved once.
-    /// </summary>
-    /// <remarks>
-    ///     Filtered up front rather than skipped while measuring, so the panel's own emptiness, its
-    ///     height and its drawing all agree. Emptiness does not depend on the column width, so there
-    ///     is nothing to recompute later.
-    /// </remarks>
+    /// <summary>Non-empty children, filtered once so emptiness, height and drawing all agree.</summary>
     private readonly List<BookBlock> visible;
 
     public PanelBlock(IReadOnlyList<BookBlock> children)
@@ -43,10 +30,7 @@ public sealed class PanelBlock : BookBlock
     /// <summary>Border alpha. Zero draws a fill with no outline.</summary>
     public float BorderOpacity { get; init; } = 0.5f;
 
-    /// <summary>
-    ///     A panel is only its contents. With none, it would draw as a bare box of padding and border
-    ///     floating on the page -- which is what a chapter missing the entries for its aside used to get.
-    /// </summary>
+    /// <summary>Empty with no visible children, so a missing aside doesn't leave a bare box.</summary>
     public override bool IsEmpty => visible.Count == 0;
 
     protected override float MeasureCore(float width)
@@ -103,14 +87,7 @@ public sealed class PanelBlock : BookBlock
     }
 }
 
-/// <summary>
-///     A note someone stuck to the page: tinted paper, a drop shadow, and handwriting.
-/// </summary>
-/// <remarks>
-///     Sticky notes are normally attached as decorations rather than placed in the flow, so they can
-///     sit over the text the way a real one would. Nothing stops you flowing one inline if you want it
-///     to part the paragraphs instead.
-/// </remarks>
+/// <summary>A sticky note: tinted paper, drop shadow, handwriting. Usually attached as a decoration, but can flow inline.</summary>
 public sealed class StickyNoteBlock(string? text) : BookBlock
 {
     private const float SHADOW_OFFSET = 2f;

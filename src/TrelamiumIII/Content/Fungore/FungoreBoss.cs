@@ -36,12 +36,8 @@ public sealed class FungoreBoss : ModNPC
 
     #region sheet
 
-    // 552x2144, a 4x16 grid of 138x134 cells. Columns are attacks, rows are that attack's frames:
-    //
-    //   0 | walk           rows 0-7
-    //   1 | punch          rows 0-11
-    //   2 | jump / slam    rows 0-11
-    //   3 | super slam     rows 0-15
+    // 552x2144 sheet, a 4x16 grid of 138x134 cells. Columns are attacks, rows their frames:
+    // 0 walk (rows 0-7), 1 punch (0-11), 2 jump/slam (0-11), 3 super slam (0-15).
 
     private const int FRAME_WIDTH = 138;
     private const int FRAME_HEIGHT = 134;
@@ -96,9 +92,7 @@ public sealed class FungoreBoss : ModNPC
     private const int SUPER_RECOVER_FIRST = 11;
     private const int SUPER_RECOVER_LAST = 15;
 
-    /// <summary>
-    ///     The pose he hangs on between clearing the ground and starting to fall.
-    /// </summary>
+    /// <summary>The pose he hangs on between clearing the ground and starting to fall.</summary>
     private const int EMERGE_HOLD_COLUMN = COLUMN_JUMP;
 
     private const int EMERGE_HOLD_ROW = JUMP_RISE;
@@ -113,9 +107,7 @@ public sealed class FungoreBoss : ModNPC
     private const float WALK_ACCELERATION = 0.24f;
     private const float GROUND_FRICTION = 0.8f;
 
-    /// <summary>
-    ///     Ground covered per step of the walk cycle, in pixels.
-    /// </summary>
+    /// <summary>Ground covered per step of the walk cycle, in pixels.</summary>
     private const float WALK_FRAME_PIXELS = 15f;
 
     private const int WALK_FRAME_MIN = 3;
@@ -141,9 +133,7 @@ public sealed class FungoreBoss : ModNPC
     private const float PUNCH_LUNGE = 5f;
     private const float DASH_LUNGE = 12.5f;
 
-    /// <summary>
-    ///     Chance of a dash punch rather than a step-in, per phase.
-    /// </summary>
+    /// <summary>1-in-N chance of a dash punch rather than a step-in, per phase.</summary>
     private static readonly int[] DashOdds = [4, 2, 2];
 
     /// <summary>Frames of suspended tile collision when dropping through a platform.</summary>
@@ -174,9 +164,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Frames of the crouch before he settles onto one knee for the rest of the charge.</summary>
     private const int SUPER_CROUCH_TICKS = 16;
 
-    /// <summary>
-    ///     The climb, the float and the fall are all driven by curves rather than by gravity.
-    /// </summary>
+    /// <summary>The climb, the float and the fall are all driven by curves rather than by gravity.</summary>
     private const int SUPER_RISE_TICKS = 22;
 
     /// <summary>Apex height above the launch point, in world pixels.</summary>
@@ -203,9 +191,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Ordinary slams landed before the big one comes out. Falls with the phase.</summary>
     private const int SLAMS_PER_SUPER = 3;
 
-    /// <summary>
-    ///     Failed approaches before he stops trying to walk it and goes under.
-    /// </summary>
+    /// <summary>Failed approaches before he stops trying to walk it and goes under.</summary>
     private const int FRUSTRATION_LIMIT = 2;
 
     /// <summary>Ordinary slams between mushrooms.</summary>
@@ -222,9 +208,7 @@ public sealed class FungoreBoss : ModNPC
     private const float HOP_DRIVE = 4.2f;
     private const int HOP_RECOVER_TICKS = 14;
 
-    /// <summary>
-    ///     Frames of struggling before the cloud goes up.
-    /// </summary>
+    /// <summary>Frames of struggling before the cloud goes up.</summary>
     private const int DEATH_TICKS = 199;
 
     /// <summary>Fraction of maximum life at which he stops fighting properly and starts hopping.</summary>
@@ -248,9 +232,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Cap on the tunnel, so a burrow under a bottomless pit still comes back up.</summary>
     private const int BURROW_TRAVEL_TIMEOUT = 240;
 
-    /// <summary>
-    ///     The reaction window: ground breaking up before anything comes out of it.
-    /// </summary>
+    /// <summary>The reaction window: ground breaking up before anything comes out of it.</summary>
     private const int BURROW_TELL_TICKS = 35;
 
     private const int BURROW_TELL_TICKS_MASTER = 20;
@@ -267,9 +249,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Shortest the tunnel may be, even if he dives straight onto them.</summary>
     private const int BURROW_MIN_TICKS = 26;
 
-    /// <summary>
-    ///     Distance at which he stops trying to walk back and simply tunnels.
-    /// </summary>
+    /// <summary>Distance at which he stops trying to walk back and simply tunnels.</summary>
     private const float BURROW_RANGE = 900f;
 
     private const int BURROW_RECOVER_TICKS = 40;
@@ -318,10 +298,7 @@ public sealed class FungoreBoss : ModNPC
 
     #region audio
 
-    /// <summary>
-    ///     The ground going before he does. Five and a half seconds long, so it is fired once and
-    ///     left to run under the whole entrance rather than retriggered.
-    /// </summary>
+    /// <summary>5.5 seconds long, so it's fired once under the whole entrance rather than retriggered.</summary>
     private static readonly SoundStyle RumbleSound = Assets.SFX.FungoreRumble.Asset with { Volume = 0.95f };
 
     // TODO: the rest are stand-ins until the real kit exists.
@@ -343,10 +320,7 @@ public sealed class FungoreBoss : ModNPC
 
     public ref float StateTimer => ref NPC.ai[1];
 
-    /// <summary>
-    ///     World Y of the floor he came up through. Zero when he did not arrive through one, which is
-    ///     what tells the draw not to bother clipping against a surface that is not there.
-    /// </summary>
+    /// <summary>World Y of the floor he came up through; zero if none, which skips ground clipping in the draw.</summary>
     private ref float GroundY => ref NPC.ai[2];
 
     private Player Target => Main.player[NPC.target];
@@ -395,9 +369,7 @@ public sealed class FungoreBoss : ModNPC
 
     private int slamsSinceSuper;
 
-    /// <summary>
-    ///     <see cref="StateTimer" /> the current state's fall ended on, or -1 while still airborne.
-    /// </summary>
+    /// <summary><see cref="StateTimer" /> the current state's fall ended on, or -1 while still airborne.</summary>
     private int landTick = -1;
 
     /// <summary>Frames already spent hanging at the top of a super slam. Reset by every leap.</summary>
@@ -409,9 +381,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>World Y his feet left the ground at. The super slam's curves are all measured from it.</summary>
     private float launchY;
 
-    /// <summary>
-    ///     <see cref="StateTimer" /> the tunnel finished on, or -1 while still travelling.
-    /// </summary>
+    /// <summary><see cref="StateTimer" /> the tunnel finished on, or -1 while still travelling.</summary>
     private int travelEnd = -1;
 
     /// <summary>Where he committed to coming up. Meaningless until the tunnel ends and fixes it.</summary>
@@ -480,10 +450,8 @@ public sealed class FungoreBoss : ModNPC
 
         NPC.value = Item.buyPrice(gold: 4);
 
-        // ModNPC.Music is deliberately left unset. The soundtrack is run by MusicDirector from the
-        // frame he breaks the surface, and it has to own the track from its first sample.
-        // starting the same track early would leave the director with a transport that disagrees
-        // with the audio, and the death fill would land off the beat.
+        // ModNPC.Music is unset on purpose: MusicDirector must own the track from its first sample when he surfaces,
+        // or the death fill lands off the beat.
     }
 
     public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry)
@@ -500,9 +468,8 @@ public sealed class FungoreBoss : ModNPC
 
         npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<FungoreTrophy>(), 10));
 
-        // The bag hands out its own copy of everything below, so outside expert it is dropped
-        // directly. The mask belongs here too -- it is in the bag, and dropping it from both would
-        // hand expert players two.
+        // Outside expert these drop directly, since the bag has its own copies. The mask is only here, or expert
+        // players would get two.
         LeadingConditionRule notExpert = new(new Conditions.NotExpert());
 
         notExpert.OnSuccess(ItemDropRule.Common(ModContent.ItemType<FungoreMask>(), 7));
@@ -524,9 +491,7 @@ public sealed class FungoreBoss : ModNPC
 
     public override void BossLoot(ref int potionType) => potionType = ItemID.LesserHealingPotion;
 
-    /// <summary>
-    ///     Places him under the floor near whoever he was summoned on, and starts the entrance.
-    /// </summary>
+    /// <summary>Places him under the floor near whoever summoned him, and starts the entrance.</summary>
     public override void OnSpawn(IEntitySource source)
     {
         NPC.TargetClosest(false);
@@ -549,9 +514,7 @@ public sealed class FungoreBoss : ModNPC
 
         GroundY = FindGround(emergeX, from);
 
-        // Started fully under the surface. The rise interpolates up from here, and the draw clips
-        // whatever is still below the floor, so he grows out of the ground rather than appearing
-        // on top of it.
+        // Starts fully under the surface; the rise interpolates up and the draw clips whatever is below the floor.
         NPC.Bottom = new Vector2(emergeX, GroundY + NPC.height);
         NPC.velocity = Vector2.Zero;
 
@@ -567,9 +530,7 @@ public sealed class FungoreBoss : ModNPC
 
         grounded = NPC.velocity.Y == 0f;
 
-        // Cleared before the switch, set again by any SetState the switch performs. Clearing here
-        // rather than at the bottom is what lets OnSpawn's SetState work too: its flag is consumed
-        // by this line, so the entrance still gets a real tick 0 and then ticks normally.
+        // Cleared before the switch and re-set by any SetState inside it, so OnSpawn's SetState still gets a real tick 0.
         entered = false;
 
         StartIntro();
@@ -627,16 +588,12 @@ public sealed class FungoreBoss : ModNPC
         if (!Main.dedServ)
             Lighting.AddLight(NPC.Center, 0.35f, 0.18f, 0.05f);
 
-        // A state entered during this tick keeps its zero. SetState runs from inside the switch
-        // above, so an unconditional increment here would hand every state a first frame of 1 and
-        // quietly delete whatever it does on 0.
+        // A state entered this tick keeps tick 0; incrementing unconditionally would skip every state's first frame.
         if (!entered)
             StateTimer++;
     }
 
-    /// <summary>
-    ///     True while a state is driving his vertical motion itself.
-    /// </summary>
+    /// <summary>True while a state is driving his vertical motion itself.</summary>
     private bool DrivesVertical => State switch
     {
         FungoreState.Emerge => StateTimer < EmergeFallTick,
@@ -653,15 +610,12 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>First tick of the entrance on which he is allowed to fall.</summary>
     private static int EmergeFallTick => EMERGE_RUMBLE_TICKS + EMERGE_RISE_TICKS + EMERGE_HANG_TICKS;
 
-    /// <summary>
-    ///     Contact damage for the current pose.
-    /// </summary>
+    /// <summary>Contact damage for the current pose.</summary>
     private int ContactDamage => State switch
     {
         FungoreState.Death => 0,
 
-        // Nothing about the entrance is a threat until he is actually standing on the floor. He
-        // cannot be hurt for its duration either, and one of those without the other is a mugging.
+        // Harmless until he lands, just as he's invulnerable until then.
         FungoreState.Emerge when landTick < 0 => 0,
 
         // Same trade underground: untouchable, and untouching.
@@ -671,11 +625,8 @@ public sealed class FungoreBoss : ModNPC
         FungoreState.Burrow when landTick < 0 => (int)(baseDamage * 1.3f),
         FungoreState.Burrow => (int)(baseDamage * 0.5f),
 
-        // Face down in the dirt after a slam. Standing on him should be the reward for reading it.
-        //
-        // Tested before the airborne arms below, not after: this runs at the end of the tick, by
-        // which point gravity has already put a frame's worth of downward speed back on a Fungore
-        // who is lying on the floor, and "moving down" would otherwise still be true of him.
+        // Face down after a slam: standing on him is the reward. Tested before the airborne arms, since gravity has
+        // already put downward speed back on him by this point.
         FungoreState.Jump when landTick >= 0 => (int)(baseDamage * 0.5f),
         FungoreState.SuperSlam when landTick >= 0 => (int)(baseDamage * 0.5f),
         FungoreState.BunnyHop when landTick >= 0 => (int)(baseDamage * 0.6f),
@@ -691,12 +642,11 @@ public sealed class FungoreBoss : ModNPC
     {
         cooldownSlot = ImmunityCooldownID.Bosses;
 
-        // Tied to the damage rather than restated: the two disagreeing would mean a pose that hits
-        // for nothing, or one that is listed as harmless and still connects.
+        // Tied to ContactDamage so the two can't disagree.
         return ContactDamage > 0;
     }
 
-    /// <summary>Never culled mid-performance -- an entrance, a tunnel or a death has to finish.</summary>
+    /// <summary>Never culled mid-performance its an entrance: a tunnel or a death needs to finish.</summary>
     public override bool CheckActive() => State is not (FungoreState.Emerge or FungoreState.Burrow or FungoreState.Death);
 
     /// <summary>Intercepts the kill so the death animation gets to run before he actually dies.</summary>
@@ -716,9 +666,7 @@ public sealed class FungoreBoss : ModNPC
 
     #region entrance
 
-    /// <summary>
-    ///     Kicks the title sequence off locally.
-    /// </summary>
+    /// <summary>Kicks the title sequence off locally.</summary>
     private void StartIntro()
     {
         if (Main.dedServ || introStarted)
@@ -768,7 +716,7 @@ public sealed class FungoreBoss : ModNPC
 
         if (since <= EMERGE_RISE_TICKS)
         {
-            Rise(since);
+            HopOutTheGround(since);
             return;
         }
 
@@ -778,7 +726,7 @@ public sealed class FungoreBoss : ModNPC
             return;
         }
 
-        Arrive();
+        DoLanding();
     }
 
     /// <summary>Still under the floor. Only the ground above him has anything to say.</summary>
@@ -825,18 +773,13 @@ public sealed class FungoreBoss : ModNPC
         if (Main.dedServ)
             return;
 
-        // Below the guard on purpose: building the score reads music slots, and a server has no
-        // music registry to read them from.
-        //
-        // Lands on the same frame as the bars, the lines and Fungore himself. The short fade is only
-        // there to keep the downbeat from colliding with whatever vanilla is still fading out.
+        // Below the dedServ guard: building the score reads music slots, which servers lack. The short fade keeps the
+        // downbeat from colliding with whatever vanilla is still fading out.
         MusicDirector.Play(FungoreMusic.Create(), fadeIn: 0.35f);
     }
 
-    /// <summary>
-    ///     Ground breaking open, shared by the entrance and the burrow.
-    /// </summary>
-    /// <param name="scale">Fraction of full strength. The entrance is the loud one.</param>
+    /// <summary>Ground breaking open, shared by the entrance and the burrow.</summary>
+    /// <param name="scale">Fraction of full strength; the entrance is the loud one.</param>
     private void Erupt(Vector2 surface, float scale)
     {
         SoundEngine.PlaySound(EruptSound with { Volume = EruptSound.Volume * scale }, surface);
@@ -870,8 +813,7 @@ public sealed class FungoreBoss : ModNPC
         }
     }
 
-    /// <summary>Climbing out. Position is interpolated outright -- gravity gets no say until the top.</summary>
-    private void Rise(int since)
+    private void HopOutTheGround(int since)
     {
         float progress = since / (float)EMERGE_RISE_TICKS;
         float eased = EaseCubicOut.Ease(progress);
@@ -882,7 +824,6 @@ public sealed class FungoreBoss : ModNPC
             MathHelper.Lerp(GroundY + NPC.height, GroundY - EMERGE_APEX, eased)
         );
 
-        // Unfolds out of the compression he was buried in.
         squish = Vector2.Lerp(RiseSquish, Vector2.One, EaseCubicOut.Ease(progress));
 
         SetFrame(EMERGE_HOLD_COLUMN, EMERGE_HOLD_ROW);
@@ -897,7 +838,6 @@ public sealed class FungoreBoss : ModNPC
         );
     }
 
-    /// <summary>Hanging at the top while the card reads. Still drifting, just barely.</summary>
     private void Hang(int since)
     {
         float progress = since / (float)EMERGE_HANG_TICKS;
@@ -916,8 +856,7 @@ public sealed class FungoreBoss : ModNPC
             SporeLayer.Trail(NPC.Center + Main.rand.NextVector2Circular(30f, 30f), Main.rand.NextVector2Circular(0.8f, 0.8f), Main.rand.NextFloat(8f, 15f));
     }
 
-    /// <summary>Falls, lands, and hands the fight over.</summary>
-    private void Arrive()
+    private void DoLanding()
     {
         if (landTick < 0)
         {
@@ -978,13 +917,7 @@ public sealed class FungoreBoss : ModNPC
 
     private int SlamsPerSuper => Phase switch { 1 => SLAMS_PER_SUPER, 2 => SLAMS_PER_SUPER - 1, _ => 1 };
 
-    /// <summary>
-    ///     Picks the next attack.
-    /// </summary>
-    /// <remarks>
-    ///     Server-only: every branch below can roll, and two clients rolling separately would put
-    ///     Fungore in two different attacks until the next packet arrived.
-    /// </remarks>
+    /// <summary>Picks the next attack. Server-only: every branch can roll, and clients rolling separately would desync.</summary>
     private static readonly string[] CRITICAL_PATTERNS =
     [
         "HHBB",
@@ -1013,12 +946,8 @@ public sealed class FungoreBoss : ModNPC
         float gap = Math.Abs(target.Center.X - NPC.Center.X);
         bool reachable = Math.Abs(target.Bottom.Y - NPC.Bottom.Y) < SAME_FLOOR;
 
-        // Getting back into the fight comes before deciding what to do in it. Both of these used to
-        // sit under the super slam counter, which meant an owed slam would be spent on empty ground
-        // a screen away from anyone.
-        //
-        // Too far to fight: walking it would take longer than the tunnel and would spend the whole
-        // trip off screen, where none of his tells mean anything.
+        // Getting back into the fight comes first, or an owed super slam is spent on empty ground. Beyond BURROW_RANGE he
+        // tunnels: walking would take longer and happen off screen, where his tells mean nothing.
         if (gap > BURROW_RANGE)
         {
             SetState(FungoreState.Burrow);
@@ -1070,9 +999,7 @@ public sealed class FungoreBoss : ModNPC
             return;
         }
 
-        // The dash punch is what closes the gap phase one lets you keep. Available from the first
-        // phase now, just rarer -- gating it entirely meant a third of the fight never showed the
-        // player the move they most need to learn.
+        // Available from phase one, just rarer: it's the move players most need to learn.
         if (reachable && gap <= DASH_RANGE && Main.rand.NextBool(DashOdds[Phase - 1]))
         {
             BeginPunch(dash: true);
@@ -1128,9 +1055,7 @@ public sealed class FungoreBoss : ModNPC
         State = state;
         StateTimer = 0f;
 
-        // Claims this tick's increment. Without it the timer would be bumped to 1 before the new
-        // state ever ran, and its first frame -- the one that caches targets, plays the swing, sets
-        // up the whole attack -- would simply never happen. See the note in AI.
+        // Claims this tick's increment, so the new state's frame 0 (which caches targets and sets up the attack) still runs.
         entered = true;
 
         landTick = -1;
@@ -1245,9 +1170,7 @@ public sealed class FungoreBoss : ModNPC
 
         if (punchesLeft > 0)
         {
-            // A follow-up dashes only if they have backed out of reach again. Jabbing at empty air
-            // because the opener was the only punch allowed to travel is the worst-looking thing he
-            // used to do; a flurry that all dashed would cross the arena.
+            // Follow-ups dash only if the target backed out of reach; a flurry that always dashed would cross the arena.
             dashing = Target is { active: true } target
                       && Math.Abs(target.Center.X - NPC.Center.X) > MELEE_RANGE;
 
@@ -1317,9 +1240,8 @@ public sealed class FungoreBoss : ModNPC
 
         squish = Vector2.Lerp(LandSquish, Vector2.One, EaseCubicOut.Ease(since / (float)SLAM_STAGGER_TICKS));
 
-        // The recovery deliberately spends most of its length on the landing pose rather than
-        // walking back up through the frames. Standing back up early would cut the punish window
-        // without shortening the animation.
+        // Most of the recovery holds the landing pose; standing up early would cut the punish window without shortening
+        // the animation.
         SetFrame(COLUMN_JUMP, since < SLAM_STAGGER_TICKS * 0.6f
             ? JUMP_LAND
             : RowAcross(JUMP_RECOVER_FIRST, JUMP_RECOVER_LAST, (since - SLAM_STAGGER_TICKS * 0.6f) / (SLAM_STAGGER_TICKS * 0.4f)));
@@ -1419,14 +1341,9 @@ public sealed class FungoreBoss : ModNPC
     }
 
     /// <summary>
-    ///     The climb, the float and the fall.
+    ///     The climb, the float and the fall. The first two are position servos: the curve's target minus the current
+    ///     position becomes velocity, so motion stays eased while ceilings still stop him.
     /// </summary>
-    /// <remarks>
-    ///     The first two phases are position servos: the curve says where he should be, and the
-    ///     difference from where he is becomes this tick's velocity. That keeps the motion eased
-    ///     while leaving the engine in charge of collision -- a ceiling still stops him, and the
-    ///     next tick simply asks for the rest of the climb again rather than teleporting through it.
-    /// </remarks>
     private void Fly(int since)
     {
         if (since < SUPER_RISE_TICKS)
@@ -1458,9 +1375,7 @@ public sealed class FungoreBoss : ModNPC
             return;
         }
 
-        // Guarded on the counter rather than on speed alone: a servo that has just arrived where it
-        // was asked to be leaves the vertical velocity at zero, which is indistinguishable from
-        // standing on the floor.
+        // Guarded on the counter: a servo that just arrived leaves vertical velocity at zero, which looks like standing.
         if (grounded && dropTicks > 1)
         {
             landTick = (int)StateTimer;
@@ -1551,22 +1466,9 @@ public sealed class FungoreBoss : ModNPC
     private bool Breaching => BreachTick >= 0 && BreachTick < BURROW_RISE_TICKS;
 
     /// <summary>
-    ///     Goes under, chases beneath the player, commits, breaks the ground, and comes down on it.
+    ///     Goes under, chases beneath the player, commits, breaks the ground and comes down on it. The spot is committed
+    ///     late, once he's beneath the target, so the tell is the whole reaction window; it's fixed once announced.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         <b>The commit is late on purpose.</b> Caching the spot at the dive made this trivial:
-    ///         the player had the whole tunnel <em>plus</em> the tell to walk out of a circle that was
-    ///         drawn before Fungore had gone anywhere, and simply strolling in one direction beat it
-    ///         every time. He now tracks live while underground and freezes the target only when he
-    ///         is beneath them, which makes the tell the entire reaction window rather than the last
-    ///         part of a much longer one.
-    ///     </para>
-    ///     <para>
-    ///         It stays fair because the window is unchanged and the spot is still fixed once it is
-    ///         announced -- the player is reacting to a real place, just with less notice.
-    ///     </para>
-    /// </remarks>
     private void UpdateBurrow()
     {
         int tick = (int)StateTimer;
@@ -1636,9 +1538,7 @@ public sealed class FungoreBoss : ModNPC
 
         var goal = new Vector2(chase, TunnelDepth());
 
-        // SafeNormalize, not DirectionTo: arriving exactly on the goal would normalise a zero vector
-        // into NaN, and a NaN position fails every distance check after it -- including the one that
-        // is supposed to end the tunnel.
+        // SafeNormalize, not DirectionTo: a zero vector would normalise to NaN and fail the check that ends the tunnel.
         NPC.velocity = (goal - NPC.Center).SafeNormalize(Vector2.UnitY) * BURROW_SPEED;
 
         squish = BurrowSquish;
@@ -1669,9 +1569,7 @@ public sealed class FungoreBoss : ModNPC
         burrowX = x;
         GroundY = FindGround(x, Target is { active: true } target ? target.Bottom.Y : NPC.Bottom.Y);
 
-        // The tick the tell begins, which is the next one -- this tick already belongs to the
-        // tunnel. Storing the arrival tick instead would start the tell at 1 and skip its opening
-        // frame, the same way the state timer used to skip every state's.
+        // The tell starts next tick; this one belongs to the tunnel.
         travelEnd = tick + 1;
 
         // Parked directly under the surface he is about to come through, so the tell, the clip and
@@ -1681,14 +1579,7 @@ public sealed class FungoreBoss : ModNPC
         NPC.netUpdate = true;
     }
 
-    /// <summary>
-    ///     Where he would surface if he committed this frame.
-    /// </summary>
-    /// <remarks>
-    ///     Clamped into the world rather than trusted. The tunnel is a straight beeline with no
-    ///     terrain to stop it, so a target that is somehow nonsense does not make him miss -- it
-    ///     makes him leave the map and never come back.
-    /// </remarks>
+    /// <summary>Where he'd surface if he committed now, clamped into the world so a bad target can't send him off the map.</summary>
     private float TrackedX()
     {
         float wanted = Target is { active: true } target ? target.Center.X : NPC.Center.X;
@@ -1784,9 +1675,7 @@ public sealed class FungoreBoss : ModNPC
 
         squish = Vector2.One;
 
-        // The tick guard matters: the climb is a servo, and a servo that has just arrived where it
-        // asked to be leaves the vertical velocity at zero -- which is indistinguishable from
-        // standing on the floor, three hundred pixels above it.
+        // The tick guard matters: an arrived servo has zero vertical velocity, which reads as standing far above the floor.
         if (grounded && since > BURROW_RISE_TICKS + 1)
         {
             landTick = (int)StateTimer;
@@ -1801,12 +1690,7 @@ public sealed class FungoreBoss : ModNPC
         SetFrame(Master ? COLUMN_SUPER : COLUMN_JUMP, Master ? SUPER_DROP_LAST : JUMP_FALL);
     }
 
-    /// <summary>
-    ///     Dirt thrown out of the surface above the tunnel.
-    /// </summary>
-    /// <remarks>
-    ///     The trip has to be legible from above or the burrow reads as a boss that simply vanished.
-    /// </remarks>
+    /// <summary>Dirt thrown up above the tunnel, so the burrow reads as travel rather than vanishing.</summary>
     private void MoleTrail()
     {
         if (!TryFindSurface(NPC.Center, out float surfaceY))
@@ -1854,9 +1738,7 @@ public sealed class FungoreBoss : ModNPC
         NPC.dontTakeDamage = true;
         NPC.damage = 0;
 
-        // Fired from here rather than from CheckDead, which only ever runs on the server. Every
-        // client reaches the death state through ai[0] and has its own copy of the soundtrack to
-        // put a fill into, so each one schedules its own against its own transport.
+        // Fired here rather than in CheckDead (server-only): each client schedules the fill against its own transport.
         if (!deathFillFired)
         {
             deathFillFired = true;
@@ -1958,18 +1840,8 @@ public sealed class FungoreBoss : ModNPC
 
     private int HorizontalDirection => Target is { active: true } target ? Math.Sign(target.Center.X - NPC.Center.X) : 0;
 
-    /// <summary>
-    ///     Launch speed that puts him roughly on top of the target, capped at <paramref name="max" />.
-    /// </summary>
-    /// <remarks>
-    ///     Solved against the flight rather than aimed at the player. He is airborne long enough that
-    ///     simply pointing at where they are standing now lands consistently short, and the whole
-    ///     point of a slam is that it arrives where you are.
-    /// </remarks>
-    /// <param name="flightTicks">
-    ///     How long he will be off the ground. <see cref="BallisticFlight" /> for a jump gravity owns;
-    ///     a plain figure for the super slam, whose airtime is set by its curves and not by physics.
-    /// </param>
+    /// <summary>Launch speed that lands him roughly on the target, capped at <paramref name="max" />; solved against flight time.</summary>
+    /// <param name="flightTicks"><see cref="BallisticFlight" /> for gravity-owned jumps; a fixed figure for the curve-driven super slam.</param>
     private float LeadHorizontal(float max, float flightTicks)
     {
         if (Target is not { active: true } target)
@@ -1981,13 +1853,7 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Frames a jump at <paramref name="leapSpeed" /> spends in the air under our gravity.</summary>
     private static float BallisticFlight(float leapSpeed) => 2f * leapSpeed / GRAVITY;
 
-    /// <summary>
-    ///     Speed that closes on the target proportionally, capped at <paramref name="max" />.
-    /// </summary>
-    /// <remarks>
-    ///     For steering that is already in flight, where there is no arc left to solve -- proportional
-    ///     so he settles onto the target rather than swinging past it and back.
-    /// </remarks>
+    /// <summary>Proportional steering toward the target for use mid-flight, capped at <paramref name="max" />.</summary>
     private float CloseHorizontal(float max)
     {
         if (Target is not { active: true } target)
@@ -1997,24 +1863,9 @@ public sealed class FungoreBoss : ModNPC
     }
 
     /// <summary>
-    ///     Drops him through the platform he is standing on when the fight has gone below it.
+    ///     Drops him through his platform when the fight is below it, by briefly suspending tile collision (long enough
+    ///     for one platform only). Skipped for states that own <see cref="NPC.noTileCollide" />.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Without this a platform is a hard counter: he stands on it, the player stands under
-    ///         it, and every attack he has is aimed at the wrong floor. Players build platforms.
-    ///     </para>
-    ///     <para>
-    ///         Done by suspending tile collision for a few frames rather than by nudging him down,
-    ///         which is the only way through a tile that is solid from above and open from below. It
-    ///         is deliberately brief -- while it is running he would fall through real ground too, so
-    ///         the window is only ever long enough to clear one platform.
-    ///     </para>
-    ///     <para>
-    ///         States that own <see cref="NPC.noTileCollide" /> themselves are left alone; the two of
-    ///         us writing the same field on the same tick is how a boss ends up inside the world.
-    ///     </para>
-    /// </remarks>
     private void UpdatePlatformDrop()
     {
         if (State is FungoreState.Emerge or FungoreState.Burrow)
@@ -2044,13 +1895,7 @@ public sealed class FungoreBoss : ModNPC
         dropThrough = PLATFORM_DROP_TICKS;
     }
 
-    /// <summary>
-    ///     Whether the tile under his feet is one you can stand on but fall through.
-    /// </summary>
-    /// <remarks>
-    ///     <c>tileSolidTop</c> rather than a platform id, so anything that behaves like a platform --
-    ///     modded ones included -- is treated like one.
-    /// </remarks>
+    /// <summary>Whether he stands on a fall-through tile; checks <c>tileSolidTop</c> so modded platforms count.</summary>
     private bool StandingOnPlatform()
     {
         int tileX = (int)(NPC.Center.X / 16f);
@@ -2082,10 +1927,8 @@ public sealed class FungoreBoss : ModNPC
 
     #region impacts
 
-    /// <summary>
-    ///     A landing that shifts the ground.
-    /// </summary>
-    /// <param name="super">The charged version: a wider, deeper wave with a trough either side of it, and spores.</param>
+    /// <summary>A landing that shifts the ground.</summary>
+    /// <param name="super">The charged version: a wider, deeper wave with troughs either side, and spores.</param>
     /// <param name="ordinary">Whether this counts toward the next super slam.</param>
     /// <param name="scale">Fraction of full strength, for the worn-down slams of the last phase.</param>
     private void Slam(bool super, bool ordinary, float scale = 1f)
@@ -2132,8 +1975,7 @@ public sealed class FungoreBoss : ModNPC
 
         CameraSystem.shake = Math.Max(CameraSystem.shake, (int)((super ? 20f : 12f) * scale));
 
-        // Purely a marker for where the ground was hit. Both sheets stand on the impact line, which
-        // is what Slam is handed, so no offset is needed here.
+        // Both sheets stand on the impact line, so no offset is needed.
         if (super)
             FungoreSuperSlamBurst.Spawn(impact, scale);
         else
@@ -2143,13 +1985,7 @@ public sealed class FungoreBoss : ModNPC
         Rubble(impact, reach: (int)((super ? 5 : 3) * scale), puffs: (int)((super ? 30 : 16) * scale));
     }
 
-    /// <summary>
-    ///     Scatters spore sacs across the ground the slam covered.
-    /// </summary>
-    /// <remarks>
-    ///     Started a little above the impact line, because the search runs downward -- from level
-    ///     with the floor it would find the tile he is standing on only by luck.
-    /// </remarks>
+    /// <summary>Scatters spore sacs across the slammed ground, searching down from just above the impact line.</summary>
     private void PlantSacs(Vector2 impact, int count, float scale)
     {
         for (int i = 0; i < count; i++)
@@ -2163,14 +1999,7 @@ public sealed class FungoreBoss : ModNPC
         }
     }
 
-    /// <summary>
-    ///     Debris off whatever he landed on.
-    /// </summary>
-    /// <remarks>
-    ///     Driven through <see cref="WorldGen.KillTile" /> with <c>fail: true</c>, the same path a
-    ///     pickaxe swing that breaks nothing takes: correct dust and sound for the actual material,
-    ///     world left intact, no netcode.
-    /// </remarks>
+    /// <summary>Material-correct debris via <see cref="WorldGen.KillTile" /> with <c>fail: true</c>; the world is left intact.</summary>
     private static void Rubble(Vector2 impact, int reach, int puffs)
     {
         Point centre = impact.ToTileCoordinates();
@@ -2313,17 +2142,9 @@ public sealed class FungoreBoss : ModNPC
     }
 
     /// <summary>
-    ///     Afterimages down the path of a dash punch.
+    ///     Afterimages along a dash, from <see cref="NPC.oldPos" /> (already warm, since the trail cache is always on).
+    ///     Entries are top-left positions, so each is moved onto the body's bottom-centre anchor.
     /// </summary>
-    /// <remarks>
-    ///     Positions come from <see cref="NPC.oldPos" />, which vanilla fills every frame once
-    ///     <see cref="NPCID.Sets.TrailCacheLength" /> is set -- so the buffer is already warm when the
-    ///     dash starts and the trail is behind him on the first frame of it rather than growing in.
-    ///     <para>
-    ///         Entries are top-left positions, so each one is moved onto the same bottom-centre anchor
-    ///         the body is drawn from.
-    ///     </para>
-    /// </remarks>
     private void DrawDashTrail(SpriteBatch spriteBatch, Texture2D texture, Rectangle source, Vector2 origin, Vector2 screenPos, SpriteEffects effects, Color drawColor)
     {
         if (NPC.oldPos is not { Length: > 1 })
@@ -2355,18 +2176,9 @@ public sealed class FungoreBoss : ModNPC
     }
 
     /// <summary>
-    ///     Trims whatever is still below the floor he is coming up through, and re-anchors what is
-    ///     left to the surface.
+    ///     Trims whatever is still below the floor he is rising through and re-anchors the rest; false if nothing is left.
+    ///     Skipped when <see cref="GroundY" /> is unset, including bestiary mannequins.
     /// </summary>
-    /// <remarks>
-    ///     This is what makes the entrance read as breaking out of the ground: NPCs draw in front of
-    ///     tiles, so without it the first half of the rise is a Fungore lying on top of the dirt.
-    ///     <para>
-    ///         Skipped whenever <see cref="GroundY" /> is unset, which covers everything that is not a
-    ///         live entrance -- including a bestiary mannequin, which has no <c>ai</c> at all.
-    ///     </para>
-    /// </remarks>
-    /// <returns>False when there is nothing left above the surface to draw.</returns>
     private bool ClipToGround(ref Rectangle source, ref Vector2 origin, ref Vector2 position)
     {
         if (GroundY <= 0f)
@@ -2410,13 +2222,8 @@ public sealed class FungoreBoss : ModNPC
     #region net
 
     /// <summary>
-    ///     Everything the state machine keeps outside <see cref="NPC.ai" />.
+    ///     State kept outside <see cref="NPC.ai" />. Facing is here because <see cref="Entity.direction" /> isn't in the vanilla packet.
     /// </summary>
-    /// <remarks>
-    ///     Facing is here because <see cref="Entity.direction" /> is not in the vanilla NPC packet,
-    ///     and the rest because a client that guessed at a flurry length or a landing frame would
-    ///     drift further out of step with every attack rather than resynchronising on the next one.
-    /// </remarks>
     public override void SendExtraAI(BinaryWriter writer)
     {
         writer.Write((sbyte)facing);

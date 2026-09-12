@@ -10,21 +10,9 @@ using static TrelamiumIII.Core.Books.BookCover;
 namespace TrelamiumIII.Core.Books;
 
 /// <summary>
-///     A book on screen: the open, read, turn and close cycle, the input that drives it, and the
-///     bridge to <see cref="BookRenderer" /> that puts it on the page.
+///     A book on screen: open, read, turn and close. Subclasses address content by spread. Hosted as an <see cref="IInGameNotification" />,
+///     which updates after vanilla consumes mouse-release flags, so clicks come from tracked edges.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Books address content by spread, not by page. A subclass says how many spreads it has and
-///         draws either side of one; everything about targets, curling and compositing is handled here.
-///     </para>
-///     <para>
-///         Hosted as an <see cref="IInGameNotification" /> so it survives without a UIState and draws
-///         above the HUD. That comes with a quirk: notifications update after vanilla has already
-///         consumed the mouse-release flags, so fresh clicks are detected from tracked edges rather
-///         than from <see cref="Main.mouseLeftRelease" />.
-///     </para>
-/// </remarks>
 public abstract class BookUI : IInGameNotification, IBookView
 {
     private const float OPEN_SPEED = 0.042f;
@@ -169,10 +157,8 @@ public abstract class BookUI : IInGameNotification, IBookView
 
     internal void BuildFrame()
     {
-        // Hover is resolved while the pages draw, and read back by the next Update. Clearing here
-        // rather than after drawing is what keeps it alive across that gap: notifications update
-        // before the frame is drawn, so a flag cleared at the end of a draw would always be null by
-        // the time the click that depends on it is handled.
+        // Cleared before drawing, not after: notifications update before the draw, so hover set during this draw has to
+        // survive to the next update.
         hoverText = null;
         hoverLink = null;
         hoverPage = null;
@@ -233,10 +219,7 @@ public abstract class BookUI : IInGameNotification, IBookView
         wasRightDown = Main.mouseRight;
     }
 
-    /// <summary>
-    ///     Tears the book down immediately, without waiting for the close to play out. Used on unload,
-    ///     where there is no next frame for the animation to finish in.
-    /// </summary>
+    /// <summary>Tears the book down immediately, for unload, where the close animation can't finish.</summary>
     internal void ForceRelease()
     {
         state = BookState.Closing;

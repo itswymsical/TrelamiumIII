@@ -203,11 +203,8 @@ public class FarmingSystem : GlobalTile
     }
 
     /// <summary>
-    /// Attempts a single growth tick on a herb at (i, j).
-    /// Requires the herb to be sitting on a registered seedbed.
-    /// <para>chanceMultiplier scales the seedbed's GrowthChance upward (worse odds).
-    /// Pass a value greater than 1 for rapid-fire sources like the watering can.</para>
-    /// Returns true if the herb advanced a stage.
+    /// Attempts one growth tick on the herb at (i, j), which must sit on a registered seedbed; true if it advanced.
+    /// <paramref name="chanceMultiplier"/> worsens the seedbed's GrowthChance (above 1 for rapid sources like the watering can).
     /// </summary>
     public static bool TryGrowHerb(int i, int j, int chanceMultiplier = 1)
     {
@@ -251,7 +248,6 @@ public class FarmingSystem : GlobalTile
         return true;
     }
 
-    /// <summary>Derives a readable herb name from TileFrameX.</summary>
     private static string HerbName(int frameX)
         => (HerbType)(frameX / 18) switch
         {

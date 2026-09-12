@@ -43,10 +43,7 @@ public class GelatinousBlaster : ModItem
         if (!Item.TryEnable(out ChemicalSourceComponent component))
             return;
 
-        // The same component the flasks carry, on the same delivery path. What makes this weapon
-        // generic rather than elemental is one field: no element, so no matchup and no reaction --
-        // the affliction is the whole of what the gel does to a target, and the coat it leaves is
-        // the whole of what it does to the fight.
+        // Solute: no element, so no matchup or reaction; the affliction and the coat are the whole effect.
         component.ChemicalType = ChemicalDamageType.Solute;
         component.ChemicalDamage = 1.5f;
         component.AfflictionRate = 30f;
@@ -66,10 +63,7 @@ public class GelatinousBlaster : ModItem
     /// <summary>One weapon out at a time; the held projectile is the weapon.</summary>
     public override bool CanUseItem(Player player) => player.ownedProjectileCounts[Item.shoot] <= 0;
 
-    /// <summary>
-    ///     The held projectile consumes gel per shot, so the item must not also take a round for
-    ///     the single use that spawned it.
-    /// </summary>
+    /// <summary>The held projectile consumes gel per shot, so the spawning use must not also take a round.</summary>
     public override bool CanConsumeAmmo(Item ammo, Player player) => false;
 
     public override void AddRecipes()
@@ -89,15 +83,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
 {
     public override string Texture => AssetReferences.Content.KingSlime.GelatinousBlaster.KEY;
 
-    /// <summary>
-    ///     The stock burst pistol, with the muzzle pushed out to clear the longer sprite.
-    /// </summary>
-    /// <remarks>
-    ///     Three rounds two ticks apart and a 36-tick breath, which is the
-    ///     <see cref="GunShotProfile.BurstPistol" /> preset unchanged -- the whole point of the
-    ///     preset is that a weapon of this archetype should not have to restate the cadence to get
-    ///     the feel. Only the two numbers that depend on this particular sprite are overridden.
-    /// </remarks>
+    /// <summary>The stock <see cref="GunShotProfile.BurstPistol" />, with only the sprite-dependent numbers changed.</summary>
     protected override GunShotProfile Profile => GunShotProfile.BurstPistol with
     {
         MuzzleLength = 28f,
@@ -114,12 +100,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
 
     protected override bool CanFireBurst(Player owner) => owner.HasAmmo(owner.HeldItem);
 
-    /// <summary>The last round of the burst coughs out a heavier vent of gel.</summary>
-    /// <remarks>
-    ///     Purely a punctuation mark, and it is worth having: without something at the end, three
-    ///     rounds and a silent pause reads as the weapon having jammed rather than as it having
-    ///     finished.
-    /// </remarks>
+    /// <summary>A heavier vent of gel on the last round, so the pause reads as finished rather than jammed.</summary>
     protected override void OnBurstComplete(Player owner)
     {
         SoundEngine.PlaySound(SoundID.Item95 with { Volume = 0.35f, Pitch = 0.6f, MaxInstances = 2 }, Owner.Center);
@@ -168,14 +149,8 @@ public class GelatinousBlasterProj : BurstGunProjectile
 }
 
 /// <summary>
-///     A blob of gel in flight. Trails the gel layer behind it and bursts into it on impact.
+///     A blob of gel in flight. Mostly a hitbox: what the player sees is the <see cref="GelLayer" /> trail it lays every tick.
 /// </summary>
-/// <remarks>
-///     The projectile itself is barely visible and barely matters -- it is a hitbox with a sprite
-///     on it. What the player sees is the <see cref="GelLayer" /> nodes it lays down, which is why
-///     the trail is emitted every tick rather than as a one-off flourish: the metaball field is the
-///     shot, and the sprite is just the part of it that can hurt something.
-/// </remarks>
 public class GelBallProj : ModProjectile
 {
     /// <summary>Pixels of terrain coated when the blob bursts.</summary>
@@ -212,13 +187,7 @@ public class GelBallProj : ModProjectile
         Trail();
     }
 
-    /// <summary>
-    ///     Lays gel behind the blob, thinning as it travels.
-    /// </summary>
-    /// <remarks>
-    ///     Emitted from a point behind the blob rather than from its centre so the trail reads as
-    ///     something shed rather than as a sphere the projectile is sitting inside.
-    /// </remarks>
+    /// <summary>Lays gel from a point behind the blob, thinning as it travels.</summary>
     private void Trail()
     {
         if (GasSystem.GetLayer<GelLayer>() is not { } layer)
@@ -243,15 +212,7 @@ public class GelBallProj : ModProjectile
         Burst(Projectile.Center, -Projectile.velocity.SafeNormalize(-Vector2.UnitY), Projectile.owner, coatTerrain: false);
     }
 
-    /// <summary>
-    ///     Bursts against terrain, coating what it hit.
-    /// </summary>
-    /// <remarks>
-    ///     The splash direction is taken from the collision normal that <c>oldVelocity</c> implies
-    ///     rather than from the blob's own heading, so gel that hits a floor spreads sideways and
-    ///     gel that hits a wall runs down it, instead of every impact spraying back the way the
-    ///     shot came.
-    /// </remarks>
+    /// <summary>Bursts against terrain, splashing along the collision normal so floors spread and walls run.</summary>
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
         var normal = new Vector2(

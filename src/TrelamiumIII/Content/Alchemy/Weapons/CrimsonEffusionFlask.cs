@@ -43,9 +43,6 @@ public class CrimsonEffusionFlaskItem : ModItem
         component.ReactionHandler = DoBloodsplosion;
     }
 
-    /// <summary>
-    /// Per-source reaction: detonates a blood splash into the BloodLayer.
-    /// </summary>
     private static void DoBloodsplosion(ChemicalReactionEvent e)
     {
         var layer = GasSystem.GetLayer<BloodLayer>();
@@ -69,14 +66,7 @@ public class CrimsonEffusionFlaskItem : ModItem
     }
 }
 
-/// <summary>
-///     A flask of blood: it dribbles behind itself, then splashes off whatever it breaks against.
-/// </summary>
-/// <remarks>
-///     The clearest case for the fan shape. Blood thrown at a floor should run along the floor, and
-///     the even spacing plus the centre-to-edge speed gradient is what gives the splash a heavy
-///     middle and thin fast outriders rather than a uniform spray.
-/// </remarks>
+/// <summary>A flask of blood: dribbles in flight, then splashes in a fan along whatever it breaks against.</summary>
 public class CrimsonEffusionFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.CrimsonEffusionFlaskItem.KEY;
@@ -89,8 +79,7 @@ public class CrimsonEffusionFlaskProjectile : ChemicalProjectile
         GroundCount = new FloatRange(18f, 24f),
         AirSpeed = new FloatRange(4.5f, 6f),
 
-        // Faster at the rim than at the middle: the splash spreads out across the surface instead
-        // of standing up off it, which is what blood does and what frost mist does not.
+        // Faster at the rim than the middle, so the splash runs along the surface.
         GroundSpeed = new FloatRange(5.5f, 10f),
         Arc = MathHelper.Pi * 0.45f,
 

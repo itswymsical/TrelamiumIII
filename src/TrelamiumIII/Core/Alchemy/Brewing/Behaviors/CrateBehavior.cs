@@ -3,12 +3,8 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 
 /// <summary>
-/// Potency-scaled Crate potion. Vanilla's crate chance is a flat percentage local in
-/// <c>Projectile.FishingCheck_RollDropLevels</c> (<c>10</c>, <c>+15</c> while <see cref="Player.cratePotion"/>),
-/// rolled as <c>Main.rand.Next(100) &lt; chance</c>. Unlike every other rarity tier it is NOT scaled by
-/// fishing power, and it is a local, so there is no field to nudge: the behaviour banks its extra
-/// percentage points on <see cref="AlchemyEffectPlayer.CrateChanceBonus"/> and the re-roll happens in
-/// <see cref="AlchemyEffectPlayer.ModifyFishingAttempt"/>, which vanilla calls immediately after its own roll.
+/// Potency-scaled Crate potion. Vanilla's chance is an unscaled local (10, +15 with <see cref="Player.cratePotion"/>), so extra points
+/// bank on <see cref="AlchemyEffectPlayer.CrateChanceBonus"/> and <see cref="AlchemyEffectPlayer.ModifyFishingAttempt"/> re-rolls.
 /// </summary>
 public sealed class CrateBehavior : IEffectBehavior
 {

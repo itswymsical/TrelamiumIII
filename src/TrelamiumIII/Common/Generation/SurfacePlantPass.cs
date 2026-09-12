@@ -119,7 +119,6 @@ public class SurfacePlantPass : GenPass
                 }
             }
 
-            // the large variant
             if (HasSpace_3x2(x, y))
             {
                 WorldGen.PlaceTile(x, y - 1, ModContent.TileType<BloodtoothFungusTileLarge>(), mute: true);

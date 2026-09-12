@@ -6,20 +6,9 @@ using Terraria.GameInput;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     Turns a frame of keyboard state into edits on a <see cref="TextBuffer" />.
+///     Turns a frame of keyboard state into buffer edits. Characters come from <see cref="TextInputEXT" /> to respect layouts, dead keys
+///     and IME; they're queued from the message pump and drained on update.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Printable characters come from FNA's <see cref="TextInputEXT" /> rather than from key
-///         states. That is the only path that respects the reader's keyboard layout, dead keys and
-///         IME composition -- deriving characters from <see cref="Keys" /> would type QWERTY at
-///         everyone regardless of what their keyboard actually is.
-///     </para>
-///     <para>
-///         The event arrives from the window's message pump, so characters are queued and drained on
-///         the update tick instead of mutating the buffer from underneath a draw.
-///     </para>
-/// </remarks>
 public sealed class EditorInput
 {
     /// <summary>Frames a key is held before it starts repeating, then frames between repeats.</summary>
@@ -41,10 +30,7 @@ public sealed class EditorInput
     /// <summary>Set for one frame when Return was pressed on a one-line field.</summary>
     public bool Submitted { get; private set; }
 
-    /// <summary>
-    ///     Column the caret tries to keep while moving vertically, in layout pixels. Reset by any
-    ///     horizontal move so the caret does not drift after an up-and-down trip through short lines.
-    /// </summary>
+    /// <summary>Sticky caret column for vertical moves, in layout pixels; reset by horizontal moves.</summary>
     private float desiredX;
 
     private bool desiredXValid;

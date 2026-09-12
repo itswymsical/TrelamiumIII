@@ -16,29 +16,13 @@ public enum DecorationAnchor
 }
 
 /// <summary>
-///     Something laid over the page rather than set into it: a sticky note, a margin scrawl, a stain,
-///     a pressed flower.
+///     Something laid over the page (note, scrawl, stain): no flow height, drawn after blocks. Anchor to a block, since page numbers shift.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Decorations take no part in the flow. They consume no height, they never push text down,
-///         and they draw after every block on their page -- which is what lets a note sit on top of a
-///         paragraph the way a real one would.
-///     </para>
-///     <para>
-///         Anchoring to a block rather than to a page is the useful default, because page numbers are
-///         computed and shift the moment the prose above changes length or the book is translated. A
-///         note pinned to block 4 stays beside block 4 wherever it lands.
-///     </para>
-/// </remarks>
 public sealed class BookDecoration
 {
     public required BookBlock Content { get; init; }
 
-    /// <summary>
-    ///     Index into the book's block list that this follows. Negative pins it to
-    ///     <see cref="AnchorPageIndex" /> instead.
-    /// </summary>
+    /// <summary>Block index this follows; negative pins it to <see cref="AnchorPageIndex" /> instead.</summary>
     public int AnchorBlockIndex { get; init; } = -1;
 
     /// <summary>Page this sits on when it is not anchored to a block.</summary>

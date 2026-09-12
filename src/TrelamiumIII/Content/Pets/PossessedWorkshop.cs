@@ -41,10 +41,7 @@ public class PossessedWorkshop : ModItem
         EnsureSlots(fill: true);
     }
 
-    /// <summary>
-    ///     Guarantees the array exists and every entry is a real <see cref="Item" />. Safe from any
-    ///     entry point, and the only place the starting stations are handed out.
-    /// </summary>
+    /// <summary>Ensures every slot holds a real Item; the only place starting stations are handed out.</summary>
     private void EnsureSlots(bool fill = false)
     {
         if (Stations.Length != SLOT_COUNT)
@@ -76,8 +73,7 @@ public class PossessedWorkshop : ModItem
     {
         var clone = (PossessedWorkshop)base.Clone(newEntity);
 
-        // The base clone is shallow, which would leave two workshops sharing one set of stations
-        // and emptying one would empty the other.
+        // Deep copy: the base clone is shallow and would share one set of stations.
         clone.Stations = new Item[SLOT_COUNT];
 
         for (int i = 0; i < SLOT_COUNT; i++)
@@ -165,10 +161,7 @@ public class PossessedWorkshopBuff : ModBuff
 }
 
 
-/// <summary>
-///     The apparition: the thing actually doing the possessing. It drifts along just above the
-///     player, holds the panel, and the stations answer to it -- nothing it carries survives it.
-/// </summary>
+/// <summary>The apparition: drifts above the player and holds the panel; the stations answer to it.</summary>
 public class PossessedWorkshopPet : ModProjectile
 {
     public enum WorkshopState
@@ -227,9 +220,7 @@ public class PossessedWorkshopPet : ModProjectile
     /// <summary>Runs on regardless of state, so the bob does not restart every time the panel opens.</summary>
     private float driftTimer;
 
-    /// <summary>
-    ///     The workshop pet <paramref name="player" /> currently owns, if any.
-    /// </summary>
+    /// <summary>The workshop pet <paramref name="player" /> currently owns, if any.</summary>
     public static bool TryGetPet(Player player, [NotNullWhen(true)] out Projectile? pet)
     {
         pet = null;
@@ -310,9 +301,7 @@ public class PossessedWorkshopPet : ModProjectile
             Projectile.frame = ++Projectile.frame % Main.projFrames[Type];
         }
 
-        // Only the owner has a panel, so only the owner holds still for one. Left unsynced
-        // deliberately: pushing it out would have remote clients, where nothing is open, fight the
-        // state back every tick.
+        // Only the owner has a panel, so only the owner holds still. Unsynced on purpose, or remote clients would fight the state.
         if (Projectile.owner == Main.myPlayer)
         {
             bool tending = PossessedWorkshopUI.IsTending(Projectile);

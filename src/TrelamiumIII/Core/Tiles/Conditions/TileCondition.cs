@@ -11,7 +11,7 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 /// <remarks>
 ///     Derived types are discovered and registered automatically by
 ///     <see cref="TileConditionSystem" />, so a new condition is one file and nothing else. It needs
-///     a parameterless constructor and it must not keep per-tile state -- see
+///     a parameterless constructor and it must not keep per-tile state: see
 ///     <see cref="ITileCondition" /> for why.
 /// </remarks>
 public abstract class TileCondition : ITileCondition
@@ -26,10 +26,6 @@ public abstract class TileCondition : ITileCondition
 
     public virtual void Unload() { }
 
-    /// <summary>
-    ///     Defaults to any solid tile. Conditions coat terrain, and a mark laid on empty space has
-    ///     nothing to sit on.
-    /// </summary>
     public virtual bool CanApplyTo(int i, int j)
     {
         Tile tile = Framing.GetTileSafely(i, j);
@@ -80,18 +76,12 @@ public abstract class TileCondition : ITileCondition
 
     /// <summary>
     ///     Draws the tile's own sprite in <paramref name="color" />, so the mark takes the exact
-    ///     shape of the terrain under it -- slopes, half blocks and merged edges included.
+    ///     shape of the terrain (slopes, half blocks and merged edges included).
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The alternative, a flat 16x16 quad, is wrong on anything that is not a full block:
-    ///         it paints char into the empty triangle above a slope and squares off a half block.
-    ///         Stamping the real silhouette costs the same draw and is right everywhere.
-    ///     </para>
-    ///     <para>
-    ///         Batches into <see cref="Main.spriteBatch" /> rather than an argument, because the
-    ///         slope walk it delegates to does. That is the batch the system has begun in both
-    ///         render modes, so it is the same one either way.
+    ///         Batches into <see cref="Main.spriteBatch" /> because of
+    ///         slopes.
     ///     </para>
     /// </remarks>
     protected static void DrawSilhouette(in TileConditionInstance instance, Color color)
@@ -112,25 +102,14 @@ public abstract class TileCondition : ITileCondition
     /// <summary>
     ///     Draws <paramref name="texture" /> in the shape of the tile this instance sits on.
     /// </summary>
-    /// <remarks>
-    ///     The frame and the slope walk come from the tile underneath, not from the texture, so any
-    ///     tile sheet passed here comes out with the terrain's own silhouette -- the same edges, the
-    ///     same slope, the same half block. Vanilla's standard blocks share a framing layout, which
-    ///     is what lets a condition borrow another block's sprite (ice over dirt, say) and have it
-    ///     land exactly on the shape it is covering.
-    /// </remarks>
     protected static void DrawAsTile(in TileConditionInstance instance, Texture2D texture, Color color)
     {
-        // Two corrections, both cancelling something DrawSloped adds for a caller we are not.
+        // TileOffset is the offscreen-range shift of the tile render target's own pass, which
+        // neither of our passes runs inside.
         //
-        // TileOffset is the offscreen-range shift belonging to the tile render target's own pass,
-        // and neither of our passes runs inside it.
-        //
-        // The pixel snap is the one that was visibly wrong. DrawSloped positions against the raw
-        // float Main.screenPosition, while vanilla draws every tile against its truncated integer.
-        // At 1x zoom that is up to a whole pixel of disagreement between a mark and the block it is
-        // supposed to be painted on, and because the fraction changes as the camera moves, the mark
-        // crawls against the terrain rather than sitting still on it.
+        // The pixel snap: DrawSloped positions against the float Main.screenPosition, while vanilla
+        // draws tiles against its truncated integer, so without it the mark crawls up to a pixel
+        // against the terrain as the camera moves.
         var pixelSnap = new Vector2(
             Main.screenPosition.X - (int)Main.screenPosition.X,
             Main.screenPosition.Y - (int)Main.screenPosition.Y);
@@ -141,7 +120,7 @@ public abstract class TileCondition : ITileCondition
     /// <summary>Whether the tile is close enough to the camera to be worth spending anything on.</summary>
     /// <remarks>
     ///     Per-tile update runs for the whole batch, on and off screen alike, because the simulation
-    ///     has to stay consistent. Dust, light and sound do not, and a thousand tiles all rolling for
+    ///     has to stay consistent. Dust, light and sound dont, and a thousand tiles all rolling for
     ///     an ember two screens away is pure cost.
     /// </remarks>
     protected static bool OnScreen(in TileConditionInstance instance, float padding = 64f)
@@ -159,9 +138,7 @@ public abstract class TileCondition : ITileCondition
     /// </summary>
     /// <remarks>
     ///     A field composite is one full-screen draw, so its shader gets one light value for the
-    ///     whole thing no matter how the marked tiles are spread. Nine fixed samples keep that value
-    ///     roughly honest as the player moves between a lit surface and a dark cave, at a cost that
-    ///     does not grow with the batch.
+    ///     whole thing no matter how the marked tiles are spread.
     /// </remarks>
     protected static Vector3 AverageScreenLight()
     {
@@ -173,19 +150,14 @@ public abstract class TileCondition : ITileCondition
                 light += Lighting.GetSubLight(Main.screenPosition + new Vector2(Main.screenWidth * x / 4f, Main.screenHeight * y / 4f));
         }
 
-        return light / 9f;
+        return light / 9f; // Nine fixed samples keep the value roughly honest as the player moves between a lit surface and a dark cave
     }
 
     /// <summary>
     ///     Sets the frame-varying parameters every field shader in this system shares: the time base,
     ///     the field's texel size, and the world offset that locks its noise to the world instead of
-    ///     to the screen.
+    ///     to the screen. Note that without the world offset the noise unintendedly moves with the camera.
     /// </summary>
-    /// <remarks>
-    ///     Without the world offset the noise swims with the camera, which reads as the effect being
-    ///     painted on the monitor rather than on the terrain -- the single most obvious tell that a
-    ///     screen-space pass is faking a world-space one.
-    /// </remarks>
     protected void ApplyFieldFrameParameters(Effect effect)
     {
         effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
@@ -195,7 +167,7 @@ public abstract class TileCondition : ITileCondition
 
         // The camera offset above is only half of the world lock. The field bakes the zoom into its
         // own transform, so the shader is handed a screen uv and has to undo that zoom before the
-        // offset means anything -- otherwise the error is (1 - Zoom) * cameraCentre, which is zero
+        // offset means anything: otherwise the error is (1 - Zoom) * cameraCentre, which is zero
         // at Zoom 1 and moves with the camera at every other zoom.
         effect.Parameters["Zoom"]?.SetValue(Main.GameViewMatrix.Zoom);
     }

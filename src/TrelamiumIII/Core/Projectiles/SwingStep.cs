@@ -7,26 +7,19 @@ namespace TrelamiumIII.Core.Projectiles;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         A sword's combo is a loop of these, and the default loop is two of them --
-///         <see cref="Down" /> then <see cref="Up" />. That is all alternating slashes are: the
-///         same arc, mirrored, played one after the other. Expressing it as a two-element array
-///         rather than as a boolean that flips is what makes the third and fourth steps free; a
-///         katana that opens with two draws and finishes on a spin is a longer array, not a longer
-///         state machine.
+///         A combo is a loop of these; the default is <see cref="Down" /> then <see cref="Up" />. An
+///         array rather than a flipping boolean makes extra steps free: a katana that opens with two
+///         draws and finishes on a spin is a longer array, not a longer state machine.
 ///     </para>
 ///     <para>
-///         Every field here is a modifier on <see cref="SwordProfile" /> rather than a value of its
-///         own. A step does not know how long a swing takes or how far the blade reaches -- it knows
-///         it is a fifth faster and a quarter longer than whatever the weapon's numbers say. That
-///         split is what lets one combo shape be shared across weapons of wildly different weight:
-///         <see cref="Thrust" /> lunges on a dagger and on a broadsword alike, and reads correctly on
-///         both because it never states an absolute.
+///         Every field is a modifier on <see cref="SwordProfile" />, never an absolute, so one combo
+///         shape works across weapons of very different weight: <see cref="Thrust" /> reads correctly
+///         on a dagger and a broadsword alike.
 ///     </para>
 ///     <para>
-///         The scale fields treat zero as "unset" and answer one, so a step written as
+///         The scale fields treat zero as "unset" and answer one, so
 ///         <c>new SwingStep { Arc = -1f }</c> is a plain mirrored slash rather than a motionless
-///         weapon that deals no damage. The cost is that a step cannot ask for zero damage by
-///         setting <see cref="Damage" /> to zero; a step that should not hurt anything wants
+///         weapon. A step therefore cannot ask for zero damage via <see cref="Damage" />; use
 ///         <see cref="HeldSwordProjectile.CanDamage" /> instead.
 ///     </para>
 /// </remarks>
@@ -36,10 +29,8 @@ public readonly record struct SwingStep
     ///     The profile's arc, scaled and signed. Negative mirrors it -- that is the up-slash.
     /// </summary>
     /// <remarks>
-    ///     Signed rather than paired with a separate direction flag because the sign is the only
-    ///     thing that distinguishes a down-slash from an up-slash, and a magnitude of anything other
-    ///     than one is a shallower or wider version of the same motion. A step at <c>0.3f</c> barely
-    ///     rotates, which is a thrust.
+    ///     The sign alone distinguishes a down-slash from an up-slash; the magnitude makes the same
+    ///     motion shallower or wider. A step at <c>0.3f</c> barely rotates, which is a thrust.
     /// </remarks>
     public float Arc { get; init; }
 
@@ -73,10 +64,9 @@ public readonly record struct SwingStep
     ///     How much of <see cref="SwordProfile.Extend" /> this step spends driving the grip forward.
     /// </summary>
     /// <remarks>
-    ///     Zero here means zero, unlike the scale fields above, because not extending is a perfectly
-    ///     ordinary thing for a step to do. A downward strike leans into the target and buys reach
-    ///     for it; the return stroke is a recovery and mostly does not, which is what keeps the pair
-    ///     reading as one committed swing and one wind-back rather than as two identical lunges.
+    ///     Zero here means zero, unlike the scale fields above, since not extending is ordinary. A
+    ///     down-strike leans in for reach; the return stroke mostly doesn't, so the pair reads as one
+    ///     committed swing and one wind-back rather than two identical lunges.
     /// </remarks>
     public float Extend { get; init; }
 

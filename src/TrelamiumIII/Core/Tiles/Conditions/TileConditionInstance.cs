@@ -16,10 +16,8 @@ public struct TileConditionInstance
 
     public int Y;
 
-    /// <summary>Ticks left before the condition lifts. Zero or less ends it on the current tick.</summary>
     public float Life;
 
-    /// <summary>The life this instance started with, so <see cref="Fade" /> has something to divide by.</summary>
     public float MaxLife;
 
     /// <summary>
@@ -35,21 +33,10 @@ public struct TileConditionInstance
     /// <summary>Ticks since the condition was applied. Reset by a re-application.</summary>
     public int Age;
 
-    /// <summary>
-    ///     The player whose weapon laid this down, or <see cref="NoOwner" />.
-    /// </summary>
-    /// <remarks>
-    ///     Carried so a condition can tell its author apart from everyone else standing in it. The
-    ///     case it exists for is the one every alchemical weapon runs into: a flask leaves a patch
-    ///     that keeps working for twenty seconds, the thrower has to walk through it to follow up,
-    ///     and without an owner the only two options are a residue that hurts the person who made
-    ///     it or one that hurts nobody. Refreshed along with the rest of the slot, so a second
-    ///     player pouring over the same tile takes it over.
-    /// </remarks>
     public int Owner;
 
     /// <summary>
-    ///     Free content-defined state -- a burn that has charred through to a second stage, a slime
+    ///     Free content-defined state: a burn that has charred through to a second stage, a slime
     ///     that has crusted over. The system never reads it.
     /// </summary>
     public byte Stage;
@@ -58,59 +45,35 @@ public struct TileConditionInstance
     ///     The continuous metric behind <see cref="Stage" />. The system never reads it either.
     /// </summary>
     /// <remarks>
-    ///     <para>
-    ///         The pair exists because a condition that changes over its life needs both readings and
-    ///         neither substitutes for the other. <see cref="Stage" /> is what rules branch on -- a
-    ///         fire is spreading or it is not -- and stepping it in bands is what stops behaviour
-    ///         flickering on and off across a threshold. This is what the stage is computed from, and
-    ///         what rendering interpolates so the same fire is visibly hotter at the middle of its
-    ///         life than at either end.
-    ///     </para>
-    ///     <para>
-    ///         Distinct from <see cref="Intensity" />, which is fixed at application and says how
-    ///         hard the mark landed, and from <see cref="Fade" />, which only ever falls. This one is
-    ///         free to climb and then drop, which is the shape of a fire and of nothing else the
-    ///         instance already carries.
-    ///     </para>
+    ///     <see cref="Stage" /> is what rules branch on, stepped in bands so behaviour doesn't flicker
+    ///     across a threshold; this is what it's computed from and what rendering interpolates. Unlike
+    ///     <see cref="Intensity" /> (fixed) and <see cref="Fade" /> (only falls), it can climb and then
+    ///     drop, like a fire.
     /// </remarks>
     public float Level;
 
     /// <summary>
     ///     Which flavour of the condition this is: the profile it was applied with.
     /// </summary>
-    /// <remarks>
-    ///     A burn lit by a torch and one lit by thermite are the same condition on the same tile and
-    ///     behave differently -- they climb at different rates, char at different speeds, and only
-    ///     one of them is allowed to consume what it is burning. Conditions are flyweights and hold
-    ///     no per-tile state, so the tile has to carry which set of rules it is running under.
-    /// </remarks>
     public byte Variant;
 
     /// <summary>
     ///     Identifies this slot for the eviction queue.
     /// </summary>
-    /// <remarks>
-    ///     The queue holds positions in insertion order, but a position can expire and be applied
-    ///     again while its old queue entry is still sitting there. The serial is what lets the
-    ///     evictor tell the tile it queued from the unrelated tile that now occupies the same
-    ///     coordinates, so a fresh mark is not dropped to make room for itself. Held stable across a
-    ///     re-application of the same live slot, which is what keeps the queue entry valid.
-    /// </remarks>
     internal int Serial;
 
-    /// <summary>Terrain nobody marked: world hazards, ambient decay, anything not player-made.</summary>
+    /// <summary>anything not player-made.</summary>
     public const int NoOwner = -1;
 
     public readonly bool IsOwnedBy(Entity entity) => Owner >= 0 && entity is Player player && player.whoAmI == Owner;
 
     public readonly Point Coordinates => new(X, Y);
 
-    /// <summary>Top-left corner of the tile, in world coordinates.</summary>
     public readonly Vector2 WorldPosition => new(X * 16f, Y * 16f);
 
     public readonly Vector2 WorldCenter => new(X * 16f + 8f, Y * 16f + 8f);
 
-    /// <summary>Life remaining as a 0..1 fraction.</summary>
+    /// <summary>Life remaining as a 0-1</summary>
     public readonly float Fade => MaxLife <= 0f ? 0f : MathHelper.Clamp(Life / MaxLife, 0f, 1f);
 
     /// <summary>

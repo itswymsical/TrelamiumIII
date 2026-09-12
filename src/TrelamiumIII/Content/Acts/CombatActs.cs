@@ -3,17 +3,8 @@ using TrelamiumIII.Core.ExperientialSystem.Acts;
 namespace TrelamiumIII.Content.Acts;
 
 /// <summary>
-/// Killing families of enemies.
-///
-/// <para>
-/// These are group acts over an explicit species list, so their payout scales with how many species the
-/// player has met. Farming one slime pool forever advances the ladder but never pays it in full.
-/// </para>
-///
-/// <para>
-/// Note that this is <i>on top of</i> the per-kill Exp the combat model already pays. Acts reward the
-/// shape of what you have hunted; the matchup model rewards the difficulty of each individual fight.
-/// </para>
+/// Killing families of enemies. Payout scales with how many listed species the player has met, on top of the
+/// per-kill Exp the combat model already pays.
 /// </summary>
 public sealed class SlimeAct : NpcKillAct
 {

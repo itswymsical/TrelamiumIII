@@ -65,36 +65,21 @@ public class ThermiteFlaskItem : ModItem
 }
 
 /// <summary>
-///     A flask of thermite: vents forward on the way in, then throws molten arms that bounce.
+///     A flask of thermite: vents forward on the way in, then throws molten arms that arc, bounce twice and char
+///     what they touch. The scorch lives on <see cref="ThermiteLayer" />.
 /// </summary>
-/// <remarks>
-///     The only flask whose burst has weight to it. The arms arc, collide with terrain, bounce twice
-///     and char whatever they touch on the way -- which is what the
-///     <c>ThermiteBurstProjectile</c> this replaces did, minus the projectile slots. The scorch
-///     itself now lives on <see cref="ThermiteLayer" />, because it is a property of thermite rather
-///     than of this particular container.
-/// </remarks>
 public class ThermiteFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.ThermiteFlaskItem.KEY;
 
     protected override GasField? Field => GasSystem.GetLayer<ThermiteLayer>();
 
-    /// <summary>Pressurised: the thermite is ahead of the glass before the glass arrives.</summary>
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {
         Jitter = new Vector2(1.5f, 0.5f),
     };
 
-    /// <summary>
-    ///     A tight cone of heavy, bouncing arms.
-    /// </summary>
-    /// <remarks>
-    ///     Aimed off the surface it broke against, where the old version aimed at a fixed angle of
-    ///     <c>-PiOver2 + Projectile.direction</c> -- straight up, plus a radian, because a facing
-    ///     index had been added to an angle. Taking the normal instead means thermite thrown at a
-    ///     wall now runs down the wall rather than climbing out of it.
-    /// </remarks>
+    /// <summary>A tight cone of heavy, bouncing arms, aimed off the surface normal so thermite runs down walls.</summary>
     protected override BurstProfile Burst => BurstProfile.Vent with
     {
         AirCount = new FloatRange(8f, 11f),

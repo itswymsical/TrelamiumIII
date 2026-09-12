@@ -5,24 +5,8 @@ using TrelamiumIII.Core.ExperientialSystem.Acts;
 namespace TrelamiumIII.Content.Acts;
 
 /// <summary>
-/// Mining, as two overlapping ladders.
-///
-/// <para>
-/// Every ore has its own act, and every ore also feeds the group act for its tier band. Breaking one
-/// copper advances the copper act and the pre-hardmode metals group at the same time, so a player who
-/// mines broadly earns from both - that overlap is the completionism bonus.
-/// </para>
-///
-/// <para>
-/// The group acts are not simply the individual acts summed. Their payout scales with how many member
-/// ores the player has actually mined, so five thousand copper cannot master "the pre-hardmode metals"
-/// while the player has never touched tin. See <see cref="Act.CoverageMultiplier"/>.
-/// </para>
-///
-/// <para>
-/// Names and descriptions live in <c>Localization/ActLang</c>, keyed off each act's id. Only the id, the
-/// tiles and the curve are decided here.
-/// </para>
+/// Mining acts: one per ore, plus a group act per tier band that each ore also feeds. Group payout scales with how
+/// many member ores were mined (see <see cref="Act.CoverageMultiplier"/>). Names live in <c>Localization/ActLang</c>.
 /// </summary>
 internal sealed class OreActs : IActProvider
 {
@@ -70,9 +54,8 @@ public sealed class PotAct : TileBreakPredicateAct
     public override int[] Thresholds => ActCurves.Scavenge;
 
     /// <summary>
-    /// A pot is a 2x2 multitile, so one smash raises four tile breaks - confirmed in game, four breaks at
-    /// the four corners of one footprint. Pots are worldgen-only and never placeable, so vanilla registers
-    /// no TileObjectData for them and the fallback is what actually answers here.
+    /// A pot is a 2x2 multitile, so one smash raises four tile breaks. Pots have no TileObjectData, so the fallback is
+    /// what actually applies.
     /// </summary>
     public override int EventsPerAction => ActUnits.MultiTileFootprint(TileID.Pots, fallback: ActUnits.TwoByTwo);
 
@@ -159,10 +142,7 @@ public sealed class LumberAct : TileBreakPredicateAct
     public override int[] Thresholds => Trees;
     public override float ExpMultiplier => 0.75f;
 
-    /// <summary>
-    /// A tree is killed one trunk tile at a time, so felling one raises a dozen or so breaks. This is what
-    /// forced the old tree challenge into thresholds of 500 for what was really forty trees.
-    /// </summary>
+    /// <summary>Felling a tree breaks a dozen or so trunk tiles, so thresholds count trees rather than breaks.</summary>
     public override int EventsPerAction => ActUnits.AverageTreeTiles;
 
     protected override bool TestTile(int tileType) => TileID.Sets.IsATreeTrunk[tileType];

@@ -4,13 +4,8 @@ using TrelamiumIII.Core.Graphics.IlluminantInk;
 namespace TrelamiumIII.Content.Menus;
 
 /// <summary>
-///     Illuminant Ink: a ferrofluid nebula wound around a black hole, in black and grey.
+///     Illuminant Ink menu. Visuals live in <see cref="IlluminantInkScene" />; this only answers tModLoader and forwards calls.
 /// </summary>
-/// <remarks>
-///     Deliberately thin. Everything visual lives in <see cref="IlluminantInkScene" />; this type
-///     exists to answer tModLoader's questions about the menu and to forward the two calls that
-///     matter, so the scene can be driven from anywhere without a menu being selected.
-/// </remarks>
 public sealed class IlluminantInkMenu : ModMenu
 {
     /// <summary>True while this menu is the one actually on screen.</summary>

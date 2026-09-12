@@ -5,34 +5,20 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 /// <summary>
-///     The bottled half of the alchemy system: the solvents that go in the vial slot, and the
-///     solutions that come back out of it. Station recipes live in
-///     <c>ChemistryRecipeSystem.RegisterSolutions</c>.
+///     Solvents for the vial slot and the solutions that come out, each a <see cref="ChemicalItem" /> instance.
+///     Internal names keep the old <c>...Item</c> spelling; <see cref="ChemicalItem.LegacyNames" /> covers earlier names.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Each of these is one <see cref="ChemicalItem" /> instance rather than a class of its own --
-///         the seven principle tonics were seven identical classes, which is what prompted this. An
-///         item that needs real code subclasses the role class instead and autoloads under its own
-///         name; <see cref="MagnoliaSolutionItem" /> is the one that does.
-///     </para>
-///     <para>
-///         Internal names keep their old <c>...Item</c> spelling so saved items, sprites and
-///         localisation keys still resolve, and <see cref="ChemicalItem.LegacyNames" /> carries
-///         forward the names these went by before that.
-///     </para>
-/// </remarks>
 public sealed class Solution : ICustomAutoload
 {
-    /// <summary>Sprites are named after the item, in this folder, as they were when each had a class.</summary>
+    /// <summary>Sprites are named after the item, in this folder.</summary>
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Alchemy/Solutions/";
 
     #region Solvents
 
-    /// <summary>Salt water in a bottle. Boil it down and it is where half the salt line begins.</summary>
+    /// <summary>Salt water; boiled down, it starts the salt line.</summary>
     public static int Brine { get; private set; }
 
-    /// <summary>Thick, black, and patient. Everything it touches becomes easier to set alight.</summary>
+    /// <summary>Makes whatever it touches easier to set alight.</summary>
     public static int BottledOil { get; private set; }
 
     #endregion
@@ -48,10 +34,7 @@ public sealed class Solution : ICustomAutoload
 
     public static int BloodtoothExtract { get; private set; }
 
-    /// <summary>
-    ///     Pulped plant matter. Thickens, binds, and asks for nothing. The one solute in this file --
-    ///     it is bottled like the rest, and its sprite has always lived here.
-    /// </summary>
+    /// <summary>Pulped plant matter; the one solute here, bottled like the rest.</summary>
     public static int FibrousSlurry { get; private set; }
 
     #endregion
@@ -83,8 +66,6 @@ public sealed class Solution : ICustomAutoload
 
     private static void LoadSolvents(Mod mod)
     {
-        // Brine had two conflicting entries in AlmanacDefinitions; these are the values of the one
-        // that was winning, plus the Hidden = false the second was reaching for.
         Brine = Add(mod, new SolventItem("BrineBottleItem")
         {
             Rare = ItemRarityID.Blue,
@@ -161,10 +142,7 @@ public sealed class Solution : ICustomAutoload
         });
     }
 
-    /// <summary>
-    ///     One per <see cref="PrincipleType" />. They are outputs of the station and vials for the
-    ///     potion recipes both, and differ from one another in nothing but name.
-    /// </summary>
+    /// <summary>One tonic per <see cref="PrincipleType" />, identical but for name: station outputs and potion vials.</summary>
     private static void LoadTonics(Mod mod)
     {
         HarmoniousTonic = AddTonic(mod, "HarmoniousTonic");
@@ -176,15 +154,8 @@ public sealed class Solution : ICustomAutoload
         BaneTonic = AddTonic(mod, "BaneTonic");
     }
 
-    /// <param name="tonic">
-    ///     Its old internal name, which each of these was renamed away from to the <c>...Item</c>
-    ///     spelling they carry now, and so is also the legacy name they need.
-    /// </param>
-    /// <remarks>
-    ///     The tonics had no almanac entry at all before this, and fell through to
-    ///     <see cref="AlmanacEntryRegistry.DefaultIngredientPotency" />. Stating that one star here
-    ///     keeps them drawing as they did; authoring an entry of 0 would have read as "unrated".
-    /// </remarks>
+    /// <param name="tonic">The old internal name, which is also the legacy name.</param>
+    /// <remarks>Rated one star explicitly: that was their fallback potency, and 0 would read as "unrated".</remarks>
     private static int AddTonic(Mod mod, string tonic) =>
         Add(mod, new SolutionItem(tonic + "Item")
         {

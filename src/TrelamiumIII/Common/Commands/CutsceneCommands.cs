@@ -19,8 +19,6 @@ public class CutsceneStartCommand : ModCommand
     {
         _registry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
 
-        // Scan every assembly the mod loaded into the domain, covers the mod itself
-        // and anything it has loaded via tML's dependency resolution.
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             IEnumerable<Type> types;
@@ -51,7 +49,6 @@ public class CutsceneStartCommand : ModCommand
             return;
         }
 
-        // /startc list
         if (args[0].Equals("list", StringComparison.OrdinalIgnoreCase))
         {
             if (_registry.Count == 0)
@@ -67,12 +64,10 @@ public class CutsceneStartCommand : ModCommand
             return;
         }
 
-        // /startc <name>
         string query = args[0];
 
         if (!_registry.TryGetValue(query, out Type cutsceneType))
         {
-            // Partial match fallback, helpful when tab-complete isn't available
             var matches = _registry.Keys
                 .Where(k => k.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToList();

@@ -105,10 +105,7 @@ public class DialogueCommand : ModCommand
             caller.Reply($"Failed to start \"{query}\" (missing Line1.Text?).", Color.Red);
     }
 
-    /// <summary>
-    ///     The town NPC nearest the caller, so a projected box has something to hang off while it is
-    ///     being looked at. Null falls the box back to hovering over the player.
-    /// </summary>
+    /// <summary>The town NPC nearest the caller; null makes the box hover over the player instead.</summary>
     private static NPC NearestNPC(Player player)
     {
         NPC nearest = null;

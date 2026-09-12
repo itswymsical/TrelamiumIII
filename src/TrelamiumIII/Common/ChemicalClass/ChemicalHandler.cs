@@ -4,20 +4,16 @@ using Terraria.DataStructures;
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-/// Carries chemical identity onto projectiles and dispatches afflictions and reactions
-/// when the projectile lands. The source reference is captured at spawn (from the firing
-/// item or a parent projectile) along with a snapshot of the player's stat scalars.
+/// Carries chemical identity onto projectiles and dispatches afflictions and reactions on hit.
+/// The source and a snapshot of the player's stat scalars are captured at spawn.
 /// </summary>
 public class ChemicalHandler : GlobalProjectile
 {
     public override bool InstancePerEntity => true;
 
-    /// <summary>The emitter that authored this projectile's chemistry.</summary>
     public IChemicalSource Source;
 
-    // Snapshot of the firing player's stats at spawn time.
-    // Captured here so values stay consistent with when the shot left the player,
-    // even if accessories swap mid-flight or the parent projectile outlives the original frame.
+    // Firing player's stats, snapshotted at spawn so accessory swaps mid-flight don't change the shot.
     public float DamageBonus = 1f;
     public float StatsAfflictionRate = 1f;
     public float StatsReactionChance;
@@ -103,9 +99,6 @@ public class ChemicalGlobalNPC : GlobalNPC
 
     private static readonly Dictionary<int, EnemyComposition> _registry = [];
 
-    /// <summary>
-    /// Explicitly sets the composition for an NPC type.
-    /// </summary>
     public static void Register(int npcType, EnemyComposition composition)
         => _registry[npcType] = composition;
 
@@ -129,7 +122,6 @@ public class ChemicalGlobalNPC : GlobalNPC
         if (npc.HitSound == SoundID.NPCHit4)
             comp |= EnemyComposition.Metal | EnemyComposition.Armored;
 
-        // Default to flesh if nothing matched
         if (comp == EnemyComposition.None)
             comp = EnemyComposition.Flesh;
 

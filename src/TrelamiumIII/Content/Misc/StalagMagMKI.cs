@@ -11,19 +11,9 @@ using TrelamiumIII.Core.Projectiles;
 namespace TrelamiumIII.Content.Misc;
 
 /// <summary>
-///     A cannon that eats masonry.
+///     A cannon that eats masonry: each shot takes its numbers from the loaded round (see <see cref="StalagMagAmmo" />), so it
+///     upgrades by mining new stone. The alternate trigger fires boulders on a cadence of its own.
 /// </summary>
-/// <remarks>
-///     The weapon itself is deliberately unremarkable -- its damage figure is the weakest round it
-///     accepts, and every shot takes its numbers from whatever was loaded instead. That is the whole
-///     design: the player upgrades the StalagMag by walking somewhere new and mining, not by
-///     crafting a better one. See <see cref="StalagMagAmmo" /> for the table that carries it.
-///     <para>
-///         The alternate trigger is a second weapon sharing a barrel. Boulders are not in the block
-///         table, are never picked by the primary fire, and run a cadence of their own -- three
-///         rounds almost on top of each other and then three seconds of nothing.
-///     </para>
-/// </remarks>
 public class StalagMagMKI : ModItem
 {
     public override void SetDefaults()
@@ -55,45 +45,22 @@ public class StalagMagMKI : ModItem
     /// <summary>Boulders are loaded on the right button and on nothing else.</summary>
     public override bool AltFunctionUse(Player player) => true;
 
-    /// <summary>
-    ///     Every round in the table is valid, whatever <see cref="Item.useAmmo" /> says.
-    /// </summary>
-    /// <remarks>
-    ///     Null rather than false for everything else, so the ordinary <c>ammo</c>/<c>useAmmo</c>
-    ///     rules still get their say -- this hook is here to widen the weapon's diet, not to
-    ///     re-implement it. Which of the accepted rounds is actually loadable right now depends on
-    ///     the trigger, and that is <see cref="CanUseItem" />'s question rather than this one's.
-    /// </remarks>
+    /// <summary>Accepts every table round; null rather than false otherwise, so the normal ammo rules still apply.</summary>
     public override bool? CanChooseAmmo(Item ammo, Player player)
         => StalagMagAmmo.TryGet(ammo.type, out _) ? true : null;
 
-    /// <summary>
-    ///     One weapon out at a time, and only if the trigger being pulled has something to fire.
-    /// </summary>
+    /// <summary>One weapon out at a time, and only if the pulled trigger has something to fire.</summary>
     public override bool CanUseItem(Player player)
         => player.ownedProjectileCounts[Item.shoot] <= 0
            && StalagMagAmmo.Choose(player, player.altFunctionUse == 2) is not null;
 
-    /// <summary>
-    ///     The held projectile spends the rounds, so the use that summons it must not spend one too.
-    /// </summary>
+    /// <summary>The held projectile spends the rounds, so the summoning use must not spend one too.</summary>
     public override bool CanConsumeAmmo(Item ammo, Player player) => false;
 
     /// <summary>
-    ///     Puts the weapon in the player's hands. It does the rest itself.
+    ///     Puts the weapon in the player's hands. The trigger rides in <c>ai[2]</c> as spawn data, since remote clients can't read
+    ///     anyone else's mouse buttons.
     /// </summary>
-    /// <remarks>
-    ///     No muzzle offset here any more: the held projectile pins itself to the holder's centre
-    ///     regardless of where it was spawned, so offsetting the spawn only ever moved it for the
-    ///     one frame before its first update. The barrel length that actually matters is
-    ///     <see cref="GunShotProfile.MuzzleLength" />, which is where the shots come from.
-    ///     <para>
-    ///         Which trigger was pulled rides along in <c>ai[2]</c> and is fixed for the life of the
-    ///         weapon. It has to be spawn data rather than something read per tick, because a remote
-    ///         client has no view of anyone else's mouse buttons and would otherwise draw a cannon
-    ///         cycling at the wrong rate.
-    ///     </para>
-    /// </remarks>
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
     {
         Projectile.NewProjectile(
@@ -123,21 +90,8 @@ public class StalagMagMKI : ModItem
 }
 
 /// <summary>
-///     The StalagMag in the player's hands: a heavy, slow-cycling cannon that shovels stone.
+///     The held StalagMag. Block fire is the stock cannon; boulder fire runs on a clock nearly twice as slow, with a heavy kick.
 /// </summary>
-/// <remarks>
-///     <para>
-///         All of the recoil, aiming and arm work this used to carry by hand now lives in
-///         <see cref="HeldGunProjectile" />, which was lifted out of this class more or less
-///         verbatim. What is left is what is actually particular to the StalagMag: two cadences, the
-///         stone it eats, and the noise it makes.
-///     </para>
-///     <para>
-///         The two cadences are the whole of the difference between the triggers. Block fire is the
-///         stock cannon, unmodified. Boulder fire is the same gun on a clock nearly twice as slow,
-///         with a kick big enough to move the man holding it.
-///     </para>
-/// </remarks>
 public class StalagMagMKIProj : HeldGunProjectile
 {
     /// <summary>Ticks from one boulder to the next. The reload, and the recoil, and the wait.</summary>
@@ -149,15 +103,7 @@ public class StalagMagMKIProj : HeldGunProjectile
     /// <summary>Pixels per tick the shot puts into the holder, backwards along the barrel.</summary>
     private const float BOULDER_SHOVE = 6.5f;
 
-    /// <summary>
-    ///     Boulder fire: one round, and then a second and a quarter of getting over it.
-    /// </summary>
-    /// <remarks>
-    ///     <see cref="GunShotProfile.RecoilTicks" /> is deliberately left alone, so the animation
-    ///     takes the fire rate as its length. That is the point of the mode: the recoil is not a
-    ///     flourish played over a wait, it *is* the wait, and the weapon is visibly still coming
-    ///     back down for every frame the player cannot fire it.
-    /// </remarks>
+    /// <summary>Boulder fire. RecoilTicks is left unset, so the recoil lasts the whole cycle: the recoil is the wait.</summary>
     private static readonly GunShotProfile boulderProfile = GunShotProfile.Cannon with
     {
         UseSpeed = BOULDER_CYCLE,
@@ -184,30 +130,14 @@ public class StalagMagMKIProj : HeldGunProjectile
     protected override bool CanFire(Player owner) => StalagMagAmmo.Choose(owner, Boulder) is not null;
 
     /// <summary>
-    ///     Keeps the weapon out for as long as the button that summoned it is down.
+    ///     Keeps the weapon out while its button is held by forcing <c>Player.channel</c> (vanilla only maintains it for the primary
+    ///     use) right before <c>base.PreAI</c> reads it; <see cref="HeldGunProjectile.WhileHeld" /> would be too late. Owner-side only.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         <see cref="HeldGunProjectile.HoldToKeep" /> reads <c>Player.channel</c>, which vanilla
-    ///         maintains for the primary use and not for the alternate one. Left alone, the boulder
-    ///         mode would lower the cannon after its first shot no matter how long the button was
-    ///         held, and the reload the whole mode is built around would never be experienced.
-    ///     </para>
-    ///     <para>
-    ///         It has to be here rather than in <see cref="HeldGunProjectile.WhileHeld" />, which
-    ///         runs after the firing cycle has already read the flag -- and the player's own update
-    ///         has been round again in between, with every opportunity to clear it. Set immediately
-    ///         before <c>base.PreAI</c> it is still true when the cycle asks. Owner-side only:
-    ///         nobody else's buttons are readable here, and nobody else needs to read them.
-    ///     </para>
-    /// </remarks>
     public override bool PreAI()
     {
         Player owner = Owner;
 
-        // Still this weapon, specifically. Forcing the flag on regardless would keep the cannon out
-        // -- and scaling its damage off whatever is now in the player's hand -- after a hotbar swap
-        // made with the button still down.
+        // Only while still holding this weapon, or a hotbar swap with the button down would keep the cannon out.
         if (Main.myPlayer == Projectile.owner
             && owner.HeldItem.type == ModContent.ItemType<StalagMagMKI>()
             && (Boulder ? owner.controlUseTile : owner.controlUseItem))
@@ -218,15 +148,7 @@ public class StalagMagMKIProj : HeldGunProjectile
         return base.PreAI();
     }
 
-    /// <summary>
-    ///     Something heavy being craned into the breech, partway through the reload.
-    /// </summary>
-    /// <remarks>
-    ///     Not on a hook, because there is no hook for the middle of a recovery -- and it wants to
-    ///     be in the middle rather than at either end, where it would be lost under the report or
-    ///     arrive after the weapon is already able to fire again. Every client runs the shot clock,
-    ///     so this lands once per shot for everyone watching rather than only for the holder.
-    /// </remarks>
+    /// <summary>The breech closing partway through the boulder reload. Every client runs the shot clock, so all of them hear it.</summary>
     protected override void WhileHeld(Player owner)
     {
         if (Boulder && TicksSinceShot == BOULDER_RELOAD_TICK)
@@ -242,9 +164,7 @@ public class StalagMagMKIProj : HeldGunProjectile
 
         Item held = owner.HeldItem;
 
-        // The round carries the numbers; the holder's gear scales them. Taking the damage off the
-        // ammunition and then through the player is what keeps a Titanstone round meaningfully
-        // better than a Stone one at every point in a run, rather than only at the start of it.
+        // Damage comes from the round, scaled by the holder's gear, so better stone stays better all run.
         int damage = (int)owner.GetTotalDamage(held.DamageType).ApplyTo(shot.Damage);
         float knockback = owner.GetWeaponKnockback(held, shot.Knockback);
 
@@ -266,9 +186,7 @@ public class StalagMagMKIProj : HeldGunProjectile
 
         Consume(round);
 
-        // The boulder is the only round heavy enough to move the man holding it. Straight back along
-        // the barrel, which makes firing at your own feet a way to travel -- that is a consequence
-        // of the recoil being real rather than a separate feature, and it is worth keeping.
+        // Only boulders shove the holder, straight back along the barrel. Firing at your feet to travel is a kept side effect.
         if (Boulder)
             owner.velocity -= direction * BOULDER_SHOVE;
 
@@ -281,15 +199,7 @@ public class StalagMagMKIProj : HeldGunProjectile
         }, owner.position);
     }
 
-    /// <summary>
-    ///     Spends the stack the round actually came out of.
-    /// </summary>
-    /// <remarks>
-    ///     Rather than <see cref="Player.ConsumeItem" /> on the item type, which searches the
-    ///     inventory again from the top and can take the round out of a different stack to the one
-    ///     <see cref="StalagMagAmmo.Choose" /> picked -- visible to the player as the ammunition
-    ///     slot they loaded staying full while their building supply drains.
-    /// </remarks>
+    /// <summary>Spends the exact stack <see cref="StalagMagAmmo.Choose" /> picked; <see cref="Player.ConsumeItem" /> might take from another.</summary>
     private static void Consume(Item round)
     {
         if (--round.stack > 0)
@@ -300,14 +210,8 @@ public class StalagMagMKIProj : HeldGunProjectile
 }
 
 /// <summary>
-///     A block of stone in flight, drawn and broken in whatever it was cut from.
+///     A block round in flight. <c>ai[0]</c> is the ammo item id, which resolves the sprite, debris and affliction on every client.
 /// </summary>
-/// <remarks>
-///     One projectile for every block round rather than one per stone: the material lives in
-///     <c>ai[0]</c> as the ammunition's item id, which is enough to recover the sprite, the debris
-///     and the affliction from <see cref="StalagMagAmmo" />. It rides the standard spawn packet, so
-///     every client cuts the same stone.
-/// </remarks>
 public class StoneBlockProj : ModProjectile
 {
     /// <summary>Registration texture only. What is drawn comes from the round. See PreDraw.</summary>
@@ -345,14 +249,7 @@ public class StoneBlockProj : ModProjectile
         Projectile.aiStyle = -1;
     }
 
-    /// <summary>
-    ///     A flat arc, hand-rolled.
-    /// </summary>
-    /// <remarks>
-    ///     Written out rather than left on <c>ProjAIStyleID.Arrow</c> because the arrow style spends
-    ///     the low <c>ai</c> slots on its own bookkeeping, and this projectile needs <c>ai[0]</c> for
-    ///     the stone it is made of.
-    /// </remarks>
+    /// <summary>A hand-rolled flat arc, since the arrow AI style uses the <c>ai[0]</c> slot this needs.</summary>
     public override void AI()
     {
         Projectile.velocity.Y = MathHelper.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
@@ -369,14 +266,7 @@ public class StoneBlockProj : ModProjectile
             target.AddBuff(shot.Buff, shot.BuffTime);
     }
 
-    /// <summary>
-    ///     Records which way the surface faced before dying on it.
-    /// </summary>
-    /// <remarks>
-    ///     The normal is what turns the burst in <see cref="OnKill" /> from a ring into a fan
-    ///     thrown back out of the wall, which is the difference between debris that looks blown off
-    ///     something and debris that looks like it appeared.
-    /// </remarks>
+    /// <summary>Records the surface normal so the burst in <see cref="OnKill" /> fans out of the wall.</summary>
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
         _impactNormal = new Vector2(
@@ -477,14 +367,7 @@ public class StoneBlockProj : ModProjectile
     }
 }
 
-/// <summary>
-///     The alternate trigger's round: a boulder, thrown rather than dropped.
-/// </summary>
-/// <remarks>
-///     It bounces twice before it gives up, which is most of what makes it feel like a boulder
-///     rather than a very large stone block -- a shot that skips down a corridor is doing something
-///     the block round cannot, and is the reason to carry the ammunition at all.
-/// </remarks>
+/// <summary>The alternate trigger's boulder, which bounces twice before stopping.</summary>
 public class BoulderShotProj : ModProjectile
 {
     public override string Texture => $"Terraria/Images/Projectile_{ProjectileID.Boulder}";
@@ -519,8 +402,7 @@ public class BoulderShotProj : ModProjectile
         Projectile.velocity.Y = MathHelper.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);
         Projectile.velocity.X *= 0.995f;
 
-        // Rolling rather than tumbling: the spin comes off the horizontal speed, so a boulder that
-        // has lost its momentum visibly stops turning.
+        // Spin follows horizontal speed, so a boulder that loses momentum visibly stops rolling.
         Projectile.rotation += Projectile.velocity.X * 0.02f;
 
         if (Main.rand.NextBool(3))
@@ -594,14 +476,7 @@ public class BoulderShotProj : ModProjectile
     }
 }
 
-/// <summary>
-///     Chips off a block round, wearing the block's own sprite.
-/// </summary>
-/// <remarks>
-///     One class with a variant per accepted stone rather than a class per stone, and the variant
-///     index is the round's position in <see cref="StalagMagAmmo" />'s own table -- so a stone added
-///     there arrives here already knowing what colour its debris is.
-/// </remarks>
+/// <summary>Block round debris; the variant index is the round's position in <see cref="StalagMagAmmo" />'s table.</summary>
 public class StoneBlockParticle : Particle
 {
     public override string[] Textures => StalagMagAmmo.BlockTextures;

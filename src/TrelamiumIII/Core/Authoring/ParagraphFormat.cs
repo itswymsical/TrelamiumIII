@@ -1,9 +1,6 @@
 namespace TrelamiumIII.Core.Authoring;
 
-/// <summary>
-///     Paragraph-level settings: what a whole run of lines shares, as against
-///     <see cref="CharFormat" />, which can change between one letter and the next.
-/// </summary>
+/// <summary>Settings shared by a whole paragraph, as opposed to per-character <see cref="CharFormat" />.</summary>
 public readonly record struct ParagraphFormat(
     AuthoredBlockKind Kind,
     AuthoredAlign Align,

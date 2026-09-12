@@ -341,7 +341,7 @@ public class WorldIndicator : IWorldUI
     }
     #endregion
 
-    public void Draw(SpriteBatch spriteBatch)
+    public virtual void Draw(SpriteBatch spriteBatch)
     {
         if (!IsActive || _hideFade <= 0f)
             return;

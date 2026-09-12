@@ -6,9 +6,8 @@ using TrelamiumIII.Core.NPCs.Housing;
 namespace TrelamiumIII.Common.Generation.Utils;
 
 /// <summary>
-/// Where on a structure a placement point refers to. StructureHelper always places
-/// from the top-left; this lets a caller say "put the bottom-centre here" or "put
-/// this doorway tile here" instead of doing the subtraction by hand.
+/// A reference point on a structure, so callers can place by bottom-centre or a specific tile instead of
+/// StructureHelper's top-left.
 /// </summary>
 public readonly struct StructureAnchor
 {
@@ -92,14 +91,12 @@ public static class Structures
         return new Point(target.X - offset.X, target.Y - offset.Y);
     }
 
-    /// <summary>True if the whole structure would fit in the world at that placement.</summary>
     public static bool Fits(string path, Point target, StructureAnchor anchor)
     {
         Point origin = OriginFor(path, target, anchor);
         return Generator.IsInBounds(path, Mod, new Point16(origin.X, origin.Y));
     }
 
-    /// <summary>Generates the structure so that <paramref name="anchor"/> lands on <paramref name="target"/>.</summary>
     public static PlacedStructure Place(string path, Point target, StructureAnchor anchor, GenFlags flags = GenFlags.None, bool ignoreNull = false)
     {
         Point16 size = Dimensions(path);

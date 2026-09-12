@@ -13,24 +13,9 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Content.Jobs;
 
 /// <summary>
-/// A finished <see cref="Job"/>'s payout, handed over as a single item the player opens when they
-/// have room for it.
+/// A finished <see cref="Job"/>'s payout as one openable item, so a full inventory can't scatter rewards. Contents are a
+/// snapshot taken at creation, not <see cref="Job.Rewards"/>, since <see cref="ModItem.ModifyItemLoot"/> can't see instances.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Paying out five loose items at once is how rewards get lost: a full inventory sends them
-///         to the ground, and a player walking away from the quest giver never notices. One bag
-///         always fits somewhere, and whatever it holds is written on the tooltip, so nothing is
-///         claimed blind.
-///     </para>
-///     <para>
-///         The contents are a <em>snapshot</em> taken when the bag is made, not a live reference to
-///         <see cref="Job.Rewards"/>. A bag sitting in a chest across a rebalance still pays what it
-///         advertises, and cross-mod rewards keep the item <see cref="JobReward"/> resolved for
-///         them. Vanilla's bag pipeline is deliberately not used: <see cref="ModItem.ModifyItemLoot"/>
-///         runs once per item <em>type</em> during loading, so it cannot see per-instance contents.
-///     </para>
-/// </remarks>
 public class RewardBag : ModItem
 {
     /// <summary>Job this bag was paid out for, or <see cref="JobID.None"/> when it came from elsewhere.</summary>
@@ -59,10 +44,7 @@ public class RewardBag : ModItem
         Item.value = 0;
     }
 
-    /// <summary>
-    /// <see cref="ModItem.Clone(Item)"/> is a shallow copy, which would leave every bag sharing one
-    /// contents list -- opening one would empty its neighbours.
-    /// </summary>
+    /// <summary>Deep-copies contents; the base shallow copy would share one list between bags.</summary>
     public override ModItem Clone(Item newEntity)
     {
         var clone = (RewardBag)base.Clone(newEntity);
@@ -73,12 +55,8 @@ public class RewardBag : ModItem
 
     #region Creation
     /// <summary>
-    /// Builds the bag a job pays out, or <see langword="null"/> when the job has nothing to give.
+    /// The bag a job pays out, or <see langword="null"/> if it has nothing to give. Rewards resolve here, so cross-mod ones are real items.
     /// </summary>
-    /// <remarks>
-    /// Rewards resolve here rather than at definition time, which is what lets a cross-mod
-    /// <see cref="JobReward"/> land in the bag as a real item.
-    /// </remarks>
     public static Item? ForJob(Job job)
     {
         var contents = new List<Item>();
@@ -115,16 +93,9 @@ public class RewardBag : ModItem
     }
 
     /// <summary>
-    /// Puts <paramref name="item"/> straight into the player's inventory, dropping only the part
-    /// that genuinely does not fit. Direct placement is the whole point of the bag: a world drop is
-    /// exactly the outcome it exists to avoid.
+    /// Puts <paramref name="item"/> straight into the inventory, dropping only what doesn't fit. Raises its own pickup popup,
+    /// since direct placement bypasses the path that would announce it.
     /// </summary>
-    /// <remarks>
-    /// The popup is raised here rather than left to happen on its own. A vanilla bag spawns its
-    /// contents into the world and lets the ordinary pickup path announce them; this bag deliberately
-    /// bypasses that path to guarantee delivery, and so has to say what it delivered itself. Without
-    /// it a payout landed in silence -- items in the inventory, nothing on screen.
-    /// </remarks>
     public static void GiveOrDrop(Player player, Item item, IEntitySource source)
     {
         // GetItem reaches into one specific player's slots, so it is only meaningful on the client
@@ -177,10 +148,7 @@ public class RewardBag : ModItem
         SoundEngine.PlaySound(SoundID.Grab, player.position);
     }
 
-    /// <summary>
-    /// Two bags are only interchangeable if they pay out the same thing; stacking them otherwise
-    /// would quietly discard one payout's contents.
-    /// </summary>
+    /// <summary>Bags only stack if they pay out the same thing, or one payout would be lost.</summary>
     public override bool CanStack(Item source)
     {
         if (source.ModItem is not RewardBag other || other.JobId != JobId)
@@ -249,10 +217,7 @@ public class RewardBag : ModItem
         });
     }
 
-    /// <summary>
-    /// One content line: vanilla's inline item tag for the icon, then the name. The tag draws its own
-    /// stack overlay but clamps it at 999, so the count is spelled out beside it as well.
-    /// </summary>
+    /// <summary>One content line: the item tag icon and name, with the stack spelled out since the tag caps at 999.</summary>
     private static string Describe(Item content)
     {
         if (content.stack <= 1)
@@ -261,14 +226,7 @@ public class RewardBag : ModItem
         return $"[i/s{content.stack}:{content.type}] {content.Name} ({content.stack})";
     }
 
-    /// <summary>
-    /// Localization key for a job's name, or <see langword="null"/> for a bag with no job behind it.
-    /// </summary>
-    /// <remarks>
-    /// This used to build an entire <see cref="Job"/> -- task lists, reward lists and all -- to read
-    /// one string, and cached the result because a hovered tooltip asks every frame. The registry now
-    /// keeps that string from load, so neither the construction nor the cache is needed.
-    /// </remarks>
+    /// <summary>Localization key for a job's name, or <see langword="null"/> for a bag with no job.</summary>
     private static string? JobNameKeyFor(int jobId)
         => jobId != JobID.None && EventSystem.TryGetJobInfo(jobId, out var info) ? info.NameKey : null;
     #endregion

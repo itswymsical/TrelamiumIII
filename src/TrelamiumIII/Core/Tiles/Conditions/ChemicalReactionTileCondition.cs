@@ -4,55 +4,12 @@ using TrelamiumIII.Core.Gas;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
-/// <summary>
-///     Chemistry left behind on the ground: the residue a <c>ChemicalGasLayer</c> deposits wherever
-///     its field pooled long enough to soak in.
-/// </summary>
-/// <remarks>
-///     <para>
-///         The condition is itself an <see cref="IChemicalSource" />, so a puddle afflicts through
-///         exactly the same path a node does -- same matchup table, same reaction roll, same
-///         <see cref="IChemicalSource.OnChemicalReaction" /> dispatch. A flask that lands and
-///         disperses therefore keeps working after its cloud is gone, and the difference between the
-///         cloud and the residue is duration and delivery, not a second parallel set of rules.
-///     </para>
-///     <para>
-///         Rendered as a coverage mask, which is what lets one puddle span several tiles without a
-///         seam at every boundary. Subclasses supply the palette and the chemistry; the machinery is
-///         all here.
-///     </para>
-/// </remarks>
 public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSource
 {
     public abstract ChemicalDamageType ChemicalType { get; }
 
-    /// <summary>
-    ///     The universal definition of whatever element this residue is made of.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Every default below comes from here, which is the point. A residue's element already
-    ///         determines what it should do to something standing in it and roughly what it should
-    ///         look like doing so, and there is no reason for a caustic pool to restate the caustic
-    ///         palette and the caustic affliction rate when it has already said it is caustic.
-    ///     </para>
-    ///     <para>
-    ///         So a residue is now a name, an element, and only the handful of things that make it
-    ///         that residue rather than the generic form of its element. What is left overridden in
-    ///         a subclass is, by construction, the part that is actually distinctive.
-    ///     </para>
-    /// </remarks>
     protected ElementProfile Element => ElementProfile.For(ChemicalType);
 
-    /// <summary>
-    ///     Affliction tick damage from standing in the residue.
-    /// </summary>
-    /// <remarks>
-    ///     Lower than the cloud that left it. The residue is a much larger window of exposure -- it
-    ///     sits there for twenty seconds where the cloud passed in two -- so matching the cloud's
-    ///     rate would make the leftovers hit harder than the weapon. The element carries that
-    ///     already-reduced figure.
-    /// </remarks>
     public virtual float ChemicalDamage => Element.ChemicalDamage;
 
     public virtual int AfflictionDuration => Element.AfflictionDuration;
@@ -65,61 +22,22 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 
-    /// <summary>A debuff put on anything hostile standing in it, or -1 for none.</summary>
-    /// <remarks>
-    ///     Players are not "anything" -- see <see cref="HarmsPlayers" />.
-    /// </remarks>
     protected virtual int ContactBuff => Element.ContactBuff;
 
     protected virtual int ContactBuffTicks => Element.ContactBuffTicks;
 
-    /// <summary>
-    ///     Whether the residue is a hazard to players, or only to what they threw it at.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Off by default, and that default is the whole shape of the feature. A flask marks a
-    ///         patch of ground for the better part of twenty seconds and the thrower has to walk
-    ///         through it to press the advantage; a residue that debuffs on contact turns every one
-    ///         of these weapons into a thing you throw and then retreat from, which is the opposite
-    ///         of what an area denial tool is for.
-    ///     </para>
-    ///     <para>
-    ///         What the residue does instead is keep breathing -- see <see cref="LingerLayer" /> --
-    ///         so the ground stays visibly and mechanically active without the player having to
-    ///         fight their own leftovers. The exception is a residue that is meant to be a hazard
-    ///         to everyone, thermite being the obvious one: molten metal does not check who poured
-    ///         it.
-    ///     </para>
-    /// </remarks>
     protected virtual bool HarmsPlayers => Element.HarmsPlayers;
 
-    /// <summary>
-    ///     The layer this residue exhales while it sits there, or null for one that just stains.
-    /// </summary>
-    /// <remarks>
-    ///     A puddle that emits its own cloud is what replaces contact damage for the residues that
-    ///     no longer have any: the patch is still doing something, and what it is doing is the same
-    ///     thing the flask did, delivered by the same nodes with the same ownership. Enemies that
-    ///     wander into it are afflicted by the gas exactly as they would be by a fresh throw.
-    /// </remarks>
     protected virtual GasField? LingerLayer => null;
 
-    /// <summary>Ticks between exhalations, per tile.</summary>
-    /// <remarks>
-    ///     Staggered by tile coordinate rather than fired in lockstep, so a wide patch simmers
-    ///     unevenly instead of pulsing as one organism.
-    /// </remarks>
     protected virtual int LingerInterval => 16;
 
     protected virtual float LingerRadius => 7f;
 
     protected virtual float LingerLife => 42f;
 
-    /// <summary>Upward drift given to an exhaled node, before the layer's own buoyancy takes over.</summary>
     protected virtual float LingerRise => 0.5f;
 
-    /// <summary>Residue below this strength is a stain rather than a hazard, and does nothing.</summary>
     protected virtual float ActiveStrength => 0.25f;
 
     public override float Duration => 14f * 60f;
@@ -128,25 +46,8 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
 
-    /// <summary>
-    ///     Additive, so neighbouring tiles sum into one pool instead of tiling.
-    /// </summary>
-    /// <remarks>
-    ///     The other half of the metaball trick -- see <see cref="DrawTile" />. Blobs have to be able
-    ///     to add past the shader's threshold where they overlap, which is exactly what fills in the
-    ///     gap between two marked tiles and rounds off the outside of the run.
-    /// </remarks>
     public override BlendState FieldBlend => BlendState.Additive;
 
-    /// <summary>
-    ///     Width of one tile's blob, in tiles.
-    /// </summary>
-    /// <remarks>
-    ///     Above 2 on purpose: each blob has to reach well past its own tile for the sum in between
-    ///     two of them to clear the threshold, and that overlap is the whole reason the result reads
-    ///     as one pool rather than as a row of circles. Too much and a single isolated tile spreads
-    ///     into a puddle bigger than the block it is on.
-    /// </remarks>
     protected virtual float PoolSpread => 2.4f;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
@@ -157,7 +58,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     protected virtual Vector3 EmittedLight => Element.EmittedLight;
 
-    /// <summary>How much of the mask survives the shader's noise erosion. Higher reads wetter.</summary>
     protected virtual float Threshold => Element.Threshold;
 
     protected virtual float NoiseScale => Element.NoiseScale;
@@ -175,9 +75,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
         noiseTexture = Assets.Textures.Noise.Turbulence_06.Asset;
 
-        // The same gradient the gas layers stamp their nodes with, which is deliberate: a puddle and
-        // the cloud that left it should be built out of the same shape, or the handoff between them
-        // is visible as a change of material.
         poolTexture = Assets.Textures.VFX.RadialGradient.Asset;
     }
 
@@ -216,23 +113,19 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         Emitted from just above the tile rather than from its centre, because the centre is
-    ///         inside solid rock: a node born there registers as enclosed on its first tick, takes
-    ///         the enclosure life penalty, and gets ejected in whichever direction its density
-    ///         happens to point. Half a tile of clearance is enough to start it in open air.
+    ///         Emitted from just above the tile rather than its centre, which is inside solid rock: a
+    ///         node born there registers as enclosed, takes the enclosure life penalty, and gets
+    ///         ejected. Half a tile of clearance starts it in open air.
     ///     </para>
     ///     <para>
     ///         Scaled by strength on both size and lifetime, so a fading patch does not keep
-    ///         producing full-bodied clouds right up to the frame it disappears.
+    ///         producing full-bodied clouds.
     ///     </para>
     ///     <para>
-    ///         Gated on being visible, and that gate is load-bearing rather than an optimisation.
-    ///         A residue runs to <see cref="TileCondition.MaxTiles" /> tiles and each one emits on
-    ///         its own cycle; ungated, a large enough pool keeps a four-figure node count alive
-    ///         permanently, and every one of those nodes is swept against every NPC in the world.
-    ///         The cloud is a reading of the patch rather than the patch itself -- the chemistry is
-    ///         in <see cref="OnNPCContact" />, which runs everywhere regardless -- so declining to
-    ///         render one nobody is looking at costs nothing that matters.
+    ///         The visibility gate is needed as a large pool keeps a
+    ///         four-figure node count alive permanently, each swept against every NPC. The chemistry
+    ///         runs in <see cref="OnNPCContact" /> regardless, so skipping off-screen clouds loses
+    ///         nothing.
     ///     </para>
     /// </remarks>
     private void Exhale(in TileConditionInstance instance)
@@ -259,30 +152,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         );
     }
 
-    /// <summary>
-    ///     Stamps a soft blob at the tile's centre rather than the tile's own hard outline.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         This is what turns a residue from a stain into a pool. A tile silhouette is a square
-    ///         with a binary edge, so a field built from silhouettes is square no matter what the
-    ///         shader afterwards does to it -- the noise erodes the outline but cannot round a
-    ///         corner that is a step function, and the result reads as blocky because it is.
-    ///     </para>
-    ///     <para>
-    ///         A radial gradient has no edge at all. Summed additively across neighbouring tiles and
-    ///         cut at a threshold, the boundary lands wherever the sum crosses the cut -- which is a
-    ///         smooth curve through the middle of the falloff, bulging where several tiles overlap
-    ///         and pinching where one sits alone. That is a metaball field, and it is the same
-    ///         mechanism the gas layers use to look like liquid.
-    ///     </para>
-    ///     <para>
-    ///         What is given up is the terrain's exact shape: a pool no longer stops precisely at a
-    ///         slope's diagonal. For something wet that is the correct trade -- liquid pools over a
-    ///         slope rather than being cut by it -- and it is why burn and rime, which do want the
-    ///         block's real outline, stamp silhouettes instead.
-    ///     </para>
-    /// </remarks>
     public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
     {
         if (poolTexture is not { Value: { } blob })
@@ -319,10 +188,8 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         effect.Parameters["WorldLight"]?.SetValue(Vector3.Max(AverageScreenLight(), new Vector3(0.2f)));
 
         effect.Parameters["Threshold"]?.SetValue(Threshold);
-        // Light, and far lighter than it was when this stamped hard silhouettes. Erosion at that
-        // strength existed to break up a square outline that had no business being square; a
-        // metaball boundary is already a smooth curve, so the noise is only here to keep the rim
-        // from looking machined. Turned up, it shreds the pool into disconnected specks.
+        // a metaball boundary is already smooth, so the noise only keeps the rim from looking
+        // machined. Turned up, it shreds the pool into disconnected specks.
         effect.Parameters["NoiseStrength"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(NoiseScale);
         effect.Parameters["NoiseDrift"]?.SetValue(NoiseDrift);
@@ -334,14 +201,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         effect.Parameters["EdgeAlpha"]?.SetValue(0.92f);
     }
 
-    /// <summary>
-    ///     Afflicts anything hostile standing in it.
-    /// </summary>
-    /// <remarks>
-    ///     The same friendly, dummy and invulnerable filter the gas sweep applies, for the same
-    ///     reason: a puddle left in a town should be scenery, not a hazard to the people living
-    ///     there.
-    /// </remarks>
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)
     {
         if (instance.Strength < ActiveStrength || !CanAffect(npc))
@@ -353,20 +212,11 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         if (ContactBuff >= 0)
             npc.AddBuff(ContactBuff, ContactBuffTicks);
 
-        // Rolled per tile of contact rather than per tick of standing in it, which is already how
-        // the gas layers roll -- residue is just a slower emitter of the same events.
+        // Rolled per tile of contact rather than per tick of standing in it
         if (Main.rand.NextFloat() < ReactionChance * instance.Strength)
             ChemicalReaction.Trigger(npc, this);
     }
 
-    /// <summary>
-    ///     Does nothing to players unless the residue is explicitly a hazard to them.
-    /// </summary>
-    /// <remarks>
-    ///     See <see cref="HarmsPlayers" />. A residue that stays out of the player's way is not
-    ///     inert -- it is still afflicting everything hostile that walks through it, and still
-    ///     exhaling its own cloud on top of that.
-    /// </remarks>
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
         if (!HarmsPlayers || instance.Strength < ActiveStrength || ContactBuff < 0)
@@ -375,10 +225,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         player.AddBuff(ContactBuff, ContactBuffTicks);
     }
 
-    /// <summary>
-    ///     The same test the gas sweep uses, so a residue and the cloud that left it agree about
-    ///     what counts as a target.
-    /// </summary>
     protected static bool CanAffect(NPC npc)
         => !npc.friendly && !npc.dontTakeDamage && !npc.immortal;
 }

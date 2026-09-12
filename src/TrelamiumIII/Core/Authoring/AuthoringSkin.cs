@@ -5,21 +5,8 @@ using Terraria.ID;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     The desk's chrome: bestiary slot plates, and the vanilla icons the toolbar hangs off.
+///     The desk's chrome: Bestiary slot plates (one nine-slice texture, unlike the generic panel pair) and the vanilla toolbar icons.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Panels are <c>Bestiary/Slot_Back</c> rather than the generic <c>PanelBackground</c> pair.
-///         The slot carries its own vertical gradient and a crisper bevel, and it is a single texture,
-///         so one nine-slice fills the whole rectangle. The generic pair needs a border drawn under an
-///         inset background, and any mismatch between the two corner sizes leaves the fill short of
-///         the frame -- which is exactly the thin, hollow look it had.
-///     </para>
-///     <para>
-///         <c>Button_Border</c> and <c>Button_Wide_Border</c> stay what vanilla uses them for: hover
-///         rings laid over an icon, never stretched as a plate.
-///     </para>
-/// </remarks>
 public static class AuthoringSkin
 {
     public static readonly Color Panel = new(48, 58, 104);
@@ -77,10 +64,7 @@ public static class AuthoringSkin
         return asset.Value;
     }
 
-    /// <summary>
-    ///     Corner inset for a nine-slice, scaled to the plate so a small texture is not sliced into
-    ///     overlapping halves.
-    /// </summary>
+    /// <summary>Nine-slice corner inset scaled to the plate, so small textures aren't sliced into overlapping halves.</summary>
     private static int CornerOf(Texture2D plate) =>
         Math.Max(2, Math.Min(10, Math.Min(plate.Width, plate.Height) / 3));
 

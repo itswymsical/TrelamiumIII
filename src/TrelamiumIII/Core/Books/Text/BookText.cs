@@ -20,14 +20,8 @@ public enum BookFont
 }
 
 /// <summary>
-///     Implemented by snippets a book page can hover: glossary terms, cross-references, anything with
-///     something to say when the cursor stops on it.
+///     A hoverable book snippet (glossary term, cross-reference). Pages hit-test themselves, since vanilla hover uses screen coordinates.
 /// </summary>
-/// <remarks>
-///     Terraria's own hover mechanism resolves against screen coordinates, which are meaningless
-///     inside a page's render target, so book pages hit-test themselves and read the result off this
-///     interface instead of calling <see cref="TextSnippet.OnHover" />.
-/// </remarks>
 public interface IBookInteractiveSnippet
 {
     /// <summary>Tooltip to raise, or null.</summary>
@@ -38,21 +32,8 @@ public interface IBookInteractiveSnippet
 }
 
 /// <summary>
-///     Implemented by snippets that draw their own text but are still ordinary prose underneath, so
-///     wrapping may break them at word boundaries.
+///     A self-drawing snippet the line breaker may split at words. Implementers must also override <see cref="TextSnippet.CopyMorph" />.
 /// </summary>
-/// <remarks>
-///     <para>
-///         A <see cref="TextSnippet.UniqueDraw" /> snippet is atomic to the line breaker by default,
-///         which is right for an icon or a glossary term but wrong for a run of text: a whole phrase
-///         set in another face would be measured as one unbreakable word and hang off the page.
-///         Implementing this puts the snippet back into the ordinary word-wrapping path.
-///     </para>
-///     <para>
-///         An implementer must also override <see cref="TextSnippet.CopyMorph" /> to return its own
-///         type, or the fragments it is split into revert to plain body text.
-///     </para>
-/// </remarks>
 public interface IWrappableSnippet
 {
     /// <summary>Width of a run of this snippet's text at the layout scale.</summary>
@@ -66,16 +47,11 @@ public enum TextAlign
     Center,
     Right,
 
-    /// <summary>
-    ///     Stretches inter-word gaps so both edges line up. Applied to every line except the last of
-    ///     a paragraph, which would otherwise be spread across the full column from a few words.
-    /// </summary>
+    /// <summary>Stretches word gaps to fill the column, except on a paragraph's last line.</summary>
     Justify,
 }
 
-/// <summary>
-///     One laid-out line of book text: the snippets sitting on it, and the extent they occupy.
-/// </summary>
+/// <summary>One laid-out line: its snippets and their measured extent.</summary>
 public sealed class BookTextLine
 {
     public required TextSnippet[] Snippets { get; init; }
@@ -83,10 +59,7 @@ public sealed class BookTextLine
     /// <summary>Measured extent at the scale the line was laid out for.</summary>
     public Vector2 Size { get; init; }
 
-    /// <summary>
-    ///     True when an explicit break ended this line rather than the column edge. Justification
-    ///     skips these, since a hard-broken line is the end of its paragraph.
-    /// </summary>
+    /// <summary>True when an explicit break ended the line; justification skips these.</summary>
     public bool HardBreak { get; init; }
 
     /// <summary>A line carrying no snippets, produced by a paragraph token. Drawn as vertical space.</summary>
@@ -94,44 +67,21 @@ public sealed class BookTextLine
 }
 
 /// <summary>
-///     Lays out rich text for the book renderer: parse to snippets, wrap to a column, then draw or
-///     hit-test one line at a time.
+///     Lays out rich text for books: parse snippets, wrap to a column, draw or hit-test per line. Wraps itself because vanilla
+///     measures raw strings (ignoring inline icons), and hit-tests itself because pages are drawn in page-local space.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Text goes through Terraria's snippet parser, so every tag the game knows works inside a
-///         book, as do this mod's own (see <see cref="Core.Text.InlineTagSystem" />). That is the
-///         reason wrapping is written here rather than deferred to
-///         <see cref="ChatManager.DrawColorCodedString(SpriteBatch, DynamicSpriteFont, string, Vector2, Color, float, Vector2, Vector2, float, bool)" />:
-///         vanilla's word-wrap measures the raw string, so a line holding an inline icon is measured
-///         as if the icon were not there and overruns the column. Walking the snippets and asking each
-///         <see cref="TextSnippet.UniqueDraw" /> for its true size is the only way to wrap honestly.
-///     </para>
-///     <para>
-///         Hit-testing is likewise ours. Vanilla resolves hover by comparing against
-///         <see cref="Main.MouseScreen" />, but book pages are drawn into a render target in
-///         page-local space, where screen coordinates mean nothing. Callers convert the cursor into
-///         page space and pass it to <see cref="HitTest" />.
-///     </para>
-/// </remarks>
 public static class BookText
 {
     public const string PARAGRAPH_TOKEN = "[p]";
 
-    /// <summary>
-    ///     Resolves a role against its typeface. The vanilla mapping that used to live here now sits
-    ///     in <see cref="BookTypeface.Vanilla" />, which is what a face with no typeface falls back to.
-    /// </summary>
+    /// <summary>Resolves a role against its typeface (vanilla fonts when none).</summary>
     public static DynamicSpriteFont FontFor(BookFace face) => face.Font;
 
     /// <summary>Height of one line of this font at this scale, before any extra leading.</summary>
     public static float LineHeight(BookFace face, float scale) =>
         FontFor(face).MeasureString("Ay").Y * scale;
 
-    /// <summary>
-    ///     Shortens text with an ellipsis until it fits, for the places that must stay one line --
-    ///     a contents row, a tab label -- where wrapping would break the shape rather than the text.
-    /// </summary>
+    /// <summary>Shortens text with an ellipsis to fit one line, for contents rows and tab labels.</summary>
     public static string Truncate(DynamicSpriteFont font, string text, float scale, float maxWidth)
     {
         if (string.IsNullOrEmpty(text) || maxWidth <= 0f || font.MeasureString(text).X * scale <= maxWidth)
@@ -149,17 +99,8 @@ public static class BookText
         return ellipsis;
     }
 
-    /// <summary>
-    ///     The ink bounds of a single glyph: how tall the letter itself is, and how far below the pen
-    ///     its top sits.
-    /// </summary>
-    /// <remarks>
-    ///     <see cref="DynamicSpriteFont.MeasureString" /> reports the line box -- ascender, descender
-    ///     and leading together -- which is the right measure for stacking lines and the wrong one for
-    ///     sizing a letter. A drop cap fitted to the line box comes out around a third shorter than the
-    ///     space it was given, sitting low in its own notch. The atlas source rectangle is the letter.
-    /// </remarks>
-    /// <returns>False when the font has no baked entry for the character; the caller falls back.</returns>
+    /// <summary>A glyph's ink height and top bearing from its atlas rect; MeasureString gives the line box, too tall for a drop cap.</summary>
+    /// <returns>False when the font has no baked entry for the character.</returns>
     public static bool TryGetGlyphInk(DynamicSpriteFont font, char character, out float height, out float topBearing)
     {
         if (font.SpriteCharacters.TryGetValue(character, out DynamicSpriteFont.SpriteCharacterData data)
@@ -177,14 +118,8 @@ public static class BookText
         return false;
     }
 
-    /// <summary>
-    ///     Parses and wraps <paramref name="text" /> into lines no wider than <paramref name="maxWidth" />.
-    /// </summary>
-    /// <param name="leadingIndent">
-    ///     Width withheld from the first <paramref name="leadingIndentLines" /> lines. One mechanism
-    ///     covers both a first-line indent and the notch a drop cap has to be wrapped around; the
-    ///     caller offsets those lines by the same amount when drawing.
-    /// </param>
+    /// <summary>Parses and wraps <paramref name="text" /> into lines no wider than <paramref name="maxWidth" />.</summary>
+    /// <param name="leadingIndent">Width withheld from the first lines, for a first-line indent or a drop cap's notch.</param>
     /// <param name="leadingIndentLines">How many opening lines <paramref name="leadingIndent" /> applies to.</param>
     public static List<BookTextLine> Layout(
         string? text,
@@ -220,10 +155,8 @@ public static class BookText
 
         foreach (TextSnippet snippet in snippets)
         {
-            // An icon-bearing snippet reports its own size and can never be split. Ask at the
-            // combined scale, since a snippet carries its own multiplier on top of the layout's.
-            // Snippets that draw text rather than an icon opt out and go through the word path,
-            // or a phrase in another face would be one unbreakable word.
+            // Icon snippets report their own size and never split (asked at the combined scale); snippets that draw text opt
+            // into word wrap instead.
             if (snippet is not IWrappableSnippet
                 && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale * snippet.Scale))
             {
@@ -290,10 +223,7 @@ public static class BookText
         return lines.Count * (LineHeight(font, scale) + lineSpacing) - lineSpacing;
     }
 
-    /// <summary>
-    ///     Draws one laid-out line with the tooltip drop shadow. <paramref name="position" /> is the
-    ///     line's top-left in whatever space the sprite batch is currently in.
-    /// </summary>
+    /// <summary>Draws one laid-out line; <paramref name="position" /> is its top-left in the batch's current space.</summary>
     public static void DrawLine(
         SpriteBatch spriteBatch,
         BookTextLine line,
@@ -322,21 +252,8 @@ public static class BookText
     }
 
     /// <summary>
-    ///     Puts a run of snippets on the page as ink: no drop shadow, and on a whole pixel.
+    ///     Draws snippets as ink: no drop shadow (it swallows thin strokes at book scale), snapped to whole pixels to avoid blur.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Vanilla's shadowed draw is built for text floating over the world, and stamps four
-    ///         black copies at a fixed two-pixel spread. Book text is set at well under full scale, so
-    ///         its strokes are around a pixel wide and that shadow swallows them -- the page comes out
-    ///         looking smudged rather than printed. Ink on paper has the page behind it for contrast
-    ///         and needs no shadow at all.
-    ///     </para>
-    ///     <para>
-    ///         Snapping matters for the same reason: the glyph atlas is a bitmap, and a line landing
-    ///         on a fractional pixel gets resampled by the page target's linear filter into a blur.
-    ///     </para>
-    /// </remarks>
     private static void DrawSnippets(
         SpriteBatch spriteBatch,
         DynamicSpriteFont font,
@@ -365,34 +282,16 @@ public static class BookText
     /// <summary>A single positioned run: one word, or one atomic snippet.</summary>
     private readonly record struct TextPiece(TextSnippet Snippet, int SnippetIndex, float X, float Width);
 
-    /// <summary>
-    ///     Reused across lines. Page drawing is single-threaded and a piece list never outlives the
-    ///     call that built it, so one buffer serves the whole book instead of allocating per line.
-    /// </summary>
+    /// <summary>Reused scratch list; page drawing is single-threaded and pieces never outlive the call.</summary>
     private static readonly List<TextPiece> pieceScratch = [];
 
     /// <summary>
-    ///     Whether this line gets justified. The last line of a paragraph never does -- a few words
-    ///     stretched across the full column is the classic way to make a page look broken.
+    ///     Justifies all but a paragraph's last line. Not gated on width, since wrap sums and line measurement differ slightly; the gap clamp handles it.
     /// </summary>
-    /// <remarks>
-    ///     Deliberately not gated on the line being narrower than the column. Wrap decisions sum
-    ///     per-word widths while <see cref="BookTextLine.Size" /> is one exact measurement of the
-    ///     finished line, and the two disagree by the font's inter-character spacing at each word
-    ///     boundary. Testing against that difference made full lines opt out and left only the loose
-    ///     ones stretched, which read as erratic spacing. The gap clamp below handles it instead.
-    /// </remarks>
     private static bool ShouldJustify(BookTextLine line, float columnWidth, TextAlign align) =>
         align == TextAlign.Justify && !line.HardBreak && columnWidth > 0f && line.Snippets.Length > 0;
 
-    /// <summary>
-    ///     Breaks a line into the runs justification moves independently, and spaces them to both
-    ///     margins.
-    /// </summary>
-    /// <remarks>
-    ///     Wrapping merges a line's words into one snippet per source run, so justifying by snippet
-    ///     would find no gaps to widen on an ordinary line. The words have to be recovered here.
-    /// </remarks>
+    /// <summary>Recovers a line's words (wrapping merges them per source run) and spaces them to both margins.</summary>
     private static List<TextPiece> BuildJustifiedPieces(
         BookTextLine line,
         DynamicSpriteFont font,
@@ -435,10 +334,8 @@ public static class BookText
 
         float space = font.MeasureString(" ").X * scale;
 
-        // Slack is measured against the words alone, so the gap already includes the space that was
-        // taken out. Clamped at both ends: never tighter than a real space, which is what a line
-        // measuring slightly over the column would otherwise ask for, and never so loose that a line
-        // that wrapped early flies apart.
+        // The gap is clamped between one space (for lines measuring slightly over) and 2.5 spaces (so early-wrapped lines
+        // don't fly apart).
         float gap = MathHelper.Clamp((columnWidth - natural) / gaps, space, space * 2.5f);
 
         float x = 0f;
@@ -472,10 +369,7 @@ public static class BookText
         }
     }
 
-    /// <summary>
-    ///     Index of the snippet under <paramref name="local" />, or -1. Coordinates are relative to
-    ///     the line's top-left, in the same space it was drawn.
-    /// </summary>
+    /// <summary>Index of the snippet under <paramref name="local" /> (relative to the line's top-left), or -1.</summary>
     public static int HitTest(
         BookTextLine line,
         BookFace bookFont,
@@ -542,14 +436,8 @@ public static class BookText
     }
 
     /// <summary>
-    ///     Accumulates snippets onto the line currently being built.
+    ///     Builds the current line. Pending words flush as a <see cref="TextSnippet.CopyMorph" /> of their source, keeping colour and scale across wraps.
     /// </summary>
-    /// <remarks>
-    ///     Text arriving from one source snippet can straddle a wrap, so the words waiting to be
-    ///     written are held apart from the snippets already committed. Flushing turns whatever is
-    ///     pending into a <see cref="TextSnippet.CopyMorph" /> of its source, which is what keeps a
-    ///     wrapped run of coloured or tagged text carrying its own colour and scale onto the next line.
-    /// </remarks>
     private sealed class LineBuilder(DynamicSpriteFont font, float scale)
     {
         private readonly List<TextSnippet> committed = [];
@@ -601,9 +489,7 @@ public static class BookText
 
             var snippets = committed.ToArray();
 
-            // One exact measurement per finished line. Wrap decisions sum per-word widths, which is
-            // linear but drops the font's inter-character spacing at word boundaries; re-measuring
-            // here keeps centring and justification honest without making layout quadratic.
+            // One exact measurement per finished line: per-word sums drop inter-character spacing at word boundaries.
             float width = 0f;
             float height = 0f;
 

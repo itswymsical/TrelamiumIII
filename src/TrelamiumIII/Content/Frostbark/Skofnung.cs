@@ -44,9 +44,7 @@ public class Skofnung : ModItem
 
 public class SkofnungProjectile : HeldSwordProjectile
 {
-    /// <summary>
-    ///     The blade in hand. Shared with the item so the two cannot disagree about the tempo.
-    /// </summary>
+    /// <summary>Shared with the item so the two can't disagree about tempo.</summary>
     public static readonly SwordProfile Swing = SwordProfile.Dagger with
     {
         BladeLength = 60f,
@@ -54,7 +52,6 @@ public class SkofnungProjectile : HeldSwordProjectile
         SwingSound = SoundID.Item1,
     };
 
-    /// <summary>The swing is the item sprite, so it shares the asset rather than duplicating it.</summary>
     public override string Texture => AssetReferences.Content.Frostbark.Skofnung.KEY;
 
     protected override SwordProfile Profile => Swing;

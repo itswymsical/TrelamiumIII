@@ -29,10 +29,7 @@ public sealed class FungalInfectionHostile : ModBuff
         Main.pvpBuff[Type] = false;
         Main.buffNoSave[Type] = true;
 
-        // Off, and difficulty is handled by FungalInfectionPlayer.InfectionTicks instead. The
-        // vanilla flag is a blunt doubling applied on top of whatever duration was asked for, which
-        // turned a ten second cloud into twenty seconds of unreadable screen in expert -- and left
-        // no way to say that master should be harsher than expert without making expert worse too.
+        // Off: InfectionTicks scales duration by difficulty, where vanilla's flag would blindly double it.
         BuffID.Sets.LongerExpertDebuff[Type] = false;
     }
 
@@ -43,9 +40,7 @@ public sealed class FungalInfectionHostile : ModBuff
     }
 }
 
-/// <summary>
-///     The heavier strain, thrown by <see cref="FungoreSpore" />.
-/// </summary>
+/// <summary>The heavier strain, thrown by <see cref="FungoreSpore" />.</summary>
 public sealed class FungalInfectionSpore : ModBuff
 {
     public override string Texture => AssetReferences.Content.Fungore.FungalInfection.KEY;
@@ -56,8 +51,7 @@ public sealed class FungalInfectionSpore : ModBuff
         Main.pvpBuff[Type] = false;
         Main.buffNoSave[Type] = true;
 
-        // Deliberately not lengthened in expert. This one is already re-applied every few seconds
-        // by an attack that is hard to avoid; doubling it as well would make it permanent.
+        // Not lengthened in expert: it's reapplied every few seconds, so doubling would make it permanent.
         BuffID.Sets.LongerExpertDebuff[Type] = false;
     }
 
@@ -76,14 +70,10 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>Caught by a slam. Two.</summary>
     public const int SPORE_BORNE = 2;
 
-    /// <summary>
-    ///     Saturation ceiling.
-    /// </summary>
+    /// <summary>Saturation ceiling.</summary>
     public const int MAX_STACKS = 10;
 
-    /// <summary>
-    ///     Peak warp at a full stack.
-    /// </summary>
+    /// <summary>Peak warp at a full stack.</summary>
     private const float WOBBLE_STRENGTH = 0.4f;
 
     /// <summary>Warp frequency at zero and full stacks. Climbing both is what sells it.</summary>
@@ -92,16 +82,11 @@ public class FungalInfectionPlayer : ModPlayer
     /// <summary>Capped low for the same reason: fine noise is what actually destroys legibility.</summary>
     private const float WOBBLE_SCALE_MAX = 4.5f;
 
-    /// <summary>
-    ///     How long a fresh infection lasts, by difficulty.
-    /// </summary>
     public static int InfectionTicks => Main.masterMode ? 20 * 60
         : Main.expertMode ? 13 * 60
         : 9 * 60;
 
-    /// <summary>
-    ///     Applies a strain and a stack of saturation in one go.
-    /// </summary>
+    /// <summary>Applies a strain and a stack of saturation in one go.</summary>
     public static void Inflict(Player player, int buffType, int ticks, int stacks = 1)
     {
         if (player is not { active: true } || player.dead)
@@ -112,26 +97,20 @@ public class FungalInfectionPlayer : ModPlayer
         player.GetModPlayer<FungalInfectionPlayer>().AddStacks(stacks);
     }
 
-    /// <summary>
-    ///     Added to <see cref="Player.lifeRegen" /> per point of severity.
-    /// </summary>
+    /// <summary>Added to <see cref="Player.lifeRegen" /> per point of severity.</summary>
     private const int REGEN_PER_SEVERITY = 2;
 
     /// <summary>Worst strain in the player this frame. Rebuilt from scratch every tick.</summary>
     public int Severity;
 
-    /// <summary>
-    ///     How saturated they are, 0 to <see cref="MAX_STACKS" />.
-    /// </summary>
+    /// <summary>Saturation, 0 to <see cref="MAX_STACKS" />.</summary>
     public int Stacks;
 
     public bool Infected => Severity > 0;
 
     public void AddStacks(int count) => Stacks = Math.Clamp(Stacks + count, 0, MAX_STACKS);
 
-    /// <summary>
-    ///     Raises the infection to <paramref name="severity" />.
-    /// </summary>
+    /// <summary>Raises the infection to <paramref name="severity" />; never lowers it.</summary>
     public void Infect(int severity) => Severity = Math.Max(Severity, severity);
 
     public override void ResetEffects() => Severity = 0;
@@ -148,9 +127,7 @@ public class FungalInfectionPlayer : ModPlayer
             Player.lifeRegen -= REGEN_PER_SEVERITY * Severity;
     }
 
-    /// <summary>
-    ///     Pushes the saturation into the warp.
-    /// </summary>
+    /// <summary>Pushes the saturation into the warp.</summary>
     public override void PostUpdate()
     {
         if (!Infected)
@@ -207,12 +184,9 @@ public sealed class FungalInfectionNPC : GlobalNPC
     private int bloomCooldown;
     private int pendingBloom;
 
-    /// <summary>
-    ///     Player credited for infection damage, so kills still drop loot and count for the thrower.
-    /// </summary>
+    /// <summary>Player credited for infection damage, so kills still drop loot and count for the thrower.</summary>
     private int infectingPlayer = -1;
 
-    /// <summary>Damage per tick at a given saturation.</summary>
     public static int TickDamageFor(int stacks) => stacks switch
     {
         >= MAJOR_DAMAGE_STACKS => MAJOR_TICK_DAMAGE,
@@ -296,10 +270,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
             npc.DelBuff(index);
     }
 
-    /// <summary>
-    ///     The host ruptures: a cloud, a shove to the camera, and a ring of spore blasts that carry
-    ///     the infection outward.
-    /// </summary>
+    /// <summary>The host ruptures: a cloud, camera shake, and a ring of spore blasts that spread the infection.</summary>
     private void Bloom(NPC npc)
     {
         int owner = infectingPlayer;
@@ -325,9 +296,6 @@ public sealed class FungalInfectionNPC : GlobalNPC
         SporeBlastProj.SpawnRing(npc, center, owner);
     }
 
-    /// <summary>
-    ///     Applies infection damage, crediting <paramref name="owner" /> so kills still drop loot.
-    /// </summary>
     private void TickDamage(NPC npc)
     {
         int damage = TickDamageFor(Stacks);
@@ -362,13 +330,7 @@ public sealed class SporeBlastProj : ModProjectile
 
     public const int BLAST_DAMAGE = 6;
 
-    /// <summary>
-    ///     How far out along its own heading each arm starts. Spawning them all on the exact
-    ///     centre would mean anything adjacent to the host overlaps all
-    ///     <see cref="BLAST_COUNT" /> arms on the first frame and eats the entire blast at once;
-    ///     starting them on a ring spreads the arms far enough apart that proximity decides how
-    ///     many catch you.
-    /// </summary>
+    /// <summary>How far out each arm starts, so proximity decides how many arms catch an adjacent target.</summary>
     private const float SPAWN_RADIUS = 20f;
 
     private const float MIN_SPEED = 7f;

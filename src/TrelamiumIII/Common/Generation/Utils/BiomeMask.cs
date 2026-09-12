@@ -7,10 +7,8 @@ using System.Threading.Tasks;
 namespace TrelamiumIII.Common.Generation.Utils;
 
 /// <summary>
-/// A snapshot of which tiles fell inside the base blob's density field,
-/// taken at fill-time before anything gets carved. Later passes (node
-/// scatter, ambient pockets, etc.) sample or validate against this instead
-/// of the blob's rectangular bounding box.
+/// Which tiles fell inside the base blob's density field, snapshotted before carving. Later passes validate
+/// against this instead of the blob's bounding box.
 /// </summary>
 public sealed class BiomeMask
 {

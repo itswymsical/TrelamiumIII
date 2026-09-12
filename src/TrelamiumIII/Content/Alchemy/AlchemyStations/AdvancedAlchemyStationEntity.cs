@@ -8,10 +8,8 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
-/// Per-station state anchored at the top-left tile of the <see cref="AdvancedAlchemyStationBase"/>.
-/// Owns the renderable + interactive contents and tracks which optional segments have been installed
-/// onto the base. The world tile renders from this entity; the UI binds its slots to these arrays
-/// so edits show live on the tile.
+/// Per-station state at the base's top-left tile: contents and installed segments. The tile renders from it and the
+/// UI binds its slots to these arrays, so edits show live on the tile.
 /// </summary>
 public class AdvancedAlchemyStationEntity : ModTileEntity
 {
@@ -22,13 +20,11 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     public readonly Item[] Vial = new Item[1];
     public readonly Item[] Output = new Item[1];
 
-    /// <summary>Whether the chamber segment has been installed onto this base.</summary>
     public bool HasChamber;
 
-    /// <summary>Whether each of the three component segments has been installed onto this base.</summary>
     public readonly bool[] ComponentPresent = new bool[ComponentSocketCount];
 
-    /// <summary>True while this station is brewing. Ticks on its own in <see cref="Update"/>, independent of the UI.</summary>
+    /// <summary>Ticks in <see cref="Update"/> independently of the UI.</summary>
     public bool IsBrewing;
 
     /// <summary>True once a brew finishes; the result waits in <see cref="Output"/> until the player collects it.</summary>
@@ -40,9 +36,8 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     public int BrewCount;
 
     /// <summary>
-    /// Units each component socket gives up per batch unit, the recipe's potency draw on that
-    /// slot, locked in when the brew started. Persisted and synced because the brew outlives the
-    /// UI that resolved it, so completion can't go back and ask what the recipe wanted.
+    /// Units each component socket gives up per batch unit, locked in when the brew starts. Persisted and synced because
+    /// completion can't re-ask the recipe once the UI is gone.
     /// </summary>
     public readonly int[] BrewComponentCost = new int[ComponentSocketCount];
 
@@ -67,10 +62,8 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     }
 
     /// <summary>
-    /// Begins a brew. <paramref name="result"/> is the locked-in output (already scaled by count); it sits in
-    /// <see cref="Output"/> as a silhouette until the timer fills. Called by the UI; the brew then runs on its own.
-    /// <para><paramref name="componentCosts"/> is the recipe's per-socket unit draw, aligned to
-    /// <see cref="Components"/>. Sockets it doesn't cover fall back to one apiece.</para>
+    /// Begins a brew that then runs on its own. <paramref name="result"/> is the locked-in output, already scaled by count;
+    /// <paramref name="componentCosts"/> aligns to <see cref="Components"/>, and uncovered sockets draw one apiece.
     /// </summary>
     public void StartBrew(Item result, int duration, int count, int[]? componentCosts = null)
     {
@@ -89,9 +82,8 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     }
 
     /// <summary>
-    /// Advances the brew every tick: independent of whether anyone has the UI open, so large batches finish while
-    /// the player is away. Completion (consuming ingredients, producing the result) is authoritative: it runs in
-    /// single-player and on the server; clients display the synced state.
+    /// Advances the brew every tick whether or not the UI is open. Completion is authoritative: it runs in single-player
+    /// and on the server, and clients display the synced state.
     /// </summary>
     public override void Update()
     {
@@ -113,8 +105,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     {
         int count = BrewCount;
 
-        // The result is already locked into Output; this just pays for it.
-        // The solvent is one per unit: a bottle in, a bottle out.
+        // Output is already locked in; this pays for it. The solvent costs one bottle per unit.
         if (!Vial[0].IsAir)
         {
             Vial[0].stack -= count;
@@ -149,8 +140,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
 
     public override int Hook_AfterPlacement(int i, int j, int type, int style, int direction, int alternate)
     {
-        // The placement hook can pass either the top-left or another cell of the placed object depending on
-        // anchoring/origin. Normalize to the top-left so Place / ByPosition lookups always agree.
+        // The placement hook may pass any cell of the object; normalise to top-left so lookups agree.
         Point16 topLeft = WalkToTopLeft(i, j);
 
         if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -181,7 +171,6 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         tag["output"] = Output[0];
         tag["hasChamber"] = HasChamber;
 
-        // Persist the brew so big batches survive a world reload (they resume from the saved timer).
         tag["isBrewing"] = IsBrewing;
         tag["resultReady"] = ResultReady;
         tag["brewTimer"] = BrewTimer;
@@ -202,7 +191,6 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         Output[0] = tag.Get<Item>("output") ?? new Item();
         HasChamber = tag.GetBool("hasChamber");
 
-        // The brew persists and resumes from where it left off.
         IsBrewing = tag.GetBool("isBrewing");
         ResultReady = tag.GetBool("resultReady");
         BrewTimer = tag.GetInt("brewTimer");
@@ -277,7 +265,6 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         return false;
     }
 
-    /// <summary>True if (i, j) is part of an Advanced Alchemy Station base; out is the top-left tile.</summary>
     public static bool TryFindBaseTopLeft(int i, int j, out Point16 topLeft)
     {
         topLeft = default;
@@ -289,10 +276,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         return true;
     }
 
-    /// <summary>
-    /// Walks back along the multitile's frame coordinates to the top-left cell (TileFrameX = TileFrameY = 0).
-    /// Robust to any CoordinateWidth / CoordinatePadding combination.
-    /// </summary>
+    /// <summary>Walks the multitile's frame coordinates back to its top-left cell, for any coordinate width or padding.</summary>
     private static Point16 WalkToTopLeft(int i, int j)
     {
         int left = i;

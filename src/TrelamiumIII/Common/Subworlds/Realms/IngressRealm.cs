@@ -100,14 +100,11 @@ public class IngressFloor : GenPass
         // 1. generate surface heightmap and tile grid
         for (int x = 0; x < Main.maxTilesX; x++)
         {
-            // Sample 1D noise by locking Y to 0
             float rawNoise = surfaceNoise.GetNoise(x, 0f); // Returns -1.0 to 1.0
             int localSurfaceY = surfaceY + (int)(rawNoise * heightAmplitude);
 
-            // Create a slightly jagged, natural-looking transition line
             int transitionY = localSurfaceY + dirtLayerThickness + WorldGen.genRand.Next(-6, 7);
 
-            // Carve air above the surface line
             for (int y = surfaceY - heightAmplitude; y < localSurfaceY; y++)
             {
                 if (WorldGen.InWorld(x, y))
@@ -117,7 +114,6 @@ public class IngressFloor : GenPass
                 }
             }
 
-            // Fill ground from the surface line down
             for (int y = localSurfaceY; y < Main.maxTilesY; y++)
             {
                 if (WorldGen.InWorld(x, y))
@@ -138,7 +134,6 @@ public class IngressFloor : GenPass
             }
         }
 
-        // 3. Random Mountains across the world
         int surfaceX = WorldGen.genRand.Next(100, 200);
 
         while (surfaceX < Main.maxTilesX - 100)
@@ -160,7 +155,6 @@ public class IngressFloor : GenPass
 
         while (x < Main.maxTilesX - 100)
         {
-            // 1. Find surface level
             int surfaceY2 = 0;
             for (int y = 150; y < Main.maxTilesY; y++)
             {
@@ -171,8 +165,7 @@ public class IngressFloor : GenPass
                 }
             }
 
-            // 2. Temporarily fulfill StonePatch prerequisites:
-            // Set surface tiles to Grass & place walls underneath
+            // StonePatch requires grass on the surface and walls beneath, so fake them temporarily.
             for (int i = x - 10; i <= x + 10; i++)
             {
                 if (WorldGen.InWorld(i, surfaceY2))
@@ -187,7 +180,6 @@ public class IngressFloor : GenPass
                 }
             }
 
-            // 3. Attempt generation
             if (WorldGen.StonePatch(x, surfaceY2))
             {
                 x += WorldGen.genRand.Next(100, 200); // Space out successful patches
@@ -217,7 +209,6 @@ public class IngressGrass : GrassSpreadPass
 
     private void LivingTrees()
     {
-        // Start away from the left world boundary
         int x = WorldGen.genRand.Next(150, 300);
 
         while (x < Main.maxTilesX - 150)
@@ -225,7 +216,6 @@ public class IngressGrass : GrassSpreadPass
             // Avoid placing living trees right on top of the main spawn point
             if (Math.Abs(x - Main.spawnTileX) > 120)
             {
-                // 1. Find the surface level for this X coordinate
                 int surfaceY2 = 0;
                 for (int y = 150; y < Main.maxTilesY; y++)
                 {
@@ -238,13 +228,11 @@ public class IngressGrass : GrassSpreadPass
 
                 if (WorldGen.GrowLivingTree(x, surfaceY2, patch: true))
                 {
-                    // If tree growth succeeds, jump forward significantly to space them out
                     x += WorldGen.genRand.Next(250, 450);
                     continue;
                 }
             }
 
-            // If skipped or generation failed, advance a small distance to test another spot
             x += WorldGen.genRand.Next(15, 35);
         }
     }
@@ -257,7 +245,6 @@ public class IngressVegetation : GenPass
     {
         progress.Message = "Growing Flora and Trees";
 
-        // Place standard trees, wild plants, and wall fills here
         WorldGen.AddTrees();
         WorldGen.GrowGlowTulips();
     }
@@ -274,7 +261,6 @@ public class IngressCaves : GenPass
     private const float BaseBlobRoughAmt = 10f;
     private const float BaseBlobRoughFreq = 0.09f;
 
-    // Ambient air pockets
     private const int AmbientPocketCount = 35;
     private const int AmbientRadiusMin = 5;
     private const int AmbientRadiusMax = 11;
@@ -286,18 +272,15 @@ public class IngressCaves : GenPass
     private const float BlobWarpAmt = 18f;
     private const float BlobFreq = 0.04f;
 
-    // Grid scatter
     private const int GridCols = 20;
     private const int GridRows = 10;
     private const float GridJitter = 0.45f;
     private const float GridInnerZone = 0.45f;
 
     private const int ExtraEdgeCount = 45;
-    // Spine scatter
     private const int SpineNodeCount = 18;
     private const float SpineCenterBias = 0.36f;
 
-    // Tunnel settings
     private const float TunnelRadius = 11.7f;
     private const float TunnelRadiusVariation = 0.9f;
     private const float TunnelWallWarpAmt = 1.4f;
@@ -310,22 +293,17 @@ public class IngressCaves : GenPass
     private const float TargetPull = 0.11f;
     private const float RadiusNoiseFreq = 0.13f;
 
-    // Vine settings
     private const int VineLengthMin = 3;
     private const int VineLengthMax = 6; // 5
 
-    // Argie's lab
     private const string ArgieLab = "Assets/Structures/ArgiesLab";
     private const int labWidth = 45;
     private const int labHeight = 32;
     private const int ArgieNodeRadius = 48;
     private const float ArgieCenterZone = 0.15f;
 
-    // World size scaling
-    // Tile-unit constants (radii, warp amounts, tunnel radius) are tuned for a
-    // large world (8400 tiles wide), WorldScale brings them down proportionally
-    // for medium (~6400) and small (~4200) worlds so the biome reads the same
-    // Frequencies are in tile space already and don't need scaling
+    // Tile-unit constants are tuned for a large world (8400 wide); WorldScale shrinks them proportionally for
+    // medium and small worlds. Frequencies are already in tile space and aren't scaled.
     private static float WorldScale => Main.maxTilesX / 8400f;
 
     public IngressCaves() : base("[T3] Ingress Caves", 1f) { }
@@ -336,7 +314,6 @@ public class IngressCaves : GenPass
 
         var scale = WorldScale;
 
-        // Noise setup
         var blobNoise = new FastNoiseLite(WorldGen.genRand.Next());
         blobNoise.SetNoiseType(FastNoiseLite.NoiseType.Value);
         blobNoise.SetFrequency(BlobFreq);
@@ -354,22 +331,18 @@ public class IngressCaves : GenPass
         wallWarpNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         wallWarpNoise.SetFrequency(TunnelWallWarpFreq);
 
-        // 1. Scatter nodes
         var nodes = ScatterNodes(scale, out Node argieNode);
 
-        // 2. Build MST and extra edges 
         var edges = BuildMST(nodes);
 
         TryAddExtraEdges(nodes, edges, extraCount: ExtraEdgeCount);
 
-        // 3. Carve blobs 
         for (var i = 0; i < nodes.Count; i++)
         {
             progress.Value = i / (double)nodes.Count * 0.40;
             CarveBlob(nodes[i], blobNoise, scale);
         }
 
-        // 4. Walk tunnels
         for (var i = 0; i < edges.Count; i++)
         {
             progress.Value = 0.40 + i / (double)edges.Count * 0.40;
@@ -381,14 +354,12 @@ public class IngressCaves : GenPass
             );
         }
 
-        // 5. Ambient air pockets
         var pockets = ScatterAmbientPockets(scale);
         for (var i = 0; i < pockets.Count; i++)
         {
             progress.Value = 0.80 + i / (double)pockets.Count * 0.20;
             CarveBlob(pockets[i], blobNoise, scale);
         }
-        // 7. Edge walls
         progress.Message = "Tracing cave walls...";
         PlaceEdgeWalls(progress, 0.70, 0.78);
 
@@ -399,7 +370,6 @@ public class IngressCaves : GenPass
     {
         const int wallThickness = 3;
 
-        // Scan from the surface down to the bottom of the world
         int left = 40;
         int right = Main.maxTilesX - 40;
         int top = (int)(IngressFloor.surfaceY * 1.25f);
@@ -433,7 +403,6 @@ public class IngressCaves : GenPass
         {
             for (int dy = -radius; dy <= radius; dy++)
             {
-                // Creates a diamond/circle shape for the thickness check
                 if (Math.Abs(dx) + Math.Abs(dy) > radius)
                     continue;
 
@@ -443,7 +412,6 @@ public class IngressCaves : GenPass
                 if (!WorldGen.InWorld(nx, ny))
                     continue;
 
-                // If the neighbor has a solid block, return true
                 if (Framing.GetTileSafely(nx, ny).HasTile)
                     return true;
             }
@@ -477,7 +445,6 @@ public class IngressCaves : GenPass
     {
         var nodes = new List<Node>();
 
-        // 1. Define the bounds of the entire underground
         int startX = 50;
         int endX = Main.maxTilesX - 50;
         int startY = IngressFloor.surfaceY + 60; // Start slightly below the surface
@@ -486,34 +453,27 @@ public class IngressCaves : GenPass
         int areaWidth = endX - startX;
         int areaHeight = endY - startY;
 
-        // 2. Calculate cell dimensions based on your Grid constants
-        // (Make sure to increase GridCols and GridRows at the top of your class!)
         int cellW = areaWidth / GridCols;
         int cellH = areaHeight / GridRows;
 
-        // 3. Anchor Argie's Lab roughly in the center of the world
         int centerX = startX + (areaWidth / 2);
         int centerY = startY + (areaHeight / 2);
         argieNode = new Node(centerX, centerY, (int)(ArgieNodeRadius * scale));
         nodes.Add(argieNode);
 
-        // 4. Iterate through every column and row to place pockets
         for (var col = 0; col < GridCols; col++)
         {
             for (var row = 0; row < GridRows; row++)
             {
-                // Find the center of the current grid cell
                 var cellCx = startX + col * cellW + cellW / 2;
                 var cellCy = startY + row * cellH + cellH / 2;
 
-                // Calculate maximum jitter (so nodes don't perfectly align in a rigid grid)
                 var jitterX = (int)(cellW * GridJitter);
                 var jitterY = (int)(cellH * GridJitter);
 
                 var nx = cellCx + WorldGen.genRand.Next(-jitterX, jitterX + 1);
                 var ny = cellCy + WorldGen.genRand.Next(-jitterY, jitterY + 1);
 
-                // Determine radius and add the node
                 var r = (int)(WorldGen.genRand.Next(NodeRadiusMin, NodeRadiusMax) * scale);
                 nodes.Add(new Node(nx, ny, r));
             }
@@ -571,7 +531,6 @@ public class IngressCaves : GenPass
             edges.Add((candidates[i].a, candidates[i].b));
     }
 
-    // Blob carve
     private void CarveBlob(Node node, FastNoiseLite noise, float scale)
     {
         var warpAmt = BlobWarpAmt * scale;
@@ -648,8 +607,6 @@ public class IngressCaves : GenPass
         }
     }
 
-    // Helpers
-
     private static float Dist(float ax, float ay, float bx, float by)
         => MathF.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
 
@@ -659,8 +616,6 @@ public class IngressCaves : GenPass
         while (a < -MathF.PI) a += MathF.PI * 2f;
         return a;
     }
-
-    // Node record
 
     private readonly record struct Node(int X, int Y, int Radius, int TileOverride = -1);
 }

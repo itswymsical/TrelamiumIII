@@ -7,10 +7,7 @@ using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
 
-/// <summary>
-///     Watches for the Eye of Cthulhu dying and hands the moment over to
-///     <see cref="EyeOfCthulhuWakeSystem" />.
-/// </summary>
+/// <summary>Watches for the Eye of Cthulhu dying and hands off to <see cref="EyeOfCthulhuWakeSystem" />.</summary>
 public sealed class EyeOfCthulhuWake : GlobalNPC
 {
     public override void HitEffect(NPC npc, NPC.HitInfo hit)
@@ -18,8 +15,7 @@ public sealed class EyeOfCthulhuWake : GlobalNPC
         if (npc.type != NPCID.EyeofCthulhu || npc.life > 0 || Main.dedServ)
             return;
 
-        // Read before OnKill has a chance to set it, which is what makes this mean "the player has
-        // not seen this yet" rather than "the boss is not dead yet".
+        // Read before OnKill sets it, so this means "not seen yet" rather than "not dead yet".
         EyeOfCthulhuWakeSystem.Arm(npc.Center, firstKill: !DownedBossSystem.SeenEyeOfCthulhuWake);
     }
 
@@ -28,24 +24,18 @@ public sealed class EyeOfCthulhuWake : GlobalNPC
         if (npc.type != NPCID.EyeofCthulhu)
             return;
 
-        // Sets the flag and pushes it to every client. Mod flags ride along in the same world-data
-        // packet, so there is nothing further to send.
+        // Also syncs: mod flags ride the same world-data packet.
         NPC.SetEventFlagCleared(ref DownedBossSystem.SeenEyeOfCthulhuWake, -1);
     }
 }
 
-/// <summary>
-///     Stages the Eye of Cthulhu's wake: adopts the gore, sheds the first ink, and starts the
-///     cutscene a beat later.
-/// </summary>
+/// <summary>Stages the wake: adopts the gore, sheds the first ink, and starts the cutscene a beat later.</summary>
 public sealed class EyeOfCthulhuWakeSystem : ModSystem
 {
     /// <summary>Ticks between the death and the cutscene opening.</summary>
     private const int QUEUE_DELAY = 45;
 
-    /// <summary>
-    ///     The Eye of Cthulhu's own gore, and how many of each the wake sheds.
-    /// </summary>
+    /// <summary>The Eye of Cthulhu's own gore, and how many of each the wake sheds.</summary>
     private static readonly WakeGore[] EyeGore =
     [
         new WakeGore(GoreType: 6, Count: 2),
@@ -68,9 +58,7 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
     /// <summary>Where the Eye died. The cutscene frames and vortexes on this.</summary>
     public static Vector2 Center => center;
 
-    /// <summary>
-    ///     Arms the sequence. Safe to call more than once for one death; the first call wins.
-    /// </summary>
+    /// <summary>Arms the sequence. Safe to call more than once per death; the first call wins.</summary>
     public static void Arm(Vector2 deathCenter, bool firstKill)
     {
         if (Main.dedServ || countdown >= 0)
@@ -124,7 +112,6 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
         playCutscene = false;
     }
 
-    /// <summary>Drops references to pieces that have expired, so the list cannot grow forever.</summary>
     private static void Prune()
     {
         for (int i = pieces.Count - 1; i >= 0; i--)
@@ -134,9 +121,7 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
         }
     }
 
-    /// <summary>
-    ///     Turns the base game's gore into our own pieces, and throws the first billow of ink.
-    /// </summary>
+    /// <summary>Converts the base game's gore into our pieces and throws the first billow of ink.</summary>
     private static void Stage()
     {
         pieces.Clear();
@@ -150,9 +135,7 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
         InkLayer.Bloom(center, radius: 90f);
     }
 
-    /// <summary>
-    ///     Spawns one piece wearing a vanilla gore sprite.
-    /// </summary>
+    /// <summary>Spawns one piece wearing a vanilla gore sprite.</summary>
     private static void Shed(WakeGore entry)
     {
         if (entry.GoreType <= 0 || entry.GoreType >= TextureAssets.Gore.Length)
@@ -163,8 +146,7 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
 
         Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.4f, 5f);
 
-        // Long-lived: these have to survive the whole cutscene, and the vortex kills them off itself
-        // when it swallows them rather than waiting for a timer.
+        // Long-lived: the vortex kills pieces when it swallows them, not a timer.
         var piece = ParticleSystem.Spawn<EyeGoreParticle>(
             center + Main.rand.NextVector2Circular(30f, 30f),
             velocity,
@@ -185,7 +167,6 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
 }
 
 /// <param name="GoreType">Index into <see cref="TextureAssets.Gore" />.</param>
-/// <param name="Count">How many of this piece the wake sheds.</param>
 /// <param name="Scale">Base scale, before the per-piece jitter.</param>
 /// <param name="Source">Cell within the sprite, or null for the whole texture.</param>
 internal readonly record struct WakeGore(int GoreType, int Count = 1, float Scale = 1f, Rectangle? Source = null);

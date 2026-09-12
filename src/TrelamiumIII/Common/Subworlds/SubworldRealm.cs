@@ -4,9 +4,7 @@ using Terraria.GameInput;
 
 namespace TrelamiumIII.Common.Subworlds;
 
-/// <summary>
-/// represents a subworld with a loading screen and other visual content.
-/// </summary>
+/// <summary>A subworld with a loading screen and other visual content.</summary>
 public abstract class SubworldRealm : Subworld
 {
     private int currentFrame;
@@ -24,17 +22,14 @@ public abstract class SubworldRealm : Subworld
     {
         try
         {
-            // Use null-conditional operators and proper error handling
             LoadingScreen = TextureAssets.Background[SurfaceBackgroundID.Forest1].Value;
             OtherworldTitle = TextureAssets.Logo?.Value;
             LoadingIcon = TextureAssets.LoadingSunflower?.Value;
         }
         catch (Exception ex)
         {
-            // Log the error but don't crash
             TrelamiumIII.Instance?.Logger.Error($"Error loading subworld textures: {ex.Message}");
 
-            // Set fallback values
             LoadingScreen = null;
             OtherworldTitle = null;
             LoadingIcon = null;
@@ -64,21 +59,18 @@ public abstract class SubworldRealm : Subworld
             frameTime -= timePerFrame;
             currentFrame = (currentFrame + 1) % totalFrames;
         }
-        // Draw background
         if (LoadingScreen != null)
         {
             Main.spriteBatch.Draw(LoadingScreen, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White * opacity);
             LoadingTooltips(Main.spriteBatch);
         }
 
-        // Draw title
         if (OtherworldTitle != null)
         {
             Vector2 nameTexturePosition = new(10, 10);
             Main.spriteBatch.Draw(OtherworldTitle, nameTexturePosition, Color.White * opacity);
         }
 
-        // Draw loading icon
         if (LoadingIcon != null)
         {
             var frameWidth = LoadingIcon.Width;

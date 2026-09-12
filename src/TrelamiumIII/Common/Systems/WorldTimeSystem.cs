@@ -6,9 +6,7 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Systems;
 
-/// <summary>
-/// Counts days in the world, and opens jobs up as the player reaches the day each is gated behind.
-/// </summary>
+/// <summary>Counts world days and unlocks jobs as their day milestones are reached.</summary>
 public class WorldTimeSystem : ModSystem
 {
     public static int TotalDaysElapsed;
@@ -34,14 +32,7 @@ public class WorldTimeSystem : ModSystem
 
     public override void LoadWorldData(TagCompound tag) => TotalDaysElapsed = tag.GetInt("TotalDaysElapsed");
 
-    /// <summary>
-    /// Unlocks everything the world has reached the day for, not only what it reached it for today.
-    /// </summary>
-    /// <remarks>
-    /// This was keyed on an exact day match, evaluated only at the moment of sunrise. Anyone who
-    /// joined a world already past day 1 -- or who was simply not in it when the day turned -- never
-    /// got HomeForager at all, and had no way to make it appear.
-    /// </remarks>
+    /// <summary>Unlocks every job whose day has been reached, not only today's.</summary>
     private static void ApplyMilestones()
     {
         var due = JobMilestones
@@ -57,10 +48,7 @@ public class WorldTimeSystem : ModSystem
         }
     }
 
-    /// <summary>
-    /// Catches one player up on every milestone the world has already passed. Called as they enter,
-    /// which is the only moment a player who missed a sunrise can be brought level.
-    /// </summary>
+    /// <summary>Catches a joining player up on every milestone the world has already passed.</summary>
     public static void ApplyMilestonesTo(Player player)
         => UnlockJobs(player, JobMilestones
             .Where(milestone => TotalDaysElapsed >= milestone.Key)
@@ -74,8 +62,7 @@ public class WorldTimeSystem : ModSystem
         {
             var job = jobPlayer.GetOrCreateJob(jobId);
 
-            // Only a job still locked is news; one already taken, finished, or deliberately withdrawn
-            // must not be re-offered by a later day rolling over.
+            // Only locked jobs unlock; taken, finished or withdrawn jobs must not be re-offered.
             if (job?.State != JobState.Locked)
                 continue;
 

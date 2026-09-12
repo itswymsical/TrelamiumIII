@@ -3,7 +3,7 @@
 // whole effect:
 //
 //   1. WOBBLE. The lookup UV is displaced by a world-locked FBM field before anything else
-//      reads it. This warps the SILHOUETTE, not just what is inside it -- the outline is the
+//      reads it. This warps the SILHOUETTE, not just what is inside it: the outline is the
 //      first thing the eye resolves, and a clean outline reads as a sprite however much is
 //      churning within it. Same reasoning, and the same world-locking convention, as
 //      MagnetizerField.fx's uShapeWarp.
@@ -16,7 +16,7 @@
 //
 //   3. HARD CUT plus RIM. The smeared coverage is thresholded with no smoothstep, and a
 //      one-texel neighbour test against the same threshold paints the rim. Cutting after
-//      the smear rather than before is what fuses separate stamps into one silhouette --
+//      the smear rather than before is what fuses separate stamps into one silhouette:
 //      two pieces whose own coverage never touches will still both trail into the gap
 //      between them and cross the threshold there.
 //

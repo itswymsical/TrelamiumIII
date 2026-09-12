@@ -6,9 +6,7 @@ public enum BookSide
     Right,
 }
 
-/// <summary>
-///     What <see cref="BookRenderer" /> needs from a book in order to compose a frame of it.
-/// </summary>
+/// <summary>What <see cref="BookRenderer" /> needs from a book to compose a frame.</summary>
 public interface IBookView
 {
     /// <summary>Drives the right leaf uncurling as the book opens. 0 when not opening.</summary>
@@ -37,21 +35,8 @@ public interface IBookView
 }
 
 /// <summary>
-///     Owns the render targets for one open book and composes the spread each frame.
+///     Owns one open book's render targets: four page targets (two leaves, two more mid-turn), redrawn live into one composite.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Four page targets, not one per page. The book only ever shows two leaves plus, mid-turn,
-///         the two coming up behind them, so the cost of a book is fixed however long it runs. The
-///         leaves are also redrawn live rather than baked once, which is what lets a page respond to
-///         the cursor and animate what is drawn on it.
-///     </para>
-///     <para>
-///         Layers, bottom to top: the destination left leaf, the destination right leaf, then the curl
-///         mesh carrying whichever leaf is in motion. Everything lands in one composite target that
-///         the UI draws to the screen, so the whole book fades as a single object.
-///     </para>
-/// </remarks>
 public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : IDisposable
 {
     private readonly int spreadWidth = pageWidth * 2 + gutter;
@@ -105,10 +90,7 @@ public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : ID
     private RenderTarget2D NewPage(GraphicsDevice device) =>
         new(device, pageWidth, pageHeight, false, SurfaceFormat.Color, DepthFormat.None);
 
-    /// <summary>
-    ///     Composes one frame. Call with no sprite batch open, from a point in the frame where render
-    ///     targets may be swapped.
-    /// </summary>
+    /// <summary>Composes one frame. Call with no sprite batch open, where render targets may be swapped.</summary>
     public void Build(IBookView view)
     {
         if (disposed || Composite is null || cover is null || Main.gameMenu || Main.dedServ)

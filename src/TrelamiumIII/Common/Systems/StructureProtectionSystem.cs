@@ -9,9 +9,7 @@ namespace TrelamiumIII.Common.Systems;
 /// </summary>
 public class StructureProtectionSystem : ModSystem
 {
-    /// <summary>
-    /// Rectangle of Stumpy's cabin in tile coordinates.
-    /// </summary>
+    /// <summary>Argie's lab, in tile coordinates.</summary>
     public static Rectangle ArgieLabArea { get; set; }
 
     public override void OnWorldLoad()
@@ -61,9 +59,6 @@ public class StructureProtectionSystem : ModSystem
         );
     }
 
-    /// <summary>
-    /// Returns true if the given tile coordinate falls inside any protected structure area.
-    /// </summary>
     public static bool IsProtected(int x, int y)
     {
         if (ArgieLabArea != Rectangle.Empty && ArgieLabArea.Contains(x, y))

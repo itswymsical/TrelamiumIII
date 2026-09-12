@@ -4,20 +4,8 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
 /// <summary>
-///     Laine L.'s <em>Illuminance</em>: a scholar's memoir.
+///     Laine L.'s <em>Illuminance</em>, a scholar's memoir: the shape a long book takes, one Chapter call plus prose per chapter.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The shape a long book wants. A chapter is one <see cref="BookBuilder.Chapter" /> call
-///         and a handful of prose blocks; the chapter breaks its own page, earns its contents row, and
-///         reports the page it landed on once the book is flowed.
-///     </para>
-///     <para>
-///         Note how little grows with length. A fifty-page book is more chapters, not more machinery,
-///         and a chapter's prose can be one localization entry however many pages it runs to --
-///         paragraphs are parted with <c>[p]</c> inside it and the block breaks across pages by itself.
-///     </para>
-/// </remarks>
 public sealed class IlluminanceBook : ModLoreBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceI";
@@ -39,10 +27,7 @@ public sealed class IlluminanceBook : ModLoreBook
         Chapter(book, "Ch5");
     }
 
-    /// <summary>
-    ///     One chapter's furniture. Every chapter in this book is set the same way, so the arrangement
-    ///     lives in one place rather than being repeated per chapter.
-    /// </summary>
+    /// <summary>One chapter's layout, shared by every chapter in the book.</summary>
     private static void Chapter(BookBuilder builder, string chapter)
     {
         builder
@@ -89,10 +74,7 @@ public sealed class IlluminanceBook2 : ModLoreBook
         //Chapter(book, "Ch5");
     }
 
-    /// <summary>
-    ///     One chapter's furniture. Every chapter in this book is set the same way, so the arrangement
-    ///     lives in one place rather than being repeated per chapter.
-    /// </summary>
+    /// <summary>One chapter's layout, shared by every chapter in the book.</summary>
     private static void Chapter(BookBuilder builder, string chapter)
     {
         builder

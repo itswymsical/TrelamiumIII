@@ -4,24 +4,14 @@ using Terraria.Localization;
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-///     How an element presents itself in text and UI: its medallion, the tint its name is written
-///     in, and that name in the player's language.
+///     How an element appears in text and UI: medallion, label tint and localised name. Separate from
+///     <see cref="ElementProfile" />, whose colours are for gas and residue rather than tooltip text.
 /// </summary>
-/// <remarks>
-///     <see cref="ElementProfile" /> is what an element does; this is what it looks like on a
-///     tooltip. Kept apart because the colours there are for gas and residue, and a label tint that
-///     reads against tooltip grey is a different colour from a pool of the stuff. Every surface that
-///     names an element -- the <c>[chem]</c> tag, the controller stat rows -- reads from here, so a
-///     new element gets a colour and a sprite once.
-/// </remarks>
 public static class ElementDisplay
 {
     private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/Elements/";
 
-    /// <summary>
-    ///     Tints sampled from the medallions themselves, so the word and the icon beside it read
-    ///     as one element rather than two.
-    /// </summary>
+    /// <summary>Label tint, sampled from the element's medallion.</summary>
     public static Color LabelColor(ChemicalDamageType type)
     {
         return type switch
@@ -39,9 +29,8 @@ public static class ElementDisplay
     }
 
     /// <summary>
-    ///     The element's medallion, or null for one with no sprite yet. Sprites are named after
-    ///     their enum member under <c>Assets/Textures/UI/Elements</c>, so a new element needs
-    ///     nothing here beyond a file of the same name.
+    ///     The element's medallion, or null if it has no sprite. Loaded by enum member name from
+    ///     <c>Assets/Textures/UI/Elements</c>.
     /// </summary>
     public static Asset<Texture2D>? Icon(ChemicalDamageType type)
     {
@@ -53,11 +42,7 @@ public static class ElementDisplay
         return ModContent.HasAsset(path) ? ModContent.Request<Texture2D>(path) : null;
     }
 
-    /// <summary>
-    ///     Localised under <c>ChemicalDamageTypes.{member}</c>, so a translation can name an element
-    ///     in its own words without every tooltip that mentions it having to change. The member
-    ///     name when no translation exists.
-    /// </summary>
+    /// <summary>Localised from <c>ChemicalDamageTypes.{member}</c>; falls back to the member name.</summary>
     public static string DisplayName(ChemicalDamageType type)
     {
         string key = TrelamiumIII.Instance.GetLocalizationKey($"ChemicalDamageTypes.{type}");

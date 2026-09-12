@@ -167,10 +167,7 @@ public class GirthquakeProj : ModProjectile
     /// <summary>Melee size modifiers apply to reach and to the sprite alike.</summary>
     public float TotalScale => Projectile.scale * meleeScale;
 
-    /// <summary>
-    ///     Only the descent and the first few frames of the impact connect. Everything else is
-    ///     animation.
-    /// </summary>
+    /// <summary>Only the descent and the first few impact frames connect.</summary>
     public bool IsDamaging => State == SwingState.Slam
         || (State == SwingState.Impact && StateTimer < IMPACT_DAMAGE_TICKS);
 
@@ -261,7 +258,6 @@ public class GirthquakeProj : ModProjectile
         switch (State)
         {
             case SwingState.Planted:
-                // Initialization of the raising animation
                 if (StateTimer >= PLANT_TICKS)
                 {
                     SetState(SwingState.Raise);
@@ -358,9 +354,7 @@ public class GirthquakeProj : ModProjectile
     #region pose
 
     /// <summary>
-    ///     Direction the hammer points, before the gravity mirror. Arm rotation is taken from this
-    ///     rather than the mirrored vector because vanilla applies <see cref="Player.gravDir" /> to
-    ///     composite arms itself, and doing it twice cancels out.
+    ///     Hammer direction before the gravity mirror; arms use this because vanilla applies <see cref="Player.gravDir" /> itself.
     /// </summary>
     private Vector2 RawDirectionFor(float angle) => (-Vector2.UnitY).RotatedBy(angle * facing);
 
@@ -374,10 +368,7 @@ public class GirthquakeProj : ModProjectile
         return direction;
     }
 
-    /// <summary>
-    ///     Composite arm rotation is measured from straight down, so a direction vector maps onto it
-    ///     by subtracting a quarter turn.
-    /// </summary>
+    /// <summary>Composite arm rotation is measured from straight down, hence the quarter-turn offset.</summary>
     private float ArmRotationFor(float angle) => RawDirectionFor(angle).ToRotation() - MathHelper.PiOver2;
 
     /// <summary>Where the grip sits. Follows the hand, so the hammer never detaches from the pose.</summary>
@@ -472,9 +463,7 @@ public class GirthquakeProj : ModProjectile
     private static int ThirdOf(float progress) => Math.Clamp((int)(progress * 3f), 0, 2);
 
     /// <summary>
-    ///     Damps horizontal movement while the weight is up. Applied to velocity rather than
-    ///     <see cref="Player.moveSpeed" /> because projectiles update after players, so the stat is
-    ///     already spent by the time this runs.
+    ///     Damps horizontal movement while the weight is up; applied to velocity because projectiles update after players.
     /// </summary>
     private void DampOwner(Player owner)
     {
@@ -490,10 +479,6 @@ public class GirthquakeProj : ModProjectile
 
     #region ground
 
-    /// <summary>
-    ///     Records what the head is resting in when the swing opens, so a slam that lands somewhere
-    ///     ambiguous still has a material to cut shards from.
-    /// </summary>
     private void SamplePlantedMaterial()
     {
         Point coords = HeadFor(ANGLE_PLANTED).ToTileCoordinates();
@@ -502,11 +487,6 @@ public class GirthquakeProj : ModProjectile
             materialTile = Framing.GetTileSafely(coords).TileType;
     }
 
-    /// <summary>
-    ///     Walks the head's path since last tick looking for terrain. Stepping the path rather than
-    ///     testing the current position matters: at full charge the head covers most of a tile per
-    ///     tick, and would happily pass straight through a one-tile floor.
-    /// </summary>
     private bool ScanForGround()
     {
         Vector2 from = HeadFor(previousAngle);
@@ -526,9 +506,7 @@ public class GirthquakeProj : ModProjectile
 
             materialTile = Framing.GetTileSafely(coords).TileType;
 
-            // Snapped back to where along the tick contact actually happened, so the pose the
-            // hitstop freezes on has the head resting on the surface rather than a few pixels
-            // inside it.
+            // Snap back to the contact point within the tick, so the hitstop pose rests on the surface.
             CurrentAngle = MathHelper.Lerp(previousAngle, CurrentAngle, slice);
 
             Land(hit: true, point);
@@ -546,8 +524,6 @@ public class GirthquakeProj : ModProjectile
         if (!tile.HasUnactuatedTile)
             return false;
 
-        // Platforms included -- a hammer this size coming down on one should crack it, not pass
-        // through as though it were background.
         return Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType];
     }
 
@@ -574,20 +550,14 @@ public class GirthquakeProj : ModProjectile
         Shake(charge);
         Rubble(charge);
 
-        // Projectiles are owner-authoritative and sync themselves out; everything above this line
-        // is decoration and runs everywhere.
         if (Main.myPlayer != Projectile.owner)
             return;
 
         int count = (int)MathHelper.Lerp(MIN_SHARDS, MAX_SHARDS, charge);
         float spread = MathHelper.Lerp(SHARD_SPREAD_MIN, SHARD_SPREAD_MAX, charge);
 
-        // Centred up-and-forward, so the fan bursts ahead of the player instead of raining back
-        // down on them.
         float centre = -MathHelper.PiOver2 + SHARD_FORWARD_LEAN * facing;
 
-        // Per-shard damage is flat too. Holding throws more of them, which is already the reward --
-        // making each one hit harder as well would quietly turn the hold back into a damage gate.
         int damage = Math.Max(1, (int)(Projectile.damage * SHARD_DAMAGE_FRACTION));
         int type = ModContent.ProjectileType<EarthShardProj>();
 
@@ -627,11 +597,7 @@ public class GirthquakeProj : ModProjectile
         ));
     }
 
-    /// <summary>
-    ///     Non-damaging debris. Driven through <see cref="WorldGen.KillTile" /> with
-    ///     <c>fail: true</c>, which is the path a pickaxe swing that does not break anything takes:
-    ///     correct dust and sound for whatever was actually struck, world left intact, no netcode.
-    /// </summary>
+    /// <summary>Material-correct debris via <see cref="WorldGen.KillTile" /> with <c>fail: true</c>; the world is left intact.</summary>
     private void Rubble(float charge)
     {
         if (Main.dedServ)
@@ -669,9 +635,8 @@ public class GirthquakeProj : ModProjectile
     public override bool? CanDamage() => IsDamaging ? null : false;
 
     /// <summary>
-    ///     The real hitbox: a thick segment along the head end of the shaft, swept across the gap
-    ///     between last tick's angle and this one so a fast slam cannot skip past an enemy.
-    ///     <see cref="HILT_FRACTION" /> is where it starts -- the grip is not a weapon.
+    ///     A thick segment along the head end of the shaft, swept from last tick's angle so a fast slam can't skip an enemy.
+    ///     Starts at <see cref="HILT_FRACTION" />; the grip isn't a weapon.
     /// </summary>
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
     {
@@ -699,11 +664,7 @@ public class GirthquakeProj : ModProjectile
         return false;
     }
 
-    /// <summary>
-    ///     Damage and knockback are deliberately untouched by charge. A weapon that costs this much
-    ///     tempo to land once should hit for its full number every time it lands; the hold buys
-    ///     shrapnel, not permission to do damage.
-    /// </summary>
+    /// <summary>Charge doesn't scale damage or knockback; holding only buys more shrapnel.</summary>
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
     {
         // Away from the player rather than along the sweep -- the hammer is coming down, so a
@@ -715,12 +676,7 @@ public class GirthquakeProj : ModProjectile
 
     #region net
 
-    /// <summary>
-    ///     Facing rides along here because <see cref="Entity.direction" /> is not in the vanilla
-    ///     projectile packet. It used to arrive for free by being derived from the spawn velocity;
-    ///     now that it comes from the player's movement keys instead, it has to be sent explicitly or
-    ///     every remote client draws the swing pointing the wrong way.
-    /// </summary>
+    /// <summary>Sends facing, which isn't in the vanilla projectile packet and comes from movement input.</summary>
     public override void SendExtraAI(BinaryWriter writer)
     {
         writer.Write((sbyte)facing);
@@ -756,9 +712,7 @@ public class GirthquakeProj : ModProjectile
         if (twirl > 0f)
             DrawTwirl(twirl, effects, flipX, flipY);
 
-        // Pivot on the very end of the grip, inset a couple of pixels off the corner so it sits in
-        // the hand rather than floating off it, then mirrored into whichever corner the grip
-        // actually landed in.
+        // Pivot on the grip end, inset slightly so it sits in the hand, then mirrored into the grip's corner.
         const float INSET = 5f;
         Vector2 origin = new(INSET, texture.Height - INSET);
 
@@ -801,15 +755,7 @@ public class GirthquakeProj : ModProjectile
         return effects;
     }
 
-    /// <summary>
-    ///     Strength of the swing streak, 0 to 1.
-    /// </summary>
-    /// <remarks>
-    ///     Driven by how far the head has actually swept, not by the clock. The slam easing is
-    ///     heavily back-loaded and it pulls further back for the first fifth and then arrives all at
-    ///     once. Meaning, a time-based fade would have the streak burning at full strength while the
-    ///     hammer is still hanging at the top of its arc having gone nowhere.
-    /// </remarks>
+    /// <summary>Swing streak strength, 0 to 1, driven by how far the head has swept rather than by time.</summary>
     private float TwirlOpacity
     {
         get
@@ -830,16 +776,9 @@ public class GirthquakeProj : ModProjectile
     }
 
     /// <summary>
-    ///     The swing streak: two passes of the same arc, a wide warm sweep for the shape of the
-    ///     swing and a tighter brighter one inside it for the edge.
+    ///     The swing streak: a wide warm arc plus a tighter bright edge. Anchored by its leading tip so it trails the head;
+    ///     mirroring maps a texture angle to <c>Pi - angle</c> horizontally and negates it vertically.
     /// </summary>
-    /// <remarks>
-    ///     Anchored by its leading tip rather than pinned at a fixed angle, so the arc trails the
-    ///     head instead of hanging in the world waiting for the hammer to catch up to it. Mirroring
-    ///     costs a little bookkeeping, since flipping horizontally maps a texture angle to
-    ///     <c>Pi - angle</c> and flipping vertically negates it. The tip has to follow through both
-    ///     or the streak detaches and sweeps the wrong way.
-    /// </remarks>
     private void DrawTwirl(float opacity, SpriteEffects effects, bool flipX, bool flipY)
     {
         float tip = TWIRL_TIP;

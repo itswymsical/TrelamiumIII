@@ -4,21 +4,8 @@ using Terraria.UI;
 
 namespace TrelamiumIII.Core.Authoring;
 
-/// <summary>Owns the authoring desk: whether it is up, and who has the screen while it is.</summary>
-/// <remarks>
-///     <para>
-///         Handed to <see cref="IngameFancyUI" /> rather than pushed on as an interface layer of its
-///         own. That is the route the Bestiary, the achievements list and the keybind menu take, and
-///         it is what actually takes the screen: it closes the inventory, stops the other layers
-///         drawing and swallows their input. A custom layer draws on top of the inventory but leaves
-///         it live underneath, which is why the first version let you rearrange your armour through
-///         the editor.
-///     </para>
-///     <para>
-///         A development tool. Only <c>/write</c> opens it, so it never appears in a normal game and
-///         is not localized.
-///     </para>
-/// </remarks>
+/// <summary>Owns the authoring desk (a dev tool opened by <c>/write</c>): whether it's up, and who has the screen.</summary>
+/// <remarks>Uses <see cref="IngameFancyUI" />, like the Bestiary, so the inventory closes and other layers stop taking input.</remarks>
 public sealed class AuthoringSystem : ModSystem
 {
     private static AuthoringUIState? state;
