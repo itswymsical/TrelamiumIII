@@ -41,7 +41,6 @@ public class WallBomb : ModItem
     {
         var modPlayer = player.GetModPlayer<WallFillPlayer>();
 
-        // Gather all unique wall item types currently in the inventory
         List<int> availableWalls = new List<int>();
         for (int i = 0; i < WallFillPlayer.INVENTORY_SLOTS; i++)
         {
@@ -57,7 +56,6 @@ public class WallBomb : ModItem
             return;
         }
 
-        // Cycle to the next available wall type
         int currentIndex = availableWalls.IndexOf(modPlayer.SelectedWallItemType);
         int nextIndex = (currentIndex + 1) % availableWalls.Count;
         modPlayer.SelectedWallItemType = availableWalls[nextIndex];
@@ -67,14 +65,12 @@ public class WallBomb : ModItem
 
     public override bool AltFunctionUse(Player player) => true;
 
-    /// <summary>Cancelling should feel instant; the 40 tick wind-up only makes sense for a throw.</summary>
     public override float UseSpeedMultiplier(Player player) => player.altFunctionUse == 2 ? 4f : 1f;
 
     public override bool CanUseItem(Player player)
     {
         var modPlayer = player.GetModPlayer<WallFillPlayer>();
 
-        // Right click exists solely to call off a fill that is already running.
         if (player.altFunctionUse == 2)
             return modPlayer.HasActiveFill;
 
@@ -102,7 +98,6 @@ public class WallBomb : ModItem
         if (player.altFunctionUse != 2)
             return null;
 
-        // CanUseItem already established there is a fill to stop.
         player.GetModPlayer<WallFillPlayer>().CancelFill();
 
         if (player.whoAmI == Main.myPlayer)
@@ -168,7 +163,6 @@ public class WallBomb : ModItem
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
     {
-        // A right click is a cancel, not a throw.
         if (player.altFunctionUse == 2)
             return false;
 
@@ -180,21 +174,16 @@ public class WallBomb : ModItem
 
         SoundEngine.PlaySound(SoundID.Item1, player.Center);
 
-        // The payload rides in ai1/ai2 rather than in fields on the ModProjectile: NewProjectile syncs
-        // ai, plain fields do not, so in multiplayer the bomb would otherwise reach the owning client
-        // with no wall and no source item recorded.
         Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI, ai1: wallId, ai2: itemType);
 
         return false;
     }
 
-    /// <summary>Resolves the wall a wall-placing item builds, or <see cref="WallID.None" /> if it is not one.</summary>
     public static ushort GetWallIdForItem(int itemType)
     {
         if (!ContentSamples.ItemsByType.TryGetValue(itemType, out Item? sample) || sample is null)
             return WallID.None;
 
-        // createWall defaults to -1, but 0 is WallID.None and is just as unusable.
         return sample.createWall > WallID.None ? (ushort)sample.createWall : WallID.None;
     }
 }
@@ -212,7 +201,6 @@ public class WallBombProj : ModProjectile
         set => Projectile.ai[1] = value;
     }
 
-    /// <summary>The inventory item the fill pays for walls with.</summary>
     public int SourceItemType
     {
         get => (int)Projectile.ai[2];
@@ -245,7 +233,6 @@ public class WallBombProj : ModProjectile
         }
         else if (Main.rand.NextBool())
         {
-            // that dust that appears on it when its rolling
             Dust dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.Smoke, 0f, 0f, 100, default, 1f);
             dust.scale = 0.1f + Main.rand.Next(5) * 0.1f;
             dust.fadeIn = 1.5f + Main.rand.Next(5) * 0.1f;
@@ -258,7 +245,6 @@ public class WallBombProj : ModProjectile
             dust.position = Projectile.Center + new Vector2(1, 0).RotatedBy(Projectile.rotation - 2.1f, default) * 10f;
         }
 
-        // bomb physics
         Projectile.ai[0] += 1f;
         if (Projectile.ai[0] > 10f)
         {
@@ -337,25 +323,16 @@ public class WallBombProj : ModProjectile
     }
 }
 
-/// <summary>
-///     Holds the wall the player has selected and runs at most one room fill for them
-/// </summary>
 public class WallFillPlayer : ModPlayer
 {
     private const int TILES_PER_STEP = 1;
     private const int STEP_INTERVAL_TICKS = 2;
     private const bool OVERWRITE_EXISTING_WALLS = false;
 
-    /// <summary>
-    ///     Ceiling on tiles judged per step. Without it a bomb thrown into an already-walled room places
-    ///     nothing, never satisfies TILES_PER_STEP, and drains the whole frontier in a single frame.
-    /// </summary>
     private const int MAX_SCANS_PER_STEP = 32;
 
-    /// <summary>One dig sound per this many walls; one per wall is a jackhammer at 30 tiles a second.</summary>
     private const int SOUND_INTERVAL = 4;
 
-    /// <summary>Slots the bomb reads and pays from: the main grid plus coins and ammo, but not the mouse slot.</summary>
     public const int INVENTORY_SLOTS = 58;
 
     private static readonly Point[] CardinalDirections =
@@ -378,14 +355,11 @@ public class WallFillPlayer : ModPlayer
         public int TickTimer;
         public int PlacedCount;
 
-        /// <summary>Open tiles waiting to be walled and expanded from, in nearest-first order.</summary>
         public readonly Queue<Point> Frontier = new();
 
-        /// <summary>Every tile the flood has judged, solid ones included, so none is tested twice.</summary>
         public readonly HashSet<Point> Reached = new();
     }
 
-    /// <summary>Starts a fill centred on a tile, replacing whatever fill was running.</summary>
     public void BeginFill(int originX, int originY, ushort wallType, int sourceItemType, int radius)
     {
         CancelFill();
@@ -418,8 +392,6 @@ public class WallFillPlayer : ModPlayer
         if (activeFill is null)
             return;
 
-        // BeginFill only ever runs for the local player, but CancelFill is reachable from a remote
-        // player's item use, so keep the stepping side explicit.
         if (Player.whoAmI != Main.myPlayer)
             return;
 
@@ -430,7 +402,6 @@ public class WallFillPlayer : ModPlayer
         StepFill(activeFill);
     }
 
-    /// <remarks>ModPlayer instances outlive the world in single player, so a fill must not.</remarks>
     public override void OnEnterWorld() => CancelFill();
 
     private void StepFill(WallFill job)
@@ -442,8 +413,6 @@ public class WallFillPlayer : ModPlayer
         {
             Point tile = job.Frontier.Dequeue();
 
-            // Expand before placing. A tile that cannot take a wall (already walled, or walled with
-            // this very wall) still has to pass the wave along, or the flood stops at the first one.
             Expand(job, tile);
 
             if (!CanWall(tile.X, tile.Y, job.WallType))
@@ -479,19 +448,12 @@ public class WallFillPlayer : ModPlayer
         {
             var next = new Point(from.X + dir.X, from.Y + dir.Y);
 
-            // bleed-out prevention, measured from the blast rather than from the seed
             if (Math.Abs(next.X - job.Origin.X) > job.Radius || Math.Abs(next.Y - job.Origin.Y) > job.Radius)
                 continue;
 
-            // Solid tiles get recorded too, not just enqueued ones: a boundary tile borders up to four
-            // open tiles, and a set that only remembers open ones tile-tests every wall once per
-            // neighbour. The radius box above already caps how large this can grow.
             if (!job.Reached.Add(next))
                 continue;
 
-            // Solid tile = the room's boundary. 4-directional only, cuz an 8-directional fill can
-            // squeeze diagonally between two solid tiles that only touch at a corner, which is exactly
-            // the kind of leak this needs to avoid.
             if (IsOpenTile(next.X, next.Y))
                 job.Frontier.Enqueue(next);
         }
@@ -528,7 +490,6 @@ public class WallFillPlayer : ModPlayer
         return !tile.HasTile || !Main.tileSolid[tile.TileType];
     }
 
-    /// <summary>The blast lands inside a block often enough that giving up on that would feel broken.</summary>
     private static Point? FindSeed(int x, int y)
     {
         if (IsOpenTile(x, y))

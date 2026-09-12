@@ -1,9 +1,6 @@
 namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
-/// <summary>
-/// A player stat a flower can feed. Adding a member here plus one <see cref="FlowerStats"/> entry is
-/// the whole cost of making a new stat available to every flower and bouquet in the catalog.
-/// </summary>
+/// <summary>A player stat flowers can feed. Adding one needs a member here plus a <see cref="FlowerStats"/> entry.</summary>
 public enum FlowerStat
 {
     MoveSpeed,
@@ -36,11 +33,7 @@ public enum FlowerStatFormat
     Decimal,
 }
 
-/// <summary>
-/// The one table that says, for each <see cref="FlowerStat"/>, what it is called, how it reads, and
-/// how it lands on the <see cref="Player"/>. Profiles in the catalog only ever name a stat and an
-/// amount.
-/// </summary>
+/// <summary>For each <see cref="FlowerStat"/>: its name, display format, and how it applies to the <see cref="Player"/>.</summary>
 public static class FlowerStats
 {
     private readonly record struct Entry(string Noun, FlowerStatFormat Format, Action<Player, float> Apply);
@@ -54,8 +47,7 @@ public static class FlowerStats
         Set(FlowerStat.MoveSpeed, "movement speed", FlowerStatFormat.Fraction,
             (p, v) => p.moveSpeed += v);
 
-        // jumpSpeedBoost is a raw pixels-per-tick addition
-        // accessories sit in the low single digits, so it reads as a decimal amount.
+        // jumpSpeedBoost is raw pixels per tick; accessories add low single digits, so it reads as a decimal.
         Set(FlowerStat.JumpSpeed, "jump speed", FlowerStatFormat.Decimal,
             (p, v) => p.jumpSpeedBoost += v);
 
@@ -128,10 +120,7 @@ public static class FlowerStats
         return $"+{amount} {entry.Noun}";
     }
 
-    /// <summary>
-    /// True when a contribution is too small to be worth a line: it would read as "+0", which looks
-    /// broken rather than modest. The stat still accumulates; only the display skips it.
-    /// </summary>
+    /// <summary>True when a contribution would display as "+0". It still accumulates; only the line is skipped.</summary>
     public static bool IsNegligible(FlowerStat stat, float value) => _entries[(int)stat].Format switch
     {
         FlowerStatFormat.Fraction => value < 0.00005f,   // rounds to 0.0%
@@ -141,10 +130,7 @@ public static class FlowerStats
     };
 }
 
-/// <summary>
-/// One frame's accumulated flower bonuses, keyed by <see cref="FlowerStat"/>. Replaces the old
-/// hand-maintained field-per-stat trio (declare, reset, apply): a new stat now costs nothing here.
-/// </summary>
+/// <summary>One frame's accumulated flower bonuses, keyed by <see cref="FlowerStat"/>.</summary>
 public sealed class FlowerStatSet
 {
     private readonly float[] _values = new float[FlowerStats.Count];

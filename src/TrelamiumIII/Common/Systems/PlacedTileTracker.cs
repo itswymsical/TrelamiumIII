@@ -12,19 +12,15 @@ public sealed class PlacedTileTracker : ModSystem
 {
     private static readonly Dictionary<Point16, ushort> PlacedValuables = [];
 
-    /// <summary>
-    ///     How many ordinary placements are remembered. Roughly one large building session; beating it
-    ///     means placing eight thousand tiles before breaking any of them.
-    /// </summary>
+    /// <summary>How many ordinary placements are remembered before the oldest are evicted.</summary>
     public const int OrdinaryCapacity = 8192;
 
     private static readonly HashSet<Point16> PlacedOrdinary = [];
     private static readonly Queue<Point16> OrdinaryOrder = new();
 
     /// <summary>
-    ///     The set of tiles worth remembering precisely and persistently. Any payout condition that reads
-    ///     the persistent grade must be a <i>subset</i> of this, otherwise a tile could be paid out on
-    ///     that was never a candidate for tracking.
+    ///     Tile types remembered precisely and persistently. Any payout condition reading the persistent grade must be
+    ///     a <i>subset</i> of this, or it could pay out on tiles that were never tracked.
     /// </summary>
     public static bool IsValuable(int type) => Main.tileSpelunker[type] || TileID.Sets.Ore[type];
 
@@ -39,9 +35,6 @@ public sealed class PlacedTileTracker : ModSystem
         ClearAll();
     }
 
-    /// <summary>
-    ///     Records hand-placed tiles.
-    /// </summary>
     private static bool MarkPlacedTile(On_WorldGen.orig_PlaceTile orig, int i, int j, int type,
         bool mute, bool forced, int plr, int style)
     {
@@ -58,7 +51,6 @@ public sealed class PlacedTileTracker : ModSystem
         return result;
     }
 
-    /// <summary>True when the player put something at this coordinate rather than finding it there.</summary>
     public static bool WasPlacedByPlayer(int i, int j)
     {
         var point = new Point16(i, j);
@@ -87,9 +79,8 @@ public sealed class PlacedTileTracker : ModSystem
             return;
         }
 
-        // Add-only, so the set and the eviction queue can never disagree. An ordinary mark is never
-        // cleared on read or by Forget; it expires by eviction alone. A coordinate that ends up in both
-        // grades is still correctly "player placed", so there is nothing to reconcile.
+        // Add-only, so the set and eviction queue never disagree: ordinary marks expire only by eviction, never on
+        // read or Forget.
         if (!PlacedOrdinary.Add(point))
             return;
 
@@ -100,16 +91,14 @@ public sealed class PlacedTileTracker : ModSystem
     }
 
     /// <summary>
-    ///     Drops a coordinate's persistent mark once the tile there is gone or replaced. Ordinary marks are
-    ///     left alone on purpose - they are session-scoped and self-expiring, and clearing them here would
-    ///     let the same coordinate re-enter the eviction queue twice.
+    ///     Drops a coordinate's persistent mark. Ordinary marks are left alone on purpose: they self-expire, and
+    ///     clearing them here would let a coordinate enter the eviction queue twice.
     /// </summary>
     public static void Forget(int i, int j) => PlacedValuables.Remove(new Point16(i, j));
 
     public override void ClearWorld()
     {
-        // Without this the set survives into the next world loaded this session, and coordinates from
-        // the old world would deny bonuses on genuinely natural ore in the new one.
+        // Otherwise marks leak into the next world loaded this session.
         ClearAll();
     }
 
@@ -163,26 +152,19 @@ public sealed class PlacedTileTracker : ModSystem
             if (!WorldGen.InWorld(i, j))
                 continue;
 
-            // Deliberately not verified against the tile here. Whether tile data is populated by the
-            // time world data loads is not something this system should bet on, and a check that ran
-            // too early would silently discard every mark. WasPlacedByPlayer revalidates on read.
+            // Not verified against the tile: tile data may not be loaded yet, and WasPlacedByPlayer revalidates on read.
             PlacedValuables[new Point16(i, j)] = (ushort)types[index];
         }
     }
 }
 
-/// <summary>
-///     Catches the one placement path that never reaches <see cref="WorldGen.PlaceTile" />.
-/// </summary>
+/// <summary>Catches block swaps, the one placement path that never reaches <see cref="WorldGen.PlaceTile" />.</summary>
 public sealed class PlacedTileSwapTracker : GlobalTile
 {
     public override void ReplaceTile(int i, int j, int type, int targetType, int targetStyle)
     {
-        // Block swap writes the new tile directly, so ore swapped into a wall of stone would other-
-        // wise read as natural. This hook runs on local, server and remote clients alike.
-        //
-        // Forget first: swapping a non-valuable tile over a placed ore has to clear the ore's mark,
-        // and Mark itself only ever writes the grade the new type belongs to.
+        // Block swap writes the tile directly, so swapped-in ore would otherwise read as natural. Runs on every client.
+        // Forget first: swapping a non-valuable tile over placed ore must clear the ore's mark.
         PlacedTileTracker.Forget(i, j);
         PlacedTileTracker.Mark(i, j, targetType);
     }

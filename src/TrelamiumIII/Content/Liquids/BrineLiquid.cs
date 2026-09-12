@@ -68,10 +68,8 @@ public class BrineLiquid : ModLiquid
     }
 
     /// <summary>
-    /// Scrolling salt overlay. Sits on top of the vanilla water draw and is anchored to world coords
-    /// so the pattern stays continuous across tiles while drifting over time. The 16-wide / SourceRect-tall
-    /// slice usually fits inside the 512x512 noise; the wrap-aware split handles the rare case where it
-    /// straddles a texture edge so we don't have to interrupt the SpriteBatch to use a wrapping sampler.
+    /// Scrolling salt overlay over the vanilla water draw, world-anchored so it's continuous across tiles. Slices straddling
+    /// the noise texture's edge are split, avoiding a SpriteBatch restart for a wrapping sampler.
     /// </summary>
     public override void PostDraw(int i, int j, LiquidRenderer.LiquidDrawCache liquidDrawCache, Vector2 drawOffset, bool isBackgroundDraw)
     {

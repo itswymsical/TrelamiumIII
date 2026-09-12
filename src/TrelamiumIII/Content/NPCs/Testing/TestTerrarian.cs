@@ -6,19 +6,8 @@ using TrelamiumIII.Core.NPCs.Combat;
 namespace TrelamiumIII.Content.NPCs.Testing;
 
 /// <summary>
-/// A world NPC that exists only to exercise the actor and behaviour systems in game.
-///
-/// <para>
-/// Every mode below maps to one thing that can break: whether an idle weapon renders,
-/// whether a swing poses the arm, whether a projectile leaves the right hand at the
-/// right angle, whether a fight closes distance and disengages, whether the NPC finds
-/// its way home. Cycle modes by talking to it, or drive it from <c>/wnpc</c>.
-/// </para>
-///
-/// <para>
-/// Never spawns naturally, never despawns, never persists - a subject stays where it
-/// was put and leaves nothing in the world file.
-/// </para>
+/// A world NPC for exercising the actor and behaviour systems; each <see cref="TestMode"/> checks one thing that can break.
+/// Cycle modes by talking to it or with <c>/wnpc</c>. Never spawns naturally, despawns or persists.
 /// </summary>
 public class TestTerrarian : TerrarianNPC
 {
@@ -128,10 +117,7 @@ public class TestTerrarian : TerrarianNPC
         Main.NewText($"{NPC.GivenName} anchored at {AnchorTile.X}, {AnchorTile.Y}.", Color.LightGreen);
     }
 
-    /// <summary>
-    /// One selector, re-evaluated every tick, so switching modes swaps the running
-    /// behaviour immediately instead of waiting for the current one to finish.
-    /// </summary>
+    /// <summary>One selector re-evaluated every tick, so mode switches take effect immediately.</summary>
     protected override IBehavior BuildScript() => Behavior.Select()
         .When(_ => Mode == TestMode.Armed, Armed)
         .When(_ => Mode == TestMode.Swing, Swing)
@@ -241,13 +227,7 @@ public class TestTerrarian : TerrarianNPC
     }
 
     /// <summary>
-    /// Sets up the subject for a mode.
-    ///
-    /// <para>
-    /// Going hostile flips it off <c>friendly</c> and <c>immortal</c> so a fight has
-    /// two sides - a non-despawning world NPC is invulnerable by default, which would
-    /// make a hostile mode untestable.
-    /// </para>
+    /// Sets up a mode. Hostile modes clear <c>friendly</c> and <c>immortal</c>, since world NPCs are invulnerable by default.
     /// </summary>
     private void Stance(bool hostile, bool presenting)
     {

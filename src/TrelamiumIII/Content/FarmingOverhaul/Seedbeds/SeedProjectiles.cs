@@ -6,8 +6,6 @@ using Terraria.GameContent;
 
 namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
-// Shared helper so DrawPrimitives isn't duplicated seven times.
-// Each seed passes its own effect params and trails.
 file static class SeedTrailHelper
 {
     public static void SetEffectParams(Effect effect, string texturePath, float timeScale, float pixelation)

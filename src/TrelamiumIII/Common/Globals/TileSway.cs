@@ -1,8 +1,5 @@
-/// <summary>
-/// Credits to Spirit Reforged for the original implementation: 
-/// https://github.com/GabeHasWon/SpiritReforged/blob/master/Common/TileCommon/TileSway/TileSwaySystem.cs#L6
-/// </summary>
-/// 
+// Credits to Spirit Reforged for the original implementation:
+// https://github.com/GabeHasWon/SpiritReforged/blob/master/Common/TileCommon/TileSway/TileSwaySystem.cs#L6
 using System.Collections.Generic;
 using System.Reflection;
 using Terraria.DataStructures;
@@ -24,10 +21,7 @@ internal class TileSwaySystem : ModSystem
     public double GrassWindCounter { get; private set; }
     public double SunflowerWindCounter { get; private set; }
 
-    /// <summary> Checks whether this tile type is an <see cref="ISwayTile"/> and outputs the counter corresponding to <see cref="ISwayTile.Style"/>. </summary>
-    /// <param name="type"> The tile type. </param>
-    /// <param name="counter"> The counter type. </param>
-    /// <returns> Whether this tile sways (implements ISwayTile) </returns>
+    /// <summary>Whether <paramref name="type"/> is an <see cref="ISwayTile"/>; outputs the counter for its <see cref="ISwayTile.Style"/>.</summary>
     public static bool DoesSway(int type, out TileCounterType counter)
     {
         if (TileSwayTypes.TryGetValue(type, out var value))
@@ -147,7 +141,6 @@ public interface ISwayTile
         return 0;
     }
 
-    /// <summary> Draw this tile transformed by <see cref="Physics"/>. </summary>
     public void DrawSway(int i, int j, SpriteBatch spriteBatch, Vector2 offset, float rotation, Vector2 origin)
     {
         var tile = Framing.GetTileSafely(i, j);
@@ -177,11 +170,7 @@ public static class TileExtensions
 
 
 
-    /// <summary>
-    /// Mutually merges the given tile with all of the ids in <paramref name="otherIds"/>.
-    /// </summary>
-    /// <param name="tile">The tile to merge with.</param>
-    /// <param name="otherIds">All other tiles to merge with.</param>
+    /// <summary>Mutually merges this tile with every tile in <paramref name="otherIds"/>.</summary>
     public static void Merge(this ModTile tile, params int[] otherIds)
     {
         foreach (int id in otherIds)

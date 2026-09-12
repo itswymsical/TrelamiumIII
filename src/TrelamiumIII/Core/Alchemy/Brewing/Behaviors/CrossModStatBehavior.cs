@@ -5,13 +5,8 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 
 /// <summary>
-/// A <see cref="DeltaBehavior"/> for a stat that lives on <em>another mod's</em> ModPlayer. We build
-/// against no reference to that mod, so its ModPlayer and the field are resolved by name once at
-/// registration and cached; anything that fails to resolve degrades to a no-op (with a log line)
-/// rather than throwing sixty times a second.
-/// <para>The write lands in <see cref="ApplyPreEquips"/>, not <see cref="Apply"/>: these fields are
-/// accumulators the owning mod reads during <c>UpdateEquips</c> and resets in <c>ResetEffects</c>, so
-/// the post-equips pass would be a frame late and then be wiped.</para>
+/// A stat on another mod's ModPlayer, resolved by name once and cached (failures log and no-op). Writes in <see cref="ApplyPreEquips"/>,
+/// since the owning mod reads it during UpdateEquips and resets it in ResetEffects.
 /// </summary>
 public sealed class CrossModStatBehavior : IEffectBehavior
 {
@@ -22,14 +17,10 @@ public sealed class CrossModStatBehavior : IEffectBehavior
     private readonly ModPlayer? _template;
     private readonly FieldInfo? _field;
 
-    /// <param name="modName">Internal name of the owning mod, e.g. "SpiritReforged".</param>
-    /// <param name="modPlayerName">Class name of its ModPlayer, e.g. "FlightPlayer".</param>
+    /// <param name="modName">Owning mod's internal name, e.g. "SpiritReforged".</param>
+    /// <param name="modPlayerName">Its ModPlayer class name, e.g. "FlightPlayer".</param>
     /// <param name="fieldName">Public float field its buff accumulates into, e.g. "wingTimeMult".</param>
-    /// <param name="vanillaValue">
-    /// What that mod's own buff already contributes each tick. We only ever add the difference the
-    /// brew's strength asks for, so a 100%-strength brew is exactly the unmodded potion.
-    /// </param>
-    /// <param name="noun">Tooltip noun, e.g. "wing flight time".</param>
+    /// <param name="vanillaValue">What that mod's buff already adds per tick; only the difference is added, so 100% is the unmodded potion.</param>
     public CrossModStatBehavior(string modName, string modPlayerName, string fieldName,
                                 float vanillaValue, string noun, bool asPercent = true)
     {

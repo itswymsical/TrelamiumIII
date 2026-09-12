@@ -76,9 +76,7 @@ public class LodestoneHelmet : ModItem
     {
         orig(self);
 
-        // Fallback indicator for everyone but the local player. Their fields can't be glass:
-        // LodestoneFieldWarp is a screen-space pass, so it can only ever be centred on one
-        // point, and that point belongs to whoever is holding the camera.
+        // Fallback indicator for other players: LodestoneFieldWarp is a screen-space pass centred only on the local player.
         var activePlayers = new List<Player>();
         for (int i = 0; i < 255; i++)
         {

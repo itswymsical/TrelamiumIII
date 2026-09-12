@@ -3,12 +3,8 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
-/// Every flower the satchel accepts and every bouquet it can form. The slot whitelist is this
-/// registry's key set, so registering a flower is the only step needed to make it placeable, and
-/// there is no second hardcoded list to keep in sync.
-/// <para>Cross-mod flowers register through the <c>(modName, itemName)</c> overloads. When that mod
-/// isn't installed the call returns a detached profile: the chained <c>PerUnit</c> calls still run
-/// and go nowhere, so catalog entries need no availability checks around them.</para>
+/// Every flower the satchel accepts and every bouquet it can form; the slot whitelist is this registry's keys.
+/// Cross-mod registrations return a detached profile when the mod is missing, so catalog entries need no checks.
 /// </summary>
 public static class FlowerRegistry
 {
@@ -19,16 +15,12 @@ public static class FlowerRegistry
 
     public static IReadOnlyList<BouquetProfile> Bouquets => _bouquets;
 
-    /// <summary>True for any item the satchel's slots accept.</summary>
     public static bool IsFlower(int itemType) => itemType > 0 && _flowers.ContainsKey(itemType);
 
     public static bool TryGet(int itemType, out FlowerProfile profile)
         => _flowers.TryGetValue(itemType, out profile);
 
-    /// <summary>
-    /// Declares a flower. Re-registering a type replaces its profile, so a later catalog pass can
-    /// retune an earlier one.
-    /// </summary>
+    /// <summary>Declares a flower. Re-registering replaces the profile, so later catalog passes can retune it.</summary>
     public static FlowerProfile Register(int itemType)
     {
         if (itemType <= 0)
@@ -39,10 +31,7 @@ public static class FlowerRegistry
         return profile;
     }
 
-    /// <summary>
-    /// Declares a flower owned by another mod. No-ops into a detached profile when that mod (or that
-    /// item) isn't present, which is the normal case rather than an error.
-    /// </summary>
+    /// <summary>Declares another mod's flower; returns a detached profile if that mod or item is missing.</summary>
     public static FlowerProfile Register(string modName, string itemName)
         => Register(TypeOf(modName, itemName));
 
@@ -54,10 +43,8 @@ public static class FlowerRegistry
     }
 
     /// <summary>
-    /// An item type from another mod, or 0 when it can't be resolved.
-    /// <para>The two ways this returns 0 are worlds apart, so they're reported differently: the mod
-    /// simply not being installed is the everyday case and stays quiet, while the mod being present
-    /// without that item means the name here is wrong, which would otherwise be invisible.</para>
+    /// Another mod's item type, or 0 if unresolved. A missing mod is silent; a present mod without the item is reported,
+    /// since that means the name here is wrong.
     /// </summary>
     public static int TypeOf(string modName, string itemName)
     {
@@ -73,9 +60,8 @@ public static class FlowerRegistry
     }
 
     /// <summary>
-    /// Drops bouquets that can never form. A member of 0 means a cross-mod flower whose mod isn't
-    /// loaded (expected, silent); a positive member with no profile is an authoring slip, and is
-    /// worth saying out loud because the bouquet would otherwise just never trigger.
+    /// Drops bouquets that can never form. A member of 0 (cross-mod flower, mod not loaded) is silent; a positive member
+    /// with no profile is an authoring slip and is reported.
     /// </summary>
     public static void PruneUnformable()
     {

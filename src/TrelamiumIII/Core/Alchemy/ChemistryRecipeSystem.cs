@@ -16,11 +16,7 @@ using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-/// <summary>
-/// The central class for registering recipes and recipe groups. Also holds vanilla recipe addons. 
-/// This class is responsible for adding custom recipes, recipe groups, and managing the overall recipe system within the mod and 
-/// Base game potion recipes.
-/// </summary>
+/// <summary>Registers recipes and recipe groups, including the vanilla potion recipe changes.</summary>
 public class ChemistryRecipeSystem : ModSystem
 {
     #region Terraria Recipe Management
@@ -55,27 +51,22 @@ public class ChemistryRecipeSystem : ModSystem
 
     public override void AddRecipeGroups()
     {
-        // Any Copper Bar
         RecipeGroup CopperBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.CopperBar)}",
                     ItemID.CopperBar, ItemID.TinBar);
         RecipeGroup.RegisterGroup(nameof(ItemID.CopperBar), CopperBarRecipeGroup);
 
-        // Any Silver Bar
         RecipeGroup SilverBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.SilverBar)}",
             ItemID.SilverBar, ItemID.TungstenBar);
         RecipeGroup.RegisterGroup(nameof(ItemID.SilverBar), SilverBarRecipeGroup);
 
-        // Any Gold Bar
         RecipeGroup GoldBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.GoldBar)}",
             ItemID.GoldBar, ItemID.PlatinumBar);
         RecipeGroup.RegisterGroup(nameof(ItemID.GoldBar), GoldBarRecipeGroup);
 
-        // Any Fish
         RecipeGroup FishRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.Bass)}", 2290, 2297, 2298, 2299, 2300, 2301, 2302, 2303, 2304, 2305, 2306, 2307,
             2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317, 2318, 2319, 2321, 4401, 4402);
         RecipeGroup.RegisterGroup(nameof(ItemID.Bass), FishRecipeGroup);
 
-        // Any Soil Block (Dirt, Mud, Ash)
         RecipeGroup soilRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.DirtBlock)}",
             ItemID.DirtBlock, ItemID.MudBlock, ItemID.AshBlock);
         RecipeGroup.RegisterGroup(nameof(ItemID.DirtBlock), soilRecipeGroup);
@@ -113,22 +104,16 @@ public class ChemistryRecipeSystem : ModSystem
     {
         base.PostSetupContent();
 
-        // Metadata for almanac entry items (chemical type, potency, rarity, etc.)
         AlmanacDefinitions.Register();
 
-        // Solvents/Solutions that are used to craft potions: think like "Awkward Potion" and "Mundane Potion" from Minecraft.
         RegisterSolutions();
 
-        // Random items that make sense to be craftable in the alchemy system (unholy water, holy water).
         RegisterMisc();
 
-        // Vanilla potions and their variants, as well as the recipes to make them.
         RegisterPotions();
 
-        // Chemical weapon class content.
         RegisterWeapons();
 
-        // Conventional chemistry: acids, alkalis and distillates refined from raw minerals.
         RegisterMinerals();
 
         if (ModLoader.TryGetMod("SpiritReforged", out Mod _ ))
@@ -185,9 +170,7 @@ public class ChemistryRecipeSystem : ModSystem
             ItemID.Daybloom, ItemID.Blinkroot, ItemID.Moonglow, ItemID.Deathweed,
             ItemID.Waterleaf, ItemID.Fireblossom, ItemID.Shiverthorn);
 
-        // Cross-mod herbs, resolved through the flower registry so a bad internal name gets reported
-        // once rather than silently vanishing. Nothing is added on a vanilla-only load, leaving the
-        // group as just the seven vanilla herbs.
+        // Cross-mod herbs go through the flower registry, so a bad internal name is reported rather than silently missing.
         int cloudstalk = FlowerRegistry.TypeOf("SpiritReforged", "Cloudstalk");
         if (cloudstalk > 0)
             AnyHerb.Add(cloudstalk);
@@ -264,25 +247,9 @@ public class ChemistryRecipeSystem : ModSystem
     }
 
     /// <summary>
-    /// The foundational recipes that make most of the other recipes possible.
+    /// Conventional chemistry: acids, alkalis and distillates refined from the raw minerals in <c>Reagent</c>. Star ratings live on
+    /// <see cref="AlmanacEntry.Potency"/>; <see cref="AlchemyVariant.Potency"/> brands buff potions and must stay 0 for reagents.
     /// </summary>
-    /// <summary>
-    /// The conventional chemistry line: acids, alkalis and distillates refined at the station
-    /// from the raw minerals in <c>Content/Alchemy/Reagents/MineralReagents.cs</c>, which are
-    /// themselves roasted out of vanilla materials at a furnace.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Oil of Vitriol is the hub -- four of these recipes draw on it, which is what makes the
-    /// trip to the Underworld for sulfur worth taking.
-    /// </para>
-    /// <para>
-    /// Star ratings for these live on <see cref="AlmanacEntry.Potency"/>, not on
-    /// <see cref="AlchemyVariant.Potency"/>: the latter stamps brew strength onto buff-potion
-    /// outputs and must stay 0 for plain reagents. Design record:
-    /// <c>docs/Alchemy/ConventionalReagents.md</c>.
-    /// </para>
-    /// </remarks>
     private static void RegisterMinerals()
     {
         #region Acids
@@ -344,8 +311,7 @@ public class ChemistryRecipeSystem : ModSystem
 
         #region Distillates and powders
 
-        // One barrel of oil splits into the light fraction and the residue. Registered as two
-        // recipes over the same solvent rather than one recipe with two outputs.
+        // Oil distils into two outputs, registered as two recipes over the same solvent.
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Alchemy,
             inputType: Solution.BottledOil,
             outputType: Reagent.SpiritOfOil,
@@ -528,9 +494,7 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
     }
 
-    /// <summary>
-    /// Registers recipes for the vanilla potions, including their inert variants.
-    /// </summary>
+    /// <summary>Recipes for the vanilla potions, including their inert variants.</summary>
     private static void RegisterPotions()
     {
         // Actual Buff Potions
@@ -552,7 +516,6 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.Daybloom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) },
             new AlchemyVariant(Iron, ItemID.Daybloom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 6) });
 
-        // -- Magnolia Variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.IronskinPotion,
@@ -589,7 +552,6 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.Sunflower, ItemID.Feather) { OutputStack = 2, Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 6) },
             new AlchemyVariant(ItemID.Sunflower, ItemID.Blinkroot, ItemID.Feather) { OutputStack = 5, Potency = 5, StrengthPercent = 115, DurationTicks = TimeConversion.SetTime(mins: 4) });
         
-        // -- Magnolia Variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.SwiftnessPotion,
@@ -603,7 +565,6 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Regeneration
-        // Regeneration Variants
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ItemID.BottledWater,
             outputType: ItemID.RegenerationPotion,
@@ -623,7 +584,6 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.Blinkroot) { OutputStack = 2, Potency = 3 },
             new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.GoldOre) { OutputStack = 2, Potency = 4, StrengthPercent = 125, DurationTicks = TimeConversion.SetTime(mins: 7) });
 
-        // -- Magnolia Variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.RegenerationPotion,
@@ -898,7 +858,6 @@ public class ChemistryRecipeSystem : ModSystem
         // Utility Potions
 
         #region Restoration & Healing
-        // Restoration Variants
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.VitalTonic,
             outputType: ItemID.RestorationPotion,
@@ -915,7 +874,6 @@ public class ChemistryRecipeSystem : ModSystem
                 Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20)) 
             });
 
-        // Healing Potions
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ItemID.Bottle,
             outputType: ItemID.LesserHealingPotion,
@@ -973,7 +931,6 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Mining
-        // Mining Potion
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, ItemID.BottledWater, ItemID.MiningPotion,
             new AlchemyVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
             new AlchemyVariant(Silver, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105 },
@@ -985,7 +942,6 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 4, StrengthPercent = 124, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) },
             new AlchemyVariant(Silver, ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = TimeConversion.SetTime(mins: 4) });
 
-        // Magnolia Variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis, ModContent.ItemType<MagnoliaSolutionItem>(), ItemID.MiningPotion,
             new AlchemyVariant(ItemID.BlinkrootSeeds, Silver) { OutputStack = 4, Potency = 2, StrengthPercent = 95, DurationTicks = TimeConversion.SetTime(mins: 10) });     
         #endregion
@@ -1016,8 +972,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 40)
             });
 
-        // brisk tonic
-
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.BriskTonic,
             outputType: ItemID.BuilderPotion,
@@ -1042,8 +996,6 @@ public class ChemistryRecipeSystem : ModSystem
             StrengthPercent = 150,
             DurationTicks = TimeConversion.SetTime(mins: 30)
             });
-
-        // Magnolia variant
 
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
@@ -1091,7 +1043,6 @@ public class ChemistryRecipeSystem : ModSystem
             });
 
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.GillsPotion,
@@ -1137,7 +1088,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.FlipperPotion,
@@ -1163,7 +1113,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             });
 
-        // Brisk variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.BriskTonic,
             outputType: ItemID.FlipperPotion,
@@ -1213,7 +1162,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.WaterWalkingPotion,
@@ -1239,7 +1187,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             });
 
-        // Brisk variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.BriskTonic,
             outputType: ItemID.WaterWalkingPotion,
@@ -1289,7 +1236,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.CalmingPotion,
@@ -1315,7 +1261,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             });
 
-        // Harmony variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.HarmoniousTonic,
             outputType: ItemID.CalmingPotion,
@@ -1351,7 +1296,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.FeatherfallPotion,
@@ -1363,7 +1307,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             });
 
-        // Brisk variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.BriskTonic,
             outputType: ItemID.FeatherfallPotion,
@@ -1394,7 +1337,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 20)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.WarmthPotion,
@@ -1406,7 +1348,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        // Vitality variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.VitalTonic,
             outputType: ItemID.FeatherfallPotion,
@@ -1517,7 +1458,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             });
 
-        // Magnolia variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.GravitationPotion,
@@ -1543,7 +1483,6 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 3)
             });
 
-        // Brisk variant
         AlchemyRecipeRegistry.RegisterVariants(AlchemyMode.Synthesis,
             inputType: Solution.BriskTonic,
             outputType: ItemID.GravitationPotion,
@@ -1934,9 +1873,7 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
     }
 
-    /// <summary>
-    /// Spirit Reforged recipes, buffs, and effect behaviors.
-    /// </summary>
+    /// <summary>Spirit Reforged recipes, buffs and effect behaviours.</summary>
     private static void RegisterSpiritReforged()
     {
         ModContent.TryFind("SpiritReforged", "RemedyPotion", out ModItem RemedyPotion);
@@ -1954,9 +1891,8 @@ public class ChemistryRecipeSystem : ModSystem
         }
 
         #region Effect behaviours
-        // Soaring rides SpiritReforged's own FlightPotionBuff, whose id doesn't exist until that mod
-        // is loaded, hence a runtime registration rather than a line in the EffectBehaviors table.
-        // Their buff adds .25f to FlightPlayer.wingTimeMult; we add the brew's delta on top of it.
+        // Soaring rides SpiritReforged's FlightPotionBuff, whose id only exists at runtime. Their buff adds 0.25 to
+        // FlightPlayer.wingTimeMult; the brew adds its delta on top.
         if (ModContent.TryFind("SpiritReforged", "FlightPotionBuff", out ModBuff flightBuff))
         {
             EffectBehaviors.Register(flightBuff.Type,
@@ -2147,9 +2083,7 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
     }
 
-    /// <summary>
-    /// Random items that should be craftable (e.g. unholy water, love potion, etc.)
-    /// </summary>
+    /// <summary>Miscellaneous craftable items (e.g. unholy water, love potion).</summary>
     private static void RegisterMisc()
     {
         #region Synthesis: Misc
@@ -2300,9 +2234,7 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { SolventInfusion = ChemicalQuality.Inert, Potency = 2 });
     }
 
-    /// <summary>
-    /// Calamity Mod recipes.
-    /// </summary>
+    /// <summary>Calamity Mod recipes.</summary>
     private static void RegisterCalamity()
     {
         ModContent.TryFind("CalamityMod", "BloodOrb", out ModItem bloodOrb);
@@ -2411,9 +2343,7 @@ public class ChemistryRecipeSystem : ModSystem
     }
 }
 
-/// <summary>
-/// RecipeGroups for component item types used in <see cref="AlchemyRecipe"/>.
-/// </summary>
+/// <summary>A named set of item types that one <see cref="AlchemyRecipe"/> component slot accepts.</summary>
 public sealed class AlchemyComponentGroup
 {
     public string Name { get; }

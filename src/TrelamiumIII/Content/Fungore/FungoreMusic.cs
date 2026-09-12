@@ -3,22 +3,9 @@ using TrelamiumIII.Core.Audio;
 namespace TrelamiumIII.Content.Fungore;
 
 /// <summary>
-///     Fungore's score: the loop, and the fill that finishes it.
+///     Fungore's score. Durations are decoded MP3 lengths including encoder padding (124.176 s, not the 124.082 s of
+///     76 bars at 147 BPM); the musical figure would drift the beat every loop. An .ogg export would loop exactly.
 /// </summary>
-/// <remarks>
-///     <para>
-///         <b>On the numbers below.</b> <see cref="MusicScore.LoopSeconds" /> is the length of the
-///         decoded audio, not of the music. At 147 BPM the loop is 76 bars, which is 124.082 seconds,
-///         but the file decodes to 124.176 -- MP3 cannot express "start here", so an encoder pads the
-///         first and last frames and every decoder plays that padding. The extra 94 ms is that
-///         padding, and giving the grid the real figure is what stops the beat count from sliding a
-///         further 94 ms out of step on every loop.
-///     </para>
-///     <para>
-///         Re-export as <c>.ogg</c> and the problem disappears: Vorbis loops sample-exactly, and both
-///         of these constants can then be replaced by the musical figures.
-///     </para>
-/// </remarks>
 internal static class FungoreMusic
 {
     public const float BPM = 147f;
@@ -33,25 +20,10 @@ internal static class FungoreMusic
 
     public const string DEATH_FILL = "DeathFill";
 
-    /// <summary>
-    ///     Where the fill is allowed to land.
-    /// </summary>
-    /// <remarks>
-    ///     A beat, so it arrives within 0.4 s of the killing blow and the music reacts while the
-    ///     player is still watching the hit land. Move it to <see cref="MusicGrid.Bar" /> if the fill
-    ///     is written to open on a downbeat -- that costs up to 1.6 s of waiting, which is most of the
-    ///     death animation.
-    /// </remarks>
+    /// <summary>A beat, so the fill lands within 0.4 s of the kill; <see cref="MusicGrid.Bar" /> would wait up to 1.6 s.</summary>
     public const MusicGrid FILL_GRID = MusicGrid.Beat;
 
-    /// <summary>
-    ///     Builds a score for one fight.
-    /// </summary>
-    /// <remarks>
-    ///     Fresh each time rather than a shared static, because <see cref="MusicScore.StaysActive" />
-    ///     is what releases the soundtrack when the fight ends and it has to be asking about a live
-    ///     world.
-    /// </remarks>
+    /// <summary>Builds a fresh score per fight, since <see cref="MusicScore.StaysActive" /> must query the live world.</summary>
     public static MusicScore Create() => new()
     {
         Name = "Fungal Fracas",

@@ -6,21 +6,8 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Core.Books.Lore;
 
 /// <summary>
-///     Where a reader left off. Bookmarks are per player, per book, and survive between sessions.
+///     Per-player, per-book bookmarks saved with the player, as flat <c>book=page,page</c> strings since TagCompound lacks dictionaries.
 /// </summary>
-/// <remarks>
-///     <para>
-///         A fifty-page book is read across several sittings, so a bookmark that vanished on exit
-///         would only ever mark a place within one of them. They are saved on the player rather than
-///         the world because it is the reader who is keeping their place, and a character carrying a
-///         book between worlds should not lose it.
-///     </para>
-///     <para>
-///         Stored as flat <c>book=page,page,page</c> strings. <see cref="TagCompound" /> has no
-///         dictionary support, and a pair of parallel lists would let the two halves drift apart if a
-///         save were ever truncated.
-///     </para>
-/// </remarks>
 public sealed class LoreBookmarkPlayer : ModPlayer
 {
     /// <summary>Slots a reader gets per book. Enough to hold a few threads, few enough to stay a glance.</summary>
@@ -39,10 +26,7 @@ public sealed class LoreBookmarkPlayer : ModPlayer
     public IReadOnlyList<int> Get(string bookKey) =>
         bookmarks.TryGetValue(bookKey, out List<int>? pages) ? pages : [];
 
-    /// <summary>
-    ///     Marks a page. Returns false when the book is already full, or the page already marked --
-    ///     silently dropping either would leave the reader wondering which slot they just used.
-    /// </summary>
+    /// <summary>Marks a page; false if the book is full or the page is already marked.</summary>
     public bool Add(string bookKey, int page)
     {
         if (page < 0)

@@ -1,10 +1,8 @@
 ﻿namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-/// Anything that can apply chemical afflictions or trigger reactions on an NPC.
-/// Weapon components, gas layers, utility items, accessory auras, and placed
-/// dispensers all implement this. Identity travels with the source so that
-/// reaction logic can be authored once per emitter instead of once per type.
+/// Anything that can apply chemical afflictions or trigger reactions on an NPC: weapons, gas layers, utilities,
+/// auras, dispensers. Reaction logic is authored per emitter rather than per type.
 /// </summary>
 public interface IChemicalSource
 {
@@ -14,15 +12,11 @@ public interface IChemicalSource
     float AfflictionRate { get; }
     float ReactionChance { get; }
 
-    /// <summary>
-    /// Crit strike damage for when this source triggers a reaction.
-    /// Set to 0 to disable bursts (e.g. ambient gas where afflictions carry the work).
-    /// </summary>
+    /// <summary>Reaction burst damage. 0 disables bursts (e.g. ambient gas where afflictions do the work).</summary>
     float ReactionDamage { get; }
 
     /// <summary>
-    /// Invoked when this specific source rolls a successful reaction on a target.
-    /// Owner-scoped behavior lives here; world-observing listeners use
+    /// Called when this source rolls a reaction on a target. World-wide listeners use
     /// <see cref="ChemicalEvents.OnReaction"/> instead.
     /// </summary>
     void OnChemicalReaction(in ChemicalReactionEvent e);
@@ -34,17 +28,12 @@ public readonly struct ChemicalReactionEvent
     public readonly IChemicalSource Source;
     public readonly EnemyComposition Composition;
 
-    /// <summary>
-    /// The projectile that delivered the reaction, when applicable.
-    /// Null for gas-layer contacts, utility AOEs, and other non-projectile delivery.
-    /// </summary>
+    /// <summary>The delivering projectile, or null for gas contacts, AOEs and other non-projectile delivery.</summary>
     public readonly Projectile DeliveryProjectile;
 
     /// <summary>
-    /// What the reaction burst actually struck the target for, after composition matchup, the
-    /// firing player's bonus, and the target's defense. 0 when the source has no
-    /// <see cref="IChemicalSource.ReactionDamage"/>. Handlers that scale off the hit (lifesteal,
-    /// for one) read this instead of recomputing the formula.
+    /// Burst damage actually dealt after matchup, player bonus and defense; 0 when the source has no
+    /// <see cref="IChemicalSource.ReactionDamage"/>. Scale off this rather than recomputing it.
     /// </summary>
     public readonly int DamageDealt;
 
@@ -65,19 +54,14 @@ public readonly struct ChemicalReactionEvent
     }
 }
 /// <summary>
-/// dispatch point for reaction effects. Both projectile hits and gas contacts
-/// run through here so reaction state, burst damage, source-scoped behavior,
-/// and global event broadcast all happen in one consistent order.
+/// Single dispatch point for reactions from projectile hits and gas contacts, so reaction state, burst damage,
+/// source callbacks and the global event always run in the same order.
 /// </summary>
 public static class ChemicalReaction
 {
     /// <remarks>
-    ///     Non-elemental sources are refused outright rather than trusted to leave their
-    ///     <see cref="IChemicalSource.ReactionChance" /> at zero. A reaction is the payoff for
-    ///     having an element, and <see cref="ChemicalDamageType.Solute" /> has none -- it would roll
-    ///     a matchup that is flat, deal a burst that is unmultiplied, and register a reaction state
-    ///     on the target keyed to an element that does not exist. Guarding here means a solute
-    ///     weapon cannot acquire a reaction by having its numbers tuned carelessly.
+    ///     Refuses non-elemental sources (<see cref="ChemicalDamageType.Solute" />) outright, so a solute weapon
+    ///     can't gain reactions through careless tuning.
     /// </remarks>
     public static void Trigger(
         NPC target,
@@ -97,8 +81,7 @@ public static class ChemicalReaction
             float mult = ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition);
             int burst = Math.Max(1, (int)(source.ReactionDamage * mult * playerDamageBonus));
 
-            // SimpleStrikeNPC returns the post-defense damage, which is what handlers want to
-            // scale off rather than the requested burst.
+            // SimpleStrikeNPC returns post-defense damage, which is what handlers scale off.
             dealt = target.SimpleStrikeNPC(
                 burst,
                 hitDirection: 0,

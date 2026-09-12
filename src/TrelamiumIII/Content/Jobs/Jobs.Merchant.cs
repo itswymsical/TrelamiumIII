@@ -16,10 +16,7 @@ public enum GoldMineTask
     ReturnToMerchant = 2
 }
 
-/// <summary>
-/// The Merchant wants copper, in variety rather than in bulk: ore, bars, furniture and tools each cap
-/// out, so the player has to go and find a different kind rather than mine one vein forever.
-/// </summary>
+/// <summary>The Merchant wants copper in variety: ore, bars, furniture and tools each cap out.</summary>
 public sealed class GoldMine : Job
 {
     private CopperPoolTask CollectionTask => (CopperPoolTask)TaskList[(int)GoldMineTask.CollectCopper].Task[0];
@@ -45,9 +42,8 @@ public sealed class GoldMine : Job
         => Context.Play("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
 
     /// <summary>
-    /// Nudges the player off a category they have already maxed out. This runs before the task sees
-    /// the event, so a pool that reads full here was full <em>before</em> this pickup -- the line for
-    /// a pool that has only just filled comes from <see cref="OnTaskAdvanced"/> instead.
+    /// Nudges the player off a maxed-out category. Runs before the task sees the event, so a full pool here was full before
+    /// this pickup; the just-filled line comes from <see cref="OnTaskAdvanced"/>.
     /// </summary>
     public override void OnEvent(GameEvent evt)
     {
@@ -72,16 +68,10 @@ public sealed class GoldMine : Job
     }
 }
 
-/// <summary>
-/// A gathering task split into capped buckets: each family of item counts for only so much, so the
-/// requirement can't be met by grinding a single one.
-/// </summary>
+/// <summary>A gathering task split into capped buckets, so it can't be met by grinding one item family.</summary>
 public sealed class CopperPoolTask : JobTask
 {
-    /// <summary>
-    /// The pools, in the order they are tested. Mutually exclusive, so the first that matches is the
-    /// only one that can.
-    /// </summary>
+    /// <summary>Tested in order; mutually exclusive, so the first match is the only one.</summary>
     private readonly CollectionPool[] pools =
     [
         new("copperOre", 10, "Merchant.GoldMine_SurplusOre", evt => evt.ItemType == ItemID.CopperOre),
@@ -115,8 +105,7 @@ public sealed class CopperPoolTask : JobTask
         if (pool is null || pool.IsFull)
             return 0;
 
-        // A stack only counts for what's left in its pool; the other forty copper ore are the
-        // player's problem.
+        // A stack only counts for what's left in its pool.
         var credited = Math.Min(Math.Max(1, evt.Amount), pool.Max - pool.Current);
 
         pool.Current += credited;
@@ -148,10 +137,7 @@ public sealed class CopperPoolTask : JobTask
     }
 }
 
-/// <summary>
-/// One capped bucket of a gathering task: what counts toward it, how much of it counts, and what the
-/// quest giver says once it is full.
-/// </summary>
+/// <summary>One capped bucket of a gathering task: what counts, how much, and the line once it's full.</summary>
 public sealed class CollectionPool(string saveKey, int max, string surplusDialogue, Func<GameEvent, bool> matches)
 {
     public string SaveKey { get; } = saveKey;

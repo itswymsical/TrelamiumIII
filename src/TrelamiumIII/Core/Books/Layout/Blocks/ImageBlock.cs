@@ -6,20 +6,8 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Layout.Blocks;
 
 /// <summary>
-///     A figure set into the page: plate, diagram, pressed specimen, map fragment.
+///     A figure in its own horizontal band, aligned by <see cref="BlockStyle.Align" />. Text doesn't wrap around it, and it never splits.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The figure takes a horizontal band to itself and is aligned within it by
-///         <see cref="BlockStyle.Align" />; body text does not run around it. Wrapping text around a
-///         floated figure would mean teaching both the composer and the line breaker about exclusion
-///         rectangles, and the arrangement it buys -- a plate with a column of text beside it -- is
-///         better served by pairing the figure with its prose explicitly.
-///     </para>
-///     <para>
-///         A figure is never split, so one taller than the space left simply moves to the next page.
-///     </para>
-/// </remarks>
 public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null) : BookBlock
 {
     /// <summary>Gap between the plate and its caption.</summary>

@@ -3,21 +3,8 @@ using Terraria.GameContent;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     HSV colour picker: a saturation/value box with a hue strip beside it.
+///     HSV picker: a saturation/value box plus hue strip, so white and black are one click away. Driven by UI mouse events.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The gradient-box arrangement rather than a hue disc, so white sits in a corner and black
-///         along an edge. Neutral and near-white ink -- which is most of what a book needs -- is then
-///         one click away, where a disc buries white at the exact centre and makes it the hardest
-///         colour to hit.
-///     </para>
-///     <para>
-///         Adapted from the breakbeat editor's picker. The difference is that this one is driven by
-///         the interface's own mouse events rather than polling <c>MouseState</c>, so it lives in the
-///         same coordinate space as everything else on the desk.
-///     </para>
-/// </remarks>
 public sealed class ColorWheelWidget
 {
     private float hue;

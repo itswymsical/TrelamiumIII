@@ -10,11 +10,8 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Common.Generation;
 
 /// <summary>
-/// A modified/expanded mushroom biome generator, which generates in proximity to SpawnX / homeTileX, but in the cavern layer.
-/// Has additional sub biomes to come later.
-/// <para>
-/// Current Goal: base generation and glowing mushroom ambience.
-/// </para>
+/// Expanded mushroom biome generated in the cavern layer near spawn. Currently base generation and glowing
+/// mushroom ambience; sub-biomes to come.
 /// </summary>
 public class GrottoPass : GenPass
 {
@@ -27,7 +24,6 @@ public class GrottoPass : GenPass
     private const float BaseBlobRoughAmt = 10f;
     private const float BaseBlobRoughFreq = 0.09f;
 
-    // Ambient air pockets
     private const int AmbientPocketCount = 16;
     private const int AmbientRadiusMin = 5;
     private const int AmbientRadiusMax = 11;
@@ -39,17 +35,14 @@ public class GrottoPass : GenPass
     private const float BlobWarpAmt = 18f;
     private const float BlobFreq = 0.04f;
 
-    // Grid scatter
     private const int GridCols = 2;
     private const int GridRows = 7;
     private const float GridJitter = 0.55f;
     private const float GridInnerZone = 0.45f;
 
-    // Spine scatter
     private const int SpineNodeCount = 9;
     private const float SpineCenterBias = 0.36f;
 
-    // Tunnel settings
     private const float TunnelRadius = 4.7f;
     private const float TunnelRadiusVariation = 0.8f;
     private const float TunnelWallWarpAmt = 1.4f;
@@ -62,20 +55,15 @@ public class GrottoPass : GenPass
     private const float TargetPull = 0.08f;
     private const float RadiusNoiseFreq = 0.11f;
 
-    // Vine settings
     private const int VineLengthMin = 3;
     private const int VineLengthMax = 6; // 5
 
-    // Argie's lab
     private const string ArgieLab = "Assets/Structures/ArgiesLab";
     private const int ArgieNodeRadius = 48;
     private const float ArgieCenterZone = 0.15f;
 
-    // World size scaling
-    // Tile-unit constants (radii, warp amounts, tunnel radius) are tuned for a
-    // large world (8400 tiles wide), WorldScale brings them down proportionally
-    // for medium (~6400) and small (~4200) worlds so the biome reads the same
-    // Frequencies are in tile space already and don't need scaling
+    // Tile-unit constants are tuned for a large world (8400 wide); WorldScale shrinks them proportionally for
+    // medium and small worlds. Frequencies are already in tile space and aren't scaled.
     private static float WorldScale => Main.maxTilesX / 8400f;
 
     public GrottoPass() : base("[Substrate] Glowshroom Grotto", 1f) { }
@@ -89,10 +77,8 @@ public class GrottoPass : GenPass
         var boundsW = (int)(Main.maxTilesX * 0.058f);
         var boundsH = (int)(Main.maxTilesY * 0.13f);
 
-        // all tile unit values scale by this so medium/small worlds produce the scale as large ones.
         var scale = WorldScale;
 
-        // Noise setup
         var baseBlobNoise = new FastNoiseLite(WorldGen.genRand.Next());
         baseBlobNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         baseBlobNoise.SetFrequency(0.14f); // note: set BaseBlobWarpFreq to 0.14f
@@ -120,24 +106,19 @@ public class GrottoPass : GenPass
         wallWarpNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         wallWarpNoise.SetFrequency(TunnelWallWarpFreq);
 
-        // 1. Fill base biome blob (0.0 to 0.22)
         var biomeMask = BiomeBlob(originX, originY, boundsW, boundsH, baseBlobNoise, baseBlobRoughNoise, progress, 0.0, 0.22, scale);
 
-        // 2. Scatter nodes (grid + spine) 
         var nodes = ScatterNodes(scale, biomeMask, out Node argieNode);
 
-        // 3. Build MST then add extra edges
         var edges = BuildMST(nodes);
         TryAddExtraEdges(nodes, edges, extraCount: 9);
 
-        // 4. Carve blobs (0.22 to 0.42)
         for (var i = 0; i < nodes.Count; i++)
         {
             progress.Value = 0.22 + i / (double)nodes.Count * 0.20;
             CarveBlob(nodes[i], blobNoise, scale);
         }
 
-        // 5. Walk tunnels (0.42 to 0.62)
         for (var i = 0; i < edges.Count; i++)
         {
             progress.Value = 0.42 + i / (double)edges.Count * 0.20;
@@ -149,7 +130,6 @@ public class GrottoPass : GenPass
             );
         }
 
-        // 6. Ambient air pockets (0.62 to 0.70)
         var pockets = ScatterAmbientPockets(biomeMask, scale);
         for (var i = 0; i < pockets.Count; i++)
         {
@@ -157,15 +137,13 @@ public class GrottoPass : GenPass
             CarveBlob(pockets[i], blobNoise, scale);
         }
 
-        // 7. Edge walls (0.70 to 0.78)
         progress.Message = "Tracing cave walls...";
         PlaceEdgeWalls(biomeMask, progress, 0.70, 0.78);
 
-        // 8. Spread woodgrass (0.78 to 0.95)
         progress.Message = "Spreading mold...";
         SpreadGrass(biomeMask, progress, 0.78, 0.95);
 
-        // 9. Argie's lab, last so no carve or wall pass touches it (0.95 to 1)
+        // Last, so no carve or wall pass touches the lab.
         progress.Message = "Furnishing the lab...";
         PlaceArgieLab(argieNode);
 
@@ -173,8 +151,7 @@ public class GrottoPass : GenPass
     }
 
     /// <summary>
-    /// Stands the lab on the floor of Argie's node: bottom-centre on the first solid
-    /// tile below the node's centre. Protected from digging; reserve it as a home
+    /// Places the lab bottom-centre on the first solid tile below Argie's node, protected from digging. Reserve it
     /// with <c>placed.ReserveFor&lt;ArgieNPC&gt;()</c> once she exists.
     /// </summary>
     private static void PlaceArgieLab(Node node)
@@ -308,7 +285,6 @@ public class GrottoPass : GenPass
                 var tile = Framing.GetTileSafely(x, y);
                 if (tile.HasTile) continue;
 
-                // Restrict wall placement to air tiles neighboring the biome's actual solid footprint
                 if (HasBiomeNeighbor(mask, x, y, wallThickness))
                     WorldGen.PlaceWall(x, y, wallTile, mute: true);
             }
@@ -330,7 +306,6 @@ public class GrottoPass : GenPass
                 if (!WorldGen.InWorld(nx, ny))
                     continue;
 
-                // The neighbor tile must be inside the dynamic biome mask AND be solid
                 if (mask.Contains(nx, ny))
                 {
                     if (Framing.GetTileSafely(nx, ny).HasTile)
@@ -417,9 +392,8 @@ public class GrottoPass : GenPass
         int maskCenterX = mask.Left + mask.Width / 2;
         int maskCenterY = mask.Top + mask.Height / 2;
 
-        // Argie is the biome's hub: anchored to the mask's true center,
-        // so tuning GridCols/GridRows/GridInnerZone later can never move her.
-        // Inserted at index 0 so Prim's MST (which roots at nodes[0]) grows outward from her.
+        // Argie is anchored to the mask's centre, independent of grid tuning, and inserted at index 0 because
+        // Prim's MST roots at nodes[0].
         var argieBoxW = (int)(mask.Width * ArgieCenterZone);
         var argieBoxH = (int)(mask.Height * ArgieCenterZone);
         var argiePoint = PlaceWithinMask(mask, maskCenterX, maskCenterY, argieBoxW / 2, argieBoxH / 2);
@@ -489,8 +463,7 @@ public class GrottoPass : GenPass
             jy = jy * 3 / 2 + 1;
         }
 
-        // Whole neighborhood is outside the biome (deep inlet, pinched lobe).
-        // Any valid tile beats a node spawning in solid, uncarved rock.
+        // Fallback when the whole neighbourhood is outside the biome: any valid tile beats uncarved rock.
         return mask.RandomPoint();
     }
 
@@ -543,7 +516,6 @@ public class GrottoPass : GenPass
             edges.Add((candidates[i].a, candidates[i].b));
     }
 
-    // Blob carve
     private void CarveBlob(Node node, FastNoiseLite noise, float scale)
     {
         var warpAmt = BlobWarpAmt * scale;
@@ -623,8 +595,6 @@ public class GrottoPass : GenPass
         }
     }
 
-    // Helpers
-
     private static float Dist(float ax, float ay, float bx, float by)
         => MathF.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
 
@@ -634,8 +604,6 @@ public class GrottoPass : GenPass
         while (a < -MathF.PI) a += MathF.PI * 2f;
         return a;
     }
-
-    // Node record
 
     private readonly record struct Node(int X, int Y, int Radius, int TileOverride = -1);
 }

@@ -15,17 +15,12 @@ public enum EnemyComposition
 
 public enum ChemicalDamageType
 {
-    /// <summary>Not chemical at all. The sentinel for a source that emits no chemistry.</summary>
     None,
 
-    /// <summary>
-    ///     Chemistry with resource items, specifically the plain material type
-    /// </summary>
+    /// <summary>Chemistry with resource items: the plain material type.</summary>
     Solute,
 
-    /// <summary>
-    ///     Chemistry with resource items, specifically the reactive type
-    /// </summary>
+    /// <summary>Chemistry with resource items: the reactive type.</summary>
     Reagent,
 
     Thermal,
@@ -38,15 +33,10 @@ public enum ChemicalDamageType
 
 public static class ChemicalMatchup
 {
-    /// <summary>
-    ///     Whether this type takes part in the composition matchup and can produce reactions.
-    /// </summary>
+    /// <summary>Whether this type takes part in the composition matchup and can produce reactions.</summary>
     public static bool IsElemental(ChemicalDamageType type)
         => type is not (ChemicalDamageType.None or ChemicalDamageType.Solute);
 
-    /// <summary>
-    /// Multiplier applied to affliction damage per tick based on chemical type vs enemy composition.
-    /// </summary>
     public static float GetAfflictionMultiplier(ChemicalDamageType type, EnemyComposition composition)
     {
         return type switch
@@ -75,9 +65,7 @@ public static class ChemicalMatchup
         };
     }
 
-    /// <summary>
-    /// Flat defense reduction applied while a chemical reaction is active on this enemy.
-    /// </summary>
+    /// <summary>Flat defense reduction while a reaction is active on the enemy.</summary>
     public static int GetReactionDefenseShred(ChemicalDamageType type, EnemyComposition composition)
     {
         return type switch

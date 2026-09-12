@@ -6,19 +6,11 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books;
 
 /// <summary>One tab along the book's top edge.</summary>
-/// <param name="Label">Text on the tab. Empty draws an unused slot.</param>
+/// <param name="Label">Text on the tab; empty draws an unused slot.</param>
 /// <param name="Filled">False draws the slot as available rather than as a destination.</param>
-/// <param name="Tint">Ribbon colour, so tabs can be told apart at a glance.</param>
-/// <param name="Tooltip">Raised on hover.</param>
 public readonly record struct BookTab(string Label, bool Filled, Color Tint, string? Tooltip = null);
 
-/// <summary>
-///     The bound cover sitting behind an open spread: boards, gold trim and the spine in the gutter.
-/// </summary>
-/// <remarks>
-///     Drawn under the composite rather than into it, so that leaves folding shut reveal it rather
-///     than taking it with them.
-/// </remarks>
+/// <summary>The cover behind an open spread, drawn under the composite so folding leaves reveal it.</summary>
 public static class BookCover
 {
     /// <summary>How far the boards overhang the paper on every edge.</summary>

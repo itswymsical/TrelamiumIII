@@ -4,9 +4,7 @@ using TrelamiumIII.Core.Rarities.Flairs;
 
 namespace TrelamiumIII.Content.Rarities;
 
-/// <summary>
-///     The smallest custom rarity that still does something: a colour and one text treatment.
-/// </summary>
+/// <summary>The smallest useful custom rarity: a colour and one text treatment.</summary>
 public class StalagMagMKRarity : FlavorRarity
 {
     public override Color RarityColor => new(190, 130, 255);

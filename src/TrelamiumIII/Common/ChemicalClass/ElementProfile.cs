@@ -3,31 +3,9 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-///     What an element <em>is</em>, once, for the whole world: what it does to something it touches,
-///     and what it looks like where it settles.
+///     The world-wide definition of an element: its contact effects and settled appearance. Also an
+///     <see cref="IChemicalSource" />, so weapon-less hazards can afflict via <see cref="ChemicalReaction.Trigger" />.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The elements are not a feature of the alchemy system. They are a property of the world
-///         that alchemy happens to be the first thing to use heavily, and heat, cold, caustics,
-///         decay and current are all things terrain, creatures, weather and machinery will need to
-///         speak about without going through a flask. Anything that wants to say "this is thermal"
-///         says it by naming an element here, rather than by restating a palette and four affliction
-///         constants at every site.
-///     </para>
-///     <para>
-///         It is itself an <see cref="IChemicalSource" />, which is the part that makes it usable
-///         from outside the weapon system. A burning tile, an ambient vent or a hazard with no
-///         weapon behind it can afflict as thermal by handing this to
-///         <see cref="ChemicalReaction.Trigger" /> -- same matchup table, same reaction roll, same
-///         dispatch -- instead of needing a source object invented for it.
-///     </para>
-///     <para>
-///         Everything here is a default rather than a rule. A residue, a field or a weapon that has
-///         a reason to differ overrides the member it cares about and inherits the rest, so the
-///         common case costs nothing to declare and the exceptional case is visible as an exception.
-///     </para>
-/// </remarks>
 public sealed record ElementProfile : IChemicalSource
 {
     public ChemicalDamageType ChemicalType { get; init; }
@@ -42,17 +20,7 @@ public sealed record ElementProfile : IChemicalSource
 
     public float ReactionDamage { get; init; }
 
-    /// <summary>
-    ///     A vanilla debuff this element puts on what it touches, or -1 for one that works purely
-    ///     through its own affliction.
-    /// </summary>
-    /// <remarks>
-    ///     Most elements are -1. A debuff is a blunt instrument next to the affliction system --
-    ///     it does not read the target's composition, it does not roll reactions, and it is not
-    ///     scaled by how strongly the element landed -- so it is reserved for the cases where the
-    ///     vanilla effect is genuinely the effect a player expects to see, on fire being the obvious
-    ///     one.
-    /// </remarks>
+    /// <summary>Vanilla debuff applied on contact, or -1 (most elements) to rely on the affliction alone.</summary>
     public int ContactBuff { get; init; } = -1;
 
     public int ContactBuffTicks { get; init; } = 90;
@@ -66,19 +34,12 @@ public sealed record ElementProfile : IChemicalSource
     /// <summary>Its colour at the rim, where it is thin and catching the light.</summary>
     public Vector3 EdgeColor { get; init; } = new(0.72f, 0.74f, 0.80f);
 
-    /// <summary>Light it gives off, or zero for an element that does not glow.</summary>
     public Vector3 EmittedLight { get; init; }
 
     /// <summary>
-    ///     Where the pool's boundary falls: the summed blob coverage a pixel needs to be inside it.
+    ///     Summed blob coverage a pixel needs to be inside the pool. Small because overlapping blobs sum past 1
+    ///     inside a pool; higher reads thicker, lower spreads thinner.
     /// </summary>
-    /// <remarks>
-    ///     A metaball cut rather than a coverage level, and the numbers are small because of it. A
-    ///     residue stamps soft blobs that add where they overlap, so the interior of a pool sums well
-    ///     past 1 while its rim tails to nearly nothing -- the cut wants to sit down in that tail.
-    ///     Higher pulls the boundary inward and reads thicker and more viscous; lower lets the pool
-    ///     spread and thin.
-    /// </remarks>
     public float Threshold { get; init; } = 0.17f;
 
     public float NoiseScale { get; init; } = 5.5f;
@@ -88,12 +49,7 @@ public sealed record ElementProfile : IChemicalSource
     /// <summary>Nothing by default: element-scoped reaction behaviour belongs to whatever emitted it.</summary>
     public void OnChemicalReaction(in ChemicalReactionEvent e) { }
 
-    /// <summary>Fire, and anything else that works by being far too hot.</summary>
-    /// <remarks>
-    ///     The one element whose vanilla debuff is not a poor substitute for its affliction. Being
-    ///     set on fire is a thing players already understand, and thermite that did not do it would
-    ///     read as broken no matter what the numbers underneath were doing.
-    /// </remarks>
+    /// <summary>Fire and anything else too hot. Sets targets on fire through its contact debuff.</summary>
     public static readonly ElementProfile Thermal = new()
     {
         ChemicalType = ChemicalDamageType.Thermal,
@@ -109,15 +65,7 @@ public sealed record ElementProfile : IChemicalSource
         NoiseDrift = new Vector2(0.014f, -0.032f),
     };
 
-    /// <summary>
-    ///     Cold, which controls by taking friction and speed away rather than by hurting.
-    /// </summary>
-    /// <remarks>
-    ///     No contact debuff on purpose. Frostburn on terrain made a flask's own landing zone a
-    ///     place its thrower could not follow into, and is a strange reading of ice besides -- what
-    ///     ice actually does is make the floor slippery, which is mechanical, reads instantly, and
-    ///     costs nobody any health.
-    /// </remarks>
+    /// <summary>Cold: controls by removing friction rather than hurting. No contact debuff on purpose.</summary>
     public static readonly ElementProfile Cryonic = new()
     {
         ChemicalType = ChemicalDamageType.Cryonic,
@@ -141,16 +89,7 @@ public sealed record ElementProfile : IChemicalSource
         EmittedLight = new Vector3(0.05f, 0.10f, 0.02f),
     };
 
-    /// <summary>
-    ///     Decay, rot and blood.
-    /// </summary>
-    /// <remarks>
-    ///     No contact debuff, where this used to hand out bleeding. A pool of blood on the floor
-    ///     causing an open wound in whatever walks through it does not follow from anything -- the
-    ///     blood is the result of the injury, not a cause of one -- and the affliction already
-    ///     carries the element's actual damage. Corruption is the case with a claim to a debuff, so
-    ///     the spores ask for one by name rather than every necrotic thing inheriting it.
-    /// </remarks>
+    /// <summary>Decay, rot and blood. No contact debuff; corrupt spores request bleeding themselves.</summary>
     public static readonly ElementProfile Necrotic = new()
     {
         ChemicalType = ChemicalDamageType.Necrotic,
@@ -171,14 +110,7 @@ public sealed record ElementProfile : IChemicalSource
         EmittedLight = new Vector3(0.08f, 0.08f, 0.14f),
     };
 
-    /// <summary>
-    ///     Current. Nothing emits it yet.
-    /// </summary>
-    /// <remarks>
-    ///     Registered ahead of anything using it because the element list is a world-level
-    ///     vocabulary rather than an inventory of what happens to be implemented. Conduction along
-    ///     wet terrain is the obvious first use and belongs on the tile-condition side.
-    /// </remarks>
+    /// <summary>Current. Registered ahead of use; nothing emits it yet.</summary>
     public static readonly ElementProfile Electric = new()
     {
         ChemicalType = ChemicalDamageType.Electric,
@@ -193,14 +125,7 @@ public sealed record ElementProfile : IChemicalSource
         NoiseDrift = new Vector2(0.05f, -0.01f),
     };
 
-    /// <summary>
-    ///     Matter with no element: gel, powders, inert gas.
-    /// </summary>
-    /// <remarks>
-    ///     Afflicts and gets in the way, and rolls no reactions -- see
-    ///     <see cref="ChemicalDamageType.Solute" />, which <see cref="ChemicalReaction.Trigger" />
-    ///     refuses outright.
-    /// </remarks>
+    /// <summary>Matter with no element (gel, powders, inert gas): afflicts but never reacts.</summary>
     public static readonly ElementProfile Solute = new()
     {
         ChemicalType = ChemicalDamageType.Solute,
@@ -240,7 +165,7 @@ public sealed record ElementProfile : IChemicalSource
         [ChemicalDamageType.Electric] = Electric,
     };
 
-    /// <summary>The universal definition of an element. Never null.</summary>
+    /// <summary>Never null: unregistered types return <see cref="None" />.</summary>
     public static ElementProfile For(ChemicalDamageType type)
         => registry.TryGetValue(type, out ElementProfile? profile) ? profile : None;
 }

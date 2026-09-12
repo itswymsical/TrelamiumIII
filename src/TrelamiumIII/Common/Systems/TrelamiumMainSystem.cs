@@ -4,9 +4,6 @@ using TrelamiumIII.Core.Dialogue;
 
 namespace TrelamiumIII.Common.Systems;
 
-/// <summary>
-///   The main system for TrelamiumIII. This system is responsible for managing the mod's state and handling events.
-/// </summary>
 public class TrelamiumMainSystem : ModSystem
 {
     public static TrelamiumMainSystem Instance => ModContent.GetInstance<TrelamiumMainSystem>();

@@ -4,15 +4,7 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Layout.Blocks;
 
-/// <summary>
-///     A paragraph of rich text. The only block that breaks across pages.
-/// </summary>
-/// <remarks>
-///     Once wrapped, a paragraph is just a list of lines, so splitting it is a matter of deciding
-///     where to cut -- no re-wrapping, and the tail carries its already-measured lines onto the next
-///     page. Cuts respect a widow and orphan minimum, so a paragraph never leaves one line stranded
-///     at the foot of a page or arrives as one line at the head of the next.
-/// </remarks>
+/// <summary>A paragraph of rich text; the only block that splits across pages, respecting widow and orphan minimums.</summary>
 public sealed class ProseBlock : BookBlock
 {
     /// <summary>Fewest lines that may sit alone on either side of a page break.</summary>
@@ -26,10 +18,7 @@ public sealed class ProseBlock : BookBlock
 
     private readonly string? source;
 
-    /// <summary>
-    ///     False on a continuation. A paragraph that resumes at the top of the next page opens flush,
-    ///     so only the block holding the paragraph's actual start may set a cap.
-    /// </summary>
+    /// <summary>False on a continuation, which opens flush; only the paragraph's real start may set a drop cap.</summary>
     private readonly bool opensParagraph;
 
     private List<BookTextLine>? lines;
@@ -41,11 +30,7 @@ public sealed class ProseBlock : BookBlock
         opensParagraph = true;
     }
 
-    /// <summary>
-    ///     Piece produced by <see cref="Split" />. Its lines are already wrapped, so the source is
-    ///     carried only for the drop cap: the head still has to draw the letter its first lines were
-    ///     laid out around.
-    /// </summary>
+    /// <summary>A <see cref="Split" /> piece with pre-wrapped lines; the source is kept only so the head can draw its drop cap.</summary>
     private ProseBlock(string? source, bool opensParagraph, List<BookTextLine> laidOut, float width, BlockStyle style)
     {
         this.source = source;
@@ -56,10 +41,7 @@ public sealed class ProseBlock : BookBlock
         Style = style;
     }
 
-    /// <summary>
-    ///     A continuation always carries lines, so testing the source alone would wrongly call it
-    ///     empty; an original with no source has nothing to lay out in the first place.
-    /// </summary>
+    /// <summary>Continuations carry lines but no source, so emptiness checks the lines when present.</summary>
     public override bool IsEmpty =>
         lines is not null ? lines.Count == 0 : string.IsNullOrWhiteSpace(source);
 
@@ -127,9 +109,7 @@ public sealed class ProseBlock : BookBlock
         }
     }
 
-    /// <summary>
-    ///     Reports a hovered snippet so the UI can raise a tooltip or follow a cross-reference.
-    /// </summary>
+    /// <summary>Reports a hovered snippet so the UI can show a tooltip or follow a cross-reference.</summary>
     private void TrackHover(BookTextLine line, Vector2 position, BookPageContext context, float columnWidth)
     {
         if (context.LocalMouse is not { } mouse)
@@ -169,9 +149,8 @@ public sealed class ProseBlock : BookBlock
         while (fits > 0 && fits <= laid.Count && laid[fits - 1].IsBlank)
             fits--;
 
-        // Too few lines left over is a widow. Pull an extra line down rather than refusing the split:
-        // refusing sends the entire paragraph to the next page, which stops being a typographic nicety
-        // and starts stranding the heading that introduced it on a page with nothing under it.
+        // Too few lines left would be a widow, so pull one down rather than refusing the split, which would strand the
+        // heading above on its own.
         if (laid.Count - fits < MIN_LINES_PER_SIDE)
             fits = laid.Count - MIN_LINES_PER_SIDE;
 
@@ -242,9 +221,7 @@ public sealed class ProseBlock : BookBlock
         string text = cap.ToString();
         float scale = DropCapScale(cap);
 
-        // Glyphs are drawn from the pen position, which sits above the letter by its top bearing.
-        // Lifting by that much puts the cap's ink level with the top of the text beside it instead
-        // of hanging below it.
+        // Lift by the top bearing so the cap's ink aligns with the top of the neighbouring text.
         float lift = BookText.TryGetGlyphInk(font, cap, out _, out float bearing) ? bearing * scale : 0f;
 
         Utils.DrawBorderStringFourWay(

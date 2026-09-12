@@ -6,10 +6,7 @@ using TrelamiumIII.Content.Alchemy;
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-/// Per-world discovery state for the Almanac: outputs the player has successfully brewed, and
-/// alchemical materials (substances/solvents) the player has obtained at least once. Ingredient
-/// entries flagged <see cref="AlmanacEntry.Hidden"/> (the default) render as "?" in the
-/// Ingredients index until obtained.
+/// Per-world Almanac discovery: brewed outputs and obtained materials. Hidden ingredient entries show as "?" until obtained.
 /// </summary>
 public class AlmanacDiscoverySystem : ModSystem
 {
@@ -47,10 +44,7 @@ public class AlmanacDiscoverySystem : ModSystem
         return true;
     }
 
-    /// <summary>
-    /// Whether a material shows in the Ingredients index: authored always-visible entries
-    /// (<see cref="AlmanacEntry.Hidden"/> = false), or anything the player has obtained.
-    /// </summary>
+    /// <summary>Shown in the Ingredients index if authored as visible (Hidden = false) or obtained.</summary>
     public static bool IsIngredientVisible(int itemType) =>
         itemType > 0 && (!AlmanacEntryRegistry.For(itemType).Hidden || _ingredients.Contains(itemType));
 
@@ -83,11 +77,7 @@ public class AlmanacDiscoverySystem : ModSystem
         return cleared;
     }
 
-    /// <summary>
-    /// Forget every obtained material. Returns how many were cleared. Entries authored with
-    /// <see cref="AlmanacEntry.Hidden"/> = false stay visible: this restores the authored starting
-    /// state, it doesn't blank the index.
-    /// </summary>
+    /// <summary>Forgets every obtained material; Hidden = false entries stay visible. Returns how many were cleared.</summary>
     public static int LockAllIngredients()
     {
         int cleared = _ingredients.Count;
@@ -183,11 +173,7 @@ public class AlmanacDiscoverySystem : ModSystem
     }
 }
 
-/// <summary>
-/// Watches the local player's inventory and marks any alchemical material (reagent or base, per
-/// <see cref="AlchemyIngredients"/>) as obtained. This reveals its ["???"] slot in the Almanac's
-/// Ingredients index.
-/// </summary>
+/// <summary>Marks alchemical materials in the local player's inventory as obtained, revealing their "?" slots.</summary>
 public class IngredientDiscoveryPlayer : ModPlayer
 {
     private int _timer;

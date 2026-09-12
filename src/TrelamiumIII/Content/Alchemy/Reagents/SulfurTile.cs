@@ -1,9 +1,6 @@
 namespace TrelamiumIII.Content.Alchemy.Reagents;
 
-/// <summary>
-///     Brimstone in the ground. Placed by <see cref="Reagent.Sulfur" />, which is the only thing that
-///     drops it -- the raw tier adds no worldgen.
-/// </summary>
+/// <summary>Brimstone in the ground. Only placed by <see cref="Reagent.Sulfur" />; there is no worldgen.</summary>
 public class SulfurTile : ModTile
 {
     public override void SetStaticDefaults()

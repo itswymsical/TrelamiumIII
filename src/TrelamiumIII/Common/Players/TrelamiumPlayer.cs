@@ -9,13 +9,6 @@ public class TrelamiumPlayer : ModPlayer
 
     private const float ShieldFadeSpeed = 0.04f;
 
-    public override void PostUpdateMiscEffects()
-    {
-        // Put all the job checks here -- yeah, i know it's ass, i do not care.
-        //Main.NewText($"Player Position | X: {(int)Player.position.X / 16}, Y: {(int)Player.position.Y / 16}");
-        
-    }
-
     public override void PreUpdate()
     {
         int tileX = (int)(Player.position.X / 16);
@@ -24,7 +17,6 @@ public class TrelamiumPlayer : ModPlayer
         if (StructureProtectionSystem.IsProtected(tileX, tileY))
             Player.noBuilding = true;
 
-        // Fade in when holding a pickaxe, fade out when not
         bool holding = Player.HeldItem.pick > 0 || Player.HeldItem.hammer > 0;
 
         if (holding)

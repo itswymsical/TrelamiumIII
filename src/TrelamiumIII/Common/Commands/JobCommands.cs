@@ -8,25 +8,16 @@ public static class JobCommandHelper
 {
     public static int TryParseJobIdentifier(string identifier)
     {
-        // Numeric ID
         if (int.TryParse(identifier, out var JobId))
             return JobId;
 
-        // Match by name in JobID class
         var field = typeof(JobID).GetFields()
             .FirstOrDefault(f => string.Equals(f.Name, identifier, StringComparison.OrdinalIgnoreCase));
 
         return field != null ? (int)field.GetValue(null) : -1;
     }
 
-    /// <summary>
-    /// This player's instance of a job, or <see langword="null"/> if no such job is registered.
-    /// </summary>
-    /// <remarks>
-    /// The registry check used to be a full <see cref="EventSystem.CreateJob"/> whose result was
-    /// thrown away -- a whole job constructed, task lists and all, purely to find out whether the id
-    /// existed.
-    /// </remarks>
+    /// <summary>This player's instance of a job, or <see langword="null"/> if no such job is registered.</summary>
     public static Job GetOrCreateJob(int jobId, Player player)
         => EventSystem.IsJobRegistered(jobId) ? player.GetModPlayer<JobPlayer>().GetOrCreateJob(jobId) : null;
 }
@@ -60,7 +51,6 @@ public class UnlockJobCommand : ModCommand
             return;
         }
 
-        // Unlock via appropriate storage
         caller.Player.GetModPlayer<JobPlayer>().UnlockJob(JobId);
 
         caller.Reply($"Unlocked: {Job.Name}", Color.Green);
@@ -96,7 +86,6 @@ public class LockJobCommand : ModCommand
             return;
         }
 
-        // Unlock via appropriate storage
         caller.Player.GetModPlayer<JobPlayer>().LockJob(JobId);
 
         caller.Reply($"Locked: {Job.Name}", Color.Green);
@@ -138,7 +127,6 @@ public class StartJobCommand : ModCommand
             return;
         }
 
-        // Start via appropriate storage
         caller.Player.GetModPlayer<JobPlayer>().StartJob(JobId);
 
         caller.Reply($"Started: {Job.Name}", Color.Green);
@@ -174,7 +162,6 @@ public class ResetJobCommand : ModCommand
             return;
         }
 
-        // Reset the Job
         Job.Reset();
         caller.Reply($"Reset: {Job.Name}", Color.Green);
     }
@@ -209,8 +196,7 @@ public class CompleteJobCommand : ModCommand
             return;
         }
 
-        // Force complete all tasks. The job must also be underway, or Complete() correctly refuses:
-        // an unstarted job has nothing to pay out for.
+        // Complete() refuses a job that hasn't started, so start it first.
         if (Job.State == JobState.Available)
             caller.Player.GetModPlayer<JobPlayer>().StartJob(JobId);
 
@@ -243,13 +229,10 @@ public class ListJobsCommand : ModCommand
         var jobPlayer = caller.Player.GetModPlayer<JobPlayer>();
         caller.Reply("# All Jobs: ", Color.CornflowerBlue);
 
-        // Materialise every registered job so the listing covers ones this player has never touched,
-        // which are exactly the ones a "locked" filter is asking about.
+        // Materialise every registered job so filters like "locked" can match jobs this player never touched.
         foreach (var registered in EventSystem.RegisteredJobIds.ToList())
             jobPlayer.GetOrCreateJob(registered);
 
-        // Listing only the active and available ones meant the "locked" and "completed" filters could
-        // never match anything.
         var allJobs = jobPlayer.GetAllJobs();
 
         var filteredJobs = filter switch

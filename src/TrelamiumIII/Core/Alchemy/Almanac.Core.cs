@@ -5,45 +5,29 @@ using Terraria.Localization;
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-/// Broad "what kind of chemical is this" tagging for an almanac entry. Flags so a
-/// single product can read as e.g. <c>Toxic | Volatile</c>. Display label and colour
-/// are handled UI-side (see <c>AlchemyAlmanacUI</c>).
+/// Broad chemical tags for an almanac entry, as flags (e.g. <c>Toxic | Volatile</c>). Labels and colours live in <c>AlchemyAlmanacUI</c>.
 /// </summary>
 [Flags]
 public enum ChemicalQuality
 {
     None = 0,
-    /// <summary>
-    /// Breaks down other compounds.
-    /// </summary>
+    /// <summary>Breaks down other compounds.</summary>
     Acidic = 1 << 0,
-    /// <summary>
-    /// Binds compounds together or neutralizes acids.
-    /// </summary>
+    /// <summary>Binds compounds together or neutralizes acids.</summary>
     Alkaline = 1 << 1,
-    /// <summary>
-    /// evaporates easily or is unstable.
-    /// </summary>
+    /// <summary>Evaporates easily or is unstable.</summary>
     Volatile = 1 << 2,
-    /// <summary>
-    /// reacts with other compounds to release energy (heat, light, etc.).
-    /// </summary>
+    /// <summary>Reacts with other compounds to release energy (heat, light, etc.).</summary>
     Kinetic = 1 << 3,
-    /// <summary>
-    /// enables or accelerates reactions.
-    /// </summary>
+    /// <summary>Enables or accelerates reactions.</summary>
     Catalytic = 1 << 4,
-    /// <summary>
-    /// Refuses to react; can stabilize mixtures or dilute reactions.
-    /// </summary>
+    /// <summary>Refuses to react; can stabilize mixtures or dilute reactions.</summary>
     Inert = 1 << 5, // these ones and above are the general types, below are distinct qualities
 
     Oxidizer = 1 << 6,
 
     Flammable = 1 << 7,
-    /// <summary>
-    /// used for bane tonic and necrotic items
-    /// </summary>
+    /// <summary>Used for bane tonic and necrotic items.</summary>
     Inhibitor = 1 << 8,
 
     Cryogen = 1 << 9,
@@ -51,59 +35,34 @@ public enum ChemicalQuality
 }
 
 /// <summary>
-/// this is basically for flavor text, but it also has some mechanical implications for the almanac's sorting and filtering. It is not a direct mapping to any in-game mechanics, but rather a thematic classification of the item based on its properties and effects.
-/// <para>
-/// Most applicable for the "alchemy" alchemy mode (making utilities and weapons)
-/// </para>
+/// Thematic classification for flavour and almanac sorting/filtering, not tied to mechanics. Mostly for the Alchemy mode.
 /// </summary>
 [Flags]
 public enum PrincipleType
 {
     None = 0,
-    /// <summary>
-    /// rejuvination, life, growth. 
-    /// </summary>
+    /// <summary>Rejuvenation, life, growth.</summary>
     Vital = 1 << 0,
-    /// <summary>
-    /// lucid, revealing, insight.
-    /// </summary>
+    /// <summary>Lucid, revealing, insight.</summary>
     Specular = 1 << 1,
-    /// <summary>
-    /// strength, power, force.
-    /// </summary>
+    /// <summary>Strength, power, force.</summary>
     Martial = 1 << 2,
-    /// <summary>
-    /// speed, dexterity, haste.
-    /// </summary>
+    /// <summary>Speed, dexterity, haste.</summary>
     Brisk = 1 << 3,
-    /// <summary>
-    /// luck, fortune, abundance.
-    /// </summary>
+    /// <summary>Luck, fortune, abundance.</summary>
     Fortune = 1 << 4,
-    /// <summary>
-    /// balance, harmony, binding.
-    /// </summary>
+    /// <summary>Balance, harmony, binding.</summary>
     Harmony = 1 << 5,
-    /// <summary>
-    /// decay, withering, unbinding.
-    /// </summary>
+    /// <summary>Decay, withering, unbinding.</summary>
     Bane = 1 << 6
 }
 /// <summary>
-/// Authored metadata for one almanac output.
-/// The "entry" shown in the Almanac's Detail view. Keyed by <see cref="ItemType"/>.
-/// <para>
-/// Recipes (<see cref="AlchemyRecipe"/>) describe how an item is <em>made</em>; an
-/// entry describes what it <em>is</em> (flavour text + ratings) for the book. Many
-/// recipes can share one output, so this metadata lives on the product, not the recipe.
-/// </para>
+/// Authored almanac metadata for one item (flavour text and ratings), keyed by <see cref="ItemType"/>. Lives on the product, since many recipes share one.
 /// </summary>
 public sealed class AlmanacEntry
 {
     /// <summary>
-    /// Item type this entry describes. This is the registry key.
-    /// <para>An entry authored by an <see cref="IAlmanacDefined"/> item leaves this alone: the
-    /// collection pass in <see cref="AlmanacDefinitions"/> stamps the item's own type in.</para>
+    /// The registry key. <see cref="IAlmanacDefined"/> items leave it unset; <see cref="AlmanacDefinitions"/> stamps their type in.
     /// </summary>
     public int ItemType { get; internal set; }
 
@@ -114,25 +73,13 @@ public sealed class AlmanacEntry
     public ChemicalQuality Chemical { get; init; }
 
     public PrincipleType Principle { get; init; } = PrincipleType.None;
-    /// <summary>
-    /// Rarity as a vanilla rarity value (an <c>ItemRarityID</c>), judged by this system's
-    /// own rules rather than read from the item's <c>Item.rare</c>. Left unset, it falls
-    /// back to the item's vanilla rarity via <see cref="ResolvedRarity"/>.
-    /// </summary>
+    /// <summary>Display rarity as an <c>ItemRarityID</c>, judged by this system; unset falls back to the item's vanilla rarity.</summary>
     public int Rarity { get; init; } = UseVanillaRarity;
 
-    /// <summary>
-    /// Localization sub-key under <c>Almanac.</c> for the flavour description.
-    /// <c>null</c> derives it from the item's display name with spaces stripped, which
-    /// preserves the original keying so existing descriptions keep working.
-    /// </summary>
+    /// <summary>Localization sub-key under <c>Almanac.</c>; null derives it from the display name with spaces stripped.</summary>
     public string? DescriptionKey { get; init; }
 
-    /// <summary>
-    /// When true (the default), this item shows as a "?" slot in the Almanac's Ingredients
-    /// index until the player has obtained it at least once
-    /// (<see cref="AlmanacDiscoverySystem.IsIngredientVisible"/>). Set false for the starter materials
-    /// </summary>
+    /// <summary>When true (default), shows as "?" in the Ingredients index until obtained. Set false for starter materials.</summary>
     public bool Hidden { get; init; } = true;
 
     /// <summary>Sentinel for <see cref="Rarity"/>: defer to the item's own vanilla rarity.</summary>
@@ -148,10 +95,7 @@ public sealed class AlmanacEntry
     public string ResolvedDescriptionKey =>
         DescriptionKey ?? Lang.GetItemNameValue(ItemType).Replace(" ", string.Empty);
 
-    /// <summary>
-    /// Localized flavour text, or empty string when no description key is defined (so the
-    /// Detail view draws nothing rather than a raw key path for un-authored entries).
-    /// </summary>
+    /// <summary>Localized flavour text, or empty when no key is defined (never a raw key path).</summary>
     public string GetDescription()
     {
         string key = TrelamiumIII.Instance.GetLocalizationKey($"Almanac.FlavorText.{ResolvedDescriptionKey}");
@@ -160,11 +104,7 @@ public sealed class AlmanacEntry
     }
 }
 
-/// <summary>
-/// Registry of authored <see cref="AlmanacEntry"/> metadata, keyed by output item type.
-/// Outputs without an authored entry resolve to a sensible default via <see cref="For"/>,
-/// so the definition list can grow incrementally instead of needing every output covered.
-/// </summary>
+/// <summary>Authored <see cref="AlmanacEntry"/> metadata by output type; un-authored outputs get defaults via <see cref="For"/>.</summary>
 public static class AlmanacEntryRegistry
 {
     private static readonly Dictionary<int, AlmanacEntry> _entries = new();
@@ -183,16 +123,12 @@ public static class AlmanacEntryRegistry
     public static IEnumerable<AlmanacEntry> All => _entries.Values;
 
     /// <summary>
-    /// Potency an un-authored solvent or reagent falls back to. Anything the recipe registry actually
-    /// brews with is doing <em>something</em>, so 0 ("unrated", draws no stars) reads as missing data
-    /// rather than as a rating. Authored entries always win, including ones that deliberately say 0.
+    /// Potency for un-authored solvents and reagents, since 0 ("unrated") would read as missing data. Authored entries always win.
     /// </summary>
     public const int DefaultIngredientPotency = 1;
 
     /// <summary>
-    /// The authored entry for <paramref name="outputType"/>, or a default entry (no chemical tags,
-    /// vanilla rarity) when none was registered. An un-authored solvent/reagent comes back rated
-    /// <see cref="DefaultIngredientPotency"/>; anything else stays unrated.
+    /// The authored entry, or a default: rated <see cref="DefaultIngredientPotency"/> for solvents and reagents, otherwise unrated.
     /// </summary>
     public static AlmanacEntry For(int outputType)
     {
@@ -212,10 +148,7 @@ public static class AlmanacEntryRegistry
 }
 
 /// <summary>
-/// Unified flavour-text lookup. An item that is both a recipe output and a reagent (Magnolia
-/// Solution, for instance) needs only ONE string: author it under <c>Almanac.FlavorText.&lt;key&gt;</c>
-/// and both its recipe page and its ingredient page show it. Falls back to the legacy
-/// <c>RecipeDesc</c> / <c>IngredientDesc</c> roots so existing entries keep working.
+/// Flavour text under <c>Almanac.FlavorText.&lt;key&gt;</c>, shared by recipe and ingredient pages; falls back to legacy roots.
 /// </summary>
 public static class AlmanacFlavor
 {
@@ -234,9 +167,7 @@ public static class AlmanacFlavor
 }
 
 /// <summary>
-/// Flavour-text lookup for ingredient items shown in the Almanac's Ingredients index.
-/// Descriptions are localized under <c>Almanac.FlavorText.&lt;key&gt;</c>, where the key
-/// is the item's display name with spaces stripped (matching the recipe-description scheme).
+/// Ingredient flavour text under <c>Almanac.FlavorText.&lt;key&gt;</c>, keyed by display name with spaces stripped.
 /// </summary>
 public static class AlmanacIngredientInfo
 {
@@ -255,20 +186,13 @@ public static class AlmanacIngredientInfo
 }
 
 
-/// <summary>
-/// Read-only views over <see cref="AlchemyRecipeRegistry"/> tailored for the
-/// Alchemist's Almanac UI. All recipes flow through here when the player browses,
-/// filters, or searches.
-/// </summary>
+/// <summary>Read-only views over <see cref="AlchemyRecipeRegistry"/> for browsing, filtering and searching in the Almanac.</summary>
 public static class AlmanacIndex
 {
     private static List<int> _allOutputs;
     private static Dictionary<int, AlchemyMode> _outputMode;
 
-    /// <summary>
-    /// Distinct output types across the registry, sorted by display name. The fallback
-    /// item is included implicitly only if a recipe explicitly produces it.
-    /// </summary>
+    /// <summary>Distinct output types, sorted by display name.</summary>
     public static IReadOnlyList<int> AllOutputTypes
     {
         get
@@ -297,10 +221,7 @@ public static class AlmanacIndex
         }
     }
 
-    /// <summary>
-    /// Recipes whose solvent or any solute slot requires <paramref name="itemType"/>
-    /// WITH the given instance infusion.
-    /// </summary>
+    /// <summary>Recipes whose solvent or any solute slot requires <paramref name="itemType"/> with the given infusion.</summary>
     public static IEnumerable<AlchemyRecipe> RecipesUsing(int itemType, ChemicalQuality infusion)
     {
         if (infusion == ChemicalQuality.None)
@@ -369,7 +290,6 @@ public static class AlmanacIndex
         _outputMode = null;
     }
 
-    /// <summary>Public accessor for a recipe's resolved output item type.</summary>
     public static int ResolvedOutputType(AlchemyRecipe r) => ResolveType(r);
 
     private static int ResolveType(AlchemyRecipe r)
@@ -401,14 +321,8 @@ public static class AlmanacIndex
 }
 
 /// <summary>
-/// Almanac entry metadata (potency / chemical type / rarity) for the <em>vanilla</em> items the book
-/// curates, and the pass that collects the same metadata off our own items.
-/// <para>Our items author their own entry through <see cref="IAlmanacDefined"/>, next to the rest of
-/// what they are, so only vanilla items -- which have no class of ours to put it on -- are listed by
-/// hand here. Anything covered by neither falls back to <see cref="AlmanacEntryRegistry.For"/>'s
-/// defaults, so this list is meant to grow incrementally as products get fleshed out.</para>
-/// <para>Rarity uses vanilla <c>ItemRarityID</c> values, chosen by the system's own
-/// judgement rather than the item's own <c>Item.rare</c>.</para>
+/// Almanac metadata for curated vanilla items, plus collection of <see cref="IAlmanacDefined"/> entries off our own items.
+/// Everything else falls back to <see cref="AlmanacEntryRegistry.For"/>. Rarity uses the system's own judgement.
 /// </summary>
 internal static class AlmanacDefinitions
 {
@@ -423,14 +337,9 @@ internal static class AlmanacDefinitions
     }
 
     /// <summary>
-    /// Collects the entry -- and the station role, where one is stated -- off every item that
-    /// authors its own, in place of the hand-written list this file used to carry for them.
+    /// Collects entries (and stated station roles) off items that author their own. Runs at PostSetupContent so types are assigned;
+    /// an authored <see cref="ChemicalRole"/> beats the one <see cref="ChemicalRoles.Of(int)"/> infers.
     /// </summary>
-    /// <remarks>
-    /// Runs at <c>PostSetupContent</c>, so <see cref="ModItem.Type"/> is assigned and the entry can
-    /// be keyed by it. An authored <see cref="ChemicalRole"/> beats the one
-    /// <see cref="ChemicalRoles.Of(int)"/> would infer from the recipes an item appears in.
-    /// </remarks>
     private static void RegisterItemDefined()
     {
         foreach (ModItem item in ModContent.GetContent<ModItem>())

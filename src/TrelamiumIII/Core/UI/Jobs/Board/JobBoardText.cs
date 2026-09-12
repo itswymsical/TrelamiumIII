@@ -26,4 +26,13 @@ internal static class JobBoardText
     public static string ConfirmPrompt => Get("ConfirmPrompt");
     public static string ConfirmAccept => Get("ConfirmAccept");
     public static string ConfirmBack => Get("ConfirmBack");
+
+    public static string HoverOne => Get("HoverOne");
+    public static string HoverHint => Get("HoverHint");
+
+    public static string HoverMany(int count)
+        => TrelamiumIII.Instance.GetLocalization("Jobs.UI.HoverMany").Format(count);
+
+    public static string HoverMore(int count)
+        => TrelamiumIII.Instance.GetLocalization("Jobs.UI.HoverMore").Format(count);
 }

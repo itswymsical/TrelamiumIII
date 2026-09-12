@@ -3,42 +3,23 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Layout;
 
 /// <summary>
-///     Everything about how a block is set on the page: face, size, leading, alignment, indents and
-///     the space it reserves above and below itself.
+///     How a block is set: face, size, leading, alignment, indents, spacing. Authored in code, never localization; adjust presets with <c>with</c>.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Style is authored in code alongside the block, never in localization. A translator supplies
-///         prose; they should not be able to change the leading, and they should not have to
-///         re-specify it when a page reflows. Presets below cover the common cases, and
-///         <c>with</c> adjusts one from there:
-///         <c>BlockStyle.Body with { Align = TextAlign.Justify }</c>.
-///     </para>
-/// </remarks>
 public readonly record struct BlockStyle()
 {
     public BookFont Font { get; init; } = BookFont.Body;
 
     /// <summary>
-    ///     Which set of real faces <see cref="Font" /> resolves against, or null to inherit.
+    ///     Typeface <see cref="Font" /> resolves against, or null to inherit the book's or section's; setting it is an element override.
     /// </summary>
-    /// <remarks>
-    ///     Left null by every preset below, because a preset describes a role and not a look. The
-    ///     builder stamps the book's or section's typeface onto anything still null when the block is
-    ///     declared, so setting this explicitly is an element-level override that outranks both.
-    /// </remarks>
     public BookTypeface? Typeface { get; init; } = null;
 
     /// <summary>This style's role bound to its typeface. Pass this to <see cref="BookText" />, not <see cref="Font" />.</summary>
     public BookFace Face => new(Font, Typeface);
 
-    /// <summary>
-    ///     Another role bound to this style's typeface, for the places a block sets something in a
-    ///     face other than its own -- a drop cap, a contents header.
-    /// </summary>
+    /// <summary>Another role in this style's typeface, e.g. for a drop cap or contents header.</summary>
     public BookFace FaceFor(BookFont role) => new(role, Typeface);
 
-    /// <summary>Text size multiplier.</summary>
     public float Scale { get; init; } = 0.82f;
 
     /// <summary>Extra pixels between lines, on top of the font's own height.</summary>
@@ -63,10 +44,7 @@ public readonly record struct BlockStyle()
 
     public Color Color { get; init; } = new(37, 38, 38);
 
-    /// <summary>
-    ///     Enlarges the paragraph's opening letter across the first lines. Ignored when the block does
-    ///     not start with a letter.
-    /// </summary>
+    /// <summary>Enlarges the opening letter across the first lines; ignored if the block doesn't start with a letter.</summary>
     public bool DropCap { get; init; } = false;
 
     /// <summary>Printed body text.</summary>

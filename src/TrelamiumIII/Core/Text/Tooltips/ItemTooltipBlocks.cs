@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.UI.Chat;
+using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.Text.Tooltips;
 
@@ -89,7 +90,10 @@ public sealed class ItemTooltipBlocks : GlobalItem
     /// </remarks>
     public override void PostDrawTooltip(Item item, ReadOnlyCollection<DrawableTooltipLine> lines)
     {
-        if (lines.Count == 0)
+        // The lines carry the flat positions they would have had, but a projected panel has drawn
+        // them somewhere else entirely, so a block placed against them would float on its own in
+        // the middle of the screen. Blocks do not appear on a projected card.
+        if (lines.Count == 0 || ProjectedTooltip.OwnsFrame)
             return;
 
         var font = FontAssets.MouseText.Value;

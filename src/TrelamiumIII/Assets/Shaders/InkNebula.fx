@@ -1,34 +1,3 @@
-// A ferrofluid nebula wound around a black hole. Grayscale by construction.
-// this is ink and starlight, not gas, so there is no hue anywhere in the pipeline; the only
-// colour comes from the two endpoint uniforms and they are meant to stay near neutral.
-//
-// The look rests on three ideas stacked in order:
-//
-//   1. DIFFERENTIAL ROTATION. The sample domain is rotated about the singularity by an
-//      angle that grows as 1/r, so the same noise field reads as spiral arms instead of
-//      concentric rings. Done as a rotation of the CARTESIAN offset, deliberately, not
-//      as a log-polar remap: polar coordinates need atan2, and atan2's branch cut leaves
-//      a seam that only stays hidden if every FBM octave lands on an integer number of
-//      turns -- which the usual `p = p * 2.0 + k` octave step destroys. A rotation is
-//      smooth in r and theta both, so there is no seam to hide in the first place.
-//
-//   2. THE INK IS A SURFACE, NOT A DENSITY. The FBM is treated as a height field and
-//      lit -- normals from its own slope, a tight specular, and a grazing-angle rim.
-//      This is what makes the material read as ferrofluid at all: it is defined by being
-//      black and GLOSSY, and gloss lives in a surface normal. Thresholding the field
-//      into coverage instead (the obvious first approach, and the one this shader was
-//      originally written around) gives hard-edged islands each outlined by its own
-//      level set, which reads as cracked dry mud rather than liquid metal.
-//
-//   3. CELLULAR WEBBING. A Voronoi tap masked to the ink stands in for the Rosensweig
-//      spiking a magnetised fluid shows -- it is the difference between "cloudy" and
-//      "magnetised". Kept low; unmasked or strong it reads as dirt on the lens.
-//
-// The singularity itself is drawn here rather than as sprites, so the horizon, the
-// photon ring and the accretion band all sit in the SAME warped domain as the ink and
-// stay registered with it under any parameter change. Gravitational lensing of the
-// layers drawn on top is a separate post pass (PinchShader).
-//
 //   uTime        seconds
 //   uAspect      (width/height, 1) so the disc and the swirl read circular
 //   uCenter      0..1 singularity position
@@ -131,7 +100,7 @@ float N(float2 p)
     return tex2D(NoiseSampler, p).r;
 }
 
-// Four octaves. A fifth lands ~16x the base frequency and, once the domain warp has
+// There are four octaves, a fifth lands ~16x the base frequency and, once the domain warp has
 // stretched it, reads as marbled wire rather than ink.
 //
 // Averaging octaves collapses the histogram: the raw sum lands in a band roughly 0.15

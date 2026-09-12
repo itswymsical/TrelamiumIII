@@ -10,11 +10,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
     public const string FilterKey = $"{nameof(TrelamiumIII)}:MagnetizerField";
 
 
-    /// <summary>
-    ///     Resolution divisor for the field. Free at half size: the surface is a soft mask deciding
-    ///     where the frame shimmers, not an image anybody looks at, so there is no detail in it to
-    ///     lose.
-    /// </summary>
+    /// <summary>Resolution divisor for the field; free at half size since it's a soft mask, not an image.</summary>
     private const int FIELD_SCALE = 2;
 
     // Lightsource.png is a sector with its apex at (10, 48) and a cap bulging out to x = 64.
@@ -22,33 +18,23 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
 
     private static readonly Vector2 ConeApex = new(0f, 39f);
 
-    /// <summary>
-    ///     How wide the drawn cone is relative to the arc it actually mines.
-    /// </summary>
+    /// <summary>How wide the drawn cone is relative to the arc it actually mines.</summary>
     private const float CONE_FLARE = 0.9f;
 
     // See MagnetizerBeam.fx for what each of these does. Note that the transverse values are in
     // cone-local t units now, where 1.0 is the cone's lip at any length, rather than in quad v.
 
-    /// <summary>
-    ///     Waves along the beam, as <c>DENSITY * length^EXPONENT</c>.
-    /// </summary>
+    /// <summary>Waves along the beam, as <c>DENSITY * length^EXPONENT</c>.</summary>
     private const float BEAM_WAVE_DENSITY = 0.2f;
     private const float BEAM_WAVE_EXPONENT = 0.62f;
 
-    /// <summary>
-    ///     Six reads as a bundle; three read as a corkscrew, because at that count the eye can still
-    ///     follow each strand individually and reassemble them into one solid object.
-    /// </summary>
+    /// <summary>Six reads as one bundle; at three the eye follows each strand and it reads as a corkscrew.</summary>
     private const float BEAM_STRANDS = 6f;
 
     private const float BEAM_AMPLITUDE = 0.62f;
     private const float BEAM_THICKNESS = 0.14f;
 
-    /// <summary>
-    ///     Spread of the strands' frequencies. Around 0.35 they drift apart fast enough to never repeat but stay close
-    ///     enough to still read as one flow.
-    /// </summary>
+    /// <summary>Strand frequency spread; around 0.35 they never repeat but still read as one flow.</summary>
     private const float BEAM_DETUNE = 0.35f;
 
     private const float BEAM_FLOW = 4.4f;
@@ -75,34 +61,13 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
     private const float BEAM_SHAPE_GAIN = 1.95f;
 
     /// <summary>
-    ///     How far the silhouette lookup is displaced by noise, as a fraction of the cone.
+    ///     Noise displacement of the silhouette lookup, as a fraction of the cone so it scales with beam length. A clean edge reads as a stretched sprite.
     /// </summary>
-    /// <remarks>
-    ///     This is what makes the mask warp itself rather than only warping the world behind it. A
-    ///     smooth, hard-edged cone reads as one big soft decal however much is going on inside it,
-    ///     because the outline is the first thing the eye resolves and a clean stretched sprite is
-    ///     immediately legible as a stretched sprite.
-    ///     <para>
-    ///         Kept as a fraction rather than a pixel figure so the boil scales with the beam: a
-    ///         fixed-pixel wobble that reads well on a two-block intake disappears on a fifty-block
-    ///         one.
-    ///     </para>
-    /// </remarks>
     private const float BEAM_SHAPE_WARP = 0.075f;
 
     private const float BEAM_SHAPE_WARP_SCALE = 1.1f;
 
-    /// <summary>
-    ///     Split of the mask channel between the cone's own coverage and its strands. Coverage
-    ///     dominates: the mask decides where the frame shimmers, and that should be the whole cone,
-    ///     with the strands only modulating how hard.
-    /// </summary>
-    /// <remarks>
-    ///     These used to have to sum under 1, back when the filter differentiated this channel to
-    ///     find a refraction normal and a clipped mask meant a flat one. The lens is gone, so the mask
-    ///     is read directly and saturating it is now harmless -- it just means a solidly shimmering
-    ///     interior, which is what is wanted.
-    /// </remarks>
+    /// <summary>Mask split between cone coverage and strands; coverage dominates. Saturating the mask is harmless.</summary>
     private const float BEAM_FIELD_BODY = 0.9f;
     private const float BEAM_FIELD_STRAND = 0.25f;
 
@@ -111,26 +76,14 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
     private static readonly Vector3 BeamCoreColor = new(0.9f, 0.96f, 1f);
 
 
-    /// <summary>
-    ///     Peak wobble, in UV. Roughly 15px on a 1080-tall frame.
-    /// </summary>
-    /// <remarks>
-    ///     The only displacement left, and the only screen effect here that earns its cost. It covers
-    ///     the whole cone rather than concentrating at the lip, and it is fine-grained enough that the
-    ///     ore veins stay countable through it -- which is exactly what the refraction lens this
-    ///     replaced could not manage on a tool used at arm's length from a wall of tiles. See
-    ///     MagnetizerField.fx for the full account of what came out and why.
-    /// </remarks>
+    /// <summary>Peak wobble in UV (~15px at 1080p), fine enough that ore veins stay countable. See MagnetizerField.fx.</summary>
     private const float FIELD_WOBBLE = 0.02f;
     private const float FIELD_WOBBLE_SCALE = 1.75f;
     private static readonly Vector2 FieldWobbleDrift = new(0.06f, -0.1f);
 
     private const float FIELD_GLOW = 1.35f;
 
-    /// <summary>
-    ///     How far the added light tracks the brightness behind it, 0..1. High, so the beam holds one
-    ///     material across a frame that runs from open sky to unlit stone. See MagnetizerField.fx.
-    /// </summary>
+    /// <summary>How much added light tracks the brightness behind it, 0..1; high so the beam reads the same from sky to stone.</summary>
     private const float FIELD_LIGHT_RESPONSE = 0.8f;
 
 
@@ -163,15 +116,11 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
             // two magnetizers pointed at the same rock sum into one denser field.
             Blend = Blends.PremultipliedAdditive,
 
-            // Linear, unlike the metaball layers. Their shaders snap decisions to the field grid and
-            // want the chunky edge; a shimmer mask wants the opposite, because a point-sampled mask
-            // edge puts a visible staircase along the boundary of where the frame moves.
+            // Linear: a point-sampled shimmer mask would staircase along the boundary.
             Sampler = SamplerState.LinearClamp,
         };
 
-        // High rather than VeryHigh: this is a thing in the world, so it belongs above an affliction
-        // the player is under (ScreenWobble, at Medium) and below a whiteout the game is doing to
-        // them (ScreenFlash, at VeryHigh).
+        // High priority: above ScreenWobble (Medium), below ScreenFlash (VeryHigh).
         Filters.Scene[FilterKey] = new Filter(new FieldData(Assets.Shaders.MagnetizerField.Asset, "P0"), EffectPriority.High);
         Filters.Scene[FilterKey].Load();
 
@@ -179,10 +128,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
         {
             orig();
 
-            // Kept running through the whole fade rather than only while a beam exists. The surface
-            // preserves its contents, and FilterManager goes on running a deactivated filter for
-            // about a second, so a beam that stops without this leaves its last frame frozen on
-            // screen for that second.
+            // Kept building through the fade: FilterManager runs a deactivated filter for ~1 s, which would freeze the last frame.
             if (fade > 0f)
                 target?.Build();
         };
@@ -228,10 +174,8 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
     }
 
     /// <summary>
-    ///     Deactivating does not stop the pass immediately: FilterManager ramps a filter's own opacity
-    ///     down at 1/sec and only unlinks it at zero, so the shader keeps running for about a second
-    ///     afterwards. It must therefore resolve to an exact passthrough at uMix 0, which is also why
-    ///     it may not tint by COLOR0 -- see the notes in the .fx file.
+    ///     Deactivation isn't immediate: FilterManager fades a filter out over ~1 s, so the shader must be an exact passthrough at
+    ///     uMix 0 and can't tint by COLOR0 (see the .fx notes).
     /// </summary>
     private static void SetFilterActive(bool active)
     {
@@ -246,9 +190,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
             filter.Deactivate();
     }
 
-    /// <summary>
-    ///     Stamps one cone per live magnetizer into the field surface.
-    /// </summary>
+    /// <summary>Stamps one cone per live magnetizer into the field.</summary>
     private static void StampBeams(SpriteBatch spriteBatch)
     {
         if (beamShader?.Value is not { } effect || coneTexture is not { Value: { } cone })
@@ -279,10 +221,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
         effect.Parameters["uShapeWarp"]?.SetValue(BEAM_SHAPE_WARP);
         effect.Parameters["uShapeWarpScale"]?.SetValue(BEAM_SHAPE_WARP_SCALE);
 
-        // The crop's place in the sheet, so the pass can turn TEXCOORD0 into a fraction of the BEAM.
-        // A source rectangle makes TEXCOORD0 span that sub-rectangle's range within the texture rather
-        // than 0..1, and every length-wise term in the shader is a fraction of the beam -- so without
-        // these the end feathers and the muzzle neck silently never apply at all. See the .fx header.
+        // A source rect makes TEXCOORD0 span the crop, not 0..1; without this offset the length-wise feathering never applies.
         effect.Parameters["uSourceOffset"]?.SetValue(new Vector2(
             ConeSource.X / (float)cone.Width,
             ConeSource.Y / (float)cone.Height));
@@ -342,9 +281,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
         }
     }
 
-    /// <summary>
-    ///     Carries the field pass's uniforms on the base type <see cref="Filters.Scene" /> will accept.
-    /// </summary>
+    /// <summary>Carries the field pass's uniforms on the base type <see cref="Filters.Scene" /> accepts.</summary>
     private sealed class FieldData(Asset<Effect> shader, string passName) : ScreenShaderData(shader, passName)
     {
         private readonly Asset<Effect> fieldAsset = shader;
@@ -357,10 +294,8 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
 
             RenderTarget2D? field = target?.Field;
 
-            // uMix carries the whole envelope, and at 0 the pass is an exact passthrough -- so a
-            // missing surface degrades to "no effect" rather than to a sampler reading whatever was
-            // last bound. The pass is still applied either way: skipping it would leave FilterManager
-            // drawing the captured frame through whichever effect happened to be current.
+            // uMix 0 is an exact passthrough, so a missing surface degrades to no effect. The pass is always applied, or FilterManager
+            // draws through whatever effect is current.
             bool ready = field is { IsDisposed: false } && noiseTexture is { Value: not null };
 
             effect.Parameters["uMix"]?.SetValue(ready ? fade : 0f);
@@ -375,12 +310,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
                 effect.Parameters["uWobbleDrift"]?.SetValue(FieldWobbleDrift);
                 effect.Parameters["uTime"]?.SetValue(Main.GlobalTimeWrappedHourly * FIELD_WOBBLE_SCALE);
 
-                // Locks the wobble to the world rather than the screen, so it boils in place while
-                // the camera pans instead of swimming along with it. Same convention as GasFbm.fx.
-                //
-                // The zoom is the other half of that lock: the field bakes it into its own transform,
-                // so the shader is handed a screen uv and has to undo it before the offset means
-                // anything.
+                // The world offset locks the wobble to the world, as in GasFbm.fx; the shader also undoes the zoom the field bakes in.
                 effect.Parameters["uWorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
                 effect.Parameters["uAspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
                 effect.Parameters["uZoom"]?.SetValue(Main.GameViewMatrix.Zoom);
@@ -389,9 +319,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
                 effect.Parameters["uLightResponse"]?.SetValue(0);
             }
 
-            // Belt and braces: every Begin in FilterManager.EndCapture already resolves to
-            // LinearClamp, but a sub-pixel warp sampled point-clamped stair-steps badly and this
-            // costs nothing.
+            // LinearClamp explicitly: a sub-pixel warp sampled point-clamped stair-steps.
             Main.graphics.GraphicsDevice.SamplerStates[0] = SamplerState.LinearClamp;
 
             effect.CurrentTechnique.Passes[pass].Apply();

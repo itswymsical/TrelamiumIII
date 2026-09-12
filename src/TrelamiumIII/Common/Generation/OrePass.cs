@@ -13,18 +13,9 @@ public class OrePass : GenPass
 
  
     /// <summary>
-    /// what defines an ore chunk for the gen pass
+    /// Ore generation settings. DepthPeak is a Y fraction (0 top, 1 bottom) with DepthRange falloff; higher
+    /// BaseThreshold is rarer; VeinSize/VeinSteps feed TileRunner; BiomeEnrich lowers the threshold near its tiles.
     /// </summary>
-    /// <param name="TileType"></param>
-    /// <param name="DepthPeak">the Y fraction (0=top, 1=bottom) where this ore is most common</param>
-    /// <param name="DepthRange">how far above/below the peak the ore still generates (falloff width)</param>
-    /// <param name="BaseThreshold">noise value the tile must exceed to place ore (higher = rarer)</param>
-    /// <param name="NoiseFreq">how tightly the noise clusters (higher = smaller, more frequent pockets)</param>
-    /// <param name="Density">denisty, duh</param>
-    /// <param name="VeinSize">passed to WorldGen.TileRunner as the strength/size argument</param>
-    /// <param name="VeinSteps">TileRunner step count (length of each vein)</param>
-    /// <param name="HostTiles">which tile types this ore can replace</param>
-    /// <param name="BiomeEnrich">pairs of (hostTile, thresholdReduction). When a biome tile is nearby, the threshold drops by that amount, making ore richer there.</param>
     private readonly record struct OreProfile(
         int TileType,
         float DepthPeak,
@@ -204,11 +195,8 @@ public class OrePass : GenPass
 
                 if (depthWeight < 0.08f) continue;
 
-                // Cheap random cull before any tile read or noise sample.
-                // This is the primary sparsity control  ore.Density is a small
-                // probability (e.g. 0.004 = 0.4% of eligible depth tiles checked).
-                // Multiply by depthWeight so tiles near the peak are checked more
-                // often than tiles at the fringes, giving a natural gradient.
+                // Cheap random cull before any tile read or noise sample, and the main sparsity control. Scaled by
+                // depthWeight so tiles near the peak are checked more often.
                 if (WorldGen.genRand.NextDouble() > ore.Density * depthWeight) continue;
 
                 if (!IsHostTile(x, y, ore.HostTiles)) continue;
@@ -222,7 +210,6 @@ public class OrePass : GenPass
         }
     }
 
-    // Helpers
     private static bool IsHostTile(int x, int y, int[] hostTiles)
     {
         if (!WorldGen.InWorld(x, y)) return false;
@@ -235,8 +222,7 @@ public class OrePass : GenPass
         return false;
     }
 
-    // Checks a small radius around the tile for biome-indicator tiles.
-    // Returns the highest enrichment bonus found (doesn't stack).
+    // Highest enrichment bonus among nearby biome-indicator tiles; bonuses don't stack.
     private static float BiomeBonus(int x, int y, (int tile, float reduction)[] enrichments)
     {
         if (enrichments.Length == 0) return 0f;

@@ -13,58 +13,34 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Storage is one flat dictionary per condition rather than a chunk tree, because the two
-///         things done with it pull in opposite directions and the flat map wins both. Contact
-///         testing is a coordinate lookup, which is already O(1); drawing walks the batch once and
-///         culls, which a chunk index would only help if the batch were far larger than its own
-///         <see cref="ITileCondition.MaxTiles" /> ceiling allows it to get.
-///     </para>
-///     <para>
-///         The two draw hooks are not interchangeable.
-///         <list type="bullet">
-///             <item>
-///                 <b>CheckMonoliths</b> is the one point in the frame where Terraria expects mods to
-///                 be binding their own render targets: it runs before the scene is drawn and nothing
-///                 has claimed the backbuffer yet. Building a field anywhere later would mean
-///                 stealing a target mid-scene and putting back whatever was there.
-///             </item>
-///             <item>
-///                 <b>PostDrawTiles</b> puts the marks on the terrain and under everything that walks
-///                 on it, which is where a coating belongs. Drawing them with the dust, as the
-///                 metaball layers do, would paint slime over the player standing in it.
-///             </item>
-///         </list>
+///         Storage is one flat dictionary per condition rather than a chunk tree: contact testing is
+///         an O(1) coordinate lookup, and drawing walks the batch once and culls, which a chunk index
+///         would only help past the <see cref="ITileCondition.MaxTiles" /> ceiling.
 ///     </para>
 /// </remarks>
 public sealed class TileConditionSystem : ModSystem
 {
     /// <summary>Pixels the hitbox is grown by before it is converted to tiles.</summary>
-    /// <remarks>
-    ///     Conditions sit on solid tiles, and an entity's hitbox never overlaps the floor it is
-    ///     standing on -- it stops at the surface. A couple of pixels of slack is what turns "inside
-    ///     the tile" into "touching it" without widening the sweep to whole extra tiles.
-    /// </remarks>
     private const int CONTACT_MARGIN = 2;
 
     /// <summary>One tick in eight, per tile.</summary>
     private const int LIQUID_PROBE_MASK = 7;
 
-    /// <summary>Tiles of slack around the viewport when culling for a draw.</summary>
     private const int CULL_PADDING = 4;
 
     private sealed class ConditionState(ITileCondition condition, int id)
     {
         public readonly ITileCondition Condition = condition;
 
-        /// <summary>Index into <see cref="states" />, and the condition's identity on the wire.</summary>
+        /// <summary>Index into <see cref="states" />, and the condition's identity on hte wire.</summary>
         public readonly int Id = id;
 
         public readonly Dictionary<Point, TileConditionInstance> Tiles = [];
 
-        /// <summary>Insertion order, for evicting the oldest once the batch is full.</summary>
+        /// <summary>Insertion order</summary>
         public readonly Queue<(Point Position, int Serial)> Order = new();
 
-        /// <summary>Scratch list of tiles that ended this tick. Reused; never read outside the tick.</summary>
+        /// <summary>Scratch list of tiles that ended this tick. Reused and never read outside the tick.</summary>
         public readonly List<Point> Finished = [];
 
         public WorldFieldTarget? Field;
@@ -87,12 +63,6 @@ public sealed class TileConditionSystem : ModSystem
     /// <summary>
     ///     Applications and removals asked for from inside a hook, held until the tick is over.
     /// </summary>
-    /// <remarks>
-    ///     A hook runs while the system is walking the batch it belongs to, and adding to or removing
-    ///     from a dictionary mid-walk invalidates the walk. Deferring is what lets a burn spread to
-    ///     its neighbours or a soak cancel a burn from inside the hook where those rules naturally
-    ///     live, instead of forcing every such rule out to a caller that has to remember to run it.
-    /// </remarks>
     private static readonly List<PendingOp> pending = [];
 
     private static bool dispatching;
@@ -133,13 +103,6 @@ public sealed class TileConditionSystem : ModSystem
     public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0)
         => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant);
 
-    /// <summary>Lifts <typeparamref name="T" /> from a tile, running its expiry hook.</summary>
-    /// <remarks>
-    ///     Not synced. Removals that both sides can work out for themselves -- expiry, a tile being
-    ///     mined, water reaching a burn -- happen on every client from state they already share, and
-    ///     one that cannot be worked out that way wants its own message rather than a blanket one
-    ///     here.
-    /// </remarks>
     public static bool Remove<T>(int i, int j) where T : class, ITileCondition
     {
         if (!byType.TryGetValue(typeof(T), out ConditionState? state))
@@ -168,7 +131,6 @@ public sealed class TileConditionSystem : ModSystem
     public static int Count<T>() where T : class, ITileCondition
         => byType.TryGetValue(typeof(T), out ConditionState? state) ? state.Tiles.Count : 0;
 
-    /// <summary>Drops every tile of every condition, without running expiry hooks.</summary>
     public static void ClearAll()
     {
         foreach (ConditionState state in states)
@@ -263,9 +225,7 @@ public sealed class TileConditionSystem : ModSystem
 
             TileConditionRenderMode mode = state.Condition.RenderMode;
 
-            // Field first, then overlay, and a condition may ask for both. The order is the reading:
-            // whatever the field says is the state of the region, and the overlay is what sits on top
-            // of individual tiles within it -- fire across a run of blocks, then the char on each.
+            // Field first, then overlay, and a condition may ask for both.
             if (mode.HasFlag(TileConditionRenderMode.Field))
                 CompositeField(state);
 
@@ -311,9 +271,7 @@ public sealed class TileConditionSystem : ModSystem
             Serial = exists ? existing.Serial : ++state.NextSerial,
 
             // Content state survives a refresh, so a condition can treat a second application as
-            // adding to what is already there rather than as starting over. A fire hit twice should
-            // burn hotter, not restart cold, and only the condition knows that -- so the value is
-            // carried across and OnApplied is given the chance to decide what to do with it.
+            // adding to what is already there rather than as starting over.
             Level = exists ? existing.Level : 0f,
             Stage = exists ? existing.Stage : (byte)0,
         };
@@ -370,7 +328,7 @@ public sealed class TileConditionSystem : ModSystem
         {
             // By reference: the hooks below mutate the instance, and a copy-then-store round trip
             // for every tile every tick is the cost this system is most exposed to. Safe against the
-            // hooks because they cannot structurally modify the batch -- see the pending queue.
+            // hooks because they cannot structurally modify the batch: see the pending queue.
             ref TileConditionInstance instance = ref CollectionsMarshal.GetValueRefOrNullRef(state.Tiles, position);
 
             instance.Age++;
@@ -392,11 +350,6 @@ public sealed class TileConditionSystem : ModSystem
     /// <summary>
     ///     Reports the wettest of the tile and its four neighbours, if any of them holds liquid.
     /// </summary>
-    /// <remarks>
-    ///     The neighbours are the point of this. A condition sits on solid tiles, and a solid tile
-    ///     holds no liquid, so a burn quenched by the water lapping against it would never see a drop
-    ///     if only its own tile were read.
-    /// </remarks>
     private static void ProbeLiquid(ITileCondition condition, ref TileConditionInstance instance)
     {
         int bestAmount = 0;
@@ -606,8 +559,7 @@ public sealed class TileConditionSystem : ModSystem
         SpriteBatch spriteBatch = Main.spriteBatch;
 
         // No view matrix: the field was built with the zoom already baked into its own transform, so
-        // it composites as a plain full-screen quad. PointClamp for the same reason the field is
-        // half resolution -- filtering it back up would soften the chunky edge that is the point.
+        // it composites as a plain full-screen quad.
         spriteBatch.Begin(
             SpriteSortMode.Immediate,
             condition.BlendState,
@@ -631,7 +583,7 @@ public sealed class TileConditionSystem : ModSystem
 
     /// <param name="overlay">
     ///     Which pass this is. A condition running both draws different geometry into each, so the
-    ///     two cannot share an entry point -- see <see cref="ITileCondition.DrawTileOverlay" />.
+    ///     two cannot share an entry point: see <see cref="ITileCondition.DrawTileOverlay" />.
     /// </param>
     private static void DrawBatch(ConditionState state, Rectangle area, SpriteBatch spriteBatch, bool overlay)
     {
@@ -691,7 +643,7 @@ public sealed class TileConditionSystem : ModSystem
         Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant);
 
         // The server is the only one that has heard this, so it is the only one that can tell the
-        // rest -- minus the client it came from, which already has it.
+        // rest, minus the client it came from, which already has it.
         if (Main.netMode == NetmodeID.Server)
             SendApply(state, i, j, intensity, duration, owner, variant, ignoreClient: whoAmI);
     }

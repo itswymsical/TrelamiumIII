@@ -7,11 +7,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 
-/// <summary>
-/// Per-item "brew" payload. Attaching it to a vanilla potion brands that instance with custom buff
-/// values; absent (or when the mod is disabled) the item behaves exactly like vanilla, so this is the
-/// least-destructive way to rework vanilla potions. Mod potions read the same accessor.
-/// </summary>
+/// <summary>Per-instance brew payload; without one (or with the mod disabled) the item behaves exactly like vanilla.</summary>
 public class BrewGlobalItem : GlobalItem
 {
     public override bool InstancePerEntity => true;
@@ -100,9 +96,7 @@ public class BrewGlobalItem : GlobalItem
         if (Brew is not { Effects.Count: > 0 } b) return;
         var primary = b.Primary;
 
-        // Rewrite the stock vanilla lines so they match the brew instead of contradicting it
-        // (no more "25% / 8 minute" sitting next to the real brewed values). Virtual primaries
-        // (negative ids) have no vanilla buff to describe; guard the Lang lookup.
+        // Rewrite the stock buff lines to match the brew. Virtual primaries (negative ids) have no vanilla buff to describe.
         string? desc = EffectBehaviors.Describe(primary);
         string? vanillaDesc = primary.BaseBuff > 0 ? Lang.GetBuffDescription(primary.BaseBuff) : null;
         int restoStr = RestorationStrength();

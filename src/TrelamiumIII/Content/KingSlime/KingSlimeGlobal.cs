@@ -70,7 +70,6 @@ public class KingSlimeRework : GlobalNPC
         )
     };
 
-    // Store pattern data per NPC
     private static Dictionary<int, PatternData> npcPatternData = new();
 
     private struct PatternData
@@ -610,12 +609,10 @@ public class KingSlimeRework : GlobalNPC
             GetState(npc) == AIState.BounceHouse && GetJumpPhase(npc) != 0)
             return;
 
-        // Only override if we're NOT in phase 1
         var currentPhase = GetCurrentPhase(npc);
         if (currentPhase == PatternType.Phase1)
             return;
 
-        // Check cooldown
         if (Main.GameUpdateCount - extraData.lastConsumeTime < CONSUME_COOLDOWN)
             return;
 
@@ -1109,7 +1106,6 @@ public class KingSlimeRework : GlobalNPC
                 {
                     npc.netUpdate = true;
 
-                    // Sound effect
                     SoundEngine.PlaySound(Assets.SFX.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
 
                     npc.velocity.Y = BOUNCE_HOUSE_JUMP_HEIGHT;
@@ -1314,7 +1310,6 @@ public class KingSlimeRework : GlobalNPC
                 }
                 else if (timer >= 35f && Main.netMode != NetmodeID.MultiplayerClient)
                 {
-                    // Execute teleport - use vanilla approach
                     npc.Bottom = new Vector2(npc.localAI[1], npc.localAI[2]);
                     extraData.teleportPhase = TeleportPhase.Execute;
                     timer = 0;
@@ -1784,7 +1779,6 @@ public class KingSlimeRework : GlobalNPC
         extraData.stuckTimer = 0f;
         GetTimer(npc) = 0;
 
-        // Use vanilla-style teleport destination finding
         if (Main.netMode != NetmodeID.MultiplayerClient)
         {
             FindTeleportSpot(npc, target);
@@ -1807,17 +1801,14 @@ public class KingSlimeRework : GlobalNPC
         {
             attempts++;
 
-            // Pick random position within range of player
             var testX = Main.rand.Next(targetTile.X - searchRange, targetTile.X + searchRange + 1);
             var testY = Main.rand.Next(targetTile.Y - searchRange, targetTile.Y + 1);
 
-            // Skip if too close to player (7 tile exclusion zone) or if tile is occupied
             if (testY >= targetTile.Y - 7 && testY <= targetTile.Y + 7 && testX >= targetTile.X - 7 && testX <= targetTile.X + 7 ||
                 !WorldGen.InWorld(testX, testY) ||
                 Main.tile[testX, testY].HasTile)
                 continue;
 
-            // Find ground level starting from testY
             var groundY = testY;
             var dropDistance = 0;
 
@@ -1827,7 +1818,6 @@ public class KingSlimeRework : GlobalNPC
             }
             else
             {
-                // Search down for solid ground
                 for (; dropDistance < 150 && groundY + dropDistance < Main.maxTilesY; dropDistance++)
                 {
                     var checkY = groundY + dropDistance;
@@ -1841,10 +1831,8 @@ public class KingSlimeRework : GlobalNPC
 
             groundY += dropDistance;
 
-            // Validate the spot
             var validSpot = true;
 
-            // Check for lava
             if (validSpot && Main.tile[testX, groundY].LiquidType == LiquidID.Lava)
                 validSpot = false;
 
@@ -1854,7 +1842,6 @@ public class KingSlimeRework : GlobalNPC
 
             if (validSpot)
             {
-                // Store teleport destination in world coordinates
                 npc.localAI[1] = testX * 16 + 8;    // X position (tile center)
                 npc.localAI[2] = groundY * 16 + 16; // Y position (bottom of tile)
                 foundSpot = true;
@@ -1862,7 +1849,6 @@ public class KingSlimeRework : GlobalNPC
             }
         }
 
-        // Fallback if no spot found - use player's position
         if (!foundSpot)
         {
             var closestPlayer = Main.player[Player.FindClosest(npc.position, npc.width, npc.height)];
@@ -2150,7 +2136,6 @@ public class KingSlimeRework : GlobalNPC
 
     public override bool CheckActive(NPC npc)
     {
-        // Clean up data if NPC is becoming inactive
         if (!npc.active)
         {
             if (npcPatternData.ContainsKey(npc.whoAmI))

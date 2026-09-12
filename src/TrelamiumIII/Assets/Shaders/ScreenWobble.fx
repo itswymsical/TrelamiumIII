@@ -3,10 +3,6 @@
 //   uIntensity  0..1 charter intensity; max displacement ~2.5% of screen
 //   uScale      warp noise frequency; 3 is neutral, higher is finer and more nauseating
 //   uNoiseTex
-//
-// COLOR0 is ignored on purpose -- see the note in ScreenFlash.fx. FilterManager.EndCapture draws
-// the captured frame tinted by the sky colour whenever any filter is active, so `* col` would pull
-// the whole screen toward black underground and at night.
 
 sampler2D ImageSampler : register(s0);
 

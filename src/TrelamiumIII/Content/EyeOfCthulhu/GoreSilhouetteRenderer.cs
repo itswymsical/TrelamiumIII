@@ -4,15 +4,10 @@ using TrelamiumIII.Core.Graphics.IlluminantInk;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
 
-/// <summary>
-///     Renders the drifting remains a second time, as one wobbling ink silhouette being dragged
-///     toward the vortex.
-/// </summary>
+/// <summary>Renders the drifting remains again as one wobbling ink silhouette dragged toward the vortex.</summary>
 internal sealed class GoreSilhouetteRenderer : ModSystem
 {
-    /// <summary>
-    ///     Resolution divisor for the field.
-    /// </summary>
+    /// <summary>Resolution divisor for the field.</summary>
     private const int FIELD_SCALE = 2;
 
     /// <summary>Coverage level where ink exists. Low, so pieces fuse early.</summary>
@@ -31,16 +26,12 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
 
     private static readonly Vector2 WobbleDrift = new(0.03f, -0.05f);
 
-    /// <summary>
-    ///     Radial reach of the smear at full wind-in, as a fraction of the focus-to-pixel vector.
-    /// </summary>
+    /// <summary>Radial reach of the smear at full wind-in, as a fraction of the focus-to-pixel vector.</summary>
     private const float SMEAR = 0.09f;
 
     private const float SPIN = 0.05f;
 
-    /// <summary>
-    ///     How fast the smear ramps up away from the focus.
-    /// </summary>
+    /// <summary>How fast the smear ramps up away from the focus.</summary>
     private const float FALLOFF = 1.4f;
 
     private static WorldFieldTarget? field;
@@ -61,12 +52,10 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
         {
             PixelScale = FIELD_SCALE,
 
-            // Additive so two overlapping pieces sum into a denser field rather than the second
-            // simply replacing the first -- summing is the whole basis of them fusing.
+            // Additive: overlapping pieces must sum to fuse.
             Blend = BlendState.Additive,
 
-            // Point, like the metaball layers and unlike the shimmer masks: the shader snaps its
-            // decisions to this grid and wants the chunky edge that comes with it.
+            // Point sampling: the shader snaps to this grid and wants the chunky edge.
             Sampler = SamplerState.PointClamp,
         };
 
@@ -102,9 +91,7 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
             envelope = Envelope();
     }
 
-    /// <summary>
-    ///     How strongly the silhouette shows, taken from the pieces rather than set by the cutscene.
-    /// </summary>
+    /// <summary>How strongly the silhouette shows, taken from the pieces rather than set by the cutscene.</summary>
     private static float Envelope()
     {
         float peak = 0f;
@@ -118,7 +105,6 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
         return MathHelper.Clamp(peak, 0f, 1f);
     }
 
-    /// <summary>Stamps every live piece into the field.</summary>
     private static void StampPieces(SpriteBatch spriteBatch)
     {
         foreach (var piece in EyeOfCthulhuWakeSystem.Pieces)
@@ -142,10 +128,7 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
         if (shader.Value is not { } effect)
             return;
 
-        // Set by name against the raw effect rather than through a generated parameter struct, which
-        // is what the metaball layers and MagnetizerFieldRenderer do. The null-conditionals matter:
-        // fxc strips any uniform a pass does not actually reference, so a parameter can legitimately
-        // be absent from a shader that still compiled fine.
+        // Null-conditionals matter: fxc strips uniforms a pass doesn't reference.
         effect.Parameters["uNoiseTex"]?.SetValue(noise);
         effect.Parameters["uTime"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
@@ -155,11 +138,8 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
 
         effect.Parameters["uAspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
-        // Locks the wobble to the world, so the outline boils in place while the camera pans instead
-        // of swimming along with it. Same convention as GasFbm.fx and MagnetizerField.fx.
-        //
-        // The zoom is the other half of that lock: the field bakes it into its own transform, so the
-        // shader is handed a screen uv and has to undo it before the offset means anything.
+        // The world offset locks the wobble to the world so it boils in place while the camera pans. The zoom completes the
+        // lock: the field bakes zoom into its transform, so the shader must undo it first.
         effect.Parameters["uWorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
         effect.Parameters["uZoom"]?.SetValue(Main.GameViewMatrix.Zoom);
 
@@ -169,9 +149,7 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
 
         effect.Parameters["uCenter"]?.SetValue(FocusUv());
 
-        // Smear ramps with the vortex rather than with the pieces: while they are only drifting there
-        // is nothing pulling them, and a silhouette already tearing toward a hole that has not opened
-        // yet gives the ending away.
+        // Smear follows the vortex, not the pieces, so the silhouette doesn't tear toward a hole that hasn't opened.
         float pull = MathHelper.Clamp(InkVortex.Fade, 0f, 1f);
 
         effect.Parameters["uSmear"]?.SetValue(SMEAR * pull);

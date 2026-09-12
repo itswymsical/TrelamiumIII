@@ -5,24 +5,9 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 /// <summary>
-///     The conventional reagent line: raw minerals roasted or boiled out of what the world already
-///     provides, and the acids, alkalis and distillates refined from them. Station recipes live in
-///     <c>ChemistryRecipeSystem.RegisterMinerals</c>; the vanilla recipes for the raw tier are here.
+///     Conventional reagents (raw minerals, acids, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
+///     Internal names keep the old <c>...Item</c> spelling so saves and localisation keys still resolve.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Every reagent is one <see cref="SoluteItem" /> instance rather than a class of its own,
-///         because none of them has behaviour -- only numbers, a chemical quality and a sprite. The
-///         static properties are the item types, so call sites read <c>Reagent.OilOfVitriol</c> and
-///         still fail to compile when a reagent is renamed out from under them.
-///     </para>
-///     <para>
-///         Internal names keep their old <c>...Item</c> spelling so saved items and localisation keys
-///         still resolve. Star ratings and chemical qualities sit on the item now, and the almanac
-///         collects them through <see cref="IAlmanacDefined" />. Design record:
-///         <c>docs/Alchemy/ConventionalReagents.md</c>.
-///     </para>
-/// </remarks>
 public sealed class Reagent : ICustomAutoload
 {
     /// <summary>What a reagent draws while it has no sprite of its own, which is most of them.</summary>
@@ -30,13 +15,13 @@ public sealed class Reagent : ICustomAutoload
 
     #region Raw minerals
 
-    /// <summary>Brimstone, scraped off the ash where the world runs hot. Places as a tile, too.</summary>
+    /// <summary>Brimstone from ash. Also places as a tile.</summary>
     public static int Sulfur { get; private set; }
 
     /// <summary>Saltpetre. Barely burns on its own; makes everything beside it burn harder.</summary>
     public static int Niter { get; private set; }
 
-    /// <summary>Boiled out of brine, which until now had a recipe and nothing to do with itself.</summary>
+    /// <summary>Boiled out of brine.</summary>
     public static int RockSalt { get; private set; }
 
     /// <summary>Burnt limestone. Meets water and gets hot about it.</summary>
@@ -50,10 +35,7 @@ public sealed class Reagent : ICustomAutoload
 
     #region Acids
 
-    /// <summary>
-    ///     The hub of the whole tree -- four downstream recipes draw on it, which is what makes the
-    ///     trip to the Underworld for sulfur worth taking.
-    /// </summary>
+    /// <summary>The hub of the tree: four downstream recipes draw on it.</summary>
     public static int OilOfVitriol { get; private set; }
 
     public static int AquaFortis { get; private set; }
@@ -120,7 +102,7 @@ public sealed class Reagent : ICustomAutoload
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Bane,
 
-            // Last, as it was before: this resizes the item and makes it placeable.
+            // Last: this resizes the item and makes it placeable.
             Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<SulfurTile>()),
 
             Recipes = self => self.CreateRecipe(2)
@@ -254,9 +236,8 @@ public sealed class Reagent : ICustomAutoload
     }
 
     /// <summary>
-    ///     The neutralising, cleansing and heat-suppressing half of the line. These are the only
-    ///     reagents in the mod that would push a burn metric <em>down</em>; see the fire-triangle
-    ///     section of the design record.
+    ///     The neutralising and heat-suppressing half of the line; the only reagents that push a burn metric
+    ///     <em>down</em>.
     /// </summary>
     private static void LoadAlkalis(Mod mod)
     {
@@ -287,11 +268,7 @@ public sealed class Reagent : ICustomAutoload
         });
     }
 
-    /// <summary>
-    ///     The fuel tier: what comes off the still, plus the two powders. Spirit of Oil and Pitch come
-    ///     out of the same barrel -- distillation splits a thing rather than consuming it -- so they
-    ///     are registered as a pair.
-    /// </summary>
+    /// <summary>The fuel tier. Spirit of Oil and Pitch come from the same distillation, so they register as a pair.</summary>
     private static void LoadDistillates(Mod mod)
     {
         SpiritOfOil = Add(mod, new SoluteItem("SpiritOfOilItem")

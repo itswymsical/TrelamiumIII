@@ -59,8 +59,7 @@ public class VilesporeFlaskProjectile : ChemicalProjectile
         GroundCount = new FloatRange(11f, 19f),
         AirSpeed = new FloatRange(3.5f, 5.5f),
 
-        // Slightly faster at the middle: spores are light, and the ones at the rim have already
-        // spent their momentum getting there.
+        // Faster at the middle than the rim on purpose: light spores lose their momentum spreading outward.
         GroundSpeed = new FloatRange(7.5f, 6f),
 
         CoreCut = 0.5f,

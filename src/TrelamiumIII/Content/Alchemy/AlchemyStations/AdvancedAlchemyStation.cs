@@ -84,12 +84,9 @@ public class AdvancedAlchemyStationComponentItem : ModItem
     }
 }
 
-// chamber/components are flags on the entity
-
 /// <summary>
-/// The base platform. The only placeable station tile: it hosts the
-/// <see cref="AdvancedAlchemyStationEntity"/>, draws the entire composite from its origin cell, and is
-/// the interaction surface for both opening the UI and installing chamber/component segments via items.
+/// The only placeable station tile: hosts the <see cref="AdvancedAlchemyStationEntity"/>, draws the whole composite
+/// from its origin cell, and handles opening the UI and installing segments.
 /// </summary>
 public class AdvancedAlchemyStationBase : ModTile
 {
@@ -120,7 +117,6 @@ public class AdvancedAlchemyStationBase : ModTile
         TileObjectData.newTile.AnchorBottom = new AnchorData(
             AnchorType.SolidTile | AnchorType.SolidWithTop | AnchorType.Table, Width, 0);
 
-        // Spawn the per-station tile entity at the top-left when placed.
         TileObjectData.newTile.HookPostPlaceMyPlayer = new PlacementHook(
             ModContent.GetInstance<AdvancedAlchemyStationEntity>().Hook_AfterPlacement, -1, 0, false);
 
@@ -169,7 +165,6 @@ public class AdvancedAlchemyStationBase : ModTile
         Player player = Main.LocalPlayer;
         Item held = player.HeldItem;
 
-        // Holding an install item? Try to install instead of opening the UI.
         if (held != null && !held.IsAir)
         {
             if (held.type == ModContent.ItemType<AdvancedAlchemyStationChamberItem>() && TryInstallChamber(entity, held))
@@ -179,14 +174,12 @@ public class AdvancedAlchemyStationBase : ModTile
                 return true;
         }
 
-        // Incomplete stations have nothing to open yet.
         if (!IsFunctional(entity))
         {
             Main.NewText("This station is missing parts.", 200, 200, 200);
             return true;
         }
 
-        // Default: open the UI bound to this station.
         SoundEngine.PlaySound(SoundID.MenuTick);
         AlchemyStationSystem.ToggleUI(entity.Position, entity);
         player.mouseInterface = true;

@@ -4,21 +4,13 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Common.Systems;
 
 /// <summary>
-///     Per-world progression flags.
+///     Per-world progression flags. Set them through <see cref="NPC.SetEventFlagCleared" />, which announces the
+///     kill and syncs clients; <see cref="NetSend" /> brings late joiners up to date.
 /// </summary>
-/// <remarks>
-///     Set through <see cref="NPC.SetEventFlagCleared" /> rather than by assignment, which is what
-///     announces the kill and pushes the flag to every client. <see cref="NetSend" /> covers the
-///     other direction: a player joining after the fact needs the world's history, not just its
-///     future.
-/// </remarks>
 public sealed class DownedBossSystem : ModSystem
 {
     public static bool DownedFungore;
 
-    /// <summary>
-    ///     Whether the Eye of Cthulhu's wake has already played in this world.
-    /// </summary>
     public static bool SeenEyeOfCthulhuWake;
 
     public override void ClearWorld()
@@ -29,8 +21,7 @@ public sealed class DownedBossSystem : ModSystem
 
     public override void SaveWorldData(TagCompound tag)
     {
-        // Written only when set. A tag that is absent reads back as false, so there is no reason to
-        // spend a key on the common case.
+        // Absent tags read back as false, so only set flags are written.
         if (DownedFungore)
             tag[nameof(DownedFungore)] = true;
 

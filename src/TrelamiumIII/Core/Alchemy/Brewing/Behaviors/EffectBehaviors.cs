@@ -3,22 +3,13 @@ using System.Linq;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
-/// <summary>
-/// Applies and describes one kind of brewed effect. Registered per vanilla buff id in
-/// <see cref="EffectBehaviors"/>. Additive/percent stat buffs share <see cref="StatDeltaBehavior"/>;
-/// "binary" effects (Spelunker reveal, ...) get bespoke behaviours that suppress + reparameterise the
-/// vanilla effect. Adding a brew-able buff = one registry entry; the player/item code never changes.
-/// </summary>
+/// <summary>Applies and describes one kind of brewed effect, registered per buff id in <see cref="EffectBehaviors"/>.</summary>
 public interface IEffectBehavior
 {
     /// <summary>Called each tick the effect's buff is present on the player.</summary>
     void Apply(Player player, in AlchemicalEffect fx);
 
-    /// <summary>
-    /// Called each tick the buff is present, after every buff has ticked but before any mod's
-    /// <c>UpdateEquips</c>. Only needed for stats somebody else *consumes* during UpdateEquips
-    /// (wing flight time, ...). <see cref="Apply"/> runs post-equips and would miss the window.
-    /// </summary>
+    /// <summary>Runs after buffs tick but before any UpdateEquips; only for stats consumed there (e.g. wing time).</summary>
     void ApplyPreEquips(Player player, in AlchemicalEffect fx) { }
 
     /// <summary>Effect line for tooltips/buff text, e.g. "[30%] increased movement speed". Null if none.</summary>
@@ -28,9 +19,7 @@ public interface IEffectBehavior
     EffectParams DefaultParams(int potency) => EffectParams.None;
 }
 
-/// <summary>
-/// Registry mapping a vanilla buff id to the <see cref="IEffectBehavior"/> that parameterises it.
-/// </summary>
+/// <summary>Maps a vanilla buff id to the <see cref="IEffectBehavior"/> that parameterises it.</summary>
 public static class EffectBehaviors
 {
     private static readonly Dictionary<int, IEffectBehavior> _behaviors = new()
@@ -100,10 +89,7 @@ public static class EffectBehaviors
     // be loaded (PostSetupContent). Tracked separately so Unload can take exactly those back out.
     private static readonly HashSet<int> _runtimeRegistered = new();
 
-    /// <summary>
-    /// Register a behaviour for a buff id that isn't a compile-time constant: i.e. a cross-mod buff,
-    /// resolved via <see cref="ModContent.TryFind{T}(string, string, out T)"/>. Replaces any existing entry.
-    /// </summary>
+    /// <summary>Registers a behaviour for a runtime buff id (e.g. a cross-mod buff), replacing any existing entry.</summary>
     public static void Register(int buff, IEffectBehavior behavior)
     {
         if (buff <= 0) return;
@@ -111,10 +97,7 @@ public static class EffectBehaviors
         _runtimeRegistered.Add(buff);
     }
 
-    /// <summary>
-    /// Drop every runtime-registered behaviour. Cross-mod entries hold another mod's types and must
-    /// not survive into a reload where that mod is gone.
-    /// </summary>
+    /// <summary>Drops runtime-registered behaviours, which hold other mods' types and must not survive a reload.</summary>
     public static void ClearRuntime()
     {
         foreach (int buff in _runtimeRegistered) _behaviors.Remove(buff);
@@ -128,11 +111,7 @@ public static class EffectBehaviors
     public static string? Describe(in AlchemicalEffect fx) => Get(fx.BaseBuff)?.Describe(fx);
 }
 
-/// <summary>
-/// Allows you to apply multiple effects with the amazing and fantastical <see cref="List{T}"/>.
-/// <para>This is used for potions with multiple affects such as Archery and Thorns 
-/// (+10% bow damage x +20% arrow speed, +10 knockback x 10% contact damage)</para>
-/// </summary>
+/// <summary>Stat delta behaviour supporting several stats per buff, e.g. Archery (bow damage and arrow speed).</summary>
 public sealed class DeltaBehavior : IEffectBehavior
 {
     private readonly List<(float vanilla, string noun, bool asPercent, bool reductionString, Action<Player, float> apply)> _deltas;
@@ -172,9 +151,7 @@ public sealed class DeltaBehavior : IEffectBehavior
 }
 
 /// <summary>
-/// Instant heal scaling for restorative potions (<see cref="VirtualBuff.Restoration"/>). There is no
-/// buff to tick, so <see cref="Apply"/> is a no-op and the actual scaling happens item-side in
-/// <see cref="BrewGlobalItem.GetHealLife"/>/<c>GetHealMana</c> when the potion is drunk.
+/// Instant heal scaling for restorative potions; there's no buff to tick, so scaling happens in <see cref="BrewGlobalItem.GetHealLife"/>.
 /// </summary>
 public sealed class RestorationBehavior : IEffectBehavior
 {

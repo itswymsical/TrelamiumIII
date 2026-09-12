@@ -160,7 +160,6 @@ public class SporadicSlime : ModNPC
     // ai[3] = previous X position for stuck detection
     private void DoSlimeAI()
     {
-        // Initial setup on spawn
         if (NPC.ai[2] == 0f)
         {
             NPC.ai[0] = -100f;
@@ -173,11 +172,9 @@ public class SporadicSlime : ModNPC
 
         if (NPC.velocity.Y == 0f)
         {
-            // collision correction
             if (NPC.collideY && NPC.oldVelocity.Y != 0f && Collision.SolidCollision(NPC.position, NPC.width, NPC.height))
                 NPC.position.X -= NPC.velocity.X + NPC.direction;
 
-            // Reverse direction if stuck horizontally
             if (NPC.ai[3] == NPC.position.X)
             {
                 NPC.direction *= -1;
@@ -185,7 +182,6 @@ public class SporadicSlime : ModNPC
             }
             NPC.ai[3] = 0f;
 
-            // Decay X velocity on ground
             NPC.velocity.X *= 0.8f;
             if (NPC.velocity.X > -0.1f && NPC.velocity.X < 0.1f)
                 NPC.velocity.X = 0f;
@@ -202,7 +198,6 @@ public class SporadicSlime : ModNPC
                 if (NPC.ai[2] == 1f)
                     NPC.TargetClosest();
 
-                // Random magnitude per jump for further sporadic feel
                 bool bigJump = Main.rand.NextBool(4);
                 float yPower = (bigJump ? 8f : 6f) * Main.rand.NextFloat(0.85f, 1.15f);
                 float xPower = bigJump ? 3f : 2f;
@@ -210,14 +205,12 @@ public class SporadicSlime : ModNPC
                 NPC.velocity.Y = -yPower;
                 NPC.velocity.X += xPower * NPC.direction;
 
-                // Random wait until next jump opportunity
                 NPC.ai[0] = Main.rand.Next(-200, -30);
                 NPC.ai[3] = NPC.position.X;
             }
         }
         else if (NPC.target < 255 && ((NPC.direction == 1 && NPC.velocity.X < 3f) || (NPC.direction == -1 && NPC.velocity.X > -3f)))
         {
-            // Airborne nudging toward target direction
             if (NPC.collideX && Math.Abs(NPC.velocity.X) == 0.2f)
                 NPC.position.X -= 1.4f * NPC.direction;
             if (NPC.collideY && NPC.oldVelocity.Y != 0f && Collision.SolidCollision(NPC.position, NPC.width, NPC.height))
@@ -346,7 +339,6 @@ public class SporadicSlime : ModNPC
 
         float yVelFactor = MathHelper.Clamp(NPC.velocity.Y / 16f, -1f, 1f);
 
-        // Pre-jump anticipation while grounded
         if (groundPoundPhase == 0 && NPC.velocity.Y == 0f && NPC.ai[0] >= -30f)
         {
             float prep = Math.Min(1f, (NPC.ai[0] + 30f) / 30f);
@@ -355,7 +347,6 @@ public class SporadicSlime : ModNPC
             return;
         }
 
-        // Heavy squash during ground pound charge
         if (groundPoundPhase == 1)
         {
             float prep = Math.Min(1f, groundPoundTimer / 28f);
@@ -432,7 +423,6 @@ public class SporadicSlime : ModNPC
 
         for (int i = 0; i < MUSHROOM_CHUNK_COUNT; i++)
         {
-            // Stable texture selection per chunk, animated over time
             int textureIndex = (int)((i + NPC.frameCounter / 10) % chunkAssets.Length);
             Texture2D texture = chunkAssets[textureIndex].Value;
 

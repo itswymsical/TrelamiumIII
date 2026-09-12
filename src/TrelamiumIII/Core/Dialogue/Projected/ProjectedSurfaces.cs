@@ -86,7 +86,7 @@ internal sealed class ProjectedSurfaces : IDisposable
 
         device.SetRenderTarget(bubble);
         device.Clear(Color.Transparent);
-        Begin(spriteBatch);
+        BeginInk(spriteBatch);
 
         Point used = content.DrawBubble(new PixelCanvas(spriteBatch));
 
@@ -100,7 +100,7 @@ internal sealed class ProjectedSurfaces : IDisposable
         {
             device.SetRenderTarget(choices);
             device.Clear(Color.Transparent);
-            Begin(spriteBatch);
+            BeginInk(spriteBatch);
 
             for (int i = 0; i < ChoicesDrawn; i++)
             {
@@ -130,7 +130,7 @@ internal sealed class ProjectedSurfaces : IDisposable
     ///     atlas already antialiased and would otherwise contribute their grey fringe as full-size
     ///     chunky pixels.
     /// </remarks>
-    private static void Begin(SpriteBatch spriteBatch)
+    internal static void BeginInk(SpriteBatch spriteBatch)
     {
         Effect? threshold = Assets.Shaders.GlyphThreshold.Asset.Value;
 
@@ -143,6 +143,38 @@ internal sealed class ProjectedSurfaces : IDisposable
             DepthStencilState.None,
             RasterizerState.CullNone,
             threshold,
+            Matrix.Identity);
+    }
+
+    /// <summary>
+    ///     Point-sampled, unshaded: for sprite art that carries its own colour. The ink batch above
+    ///     returns the vertex colour only, which would flatten an item sprite to a silhouette.
+    /// </summary>
+    internal static void BeginArt(SpriteBatch spriteBatch)
+    {
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.AlphaBlend,
+            SamplerState.PointClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
+            Matrix.Identity);
+    }
+
+    /// <summary>
+    ///     Linear-sampled, unshaded: for text drawn at native resolution into a face that is sampled
+    ///     smoothly rather than magnified as chunky pixels.
+    /// </summary>
+    internal static void BeginSmooth(SpriteBatch spriteBatch)
+    {
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.AlphaBlend,
+            SamplerState.LinearClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
             Matrix.Identity);
     }
 

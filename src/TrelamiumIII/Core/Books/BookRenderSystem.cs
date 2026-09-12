@@ -3,14 +3,8 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Core.Books;
 
 /// <summary>
-///     Owns the one page-curl mesh every book shares, and drives open books once per frame.
+///     Owns the shared page-curl mesh and composes open books in <c>CheckMonoliths</c>, while render targets can still be swapped.
 /// </summary>
-/// <remarks>
-///     Composition has to happen while render targets can still be swapped, which rules out the usual
-///     UI draw layers -- by then the back buffer is bound and setting a target would discard the frame
-///     drawn so far. <c>CheckMonoliths</c> is where vanilla does its own off-screen work, so books
-///     hook in alongside it.
-/// </remarks>
 public sealed class BookRenderSystem : ModSystem
 {
     internal static PageFlipMesh? Mesh { get; private set; }

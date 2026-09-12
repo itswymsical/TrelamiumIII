@@ -2,10 +2,7 @@ using System.Collections.Generic;
 
 namespace TrelamiumIII.Content.Misc;
 
-/// <summary>
-///     Which family a round belongs to, which is the same thing as saying how it is loaded and what
-///     it does when it lands.
-/// </summary>
+/// <summary>A round's family, which decides how it loads and what it does on impact.</summary>
 public enum StalagMagFamily
 {
     /// <summary>A raw block off the wall. Shatters into shards of its own stone.</summary>
@@ -18,33 +15,17 @@ public enum StalagMagFamily
     Boulder,
 }
 
-/// <summary>
-///     One round out of the StalagMag, as numbers.
-/// </summary>
-/// <remarks>
-///     The weapon has no damage of its own worth speaking of -- it is a tube that throws whatever is
-///     shovelled into it, so the ammunition is where the whole of the progression lives. Stone is
-///     what you have; Titanstone is what you graduate to. Keeping that as a table of values rather
-///     than as a chain of <c>if (ammo == ...)</c> in the firing path is what makes adding the next
-///     stone a one-line change.
-/// </remarks>
+/// <summary>One StalagMag round as data; progression lives in the ammo, so a new stone is one table entry.</summary>
 public readonly record struct StalagMagShot
 {
-    /// <summary>How the round is loaded and what it does on impact.</summary>
     public StalagMagFamily Family { get; init; }
 
     /// <summary>Tile the round is cut from. What the debris is drawn out of.</summary>
     public ushort TileType { get; init; }
 
     /// <summary>
-    ///     Projectile fired, or 0 to take the family's default.
+    ///     Projectile fired, or 0 for the family default (mod ids aren't compile-time constants). See <see cref="StalagMagAmmo.ResolveProjectile" />.
     /// </summary>
-    /// <remarks>
-    ///     Left at zero for everything vanilla, because a mod projectile's id is not a compile-time
-    ///     constant and this table has to be readable from a static initialiser. Only the stalagmite
-    ///     items -- which are mod content themselves, and are asked for their profile at runtime --
-    ///     fill it in. See <see cref="StalagMagAmmo.ResolveProjectile" />.
-    /// </remarks>
     public int ProjectileType { get; init; }
 
     public int Damage { get; init; }
@@ -63,42 +44,19 @@ public readonly record struct StalagMagShot
     public int BuffTime { get; init; }
 }
 
-/// <summary>
-///     Ammunition that is not a vanilla block, and so cannot live in the table.
-/// </summary>
-/// <remarks>
-///     Implemented by the ammunition item itself rather than registered into a dictionary at load,
-///     which keeps a round's numbers next to the item they belong to and sidesteps the load-order
-///     question of when a mod item's id becomes knowable.
-/// </remarks>
+/// <summary>Non-vanilla ammunition, implemented by the item itself so its numbers live beside it.</summary>
 public interface IStalagMagAmmo
 {
     StalagMagShot Shot { get; }
 }
 
-/// <summary>
-///     Everything the StalagMag will eat, and how to find it in a player's inventory.
-/// </summary>
+/// <summary>Everything the StalagMag accepts, and how to find it in an inventory.</summary>
 public static class StalagMagAmmo
 {
     /// <summary>
-    ///     The block rounds, in the order <see cref="StoneBlockParticle" /> lists its variants.
+    ///     Block rounds in <see cref="StoneBlockParticle" /> variant order (the index is the debris variant). Pre-mech stones cap at
+    ///     13 damage so Pearlstone is a step up; Titanstone sits well clear; Hellstone pays in burn.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Progression runs on the stone rather than on the gun. Everything reachable before a
-    ///         mechanical boss tops out at 13 so that Pearlstone -- which is free the moment the
-    ///         world turns -- is a step up rather than a sidegrade, and Titanstone sits well clear
-    ///         of all of it. Hellstone pays for the trip to the Underworld in burn rather than in
-    ///         raw damage, which keeps the ordering honest.
-    ///     </para>
-    ///     <para>
-    ///         One array rather than a dictionary because the position in it is also the particle
-    ///         variant: the debris that comes off a Crimstone round has to be Crimstone-coloured,
-    ///         and deriving the index from the same table that holds the numbers means the two can
-    ///         never drift apart.
-    ///     </para>
-    /// </remarks>
     private static readonly (int Item, StalagMagShot Shot)[] blocks =
     [
         (ItemID.StoneBlock, new StalagMagShot
@@ -191,15 +149,7 @@ public static class StalagMagAmmo
         }),
     ];
 
-    /// <summary>
-    ///     The alternate trigger's round: slow to reload, brutal when it lands.
-    /// </summary>
-    /// <remarks>
-    ///     Not in <see cref="blocks" /> because it is not one -- it never shatters into shards, it
-    ///     is never picked by the primary trigger, and it has no particle variant. Its numbers are
-    ///     the ones that make the alternate fire worth the ammunition: forty-five percent crit on
-    ///     top of the holder's own, against three rounds every three seconds.
-    /// </remarks>
+    /// <summary>The alternate trigger's round: never shatters, has no particle variant, and hits hard (45% extra crit).</summary>
     private static readonly StalagMagShot boulder = new()
     {
         Family = StalagMagFamily.Boulder,
@@ -256,14 +206,7 @@ public static class StalagMagAmmo
         return false;
     }
 
-    /// <summary>
-    ///     The profile for one ammunition item, falling back to plain stone.
-    /// </summary>
-    /// <remarks>
-    ///     For the read side, where a round in flight is asking what it was loaded from. A shot that
-    ///     has lost track of its ammunition -- an old projectile out of a save, a spawn that never
-    ///     got told -- should look like the commonest round rather than like nothing at all.
-    /// </remarks>
+    /// <summary>The profile for an item, falling back to plain stone for rounds that lost track of their ammo.</summary>
     public static StalagMagShot GetOrDefault(int itemType)
         => TryGet(itemType, out StalagMagShot shot) ? shot : blocks[0].Shot;
 
@@ -275,14 +218,7 @@ public static class StalagMagAmmo
     public static int BlockVariant(int itemType)
         => blockIndex.TryGetValue(itemType, out int index) ? index : 0;
 
-    /// <summary>
-    ///     What a round actually spawns.
-    /// </summary>
-    /// <remarks>
-    ///     The families that are entirely vanilla-fed share one projectile each and resolve it here,
-    ///     at a point where mod content is loaded; anything carrying its own
-    ///     <see cref="StalagMagShot.ProjectileType" /> has already answered the question itself.
-    /// </remarks>
+    /// <summary>What a round spawns: its own <see cref="StalagMagShot.ProjectileType" />, or its family's shared projectile.</summary>
     public static int ResolveProjectile(in StalagMagShot shot)
     {
         if (shot.ProjectileType > 0)
@@ -294,21 +230,9 @@ public static class StalagMagAmmo
     }
 
     /// <summary>
-    ///     The stack the next round comes out of, ammunition slots first.
+    ///     The stack the next round comes from, ammo slots first. Hand-rolled because <see cref="Player.ChooseAmmo" /> doesn't know
+    ///     the trigger. Side-effect free: the firing cycle also asks it on ticks where nothing fires.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Hand-rolled rather than deferred to <see cref="Player.ChooseAmmo" /> because the
-    ///         choice depends on which trigger is being pulled, and vanilla's selection has no
-    ///         notion of that -- it would happily load a boulder into the primary fire. Searching
-    ///         the ammunition slots before the pack keeps the vanilla habit intact, so a player who
-    ///         wants Titanstone spent before their Stone puts it in an ammunition slot and it is.
-    ///     </para>
-    ///     <para>
-    ///         Side-effect free, because the firing cycle asks it on ticks where nothing is fired to
-    ///         find out whether a committed burst can be finished.
-    ///     </para>
-    /// </remarks>
     public static Item? Choose(Player player, bool boulder)
     {
         for (int i = 54; i < 58; i++)
@@ -349,14 +273,8 @@ public static class StalagMagAmmo
 }
 
 /// <summary>
-///     Turns the blocks the StalagMag eats into things a player can put in an ammunition slot.
+///     Makes StalagMag blocks ammo while <c>notAmmo</c> keeps them out of ammo slots; tooltip damage comes from the table.
 /// </summary>
-/// <remarks>
-///     <c>notAmmo</c> is what keeps them out of the way the rest of the time: a stack of stone is a
-///     building material first and a magazine second, and without it every block picked up would be
-///     shovelled into the ammunition slots. The damage figure is set from the same table the weapon
-///     fires off, so the number on a block's tooltip is the number it actually hits for.
-/// </remarks>
 public sealed class StalagMagAmmoItem : GlobalItem
 {
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)

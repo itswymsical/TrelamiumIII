@@ -5,9 +5,7 @@ using TrelamiumIII.Core.Audio;
 
 namespace TrelamiumIII.Common.Commands;
 
-/// <summary>
-///     Drives <see cref="MusicDirector" /> by hand.
-/// </summary>
+/// <summary>Drives <see cref="MusicDirector" /> by hand.</summary>
 public class MusicCommand : ModCommand
 {
     public override string Command => "music";
@@ -21,8 +19,7 @@ public class MusicCommand : ModCommand
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {
-        // A chat command runs on the server in multiplayer, and there is no music registry there to
-        // look a score's slots up in. Auditioning is a single-player job anyway.
+        // Commands run on the server in multiplayer, which has no music registry.
         if (Main.dedServ)
         {
             caller.Reply("The music director only exists on a client.", Color.Red);
@@ -89,8 +86,7 @@ public class MusicCommand : ModCommand
             return;
         }
 
-        // The Fungore score releases itself when no Fungore exists, which would end it on the frame
-        // it started. Stripped here so the track can be auditioned on its own.
+        // Copied without the score's release condition, which would end it instantly when no Fungore exists.
         MusicDirector.Play(new MusicScore
         {
             Name = score.Name,

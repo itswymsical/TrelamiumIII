@@ -73,8 +73,6 @@ float2 WorldUv(float2 uv)
     return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
 }
 
-// Coverage in RED, coverage weighted by world brightness in GREEN. See GasFbm.fx for the whole
-// story -- both shaders read the same field encoding.
 float Density(float2 uv)
 {
     float f = tex2D(FieldSampler, uv).r;

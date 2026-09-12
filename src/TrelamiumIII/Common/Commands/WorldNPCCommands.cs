@@ -5,10 +5,7 @@ using TrelamiumIII.Core.NPCs.Combat;
 
 namespace TrelamiumIII.Common.Commands;
 
-/// <summary>
-/// Spawns and drives <see cref="TestTerrarian"/>. Development tool for checking the
-/// puppet animation and director modules without waiting on natural spawns.
-/// </summary>
+/// <summary>Dev tool that spawns and drives <see cref="TestTerrarian"/>.</summary>
 public class WorldNPCCommand : ModCommand
 {
     public override string Command => "wnpc";
@@ -35,8 +32,7 @@ public class WorldNPCCommand : ModCommand
             return;
         }
 
-        // NPC spawning and AI are the server's; a client-side spawn would appear and
-        // then evaporate on the next sync.
+        // Server-owned: a client-side spawn would vanish on the next sync.
         if (Main.netMode == NetmodeID.MultiplayerClient)
         {
             caller.Reply("World NPCs are server-owned; run this in singleplayer.", Color.Red);
@@ -140,10 +136,7 @@ public class WorldNPCCommand : ModCommand
         caller.Reply($"Removed {count} subject(s).", Color.LightGreen);
     }
 
-    /// <summary>
-    /// Materialised into a list rather than yielded: Main.ActiveNPCs hands back a ref
-    /// struct enumerator, which cannot cross a yield boundary.
-    /// </summary>
+    /// <summary>A list rather than an iterator: Main.ActiveNPCs' ref struct enumerator can't cross a yield.</summary>
     private static List<TestTerrarian> Subjects()
     {
         List<TestTerrarian> subjects = [];

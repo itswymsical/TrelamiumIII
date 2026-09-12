@@ -136,8 +136,6 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
     float lum = dot(warped, float3(0.299, 0.587, 0.114));
     float response = lerp(1.0, sqrt(saturate(lum)), saturate(uLightResponse));
 
-    // Already premultiplied by the beam pass, so this is a straight add rather than a lerp toward a
-    // colour -- the intake emits light, it does not replace what is behind it.
     float3 lit = warped + field.rgb * uGlow * response;
 
     return float4(lerp(bg.rgb, lit, saturate(uMix)), bg.a);

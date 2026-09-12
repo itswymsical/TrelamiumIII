@@ -4,10 +4,6 @@ using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-/// <summary>
-///     The one solution with code of its own -- leaves drift across its name in the tooltip -- so it
-///     keeps a class where the rest of them are instances in <see cref="Solution" />.
-/// </summary>
 public class MagnoliaSolutionItem : SolutionItem
 {
     public MagnoliaSolutionItem()

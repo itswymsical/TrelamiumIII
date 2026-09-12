@@ -5,63 +5,20 @@ using Terraria.Audio;
 namespace TrelamiumIII.Core.Audio;
 
 /// <summary>
-///     Runs a <see cref="MusicScore" />: several tracks playing at once, locked together, with the
-///     faders and the bar count in our hands rather than vanilla's.
+///     Runs a <see cref="MusicScore" />: its tracks start together and keep rolling under our faders and bar count, so arrangements
+///     swap seamlessly. Vanilla's track choice and volumes are overwritten after it runs; faders are linear on purpose.
 /// </summary>
-/// <remarks>
-///     <para>
-///         <b>Why this exists.</b> Vanilla music is one track at a time. Switching between two
-///         arrangements of the same piece goes through <c>Main.newMusic</c>, which means the outgoing
-///         track fades out over a couple of seconds while the incoming one fades in <em>from its own
-///         beginning</em>. You hear a crossfade between two different points in the music. There is no
-///         setting for this; the only fix is to not use the mechanism.
-///     </para>
-///     <para>
-///         <b>How it works.</b> Every stem in a score is started on the same frame and left running for
-///         as long as the score lasts, silent ones included. Moving between arrangements is then a
-///         fader move between two tracks that are already at the same place in the music, and it is
-///         seamless because nothing transitioned -- the audio was always there.
-///     </para>
-///     <para>
-///         <b>How it coexists with vanilla.</b> Two hooks, both after the fact.
-///         <see cref="Main.UpdateAudio_DecideOnNewMusic" /> is allowed to run and its answer is then
-///         overwritten with the score's primary stem, so vanilla believes the score is the current
-///         track and fades everything else out on its own. <see cref="Main.UpdateAudio" /> is allowed
-///         to run and the volumes it just wrote are then overwritten with ours.
-///         <see cref="Main.musicFade" /> is held above zero for every managed slot for one reason
-///         only: vanilla stops any track whose fade reaches it, and a stopped stem loses its place.
-///     </para>
-///     <para>
-///         <b>Faders are linear, deliberately.</b> Equal-power is for crossfading unrelated material.
-///         Both things a score does -- swapping between arrangements of one performance, and adding a
-///         stem to a mix it was bounced against -- involve signals that are either correlated or meant
-///         to sum, and an equal-power curve would make both bulge in the middle.
-///     </para>
-/// </remarks>
 internal sealed class MusicDirector : ModSystem
 {
     /// <summary>
-    ///     Floor held under every managed slot's <see cref="Main.musicFade" />.
+    ///     Floor held under managed slots' <see cref="Main.musicFade" /> so vanilla never stops them: a "do not stop" token, not a volume.
     /// </summary>
-    /// <remarks>
-    ///     Vanilla walks a non-current track's fade down by a small step each frame and stops the
-    ///     track when it reaches zero. Anything comfortably above one step survives indefinitely,
-    ///     since this re-stamps it every frame. It is not a volume -- the real gain is written
-    ///     straight to the track afterwards -- it is a "do not stop me" token.
-    /// </remarks>
     private const float KeepAlive = 0.2f;
 
     /// <summary>Below this a fader counts as closed.</summary>
     private const float Silence = 0.0005f;
 
-    /// <summary>
-    ///     Longest frame the transport will believe in.
-    /// </summary>
-    /// <remarks>
-    ///     A load hitch would otherwise jump the bar count forward by however long the game was busy,
-    ///     while the audio, which does not care that the game stalled, has only advanced by its own
-    ///     buffer. Capping keeps a stall from throwing the grid somewhere the music never went.
-    /// </remarks>
+    /// <summary>Longest frame the transport accepts, so a load hitch can't jump the bar count past the audio.</summary>
     private const double MaxFrame = 0.25d;
 
     private static MusicScore? score;
@@ -112,14 +69,7 @@ internal sealed class MusicDirector : ModSystem
 
     public static float BarPhase => Bars - MathF.Floor(Bars);
 
-    /// <summary>
-    ///     Starts <paramref name="next" />, replacing whatever the director was running.
-    /// </summary>
-    /// <remarks>
-    ///     Always from the top. Adopting a track vanilla already had going would mean a transport with
-    ///     no known origin and stems that cannot be joined to it, since none of them can be seeked to
-    ///     meet it -- so a score owns its own playback from the first sample or it does not work at all.
-    /// </remarks>
+    /// <summary>Starts <paramref name="next" /> from the top, replacing whatever was running.</summary>
     /// <param name="fadeIn">Seconds for the opening stems to reach their gain. Zero starts them up.</param>
     public static void Play(MusicScore next, float fadeIn = 0f)
     {
@@ -128,11 +78,8 @@ internal sealed class MusicDirector : ModSystem
 
         Release();
 
-        // Every track in the score goes back to its first sample, including one vanilla already had
-        // running through ModNPC.Music or a scene effect. The transport is measured from this frame,
-        // and a stem adopted mid-phrase would put the bar count somewhere the music is not -- which
-        // is the one error this whole system exists to avoid. They are restarted rather than merely
-        // rewound: DriveLayer starts anything stopped, so they all begin on the same frame.
+        // Every track restarts from its first sample, even ones vanilla already had going: the transport is measured from
+        // this frame, and an adopted mid-phrase stem would desync the bar count.
         if (Tracks is { } tracks)
         {
             foreach (MusicLayer layer in next.Layers)
@@ -171,9 +118,7 @@ internal sealed class MusicDirector : ModSystem
         clock.Restart();
     }
 
-    /// <summary>
-    ///     Closes every fader and hands the slots back to vanilla once they are shut.
-    /// </summary>
+    /// <summary>Closes every fader and hands the slots back to vanilla once they're shut.</summary>
     public static void Stop(float fade = 1.5f)
     {
         if (score is null || releasing)
@@ -213,13 +158,8 @@ internal sealed class MusicDirector : ModSystem
         SetLayer(to, true, fade);
     }
 
-    /// <summary>
-    ///     Schedules a cue to start on the next <paramref name="grid" /> boundary.
-    /// </summary>
-    /// <param name="cut">
-    ///     Whether the stems are cut the instant the cue lands. True for material that continues the
-    ///     track rather than sitting on top of it, which is what a death fill is.
-    /// </param>
+    /// <summary>Schedules a cue to start on the next <paramref name="grid" /> boundary.</summary>
+    /// <param name="cut">Whether stems cut when the cue lands; true for material that continues the track, like a death fill.</param>
     /// <returns>Seconds until it lands, or -1 if there is no such cue.</returns>
     public static float Fire(string name, MusicGrid grid = MusicGrid.Bar, bool cut = true)
     {
@@ -260,14 +200,7 @@ internal sealed class MusicDirector : ModSystem
 
     public override void OnWorldUnload() => Stop(0f);
 
-    /// <summary>
-    ///     Lets vanilla pick, then tells it the answer is ours.
-    /// </summary>
-    /// <remarks>
-    ///     Overriding the result rather than skipping the call: the method sets more than
-    ///     <see cref="Main.newMusic" />, and a score should suppress vanilla's choice of track without
-    ///     also suppressing its bookkeeping.
-    /// </remarks>
+    /// <summary>Lets vanilla decide the track, then overrides the answer while keeping the method's other bookkeeping.</summary>
     private static void ClaimCurrentTrack(On_Main.orig_UpdateAudio_DecideOnNewMusic orig, Main self)
     {
         orig(self);
@@ -284,10 +217,7 @@ internal sealed class MusicDirector : ModSystem
         {
             Update();
 
-            // Re-asserted here as well as in the decide hook. That hook is the one that matters --
-            // it lands before vanilla acts on the answer -- but it is reached through a call chain
-            // this makes no assumptions about, and a claim that arrives a frame late still beats a
-            // claim that never arrives.
+            // Re-asserted here too, in case the decide hook's call chain lands a frame late.
             if (score is { } current && !releasing)
                 Main.newMusic = current.Primary.Slot;
         }
@@ -353,13 +283,8 @@ internal sealed class MusicDirector : ModSystem
     }
 
     /// <summary>
-    ///     Seconds of music since the last frame.
+    ///     Seconds of music since last frame, from the wall clock and gated on the primary stem sounding, so pauses don't advance it.
     /// </summary>
-    /// <remarks>
-    ///     Measured off the wall clock rather than counted in frames, because the audio is playing in
-    ///     real time whatever the frame rate is doing, and gated on the primary stem actually
-    ///     sounding so a paused game does not advance the bar count past the music.
-    /// </remarks>
     private static double Elapsed(IAudioTrack[] tracks, MusicScore current)
     {
         double delta = clock.Elapsed.TotalSeconds;
@@ -372,13 +297,7 @@ internal sealed class MusicDirector : ModSystem
         return Math.Min(delta, MaxFrame);
     }
 
-    /// <summary>
-    ///     Walks each fader toward its target.
-    /// </summary>
-    /// <remarks>
-    ///     Driven by the same gated delta as the transport, so a crossfade freezes along with the
-    ///     music when the game is paused rather than completing behind a silent window.
-    /// </remarks>
+    /// <summary>Walks each fader toward its target on the gated delta, so crossfades freeze when the game pauses.</summary>
     private static void AdvanceFaders(double delta)
     {
         for (int i = 0; i < gain.Length; i++)
@@ -443,9 +362,7 @@ internal sealed class MusicDirector : ModSystem
 
         SilenceCues(current, tracks);
 
-        // A cue that cut the stems on its way in has just played the last of the music. The score is
-        // over rather than merely quiet, and sitting there holding silent slots would keep vanilla
-        // locked out of the soundtrack indefinitely.
+        // A cue that cut the stems just played the last of the music, so stop rather than hold silent slots from vanilla.
         if (!stemsStillUp)
             Stop(0.25f);
     }
@@ -478,14 +395,7 @@ internal sealed class MusicDirector : ModSystem
         }
     }
 
-    /// <summary>
-    ///     Transport time of the next <paramref name="grid" /> boundary.
-    /// </summary>
-    /// <remarks>
-    ///     Resolution is one frame: a cue lands on the first frame at or after the boundary, so it can
-    ///     be up to a frame late. There is no finer control available -- a track starts when
-    ///     <c>Play</c> is called and the game only gets to call it once a frame.
-    /// </remarks>
+    /// <summary>Transport time of the next <paramref name="grid" /> boundary; a cue can land up to a frame late.</summary>
     private static double NextBoundary(MusicScore current, MusicGrid grid)
     {
         if (grid == MusicGrid.Immediate)
@@ -500,10 +410,7 @@ internal sealed class MusicDirector : ModSystem
             _ => current.SecondsPerBar * 4d,
         };
 
-        // Solved in wrapped grid time, not against the raw transport. The two only agree for the
-        // first pass through the loop: a file whose decoded length is not a whole number of beats --
-        // which is every MP3 -- puts its real downbeat a little later on each repeat, and a boundary
-        // measured from the start of playback would be a beat out after a few minutes.
+        // Solved in wrapped grid time: an MP3 loop isn't a whole number of beats, so raw-transport boundaries drift over repeats.
         double now = GridTime(current);
         double next = Math.Floor(now / step + 1d) * step;
 
@@ -540,14 +447,8 @@ internal sealed class MusicDirector : ModSystem
     }
 
     /// <summary>
-    ///     Gives every slot back, stopped and at zero.
+    ///     Stops every slot outright at zero; left to vanilla, the keep-alive floor would bring silent stems back at a fifth volume.
     /// </summary>
-    /// <remarks>
-    ///     The tracks are stopped outright rather than left to vanilla's own fade. The keep-alive
-    ///     floor is a real number as far as vanilla is concerned, so releasing a silent stem without
-    ///     stopping it would have the next frame's <c>UpdateAudio</c> read that floor back and bring
-    ///     the track up at a fifth volume.
-    /// </remarks>
     private static void Release()
     {
         if (score is { } current && Tracks is { } tracks)

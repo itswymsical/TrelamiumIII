@@ -64,12 +64,8 @@ internal sealed class PossessedWorkshopUIState : UIState
     private Item? bound;
 
     /// <summary>
-    ///     Where the panel is in raw screen pixels, for the pet's own click test.
+    ///     Panel bounds in raw screen pixels, for the pet's click test. A frame stale, which is fine: the pet is planted while it's open.
     /// </summary>
-    /// <remarks>
-    ///     Read a frame later than it is written, which does not matter: the pet holding the panel is
-    ///     planted for as long as it is open, so these bounds do not move while anyone can click them.
-    /// </remarks>
     public Rectangle ScreenBounds { get; private set; }
 
     public override void OnInitialize()
@@ -166,9 +162,7 @@ internal sealed class PossessedWorkshopUIState : UIState
     }
 }
 
-/// <summary>
-///     Owns the station panel: what it is attached to, whether it is up, and where it draws.
-/// </summary>
+/// <summary>Owns the station panel: what it's attached to, whether it's up, and where it draws.</summary>
 public sealed class PossessedWorkshopUI : ModSystem
 {
     private static UserInterface? userInterface;
@@ -249,10 +243,7 @@ public sealed class PossessedWorkshopUI : ModSystem
         userInterface?.Update(gameTime);
     }
 
-    /// <summary>
-    ///     Whether the thing the panel is attached to is still there and still within arm's reach.
-    ///     Walking off, dismissing the pet or dying all close it through here.
-    /// </summary>
+    /// <summary>Whether the panel's pet still exists and is within reach; walking off, dismissing it or dying closes the panel.</summary>
     private static bool StillReachable()
     {
         if (tending < 0 || tending >= Main.maxProjectiles)

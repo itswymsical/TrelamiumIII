@@ -8,8 +8,9 @@ using TrelamiumIII.Core.UI.World;
 namespace TrelamiumIII.Core.UI.Jobs.Board;
 
 /// <summary>
-///     The marker over an NPC with work going: bobs above their head, and opens their
-///     <see cref="JobBoardPanel" /> when clicked.
+///     The marker over an NPC with work going: bobs above their head, stands a
+///     <see cref="JobHoverCard" /> up while the cursor rests on it, and opens their
+///     <see cref="ProjectedJobBoard" /> when clicked.
 /// </summary>
 internal sealed class JobIndicator : WorldIndicator
 {
@@ -18,6 +19,7 @@ internal sealed class JobIndicator : WorldIndicator
 
     private readonly NPC _npc;
     private readonly Texture2D _icon;
+    private readonly JobHoverCard _card;
 
     public override AnimationType AnimationStyle => AnimationType.Wag;
 
@@ -25,6 +27,7 @@ internal sealed class JobIndicator : WorldIndicator
     {
         _npc = npc;
         _icon = icon;
+        _card = new JobHoverCard(icon, () => IsActive);
 
         TrackEntity(npc, HeadOffset);
         OnClick += OpenBoard;
@@ -51,19 +54,35 @@ internal sealed class JobIndicator : WorldIndicator
 
     protected override void PostUpdate()
     {
+        List<Job> jobs = [.. AvailableJobs(_npc)];
+
         // Nothing left on offer: the job was taken, or its provider changed. Retire rather than
         // hide, since an NPC that has run out of work has no reason to be marked again.
-        if (!AvailableJobs(_npc).Any())
+        if (jobs.Count == 0)
         {
+            _card.Retire();
             IsActive = false;
             return;
         }
 
-        // Step aside for dialogue rather than disappearing, so the icon comes back when it ends.
-        if (DialogueManager.Instance.IsAnyActive())
+        // Step aside for dialogue and for an open board rather than disappearing, so the icon
+        // comes back when they end. The board hangs off the same head, and would sit on top of it.
+        if (DialogueManager.Instance.IsAnyActive() || WorldUISystem.HasOpenPanel)
             Hide();
         else
             Show();
+
+        _card.SetJobs(jobs);
+        _card.Update(IsHovering && !IsHidden, IconTop());
+    }
+
+    /// <summary>The top of the icon as drawn, in raw screen pixels: where the card's tail points.</summary>
+    private Vector2 IconTop()
+    {
+        Vector2 centre = WorldUI.ToScreen(WorldAnchor + Offset);
+        float half = Height * 0.5f * GetAnimationScale() * WorldUI.ZoomScale;
+
+        return centre - new Vector2(0f, half);
     }
 
     private void OpenBoard()
@@ -76,7 +95,15 @@ internal sealed class JobIndicator : WorldIndicator
             return;
         }
 
-        WorldUISystem.OpenPanelState(new JobBoardPanel(_npc, jobs));
+        WorldUISystem.OpenPanelState(new ProjectedJobBoard(_npc, jobs));
+    }
+
+    public override void Draw(SpriteBatch spriteBatch)
+    {
+        base.Draw(spriteBatch);
+
+        // After the icon, so the card's tail lands on top of it rather than under it.
+        _card.Draw(spriteBatch);
     }
 
     protected override void DrawIcon(SpriteBatch spriteBatch, Vector2 uiPosition, float opacity)

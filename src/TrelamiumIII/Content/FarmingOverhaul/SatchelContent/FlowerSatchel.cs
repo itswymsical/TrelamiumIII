@@ -14,9 +14,7 @@ using TrelamiumIII.Core;
 namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 
 /// <summary>
-/// Holds a few flowers and turns them into passive bonuses while it sits anywhere in the inventory.
-/// What each flower does, and which ones fit at all. It is declared in
-/// <see cref="FlowerCatalogSystem"/>; this item only owns the storage.
+/// Holds flowers that grant passive bonuses from anywhere in the inventory; behaviour is declared in <see cref="FlowerCatalogSystem"/>.
 /// </summary>
 public class FlowerSatchelItem : ModItem
 {
@@ -40,10 +38,7 @@ public class FlowerSatchelItem : ModItem
         EnsureSlots();
     }
 
-    /// <summary>
-    /// Guarantees the flower array exists and every entry is a valid Item.
-    /// Safe to call from any entry point (SetDefaults, LoadData, NetReceive).
-    /// </summary>
+    /// <summary>Ensures every slot holds a valid Item. Safe from SetDefaults, LoadData and NetReceive.</summary>
     private void EnsureSlots()
     {
         if (Flowers == null || Flowers.Length != SLOT_COUNT)
@@ -77,8 +72,7 @@ public class FlowerSatchelItem : ModItem
 
     public override void RightClick(Player player)
     {
-        // Right-click only toggles UI visibility now.
-        // Effects apply automatically while the satchel is anywhere in the inventory.
+        // Right-click only toggles the panel; effects apply while the satchel is anywhere in the inventory.
         var modPlayer = player.GetModPlayer<SatchelPlayer>();
         modPlayer.PanelVisible = !modPlayer.PanelVisible;
 
@@ -130,17 +124,14 @@ public class FlowerSatchelItem : ModItem
 }
 
 /// <summary>
-/// Turns the satchel's contents into player bonuses. The arithmetic is entirely
-/// table-driven: bouquets claim their member flowers first, leftovers pay out individually, and every
-/// contribution lands through <see cref="FlowerStats"/>.
-/// <para>The only hand-written behaviour left is the <see cref="FlowerPerk"/> block.</para>
+/// Turns the satchel's contents into player bonuses: bouquets claim their members first, leftovers pay individually,
+/// and everything lands through <see cref="FlowerStats"/>. Only <see cref="FlowerPerk"/> behaviour is hand-written.
 /// </summary>
 public class SatchelPlayer : ModPlayer
 {
     /// <summary>Per-slot stack cap on stat contribution. Extra flowers still stack, they just stop counting.</summary>
     public const int MAX_STACK_PER_SLOT = 30;
 
-    /// <summary>True when the player has chosen to display the panel (right-click toggle).</summary>
     public bool PanelVisible;
 
     /// <summary>The satchel currently driving effects. Auto-detected each frame from inventory.</summary>
@@ -172,10 +163,8 @@ public class SatchelPlayer : ModPlayer
 
     public override void ResetEffects()
     {
-        // Auto-detect satchel from inventory. Effects no longer depend on UI state.
         ActiveSatchel = FindSatchelInInventory();
 
-        // If the satchel left the inventory, hide the panel automatically.
         if (ActiveSatchel == null)
             PanelVisible = false;
 
@@ -185,10 +174,7 @@ public class SatchelPlayer : ModPlayer
             Recalculate(satchel);
     }
 
-    /// <summary>
-    /// Scans the player's main inventory for a Flower Satchel.
-    /// CanPickup prevents owning more than one, so the first match is authoritative.
-    /// </summary>
+    /// <summary>First Flower Satchel in the main inventory; CanPickup prevents owning more than one.</summary>
     private Item FindSatchelInInventory()
     {
         var inventory = Player.inventory;
@@ -283,9 +269,8 @@ public class SatchelPlayer : ModPlayer
     }
 
     /// <summary>
-    /// Pays out a bouquet if every member is stocked. Each contribution scales with its own member's
-    /// count; the perk thresholds gate on the <em>lowest</em> member, so a bouquet is only as strong
-    /// as its thinnest flower.
+    /// Pays out a bouquet if every member is stocked. Contributions scale with each member's count; perk thresholds gate
+    /// on the <em>lowest</em> member.
     /// </summary>
     private void TryApplyBouquet(BouquetProfile bouquet)
     {
@@ -361,10 +346,7 @@ public class SatchelPlayer : ModPlayer
     #endregion
 }
 
-/// <summary>
-/// Draws the animated leaf-particle title for the Flower Satchel tooltip.
-/// Extracted from FlowerSatchelItem to keep item logic separate from rendering math.
-/// </summary>
+/// <summary>Draws the animated leaf-particle title for the Flower Satchel tooltip.</summary>
 internal static class FlowerSatchelTooltipRenderer
 {
     private const int FRAME_WIDTH = 10;
@@ -381,10 +363,8 @@ internal static class FlowerSatchelTooltipRenderer
         var text = line.Text;
         float textWidth = FontAssets.MouseText.Value.MeasureString(text).X;
 
-        // Draw the title text itself
         Main.spriteBatch.DrawString(FontAssets.MouseText.Value, text, pos, Color.YellowGreen);
 
-        // Switch to additive for glowing leaves, then restore
         Main.spriteBatch.End();
         Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive,
             null, null, null, null, Main.UIScaleMatrix);

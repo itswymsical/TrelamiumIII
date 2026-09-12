@@ -24,25 +24,13 @@ public enum EditorField
 /// <summary>Extensions over <see cref="EditorField" />.</summary>
 public static class EditorFieldExtensions
 {
-    /// <summary>
-    ///     Whether the field is a one-line value rather than prose.
-    /// </summary>
-    /// <remarks>
-    ///     Short fields are set in the chrome font at chrome scale and never wrap, so the caret has to
-    ///     be measured against those rather than against the book face the page uses. They also treat
-    ///     Return as "done" instead of as a line break.
-    /// </remarks>
+    /// <summary>A one-line value rather than prose: measured in the chrome font, never wraps, and Return means "done".</summary>
     public static bool IsShort(this EditorField field) => field != EditorField.BlockText;
 }
 
 /// <summary>
-///     One editing sitting: the book being written, which block is open, and the buffer holding it.
+///     One editing sitting. Only the selected block's text lives in the buffer, so each block keeps its own undo history.
 /// </summary>
-/// <remarks>
-///     Only the selected block's text lives in the <see cref="TextBuffer" />. Switching blocks
-///     commits the buffer back and reloads, which is also what keeps each block's undo history its
-///     own rather than one stack spanning the book.
-/// </remarks>
 public sealed class AuthoringSession
 {
     public AuthoringSession()
@@ -50,9 +38,7 @@ public sealed class AuthoringSession
         Book.Blocks.Add(new AuthoredBlock { Kind = AuthoredBlockKind.Heading, Key = "Title", Text = "Untitled" });
         Book.Blocks.Add(new AuthoredBlock { Kind = AuthoredBlockKind.Prose, Key = "Opening" });
 
-        // The buffer has not been loaded from anything yet, so Commit's guard makes the selection
-        // below harmless. Before that guard existed this line flushed the empty buffer over the
-        // heading's text, and an emptied heading is skipped by the composer -- a blank first page.
+        // Commit's guard makes this harmless: the buffer hasn't been loaded from anything yet.
         SelectBlock(1);
     }
 
@@ -72,13 +58,8 @@ public sealed class AuthoringSession
     public EditorField Focus { get; private set; } = EditorField.BlockText;
 
     /// <summary>
-    ///     Points the buffer at a different string, saving whatever it held first.
+    ///     Points the shared buffer at another field, saving it first, so selection, clipboard and undo work the same everywhere.
     /// </summary>
-    /// <remarks>
-    ///     One buffer serves the prose and the short fields alike, so selection, clipboard and undo
-    ///     behave identically in a key box and in a paragraph rather than the fields getting a
-    ///     second, poorer input path.
-    /// </remarks>
     public void FocusField(EditorField field)
     {
         if (field == Focus) return;
@@ -89,14 +70,8 @@ public sealed class AuthoringSession
     }
 
     /// <summary>
-    ///     Writes the buffer back into whatever it was loaded from.
+    ///     Writes the buffer back to where it was loaded from; a no-op if focus moved, since writing elsewhere would silently overwrite text.
     /// </summary>
-    /// <remarks>
-    ///     Guarded by what the buffer actually holds rather than by what is selected now. A commit
-    ///     against a target the buffer was never filled from overwrites that target with unrelated
-    ///     text -- silently, and with no undo, since the history belongs to the buffer and not to the
-    ///     block. Making the guard part of the method means no caller has to remember it.
-    /// </remarks>
     public void Commit()
     {
         if (loadedFrom != SelectedIndex || loadedField != Focus) return;
@@ -120,9 +95,7 @@ public sealed class AuthoringSession
                     sized.Scale = Math.Clamp(parsed, 0.2f, 3f);
 
                 break;
-            // Written back as tags, so the block's stored text is always exactly what would be
-            // exported. Keeping a second, parallel representation of the formatting is what would
-            // let the two drift.
+            // Stored as tags, so the block's text is always exactly what exports, with no parallel representation to drift.
             case EditorField.BlockText when Selected is { HasText: true } block:
                 block.Text = FormatCodec.Serialize(Buffer.Text, Buffer.Formats);
                 break;
@@ -166,13 +139,7 @@ public sealed class AuthoringSession
         });
     }
 
-    /// <summary>
-    ///     The selected block's size as text, resolved through its preset when it has no override.
-    /// </summary>
-    /// <remarks>
-    ///     Seeding the field with the effective size rather than a blank means typing over it starts
-    ///     from what is actually on the page, which is what a size box in any editor does.
-    /// </remarks>
+    /// <summary>The effective size as text, seeded from the preset so typing starts from what's on the page.</summary>
     public string ScaleText => EffectiveScale.ToString("0.00", CultureInfo.InvariantCulture);
 
     /// <summary>The size the selected block renders at, override or preset.</summary>
@@ -184,9 +151,7 @@ public sealed class AuthoringSession
 
             if (block.Scale > 0f) return block.Scale;
 
-            // Read off the presets rather than restated as literals. Copying the numbers here would
-            // leave the size box reporting one thing while the page rendered another the moment a
-            // preset was retuned.
+            // Read from the presets, not restated, so the size box can't disagree with the render after a retune.
             return block.Kind switch
             {
                 AuthoredBlockKind.Heading or AuthoredBlockKind.Chapter => BlockStyle.Heading.Scale,
@@ -265,9 +230,8 @@ public sealed class AuthoringSession
         (Book.Blocks[SelectedIndex], Book.Blocks[target]) = (Book.Blocks[target], Book.Blocks[SelectedIndex]);
         SelectedIndex = target;
 
-        // The buffer still holds this same block's text -- it only changed position -- so the
-        // loaded-from index follows it. Without this the commit guard would reject every later
-        // write and everything typed after a move would be dropped on the next selection.
+        // The buffer still holds this block's text at its new position, so loadedFrom follows it; otherwise the commit guard
+        // would drop every later edit.
         loadedFrom = target;
 
         Status = "Moved block.";
@@ -296,13 +260,8 @@ public sealed class AuthoringSession
     #region Export
 
     /// <summary>
-    ///     Writes the hjson fragment and the C# definition, and reports where they landed.
+    ///     Writes the hjson fragment and C# definition and reports where. The hjson isn't merged into the library; that stays a manual paste.
     /// </summary>
-    /// <remarks>
-    ///     The hjson goes out as a fragment beside the library rather than into it. Merging it in
-    ///     would mean parsing and rewriting a file holding every other book, and a bug there costs
-    ///     prose that only exists in that file -- so the merge stays a deliberate, human paste.
-    /// </remarks>
     public string Export()
     {
         Commit();

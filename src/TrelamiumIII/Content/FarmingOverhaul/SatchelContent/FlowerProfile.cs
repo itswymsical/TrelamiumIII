@@ -7,9 +7,7 @@ namespace TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 public readonly record struct FlowerContribution(FlowerStat Stat, float PerUnit);
 
 /// <summary>
-/// Everything the satchel knows about one flower: which stats it feeds and how much per unit. 
-/// The wording of its panel lines and the vanilla fields it touches come from
-/// <see cref="FlowerStats"/>, so a flower is declared, not coded.
+/// Which stats one flower feeds and how much per unit; wording and application come from <see cref="FlowerStats"/>.
 /// </summary>
 public sealed class FlowerProfile
 {
@@ -20,7 +18,6 @@ public sealed class FlowerProfile
 
     public FlowerProfile(int itemType) => ItemType = itemType;
 
-    /// <summary>Adds a per-unit stat contribution. Chainable.</summary>
     public FlowerProfile PerUnit(FlowerStat stat, float amount)
     {
         Contributions.Add(new FlowerContribution(stat, amount));
@@ -29,16 +26,14 @@ public sealed class FlowerProfile
 }
 
 /// <summary>
-/// One stat a bouquet feeds, scaled by how many of <paramref name="Flower"/> are held. Bouquets pay
-/// per member flower rather than per bouquet, so an uneven arrangement still rewards the flower you
-/// stocked heavily.
+/// One stat a bouquet feeds per unit of <paramref name="Flower"/> held, so uneven arrangements still reward heavily
+/// stocked flowers.
 /// </summary>
 public readonly record struct BouquetContribution(int Flower, FlowerStat Stat, float PerUnit);
 
 /// <summary>
-/// A named combination. Its member flowers are inferred from its contributions: a bouquet requires
-/// exactly the flowers it pays out on, so the two can't drift apart. While active it claims those
-/// flowers, which stops them also paying their standalone <see cref="FlowerProfile"/>.
+/// A named flower combination. Members are inferred from its contributions; while active it claims them, so they
+/// don't also pay their standalone <see cref="FlowerProfile"/>.
 /// </summary>
 public sealed class BouquetProfile
 {
@@ -51,12 +46,10 @@ public sealed class BouquetProfile
 
     private int[] _members;
 
-    /// <summary>The distinct flowers this bouquet needs, derived from its contributions once.</summary>
     public int[] Members => _members ??= Contributions.Select(c => c.Flower).Distinct().ToArray();
 
     public BouquetProfile(string name) => Name = name;
 
-    /// <summary>Adds a stat this bouquet pays out per unit of <paramref name="flower"/> held. Chainable.</summary>
     public BouquetProfile From(int flower, FlowerStat stat, float perUnit)
     {
         Contributions.Add(new BouquetContribution(flower, stat, perUnit));
@@ -72,10 +65,7 @@ public sealed class BouquetProfile
     }
 }
 
-/// <summary>
-/// A behaviour a bouquet unlocks at a stocking threshold. The behaviour itself lives in
-/// <c>SatchelPlayer</c>'s update hooks.
-/// </summary>
+/// <summary>A behaviour a bouquet unlocks at a stocking threshold, implemented in <c>SatchelPlayer</c>'s update hooks.</summary>
 public enum FlowerPerk
 {
     /// <summary>Permanent Night Owl vision.</summary>

@@ -9,20 +9,7 @@ namespace TrelamiumIII.Core.Books.Lore;
 /// <summary>Entry point for defining a lore book.</summary>
 public static class BookNovel
 {
-    /// <summary>
-    ///     Starts a definition. Finish it with <see cref="BookBuilder.Register" />.
-    /// </summary>
-    /// <example>
-    ///     <code>
-    ///     BookNovel.Define("DrownedArchive")
-    ///         .Heading("Title")
-    ///         .Prose("Opening", BlockStyle.Body with { DropCap = true })
-    ///         .Image(Assets.Textures.UI.Lore.ArchiveSeal.Asset, "SealCaption", span: 0.6f)
-    ///         .Prose("Continued")
-    ///         .StickyNote("MarginNote", offset: new Vector2(10f, -20f), rotation: -0.06f)
-    ///         .Register();
-    ///     </code>
-    /// </example>
+    /// <summary>Starts a definition; finish with <see cref="BookBuilder.Register" />. See <c>ExampleLoreBook</c> for usage.</summary>
     public static BookBuilder Define(string key) => new(key);
 }
 
@@ -30,12 +17,7 @@ internal delegate BookBlock BlockFactory(BookProseText text, BookContents conten
 
 internal delegate BookDecoration DecorationFactory(BookProseText text);
 
-/// <summary>
-///     an ordered list of blocks, plus the decorations pinned to them.
-/// </summary>
-/// <remarks>
-///     A definition holds factories rather than blocks.
-/// </remarks>
+/// <summary>An ordered list of block factories, plus the decorations pinned to them.</summary>
 public sealed class BookDefinition
 {
     public required string Key { get; init; }
@@ -103,14 +85,7 @@ public sealed class BookContent
     public required BookContents Contents { get; init; }
 }
 
-/// <summary>
-///     Fluent builder for a lore book. Structure and presentation are set here; the words are not.
-/// </summary>
-/// <remarks>
-///     Every method that takes text takes a <c>key</c> naming an entry under
-///     <c>LoreLibrary.{book}</c>, never the text itself. Spacing, alignment, size and placement are
-///     arguments here because they are decisions about the book, not about the language it is read in.
-/// </remarks>
+/// <summary>Fluent lore book builder: structure and presentation here, words by localization key under <c>LoreLibrary.{book}</c>.</summary>
 public sealed class BookBuilder(string key)
 {
     private readonly List<BlockFactory> blocks = [];
@@ -129,20 +104,9 @@ public sealed class BookBuilder(string key)
     #region Type
 
     /// <summary>
-    ///     Sets the typeface for every block declared after this call.
+    ///     Sets the typeface for blocks declared after this, until the next call (before any block, it's the book's). Use
+    ///     <see cref="Section" /> for a change that closes again; elements that name their own typeface keep it.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Called before any block, this is the book's typeface. Called partway through, it opens
-    ///         a new section and runs to the end of the book or the next call -- which is what a
-    ///         section is here, since a book is a linear sequence of blocks. Use
-    ///         <see cref="Section" /> instead when the change should close again afterwards.
-    ///     </para>
-    ///     <para>
-    ///         Only fills in styles that did not name a typeface themselves, so an element-level
-    ///         override survives.
-    ///     </para>
-    /// </remarks>
     public BookBuilder Typeface(BookTypeface? face)
     {
         typeface = face;
@@ -150,25 +114,9 @@ public sealed class BookBuilder(string key)
     }
 
     /// <summary>
-    ///     A run of blocks set in <paramref name="face" />, after which the previous typeface resumes.
+    ///     A run of blocks in <paramref name="face" />, after which the previous typeface resumes. Runs on this same builder, since
+    ///     decoration anchors are block indices captured at declaration.
     /// </summary>
-    /// <example>
-    ///     <code>
-    ///     book.Typeface(BookTypeface.Encyclopedia)
-    ///         .Chapter("Entries")
-    ///         .Prose("Definition")
-    ///         .Section(BookTypeface.Glossary, s => s
-    ///             .Heading("AsideTitle")
-    ///             .Prose("AsideBody"))
-    ///         .Prose("BackToEncyclopedia");
-    ///     </code>
-    /// </example>
-    /// <remarks>
-    ///     Runs the callback against this same builder rather than a nested one. A section is a run of
-    ///     ordinary sibling blocks, so collecting them separately and merging afterwards would leave
-    ///     every decoration inside the section anchored to the wrong block -- anchors are captured as
-    ///     indices into the block list at the moment they are declared.
-    /// </remarks>
     public BookBuilder Section(BookTypeface? face, Action<BookBuilder> contents)
     {
         BookTypeface? previous = typeface;
@@ -181,14 +129,8 @@ public sealed class BookBuilder(string key)
     }
 
     /// <summary>
-    ///     Picks the style for a block and stamps the current typeface onto it if it has none.
+    ///     Picks a block's style and stamps the current typeface. Call at declaration, not in the factory, which runs later with the wrong typeface.
     /// </summary>
-    /// <remarks>
-    ///     Callers must invoke this when the block is <em>declared</em>, not inside the factory
-    ///     lambda. The factory runs at <see cref="BookDefinition.Build" />, by which point
-    ///     <see cref="typeface" /> holds whatever the last section left behind, and every block in the
-    ///     book would come out in that one face.
-    /// </remarks>
     private BlockStyle Resolve(BlockStyle? style, BlockStyle fallback)
     {
         BlockStyle resolved = style ?? fallback;
@@ -210,21 +152,9 @@ public sealed class BookBuilder(string key)
     }
 
     /// <summary>
-    ///     Opens a chapter: a heading that also earns a row in the table of contents.
+    ///     A heading that also gets a contents row. Reads <c>{key}.Title</c> (falling back to <c>{key}</c>) and breaks the page first
+    ///     unless <paramref name="pageBreak" /> is false. A <paramref name="depth" /> of 0 is a chapter, 1 a section beneath it.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Reads its title from <c>{key}.Title</c>, falling back to <c>{key}</c>, so a chapter can
-    ///         keep its prose under the same key: <c>Ch1.Title</c> beside <c>Ch1.Body</c>.
-    ///     </para>
-    ///     <para>
-    ///         Breaks the page before itself by default, which is what a chapter does in a printed
-    ///         book and what keeps contents page numbers meaning something. Pass
-    ///         <paramref name="pageBreak" /> false for a run of short entries -- diary dates, catalogue
-    ///         items -- that would waste most of a page each.
-    ///     </para>
-    /// </remarks>
-    /// <param name="depth">0 for a chapter, 1 for a section beneath it. Indents the contents row.</param>
     public BookBuilder Chapter(
         string key,
         int depth = 0,
@@ -249,10 +179,7 @@ public sealed class BookBuilder(string key)
         return this;
     }
 
-    /// <summary>
-    ///     The table of contents. Rows are filled from every <see cref="Chapter" /> in the book,
-    ///     wherever they are declared relative to this call.
-    /// </summary>
+    /// <summary>The table of contents, filled from every <see cref="Chapter" /> wherever it's declared.</summary>
     public BookBuilder Contents(string? header = null, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body with { Scale = 0.78f, SpaceAfter = 12f });
@@ -265,12 +192,9 @@ public sealed class BookBuilder(string key)
         return this;
     }
 
-    /// <summary>A paragraph. The only block that breaks across pages.</summary>
-    /// <remarks>
-    ///     One call takes a whole chapter's prose: paragraphs are parted by
-    ///     <see cref="BookText.PARAGRAPH_TOKEN" /> inside a single localization entry, and the block
-    ///     flows across as many pages as it needs. There is no reason to declare a block per paragraph.
-    /// </remarks>
+    /// <summary>
+    ///     A paragraph that breaks across pages. One entry can hold a whole chapter, with paragraphs split by <see cref="BookText.PARAGRAPH_TOKEN" />.
+    /// </summary>
     public BookBuilder Prose(string key, BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body);
@@ -367,11 +291,7 @@ public sealed class BookBuilder(string key)
 
     #region Decorations
 
-    /// <summary>
-    ///     A note stuck over the page. Anchored to the block most recently added unless
-    ///     <paramref name="anchorBlock" /> says otherwise, so it travels with that block through
-    ///     reflow instead of being pinned to a page number that shifts.
-    /// </summary>
+    /// <summary>A note stuck over the page, anchored to the latest block (or <paramref name="anchorBlock" />) so it moves with reflow.</summary>
     public BookBuilder StickyNote(
         string key,
         Vector2 offset = default,
@@ -402,10 +322,7 @@ public sealed class BookBuilder(string key)
         return this;
     }
 
-    /// <summary>
-    ///     Handwriting in the margin, with no paper behind it. Reads as something added to the page
-    ///     rather than stuck onto it.
-    /// </summary>
+    /// <summary>Handwriting in the margin, with no paper behind it.</summary>
     public BookBuilder Marginalia(
         string key,
         Vector2 offset = default,

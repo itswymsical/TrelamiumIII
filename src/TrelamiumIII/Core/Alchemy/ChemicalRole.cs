@@ -22,10 +22,7 @@ public enum ChemicalRole
     Solution,
 }
 
-/// <summary>
-///     Which items are solutes, solvents and solutions, and the <see cref="ChemicalQuality" /> each
-///     one carries.
-/// </summary>
+/// <summary>Which items are solutes, solvents and solutions, and the <see cref="ChemicalQuality" /> each carries.</summary>
 public static class ChemicalRoles
 {
     private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/";
@@ -106,10 +103,7 @@ public static class ChemicalRoles
     }
 }
 
-/// <summary>
-///     The glyph sprites under <c>Assets/Textures/UI/ChemicalGlyphs</c>, one per
-///     <see cref="ChemicalQuality" /> flag and named after it.
-/// </summary>
+/// <summary>Glyph sprites under <c>Assets/Textures/UI/ChemicalGlyphs</c>, one per <see cref="ChemicalQuality" /> flag.</summary>
 public static class ChemicalQualityGlyphs
 {
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/ChemicalGlyphs/";
@@ -151,10 +145,7 @@ public static class ChemicalQualityGlyphs
     }
 }
 
-/// <summary>
-///     Labels every solute, solvent and solution in its tooltip, and marks its inventory slot with
-///     the glyph of the quality it carries.
-/// </summary>
+/// <summary>Labels solutes, solvents and solutions in tooltips and marks their inventory slot with a quality glyph.</summary>
 public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
 {
     /// <summary>Longest edge of the slot glyph, in unscaled slot pixels.</summary>

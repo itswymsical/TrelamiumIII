@@ -4,16 +4,7 @@ using TrelamiumIII.Core.Projectiles;
 
 namespace TrelamiumIII.Content.Misc;
 
-/// <summary>
-///     Stone knapped into a spike, for a weapon that would otherwise be firing masonry.
-/// </summary>
-/// <remarks>
-///     The block rounds are the StalagMag's bluntest option -- they hit once, shatter, and are gone.
-///     A stalagmite is the same stone spent differently: less shrapnel, and it stays in the target
-///     carrying a long affliction, which is what makes it worth crafting over the block it came
-///     from. The two families share the primary trigger and the player picks between them by what
-///     they leave in their ammunition slots.
-/// </remarks>
+/// <summary>A knapped stone spike round: less shrapnel than the block, but it sticks and carries a long affliction.</summary>
 public abstract class StalagmiteItem : ModItem, IStalagMagAmmo
 {
     public override string Texture => AssetReferences.Assets.Textures.PlaceholderItem.KEY;
@@ -109,24 +100,9 @@ public class CrimstoneStalagmite : StalagmiteItem
 }
 
 /// <summary>
-///     A stalagmite in flight, and then in something.
+///     A stalagmite in flight, then stuck in something (see <see cref="StickyProjectile" />). The sheet points down, so
+///     <see cref="PostAI" /> pins <c>spriteDirection</c> and rotates off velocity instead of the base's horizontal flip.
 /// </summary>
-/// <remarks>
-///     <para>
-///         All of the sticking, the stack limit and the little death slump belong to
-///         <see cref="StickyProjectile" />. What is here is the two things that are particular to a
-///         spike: the affliction it carries, and its sprite convention.
-///     </para>
-///     <para>
-///         The sprite is the reason for <see cref="PostAI" />. <see cref="StickyProjectile" /> is
-///         written for a shuriken -- a sprite drawn pointing right, flipped horizontally when it
-///         travels left -- and the stalactite sheet is drawn pointing *down*. Flipping a spike
-///         horizontally does nothing (it is symmetric about that axis) and the base's rotation then
-///         has it flying tail-first. Pinning <c>spriteDirection</c> and taking the rotation off the
-///         velocity with a quarter turn subtracted puts the point where the point should be, in both
-///         directions, without the base having to know that sprites can be drawn any other way.
-///     </para>
-/// </remarks>
 public abstract class StalagmiteProj : StickyProjectile
 {
     /// <summary>The sheet points down; velocity does not. This is the difference.</summary>
@@ -171,9 +147,7 @@ public abstract class StalagmiteProj : StickyProjectile
 
     protected override void PostAI()
     {
-        // Rotation is the whole of the orientation here, so the base's horizontal flip must not get
-        // a look in -- it would mirror the origin out from under a sprite that is already pointing
-        // wherever it is going.
+        // Rotation carries all orientation, so the base's horizontal flip must not apply.
         Projectile.spriteDirection = 1;
 
         if (stickingToNPC)

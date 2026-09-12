@@ -4,9 +4,8 @@ public class FlailstormItem : ModItem
 {
     public override void SetDefaults()
     {
-        // Damage and knockback are the floors of the charge band -- FlailstormProj multiplies both
-        // by CHARGE_SCALE at full wind-up, putting the ceiling at 25 and 11.5. Crit is a bonus over
-        // the base 4%, ramped to 45% by the projectile.
+        // Floors of the charge band: FlailstormProj scales damage and knockback by CHARGE_SCALE at full wind-up (25 and
+        // 11.5) and ramps crit to 45%.
         Item.damage = 10;
         Item.knockBack = 4.6f;
         Item.crit = 2;
@@ -20,8 +19,7 @@ public class FlailstormItem : ModItem
         Item.UseSound = SoundID.DD2_MonkStaffSwing;
         Item.shootSpeed = 10.5f;
 
-        // MeleeNoSpeed: attack speed bonuses would otherwise shorten the wind-up, and the wind-up is
-        // the weapon.
+        // MeleeNoSpeed: attack speed would shorten the wind-up, which is the weapon.
         Item.DamageType = DamageClass.MeleeNoSpeed;
         Item.noUseGraphic =
             Item.channel = Item.noMelee = true;

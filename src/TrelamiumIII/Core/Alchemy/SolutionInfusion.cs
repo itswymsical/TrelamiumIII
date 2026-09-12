@@ -7,10 +7,7 @@ using Terraria.ModLoader.IO;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-/// <summary>
-/// Display metadata per <see cref="ChemicalQuality"/> flag (shared by the infused-solution
-/// tooltip; the almanac badges keep their own table for now).
-/// </summary>
+/// <summary>Display metadata per <see cref="ChemicalQuality"/> flag, for the infused-solution tooltip.</summary>
 public static class ChemicalTypeInfo
 {
     private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _meta =
@@ -41,11 +38,7 @@ public static class ChemicalTypeInfo
     }
 }
 
-/// <summary>
-/// Optional visual override for one (item type, infusion) pair: a replacement sprite and/or a
-/// shader pass, applied wherever the item instance draws (inventory slots and in the world).
-/// The tooltip suffix/VFX stay independent of this.
-/// </summary>
+/// <summary>Optional sprite and/or shader override for one (item type, infusion) pair, wherever the instance draws.</summary>
 public sealed class InfusionVisual
 {
     /// <summary>Replacement sprite path. Null keeps the item's own texture.</summary>
@@ -80,20 +73,13 @@ public static class InfusionVisuals
     public static void Clear() => _visuals.Clear();
 }
 
-/// <summary>
-/// Registers the stock infusion visuals. PARKED: no visuals register while the infusion
-/// front-end is shelved (solutions stay dedicated items); the registry and draw hooks stay
-/// wired for the future infusion-as-augmentation pass.
-/// </summary>
+/// <summary>Stock infusion visuals. PARKED: nothing registers while the infusion front-end is shelved; the hooks stay wired.</summary>
 public class InfusionVisualsSystem : ModSystem
 {
     public override void Unload() => InfusionVisuals.Clear();
 }
 
-/// <summary>
-/// Per-instance "infusion" on Bottled Water: a single <see cref="ChemicalQuality"/> that turns the
-/// plain vanilla item into a suffixed solvent.
-/// </summary>
+/// <summary>A per-instance <see cref="ChemicalQuality"/> infusion that turns a bottled solvent into a suffixed one.</summary>
 public class SolutionGlobalItem : GlobalItem
 {
     public override bool InstancePerEntity => true;

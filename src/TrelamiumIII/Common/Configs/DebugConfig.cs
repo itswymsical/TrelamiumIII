@@ -11,7 +11,6 @@ namespace TrelamiumIII.Common.Configs
     internal class DebugConfig : ModConfig
     {
         public override ConfigScope Mode => ConfigScope.ClientSide;
-        /// <summary>Matches the accessor convention the other configs use.</summary>
         internal static DebugConfig Instance => ModContent.GetInstance<DebugConfig>();
 
         [Header("DebugMode")]

@@ -9,10 +9,8 @@ public class UpdateSubworldSystem : ModSystem
     {
         if (SubworldSystem.AnyActive())
         {
-            // Update mechanisms
             Wiring.UpdateMech();
 
-            // Update tile entities
             TileEntity.UpdateStart();
             foreach (var te in TileEntity.ByID.Values)
             {
@@ -20,7 +18,6 @@ public class UpdateSubworldSystem : ModSystem
             }
             TileEntity.UpdateEnd();
 
-            // Update liquid
             if (++Liquid.skipCount > 1)
             {
                 Liquid.UpdateLiquid();

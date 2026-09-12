@@ -101,9 +101,7 @@ public class ShroomsonMinion : ModProjectile
     private const float GROUND_FRICTION = 0.78f;
 
     /// <summary>
-    ///     Multiplier on his top speed once he is properly behind. A walk is slower than a player in
-    ///     boots, so without a run he can never close the gap in open ground and a Shroomson who
-    ///     can never close the gap reads as stuck and digs when there was nothing in his way.
+    ///     Top-speed multiplier once far behind; a walk is slower than a player in boots and would never close the gap.
     /// </summary>
     private const float CATCHUP_SPEED = 1.9f;
 
@@ -124,16 +122,9 @@ public class ShroomsonMinion : ModProjectile
     private const float BURROW_RANGE = 250f;
 
     /// <summary>
-    ///     Height above him that a jump cannot clear, so climbing under his own power is the only
-    ///     way up.
+    ///     Height above him a jump can't clear (a jump reaches about 68 px), so he climbs instead. Without it an owner
+    ///     overhead is inside both <see cref="BURROW_RANGE" /> and <see cref="STUCK_SLACK" />, and he'd hop forever.
     /// </summary>
-    /// <remarks>
-    ///     A jump reaches <c>JUMP_SPEED^2 / (2 * GRAVITY)</c>, which is about sixty-eight pixels --
-    ///     four tiles. Everything past that used to fall into a hole between the two dig triggers: an
-    ///     owner directly overhead is inside <see cref="BURROW_RANGE" /> so distance never fires it,
-    ///     and inside <see cref="STUCK_SLACK" /> so the stuck counter is reset every tick and never
-    ///     fires it either. He would stand underneath and hop, forever.
-    /// </remarks>
     private const float ASCEND_TRIGGER = 80f;
 
     /// <summary>Furthest to the side the owner may be for this to read as "above" and not "over there".</summary>
@@ -147,13 +138,7 @@ public class ShroomsonMinion : ModProjectile
     /// <summary>Backstop, in case the owner climbs faster than he does.</summary>
     private const int ASCEND_TIMEOUT = 150;
 
-    /// <summary>
-    ///     Frames before he may climb again.
-    /// </summary>
-    /// <remarks>
-    ///     Arriving level with an owner stood over a gap means falling straight back out of range,
-    ///     and without this he would climb again on the next tick and hover there.
-    /// </remarks>
+    /// <summary>Frames before he may climb again, so he doesn't hover when he falls straight back out of range.</summary>
     private const int ASCEND_COOLDOWN = 45;
 
     /// <summary>Backstop for a Shroomson that is not even on the ground to dig into any more.</summary>
@@ -218,10 +203,7 @@ public class ShroomsonMinion : ModProjectile
 
     private static readonly Vector2 SurfaceSquish = new(0.62f, 1.45f);
 
-    /// <summary>
-    ///     The sheet is drawn with the body one pixel left of the 42-wide frame's centre, so the draw
-    ///     origin has to be nudged onto the body or he sits a pixel right of his own hitbox.
-    /// </summary>
+    /// <summary>The body sits a pixel left of the 42-wide frame's centre, so the origin is nudged onto it.</summary>
     private const float BODY_NUDGE_X = 1f;
 
     private const int FRAME_IDLE = 0;
@@ -236,10 +218,7 @@ public class ShroomsonMinion : ModProjectile
     /// <summary>Pixels of ground covered per step of the walk cycle.</summary>
     private const float WALK_FRAME_PIXELS = 26f;
 
-    /// <summary>
-    ///     Where the mushroom sits in each frame.
-    ///     Only the toss frames carry a real one, the rest are along for the ride.
-    /// </summary>
+    /// <summary>Where the mushroom sits in each frame; only the toss frames matter.</summary>
     private static readonly Vector2[] HandOffsets =
     [
         new(6f, 4f),     // 0 | idle
@@ -296,10 +275,7 @@ public class ShroomsonMinion : ModProjectile
 
     private int followRerollTimer;
 
-    /// <summary>
-    ///     Where the throw was aimed. Owner-only, since the owner is the only client that spawns the
-    ///     mushroom.
-    /// </summary>
+    /// <summary>Where the throw was aimed. Owner-only, since only the owner spawns the mushroom.</summary>
     private Vector2 aimPoint;
 
     /// <summary>Per-axis draw scale, driven by the burrow. Cosmetic, so it is never synced.</summary>
@@ -343,12 +319,7 @@ public class ShroomsonMinion : ModProjectile
 
     public override void SetStaticDefaults()
     {
-        // Sheet:
-        // 42x38, 9 frames
-        // 0 | idle
-        // 1 - 3 | walk
-        // 4 - 7 | toss mushroom
-        // 8 | jump / falling / airborne
+        // Sheet: 42x38, 9 frames. 0 idle, 1-3 walk, 4-7 toss mushroom, 8 airborne.
 
         Main.projFrames[Type] = 9;
         // This is necessary for right-click targeting
@@ -493,16 +464,11 @@ public class ShroomsonMinion : ModProjectile
     {
         Recall(owner);
 
-        // A Shroomson with something to attack neither tunnels nor climbs. The dig goes to the
-        // OWNER, so digging mid-fight both abandons the target and travels away from it -- and
-        // because the trigger is distance from the owner, and fighting is exactly when a minion is
-        // furthest from them, it fired constantly. Whatever he cannot reach can wait until there is
-        // nothing left to throw at.
+        // No digging or climbing with a target: both travel to the owner, away from the fight, and the distance trigger
+        // fires most while fighting. Unreachable things can wait.
         if (target is null && Main.myPlayer == Projectile.owner)
         {
-            // Climbing is tried first. It is the answer whenever the way up is simply open air, and
-            // it is also the case a dig cannot solve: there is no floor between them to surface
-            // through, so tunnelling would only put him back underneath the same gap.
+            // Climbing is tried first: it handles open air overhead, where a dig has no floor to surface through.
             if (ShouldAscend(owner))
             {
                 SetState(ShroomsonState.Ascend);
@@ -558,10 +524,7 @@ public class ShroomsonMinion : ModProjectile
         );
     }
 
-    /// <summary>
-    ///     Last resort for a Shroomson the dig cannot help: one with no ground under him at all,
-    ///     dropped down a shaft or left behind while the player flew off.
-    /// </summary>
+    /// <summary>Last resort when digging can't help: no ground under him, or left far behind while the player flew.</summary>
     private void Recall(Player owner)
     {
         if (Projectile.Distance(owner.Center) < TELEPORT_RANGE)
@@ -573,13 +536,8 @@ public class ShroomsonMinion : ModProjectile
     }
 
     /// <summary>
-    ///     Whether the owner is straight up through open air, which is the one gap a jump cannot
-    ///     close and a dig cannot fix.
+    ///     Whether the owner is straight up through open air. Owner-only, since it uses positions remote clients approximate.
     /// </summary>
-    /// <remarks>
-    ///     Owner-only for the same reason <see cref="ShouldDig" /> is: the decision is measured
-    ///     against positions remote clients only approximate.
-    /// </remarks>
     private bool ShouldAscend(Player owner)
     {
         if (!grounded || ascendCooldown > 0)
@@ -598,16 +556,7 @@ public class ShroomsonMinion : ModProjectile
         return ColumnIsClear(Projectile.Center.X, Projectile.Top.Y, owner.Bottom.Y);
     }
 
-    /// <summary>
-    ///     Whether the vertical run between two heights is free of anything he would have to go
-    ///     through.
-    /// </summary>
-    /// <remarks>
-    ///     Platforms deliberately do not count. They are passable from below, which is exactly the
-    ///     shape of arena this exists for -- an owner stood on a platform tower is reachable by
-    ///     climbing and not by anything else, because a dig has no floor down there to come up
-    ///     through and would strand him underneath all over again.
-    /// </remarks>
+    /// <summary>Whether the vertical run is unobstructed. Platforms don't count, since they're passable from below.</summary>
     private static bool ColumnIsClear(float worldX, float fromY, float toY)
     {
         int tileX = (int)(worldX / 16f);
@@ -636,14 +585,8 @@ public class ShroomsonMinion : ModProjectile
     }
 
     /// <summary>
-    ///     Climbs to the owner under his own power, steering as he goes.
+    ///     Climbs to the owner while steering. A state rather than a precomputed leap, which breaks when the owner moves.
     /// </summary>
-    /// <remarks>
-    ///     A state rather than a bigger jump, because a leap sized to arrive exactly is fragile --
-    ///     it has to be re-derived every time the owner moves, and it overshoots or falls short the
-    ///     moment they do. Climbing simply keeps going until it is level with them, and gives up
-    ///     honestly when the way closes.
-    /// </remarks>
     private void UpdateAscend(Player owner, NPC? target)
     {
         StateTimer++;
@@ -677,13 +620,9 @@ public class ShroomsonMinion : ModProjectile
     }
 
     /// <summary>
-    ///     Whether walking has stopped working: he is either a long way off, or has spent long enough
-    ///     getting nowhere that there is clearly something in the way he can neither step nor jump.
+    ///     Whether walking has stopped working: far away, or stuck long enough that something is in the way. Owner-only,
+    ///     since the stuck count uses positions remote clients approximate.
     /// </summary>
-    /// <remarks>
-    ///     Owner-only, because the stuck count is measured against a position remote clients only
-    ///     approximate, and they would each reach the conclusion on a different tick.
-    /// </remarks>
     private bool ShouldDig(Player owner)
     {
         // Nothing to dig into mid-air, and a Shroomson still falling is making progress by default.
@@ -693,10 +632,7 @@ public class ShroomsonMinion : ModProjectile
         return Projectile.Distance(owner.Center) > BURROW_RANGE || stuckTimer >= STUCK_TIMEOUT;
     }
 
-    /// <summary>
-    ///     Watches whether he is actually getting anywhere. Without it a Shroomson pressed against
-    ///     something he cannot climb walks into it until the buff runs out.
-    /// </summary>
+    /// <summary>Tracks whether he's getting anywhere, so an unclimbable obstacle doesn't trap him walking into it.</summary>
     private void TrackProgress(Vector2? destination)
     {
         if (destination is not { } goal)
@@ -736,13 +672,8 @@ public class ShroomsonMinion : ModProjectile
     }
 
     /// <summary>
-    ///     Decides whether it is time to make you something.
+    ///     Decides whether to make a gift. Owner-only: the cooldown re-roll is random, and the result syncs through ai[].
     /// </summary>
-    /// <remarks>
-    ///     Owner-only. The timing itself is deterministic, but the cooldown it re-rolls is not, and
-    ///     every client running its own <see cref="Main.rand" /> would leave them disagreeing about
-    ///     whether a mushroom exists. The resulting state rides ai[] out to everyone else.
-    /// </remarks>
     private bool TryBeginGift(Player owner)
     {
         if (Main.myPlayer != Projectile.owner || giftCooldown > 0 || !grounded)
@@ -857,10 +788,7 @@ public class ShroomsonMinion : ModProjectile
         );
     }
 
-    /// <summary>
-    ///     Solves the throw that lands on <paramref name="aim" /> under the mushroom's own gravity,
-    ///     so the arc is aimed rather than merely pointed.
-    /// </summary>
+    /// <summary>Launch velocity that lands on <paramref name="aim" /> under the mushroom's gravity.</summary>
     private static Vector2 LobTo(Vector2 from, Vector2 aim)
     {
         Vector2 toTarget = aim - from;
@@ -959,10 +887,7 @@ public class ShroomsonMinion : ModProjectile
             SetState(ShroomsonState.Burrow);
     }
 
-    /// <summary>
-    ///     Underground: no gravity, no terrain, no sprite. He runs below the player's feet so he
-    ///     comes up through the floor they are stood on rather than through the middle of them.
-    /// </summary>
+    /// <summary>Underground: no gravity, terrain or sprite. Runs below the player's feet so he surfaces through their floor.</summary>
     private void UpdateBurrow(Player owner)
     {
         StateTimer++;
@@ -1004,9 +929,7 @@ public class ShroomsonMinion : ModProjectile
     {
         Player owner = Owner;
 
-        // Started a little above the player's feet, so the first solid tile found is the floor they
-        // are stood on and not the one below it. With nothing under them at all -- flying, or over a
-        // pit -- he simply arrives at their feet.
+        // Searches from just above the player's feet so it finds their floor; with nothing underneath, he arrives at their feet.
         Projectile.Bottom = TryFindFloor(owner.Bottom - new Vector2(0f, 8f), out float floorY)
             ? new Vector2(owner.Bottom.X, floorY)
             : owner.Bottom;
@@ -1031,10 +954,7 @@ public class ShroomsonMinion : ModProjectile
         }
     }
 
-    /// <summary>
-    ///     Dirt kicked out at the surface directly above the tunnel, so the trip reads as a trail
-    ///     crossing the ground rather than as a Shroomson that simply vanished.
-    /// </summary>
+    /// <summary>Dirt kicked up above the tunnel, so the trip reads as a trail rather than vanishing.</summary>
     private void MoleTrail()
     {
         if (!TryFindSurface(Projectile.Center, out float surfaceY))
@@ -1093,16 +1013,9 @@ public class ShroomsonMinion : ModProjectile
     }
 
     /// <summary>
-    ///     Whether a tile is something the Shroomson could come up onto.
+    ///     Whether he could surface onto this tile. Unlike <see cref="WorldGen.SolidTile(int, int, bool)" />, platforms,
+    ///     slopes and half blocks count.
     /// </summary>
-    /// <remarks>
-    ///     Deliberately not <see cref="WorldGen.SolidTile(int, int, bool)" />, which answers a
-    ///     narrower question: it excludes anything <see cref="Main.tileSolidTop" />, and anything
-    ///     sloped or halved. Every one of those is a surface a player can stand on, so using it here
-    ///     meant a Shroomson digging to an owner stood on a platform ignored the platform, kept
-    ///     searching, and surfaced on whatever real ground happened to be underneath it -- which is
-    ///     usually a long way down, and sometimes nowhere at all.
-    /// </remarks>
     private static bool IsStandable(int tileX, int tileY)
     {
         Tile tile = Framing.GetTileSafely(tileX, tileY);
@@ -1141,9 +1054,7 @@ public class ShroomsonMinion : ModProjectile
         return false;
     }
 
-    /// <summary>
-    ///     A whip mark wins outright; failing that, the nearest thing worth throwing at.
-    /// </summary>
+    /// <summary>A whip mark wins outright; otherwise the nearest thing worth throwing at.</summary>
     private NPC? FindTarget(Player owner)
     {
         if (owner.HasMinionAttackTargetNPC)
@@ -1244,10 +1155,7 @@ public class ShroomsonMinion : ModProjectile
         ResolveTerrain();
     }
 
-    /// <summary>
-    ///     Resolves the walk against terrain, leaving <see cref="Projectile.velocity" /> as the move
-    ///     the engine is allowed to make this tick.
-    /// </summary>
+    /// <summary>Resolves the walk against terrain, leaving velocity as the move the engine may make this tick.</summary>
     private void ResolveTerrain()
     {
         DecayStepOffset();
@@ -1270,11 +1178,7 @@ public class ShroomsonMinion : ModProjectile
         Projectile.velocity = resolved;
     }
 
-    /// <summary>
-    ///     Eases the step-up offset back to zero. Nothing decays a projectile's
-    ///     <see cref="Projectile.gfxOffY" /> for us, so without this one step leaves the sprite
-    ///     floating for good.
-    /// </summary>
+    /// <summary>Eases the step-up gfxOffY back to zero; nothing decays it for projectiles.</summary>
     private void DecayStepOffset()
     {
         if (Projectile.gfxOffY > 0f)
@@ -1305,9 +1209,7 @@ public class ShroomsonMinion : ModProjectile
 
     private int WindFrame()
     {
-        // The cloud is gathered in the cocked hand and then brought around into the presenting pose
-        // for the flash, so the silhouette and the mushroom that replaces it land in the same place
-        // rather than the mushroom appearing across the body from where it was grown.
+        // The cloud gathers in the cocked hand, then moves to the presenting pose for the flash, so the mushroom appears where it grew.
         if (FlashProgress > 0f)
             return FRAME_HOLD;
 

@@ -5,12 +5,8 @@ using TrelamiumIII.Content.Alchemy.Solutions;
 namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
-/// Procedural fluid for the Advanced Alchemy Station chamber. Replaces the flat tinted overlay while
-/// keeping its composite-space anchor: the <c>ChamberLiquidOverlay</c> mask (a 48x50 capsule silhouette)
-/// is reused as the liquid's <i>shape</i>, and every layer is drawn FROM that mask so it self-clips to the
-/// glass. The body is tinted by the loaded vial's average sprite
-/// colour; while brewing the hue drifts slowly, turbulence bands rise through the fluid, and the surface
-/// sloshes, with intensity scaling by brew progress (see <see cref="AdvancedAlchemyStationEntity.BrewProgress"/>).
+/// Procedural chamber fluid, drawn from the <c>ChamberLiquidOverlay</c> capsule mask so it self-clips to the glass.
+/// Tinted by the vial's colour; while brewing it drifts in hue, churns and sloshes, scaling with brew progress.
 /// </summary>
 internal static class AdvancedAlchemyStationLiquid
 {
@@ -26,9 +22,8 @@ internal static class AdvancedAlchemyStationLiquid
     private static readonly Dictionary<int, Color> _avgColorCache = new();
 
     /// <summary>
-    /// Per-item fluid colours: listed items render as their actual liquid; everything else falls back to the
-    /// item's average sprite colour. Brine and oil are sampled from their liquid sprites; water and honey use
-    /// representative vanilla tints. Built lazily because modded item ids resolve only after content loads.
+    /// Fluid colours for items that are liquids; everything else falls back to its average sprite colour. Built lazily
+    /// because modded item ids resolve only after content loads.
     /// </summary>
     private static Dictionary<int, Color>? _liquidColors;
     private static Dictionary<int, Color> LiquidColors => _liquidColors ??= new()
@@ -42,10 +37,8 @@ internal static class AdvancedAlchemyStationLiquid
     private static readonly Color SaltTint = new(220, 225, 235);
 
     /// <summary>
-    /// Draws the chamber fluid. <paramref name="baseTopLeft"/> is the mask's unrocked top-left in screen space
-    /// (composite origin + ChamberLiquidOffset); <paramref name="motion"/> rocks/vibrates every layer in step
-    /// with the glass. <paramref name="light"/> is the tile's lighting; <paramref name="progress"/> is 0..1
-    /// brew progress, only meaningful while <paramref name="brewing"/>.
+    /// Draws the chamber fluid. <paramref name="baseTopLeft"/> is the mask's unrocked screen top-left; <paramref name="motion"/>
+    /// rocks every layer with the glass; <paramref name="progress"/> (0..1) only matters while <paramref name="brewing"/>.
     /// </summary>
     public static void Draw(SpriteBatch sb, Texture2D mask, Vector2 baseTopLeft, ChamberMotion motion, int vialType, Color light, bool brewing, float progress)
     {
@@ -56,7 +49,6 @@ internal static class AdvancedAlchemyStationLiquid
 
         Color content = ContentColor(vialType);
 
-        // Colour: slow hue drift while brewing, so the fluid "reacts" over the brew.
         Color baseColor = content;
         if (brewing)
         {
@@ -67,7 +59,6 @@ internal static class AdvancedAlchemyStationLiquid
             baseColor = Color.Lerp(content, drifted, 0.5f + 0.5f * wobble);
         }
 
-        // Fill level: a tiny resting bob, larger while brewing.
         float bobAmp = brewing ? 0.018f + 0.03f * progress : 0.012f;
         float bobSpeed = brewing ? 2.4f : 1.4f;
         float fill = MathHelper.Clamp(RestFill + bobAmp * (float)Math.Sin(t * bobSpeed), 0.05f, 1f);
@@ -76,12 +67,10 @@ internal static class AdvancedAlchemyStationLiquid
         if (bodyH <= 0)
             return;
 
-        // Brighten: multiplying straight by tile light crushes the fluid too dark, so lift the effective
-        // lighting toward white. Keeps the per-item hue but stops caves/night from washing it to near-black.
+        // Lift lighting toward white: multiplying by raw tile light crushes the fluid near-black in caves and at night.
         Color glow = Color.Lerp(light, Color.White, BrightnessBoost);
 
-        // Body: the bottom slice of the mask, self-clipped to the rounded capsule. The mask's own internal
-        // shading survives the colour multiply, lending the fluid some volume.
+        // Body: the bottom slice of the mask; its internal shading survives the multiply and gives the fluid volume.
         Color body = Mul(baseColor, glow);
         sb.Draw(mask, motion.Place(baseTopLeft + new Vector2(0f, topY)), new Rectangle(0, topY, w, bodyH),
             body, motion.Angle, Vector2.Zero, 1f, SpriteEffects.None, 0f);
@@ -117,11 +106,8 @@ internal static class AdvancedAlchemyStationLiquid
                 surf * 0.45f, motion.Angle, Vector2.Zero, 1f, SpriteEffects.None, 0f);
         }
 
-        // Brine: extra fine "salt" bands on top of the water body. Faster scroll and tighter (1px) bands
-        // than the regular turbulence so the read is "suspended particles drifting" rather than "currents".
-        // World brine uses an actual scrolling FBM noise overlay; the chamber can't easily clip a noise
-        // sample to the capsule mask without a render target, so we approximate the same drift with
-        // mask-clipped bands sharing the world render's color palette.
+        // Brine: fine, fast 1px "salt" bands over the body. The world overlay uses scrolling FBM noise, which can't be
+        // clipped to the capsule without a render target, so bands approximate it with the same palette.
         if (isBrine && bodyH > 4)
         {
             Color salt = Mul(SaltTint, glow);

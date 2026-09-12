@@ -6,9 +6,7 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 
 /// <summary>
-/// Applies brewed effect instances. The vanilla buff owns the icon + timer; each active effect is
-/// dispatched to its <see cref="IEffectBehavior"/> (a stat nudge, or suppress+reparameterise for the
-/// "binary" effects). Effects are keyed by vanilla buff id, so one potion can carry several at once.
+/// Applies brewed effects: the vanilla buff owns icon and timer, and each effect runs its <see cref="IEffectBehavior"/>. Keyed by buff id.
 /// </summary>
 public class AlchemyEffectPlayer : ModPlayer
 {
@@ -41,9 +39,7 @@ public class AlchemyEffectPlayer : ModPlayer
 
     public override void ModifyLuck(ref float luck)
     {
-        // luckPotion is vanilla's tier (1-3 by time left), worth LuckBehavior.PerTier each once
-        // RecalculateLuck has folded it in. Zero means vanilla contributed nothing to rescale here
-        // (no buff up, or a copy of a player this client doesn't own), so we mirror that and bow out.
+        // luckPotion is vanilla's tier (1-3), each worth LuckBehavior.PerTier. Zero means vanilla added nothing to rescale.
         if (Player.luckPotion <= 0) return;
         if (!TryGetActiveBrew(BuffID.Lucky, out var fx)) return;   // stock potion keeps vanilla's values
 
@@ -75,9 +71,7 @@ public class AlchemyEffectPlayer : ModPlayer
             _pendingDuration.Clear();
         }
 
-        // A stat somebody else consumes in UpdateEquips has to be written here, in the gap between
-        // "every buff has ticked" and "equips are applied", the PostUpdateEquips pass below lands a
-        // frame too late for those. Expiry is pruned there; HasBuff covers the one frame in between.
+        // Stats consumed in UpdateEquips must be written here, between buff ticks and equips; PostUpdateEquips is a frame late.
         if (_active.Count == 0) return;
         foreach (var (buff, fx) in _active)
             if (Player.HasBuff(buff))

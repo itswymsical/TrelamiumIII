@@ -4,19 +4,9 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Content.Fungore;
 
 /// <summary>
-///     A chunk of whatever <see cref="GirthquakeProj" /> just smashed, thrown out in the impact fan.
+///     A chunk of whatever <see cref="GirthquakeProj" /> smashed, drawn as an 8x8 crop of the struck tile's sheet.
+///     <see cref="Entity.ai" />[0] is the tile type and [1] the crop, so the spawn packet is enough to sync it.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The shard has no sprite of its own, it draws an 8x8 crop lifted straight out of the
-///         struck tile's own sheet.
-///     </para>
-///     <para>
-///         <see cref="Entity.ai" />[0] carries the tile type and [1] the crop to take from it. Both
-///         come across in the spawn packet, so every client cuts the same shard out of the same
-///         sheet without any extra syncing.
-///     </para>
-/// </remarks>
 public class EarthShardProj : ModProjectile
 {
 
@@ -59,7 +49,6 @@ public class EarthShardProj : ModProjectile
 
     public override void OnSpawn(IEntitySource source)
     {
-        // Spin from the throw rather than at random
         Spin = Projectile.velocity.X * 0.02f + 0.09f * Math.Sign(Projectile.velocity.X);
 
         Projectile.scale = 0.8f + ChunkSeed / (float)CHUNK_SEEDS * 0.6f;

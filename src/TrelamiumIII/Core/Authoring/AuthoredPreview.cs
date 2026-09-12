@@ -6,15 +6,8 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     Builds real <see cref="BookBlock" />s from the authored model so the viewport shows the page
-///     the reader will get, flowed by the same composer.
+///     Builds real blocks from the authored model for the viewport, with text inline since it isn't in localization yet.
 /// </summary>
-/// <remarks>
-///     Deliberately bypasses <see cref="Lore.LoreBookBuilder" />. The builder reads its words out of
-///     localization, and the words being previewed are not in localization yet -- they are in the
-///     buffer. The blocks are constructed with their text inline instead, which is the one place in
-///     the mod that is allowed to do that.
-/// </remarks>
 public static class AuthoredPreview
 {
     public static List<BookBlock> ToBlocks(AuthoredBook book)

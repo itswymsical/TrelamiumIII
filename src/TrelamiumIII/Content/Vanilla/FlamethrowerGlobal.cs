@@ -2,9 +2,7 @@
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 
 namespace TrelamiumIII.Content.Vanilla;
-/// <summary>
-/// makes the flamethrower burn tiles
-/// </summary>
+/// <summary>Makes the flamethrower burn tiles.</summary>
 public class FlamethrowerGlobal : GlobalProjectile
 {
     public override bool InstancePerEntity => true;

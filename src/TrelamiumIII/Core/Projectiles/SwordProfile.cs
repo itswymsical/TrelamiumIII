@@ -36,39 +36,32 @@ public enum SwingArcStyle
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The counterpart to <see cref="GunShotProfile" />, and it exists for the same reason. Two
-///         swords that deal the same damage feel nothing alike, and all of the difference is in
-///         numbers that have no business being restated in every weapon: how far the arc travels,
-///         how long the blade hangs before it commits, how much of it is follow-through, where the
-///         edge starts, how closely the arm tracks. Pulling those into a value means a new weapon is
-///         a preset and a hit effect rather than another copy of the same swing arithmetic.
+///         The counterpart to <see cref="GunShotProfile" />. Swords that deal the same damage can feel
+///         nothing alike, and the difference lives in numbers like arc travel, windup hang,
+///         follow-through, edge start and arm tracking. Pulling those into a value means a new weapon
+///         is a preset and a hit effect rather than another copy of the swing arithmetic.
 ///     </para>
 ///     <para>
-///         One strike runs windup, swing, recover. The windup carries the blade from its guard to
-///         the far side of the arc and is the only part that can still be aimed; the swing is the
-///         only part that hurts anything; the recover brings it back to guard and is the gap the
-///         next strike opens from. <see cref="Anticipation" /> is a number rather than a fourth
-///         phase -- it widens the arc backwards past its nominal start, so the windup overshoots and
-///         the swing has that overshoot to spend. A heavy weapon reads as heavy without being given
-///         any extra frames to do it in.
+///         One strike runs windup, swing, recover. The windup carries the blade from guard to the far
+///         side of the arc and is the only part that can still be aimed; the swing is the only part
+///         that hurts anything; the recover returns to guard. <see cref="Anticipation" /> is a number
+///         rather than a fourth phase -- it widens the arc backwards so the windup overshoots, which
+///         makes a heavy weapon read as heavy without extra frames.
 ///     </para>
 ///     <para>
 ///         Everything angular is stated in <i>facing space</i>: positive is toward the ground, and
-///         forward is wherever the weapon is pointed, on both sides of the screen. The alternative
-///         is stating world angles and mirroring at every use site, which buys a weapon exactly one
-///         swing before somebody turns around and the down-slash comes up.
+///         forward is wherever the weapon is pointed, on both sides of the screen, so use sites never
+///         have to mirror.
 ///     </para>
 ///     <para>
-///         The combo lives here too, as <see cref="Steps" />. A weapon that says nothing gets
-///         <see cref="SwingStep.Alternating" /> -- down, up, repeat -- which is what most swords want
-///         and none of them should have to ask for. See <see cref="SwingStep" />.
+///         The combo lives here too, as <see cref="Steps" />. Unset, it defaults to
+///         <see cref="SwingStep.Alternating" /> (down, up, repeat). See <see cref="SwingStep" />.
 ///     </para>
 ///     <para>
-///         A record struct so presets compose: start from <see cref="Broadsword" /> and adjust with
-///         a <see langword="with" /> expression rather than restating thirty fields. Starting from a
-///         preset is the supported path -- a profile built field by field from
-///         <see langword="default" /> has a zero-length blade and no timing, and only the handful of
-///         fields whose zero would crash rather than merely look wrong are defended against.
+///         Start from a preset such as <see cref="Broadsword" /> and adjust with a
+///         <see langword="with" /> expression. A profile built from <see langword="default" /> has a
+///         zero-length blade and no timing, and only fields whose zero would crash are defended
+///         against.
 ///     </para>
 /// </remarks>
 public readonly record struct SwordProfile
@@ -113,11 +106,9 @@ public readonly record struct SwordProfile
 
     /// <summary>How closely the front arm tracks the blade, 0 to 1. Zero means unset.</summary>
     /// <remarks>
-    ///     A wide arc taken literally swings the arm through the player's own torso and out the far
-    ///     side. Dropping the follow keeps the shoulder inside its range while the blade still
-    ///     covers the whole sweep, because the blade pivots at the hand rather than being welded to
-    ///     the arm's angle -- the two are allowed to disagree, and past about two radians they have
-    ///     to.
+    ///     A wide arc taken literally swings the arm through the player's torso. Lowering this keeps
+    ///     the shoulder in range while the blade still covers the whole sweep, since the blade pivots
+    ///     at the hand; past about two radians of arc the two have to disagree.
     /// </remarks>
     public float ArmFollow { get; init; }
 
@@ -177,10 +168,9 @@ public readonly record struct SwordProfile
     ///     Radians the windup carries the blade past the start of the arc, against the sweep.
     /// </summary>
     /// <remarks>
-    ///     The whole of a weapon's weight, as one number. It costs no time -- the windup is however
-    ///     many ticks it is either way -- but the swing then has further to travel in the same
-    ///     frames, so it moves faster and arrives harder. It widens the damaging sweep too, since
-    ///     the blade genuinely passes through that extra ground.
+    ///     The whole of a weapon's weight, as one number. It costs no time, but the swing has further
+    ///     to travel in the same frames, so it moves faster and arrives harder. The extra ground is
+    ///     part of the damaging sweep too.
     /// </remarks>
     public float Anticipation { get; init; }
 
@@ -188,18 +178,10 @@ public readonly record struct SwordProfile
     ///     Pixels the grip is driven forward along the blade at the far end of a sweep.
     /// </summary>
     /// <remarks>
-    ///     <para>
-    ///         The lean into a strike. It moves the grip rather than lengthening the blade, so the
-    ///         sprite, the hitbox and the arc all extend together -- reach bought this way is reach
-    ///         the player can see. Stretching <see cref="BladeLength" /> instead would buy the same
-    ///         pixels and hand them to a hitbox hanging off the end of the drawn weapon.
-    ///     </para>
-    ///     <para>
-    ///         Small on purpose. This is a body committing to a swing, not a lunge; past about a
-    ///         fifth of the blade the grip visibly detaches from the hand it is supposed to be in.
-    ///         <see cref="SwingStep.Extend" /> scales it per step, which is what lets a down-slash
-    ///         lean in and its return stroke not.
-    ///     </para>
+    ///     Moves the grip rather than lengthening the blade, so the sprite, hitbox and arc all extend
+    ///     together; stretching <see cref="BladeLength" /> would put the extra reach on a hitbox
+    ///     hanging off the end of the drawn weapon. Keep it small: past about a fifth of the blade the
+    ///     grip visibly detaches from the hand. <see cref="SwingStep.Extend" /> scales it per step.
     /// </remarks>
     public float Extend { get; init; }
 

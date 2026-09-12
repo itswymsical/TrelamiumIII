@@ -4,9 +4,8 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Common.Commands;
 
 /// <summary>
-/// Dev toggle for Almanac discovery state, so entries can be reviewed and balanced without brewing
-/// every product first. Drives the same two sets the Almanac's indexes read from
-/// (<see cref="AlmanacDiscoverySystem"/>), over exactly the types those indexes list.
+/// Dev toggle for Almanac discovery state, so entries can be reviewed without brewing every product first.
+/// Drives the same sets the <see cref="AlmanacDiscoverySystem"/> indexes read from.
 /// </summary>
 public class AlmanacCommand : ModCommand
 {
@@ -17,9 +16,7 @@ public class AlmanacCommand : ModCommand
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {
-        // Discovery is world data the server owns and only pushes to clients on join, so a
-        // client-side edit would show in the UI and then evaporate. Refusing beats looking like
-        // it worked.
+        // Discovery is server-owned world data synced on join; a client-side edit would silently revert.
         if (Main.netMode == NetmodeID.MultiplayerClient)
         {
             caller.Reply("Almanac discovery is world data; run this in singleplayer.", Color.Red);

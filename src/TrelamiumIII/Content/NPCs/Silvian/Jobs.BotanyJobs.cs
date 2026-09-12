@@ -40,10 +40,4 @@ namespace TrelamiumIII.Content.NPCs.Silvian;
         base.OnJobComplete(giveRewards);
         Context.Play("Silvian.BotanyJob1_Complete", style: DialogueStyle.Projected);
     }
-
-    //public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
-    //{
-    //    2 => ChatEncounter.Play("Silvian.BotanyJob1_Complete"),
-    //    _ => ChatEncounter.None
-    //};
 }

@@ -34,14 +34,8 @@ public enum AuthoredAlign
 }
 
 /// <summary>
-///     One block as the editor holds it: a kind, the localization key it will be written under, and
-///     the prose itself.
+///     One editor block: kind, localization key and text. Paragraph formatting only; inline tags stay in <see cref="Text" />.
 /// </summary>
-/// <remarks>
-///     The formatting here is deliberately paragraph-level only. Character formatting stays inside
-///     <see cref="Text" /> as the same inline tags the renderer already understands, so it needs no
-///     representation of its own and survives the round trip through hjson untouched.
-/// </remarks>
 public sealed class AuthoredBlock
 {
     public AuthoredBlockKind Kind { get; set; } = AuthoredBlockKind.Prose;
@@ -63,13 +57,8 @@ public sealed class AuthoredBlock
     public float Scale { get; set; }
 
     /// <summary>
-    ///     Ink colour packed as 0xRRGGBB, or null to keep the preset's.
+    ///     Ink colour as 0xRRGGBB, or null for the preset's. An int keeps this model free of the graphics stack, so it's testable.
     /// </summary>
-    /// <remarks>
-    ///     Held as an int rather than an XNA <c>Color</c> so this model stays free of the graphics
-    ///     stack. That is what lets it -- and the exporter over it -- be tested without a device, and
-    ///     it is the form the generated C# needs anyway.
-    /// </remarks>
     public int? Ink { get; set; }
 
     public bool DropCap { get; set; }
@@ -122,10 +111,7 @@ public sealed class AuthoredBook
         }
     }
 
-    /// <summary>
-    ///     Reports keys that would collide in the localization file, since two blocks writing the same
-    ///     key silently lose one of them.
-    /// </summary>
+    /// <summary>Keys that would collide in the localization file, where one block would be silently lost.</summary>
     public IEnumerable<string> DuplicateKeys()
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);

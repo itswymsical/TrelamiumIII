@@ -277,36 +277,28 @@ public class WardenArm : ModNPC
         const float MaxRaiseHeight = 200f; // Maximum height to raise the player
         const float HorizontalHoldStrength = 0.9f; // How strongly to restrict horizontal movement (0-1)
 
-        // Store the initial grab position if it's not set
         if (grabInitialPosition == Vector2.Zero)
         {
             grabInitialPosition = target.position;
         }
 
-        // Calculate the desired position (raising the player)
         var desiredPosition = grabInitialPosition;
         desiredPosition.Y -= Math.Min(AITimer * RaiseSpeed, MaxRaiseHeight);
 
-        // Move the player towards the desired position
         target.position = Vector2.Lerp(target.position, desiredPosition, 0.2f);
 
-        // Restrict horizontal movement
         target.velocity.X *= 1f - HorizontalHoldStrength;
 
-        // Disable player's ability to jump
         target.jump = 0;
 
-        // Update NPC position to match player
         NPC.Center = target.Center;
 
-        // Handle hits taken
         if (NPC.justHit)
         {
             hitsTaken++;
             CombatText.NewText(NPC.Hitbox, Color.Red, $"Hits: {hitsTaken}!", true);
         }
 
-        // Check for release conditions
         var hitsRequired = Main.masterMode ? 5 : 3;
         if (hitsTaken >= hitsRequired)
         {
@@ -395,13 +387,11 @@ public class WardenArm : ModNPC
                 Projectile.NewProjectile(default, NPC.Center, velocity, ProjectileID.JungleSpike, 5, 0f, Main.myPlayer);
             }
 
-            // Recoil effect
             NPC.velocity -= angle * 9f; // Adjust the multiplier for stronger/weaker recoil
 
             ShotTimer = 0;
         }
 
-        // Gradually reduce recoil
         NPC.velocity *= 0.95f;
     }
 }

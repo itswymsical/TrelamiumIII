@@ -4,10 +4,7 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 
 /// <summary>
-/// Tier-gated Spelunker. Vanilla lights every ore whose <c>Main.tileSpelunker[type]</c> flag is set
-/// while the Spelunker buff is up; this rides that renderer, masking ore types deeper than the brew's
-/// <see cref="EffectParams.MaxOreTier"/> so a weak brew only reveals shallow ores. The mask is a
-/// local-client, render-only concern owned by <see cref="SpelunkerReveal"/>.
+/// Tier-gated Spelunker: masks ores deeper than <see cref="EffectParams.MaxOreTier"/> from vanilla's reveal via <see cref="SpelunkerReveal"/>.
 /// </summary>
 public sealed class SpelunkerBehavior : IEffectBehavior
 {
@@ -27,10 +24,8 @@ public sealed class SpelunkerBehavior : IEffectBehavior
 }
 
 /// <summary>
-/// Owns the tile-reveal gate for tier-limited Spelunker brews. Each frame the effect player calls
-/// <see cref="BeginFrame"/> (restoring the vanilla reveal for our ore ladder), then the active brew (if
-/// any) calls <see cref="RequestGate"/> to re-mask ores above its tier. Only ladder ore types are ever
-/// touched. Chests, pots, and hearts stay fully revealed, and un-tiered ores are never hidden.
+/// Owns the Spelunker reveal gate: <see cref="BeginFrame"/> restores the ladder, then <see cref="RequestGate"/> re-masks ores above the tier.
+/// Only ladder ores are touched; chests, pots, hearts and untiered ores stay revealed.
 /// </summary>
 public static class SpelunkerReveal
 {

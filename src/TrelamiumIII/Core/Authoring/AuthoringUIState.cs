@@ -9,30 +9,9 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Authoring;
 
 /// <summary>
-///     The authoring desk: a composed page on a desk, formatting above it, the running order beside.
+///     The authoring desk: the real composed page, formatting above, running order beside. The edited block is drawn by the editor
+///     instead of <see cref="PageComposer" /> so the caret matches the glyphs exactly. Input comes through <see cref="UIElement" /> events.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The page is always the real render. There is no draft mode to switch out of, because a
-///         writing tool that shows you something other than the thing you are making is only half a
-///         tool. Every block on the page is drawn by the same <see cref="PageComposer" /> the reader's
-///         copy goes through.
-///     </para>
-///     <para>
-///         The block being edited is the one exception, and for a specific reason: composed prose is
-///         wrapped by <see cref="BookText" /> over parsed snippets, while the caret is positioned by
-///         <see cref="EditorLayout" /> over raw characters. Those two wrappers cannot be made to agree
-///         once tags, justification or a drop cap are in play, so the caret would drift away from the
-///         glyphs. The selected block is therefore drawn by the editor instead -- same face, same
-///         scale, same ink, so it reads identically -- which makes the caret exact by construction
-///         rather than by coincidence.
-///     </para>
-///     <para>
-///         Input arrives through <see cref="UIElement" />'s events, never <c>Main.mouseLeft</c>: a
-///         click is delivered once, to the hovered element, already in this element's coordinate
-///         space.
-///     </para>
-/// </remarks>
 public sealed class AuthoringUIState : UIState
 {
     private const float CHROME = 0.8f;
@@ -134,9 +113,7 @@ public sealed class AuthoringUIState : UIState
 
         if (colorOpen && colorWheel.Press(point, colorRect)) return;
 
-        // Walked backwards, so the last thing drawn is the first thing hit. Painter's order puts
-        // overlays on top; matching front-to-back would let a toolbar button underneath an open
-        // dropdown steal the click that was meant for the list.
+        // Walked backwards, so the topmost drawn element gets the click first.
         for (int i = hotspots.Count - 1; i >= 0; i--)
         {
             if (!hotspots[i].Area.Contains(point)) continue;
@@ -159,9 +136,7 @@ public sealed class AuthoringUIState : UIState
 
         if (!editorRect.Contains(point)) return;
 
-        // Clicking into the page leaves any toolbar field that still held the buffer. That discards
-        // the wrap, and the caret placement below needs one, so it is rebuilt before being asked --
-        // for the prose this time, not for the field just left.
+        // Clicking the page leaves any toolbar field, which drops the wrap; rebuild it for the prose before placing the caret.
         LeaveShortField();
         EnsureLayout();
 
@@ -265,9 +240,7 @@ public sealed class AuthoringUIState : UIState
     {
         int height = Math.Max(200, pageRect.Height - 44);
 
-        // The sheet's height is only known once the desk has laid itself out, and it decides how
-        // much fits on a page. Composing against a stale height silently paginates the whole book
-        // wrong, so the height is part of what makes the cache valid.
+        // The sheet height decides pagination, so it's part of the cache key.
         if (composed is not null && composedFor == height) return;
 
         composedFor = height;
@@ -276,8 +249,7 @@ public sealed class AuthoringUIState : UIState
 
         composed = PageComposer.Compose(AuthoredPreview.ToBlocks(session.Book), [], metrics);
 
-        // The page follows the writer. Selecting a block that flowed onto page four should show
-        // page four, not leave the caret somewhere off-screen.
+        // Show the page the selected block flowed onto.
         int index = session.SelectedIndex;
 
         if (index >= 0 && index < composed.BlockPages.Length && composed.BlockPages[index] >= 0)
@@ -309,19 +281,9 @@ public sealed class AuthoringUIState : UIState
     /// <summary>Size the selected block renders at. One definition, owned by the session.</summary>
     private float PageScale() => session.EffectiveScale;
 
-    /// <summary>
-    ///     Rebuilds the wrap when the text, the column or the face changed under it.
-    /// </summary>
-    /// <remarks>
-    ///     The prompt gets its own metrics rather than borrowing the page's. It is a single line of
-    ///     interface text in the chrome font, and measuring it with the book face at book scale would
-    ///     put its caret somewhere else entirely.
-    /// </remarks>
+    /// <summary>Rebuilds the wrap when the text, column or face changed. Short fields use chrome-font metrics, not the page's.</summary>
     private void EnsureLayout()
     {
-        // Any one-line field is measured in the chrome font and never wraps, whether it lives in a
-        // modal or inline in the toolbar. Measuring one with the book face at book scale would put
-        // its caret somewhere else entirely.
         bool onShortField = session.Focus.IsShort();
 
         DynamicSpriteFont font = onShortField ? FontAssets.MouseText.Value : PageFont();
@@ -350,11 +312,8 @@ public sealed class AuthoringUIState : UIState
             float ascent = BaselineOf(at) * size;
             float height = at.LineSpacing * size;
 
-            // A run boundary is measured the way the book measures it. BookText lays each snippet
-            // out with its own MeasureString, which clamps the leading bearing of a run's first
-            // glyph and charges no spacing before it. Charging them here instead would make a block
-            // shift sideways the instant it stopped being the edited one and went back to being
-            // composed -- correct typography, visibly wrong behaviour.
+            // Measure run boundaries the way BookText does (clamped leading bearing, no spacing), or the block shifts sideways
+            // when it stops being the edited one.
             bool runStart = onShortField
                 ? index == 0
                 : index == 0 || index >= content.Length || buffer.FormatAt(index) != buffer.FormatAt(index - 1);
@@ -369,14 +328,7 @@ public sealed class AuthoringUIState : UIState
         }, column);
     }
 
-    /// <summary>
-    ///     The face and size one character is set in: the block's settings, with its own on top.
-    /// </summary>
-    /// <remarks>
-    ///     Character formatting adds to the block's rather than replacing it, so bolding a word inside
-    ///     an already-italic block gives bold italic. A character size overrides the block's outright,
-    ///     since two sizes cannot compose.
-    /// </remarks>
+    /// <summary>Face and size for one character: character formatting adds to the block's, but a character size overrides it.</summary>
     private (DynamicSpriteFont Font, float Scale) FaceAt(int index)
     {
         TextBuffer buffer = session.Buffer;
@@ -399,14 +351,8 @@ public sealed class AuthoringUIState : UIState
     }
 
     /// <summary>
-    ///     Distance from a face's line-box top down to its baseline.
+    ///     Line-box top to baseline, from a capital's top bearing plus ink height, since there's no ascent metric. Cached per face.
     /// </summary>
-    /// <remarks>
-    ///     Read off a capital that neither ascends above the cap line nor descends below the baseline:
-    ///     its top bearing plus its ink height lands exactly on the baseline. There is no ascent metric
-    ///     on <see cref="DynamicSpriteFont" /> to ask for directly, and guessing a fraction of the line
-    ///     height would misalign faces against each other. Cached, since it is a property of the face.
-    /// </remarks>
     private static float BaselineOf(DynamicSpriteFont font)
     {
         if (baselines.TryGetValue(font, out float cached)) return cached;
@@ -496,9 +442,7 @@ public sealed class AuthoringUIState : UIState
                     Y = placed.Rect.Y + sheet.Y,
                 };
 
-                // While a short field owns the buffer the page has no caret to show, so the block is
-                // drawn composed like every other one rather than through a layout built for a
-                // different font entirely.
+                // While a short field owns the buffer the page has no caret, so the block draws composed like the rest.
                 if (!session.Focus.IsShort()
                     && placed.SourceIndex == session.SelectedIndex
                     && session.Selected is { HasText: true })
@@ -528,14 +472,8 @@ public sealed class AuthoringUIState : UIState
     }
 
     /// <summary>
-    ///     Draws the block under the caret, run by run.
+    ///     Draws the edited block as runs of identical formatting, positioned from the layout's prefix widths so the caret lines up.
     /// </summary>
-    /// <remarks>
-    ///     A line can no longer be drawn as one string: neighbouring characters may be set in
-    ///     different faces at different sizes. It is emitted as runs of identical formatting instead,
-    ///     each positioned from the layout's own prefix widths so the glyphs land exactly where the
-    ///     caret says they will.
-    /// </remarks>
     private void DrawEditedBlock(SpriteBatch spriteBatch, float alpha)
     {
         TextBuffer buffer = session.Buffer;
@@ -670,14 +608,8 @@ public sealed class AuthoringUIState : UIState
     }
 
     /// <summary>
-    ///     Applies emphasis to the selection, or to the whole block when there is none.
+    ///     Applies emphasis to the selection, or the whole block when nothing is selected; character formatting stacks on the block's.
     /// </summary>
-    /// <remarks>
-    ///     Selecting nothing and pressing bold does what it always did -- the paragraph turns bold --
-    ///     so the control the writer already knows keeps working. Selecting a word narrows the same
-    ///     control to that word. Character formatting stacks on top of the block's, so bolding a word
-    ///     inside an italic paragraph gives bold italic rather than replacing the slant.
-    /// </remarks>
     private void Emphasise(Func<CharFormat, CharFormat> character, Action<AuthoredBlock> whole)
     {
         if (session.Buffer.HasSelection && !session.Focus.IsShort())
@@ -731,14 +663,7 @@ public sealed class AuthoringUIState : UIState
         layout = null;
     }
 
-    /// <summary>
-    ///     The size box: a readout until clicked, an editable field after.
-    /// </summary>
-    /// <remarks>
-    ///     Typed rather than only stepped, because a writer who wants 1.35 should not have to press
-    ///     a button nine times to get there. It rides the same buffer as every other field, so
-    ///     selection, clipboard and undo behave the same inside it as they do in the prose.
-    /// </remarks>
+    /// <summary>The size box: a readout until clicked, then an editable field on the shared buffer.</summary>
     private int SizeField(SpriteBatch spriteBatch, int x, int y, int width, float alpha)
     {
         var area = new Rectangle(x, y, width, BUTTON_HEIGHT);
@@ -933,10 +858,7 @@ public sealed class AuthoringUIState : UIState
         layout = null;
     }
 
-    /// <summary>
-    ///     A modal for the short fields, so the book's identity is not sitting in the toolbar where
-    ///     it can be typed into by accident.
-    /// </summary>
+    /// <summary>A modal for the short fields, so the book's identity can't be typed into by accident.</summary>
     private void DrawPrompt(SpriteBatch spriteBatch, Rectangle screen, float alpha)
     {
         var area = new Rectangle(screen.X + screen.Width / 2 - 190, screen.Y + screen.Height / 2 - 52, 380, 104);
@@ -1085,8 +1007,7 @@ public sealed class AuthoringUIState : UIState
         int full = entries.Length * ROW + 20;
         int height = (int)(full * Ease(legend));
 
-        // The gear is the handle. It turns while the panel moves, which reads as the panel being
-        // cranked open rather than simply appearing.
+        // The gear is the handle, turning while the panel moves.
         var handle = new Rectangle(screen.Right - 56, screen.Bottom - 68, 44, 44);
         bool hoverHandle = handle.Contains(CursorPoint);
 
@@ -1215,13 +1136,7 @@ public sealed class AuthoringUIState : UIState
         hotspots.Add((area, act));
     }
 
-    /// <summary>
-    ///     The hovered control's explanation, drawn last so it sits over everything.
-    /// </summary>
-    /// <remarks>
-    ///     Drawn here rather than through <c>Main.hoverItemName</c>: the desk is a fancy UI state, and
-    ///     vanilla's mouse text is composited by a layer that does not run while one is up.
-    /// </remarks>
+    /// <summary>The hovered control's tooltip, drawn last; <c>Main.hoverItemName</c> isn't composited while a fancy UI is up.</summary>
     private void DrawTooltip(SpriteBatch spriteBatch, Rectangle screen, float alpha)
     {
         if (tooltip is null) return;

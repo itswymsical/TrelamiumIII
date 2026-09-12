@@ -4,13 +4,7 @@ using System.Text;
 
 namespace TrelamiumIII.Core.Authoring;
 
-/// <summary>
-///     Character-level formatting: what makes one run of a paragraph differ from its neighbours.
-/// </summary>
-/// <remarks>
-///     Paragraph-level settings -- alignment, indent, drop cap, block kind -- stay on the block. This
-///     is only the part that can change between one letter and the next.
-/// </remarks>
+/// <summary>Character-level formatting that can change between letters; paragraph settings stay on the block.</summary>
 public readonly record struct CharFormat(bool Bold, bool Italic, float Scale, int? Ink)
 {
     /// <summary>Inherit everything from the block. Emits no tag.</summary>
@@ -23,23 +17,9 @@ public readonly record struct CharFormat(bool Bold, bool Italic, float Scale, in
 }
 
 /// <summary>
-///     Converts between a tagged localization string and plain text with per-character formatting.
+///     Converts between tagged localization strings and plain text with per-character formats. One combined <c>[fmt/options:text]</c>
+///     tag per run, never nested, since Terraria's parser ends a body at the first unescaped <c>]</c>. Other tags stay literal.
 /// </summary>
-/// <remarks>
-///     <para>
-///         One combined tag per run, never nested. Terraria's parser matches
-///         <c>[tag/options:text]</c> with a lazy body that stops at the first unescaped <c>]</c>, so
-///         <c>[b:[i:x]]</c> does not parse as bold-italic -- it parses as a bold run containing
-///         <c>[i:x</c> and a stray bracket. Bold, italic, size and colour therefore travel together
-///         in the options field, which may hold anything except a colon.
-///     </para>
-///     <para>
-///         Tags this codec does not own -- <c>[gloss:]</c>, <c>[hand:]</c>, <c>[c/hex:]</c> and the
-///         rest -- are deliberately left as literal characters in the buffer. The writer sees and
-///         edits them exactly as they do today, and nothing the editor does can silently eat one. Only
-///         formatting applied through the toolbar becomes structured.
-///     </para>
-/// </remarks>
 public static class FormatCodec
 {
     /// <summary>Tag name for a formatted run. Letters only, ten at most, per the parser's pattern.</summary>
@@ -111,9 +91,7 @@ public static class FormatCodec
     private static CharFormat At(IReadOnlyList<CharFormat> formats, int index) =>
         index < formats.Count ? formats[index] : CharFormat.Inherit;
 
-    /// <summary>
-    ///     The options field: comma-separated flags, no colons, order-independent on the way back in.
-    /// </summary>
+    /// <summary>The options field: comma-separated flags, no colons, order-independent when read back.</summary>
     private static string Options(CharFormat format)
     {
         var parts = new List<string>(4);
@@ -156,14 +134,7 @@ public static class FormatCodec
         return new CharFormat(bold, italic, scale, ink);
     }
 
-    /// <summary>
-    ///     Reads a run tag at <paramref name="index" />, if one starts there.
-    /// </summary>
-    /// <remarks>
-    ///     Matched by hand rather than by regex so it can agree with the game's own pattern exactly:
-    ///     an escaped bracket does not open or close a tag, and the body ends at the first unescaped
-    ///     <c>]</c>.
-    /// </remarks>
+    /// <summary>Reads a run tag at <paramref name="index" />, matched by hand to agree exactly with the game's escape rules.</summary>
     private static bool TryReadTag(string source, int index, out CharFormat format, out string body, out int consumed)
     {
         format = CharFormat.Inherit;

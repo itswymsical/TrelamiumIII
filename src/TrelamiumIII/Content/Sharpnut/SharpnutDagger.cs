@@ -91,7 +91,6 @@ public class SharpnutDaggerProjectile : ModProjectile
     public override void AI()
     {
 
-        // Start death animation when time is almost up and stuck to target
         if (!deathAnimationStarted && stickingToNPC && Projectile.timeLeft <= 60)
         {
             deathAnimationStarted = true;

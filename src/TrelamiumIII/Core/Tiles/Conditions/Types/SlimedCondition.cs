@@ -6,26 +6,16 @@ using TrelamiumIII.Core.Graphics;
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
-///     A coat of slime, rendered as a metaball field so a splattered wall reads as one sheet of goo
-///     rather than a grid of stickers.
+///     A coat of slime rendered as a metaball field.
 /// </summary>
-/// <remarks>
-///     Each tile stamps a single soft blob wider than the tile it sits on. Summed additively and cut
-///     at a low threshold, neighbouring blobs cross that threshold in the gap between them and fuse;
-///     an isolated tile stays a lone droplet. That is the whole reason this is a field rather than an
-///     overlay, and it is what a per-tile texture could never do -- the sheet bulges over the seams
-///     and sags past the edges of the marked area.
-/// </remarks>
 public sealed class SlimedCondition : TileCondition
 {
-    /// <summary>Wider than a tile, so a blob reaches its neighbours and the two merge.</summary>
-    private const float BLOB_DIAMETER = 36f;
+    private const float BLOB_DIAM = 36f;
 
     private const float PLAYER_DRAG = 0.93f;
 
     private const float NPC_DRAG = 0.90f;
 
-    /// <summary>Life a damaging projectile scrubs off the tile it passes through.</summary>
     private const float PROJECTILE_SCOUR = 2.5f;
 
     public override float Duration => 9f * 60f;
@@ -34,7 +24,6 @@ public sealed class SlimedCondition : TileCondition
 
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
 
-    /// <summary>Additive: blobs have to sum for the threshold to fuse them.</summary>
     public override BlendState FieldBlend => BlendState.Additive;
 
     public override Asset<Effect>? Shader => Assets.Shaders.GasFbm.Asset;
@@ -43,15 +32,6 @@ public sealed class SlimedCondition : TileCondition
 
     private Asset<Texture2D>? noiseTexture;
 
-    /// <summary>
-    ///     Entities already dragged this tick.
-    /// </summary>
-    /// <remarks>
-    ///     Contact fires once per marked tile touched, and a player standing across a slimed floor
-    ///     touches two or three of them. Multiplying velocity once per tile would make the drag scale
-    ///     with how the tiles happen to line up under the hitbox, which is both invisible to the
-    ///     player and wrong -- wading through slime should cost the same wherever they stand.
-    /// </remarks>
     private readonly HashSet<Entity> draggedThisTick = [];
 
     public override void Load()
@@ -92,12 +72,6 @@ public sealed class SlimedCondition : TileCondition
         float time = (float)Main.timeForVisualEffects / 60f;
         var wobble = new Vector2(MathF.Sin(time * 1.4f + phase) * 1.6f, MathF.Cos(time * 1.1f + phase) * 1.2f);
 
-        // Coverage in red, coverage-weighted brightness in green -- the same field encoding the gas
-        // layers stamp, because this draws through the same shader. Slime coating a lit wall and
-        // slime down a dark shaft should not be the same colour.
-        //
-        // Overdriven past white on purpose: the shader thresholds the summed field, and a blob that
-        // only just reaches 1.0 at its centre never fuses with its neighbours.
         Color color = FieldStamp.Lit(instance.WorldCenter, (0.55f + 0.45f * instance.Strength) * 1.25f);
 
         spriteBatch.Draw(
@@ -107,7 +81,7 @@ public sealed class SlimedCondition : TileCondition
             color,
             0f,
             texture.Size() / 2f,
-            BLOB_DIAMETER / texture.Width,
+            BLOB_DIAM / texture.Width,
             SpriteEffects.None,
             0f
         );
@@ -158,7 +132,6 @@ public sealed class SlimedCondition : TileCondition
         npc.velocity.X *= MathHelper.Lerp(1f, NPC_DRAG, instance.Strength);
     }
 
-    /// <summary>Anything with damage on it blasts slime off the tile it hits.</summary>
     public override void OnProjectileContact(ref TileConditionInstance instance, Projectile projectile)
     {
         if (projectile.damage <= 0)
@@ -170,7 +143,6 @@ public sealed class SlimedCondition : TileCondition
             SlimeDust(instance.WorldCenter, -projectile.velocity);
     }
 
-    /// <summary>Water rinses it off and leaves the tile wet; lava cooks it into a scorch.</summary>
     public override void OnLiquidContact(ref TileConditionInstance instance, int liquidType, int amount)
     {
         float share = amount / 255f;
@@ -184,7 +156,6 @@ public sealed class SlimedCondition : TileCondition
             return;
         }
 
-        // Probed one tick in eight, so this is really about 5 life a second at full submersion.
         instance.Life -= 6f * share;
 
         if (instance.Life <= 0f)
@@ -209,14 +180,6 @@ public sealed class SlimedCondition : TileCondition
     ///     Splatters slime over everything solid within <paramref name="radius" /> pixels, thinning
     ///     toward the edge of the splash.
     /// </summary>
-    /// <remarks>
-    ///     Applied without a packet: every client runs the same collision that led here, so each one
-    ///     works the splash out for itself. Syncing it instead would put one message on the wire per
-    ///     tile of every splash, to say something the receiver already knows.
-    /// </remarks>
-    /// <param name="owner">
-    ///     The player who put it there, so the sheet knows whose boots to let through.
-    /// </param>
     public static void Splatter(Vector2 center, float radius, float intensity = 1f, int owner = TileConditionInstance.NoOwner)
     {
         int reach = (int)MathF.Ceiling(radius / 16f);

@@ -3,14 +3,7 @@ using Terraria.GameContent;
 
 namespace TrelamiumIII.Core.Books;
 
-/// <summary>
-///     The paper a page is printed on.
-/// </summary>
-/// <remarks>
-///     Drawn procedurally so books work before any paper texture exists. Point
-///     <see cref="Texture" /> at an asset and it is used instead, stretched to the page and mirrored
-///     on the left leaf so the two halves are not obviously the same image.
-/// </remarks>
+/// <summary>Page paper, drawn procedurally unless <see cref="Texture" /> is set (then mirrored on the left leaf).</summary>
 public static class PagePaper
 {
     private static readonly Color Base = new(235, 234, 211);

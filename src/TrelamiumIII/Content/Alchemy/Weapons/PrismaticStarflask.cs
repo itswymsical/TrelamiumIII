@@ -63,16 +63,13 @@ public class PrismaticStarflaskItem : ModItem
     }
 }
 
-/// <summary>
-///     A flask of unstable starlight: it sheds sparks in flight and scatters them on breaking.
-/// </summary>
+/// <summary>A flask of unstable starlight: sheds sparks in flight and scatters them on breaking.</summary>
 public class PrismaticStarflaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PrismaticStarflaskItem.KEY;
 
     protected override GasField? Field => GasSystem.GetLayer<StarLayer>();
 
-    /// <summary>Fat, slow and lazy: starlight leaks rather than jets.</summary>
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {
         NodeRadius = 9f,
@@ -80,7 +77,6 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
         Jitter = new Vector2(2.5f, 2.5f),
     };
 
-    /// <summary>Few arms, thrown lightly. The payload is meant to hang, not to travel.</summary>
     protected override BurstProfile Burst => BurstProfile.Vent with
     {
         AirCount = new FloatRange(7f, 8f),
@@ -95,7 +91,6 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
         DamageShare = 1f,
     };
 
-    /// <inheritdoc cref="HyperboreanFlaskProjectile.PlayShatter" />
     protected override void PlayShatter()
     {
         SoundEngine.PlaySound(Assets.SFX.Items.BigFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });

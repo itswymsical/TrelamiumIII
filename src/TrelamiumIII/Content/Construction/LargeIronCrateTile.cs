@@ -13,7 +13,6 @@ public class LargeIronCrateTile : ModTile
         Main.tileFrameImportant[Type] = true;
         Main.tileNoFail[Type] = true;
 
-        // Start with Style4x2 as base but modify for 4x4
         TileObjectData.newTile.CopyFrom(TileObjectData.Style4x2);
         TileObjectData.newTile.Width = 4;
         TileObjectData.newTile.Height = 4;

@@ -44,9 +44,7 @@ public class HyperboreanFlaskItem : ModItem
     }
 
     /// <summary>
-    /// Per-source reaction: ice burst, frostburn buff, dust spray.
-    /// Lives on this item's component so other Cryonic sources can carry
-    /// their own reaction without colliding with this one.
+    /// Per-source reaction: ice burst, frostburn and dust. Lives on this item so other Cryonic sources can react differently.
     /// </summary>
     private static void OnCryonicReaction(ChemicalReactionEvent e)
     {
@@ -68,9 +66,7 @@ public class HyperboreanFlaskItem : ModItem
     }
 }
 
-/// <summary>
-///     A flask of pressurised cryogen: it vents ahead of itself, then flash-freezes outward.
-/// </summary>
+/// <summary>A flask of pressurised cryogen: vents ahead of itself, then flash-freezes outward.</summary>
 public class HyperboreanFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.HyperboreanFlaskItem.KEY;
@@ -80,13 +76,8 @@ public class HyperboreanFlaskProjectile : ChemicalProjectile
     protected override TrailProfile? Trail => TrailProfile.Vented;
 
     /// <summary>
-    ///     A wide, fast, uneven bloom of mist.
+    ///     A wide, fast, uneven bloom of mist, scattered rather than fanned even on terrain since gas ignores surfaces.
     /// </summary>
-    /// <remarks>
-    ///     Scatter rather than a fan even against terrain, because expanding gas has no reason to
-    ///     respect a surface the way a liquid splash does -- it goes wherever the pressure sends it
-    ///     and finds its own level afterwards.
-    /// </remarks>
     protected override BurstProfile Burst => BurstProfile.Vent with
     {
         Core = EmitterProfile.Default with
@@ -97,7 +88,6 @@ public class HyperboreanFlaskProjectile : ChemicalProjectile
         DamageShare = 1f,
     };
 
-    /// <summary>Glass, ice and the pressure behind it, all at once.</summary>
     protected override void PlayShatter()
     {
         SoundEngine.PlaySound(Assets.SFX.Items.BigFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });

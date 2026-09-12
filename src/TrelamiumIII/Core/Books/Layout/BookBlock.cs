@@ -16,14 +16,8 @@ public readonly record struct BlockRect(float X, float Y, float Width, float Hei
 }
 
 /// <summary>
-///     Per-frame state handed to blocks as they draw, and the channel they report interaction back on.
+///     Per-frame draw state and interaction channel for blocks. Pages are render targets, so the cursor arrives in page-local space.
 /// </summary>
-/// <remarks>
-///     Pages are drawn into a render target, so a block cannot consult <see cref="Main.MouseScreen" />
-///     to work out whether it is hovered -- the cursor has to arrive already converted into page-local
-///     space. <see cref="LocalMouse" /> is null whenever the page is not the one under the cursor, or
-///     while the book is animating, which is also what suppresses hover during a page turn.
-/// </remarks>
 public sealed class BookPageContext
 {
     public required int PageWidth { get; init; }
@@ -42,10 +36,7 @@ public sealed class BookPageContext
     /// <summary>Page a hovered row would turn to, set by contents rows and indexes.</summary>
     public int? HoverPage { get; set; }
 
-    /// <summary>
-    ///     Transform the batch currently carries, non-identity inside a tilted decoration. A block
-    ///     that has to restart the batch passes this back so it does not drop the tilt.
-    /// </summary>
+    /// <summary>The batch's current transform (non-identity in a tilted decoration); pass it back when restarting the batch.</summary>
     public Matrix Transform { get; set; } = Matrix.Identity;
 
     public bool IsHovering(in BlockRect rect) =>
@@ -53,21 +44,8 @@ public sealed class BookPageContext
 }
 
 /// <summary>
-///     One authored element of a lore book: a paragraph, a figure, a rule, a panel.
+///     One authored lore book element, created fresh per opening and flowed by <see cref="PageComposer" /> so translations never overflow fixed pages.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Blocks are created fresh each time a book is opened, so their text is resolved in the
-///         language that is current at that moment and no state survives between readings. They are
-///         measured against a column width, then flowed onto pages by <see cref="PageComposer" />;
-///         nothing in a book declares which page it is on.
-///     </para>
-///     <para>
-///         That is the whole point of the model. Authoring pages directly -- as
-///         <c>Page1</c>/<c>Page2</c> localization keys -- bakes one language's line count into the
-///         content, and any translation that runs longer silently overflows.
-///     </para>
-/// </remarks>
 public abstract class BookBlock
 {
     public BlockStyle Style { get; init; } = BlockStyle.Body;
@@ -75,11 +53,7 @@ public abstract class BookBlock
     private float measuredForWidth = float.NaN;
     private float measuredHeight;
 
-    /// <summary>
-    ///     Height this block occupies at the given column width, excluding
-    ///     <see cref="BlockStyle.SpaceBefore" /> and <see cref="BlockStyle.SpaceAfter" />. Cached,
-    ///     since the composer measures a block at least twice when deciding where it lands.
-    /// </summary>
+    /// <summary>Height at a column width, excluding space before and after. Cached, since the composer measures blocks repeatedly.</summary>
     public float Measure(float width)
     {
         if (measuredForWidth != width)
@@ -97,53 +71,19 @@ public abstract class BookBlock
     public abstract void Draw(SpriteBatch spriteBatch, in BlockRect rect, BookPageContext context);
 
     /// <summary>
-    ///     Whether this block has nothing to show. Empty blocks are skipped entirely: no height, no
-    ///     spacing, no chrome, as though they had never been declared.
+    ///     Whether this block has nothing to show. Empty blocks are skipped entirely, so chapters can omit optional parts; blocks with chrome must answer honestly.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         This is what lets one chapter template serve chapters that do not all have the same
-    ///         parts. A book declares the arrangement once -- opening, aside, excerpt, closing -- and
-    ///         the chapters that have no aside simply omit the localization entry, rather than every
-    ///         chapter having to carry a key for every slot.
-    ///     </para>
-    ///     <para>
-    ///         Blocks with chrome of their own have to answer this honestly, or a missing entry leaves
-    ///         its frame behind: a panel around nothing still draws a border and its padding, which is
-    ///         a box floating on the page with no content in it.
-    ///     </para>
-    ///     <para>
-    ///         Deliberately silent rather than logged. A missing entry here is an authoring choice, not
-    ///         a mistake, and warning on it would bury a real problem under noise on every open.
-    ///     </para>
-    /// </remarks>
     public virtual bool IsEmpty => false;
 
-    /// <summary>
-    ///     Whether this block must stay on the same page as whatever follows it.
-    /// </summary>
-    /// <remarks>
-    ///     A heading exists to introduce something. Left at the foot of a page with its content on the
-    ///     next one it introduces a blank space, which reads as a mistake even though every block
-    ///     involved was placed correctly. When the block after one of these has to move, the composer
-    ///     takes the heading with it.
-    /// </remarks>
+    /// <summary>Whether this block must share a page with what follows, e.g. a heading moves with its content.</summary>
     public virtual bool KeepWithNext => false;
 
-    /// <summary>
-    ///     Whether this block can be broken across a page boundary. Prose can; a figure cannot, and is
-    ///     pushed whole onto the next page instead.
-    /// </summary>
+    /// <summary>Whether this block can break across pages; unsplittable blocks move whole to the next page.</summary>
     public virtual bool Splittable => false;
 
     /// <summary>
-    ///     Divides the block so that <paramref name="head" /> fits within <paramref name="available" />
-    ///     height, returning whatever is left over, or null if it all fit.
+    ///     Splits so <paramref name="head" /> fits in <paramref name="available" />, returning the rest (null if all fit). A null head moves the whole block.
     /// </summary>
-    /// <remarks>
-    ///     Returning a null <paramref name="head" /> means nothing useful fit and the whole block
-    ///     should move to the next page -- a paragraph will not leave a single orphan line behind.
-    /// </remarks>
     public virtual BookBlock? Split(float width, float available, out BookBlock? head)
     {
         head = null;

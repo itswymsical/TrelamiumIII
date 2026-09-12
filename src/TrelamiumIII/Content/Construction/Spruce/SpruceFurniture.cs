@@ -2,9 +2,7 @@ using TrelamiumIII.Content.Dusts;
 using TrelamiumIII.Core.Items.Components;
 using TrelamiumIII.Core.Tiles;
 
-/// <summary>
-/// Some code structure adapted from Spirit Reforged: https://github.com/GabeHasWon/SpiritReforged/tree/master/Common/TileCommon/PresetTiles/Furniture
-/// </summary>
+// Some code structure adapted from Spirit Reforged: https://github.com/GabeHasWon/SpiritReforged/tree/master/Common/TileCommon/PresetTiles/Furniture
 namespace TrelamiumIII.Content.Construction.Spruce;
 
 public class SpruceChairTile : FurnitureActor

@@ -2,7 +2,6 @@ using TrelamiumIII.Common.Systems;
 
 namespace TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 
-// Items
 public class SeedBedItem_Dirt : SeedBedItem
 {
     protected override int PlaceTileType => ModContent.TileType<SeedBedTile_Dirt>();
@@ -43,7 +42,6 @@ public class SeedBedItem_Ash : SeedBedItem
             .AddTile(TileID.WorkBenches);
 }
 
-// Tiles
 public class SeedBedTile_Dirt : SeedBedTile
 {
     public override Color MapColor => new(180, 140, 100);
