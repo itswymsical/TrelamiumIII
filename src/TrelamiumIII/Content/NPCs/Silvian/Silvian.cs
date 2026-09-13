@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
-using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Utilities.Extensions;
 
@@ -58,17 +56,13 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
     {
         int randomChoice = Main.rand.Next(3);
 
-        switch (randomChoice)
+        return randomChoice switch
         {
-            case 0:
-                return ChatEncounter.Play("Silvian.Banter1");
-            case 1:
-                return ChatEncounter.Play("Silvian.Banter2");
-            case 2:
-                return ChatEncounter.Play("Silvian.Banter3");
-            default:
-                return ChatEncounter.None;
-        }
+            0 => ChatEncounter.Play("Silvian.Banter1"),
+            1 => ChatEncounter.Play("Silvian.Banter2"),
+            2 => ChatEncounter.Play("Silvian.Banter3"),
+            _ => ChatEncounter.None,
+        };
     }
 
     //protected override IBehavior BuildScript()
