@@ -15,7 +15,7 @@ public sealed class AlchemyVariant
     /// <summary>Optional override for output construction.</summary>
     public Func<Item> CustomOutput { get; init; }
 
-    /// <summary>Brew potency (1-5) stamped onto buff-potion outputs. 0 = no brew (plain item).</summary>
+    /// <summary>Brew potency (1-5) stamped onto buff-potion outputs. 0 uses <see cref="BrewComposition.Potency"/>.</summary>
     public int Potency { get; init; }
 
     /// <summary>Override the potency curve's strength (percent of the vanilla effect). 0 = use the curve.</summary>
@@ -33,8 +33,8 @@ public sealed class AlchemyVariant
     /// <summary>Optional augmentation pass: boost, re-gate, or combine further effects onto the brew.</summary>
     public Action<BrewBuilder>? Augment { get; init; }
 
-    /// <summary>Required solvent infusion; None means plain solvent only, so one solvent type can key different recipes.</summary>
-    public ChemicalQuality SolventInfusion { get; init; }
+    /// <summary>Required input infusion; None means plain input only, so one input type can key different recipes.</summary>
+    public ChemicalQuality InputInfusion { get; init; }
 
     /// <summary>Infusion stamped onto the output. Infused outputs are plain solvents, so they skip brew branding.</summary>
     public ChemicalQuality OutputInfusion { get; init; }
@@ -46,8 +46,8 @@ public sealed class AlchemyVariant
     public string? SuppressValidation { get; init; }
 
     /// <summary>
-    /// One input combination for a shared output (see <see cref="AlchemyRecipeRegistry.RegisterVariants"/>). Each component carries
-    /// its own quantity: a plain item type draws one, <c>ComponentMatcher.Of(type, 5)</c> draws five.
+    /// One input combination for a shared output (see <see cref="AlchemyRecipeRegistry.RegisterVariants"/>). A plain item type
+    /// requires potency 1; <c>ComponentMatcher.Of(type, 3)</c> requires potency 3.
     /// </summary>
     public AlchemyVariant(params ComponentMatcher[] components)
     {
@@ -56,8 +56,9 @@ public sealed class AlchemyVariant
 }
 
 /// <summary>
-/// A resolved brew: recipe, output, and each slot's cost per batch unit (aligned to the station's slots). When only a stack is short,
-/// <see cref="Found"/> is false but <see cref="Shortfall"/> and <see cref="ComponentCosts"/> still describe the requirement.
+/// A resolved brew: recipe, output, and per-slot costs and required potencies aligned to the station's component slots. On a
+/// potency-only failure <see cref="Found"/> is false and <see cref="Shortfall"/>, <see cref="ComponentCosts"/> and
+/// <see cref="RequiredPotencies"/> describe the nearest recipe.
 /// </summary>
 public sealed class AlchemyResolution
 {
@@ -72,24 +73,32 @@ public sealed class AlchemyResolution
 
     public bool ReturnsBottle => Found && Recipe!.ReturnsBottle;
 
-    /// <summary>Units taken from each solute slot per batch unit; 0 for slots no recipe wants.</summary>
+    /// <summary>Items taken from each component slot per batch; 0 for unclaimed slots.</summary>
     public int[] ComponentCosts { get; init; } = Array.Empty<int>();
 
-    /// <summary>The right solute in too small a stack. Only meaningful while <see cref="Found"/> is false.</summary>
+    /// <summary>Minimum potency required of each component slot; 0 for unclaimed slots.</summary>
+    public int[] RequiredPotencies { get; init; } = Array.Empty<int>();
+
+    /// <summary>Items taken from the input slot per batch.</summary>
+    public int InputCost { get; init; } = 1;
+
+    /// <summary>An item below its required potency or cost. Only meaningful while <see cref="Found"/> is false.</summary>
     public AlchemyShortfall Shortfall { get; init; }
 
     public bool Found => Recipe != null && !Output.IsAir;
 
-    /// <summary>Units taken from slot <paramref name="index"/> per batch unit.</summary>
     public int CostFor(int index) =>
         index >= 0 && index < ComponentCosts.Length ? ComponentCosts[index] : 0;
 
-    /// <summary>Batch units the slotted ingredients can pay for: one solvent per unit, solutes by recipe cost.</summary>
-    public int MaxBatches(Item solvent, Item[] components)
-    {
-        if (!Found || solvent is null || solvent.IsAir) return 1;
+    public int RequiredPotencyFor(int index) =>
+        index >= 0 && index < RequiredPotencies.Length ? RequiredPotencies[index] : 0;
 
-        int max = solvent.stack;
+    /// <summary>Batches the slotted stacks can pay for at <see cref="InputCost"/> and <see cref="ComponentCosts"/>.</summary>
+    public int MaxBatches(Item input, Item[] components)
+    {
+        if (!Found || input is null || input.IsAir) return 1;
+
+        int max = input.stack / Math.Max(1, InputCost);
         for (int i = 0; i < components.Length && i < ComponentCosts.Length; i++)
         {
             int cost = ComponentCosts[i];
@@ -123,7 +132,7 @@ public static class AlchemyRecipeRegistry
     /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
-    /// <summary>Registers several input combinations that share one (solvent, output) target.</summary>
+    /// <summary>Registers several input combinations that share one (input, output) target.</summary>
     public static void RegisterVariants(
         int inputType,
         int outputType,
@@ -140,13 +149,12 @@ public static class AlchemyRecipeRegistry
             var maxOreTier = v.MaxOreTier;
             var augment = v.Augment;
             var custom = v.CustomOutput;
-            var comps = v.Components;
             var outputInfusion = v.OutputInfusion;
 
             Register(new AlchemyRecipe
             {
-                SolventType = inputType,
-                SolventInfusion = v.SolventInfusion,
+                InputType = inputType,
+                InputInfusion = v.InputInfusion,
                 OutputItemType = outputType,
                 Components = v.Components,
                 ReturnsBottleOverride = v.ReturnsBottle,
@@ -166,11 +174,11 @@ public static class AlchemyRecipeRegistry
                         return r;
                     }
 
-                    // Brand buff and restorative potions (heals get a virtual Restoration effect), then apply overrides. Explicit
-                    // potency wins; otherwise it's inferred lazily from almanac ratings, which register after recipes.
+                    // Brand buff and restorative potions (heals get a virtual Restoration effect), then apply overrides.
+                    // Explicit potency wins over the composition's.
                     if (r.buffType > 0 || r.healLife > 0 || r.healMana > 0)
                     {
-                        int pot = potency > 0 ? potency : AutoPotency(inputType, comps);
+                        int pot = potency > 0 ? potency : composition.Potency;
                         if (pot > 0)
                         {
                             var effect = r.buffType > 0
@@ -191,91 +199,69 @@ public static class AlchemyRecipeRegistry
         }
     }
 
-    /// <summary>Baseline potency inferred from almanac ratings; an explicit <see cref="AlchemyVariant.Potency"/> always wins.</summary>
-    public static int AutoPotency(int solventType, ComponentMatcher[] components)
-    {
-        if (components.Length == 0) return 0;
-
-        int vial = RatedPotency(solventType);
-        int sum = 0;
-        bool anyRated = vial > 0;
-        foreach (var m in components)
-        {
-            int p = m.Group != null ? GroupPotency(m.Group) : RatedPotency(m.ExactType);
-            if (p > 0) anyRated = true;
-            sum += p;
-        }
-        if (!anyRated) return 0;
-        return Math.Clamp(sum / components.Length + vial, 1, 5);
-    }
-
-    private static int RatedPotency(int itemType) =>
-        itemType > 0 ? Math.Max(0, AlmanacEntryRegistry.For(itemType).Potency) : 0;
-
-    // A group slot can be filled by any member and the brew is stamped without slot context,
-    // so rate the group as the floor-average of its members.
-    private static int GroupPotency(AlchemyComponentGroup group)
-    {
-        int count = 0, sum = 0;
-        foreach (int t in group.ItemTypes) { sum += RatedPotency(t); count++; }
-        return count == 0 ? 0 : sum / count;
-    }
-
     /// <summary>
-    /// Resolves the vial and solute slots against every recipe. The fitting recipe drawing the most solute wins; ties go to
-    /// registration order.
+    /// Resolves the input and component slots against every recipe. The fitting recipe with the highest total minimum potency
+    /// wins; ties go to registration order.
     /// </summary>
-    public static AlchemyResolution Resolve(Item vial, Item[] components)
+    public static AlchemyResolution Resolve(Item input, Item[] components)
     {
-        if (vial == null || vial.IsAir) return AlchemyResolution.None;
+        if (input == null || input.IsAir) return AlchemyResolution.None;
         if (components == null || components.Length == 0) return AlchemyResolution.None;
-
-        var composition = BrewCompositions.Of(vial, components);
 
         AlchemyRecipe? best = null;
         int bestDemand = -1;   // so even a hypothetical component-free recipe can win
         int[] bestCosts = Array.Empty<int>();
+        int[] bestPotencies = Array.Empty<int>();
 
         // Closest near-miss, kept only in case nothing matches at all.
         AlchemyShortfall shortfall = default;
         int[] shortfallCosts = Array.Empty<int>();
+        int[] shortfallPotencies = Array.Empty<int>();
 
         Span<int> costs = stackalloc int[components.Length];
+        Span<int> potencies = stackalloc int[components.Length];
 
         foreach (var recipe in _recipes)
         {
             // Matching is instance-aware (per-item infusions and stacks), so the slot array
             // goes through as-is rather than being flattened to type ids.
-            if (!recipe.TryMatch(vial, components, costs, out var miss))
+            if (!recipe.TryMatch(input, components, costs, potencies, out var miss))
             {
                 if (miss.Exists && !shortfall.Exists)
                 {
                     shortfall = miss;
                     shortfallCosts = costs.ToArray();
+                    shortfallPotencies = potencies.ToArray();
                 }
                 continue;
             }
 
             // Strictly greater, so the first registration wins an equal-demand tie.
-            if (recipe.TotalQuantity <= bestDemand) continue;
+            if (recipe.TotalMinPotency <= bestDemand) continue;
 
             best = recipe;
-            bestDemand = recipe.TotalQuantity;
+            bestDemand = recipe.TotalMinPotency;
             bestCosts = costs.ToArray();
+            bestPotencies = potencies.ToArray();
         }
 
-        // No match, no output: products like Inert Solution need explicit recipes, not a catch-all. (The steeping fallback is
-        // parked below with the rest of the infusion front-end.)
-        var output = best?.CreateOutput?.Invoke(composition) ?? new Item();
-        if (output.IsAir)
+        if (best == null)
         {
             return new AlchemyResolution
             {
-                Composition = composition,
+                Composition = BrewCompositions.Of(input, components),
                 Shortfall = shortfall,
                 ComponentCosts = shortfallCosts,
+                RequiredPotencies = shortfallPotencies,
             };
         }
+
+        // The output is built at the recipe's minimum potencies, which is what the brew consumes.
+        var composition = BrewCompositions.Of(input, components, bestPotencies);
+        var output = best.CreateOutput?.Invoke(composition) ?? new Item();
+
+        if (output.IsAir)
+            return new AlchemyResolution { Composition = composition };
 
         return new AlchemyResolution
         {
@@ -283,12 +269,14 @@ public static class AlchemyRecipeRegistry
             Output = output,
             Composition = composition,
             ComponentCosts = bestCosts,
+            RequiredPotencies = bestPotencies,
+            InputCost = AlchemyRecipe.InputCostOf(input),
         };
     }
 
     /// <summary>Just the output item; air when nothing matches.</summary>
-    public static Item ResolveOutput(Item vial, Item[] components)
-        => Resolve(vial, components).Output;
+    public static Item ResolveOutput(Item input, Item[] components)
+        => Resolve(input, components).Output;
 
     // Tie-break order when solutes share several flags, following the three axes.
     private static readonly ChemicalQuality[] _infusionPriority =
@@ -323,44 +311,26 @@ public static class AlchemyRecipeRegistry
 }
 
 
-/// <summary>
-/// Alchemy Station slot whitelists, derived from <see cref="AlchemyRecipeRegistry"/>: every vial and component any recipe references.
-/// </summary>
+/// <summary>Item types referenced by <see cref="AlchemyRecipeRegistry"/>: every recipe input and component.</summary>
 public static class AlchemyIngredients
 {
     private static HashSet<int> _substances;
-    private static HashSet<int> _solvents;
+    private static HashSet<int> _inputs;
     private static List<int> _allIngredients;
 
     /// <summary>Discard derived caches. Called on mod unload via <see cref="ChemistryRecipeSystem"/>.</summary>
     public static void Clear()
     {
         _substances = null;
-        _solvents = null;
+        _inputs = null;
         _allIngredients = null;
     }
 
-    public static bool IsValidSolvent(Item item)
-    {
-        if (item == null || item.IsAir) return false;
-
-        EnsureBuilt();
-        return _solvents.Contains(item.type);
-    }
-
-    public static bool IsValidSubstance(Item item)
-    {
-        if (item == null || item.IsAir) return false;
-
-        EnsureBuilt();
-        return _substances.Contains(item.type);
-    }
-
-    public static bool IsSolventType(int itemType)
+    public static bool IsInputType(int itemType)
     {
         if (itemType <= 0) return false;
         EnsureBuilt();
-        return _solvents.Contains(itemType);
+        return _inputs.Contains(itemType);
     }
 
     public static bool IsSubstanceType(int itemType)
@@ -371,7 +341,7 @@ public static class AlchemyIngredients
     }
 
     /// <summary>
-    /// Every item type used as a vial or component, sorted by name. Undiscovered hidden entries stay listed and render as "?".
+    /// Every item type used as an input or component, sorted by name. Undiscovered hidden entries stay listed and render as "?".
     /// </summary>
     public static IReadOnlyList<int> AllIngredientTypes
     {
@@ -383,11 +353,11 @@ public static class AlchemyIngredients
         if (_substances != null) return;
 
         var components = new HashSet<int>();
-        var solvents = new HashSet<int>();
+        var inputs = new HashSet<int>();
 
         foreach (var recipe in AlchemyRecipeRegistry.All)
         {
-            solvents.Add(recipe.SolventType);
+            inputs.Add(recipe.InputType);
 
             foreach (var matcher in recipe.Components)
             {
@@ -404,10 +374,10 @@ public static class AlchemyIngredients
         }
 
         _substances = components;
-        _solvents = solvents;
+        _inputs = inputs;
 
         var all = new HashSet<int>(components);
-        all.UnionWith(solvents);
+        all.UnionWith(inputs);
         _allIngredients = all
             .Where(t => t > 0)
             .OrderBy(t => Lang.GetItemNameValue(t))
@@ -426,34 +396,30 @@ public readonly struct ComponentMatcher
     /// <summary>Required instance infusion; None accepts only plain items, so infused and plain variants never cross-match.</summary>
     public readonly ChemicalQuality Infusion;
 
-    /// <summary>Units drawn per batch unit (the potency dial, shown as "potency N"). Always at least 1.</summary>
-    public readonly int Quantity;
+    /// <summary>Minimum slot potency, 1 to <see cref="SolutePotency.MAX"/>. Each batch consumes this potency's cost.</summary>
+    public readonly int MinPotency;
 
-    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int quantity = 1)
-    { ExactType = exactType; Group = null; Infusion = infusion; Quantity = Math.Max(1, quantity); }
+    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int minPotency = 1)
+    { ExactType = exactType; Group = null; Infusion = infusion; MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX); }
 
-    public ComponentMatcher(AlchemyComponentGroup group, int quantity = 1)
-    { ExactType = 0; Group = group; Infusion = ChemicalQuality.None; Quantity = Math.Max(1, quantity); }
+    public ComponentMatcher(AlchemyComponentGroup group, int minPotency = 1)
+    { ExactType = 0; Group = group; Infusion = ChemicalQuality.None; MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX); }
 
     /// <summary>An exact-type slot that additionally requires the given infusion.</summary>
     public static ComponentMatcher Infused(int itemType, ChemicalQuality infusion) => new(itemType, infusion);
 
-    /// <summary>
-    /// An exact-type slot drawing <paramref name="quantity"/> per batch unit; the heavier variant wins when both are affordable.
-    /// </summary>
-    public static ComponentMatcher Of(int itemType, int quantity, ChemicalQuality infusion = ChemicalQuality.None)
-        => new(itemType, infusion, quantity);
+    /// <summary>An exact-type slot requiring <paramref name="minPotency"/>; the more demanding variant wins when both fit.</summary>
+    public static ComponentMatcher Of(int itemType, int minPotency, ChemicalQuality infusion = ChemicalQuality.None)
+        => new(itemType, infusion, minPotency);
 
-    /// <summary>A group slot drawn at <paramref name="quantity"/> potency, whichever member fills it.</summary>
-    public static ComponentMatcher Of(AlchemyComponentGroup group, int quantity) => new(group, quantity);
+    /// <summary>A group slot requiring <paramref name="minPotency"/>, whichever member fills it.</summary>
+    public static ComponentMatcher Of(AlchemyComponentGroup group, int minPotency) => new(group, minPotency);
 
     /// <summary>Type-level acceptance (almanac indexing: "which recipes use this item type").</summary>
     public bool Matches(int itemType) =>
         Group != null ? Group.Contains(itemType) : itemType == ExactType;
 
-    /// <summary>
-    /// Type/group plus infusion match. Stack-blind on purpose: <see cref="AlchemyRecipe.TryMatch"/> checks quantity separately.
-    /// </summary>
+    /// <summary>Type/group plus infusion match. Potency is checked separately by <see cref="AlchemyRecipe.TryMatch"/>.</summary>
     public bool Matches(Item item) =>
         Matches(item.type) && SolutionGlobalItem.GetInfusion(item) == Infusion;
 
@@ -464,24 +430,24 @@ public readonly struct ComponentMatcher
     public static implicit operator ComponentMatcher(AlchemyComponentGroup group) => new(group);
 }
 
-/// <summary>A slot with the right solute but too few of it, so the station can name what's missing.</summary>
+/// <summary>A slot holding the right item in too small a stack, so the station can name what's missing.</summary>
 public readonly record struct AlchemyShortfall(int ItemType, int Have, int Required)
 {
     public bool Exists => ItemType > 0;
 }
 
-/// <summary>One recipe: (solvent, components) to output, with components matched as an unordered multiset.</summary>
+/// <summary>One recipe: (input, components) to output, with components matched as an unordered multiset.</summary>
 public sealed class AlchemyRecipe
 {
-    public int SolventType { get; init; }
+    public int InputType { get; init; }
 
-    /// <summary>Required solvent infusion; None means plain solvent only.</summary>
-    public ChemicalQuality SolventInfusion { get; init; }
+    /// <summary>Required input infusion; None means plain input only.</summary>
+    public ChemicalQuality InputInfusion { get; init; }
 
     /// <summary>Output type for indexing without invoking <see cref="CreateOutput"/>; 0 only for fully dynamic recipes.</summary>
     public int OutputItemType { get; init; }
 
-    /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own quantity.</summary>
+    /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own minimum potency.</summary>
     public ComponentMatcher[] Components { get; init; } = Array.Empty<ComponentMatcher>();
 
     /// <summary>Builds the output from the composition of the slotted ingredients.</summary>
@@ -497,48 +463,65 @@ public sealed class AlchemyRecipe
     /// <see cref="ReturnsBottleOverride" />, else true when a solvent other than an empty Bottle produces a solute.
     /// Only evaluate after load: <see cref="ChemicalRoles.Of(int)" /> caches its inference.
     /// </summary>
-    public bool ReturnsBottle => ReturnsBottleOverride ?? (SolventType != ItemID.Bottle
-        && ChemicalRoles.Of(SolventType) == ChemicalRole.Solvent
+    public bool ReturnsBottle => ReturnsBottleOverride ?? (InputType != ItemID.Bottle
+        && ChemicalRoles.Of(InputType) == ChemicalRole.Solvent
         && ChemicalRoles.Of(OutputItemType) == ChemicalRole.Solute);
 
-    /// <summary>Solute units consumed per batch unit; ranks matches so a heavier stack reaches the heavier recipe.</summary>
-    public int TotalQuantity
+    /// <summary>Sum of component minimum potencies; ranks matches so the more demanding recipe wins.</summary>
+    public int TotalMinPotency
     {
         get
         {
             int sum = 0;
-            for (int i = 0; i < Components.Length; i++) sum += Components[i].Quantity;
+            for (int i = 0; i < Components.Length; i++) sum += Components[i].MinPotency;
             return sum;
         }
     }
 
+    /// <summary>Items consumed from the input per batch: one potency level's stack for a solute, otherwise 1.</summary>
+    public static int InputCostOf(Item input) =>
+        ChemicalRoles.Of(input) == ChemicalRole.Solute ? SolutePotency.StackPerPotency(input.type) : 1;
+
     /// <summary>
-    /// Whether the solvent and slots satisfy this recipe, stacks included. <paramref name="slotCosts"/> gets each slot's per-unit cost;
-    /// on a stacks-only failure it holds the unmet requirement, otherwise it's cleared.
+    /// Whether the input and slots satisfy this recipe. <paramref name="slotCosts"/> and <paramref name="slotPotencies"/> receive
+    /// each claimed slot's per-batch cost and minimum potency. On a stack-only failure they still describe the requirement and
+    /// <paramref name="shortfall"/> names the first short item; on any other failure both are cleared.
     /// </summary>
-    public bool TryMatch(Item solvent, Item[] slots, Span<int> slotCosts, out AlchemyShortfall shortfall)
+    public bool TryMatch(Item input, Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, out AlchemyShortfall shortfall)
     {
         shortfall = default;
         slotCosts.Clear();
+        slotPotencies.Clear();
 
-        if (solvent is null || solvent.IsAir) return false;
-        if (solvent.type != SolventType) return false;
-        if (SolutionGlobalItem.GetInfusion(solvent) != SolventInfusion) return false;
+        if (input is null || input.IsAir) return false;
+        if (input.type != InputType) return false;
+        if (SolutionGlobalItem.GetInfusion(input) != InputInfusion) return false;
 
         int filled = 0;
         for (int i = 0; i < slots.Length; i++)
             if (slots[i] is { IsAir: false }) filled++;
         if (filled != Components.Length) return false;
 
-        if (Assign(slots, slotCosts, requireStack: true))
+        int inputCost = InputCostOf(input);
+        bool inputCovered = input.stack >= inputCost;
+
+        if (inputCovered && Assign(slots, slotCosts, slotPotencies, requirePotency: true))
             return true;
 
-        // The shape fits but something is under-stacked. Re-assign ignoring stacks so the
-        // requirement survives for the station to display, and name the first short slot.
+        // The shape may fit with something under its requirement. Re-assign ignoring potency so the
+        // requirement survives for the station to display, and name the first short item.
         slotCosts.Clear();
-        if (!Assign(slots, slotCosts, requireStack: false))
+        slotPotencies.Clear();
+        if (!Assign(slots, slotCosts, slotPotencies, requirePotency: false))
         {
             slotCosts.Clear();
+            slotPotencies.Clear();
+            return false;
+        }
+
+        if (!inputCovered)
+        {
+            shortfall = new AlchemyShortfall(input.type, input.stack, inputCost);
             return false;
         }
 
@@ -551,8 +534,11 @@ public sealed class AlchemyRecipe
         return false;
     }
 
-    /// <summary>Claims a slot per matcher, most specific first; each claimed slot's cost (never 0) doubles as its claimed marker.</summary>
-    private bool Assign(Item[] slots, Span<int> slotCosts, bool requireStack)
+    /// <summary>
+    /// Claims a slot per matcher, most specific first. A claimed slot receives the matcher's minimum potency (never 0, which
+    /// marks it claimed) and that potency's cost.
+    /// </summary>
+    private bool Assign(Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, bool requirePotency)
     {
         // Insertion sort: these arrays are 1–3 long, so this beats allocating a comparison.
         Span<int> order = stackalloc int[Components.Length];
@@ -572,18 +558,18 @@ public sealed class AlchemyRecipe
         foreach (int matcherIdx in order)
         {
             var matcher = Components[matcherIdx];
-            int need = matcher.Quantity;
             bool found = false;
 
             for (int j = 0; j < slots.Length; j++)
             {
-                if (slotCosts[j] != 0) continue;
+                if (slotPotencies[j] != 0) continue;
                 var slot = slots[j];
                 if (slot is null || slot.IsAir) continue;
                 if (!matcher.Matches(slot)) continue;
-                if (requireStack && slot.stack < need) continue;
+                if (requirePotency && SolutePotency.LevelOf(slot) < matcher.MinPotency) continue;
 
-                slotCosts[j] = need;
+                slotPotencies[j] = matcher.MinPotency;
+                slotCosts[j] = SolutePotency.CostOf(slot.type, matcher.MinPotency);
                 found = true;
                 break;
             }
@@ -592,9 +578,9 @@ public sealed class AlchemyRecipe
         return true;
     }
 
-    /// <summary>Narrower matchers pick first; among equals the hungrier one does, so a light matcher can't starve a heavy one.</summary>
+    /// <summary>Narrower matchers pick first; among equals the more demanding one does, so a light matcher can't starve a heavy one.</summary>
     private static bool ClaimsFirst(ComponentMatcher a, ComponentMatcher b) =>
         a.Specificity != b.Specificity
             ? a.Specificity < b.Specificity
-            : a.Quantity > b.Quantity;
+            : a.MinPotency > b.MinPotency;
 }

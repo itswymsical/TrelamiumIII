@@ -10,27 +10,31 @@ public enum BrewCategory
     /// <summary>The resolved principle is not None.</summary>
     Synthesis,
 
-    /// <summary>The solvent slot holds a <see cref="ChemicalRole.Solution" />.</summary>
+    /// <summary>The input slot holds a <see cref="ChemicalRole.Solution" />.</summary>
     Augmentation,
 
-    /// <summary>The resolved principle is None: neither the solvent nor any solute carries one.</summary>
+    /// <summary>The resolved principle is None: neither the input nor any solute carries one.</summary>
     Refinement,
+
+    /// <summary>The input slot holds a <see cref="ChemicalRole.Solute" />.</summary>
+    Mixture,
 }
 
 /// <summary>
-///     Principle and qualities resolved from a solvent and its solutes. <see cref="Principle" /> comes from
-///     <see cref="PrimarySolute" />, or from the solvent when no solute has one.
+///     Principle, potency and qualities resolved from an input and its solutes. <see cref="Principle" /> comes from
+///     <see cref="PrimarySolute" />, or from a non-solute input when no solute has one.
 /// </summary>
 public readonly record struct BrewComposition(
-    int Solvent,
+    int Input,
     int PrimarySolute,
+    int Potency,
     PrincipleType Principle,
     PrincipleType SecondaryPrinciples,
     ChemicalQuality Qualities,
     ChemicalQuality Modifiers,
     BrewCategory Category);
 
-/// <summary>Builds <see cref="BrewComposition" /> values from almanac entries and roles. Does not read recipes.</summary>
+/// <summary>Builds <see cref="BrewComposition" /> values from almanac entries, roles and slot potencies. Does not read recipes.</summary>
 public static class BrewCompositions
 {
     /// <summary>Acidic/Alkaline, Volatile/Kinetic and Catalytic/Inert: three opposed pairs.</summary>
@@ -45,52 +49,95 @@ public static class BrewCompositions
     public static PrincipleType PrincipleOf(int itemType) =>
         AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry) ? entry.Principle : PrincipleType.None;
 
-    /// <summary>Air entries in <paramref name="solutes" /> are skipped.</summary>
-    public static BrewComposition Of(Item? solvent, Item[] solutes)
+    /// <summary>Solute potencies are read from stack sizes. Air entries in <paramref name="solutes" /> are skipped.</summary>
+    public static BrewComposition Of(Item? input, Item[] solutes)
     {
-        Span<int> types = stackalloc int[solutes.Length];
-        int count = 0;
+        Span<int> levels = stackalloc int[solutes.Length];
 
-        foreach (Item? solute in solutes)
-        {
-            if (solute is { IsAir: false })
-                types[count++] = solute.type;
-        }
+        for (int i = 0; i < solutes.Length; i++)
+            levels[i] = SolutePotency.LevelOf(solutes[i]);
 
-        return Of(solvent is { IsAir: false } ? solvent.type : 0, types[..count]);
+        return Of(input, solutes, levels);
     }
 
-    /// <summary>Group matchers contribute their first member.</summary>
+    /// <summary><paramref name="soluteLevels" /> aligns to <paramref name="solutes" />. Air entries are skipped.</summary>
+    public static BrewComposition Of(Item? input, Item[] solutes, ReadOnlySpan<int> soluteLevels)
+    {
+        Span<int> types = stackalloc int[solutes.Length];
+        Span<int> levels = stackalloc int[solutes.Length];
+        int count = 0;
+
+        for (int i = 0; i < solutes.Length; i++)
+        {
+            if (solutes[i] is not { IsAir: false } solute)
+                continue;
+
+            types[count] = solute.type;
+            levels[count] = i < soluteLevels.Length ? soluteLevels[i] : 0;
+            count++;
+        }
+
+        int inputType = input is { IsAir: false } ? input.type : 0;
+
+        return Of(inputType, SolutePotency.LevelOf(input), types[..count], levels[..count]);
+    }
+
+    /// <summary>Group matchers contribute their first member; each solute is read at its matcher's minimum potency.</summary>
     public static BrewComposition Of(AlchemyRecipe recipe)
     {
         Span<int> types = stackalloc int[recipe.Components.Length];
+        Span<int> levels = stackalloc int[recipe.Components.Length];
 
         for (int i = 0; i < types.Length; i++)
+        {
             types[i] = FirstMember(recipe.Components[i]);
+            levels[i] = recipe.Components[i].MinPotency;
+        }
 
-        return Of(recipe.SolventType, types);
+        return Of(recipe.InputType, 1, types, levels);
     }
 
     /// <summary>
-    ///     Primary solute: highest potency with a principle, ties preferring the solvent's principle. A Solution-role solvent
-    ///     keeps its principle and demotes solute principles to secondary. Inhibitor clears secondary principles.
+    ///     Primary solute: highest potency with a principle, ties preferring the input's principle. A Solution input keeps its
+    ///     principle and demotes solute principles to secondary; a Solute input competes as a solute. Inhibitor clears
+    ///     secondary principles. <paramref name="soluteLevels" /> must match <paramref name="soluteTypes" /> in length.
     /// </summary>
-    public static BrewComposition Of(int solventType, ReadOnlySpan<int> soluteTypes)
+    public static BrewComposition Of(int inputType, int inputLevel, ReadOnlySpan<int> soluteTypes, ReadOnlySpan<int> soluteLevels)
     {
-        bool augmenting = ChemicalRoles.Of(solventType) == ChemicalRole.Solution;
-        PrincipleType solventPrinciple = PrincipleOf(solventType);
+        ChemicalRole inputRole = ChemicalRoles.Of(inputType);
+        bool augmenting = inputRole == ChemicalRole.Solution;
+        bool mixing = inputRole == ChemicalRole.Solute;
+        PrincipleType inputPrinciple = mixing ? PrincipleType.None : PrincipleOf(inputType);
+
+        int candidates = soluteTypes.Length + (mixing ? 1 : 0);
+        Span<int> types = stackalloc int[candidates];
+        Span<int> levels = stackalloc int[candidates];
+
+        soluteTypes.CopyTo(types);
+        soluteLevels.CopyTo(levels);
+
+        if (mixing)
+        {
+            types[^1] = inputType;
+            levels[^1] = inputLevel;
+        }
 
         Span<int> counts = stackalloc int[QUALITY_BITS];
-        Tally(counts, QualityOf(solventType));
+
+        if (!mixing)
+            Tally(counts, QualityOf(inputType));
 
         int primary = 0;
-        int primaryPotency = -1;
+        int primaryLevel = -1;
+        int highestLevel = 0;
         PrincipleType primaryPrinciple = PrincipleType.None;
         PrincipleType allPrinciples = PrincipleType.None;
 
-        foreach (int type in soluteTypes)
+        for (int i = 0; i < types.Length; i++)
         {
+            int type = types[i];
             Tally(counts, QualityOf(type));
+            highestLevel = Math.Max(highestLevel, levels[i]);
 
             PrincipleType principle = PrincipleOf(type);
 
@@ -102,30 +149,32 @@ public static class BrewCompositions
             if (augmenting)
                 continue;
 
-            int potency = PotencyOf(type);
-            bool winsTie = (principle & solventPrinciple) != 0 && (primaryPrinciple & solventPrinciple) == 0;
+            bool winsTie = (principle & inputPrinciple) != 0 && (primaryPrinciple & inputPrinciple) == 0;
 
-            if (potency > primaryPotency || (potency == primaryPotency && winsTie))
+            if (levels[i] > primaryLevel || (levels[i] == primaryLevel && winsTie))
             {
                 primary = type;
-                primaryPotency = potency;
+                primaryLevel = levels[i];
                 primaryPrinciple = principle;
             }
         }
 
-        PrincipleType resolved = augmenting || primaryPrinciple == PrincipleType.None ? solventPrinciple : primaryPrinciple;
+        PrincipleType resolved = augmenting || primaryPrinciple == PrincipleType.None ? inputPrinciple : primaryPrinciple;
         ChemicalQuality modifiers = NetModifiers(counts);
 
         PrincipleType secondary = (modifiers & ChemicalQuality.Inhibitor) != 0
             ? PrincipleType.None
-            : (allPrinciples | solventPrinciple) & ~resolved;
+            : (allPrinciples | inputPrinciple) & ~resolved;
 
-        BrewCategory category = solventType <= 0 || soluteTypes.Length == 0 ? BrewCategory.None
+        int potency = primary > 0 ? primaryLevel : highestLevel;
+
+        BrewCategory category = inputType <= 0 || soluteTypes.Length == 0 ? BrewCategory.None
             : augmenting ? BrewCategory.Augmentation
+            : mixing ? BrewCategory.Mixture
             : resolved == PrincipleType.None ? BrewCategory.Refinement
             : BrewCategory.Synthesis;
 
-        return new BrewComposition(solventType, primary, resolved, secondary, NetQualities(counts), modifiers, category);
+        return new BrewComposition(inputType, primary, potency, resolved, secondary, NetQualities(counts), modifiers, category);
     }
 
     /// <summary>Opposite pairs cancel by count; any Inert removes Catalytic.</summary>
@@ -175,9 +224,6 @@ public static class BrewCompositions
     private static ChemicalQuality QualityOf(int itemType) =>
         AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry) ? entry.Chemical : ChemicalQuality.None;
 
-    private static int PotencyOf(int itemType) =>
-        AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry) ? entry.Potency : 0;
-
     internal static int FirstMember(in ComponentMatcher matcher)
     {
         if (matcher.Group == null)
@@ -193,7 +239,8 @@ public static class BrewCompositions
 /// <summary>Localized names and colors for <see cref="BrewCategory" />.</summary>
 public static class BrewCategories
 {
-    public static readonly BrewCategory[] All = [BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement];
+    public static readonly BrewCategory[] All =
+        [BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture];
 
     /// <summary>Localized under <c>BrewCategories.{member}</c>; falls back to the member name.</summary>
     public static string DisplayName(BrewCategory category)
@@ -209,6 +256,7 @@ public static class BrewCategories
         BrewCategory.Synthesis => new Color(140, 200, 255),
         BrewCategory.Augmentation => new Color(255, 200, 120),
         BrewCategory.Refinement => new Color(255, 130, 130),
+        BrewCategory.Mixture => new Color(190, 160, 255),
         _ => Color.White,
     };
 }

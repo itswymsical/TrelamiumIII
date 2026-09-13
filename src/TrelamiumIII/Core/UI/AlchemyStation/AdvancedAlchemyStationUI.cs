@@ -17,15 +17,15 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
     public const int BREW_DURATION_PER_OUTPUT = 30;
 
     /// <summary>Slot draw scale at zoom 1; multiplied by the game zoom each frame so slots track the sprite.</summary>
-    private const float BaseSlotScale = .68f;
+    private const float BaseSlotScale = .85f;
 
     private readonly AlchemyComponentSlot[] _componentSlots = new AlchemyComponentSlot[COMPONENT_SLOT_COUNT];
-    private AlchemyVialSlot _vialSlot;
+    private AlchemyInputSlot _inputSlot;
     private AlchemyOutputSlot _outputSlot;
     private AlchemyBottleReturnSlot _bottleReturnSlot;
 
     private UIElement _controls;
-    private UIText _categoryLabel;
+    private AlchemyCategoryLabel _categoryLabel;
     private UIText _countLabel;
 
     /// <summary>The station this UI is currently editing. Brewing runs on it, independent of the UI being open.</summary>
@@ -41,6 +41,8 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
     public bool IsBrewing => _entity?.IsBrewing ?? false;
     public bool IsResultReady => _entity?.ResultReady ?? false;
     public float BrewProgress => _entity?.BrewProgress ?? 0f;
+
+    public AlchemyStationMode Mode => _entity?.Mode ?? AlchemyStationMode.Solution;
 
     /// <summary>How many output units the next brew produces. Clamped to <see cref="MaxOutputCount"/>.</summary>
     public int OutputCount { get; private set; } = 1;
@@ -67,7 +69,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         if (_componentSlots[0] != null)
         {
             for (int i = 0; i < COMPONENT_SLOT_COUNT; i++) RemoveChild(_componentSlots[i]);
-            RemoveChild(_vialSlot);
+            RemoveChild(_inputSlot);
             RemoveChild(_outputSlot);
             RemoveChild(_bottleReturnSlot);
         }
@@ -76,14 +78,14 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
         for (int i = 0; i < COMPONENT_SLOT_COUNT; i++)
         {
-            _componentSlots[i] = new AlchemyComponentSlot(entity.Components, i, this);
+            _componentSlots[i] = new AlchemyComponentSlot(entity.Components, i, this, BaseSlotScale);
             Append(_componentSlots[i]);
         }
-        _vialSlot = new AlchemyVialSlot(entity.Vial, this);
-        Append(_vialSlot);
-        _outputSlot = new AlchemyOutputSlot(entity.Output, this);
+        _inputSlot = new AlchemyInputSlot(entity.Input, this, BaseSlotScale);
+        Append(_inputSlot);
+        _outputSlot = new AlchemyOutputSlot(entity.Output, this, BaseSlotScale);
         Append(_outputSlot);
-        _bottleReturnSlot = new AlchemyBottleReturnSlot(entity.BottleReturn);
+        _bottleReturnSlot = new AlchemyBottleReturnSlot(entity.BottleReturn, BaseSlotScale);
         Append(_bottleReturnSlot);
 
         OutputCount = 1;
@@ -100,7 +102,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         _resolution = AlchemyResolution.None;
     }
 
-    /// <summary>A small fixed-size cluster (category label + batch count) that floats just above the chamber.</summary>
+    /// <summary>A small fixed-size cluster (category label, batch count, mode button) that floats just above the chamber.</summary>
     private void BuildControls()
     {
         const float W = 120f;
@@ -112,18 +114,18 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
             Height = StyleDimension.FromPixels(H),
         };
 
-        _categoryLabel = new UIText(string.Empty, 0.8f, large: false)
+        _categoryLabel = new AlchemyCategoryLabel(0.8f)
         {
-            HAlign = 0.5f,
-            Top = StyleDimension.FromPixels(2f),
-            TextColor = Color.White,
+            Width = StyleDimension.FromPercent(1f),
+            Height = StyleDimension.FromPixels(20f),
         };
         _controls.Append(_categoryLabel);
 
-        // Batch count row, centred under the mode label.
+        // Batch count row, centred under the category label, with the mode button at its right edge.
         const float ROW2 = 22f;
         const float BUTTON_W = 18f;
         const float COUNT_TEXT_W = 28f;
+        const float MODE_BUTTON_SIZE = 22f;
         float rowLeft = (W - (BUTTON_W * 2 + COUNT_TEXT_W)) * 0.5f;
 
         var minus = new AlchemyButton("-", width: BUTTON_W, height: BUTTON_W, scale: 0.95f)
@@ -156,6 +158,15 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
             Tooltip = () => "Increase batch",
         };
         _controls.Append(plus);
+
+        var modeButton = new AlchemyModeButton(MODE_BUTTON_SIZE)
+        {
+            Left = StyleDimension.FromPixels(W - MODE_BUTTON_SIZE),
+            Top = StyleDimension.FromPixels(ROW2 - 2f),
+            OnClick = CycleMode,
+            IsEnabled = CanCycleMode,
+        };
+        _controls.Append(modeButton);
     }
 
     /// <summary>
@@ -172,7 +183,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         for (int k = 0; k < COMPONENT_SLOT_COUNT; k++)
             PlaceSlot(_componentSlots[k], origin + AdvancedAlchemyStationRenderer.ComponentSlotWorldOffset(k));
 
-        PlaceSlot(_vialSlot, origin + AdvancedAlchemyStationRenderer.VialSlotWorldOffset);
+        PlaceSlot(_inputSlot, origin + AdvancedAlchemyStationRenderer.InputSlotWorldOffset);
         PlaceSlot(_outputSlot, origin + AdvancedAlchemyStationRenderer.OutputSlotWorldOffset);
         PlaceSlot(_bottleReturnSlot, origin + AdvancedAlchemyStationRenderer.BottleReturnSlotWorldOffset);
 
@@ -242,7 +253,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
     private void UpdatePreview()
     {
-        _resolution = AlchemyRecipeRegistry.Resolve(_entity.Vial[0], _entity.Components);
+        _resolution = AlchemyRecipeRegistry.Resolve(_entity.Input[0], _entity.Components);
 
         MaxOutputCount = ComputeMaxOutputCount(_resolution);
         if (OutputCount > MaxOutputCount) OutputCount = MaxOutputCount;
@@ -256,15 +267,14 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
     }
 
     /// <summary>
-    /// Largest batch the socketed stacks can pay for. Each solute is divided by what the recipe
-    /// draws from it (its potency), and the batch is capped so it can't overflow the output
-    /// item's own stack limit.
+    /// Largest batch the socketed stacks can pay for, capped by the output item's stack limit and, for recipes that return
+    /// bottles, by the bottle slot's remaining capacity.
     /// </summary>
     private int ComputeMaxOutputCount(AlchemyResolution resolution)
     {
         if (!resolution.Found) return 1;
 
-        int max = resolution.MaxBatches(_entity.Vial[0], _entity.Components);
+        int max = resolution.MaxBatches(_entity.Input[0], _entity.Components);
 
         int baseStack = Math.Max(1, resolution.Output.stack);
         if (resolution.Output.maxStack > 0)
@@ -277,7 +287,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
     }
 
     /// <inheritdoc/>
-    public int SoluteCost(int index) => _resolution.CostFor(index);
+    public int RequiredPotency(int index) => _resolution.RequiredPotencyFor(index);
 
     private bool CanAdjustCount() => _entity != null && !IsBrewing && !IsResultReady && !_entity.Output[0].IsAir;
 
@@ -289,6 +299,15 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         OutputCount = next;
     }
 
+    private bool CanCycleMode() => _entity != null && !IsBrewing && !IsResultReady
+        && AlchemyStationRules.NextMode(_entity.Mode, _entity.Input[0], _entity.Components) != _entity.Mode;
+
+    private void CycleMode()
+    {
+        if (_entity != null)
+            _entity.Mode = AlchemyStationRules.NextMode(_entity.Mode, _entity.Input[0], _entity.Components);
+    }
+
     private void UpdateLabels()
     {
         if (_categoryLabel == null) return;
@@ -297,22 +316,19 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
         if (IsBrewing)
         {
-            _categoryLabel.SetText("Brewing");
-            _categoryLabel.TextColor = new Color(255, 240, 160);
+            _categoryLabel.SetText("Brewing", new Color(255, 240, 160));
             return;
         }
 
         if (IsResultReady)
         {
-            _categoryLabel.SetText("Done");
-            _categoryLabel.TextColor = new Color(180, 240, 160);
+            _categoryLabel.SetText("Done", new Color(180, 240, 160));
             return;
         }
 
-        // Blank until the slotted ingredients resolve to a category.
         BrewCategory category = _resolution.Composition.Category;
-        _categoryLabel.SetText(category == BrewCategory.None ? string.Empty : BrewCategories.DisplayName(category));
-        _categoryLabel.TextColor = BrewCategories.ColorOf(category);
+        _categoryLabel.SetText(category == BrewCategory.None ? string.Empty : BrewCategories.DisplayName(category),
+            BrewCategories.ColorOf(category));
     }
 
     /// <summary>
@@ -324,7 +340,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         if (_entity == null) return;
         if (IsBrewing || IsResultReady) return;
         if (_entity.Output[0].IsAir) return;
-        if (_entity.Vial[0].IsAir) return;
+        if (_entity.Input[0].IsAir) return;
 
         int count = Math.Max(1, OutputCount);
         if (_resolution.ReturnsBottle && StationBottles.Capacity(_entity.BottleReturn[0]) < count) return;
@@ -332,8 +348,8 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         Item result = _entity.Output[0].Clone(); // the live preview, already scaled by count
         // The per-socket costs go with the brew: the entity runs it to completion on its own,
         // possibly after a save/load, so it can't re-derive them from a UI that's long gone.
-        _entity.StartBrew(result, BREW_DURATION_PER_OUTPUT * count, count, _resolution.ComponentCosts,
-            _resolution.ReturnsBottle);
+        _entity.StartBrew(result, BREW_DURATION_PER_OUTPUT * count, count, _resolution.InputCost,
+            _resolution.ComponentCosts, _resolution.ReturnsBottle);
 
         SoundEngine.PlaySound(Assets.SFX.Brewing.Asset);
         _entity.SyncToClients();

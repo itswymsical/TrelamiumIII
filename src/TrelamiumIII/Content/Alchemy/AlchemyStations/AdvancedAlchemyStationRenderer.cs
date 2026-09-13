@@ -3,6 +3,7 @@ using ReLogic.Content;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.UI.AlchemyStation;
 
@@ -50,12 +51,12 @@ public static class AdvancedAlchemyStationRenderer
     public static Vector2 UiAnchorWorldOffset => new(CompositeToCell.X + BaseEdgeOutputOffset.X, CompositeToCell.Y + ChamberOffset.Y);
 
     public static Vector2 ComponentSlotWorldOffset(int k)
-        => CompositeToCell + ComponentOffsets[k] + ComponentSlotOffset + new Vector2((k - 1) * 18, -24f);
-    public static Vector2 VialSlotWorldOffset => CompositeToCell + ChamberLiquidOffset + new Vector2(32f, 0f); // chamber fluid centre
+        => CompositeToCell + ComponentOffsets[k] + ComponentSlotOffset + new Vector2((k - 1) * 27, -24f);
+    public static Vector2 InputSlotWorldOffset => CompositeToCell + ChamberLiquidOffset + new Vector2(32f, 0f); // chamber fluid centre
     public static Vector2 OutputSlotWorldOffset => CompositeToCell + BaseEdgeOutputOffset + new Vector2(11f, 11f);
 
     /// <summary>Right of the output slot, outside the station sprite's bounds.</summary>
-    public static Vector2 BottleReturnSlotWorldOffset => OutputSlotWorldOffset + new Vector2(38f, 0f);
+    public static Vector2 BottleReturnSlotWorldOffset => OutputSlotWorldOffset + new Vector2(48f, 0f);
 
     // heat plate sheet: 64x34 = 3 frames of 64x10 with 2px vertical padding
     private const int HeatPlateFrameWidth = 64;
@@ -90,10 +91,10 @@ public static class AdvancedAlchemyStationRenderer
 
             BlitRocked(sb, GetTex(ref _chamberBack, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_ChamberBack.KEY), c + ChamberBackOffset, motion, light);
 
-            if (!entity.Vial[0].IsAir)
+            if (ChemicalRoles.Of(entity.Input[0]) is ChemicalRole.Solvent or ChemicalRole.Solution)
                 AdvancedAlchemyStationLiquid.Draw(sb,
                     GetTex(ref _chamberOverlay, AssetReferences.Content.Alchemy.AlchemyStations.ChamberLiquidOverlay.KEY),
-                    c + ChamberLiquidOffset, motion, entity.Vial[0].type, light, entity.IsBrewing, entity.BrewProgress);
+                    c + ChamberLiquidOffset, motion, entity.Input[0].type, light, entity.IsBrewing, entity.BrewProgress);
 
             BlitRocked(sb, GetTex(ref _chamber, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Chamber.KEY), c + ChamberOffset, motion, light);
             Blit(sb, GetTex(ref _pipes, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Pipes.KEY), c + PipesOffset, light);

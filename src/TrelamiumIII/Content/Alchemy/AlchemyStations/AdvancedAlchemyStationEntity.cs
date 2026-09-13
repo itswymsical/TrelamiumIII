@@ -17,11 +17,13 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
 
     // Item[] (not Item) so the UI's BasicItemSlots can bind directly to these arrays.
     public readonly Item[] Components = new Item[ComponentSocketCount];
-    public readonly Item[] Vial = new Item[1];
+    public readonly Item[] Input = new Item[1];
     public readonly Item[] Output = new Item[1];
 
     /// <summary>Empty bottles returned by brews whose recipe returns them. Take-only in the UI.</summary>
     public readonly Item[] BottleReturn = new Item[1];
+
+    public AlchemyStationMode Mode;
 
     public bool HasChamber;
 
@@ -41,6 +43,9 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     /// <summary>Whether completing the active brew adds <see cref="BrewCount" /> bottles to <see cref="BottleReturn" />.</summary>
     public bool BrewReturnsBottles;
 
+    /// <summary>Items the input slot gives up per batch unit, locked in when the brew starts.</summary>
+    public int BrewInputCost = 1;
+
     /// <summary>
     /// Units each component socket gives up per batch unit, locked in when the brew starts. Persisted and synced because
     /// completion can't re-ask the recipe once the UI is gone.
@@ -57,7 +62,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
             Components[k] = new Item();
             BrewComponentCost[k] = 1;
         }
-        Vial[0] = new Item();
+        Input[0] = new Item();
         Output[0] = new Item();
         BottleReturn[0] = new Item();
     }
@@ -72,11 +77,12 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     /// Begins a brew that then runs on its own. <paramref name="result"/> is the locked-in output, already scaled by count;
     /// <paramref name="componentCosts"/> aligns to <see cref="Components"/>, and uncovered sockets draw one apiece.
     /// </summary>
-    public void StartBrew(Item result, int duration, int count, int[]? componentCosts = null, bool returnsBottles = false)
+    public void StartBrew(Item result, int duration, int count, int inputCost, int[] componentCosts, bool returnsBottles)
     {
         Output[0] = result.Clone();
         BrewDuration = duration;
         BrewCount = count;
+        BrewInputCost = Math.Max(1, inputCost);
         BrewReturnsBottles = returnsBottles;
         BrewTimer = 0;
         IsBrewing = true;
@@ -84,7 +90,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
 
         for (int k = 0; k < ComponentSocketCount; k++)
         {
-            int cost = componentCosts != null && k < componentCosts.Length ? componentCosts[k] : 1;
+            int cost = k < componentCosts.Length ? componentCosts[k] : 1;
             BrewComponentCost[k] = Math.Max(1, cost);
         }
     }
@@ -113,17 +119,16 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
     {
         int count = BrewCount;
 
-        // Output is already locked in; this pays for it. The solvent costs one bottle per unit.
-        if (!Vial[0].IsAir)
+        // Output is already locked in; this pays for it.
+        if (!Input[0].IsAir)
         {
-            Vial[0].stack -= count;
-            if (Vial[0].stack <= 0) Vial[0].TurnToAir();
+            Input[0].stack -= BrewInputCost * count;
+            if (Input[0].stack <= 0) Input[0].TurnToAir();
         }
 
         if (BrewReturnsBottles)
             StationBottles.Deposit(BottleReturn, count);
 
-        // Solutes go by the recipe's draw on each socket (its potency), times the batch.
         for (int k = 0; k < ComponentSocketCount; k++)
         {
             if (Components[k].IsAir) continue;
@@ -178,9 +183,10 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
             tag[$"present{k}"] = ComponentPresent[k];
             tag[$"brewCost{k}"] = BrewComponentCost[k];
         }
-        tag["vial"] = Vial[0];
+        tag["vial"] = Input[0];   // key predates the input slot rename
         tag["output"] = Output[0];
         tag["bottleReturn"] = BottleReturn[0];
+        tag["mode"] = (byte)Mode;
         tag["hasChamber"] = HasChamber;
 
         tag["isBrewing"] = IsBrewing;
@@ -189,6 +195,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         tag["brewDuration"] = BrewDuration;
         tag["brewCount"] = BrewCount;
         tag["brewReturnsBottles"] = BrewReturnsBottles;
+        tag["brewInputCost"] = BrewInputCost;
     }
 
     public override void LoadData(TagCompound tag)
@@ -200,9 +207,10 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
             // Absent on stations saved before solute quantities existed; one apiece was the old rule.
             BrewComponentCost[k] = Math.Max(1, tag.GetInt($"brewCost{k}"));
         }
-        Vial[0] = tag.Get<Item>("vial") ?? new Item();
+        Input[0] = tag.Get<Item>("vial") ?? new Item();
         Output[0] = tag.Get<Item>("output") ?? new Item();
         BottleReturn[0] = tag.TryGet("bottleReturn", out Item bottles) ? bottles : new Item();
+        Mode = (AlchemyStationMode)tag.GetByte("mode");
         HasChamber = tag.GetBool("hasChamber");
 
         IsBrewing = tag.GetBool("isBrewing");
@@ -211,6 +219,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         BrewDuration = tag.GetInt("brewDuration");
         BrewCount = tag.GetInt("brewCount");
         BrewReturnsBottles = tag.GetBool("brewReturnsBottles");
+        BrewInputCost = Math.Max(1, tag.GetInt("brewInputCost"));
     }
 
     public override void NetSend(BinaryWriter writer)
@@ -223,16 +232,18 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         if (ResultReady) flags |= 1 << 5;
         if (BrewReturnsBottles) flags |= 1 << 6;
         writer.Write(flags);
+        writer.Write((byte)Mode);
 
         for (int k = 0; k < ComponentSocketCount; k++)
             ItemIO.Send(Components[k], writer, writeStack: true);
-        ItemIO.Send(Vial[0], writer, writeStack: true);
+        ItemIO.Send(Input[0], writer, writeStack: true);
         ItemIO.Send(Output[0], writer, writeStack: true);
         ItemIO.Send(BottleReturn[0], writer, writeStack: true);
 
         writer.Write(BrewTimer);
         writer.Write(BrewDuration);
         writer.Write(BrewCount);
+        writer.Write(BrewInputCost);
         for (int k = 0; k < ComponentSocketCount; k++)
             writer.Write(BrewComponentCost[k]);
     }
@@ -246,16 +257,18 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         IsBrewing = (flags & (1 << 4)) != 0;
         ResultReady = (flags & (1 << 5)) != 0;
         BrewReturnsBottles = (flags & (1 << 6)) != 0;
+        Mode = (AlchemyStationMode)reader.ReadByte();
 
         for (int k = 0; k < ComponentSocketCount; k++)
             Components[k] = ItemIO.Receive(reader, readStack: true);
-        Vial[0] = ItemIO.Receive(reader, readStack: true);
+        Input[0] = ItemIO.Receive(reader, readStack: true);
         Output[0] = ItemIO.Receive(reader, readStack: true);
         BottleReturn[0] = ItemIO.Receive(reader, readStack: true);
 
         BrewTimer = reader.ReadInt32();
         BrewDuration = reader.ReadInt32();
         BrewCount = reader.ReadInt32();
+        BrewInputCost = Math.Max(1, reader.ReadInt32());
         for (int k = 0; k < ComponentSocketCount; k++)
             BrewComponentCost[k] = Math.Max(1, reader.ReadInt32());
     }

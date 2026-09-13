@@ -1059,6 +1059,7 @@ BrewCategories: {
 	Synthesis: Synthesis
 	Augmentation: Augmentation
 	Refinement: Refinement
+	Mixture: Mixture
 }
 
 # The stat rows a controller weapon shows under its damage line (ChemicalStatsTooltip). Each row

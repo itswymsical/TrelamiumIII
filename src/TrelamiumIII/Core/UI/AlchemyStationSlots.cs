@@ -2,6 +2,7 @@ using ReLogic.Content;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
+using Terraria.UI.Chat;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.UI.AlchemyStation;
 using static TrelamiumIII.Core.AssetReferences;
@@ -34,52 +35,61 @@ internal static class AlchemySlotArt
         => ModContent.Request<Texture2D>(key, AssetRequestMode.ImmediateLoad);
 }
 
-/// <summary>
-/// Accepts solute-role items and any item a registered recipe uses as a component. Locked while a brew is in progress.
-/// </summary>
+/// <summary>Potency meters and stack counts drawn by alchemy station slots.</summary>
+internal static class AlchemySlotOverlay
+{
+    private static readonly Color MeterNeutral = new(200, 200, 215);
+    private static readonly Color MeterMet = new(255, 220, 150);
+    private static readonly Color MeterUnmet = new(255, 110, 110);
+
+    /// <summary>
+    /// Meter of <paramref name="item"/>'s stack potency below <paramref name="slot"/>. <paramref name="required"/> of 0 draws a
+    /// neutral meter; otherwise the tint shows whether the requirement is met, and empty pips draw at level 0.
+    /// </summary>
+    public static void DrawPotency(SpriteBatch spriteBatch, Rectangle slot, float scale, Item item, int required)
+    {
+        if (item.IsAir)
+            return;
+
+        int level = SolutePotency.LevelOf(item);
+        Color tint = required <= 0 ? MeterNeutral : level >= required ? MeterMet : MeterUnmet;
+
+        PotencyMeter.Draw(spriteBatch, level, slot.Center.X, slot.Bottom + 2f * scale,
+            pipHeight: 8f * scale, gap: scale, tint: tint, drawEmpty: required > 0);
+    }
+
+    /// <summary>Stack count at vanilla's slot position, for items not drawn through <see cref="ItemSlot.Draw" />.</summary>
+    public static void DrawStack(SpriteBatch spriteBatch, Vector2 slotTopLeft, float scale, int stack)
+    {
+        if (stack <= 1)
+            return;
+
+        ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.ItemStack.Value, stack.ToString(),
+            slotTopLeft + new Vector2(10f, 26f) * scale, Color.White, 0f, Vector2.Zero, new Vector2(scale), -1f, scale);
+    }
+}
+
+/// <summary>Component slot. Acceptance follows <see cref="AlchemyStationRules.AcceptsComponent" />. Locked while brewing.</summary>
 internal class AlchemyComponentSlot : BasicItemSlot
 {
     private readonly IAlchemyStationUI _ui;
 
-    // InventoryItem rather than EquipDye: a dye slot paints vanilla's own faint dye glyph when
-    // empty, which would fight the frame's star hint now that the socket brings its own art.
-    public AlchemyComponentSlot(Item[] items, int index, IAlchemyStationUI ui)
-        : base(items, index, ItemSlot.Context.InventoryItem, 0.85f)
+    public AlchemyComponentSlot(Item[] items, int index, IAlchemyStationUI ui, float scale)
+        : base(items, index, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;
     }
-    protected override Vector2 DrawOffset => Vector2.Zero;
 
-    protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Ingredient(!items[index].IsAir);
+    protected override Asset<Texture2D>? SlotFrame => ChemicalRoles.Of(items[index]) == ChemicalRole.Solvent
+        ? AlchemySlotArt.Bottle(inUse: true)
+        : AlchemySlotArt.Ingredient(!items[index].IsAir);
 
-    public override bool ValidItemForSlot(Item item)
-        => item.IsAir || AlchemyIngredients.IsValidSubstance(item) || ChemicalRoles.Of(item) == ChemicalRole.Solute;
+    public override bool ValidItemForSlot(Item item) => AlchemyStationRules.AcceptsComponent(_ui.Mode, items, index, item);
 
     protected override void DrawSelf(SpriteBatch spriteBatch)
     {
         base.DrawSelf(spriteBatch);
-        DrawPotencyDraw(spriteBatch);
-    }
-
-    /// <summary>
-    /// The potency the previewed recipe is drawing from this slot, as a star meter across the
-    /// slot's foot. Amber while the stack covers it, red while it doesn't.
-    /// </summary>
-    private void DrawPotencyDraw(SpriteBatch sb)
-    {
-        int cost = _ui.SoluteCost(index);
-        if (cost <= 0) return;
-
-        var item = items[index];
-        bool covered = item is { IsAir: false } && item.stack >= cost;
-
-        var bounds = GetDimensions().ToRectangle();
-        PotencyMeter.Draw(sb, cost,
-            centerX: bounds.X + bounds.Width * 0.5f,
-            y: bounds.Bottom - 9f * Scale,
-            pipHeight: 8f * Scale,
-            gap: 1f * Scale,
-            tint: covered ? new Color(255, 220, 150) : new Color(255, 110, 110));
+        AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], _ui.RequiredPotency(index));
     }
 
     protected override void SlotLogic(ref Item item)
@@ -94,27 +104,30 @@ internal class AlchemyComponentSlot : BasicItemSlot
     }
 }
 
-/// <summary>
-/// Accepts solvent- and solution-role items and any item a registered recipe uses as a solvent.
-/// Locked while a brew is in progress.
-/// </summary>
-internal class AlchemyVialSlot : BasicItemSlot
+/// <summary>Input slot. Acceptance follows <see cref="AlchemyStationRules.AcceptsInput" />. Locked while brewing.</summary>
+internal class AlchemyInputSlot : BasicItemSlot
 {
     private readonly IAlchemyStationUI _ui;
 
-    public AlchemyVialSlot(Item[] items, IAlchemyStationUI ui)
-        : base(items, 0, ItemSlot.Context.CraftingMaterial, 0.85f)
+    public AlchemyInputSlot(Item[] items, IAlchemyStationUI ui, float scale)
+        : base(items, 0, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;
     }
 
-    protected override Vector2 DrawOffset => Vector2.Zero;
+    protected override Asset<Texture2D>? SlotFrame => _ui.Mode == AlchemyStationMode.SoluteMixture
+        ? AlchemySlotArt.Ingredient(!items[index].IsAir)
+        : AlchemySlotArt.Bottle(!items[index].IsAir);
 
-    protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Bottle(!items[index].IsAir);
+    public override bool ValidItemForSlot(Item item) => AlchemyStationRules.AcceptsInput(_ui.Mode, item);
 
-    public override bool ValidItemForSlot(Item item)
-        => item.IsAir || AlchemyIngredients.IsValidSolvent(item)
-            || ChemicalRoles.Of(item) is ChemicalRole.Solvent or ChemicalRole.Solution;
+    protected override void DrawSelf(SpriteBatch spriteBatch)
+    {
+        base.DrawSelf(spriteBatch);
+
+        if (ChemicalRoles.Of(items[index]) == ChemicalRole.Solute)
+            AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], required: 0);
+    }
 
     protected override void SlotLogic(ref Item item)
     {
@@ -131,8 +144,8 @@ internal class AlchemyVialSlot : BasicItemSlot
 /// <summary>Take-only slot holding bottles returned by completed brews.</summary>
 internal class AlchemyBottleReturnSlot : BasicItemSlot
 {
-    public AlchemyBottleReturnSlot(Item[] items)
-        : base(items, 0, ItemSlot.Context.CraftingMaterial, 0.85f)
+    public AlchemyBottleReturnSlot(Item[] items, float scale)
+        : base(items, 0, ItemSlot.Context.InventoryItem, scale)
     {
     }
 
@@ -153,18 +166,15 @@ internal class AlchemyOutputSlot : BasicItemSlot
 {
     private readonly IAlchemyStationUI _ui;
 
-    public AlchemyOutputSlot(Item[] items, IAlchemyStationUI ui)
-        : base(items, 0, ItemSlot.Context.CraftingMaterial, 0.85f)
+    public AlchemyOutputSlot(Item[] items, IAlchemyStationUI ui, float scale)
+        : base(items, 0, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;
     }
 
     protected override Vector2 DrawOffset => Vector2.Zero;
 
-    /// <summary>
-    /// A pending preview counts as in use: the socket is showing something, even if it's only the
-    /// silhouette of what a brew would yield, so the flask hint has done its job and steps aside.
-    /// </summary>
+    /// <summary>A pending preview counts as in use, so the empty-state hint frame is replaced while one is shown.</summary>
     protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Bottle(!items[index].IsAir);
 
     /// <summary>Block placing items into the output slot.</summary>
@@ -172,27 +182,29 @@ internal class AlchemyOutputSlot : BasicItemSlot
 
     protected override void DrawSelf(SpriteBatch spriteBatch)
     {
-        // Skip BasicItemSlot.DrawSelf so we control whether the icon or a silhouette is drawn.
+        // Replaces BasicItemSlot.DrawSelf to choose between the real item and a silhouette.
         float oldScale = Main.inventoryScale;
         Main.inventoryScale = Scale;
 
-        var pos = GetDimensions().ToRectangle().TopLeft();
+        Vector2 position = DrawnBounds().TopLeft();
 
-        // Both paths go through SlotFrameOverride so the socket keeps its own frame; SlotFrame
-        // reads the real contents, so the empty-state hint isn't fooled by the dummy below.
         if (_ui.IsResultReady || AlmanacDiscoverySystem.IsUnlocked(items[index].type))
         {
-            SlotFrameOverride.Draw(spriteBatch, ref items[index], context, pos + DrawOffset, SlotFrame);
+            SlotFrameOverride.Draw(spriteBatch, ref items[index], context, position, SlotFrame);
         }
         else
         {
-            // Preview/brewing
-            Item dummy = new Item();
-            SlotFrameOverride.Draw(spriteBatch, ref dummy, context, pos + DrawOffset, SlotFrame);
+            // Undiscovered preview: the frame around an empty item, then the silhouette and its stack.
+            Item empty = new();
+            SlotFrameOverride.Draw(spriteBatch, ref empty, context, position, SlotFrame);
 
-            var item = items[index];
+            Item item = items[index];
+
             if (!item.IsAir)
+            {
                 DrawItemSilhouette(spriteBatch, item);
+                AlchemySlotOverlay.DrawStack(spriteBatch, position, Scale, item.stack);
+            }
         }
 
         if (_ui.IsBrewing && _ui.ShowInlineBrewBar)
@@ -275,7 +287,6 @@ internal class AlchemyOutputSlot : BasicItemSlot
 
             return;
         }
-
 
         if (Main.mouseLeft && Main.mouseLeftRelease)
         {

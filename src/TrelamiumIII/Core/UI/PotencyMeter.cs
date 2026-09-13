@@ -67,12 +67,12 @@ internal static class PotencyMeter
     /// <summary>
     /// Draws the meter with <paramref name="potency"/> pips filled, horizontally centred on
     /// <paramref name="centerX"/> with its top edge at <paramref name="y"/>. Draws nothing at
-    /// potency 0, so callers can pass an unrated value straight through.
+    /// potency 0 unless <paramref name="drawEmpty"/> is set.
     /// </summary>
     public static void Draw(SpriteBatch sb, int potency, float centerX, float y,
-                            float pipHeight = 8f, float gap = 1f, Color? tint = null)
+                            float pipHeight = 8f, float gap = 1f, Color? tint = null, bool drawEmpty = false)
     {
-        if (potency <= 0) return;
+        if (potency <= 0 && !drawEmpty) return;
         potency = Math.Clamp(potency, 0, PIPS);
 
         var sample = Star(true);

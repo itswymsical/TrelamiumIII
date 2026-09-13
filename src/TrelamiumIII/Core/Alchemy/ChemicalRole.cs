@@ -48,7 +48,7 @@ public static class ChemicalRoles
 
     /// <summary>
     ///     Authored role, else inferred from recipe usage in this order: a potion used or produced by a recipe is a
-    ///     solution, then solvent use, solute use, and production.
+    ///     solution, then component use (solute), input use (solvent), and production (solution).
     /// </summary>
     public static ChemicalRole Of(int itemType)
     {
@@ -63,12 +63,12 @@ public static class ChemicalRoles
         if (AlchemyRecipeRegistry.All.Count == 0)
             return ChemicalRole.None;
 
-        bool solvent = AlchemyIngredients.IsSolventType(itemType);
+        bool input = AlchemyIngredients.IsInputType(itemType);
         bool produced = AlchemyRecipeRegistry.Produces(itemType);
 
-        role = (solvent || produced) && IsPotion(itemType) ? ChemicalRole.Solution
-            : solvent ? ChemicalRole.Solvent
+        role = (input || produced) && IsPotion(itemType) ? ChemicalRole.Solution
             : AlchemyIngredients.IsSubstanceType(itemType) ? ChemicalRole.Solute
+            : input ? ChemicalRole.Solvent
             : produced ? ChemicalRole.Solution
             : ChemicalRole.None;
 

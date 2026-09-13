@@ -8,7 +8,7 @@ public class OxidizedCopperItem : ModItem, IAlmanacDefined
 {
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
-        Potency = 2,
+        AlmanacPotency = 2,
         Chemical = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
         Principle = PrincipleType.Harmony,
     };

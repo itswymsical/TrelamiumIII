@@ -12,7 +12,7 @@ public class FlyAgaricItem : ModItem, IAlmanacDefined
 {
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
-        Potency = 2,
+        AlmanacPotency = 2,
         Chemical = ChemicalQuality.Catalytic,
         Principle = PrincipleType.Harmony,
     };

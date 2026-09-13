@@ -9,6 +9,7 @@ AlmanacUI: {
 	SynthesisRecipes: Synthesis Recipes
 	AugmentationRecipes: Augmentation Recipes
 	RefinementRecipes: Refinement Recipes
+	MixtureRecipes: Mixture Recipes
 	AllRecipes: All Recipes
 	RecipeVariant: 1 recipe variant
 	RecipeVariants: recipe variants
