@@ -1,6 +1,5 @@
 using System;
 using Terraria.Audio;
-using Terraria.GameContent.UI.Elements;
 using Terraria.UI;
 using TrelamiumIII.Content.Alchemy.AlchemyStations;
 using TrelamiumIII.Core.Alchemy;
@@ -14,8 +13,6 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 {
     public const int COMPONENT_SLOT_COUNT = 3;
 
-    public const int BREW_DURATION_PER_OUTPUT = 30;
-
     /// <summary>Slot draw scale at zoom 1; multiplied by the game zoom each frame so slots track the sprite.</summary>
     private const float BaseSlotScale = .85f;
 
@@ -26,7 +23,6 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
     private UIElement _controls;
     private AlchemyCategoryLabel _categoryLabel;
-    private UIText _countLabel;
 
     /// <summary>The station this UI is currently editing. Brewing runs on it, independent of the UI being open.</summary>
     private AdvancedAlchemyStationEntity _entity;
@@ -44,14 +40,15 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
     public AlchemyStationMode Mode => _entity?.Mode ?? AlchemyStationMode.Solution;
 
-    /// <summary>How many output units the next brew produces. Clamped to <see cref="MaxOutputCount"/>.</summary>
-    public int OutputCount { get; private set; } = 1;
+    /// <summary>Batches the next brew produces: the selected <see cref="AlchemyBatchSizes.Presets"/> entry clamped to <see cref="MaxOutputCount"/>.</summary>
+    public int OutputCount => AlchemyBatchSizes.Of(_batchPreset, MaxOutputCount);
 
     /// <summary>Largest <see cref="OutputCount"/> the current ingredients can support.</summary>
     public int MaxOutputCount { get; private set; } = 1;
 
-    /// <summary>Live preview: which recipe the sockets resolve to and what each owes it.</summary>
-    private AlchemyResolution _resolution = AlchemyResolution.None;
+    private int _batchPreset;
+
+    private readonly AlchemyPreview _preview = new();
 
     public override void OnInitialize()
     {
@@ -88,8 +85,8 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         _bottleReturnSlot = new AlchemyBottleReturnSlot(entity.BottleReturn, BaseSlotScale);
         Append(_bottleReturnSlot);
 
-        OutputCount = 1;
-        _resolution = AlchemyResolution.None;
+        _batchPreset = 0;
+        _preview.Reset();
     }
 
     /// <summary>Releases the bound station on close. A lingering idle preview isn't a real item, so clear it.</summary>
@@ -99,7 +96,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
             _entity.Output[0] = new Item();
 
         _entity = null;
-        _resolution = AlchemyResolution.None;
+        _preview.Reset();
     }
 
     /// <summary>A small fixed-size cluster (category label, batch count, mode button) that floats just above the chamber.</summary>
@@ -121,43 +118,22 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         };
         _controls.Append(_categoryLabel);
 
-        // Batch count row, centred under the category label, with the mode button at its right edge.
-        const float ROW2 = 22f;
-        const float BUTTON_W = 18f;
-        const float COUNT_TEXT_W = 28f;
+        // Batch row, centred under the category label, with the mode button at its right edge.
+        const float ROW2 = 21f;
+        const float BATCH_W = 52f;
+        const float BATCH_H = 22f;
         const float MODE_BUTTON_SIZE = 22f;
-        float rowLeft = (W - (BUTTON_W * 2 + COUNT_TEXT_W)) * 0.5f;
 
-        var minus = new AlchemyButton("-", width: BUTTON_W, height: BUTTON_W, scale: 0.95f)
+        var batch = new AlchemyBatchButton(BATCH_W, BATCH_H, textScale: 0.8f)
         {
-            Left = StyleDimension.FromPixels(rowLeft),
+            Left = StyleDimension.FromPixels((W - BATCH_W) * 0.5f),
             Top = StyleDimension.FromPixels(ROW2),
-            OnClick = () => AdjustOutputCount(-1),
-            IsEnabled = () => CanAdjustCount() && OutputCount > 1,
-            Tooltip = () => "Decrease batch",
+            OnClick = CycleBatch,
+            IsEnabled = CanCycleBatch,
+            Count = () => OutputCount,
+            IsCapped = () => OutputCount < AlchemyBatchSizes.Presets[_batchPreset],
         };
-        _controls.Append(minus);
-
-        _countLabel = new UIText("x1", 0.85f, large: false)
-        {
-            Left = StyleDimension.FromPixels(rowLeft + BUTTON_W),
-            Top = StyleDimension.FromPixels(ROW2 + 2f),
-            Width = StyleDimension.FromPixels(COUNT_TEXT_W),
-            Height = StyleDimension.FromPixels(BUTTON_W),
-            TextColor = Color.White,
-        };
-        _countLabel.TextOriginX = 0.5f;
-        _controls.Append(_countLabel);
-
-        var plus = new AlchemyButton("+", width: BUTTON_W, height: BUTTON_W, scale: 0.95f)
-        {
-            Left = StyleDimension.FromPixels(rowLeft + BUTTON_W + COUNT_TEXT_W),
-            Top = StyleDimension.FromPixels(ROW2),
-            OnClick = () => AdjustOutputCount(1),
-            IsEnabled = () => CanAdjustCount() && OutputCount < MaxOutputCount,
-            Tooltip = () => "Increase batch",
-        };
-        _controls.Append(plus);
+        _controls.Append(batch);
 
         var modeButton = new AlchemyModeButton(MODE_BUTTON_SIZE)
         {
@@ -239,7 +215,6 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
             if (_entity.Output[0].IsAir)
             {
                 _entity.ResultReady = false;
-                OutputCount = 1;
                 _entity.SyncToClients();
             }
         }
@@ -253,51 +228,18 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
 
     private void UpdatePreview()
     {
-        _resolution = AlchemyRecipeRegistry.Resolve(_entity.Input[0], _entity.Components);
-
-        MaxOutputCount = ComputeMaxOutputCount(_resolution);
-        if (OutputCount > MaxOutputCount) OutputCount = MaxOutputCount;
-        if (OutputCount < 1) OutputCount = 1;
-
-        var preview = _resolution.Output;
-        if (!preview.IsAir)
-            preview.stack = Math.Max(1, preview.stack) * OutputCount;
-
-        _entity.Output[0] = preview;
-    }
-
-    /// <summary>
-    /// Largest batch the socketed stacks can pay for, capped by the output item's stack limit and, for recipes that return
-    /// bottles, by the bottle slot's remaining capacity.
-    /// </summary>
-    private int ComputeMaxOutputCount(AlchemyResolution resolution)
-    {
-        if (!resolution.Found) return 1;
-
-        int max = resolution.MaxBatches(_entity.Input[0], _entity.Components);
-
-        int baseStack = Math.Max(1, resolution.Output.stack);
-        if (resolution.Output.maxStack > 0)
-            max = Math.Min(max, Math.Max(1, resolution.Output.maxStack / baseStack));
-
-        if (resolution.ReturnsBottle)
-            max = Math.Min(max, StationBottles.Capacity(_entity.BottleReturn[0]));
-
-        return Math.Max(1, max);
+        _preview.Refresh(_entity.Input[0], _entity.Components, _entity.BottleReturn[0]);
+        MaxOutputCount = _preview.MaxBatches;
+        _entity.Output[0] = _preview.ItemFor(OutputCount);
     }
 
     /// <inheritdoc/>
-    public int RequiredPotency(int index) => _resolution.RequiredPotencyFor(index);
+    public int RequiredPotency(int index) => _preview.Resolution.RequiredPotencyFor(index);
 
-    private bool CanAdjustCount() => _entity != null && !IsBrewing && !IsResultReady && !_entity.Output[0].IsAir;
+    private bool CanCycleBatch() =>
+        _entity != null && !IsBrewing && !IsResultReady && !_entity.Output[0].IsAir && MaxOutputCount > 1;
 
-    private void AdjustOutputCount(int delta)
-    {
-        int next = OutputCount + delta;
-        if (next < 1) next = 1;
-        if (next > MaxOutputCount) next = MaxOutputCount;
-        OutputCount = next;
-    }
+    private void CycleBatch() => _batchPreset = AlchemyBatchSizes.Next(_batchPreset, MaxOutputCount);
 
     private bool CanCycleMode() => _entity != null && !IsBrewing && !IsResultReady
         && AlchemyStationRules.NextMode(_entity.Mode, _entity.Input[0], _entity.Components) != _entity.Mode;
@@ -312,8 +254,6 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
     {
         if (_categoryLabel == null) return;
 
-        _countLabel?.SetText($"x{OutputCount}");
-
         if (IsBrewing)
         {
             _categoryLabel.SetText("Brewing", new Color(255, 240, 160));
@@ -326,7 +266,7 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
             return;
         }
 
-        BrewCategory category = _resolution.Composition.Category;
+        BrewCategory category = _preview.Resolution.Composition.Category;
         _categoryLabel.SetText(category == BrewCategory.None ? string.Empty : BrewCategories.DisplayName(category),
             BrewCategories.ColorOf(category));
     }
@@ -342,14 +282,15 @@ internal class AdvancedAlchemyStationUI : UIState, IAlchemyStationUI
         if (_entity.Output[0].IsAir) return;
         if (_entity.Input[0].IsAir) return;
 
-        int count = Math.Max(1, OutputCount);
-        if (_resolution.ReturnsBottle && StationBottles.Capacity(_entity.BottleReturn[0]) < count) return;
+        AlchemyResolution resolution = _preview.Resolution;
+        int count = OutputCount;
+        if (resolution.ReturnsBottle && StationBottles.Capacity(_entity.BottleReturn[0]) < count) return;
 
         Item result = _entity.Output[0].Clone(); // the live preview, already scaled by count
         // The per-socket costs go with the brew: the entity runs it to completion on its own,
         // possibly after a save/load, so it can't re-derive them from a UI that's long gone.
-        _entity.StartBrew(result, BREW_DURATION_PER_OUTPUT * count, count, _resolution.InputCost,
-            _resolution.ComponentCosts, _resolution.ReturnsBottle);
+        _entity.StartBrew(result, resolution.BrewTicks(AdvancedAlchemyStationBase.BrewSpeed), count, resolution.InputCost,
+            resolution.ComponentCosts, resolution.ReturnsBottle);
 
         SoundEngine.PlaySound(Assets.SFX.Brewing.Asset);
         _entity.SyncToClients();

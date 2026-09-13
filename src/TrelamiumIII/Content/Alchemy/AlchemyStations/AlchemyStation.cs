@@ -32,6 +32,9 @@ public class AlchemyStationItem : ModItem
 
 public class AlchemyStationTile : ModTile
 {
+    /// <summary>Divisor applied to an output's <see cref="Core.Alchemy.AlmanacEntry.BrewTicks" />.</summary>
+    public const float BrewSpeed = 1f;
+
     public override void SetStaticDefaults()
     {
         Main.tileFrameImportant[Type] = true;

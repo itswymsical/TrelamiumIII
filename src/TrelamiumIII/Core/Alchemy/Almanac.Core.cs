@@ -73,6 +73,9 @@ public sealed class AlmanacEntry
     /// <summary>Items per potency level in a station slot; see <see cref="SolutePotency" />.</summary>
     public int StackPerPotency { get; init; } = 1;
 
+    /// <summary>Ticks a station takes to brew this item as its output, divided by the station's brew speed. Batch size doesn't scale it.</summary>
+    public int BrewTicks { get; init; } = DefaultBrewTicks;
+
     /// <summary>Chemical tag(s). Drawn as one coloured badge per set flag.</summary>
     public ChemicalQuality Chemical { get; init; }
 
@@ -88,6 +91,8 @@ public sealed class AlmanacEntry
 
     /// <summary>Sentinel for <see cref="Rarity"/>: defer to the item's own vanilla rarity.</summary>
     public const int UseVanillaRarity = int.MinValue;
+
+    public const int DefaultBrewTicks = 60;
 
     /// <summary>The rarity to actually display: explicit value, else the item's vanilla rarity.</summary>
     public int ResolvedRarity =>

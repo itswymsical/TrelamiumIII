@@ -15,8 +15,6 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 {
     public const int COMPONENT_SLOT_COUNT = 3;
 
-    public const int BREW_DURATION_PER_OUTPUT = 60;
-
     /// <summary>Slot draw scale; the layout constants in <see cref="BuildPanel"/> derive from it.</summary>
     private const float SLOT_SCALE = 1.0625f;
 
@@ -31,7 +29,6 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
     private AlchemyStationPanel _panel;
     private AlchemyCategoryLabel _categoryLabel;
     private UIText _hintLabel;
-    private UIText _countLabel;
 
     /// <summary>World position (pixels) the panel anchors to, set by the system each frame; null leaves it put.</summary>
     public Vector2? WorldAnchor;
@@ -55,17 +52,18 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 
     public AlchemyStationMode Mode { get; private set; }
 
-    /// <summary>How many output units the next/current brew produces. Clamped to <see cref="MaxOutputCount"/>.</summary>
-    public int OutputCount { get; private set; } = 1;
+    /// <summary>Batches the next brew produces: the selected <see cref="AlchemyBatchSizes.Presets"/> entry clamped to <see cref="MaxOutputCount"/>.</summary>
+    public int OutputCount => AlchemyBatchSizes.Of(_batchPreset, MaxOutputCount);
 
     /// <summary>Largest <see cref="OutputCount"/> the current ingredients can support.</summary>
     public int MaxOutputCount { get; private set; } = 1;
 
+    private int _batchPreset;
+
     /// <summary>The result item locked in when the brew started. Used to populate the output on completion.</summary>
     private Item _brewSnapshot = new();
 
-    /// <summary>Live preview: which recipe the slots resolve to and what each slot owes it.</summary>
-    private AlchemyResolution _resolution = AlchemyResolution.None;
+    private readonly AlchemyPreview _preview = new();
 
     /// <summary>Per-slot unit costs locked in when the brew started, so mid-brew edits can't change the bill.</summary>
     private int[] _brewCosts = Array.Empty<int>();
@@ -75,6 +73,8 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 
     /// <summary>Whether the active brew deposits bottles into <see cref="BottleReturnContainer" /> on completion.</summary>
     private bool _brewReturnsBottles;
+
+    private int _brewCount = 1;
 
     private int _totalBrewTicks;
 
@@ -93,7 +93,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         //                  [input]
         //     [component]-[component]-[component]
         //                  [output]-[bottle]
-        //                  [-] xN [+]
+        //                  [batch]
         const float PANEL_W = 412f;
         const float SLOT = 52f * SLOT_SCALE;   // BasicItemSlot box size at SLOT_SCALE
         const float SLOT_GAP = 31f;
@@ -108,11 +108,10 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         const float SLOT_STRIDE = SLOT + SLOT_GAP;
         const float ROW_LEFT = CENTER_X - (SLOT * 3f + SLOT_GAP * 2f) * 0.5f;
 
-        const float BUTTON_W = 18f;
-        const float COUNT_TEXT_W = 28f;
-        const float BATCH_TOP = OUTPUT_TOP + SLOT + 20f;
-        const float BATCH_LEFT = CENTER_X - (BUTTON_W * 2f + COUNT_TEXT_W) * 0.5f;
-        const float PANEL_H = BATCH_TOP + BUTTON_W + 20f;
+        const float BATCH_W = 60f;
+        const float BATCH_H = 24f;
+        const float BATCH_TOP = OUTPUT_TOP + SLOT + 16f;
+        const float PANEL_H = BATCH_TOP + BATCH_H + 16f;
 
         const float MODE_BUTTON_SIZE = 26f;
 
@@ -161,14 +160,16 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         };
         _panel.Append(input);
 
+        var components = new AlchemyComponentSlot[COMPONENT_SLOT_COUNT];
+
         for (int i = 0; i < COMPONENT_SLOT_COUNT; i++)
         {
-            var slot = new AlchemyComponentSlot(Components, i, this, SLOT_SCALE)
+            components[i] = new AlchemyComponentSlot(Components, i, this, SLOT_SCALE)
             {
                 Left = StyleDimension.FromPixels(ROW_LEFT + i * SLOT_STRIDE),
                 Top = StyleDimension.FromPixels(COMPONENT_TOP),
             };
-            _panel.Append(slot);
+            _panel.Append(components[i]);
         }
 
         var output = new AlchemyOutputSlot(OutputContainer, this, SLOT_SCALE)
@@ -186,57 +187,40 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         _panel.Append(bottleReturn);
 
         // Links behind the slots: input into the middle component, components chained, outer components into the output.
+        // A link leaving a slot starts at the slot's edge, or below its potency meter while one is drawn.
         const float COMPONENT_MID_Y = COMPONENT_TOP + SLOT * 0.5f;
-        const float COMPONENT_METER_BOTTOM = COMPONENT_TOP + SLOT + METER_SPACE;
+        const float COMPONENT_BOTTOM = COMPONENT_TOP + SLOT;
         const float FUNNEL_Y = OUTPUT_TOP + 5f;
+        _panel.MeterClearance = METER_SPACE;
         _panel.Links =
         [
-            (new Vector2(CENTER_X, INPUT_TOP + SLOT + METER_SPACE), new Vector2(CENTER_X, COMPONENT_TOP)),
+            new SlotLink(new Vector2(CENTER_X, INPUT_TOP + SLOT), new Vector2(CENTER_X, COMPONENT_TOP),
+                () => input.ShowsPotencyMeter),
 
-            (new Vector2(ROW_LEFT + SLOT, COMPONENT_MID_Y),
-             new Vector2(ROW_LEFT + SLOT_STRIDE, COMPONENT_MID_Y)),
-            (new Vector2(ROW_LEFT + SLOT_STRIDE + SLOT, COMPONENT_MID_Y),
-             new Vector2(ROW_LEFT + SLOT_STRIDE * 2f, COMPONENT_MID_Y)),
+            new SlotLink(new Vector2(ROW_LEFT + SLOT, COMPONENT_MID_Y),
+                new Vector2(ROW_LEFT + SLOT_STRIDE, COMPONENT_MID_Y)),
+            new SlotLink(new Vector2(ROW_LEFT + SLOT_STRIDE + SLOT, COMPONENT_MID_Y),
+                new Vector2(ROW_LEFT + SLOT_STRIDE * 2f, COMPONENT_MID_Y)),
 
-            (new Vector2(ROW_LEFT + SLOT * 0.75f, COMPONENT_METER_BOTTOM),
-             new Vector2(COLUMN_LEFT, FUNNEL_Y)),
-            (new Vector2(ROW_LEFT + SLOT_STRIDE * 2f + SLOT * 0.25f, COMPONENT_METER_BOTTOM),
-             new Vector2(COLUMN_LEFT + SLOT, FUNNEL_Y)),
+            new SlotLink(new Vector2(ROW_LEFT + SLOT * 0.75f, COMPONENT_BOTTOM),
+                new Vector2(COLUMN_LEFT, FUNNEL_Y), () => components[0].ShowsPotencyMeter),
+            new SlotLink(new Vector2(ROW_LEFT + SLOT_STRIDE * 2f + SLOT * 0.25f, COMPONENT_BOTTOM),
+                new Vector2(COLUMN_LEFT + SLOT, FUNNEL_Y), () => components[2].ShowsPotencyMeter),
 
-            (new Vector2(COLUMN_LEFT + SLOT, OUTPUT_TOP + SLOT * 0.5f),
-             new Vector2(COLUMN_LEFT + SLOT_STRIDE, OUTPUT_TOP + SLOT * 0.5f)),
+            new SlotLink(new Vector2(COLUMN_LEFT + SLOT, OUTPUT_TOP + SLOT * 0.5f),
+                new Vector2(COLUMN_LEFT + SLOT_STRIDE, OUTPUT_TOP + SLOT * 0.5f)),
         ];
 
-        var minus = new AlchemyButton("-", width: BUTTON_W, height: BUTTON_W, scale: 0.95f)
+        var batch = new AlchemyBatchButton(BATCH_W, BATCH_H, textScale: 0.85f)
         {
-            Left = StyleDimension.FromPixels(BATCH_LEFT),
+            Left = StyleDimension.FromPixels(CENTER_X - BATCH_W * 0.5f),
             Top = StyleDimension.FromPixels(BATCH_TOP),
-            OnClick = () => AdjustOutputCount(-1),
-            IsEnabled = () => CanAdjustCount() && OutputCount > 1,
-            Tooltip = () => "Decrease batch",
+            OnClick = CycleBatch,
+            IsEnabled = CanCycleBatch,
+            Count = () => OutputCount,
+            IsCapped = () => OutputCount < AlchemyBatchSizes.Presets[_batchPreset],
         };
-        _panel.Append(minus);
-
-        _countLabel = new UIText("x1", 0.85f, large: false)
-        {
-            Left = StyleDimension.FromPixels(BATCH_LEFT + BUTTON_W),
-            Top = StyleDimension.FromPixels(BATCH_TOP + 2f),
-            Width = StyleDimension.FromPixels(COUNT_TEXT_W),
-            Height = StyleDimension.FromPixels(BUTTON_W),
-            TextColor = Color.White,
-        };
-        _countLabel.TextOriginX = 0.5f;
-        _panel.Append(_countLabel);
-
-        var plus = new AlchemyButton("+", width: BUTTON_W, height: BUTTON_W, scale: 0.95f)
-        {
-            Left = StyleDimension.FromPixels(BATCH_LEFT + BUTTON_W + COUNT_TEXT_W),
-            Top = StyleDimension.FromPixels(BATCH_TOP),
-            OnClick = () => AdjustOutputCount(1),
-            IsEnabled = () => CanAdjustCount() && OutputCount < MaxOutputCount,
-            Tooltip = () => "Increase batch",
-        };
-        _panel.Append(plus);
+        _panel.Append(batch);
     }
 
     /// <summary>
@@ -286,10 +270,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         {
             // Player has taken the result = return to preview mode.
             if (OutputContainer[0].IsAir)
-            {
                 IsResultReady = false;
-                OutputCount = 1;
-            }
         }
         else
         {
@@ -301,51 +282,17 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 
     private void UpdatePreview()
     {
-        _resolution = AlchemyRecipeRegistry.Resolve(InputContainer[0], Components);
-
-        MaxOutputCount = ComputeMaxOutputCount(_resolution);
-        if (OutputCount > MaxOutputCount) OutputCount = MaxOutputCount;
-        if (OutputCount < 1) OutputCount = 1;
-
-        var preview = _resolution.Output;
-        if (!preview.IsAir)
-            preview.stack = Math.Max(1, preview.stack) * OutputCount;
-
-        OutputContainer[0] = preview;
-    }
-
-    /// <summary>
-    /// Largest batch the slotted stacks can pay for, capped by the output item's stack limit and, for recipes that return
-    /// bottles, by the bottle slot's remaining capacity.
-    /// </summary>
-    private int ComputeMaxOutputCount(AlchemyResolution resolution)
-    {
-        if (!resolution.Found) return 1;
-
-        int max = resolution.MaxBatches(InputContainer[0], Components);
-
-        int baseStack = Math.Max(1, resolution.Output.stack);
-        if (resolution.Output.maxStack > 0)
-            max = Math.Min(max, Math.Max(1, resolution.Output.maxStack / baseStack));
-
-        if (resolution.ReturnsBottle)
-            max = Math.Min(max, StationBottles.Capacity(BottleReturnContainer[0]));
-
-        return Math.Max(1, max);
+        _preview.Refresh(InputContainer[0], Components, BottleReturnContainer[0]);
+        MaxOutputCount = _preview.MaxBatches;
+        OutputContainer[0] = _preview.ItemFor(OutputCount);
     }
 
     /// <inheritdoc/>
-    public int RequiredPotency(int index) => _resolution.RequiredPotencyFor(index);
+    public int RequiredPotency(int index) => _preview.Resolution.RequiredPotencyFor(index);
 
-    private bool CanAdjustCount() => !IsBrewing && !IsResultReady && !OutputContainer[0].IsAir;
+    private bool CanCycleBatch() => !IsBrewing && !IsResultReady && !OutputContainer[0].IsAir && MaxOutputCount > 1;
 
-    private void AdjustOutputCount(int delta)
-    {
-        int next = OutputCount + delta;
-        if (next < 1) next = 1;
-        if (next > MaxOutputCount) next = MaxOutputCount;
-        OutputCount = next;
-    }
+    private void CycleBatch() => _batchPreset = AlchemyBatchSizes.Next(_batchPreset, MaxOutputCount);
 
     private bool CanCycleMode() => !IsBrewing && !IsResultReady
         && AlchemyStationRules.NextMode(Mode, InputContainer[0], Components) != Mode;
@@ -355,8 +302,6 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
     private void UpdateLabels()
     {
         if (_categoryLabel == null) return;
-
-        _countLabel?.SetText($"x{OutputCount}");
 
         if (IsBrewing)
         {
@@ -373,7 +318,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
             return;
         }
 
-        BrewCategory category = _resolution.Composition.Category;
+        BrewCategory category = _preview.Resolution.Composition.Category;
         _categoryLabel.SetText(category == BrewCategory.None ? string.Empty : BrewCategories.DisplayName(category),
             BrewCategories.ColorOf(category));
         _hintLabel.SetText(IdleHint());
@@ -385,7 +330,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (!OutputContainer[0].IsAir)
             return "Click the result to brew.";
 
-        var missing = _resolution.Shortfall;
+        var missing = _preview.Resolution.Shortfall;
 
         if (missing.Exists)
             return $"Needs {missing.Required} {Lang.GetItemNameValue(missing.ItemType)} ({missing.Have} slotted).";
@@ -410,13 +355,15 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (OutputContainer[0].IsAir) return;
         if (InputContainer[0].IsAir) return;
 
-        if (_resolution.ReturnsBottle && StationBottles.Capacity(BottleReturnContainer[0]) < Math.Max(1, OutputCount)) return;
+        AlchemyResolution resolution = _preview.Resolution;
+        if (resolution.ReturnsBottle && StationBottles.Capacity(BottleReturnContainer[0]) < OutputCount) return;
 
         _brewSnapshot = OutputContainer[0].Clone();
-        _brewCosts = (int[])_resolution.ComponentCosts.Clone();
-        _brewInputCost = _resolution.InputCost;
-        _brewReturnsBottles = _resolution.ReturnsBottle;
-        _totalBrewTicks = BREW_DURATION_PER_OUTPUT * Math.Max(1, OutputCount);
+        _brewCosts = (int[])resolution.ComponentCosts.Clone();
+        _brewInputCost = resolution.InputCost;
+        _brewReturnsBottles = resolution.ReturnsBottle;
+        _brewCount = OutputCount;
+        _totalBrewTicks = resolution.BrewTicks(AlchemyStationTile.BrewSpeed);
         BrewTicks = 0;
         IsBrewing = true;
 
@@ -426,7 +373,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
     private void CompleteBrew()
     {
         var result = _brewSnapshot.Clone();
-        int count = OutputCount;
+        int count = _brewCount;
 
         if (!InputContainer[0].IsAir)
         {
@@ -536,7 +483,8 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         _brewCosts = Array.Empty<int>();
         _brewInputCost = 1;
         _brewReturnsBottles = false;
-        _resolution = AlchemyResolution.None;
-        OutputCount = 1;
+        _brewCount = 1;
+        _batchPreset = 0;
+        _preview.Reset();
     }
 }
