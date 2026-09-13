@@ -35,7 +35,8 @@ public enum ChemicalQuality
 }
 
 /// <summary>
-/// Thematic classification for flavour and almanac sorting/filtering, not tied to mechanics. Mostly for the Alchemy mode.
+/// Principle flags. A solute with None is a reagent; a solvent may carry one only when a recipe produces it from solutes.
+/// Brews resolve theirs through <see cref="BrewCompositions" />.
 /// </summary>
 [Flags]
 public enum PrincipleType
@@ -119,6 +120,9 @@ public static class AlmanacEntryRegistry
 
     public static bool Has(int outputType) => _entries.ContainsKey(outputType);
 
+    public static bool TryGet(int itemType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out AlmanacEntry? entry) =>
+        _entries.TryGetValue(itemType, out entry);
+
     /// <summary>Every authored entry (e.g. for building chemical-type ingredient groups).</summary>
     public static IEnumerable<AlmanacEntry> All => _entries.Values;
 
@@ -190,7 +194,7 @@ public static class AlmanacIngredientInfo
 public static class AlmanacIndex
 {
     private static List<int> _allOutputs;
-    private static Dictionary<int, AlchemyMode> _outputMode;
+    private static Dictionary<int, BrewCategory> _outputCategory;
 
     /// <summary>Distinct output types, sorted by display name.</summary>
     public static IReadOnlyList<int> AllOutputTypes
@@ -202,12 +206,14 @@ public static class AlmanacIndex
         }
     }
 
-    /// <summary>Outputs that match the given mode, sorted by display name.</summary>
-    public static IEnumerable<int> OutputsByMode(AlchemyMode mode)
+    /// <summary>Outputs whose first registered recipe has the given category, sorted by display name.</summary>
+    public static IEnumerable<int> OutputsByCategory(BrewCategory category)
     {
         EnsureBuilt();
-        return _allOutputs.Where(t => _outputMode.TryGetValue(t, out var m) && m == mode);
+        return _allOutputs.Where(t => _outputCategory.TryGetValue(t, out var c) && c == category);
     }
+
+    public static BrewCategory CategoryOf(AlchemyRecipe recipe) => BrewCompositions.Of(recipe).Category;
 
     /// <summary>All recipes whose output equals <paramref name="outputType"/>.</summary>
     public static IEnumerable<AlchemyRecipe> RecipesProducing(int outputType)
@@ -287,7 +293,7 @@ public static class AlmanacIndex
     public static void Invalidate()
     {
         _allOutputs = null;
-        _outputMode = null;
+        _outputCategory = null;
     }
 
     public static int ResolvedOutputType(AlchemyRecipe r) => ResolveType(r);
@@ -296,7 +302,7 @@ public static class AlmanacIndex
     {
         if (r.OutputItemType > 0) return r.OutputItemType;
         // Fallback for recipes that built CreateOutput inline without setting OutputItemType.
-        var item = r.CreateOutput?.Invoke();
+        var item = r.CreateOutput?.Invoke(BrewCompositions.Of(r));
         return item is { IsAir: false } ? item.type : 0;
     }
 
@@ -304,16 +310,16 @@ public static class AlmanacIndex
     {
         if (_allOutputs != null) return;
 
-        var byType = new Dictionary<int, AlchemyMode>();
+        var byType = new Dictionary<int, BrewCategory>();
         foreach (var r in AlchemyRecipeRegistry.All)
         {
             int t = ResolveType(r);
             if (t <= 0) continue;
-            // First mode wins. An output is conceptually owned by its registering mode.
-            byType.TryAdd(t, r.Mode);
+            // The first registered recipe decides the output's category.
+            byType.TryAdd(t, CategoryOf(r));
         }
 
-        _outputMode = byType;
+        _outputCategory = byType;
         _allOutputs = byType.Keys
             .OrderBy(t => Lang.GetItemNameValue(t))
             .ToList();
@@ -359,6 +365,9 @@ internal static class AlmanacDefinitions
 
     private static void RegisterSolvents()
     {
+        ChemicalRoles.Register(ItemID.BottledWater, ChemicalRole.Solvent);
+        ChemicalRoles.Register(ItemID.BottledHoney, ChemicalRole.Solvent);
+
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.BottledWater,

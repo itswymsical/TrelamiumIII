@@ -5,7 +5,7 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 /// <summary>
-///     Conventional reagents (raw minerals, acids, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
+///     Conventional solutes (raw minerals, acid products, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
 ///     Internal names keep the old <c>...Item</c> spelling so saves and localisation keys still resolve.
 /// </summary>
 public sealed class Reagent : ICustomAutoload
@@ -33,17 +33,9 @@ public sealed class Reagent : ICustomAutoload
 
     #endregion
 
-    #region Acids
-
-    /// <summary>The hub of the tree: four downstream recipes draw on it.</summary>
-    public static int OilOfVitriol { get; private set; }
-
-    public static int AquaFortis { get; private set; }
+    #region Acid products
 
     public static int SpiritOfSalt { get; private set; }
-
-    /// <summary>The one that eats gold. The tree's five-star capstone on the Salt line.</summary>
-    public static int AquaRegia { get; private set; }
 
     public static int BlueVitriol { get; private set; }
 
@@ -83,7 +75,7 @@ public sealed class Reagent : ICustomAutoload
     public static void Autoload(Mod mod)
     {
         LoadMinerals(mod);
-        LoadAcids(mod);
+        LoadAcidProducts(mod);
         LoadAlkalis(mod);
         LoadDistillates(mod);
     }
@@ -186,27 +178,9 @@ public sealed class Reagent : ICustomAutoload
         });
     }
 
-    /// <summary>The acid tier: what takes other compounds apart.</summary>
-    private static void LoadAcids(Mod mod)
+    /// <summary>Solutes produced by the acid solvents in <see cref="Solution" />.</summary>
+    private static void LoadAcidProducts(Mod mod)
     {
-        OilOfVitriol = Add(mod, new SoluteItem("OilOfVitriolItem")
-        {
-            Rare = ItemRarityID.Blue,
-            Value = Item.sellPrice(silver: 2),
-            Potency = 4,
-            Quality = ChemicalQuality.Acidic,
-            Principle = PrincipleType.Bane,
-        });
-
-        AquaFortis = Add(mod, new SoluteItem("AquaFortisItem")
-        {
-            Rare = ItemRarityID.Blue,
-            Value = Item.sellPrice(silver: 5),
-            Potency = 4,
-            Quality = ChemicalQuality.Acidic | ChemicalQuality.Volatile,
-            Principle = PrincipleType.Bane | PrincipleType.Martial,
-        });
-
         SpiritOfSalt = Add(mod, new SoluteItem("SpiritOfSaltItem")
         {
             Rare = ItemRarityID.Blue,
@@ -214,15 +188,6 @@ public sealed class Reagent : ICustomAutoload
             Potency = 3,
             Quality = ChemicalQuality.Acidic,
             Principle = PrincipleType.Bane,
-        });
-
-        AquaRegia = Add(mod, new SoluteItem("AquaRegiaItem")
-        {
-            Rare = ItemRarityID.Orange,
-            Value = Item.sellPrice(silver: 20),
-            Potency = 5,
-            Quality = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
-            Principle = PrincipleType.Fortune | PrincipleType.Bane,
         });
 
         BlueVitriol = Add(mod, new SoluteItem("BlueVitriolItem")

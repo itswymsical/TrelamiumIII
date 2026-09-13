@@ -8,12 +8,8 @@ using TrelamiumIII.Core.Alchemy;
 namespace TrelamiumIII.Core.UI.AlchemyStation;
 
 /// <summary>
-/// The basic alchemy station UI (the early-game station). A simple framed panel containing three
-/// component slots, one vial slot, and one output slot. The vial determines the active
-/// <see cref="AlchemyMode"/>; the output silhouette is the live preview of what would be brewed. Clicking
-/// the output starts a brew (duration scales with output count); when it completes the result drops into the
-/// output slot for pickup. The advanced (progression) station uses the separate
-/// <see cref="AdvancedAlchemyStationUI"/>.
+/// Basic station panel: three component slots, a vial slot, an output slot and a bottle return slot. The output shows a
+/// silhouette preview; clicking it starts a brew. The advanced station uses <see cref="AdvancedAlchemyStationUI"/>.
 /// </summary>
 internal class AlchemyStationUI : UIState, IAlchemyStationUI
 {
@@ -27,8 +23,10 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 
     public readonly Item[] OutputContainer = new Item[1];
 
+    public readonly Item[] BottleReturnContainer = new Item[1];
+
     private AlchemyStationPanel _panel;
-    private UIText _modeLabel;
+    private UIText _categoryLabel;
     private UIText _hintLabel;
     private UIText _countLabel;
 
@@ -67,23 +65,17 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
     /// <summary>Per-slot unit costs locked in when the brew started, so mid-brew edits can't change the bill.</summary>
     private int[] _brewCosts = Array.Empty<int>();
 
+    /// <summary>Whether the active brew deposits bottles into <see cref="BottleReturnContainer" /> on completion.</summary>
+    private bool _brewReturnsBottles;
+
     private int _totalBrewTicks;
-
-    /// <summary>Player override for the active mode; <c>null</c> = auto-detect from vial.</summary>
-    private AlchemyMode? _modeOverride;
-
-    /// <summary>Last seen vial type. Mode override resets when this changes.</summary>
-    private int _lastVialType;
-
-    /// <summary>Currently active mode.</summary>
-    public AlchemyMode CurrentMode =>
-        _modeOverride ?? AlchemyIngredients.GetModeForSolvent(VialContainer[0]);
 
     public override void OnInitialize()
     {
         for (int i = 0; i < COMPONENT_SLOT_COUNT; i++) Components[i] = new Item();
         VialContainer[0] = new Item();
         OutputContainer[0] = new Item();
+        BottleReturnContainer[0] = new Item();
 
         BuildPanel();
     }
@@ -96,7 +88,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         //
         //             [solvent]
         //     [solute]-[solute]-[solute]
-        //              [solution]
+        //              [solution]-[bottle]
         //              [-] xN [+]
         const float PANEL_W = 330f;
         const float PANEL_H = 292f;
@@ -127,25 +119,15 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         _panel.SetPadding(0f);
         Append(_panel);
 
-        _modeLabel = new UIText("Idle", 0.95f, large: false)
+        _categoryLabel = new UIText(string.Empty, 0.95f, large: false)
         {
             HAlign = 0.5f,
             Top = StyleDimension.FromPixels(8f),
             TextColor = Color.White,
         };
-        _panel.Append(_modeLabel);
+        _panel.Append(_categoryLabel);
 
-        var modeCycle = new AlchemyButton(">", width: 18f, height: 18f, scale: 0.85f)
-        {
-            Left = StyleDimension.FromPixels(PANEL_W - 32f),
-            Top = StyleDimension.FromPixels(8f),
-            OnClick = CycleMode,
-            IsEnabled = () => !IsBrewing && !IsResultReady && !VialContainer[0].IsAir,
-            Tooltip = () => "Cycle mode",
-        };
-        _panel.Append(modeCycle);
-
-        _hintLabel = new UIText("Place a solvent or reagent(s).", 0.78f, large: false)
+        _hintLabel = new UIText("Place a solvent and solutes.", 0.78f, large: false)
         {
             HAlign = 0.5f,
             Top = StyleDimension.FromPixels(30f),
@@ -177,6 +159,13 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         };
         _panel.Append(output);
 
+        var bottleReturn = new AlchemyBottleReturnSlot(BottleReturnContainer)
+        {
+            Left = StyleDimension.FromPixels(COLUMN_LEFT + SOLUTE_STRIDE),
+            Top = StyleDimension.FromPixels(OUTPUT_TOP),
+        };
+        _panel.Append(bottleReturn);
+
         // The flow behind the slots: solvent drops into the middle solute, the solutes chain
         // across, and the outer two funnel down into the solution.
         const float SOLUTE_MID_Y = SOLUTE_TOP + SLOT * 0.5f;
@@ -195,6 +184,9 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
              new Vector2(COLUMN_LEFT, FUNNEL_Y)),
             (new Vector2(ROW_LEFT + SOLUTE_STRIDE * 2f + SLOT * 0.25f, SOLUTE_BOTTOM),
              new Vector2(COLUMN_LEFT + SLOT, FUNNEL_Y)),
+
+            (new Vector2(COLUMN_LEFT + SLOT, OUTPUT_TOP + SLOT * 0.5f),
+             new Vector2(COLUMN_LEFT + SOLUTE_STRIDE, OUTPUT_TOP + SLOT * 0.5f)),
         ];
 
         // Batch row, centred under the solution (below the progress bar the output slot draws).
@@ -270,14 +262,6 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (_panel != null && _panel.ContainsPoint(Main.MouseScreen))
             Main.LocalPlayer.mouseInterface = true;
 
-        // Reset mode override when the vial changes type.
-        int curVialType = VialContainer[0].IsAir ? 0 : VialContainer[0].type;
-        if (curVialType != _lastVialType)
-        {
-            _modeOverride = null;
-            _lastVialType = curVialType;
-        }
-
         if (IsBrewing)
         {
             BrewTicks++;
@@ -305,7 +289,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
 
     private void UpdatePreview()
     {
-        _resolution = AlchemyRecipeRegistry.Resolve(VialContainer[0], Components, CurrentMode);
+        _resolution = AlchemyRecipeRegistry.Resolve(VialContainer[0], Components);
 
         MaxOutputCount = ComputeMaxOutputCount(_resolution);
         if (OutputCount > MaxOutputCount) OutputCount = MaxOutputCount;
@@ -333,6 +317,9 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (resolution.Output.maxStack > 0)
             max = Math.Min(max, Math.Max(1, resolution.Output.maxStack / baseStack));
 
+        if (resolution.ReturnsBottle)
+            max = Math.Min(max, StationBottles.Capacity(BottleReturnContainer[0]));
+
         return Math.Max(1, max);
     }
 
@@ -349,86 +336,48 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         OutputCount = next;
     }
 
-    /// <summary>Step to the next mode in the cycle (Synthesis -> Augmentation -> WeaponsUtility -> ...).</summary>
-    public void CycleMode()
-    {
-        if (IsBrewing || IsResultReady) return;
-        if (VialContainer[0].IsAir) return;
-
-        var current = CurrentMode;
-        AlchemyMode next = current switch
-        {
-            AlchemyMode.Synthesis => AlchemyMode.Augmentation,
-            AlchemyMode.Augmentation => AlchemyMode.Alchemy,
-            AlchemyMode.Alchemy => AlchemyMode.Synthesis,
-            _ => AlchemyMode.Synthesis,
-        };
-        _modeOverride = next;
-    }
-
     private void UpdateLabels()
     {
-        if (_modeLabel == null) return;
+        if (_categoryLabel == null) return;
 
         _countLabel?.SetText($"x{OutputCount}");
 
         if (IsBrewing)
         {
             int secsLeft = (int)Math.Ceiling((_totalBrewTicks - BrewTicks) / 60f);
-            _modeLabel.SetText("Brewing...");
-            _modeLabel.TextColor = new Color(255, 240, 160);
+            _categoryLabel.SetText("Brewing...");
+            _categoryLabel.TextColor = new Color(255, 240, 160);
             _hintLabel.SetText($"{secsLeft}s remaining");
             return;
         }
 
         if (IsResultReady)
         {
-            _modeLabel.SetText("Done");
-            _modeLabel.TextColor = new Color(180, 240, 160);
+            _categoryLabel.SetText("Done");
+            _categoryLabel.TextColor = new Color(180, 240, 160);
             _hintLabel.SetText("Chemicals produced!");
             return;
         }
 
-        switch (CurrentMode)
-        {
-            case AlchemyMode.Augmentation:
-                _modeLabel.SetText("Augmentation");
-                _modeLabel.TextColor = new Color(255, 200, 120);
-                _hintLabel.SetText(IdleHint("Add components to modify the contents."));
-                break;
-            case AlchemyMode.Synthesis:
-                _modeLabel.SetText("Synthesis");
-                _modeLabel.TextColor = new Color(140, 200, 255);
-                _hintLabel.SetText(IdleHint("Add components to react with the contents."));
-                break;
-            case AlchemyMode.Alchemy:
-                _modeLabel.SetText("Utility");
-                _modeLabel.TextColor = new Color(255, 130, 130);
-                _hintLabel.SetText(IdleHint("Add components to assemble a serum."));
-                break;
-            default:
-                _modeLabel.SetText("Idle");
-                _modeLabel.TextColor = Color.White;
-                _hintLabel.SetText(VialContainer[0].IsAir
-                    ? "Place a vial or components."
-                    : "That isn't a recognized vial.");
-                break;
-        }
+        // Blank until the slotted ingredients resolve to a category.
+        BrewCategory category = _resolution.Composition.Category;
+        _categoryLabel.SetText(category == BrewCategory.None ? string.Empty : BrewCategories.DisplayName(category));
+        _categoryLabel.TextColor = BrewCategories.ColorOf(category);
+        _hintLabel.SetText(IdleHint());
     }
 
-    /// <summary>
-    /// The line under the mode label while idle. A solute that's present but too thin is the
-    /// one thing the player can't see for themselves, so it takes priority over the prompt.
-    /// </summary>
-    private string IdleHint(string prompt)
+    /// <summary>Idle hint. An under-stacked solute takes priority, since the slot itself doesn't show the requirement.</summary>
+    private string IdleHint()
     {
         if (!OutputContainer[0].IsAir)
             return "Click the result to brew.";
 
         var missing = _resolution.Shortfall;
-        return missing.Exists
-            ? $"Needs {missing.Required} {Lang.GetItemNameValue(missing.ItemType)} ({missing.Have} slotted)."
-            : prompt;
+
+        if (missing.Exists)
+            return $"Needs {missing.Required} {Lang.GetItemNameValue(missing.ItemType)} ({missing.Have} slotted).";
+
+        return VialContainer[0].IsAir ? "Place a solvent and solutes." : "Add solutes to the solvent.";
     }
 
     /// <summary>
@@ -441,8 +390,11 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (OutputContainer[0].IsAir) return;
         if (VialContainer[0].IsAir) return;
 
+        if (_resolution.ReturnsBottle && StationBottles.Capacity(BottleReturnContainer[0]) < Math.Max(1, OutputCount)) return;
+
         _brewSnapshot = OutputContainer[0].Clone();
         _brewCosts = (int[])_resolution.ComponentCosts.Clone();
+        _brewReturnsBottles = _resolution.ReturnsBottle;
         _totalBrewTicks = BREW_DURATION_PER_OUTPUT * Math.Max(1, OutputCount);
         BrewTicks = 0;
         IsBrewing = true;
@@ -461,6 +413,9 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
             VialContainer[0].stack -= count;
             if (VialContainer[0].stack <= 0) VialContainer[0].TurnToAir();
         }
+
+        if (_brewReturnsBottles)
+            StationBottles.Deposit(BottleReturnContainer, count);
 
         // Solutes go by what the recipe drew from each slot (its potency), times the batch.
         for (int i = 0; i < Components.Length; i++)
@@ -501,6 +456,9 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         if (!VialContainer[0].IsAir)
             player.QuickSpawnItem(src, VialContainer[0], VialContainer[0].stack);
 
+        if (!BottleReturnContainer[0].IsAir)
+            player.QuickSpawnItem(src, BottleReturnContainer[0], BottleReturnContainer[0].stack);
+
         for (int i = 0; i < Components.Length; i++)
             if (!Components[i].IsAir)
                 player.QuickSpawnItem(src, Components[i], Components[i].stack);
@@ -516,6 +474,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
             Components[i] = entity.Components[i] ?? new Item();
         VialContainer[0] = entity.Vial[0] ?? new Item();
         OutputContainer[0] = entity.Output[0] ?? new Item();
+        BottleReturnContainer[0] = entity.BottleReturn[0] ?? new Item();
         ResetBrewState();
     }
 
@@ -526,6 +485,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
             entity.Components[i] = Components[i];
         entity.Vial[0] = VialContainer[0];
         entity.Output[0] = OutputContainer[0];
+        entity.BottleReturn[0] = BottleReturnContainer[0];
         entity.IsBrewing = IsBrewing;
     }
 
@@ -542,6 +502,7 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
             Components[i] = new Item();
         VialContainer[0] = new Item();
         OutputContainer[0] = new Item();
+        BottleReturnContainer[0] = new Item();
     }
 
     private void ResetBrewState()
@@ -552,9 +513,8 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         _totalBrewTicks = 0;
         _brewSnapshot = new Item();
         _brewCosts = Array.Empty<int>();
+        _brewReturnsBottles = false;
         _resolution = AlchemyResolution.None;
         OutputCount = 1;
-        _modeOverride = null;
-        _lastVialType = 0;
     }
 }

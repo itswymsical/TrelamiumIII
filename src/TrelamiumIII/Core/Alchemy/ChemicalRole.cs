@@ -4,21 +4,22 @@ using ReLogic.Content;
 using Terraria.GameContent;
 using Terraria.Localization;
 using TrelamiumIII.Core.Text.Tooltips;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-/// <summary>What part an item plays at the alchemy station.</summary>
+/// <summary>Station slot an item belongs to.</summary>
 public enum ChemicalRole
 {
     None,
 
-    /// <summary>A reagent: dissolved into a solvent to make something.</summary>
+    /// <summary>Solute slot. With a principle of None the item is a reagent.</summary>
     Solute,
 
-    /// <summary>What solutes are dissolved into.</summary>
+    /// <summary>Solvent slot.</summary>
     Solvent,
 
-    /// <summary>What comes out.</summary>
+    /// <summary>Terminal output. Accepted in the solvent slot as an augmentation target.</summary>
     Solution,
 }
 
@@ -45,6 +46,10 @@ public static class ChemicalRoles
 
     public static ChemicalRole Of(Item? item) => item is { IsAir: false } ? Of(item.type) : ChemicalRole.None;
 
+    /// <summary>
+    ///     Authored role, else inferred from recipe usage in this order: a potion used or produced by a recipe is a
+    ///     solution, then solvent use, solute use, and production.
+    /// </summary>
     public static ChemicalRole Of(int itemType)
     {
         if (itemType <= 0)
@@ -58,15 +63,22 @@ public static class ChemicalRoles
         if (AlchemyRecipeRegistry.All.Count == 0)
             return ChemicalRole.None;
 
-        role = AlchemyRecipeRegistry.Produces(itemType) ? ChemicalRole.Solution
-            : AlchemyIngredients.IsSolventType(itemType) ? ChemicalRole.Solvent
+        bool solvent = AlchemyIngredients.IsSolventType(itemType);
+        bool produced = AlchemyRecipeRegistry.Produces(itemType);
+
+        role = (solvent || produced) && IsPotion(itemType) ? ChemicalRole.Solution
+            : solvent ? ChemicalRole.Solvent
             : AlchemyIngredients.IsSubstanceType(itemType) ? ChemicalRole.Solute
+            : produced ? ChemicalRole.Solution
             : ChemicalRole.None;
 
         derived[itemType] = role;
 
         return role;
     }
+
+    public static bool IsReagent(int itemType) =>
+        Of(itemType) == ChemicalRole.Solute && BrewCompositions.PrincipleOf(itemType) == PrincipleType.None;
 
     /// <summary>The instance's infusion, else the almanac's tags for the type. May hold several flags.</summary>
     public static ChemicalQuality QualityOf(Item item)
@@ -83,13 +95,11 @@ public static class ChemicalRoles
     }
 
     /// <summary>Localised under <c>ChemicalRoles.{member}</c>; the member name when no translation exists.</summary>
-    public static string DisplayName(ChemicalRole role)
-    {
-        string key = TrelamiumIII.Instance.GetLocalizationKey($"ChemicalRoles.{role}");
-        string value = Language.GetTextValue(key);
+    public static string DisplayName(ChemicalRole role) => Localize(role.ToString());
 
-        return value == key ? role.ToString() : value;
-    }
+    /// <summary>As <see cref="DisplayName(ChemicalRole)" />, but names a reagent <c>ChemicalRoles.Reagent</c>.</summary>
+    public static string DisplayName(int itemType) =>
+        IsReagent(itemType) ? Localize("Reagent") : DisplayName(Of(itemType));
 
     /// <summary>The role's tooltip icon (<c>Assets/Textures/{Role}TooltipIcon</c>), or null while it has none.</summary>
     public static Asset<Texture2D>? Icon(ChemicalRole role)
@@ -101,6 +111,17 @@ public static class ChemicalRoles
 
         return ModContent.HasAsset(path) ? ModContent.Request<Texture2D>(path) : null;
     }
+
+    private static string Localize(string member)
+    {
+        string key = TrelamiumIII.Instance.GetLocalizationKey($"ChemicalRoles.{member}");
+        string value = Language.GetTextValue(key);
+
+        return value == key ? member : value;
+    }
+
+    internal static bool IsPotion(int itemType) =>
+        ContentSamples.ItemsByType.TryGetValue(itemType, out Item? sample) && sample.IsManagedPotion();
 }
 
 /// <summary>Glyph sprites under <c>Assets/Textures/UI/ChemicalGlyphs</c>, one per <see cref="ChemicalQuality" /> flag.</summary>
@@ -167,7 +188,7 @@ public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
         if (role == ChemicalRole.None)
             return;
 
-        string roleName = ChemicalRoles.DisplayName(role);
+        string roleName = ChemicalRoles.DisplayName(item.type);
         var qualities = new List<(ChemicalQuality Flag, string Label, Color Color)>();
 
         foreach (ChemicalQuality flag in ChemicalQualityGlyphs.Flags(ChemicalRoles.QualityOf(item)))

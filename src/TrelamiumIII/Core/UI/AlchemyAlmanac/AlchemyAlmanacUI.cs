@@ -106,7 +106,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     #endregion
 
     #region Filter state
-    public AlchemyMode? ModeFilter { get; private set; }   // null = All
+    public BrewCategory? BrewCategoryFilter { get; private set; }   // null = All
     public Item SearchItem { get; private set; } = new();   // air = no search
 
     /// <summary>Cached filtered output type list. Invalidated by mode-filter changes.</summary>
@@ -177,8 +177,8 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     private List<int> BuildFiltered()
     {
-        IEnumerable<int> source = ModeFilter.HasValue
-            ? AlmanacIndex.OutputsByMode(ModeFilter.Value)
+        IEnumerable<int> source = BrewCategoryFilter.HasValue
+            ? AlmanacIndex.OutputsByCategory(BrewCategoryFilter.Value)
             : AlmanacIndex.AllOutputTypes;
 
         return source
@@ -200,10 +200,10 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
     }
 
-    public void SetModeFilter(AlchemyMode? mode)
+    public void SetBrewCategoryFilter(BrewCategory? category)
     {
-        if (ModeFilter == mode) return;
-        ModeFilter = mode;
+        if (BrewCategoryFilter == category) return;
+        BrewCategoryFilter = category;
         InvalidateFilter();
         SoundEngine.PlaySound(SoundID.MenuTick);
     }
@@ -302,7 +302,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     {
         UpdateCategoryTabs();
         if (current.Category == AlmanacCategory.Recipes && current.View == ViewMode.Browse)
-            UpdateModeTabs();
+            UpdateFilterTabs();
         // The Query slot is live in Recipes (look up a brew) and Ingredients (look up a material).
         if (current.Category == AlmanacCategory.Recipes || current.Category == AlmanacCategory.Ingredients)
             UpdateSearchSlot();
@@ -536,21 +536,16 @@ public class AlchemyAlmanacUI : IInGameNotification
         ("Recipes", AlmanacCategory.Recipes),
     };
 
-    // Mode filter, shown only while browsing the Recipes category.
-    private static readonly (string label, AlchemyMode? mode)[] _modeTabs =
-    {
-        ("All", null),
-        ("Synthesis", AlchemyMode.Synthesis),
-        ("Augmentation", AlchemyMode.Augmentation),
-        ("Alchemy", AlchemyMode.Alchemy),
-    };
+    // Brew category filter, shown only while browsing the Recipes category. Null means all.
+    private static readonly BrewCategory?[] _filterTabs =
+        [null, BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement];
 
-    private const float MODE_TAB_W = 96f;
-    private const float MODE_TAB_H = 26f;
-    private const float MODE_TAB_GAP = 4f;
+    private const float FILTER_TAB_W = 96f;
+    private const float FILTER_TAB_H = 26f;
+    private const float FILTER_TAB_GAP = 4f;
 
     private readonly Rectangle[] _categoryTabBounds = new Rectangle[_categoryTabs.Length];
-    private readonly Rectangle[] _modeTabBounds = new Rectangle[_modeTabs.Length];
+    private readonly Rectangle[] _filterTabBounds = new Rectangle[_filterTabs.Length];
 
     private Rectangle _closeButton;
     private Rectangle _prevButton;
@@ -578,18 +573,18 @@ public class AlchemyAlmanacUI : IInGameNotification
                 (int)(startX + i * (bw + gap)), (int)y, (int)bw, (int)bh);
     }
 
-    // Mode tabs: vertical stack hugging the left edge of the spread.
-    private void RecomputeModeTabBounds()
+    // Filter tabs: vertical stack hugging the left edge of the spread.
+    private void RecomputeFilterTabBounds()
     {
         var origin = GetSpreadOrigin();
         float s = UI_SCALE;
-        float tw = MODE_TAB_W * s, th = MODE_TAB_H * s, gap = MODE_TAB_GAP * s;
-        float totalH = th * _modeTabs.Length + gap * (_modeTabs.Length - 1);
+        float tw = FILTER_TAB_W * s, th = FILTER_TAB_H * s, gap = FILTER_TAB_GAP * s;
+        float totalH = th * _filterTabs.Length + gap * (_filterTabs.Length - 1);
         float y0 = origin.Y + (PAGE_HEIGHT * s - totalH) * 0.5f;
         float x = origin.X - tw - 6f * s;
 
-        for (int i = 0; i < _modeTabs.Length; i++)
-            _modeTabBounds[i] = new Rectangle(
+        for (int i = 0; i < _filterTabs.Length; i++)
+            _filterTabBounds[i] = new Rectangle(
                 (int)x, (int)(y0 + i * (th + gap)), (int)tw, (int)th);
     }
 
@@ -608,17 +603,17 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
     }
 
-    private void UpdateModeTabs()
+    private void UpdateFilterTabs()
     {
-        RecomputeModeTabBounds();
+        RecomputeFilterTabBounds();
         var mouse = Main.MouseScreen.ToPoint();
 
-        for (int i = 0; i < _modeTabs.Length; i++)
+        for (int i = 0; i < _filterTabs.Length; i++)
         {
-            if (!_modeTabBounds[i].Contains(mouse)) continue;
+            if (!_filterTabBounds[i].Contains(mouse)) continue;
 
             Main.LocalPlayer.mouseInterface = true;
-            if (LeftPressed) SetModeFilter(_modeTabs[i].mode);
+            if (LeftPressed) SetBrewCategoryFilter(_filterTabs[i]);
             return;
         }
     }
@@ -765,8 +760,8 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         if (current.Category == AlmanacCategory.Recipes && current.View == ViewMode.Browse)
         {
-            RecomputeModeTabBounds();
-            foreach (var b in _modeTabBounds) if (b.Contains(mouse)) return true;
+            RecomputeFilterTabBounds();
+            foreach (var b in _filterTabBounds) if (b.Contains(mouse)) return true;
         }
         if (current.Category == AlmanacCategory.Recipes || current.Category == AlmanacCategory.Ingredients)
         {
@@ -898,7 +893,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         cx += 18f;   // arrow
         if (local.X >= cx && local.X < cx + ICON)
         {
-            Item output = recipe.CreateOutput?.Invoke() ?? new Item();
+            Item output = recipe.CreateOutput?.Invoke(BrewCompositions.Of(recipe)) ?? new Item();
             if (output.IsAir) return 0;
             infusion = SolutionGlobalItem.GetInfusion(output);
             return output.type;
@@ -1127,13 +1122,11 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
     }
 
-    private string HeaderForCurrentBrowse() => ModeFilter switch
-    {
-        AlchemyMode.Synthesis => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.SynthesisRecipes"),
-        AlchemyMode.Augmentation => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AugmentationRecipes"),
-        AlchemyMode.Alchemy => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AlchemyRecipes"),
-        _ => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AllRecipes"),
-    };
+    private string HeaderForCurrentBrowse() => RecipesLabel(BrewCategoryFilter);
+
+    /// <summary>Localized under <c>AlmanacUI.{category}Recipes</c>; <c>AlmanacUI.AllRecipes</c> when null.</summary>
+    private static string RecipesLabel(BrewCategory? category) =>
+        ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, $"AlmanacUI.{category?.ToString() ?? "All"}Recipes");
 
     private static void DrawIconCell(SpriteBatch sb, Rectangle cell, int itemType, bool unlocked)
     {
@@ -1201,28 +1194,16 @@ public class AlchemyAlmanacUI : IInGameNotification
             new Vector2((PAGE_WIDTH - nSize.X) * 0.5f, PAGE_HEIGHT * 0.30f),
             RarityColor(entry.ResolvedRarity), TITLE_SCALE);
 
-        // Mode badge: based on the FIRST recipe producing this output
+        // Category badge from the first recipe producing this output.
         var firstRecipe = AlmanacIndex.RecipesProducing(outputType).FirstOrDefault();
         if (firstRecipe != null)
         {
-            string modeLabel = firstRecipe.Mode switch
-            {
-                AlchemyMode.Synthesis => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.SynthesisRecipes"),
-                AlchemyMode.Augmentation => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AugmentationRecipes"),
-                AlchemyMode.Alchemy => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AlchemyRecipes"),
-                _ => ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.AlchemyRecipes"),
-            };
-            Color modeColor = firstRecipe.Mode switch
-            {
-                AlchemyMode.Synthesis => new Color(140, 200, 255),
-                AlchemyMode.Augmentation => new Color(255, 200, 120),
-                AlchemyMode.Alchemy => new Color(255, 130, 130),
-                _ => Color.White,
-            };
-            Vector2 mSize = font.MeasureString(modeLabel) * HEADER_SCALE;
-            Utils.DrawBorderString(sb, modeLabel,
+            BrewCategory category = AlmanacIndex.CategoryOf(firstRecipe);
+            string categoryLabel = RecipesLabel(category);
+            Vector2 mSize = font.MeasureString(categoryLabel) * HEADER_SCALE;
+            Utils.DrawBorderString(sb, categoryLabel,
                 new Vector2((PAGE_WIDTH - mSize.X) * 0.5f, PAGE_HEIGHT * 0.37f),
-                modeColor, HEADER_SCALE);
+                BrewCategories.ColorOf(category), HEADER_SCALE);
         }
 
         // Potency stars + chemical-type badges.
@@ -1337,10 +1318,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             new Vector2((PAGE_WIDTH - nSize.X) * 0.5f, PAGE_HEIGHT * 0.30f),
             RarityColor(entry.ResolvedRarity), TITLE_SCALE);
 
-        // Role subtitle: solvent (vial), solute (substance), or both.
-        bool isVial = AlchemyIngredients.IsSolventType(itemType);
-        bool isComp = AlchemyIngredients.IsSubstanceType(itemType);
-        string role = isVial && isComp ? "Solute & Solvent" : isVial ? "Solvent" : isComp ? "Solute/Reagent" : "";
+        string role = ChemicalRoles.Of(itemType) == ChemicalRole.None ? "" : ChemicalRoles.DisplayName(itemType);
         if (role.Length > 0)
         {
             Vector2 rSize = font.MeasureString(role) * HEADER_SCALE;
@@ -1842,7 +1820,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             new Color(120, 90, 50), 1f);
         cx += 18f;
 
-        Item output = recipe.CreateOutput?.Invoke() ?? new Item();
+        Item output = recipe.CreateOutput?.Invoke(BrewCompositions.Of(recipe)) ?? new Item();
         if (!output.IsAir)
         {
             DrawSmallItemIcon(sb, output.type, new Vector2(cx, cy), ICON);
@@ -2046,7 +2024,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             DrawCategoryTabsOverlay(sb);
             DrawBookButtons(sb);
             if (current.Category == AlmanacCategory.Recipes && current.View == ViewMode.Browse)
-                DrawModeTabsOverlay(sb);
+                DrawFilterTabsOverlay(sb);
 
             if (current.Category == AlmanacCategory.Recipes || current.Category == AlmanacCategory.Ingredients)
             {
@@ -2097,15 +2075,16 @@ public class AlchemyAlmanacUI : IInGameNotification
                 canNext ? (_nextButton.Contains(mouse) ? Color.White : new Color(235, 235, 235)) : new Color(110, 110, 110, 150));
     }
 
-    private void DrawModeTabsOverlay(SpriteBatch sb)
+    private void DrawFilterTabsOverlay(SpriteBatch sb)
     {
-        RecomputeModeTabBounds();
+        RecomputeFilterTabBounds();
         var mouse = Main.MouseScreen.ToPoint();
-        for (int i = 0; i < _modeTabs.Length; i++)
+        for (int i = 0; i < _filterTabs.Length; i++)
         {
-            bool active = ModeFilter == _modeTabs[i].mode;
-            DrawOverlayButton(sb, _modeTabBounds[i], _modeTabs[i].label,
-                _modeTabBounds[i].Contains(mouse), active);
+            BrewCategory? category = _filterTabs[i];
+            string label = category.HasValue ? BrewCategories.DisplayName(category.Value) : "All";
+            DrawOverlayButton(sb, _filterTabBounds[i], label,
+                _filterTabBounds[i].Contains(mouse), BrewCategoryFilter == category);
         }
     }
 

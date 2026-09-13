@@ -478,16 +478,6 @@ Items: {
 			'''
 	}
 
-	ArcaneSolutionItem: {
-		DisplayName: Arcane Solution
-		Tooltip: ""
-	}
-
-	ArcaneSolution: {
-		DisplayName: Arcane Solution
-		Tooltip: ""
-	}
-
 	BaneTonicItem: {
 		DisplayName: Bane Tonic
 		Tooltip: ""
@@ -1059,8 +1049,16 @@ ChemicalDamageTypes: {
 # the station, followed by the qualities it carries.
 ChemicalRoles: {
 	Solute: Solute
+	Reagent: Reagent
 	Solvent: Solvent
 	Solution: Solution
+}
+
+# Category label shown by the alchemy station for the slotted ingredients (BrewCategories).
+BrewCategories: {
+	Synthesis: Synthesis
+	Augmentation: Augmentation
+	Refinement: Refinement
 }
 
 # The stat rows a controller weapon shows under its damage line (ChemicalStatsTooltip). Each row

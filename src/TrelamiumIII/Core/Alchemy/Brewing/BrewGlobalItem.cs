@@ -44,7 +44,7 @@ public class BrewGlobalItem : GlobalItem
 
         Brew = new PotionBrew
         {
-            Domain = PrincipleType.None,
+            Principle = PrincipleType.None,
             Effects = new List<AlchemicalEffect> { new AlchemicalEffect(baseBuff, 1, duration, 100) }
         };
     }
@@ -133,7 +133,7 @@ public class BrewGlobalItem : GlobalItem
     public override void SaveData(Item item, TagCompound tag)
     {
         if (Brew is not { Effects.Count: > 0 } b) return;
-        tag["domain"] = (int)b.Domain;
+        tag["domain"] = (int)b.Principle;
         var list = new List<TagCompound>();
         foreach (var e in b.Effects)
             list.Add(new TagCompound
@@ -152,13 +152,13 @@ public class BrewGlobalItem : GlobalItem
             foreach (var t in list)
                 effects.Add(new AlchemicalEffect(t.GetInt("buff"), t.GetInt("pot"), t.GetInt("dur"),
                     t.GetInt("str"), new EffectParams(t.GetInt("tier"))));
-            Brew = new PotionBrew { Domain = (PrincipleType)tag.GetInt("domain"), Effects = effects };
+            Brew = new PotionBrew { Principle = (PrincipleType)tag.GetInt("domain"), Effects = effects };
         }
         else if (tag.ContainsKey("buff"))   // legacy single-effect save format
         {
             Brew = new PotionBrew
             {
-                Domain = (PrincipleType)tag.GetInt("domain"),
+                Principle = (PrincipleType)tag.GetInt("domain"),
                 Effects = { new AlchemicalEffect(tag.GetInt("buff"), tag.GetInt("pot"),
                             tag.GetInt("dur"), tag.GetInt("str")) },
             };
@@ -170,7 +170,7 @@ public class BrewGlobalItem : GlobalItem
     {
         if (Brew is not { Effects.Count: > 0 } b) { writer.Write((byte)0); return; }
         writer.Write((byte)b.Effects.Count);
-        writer.Write((int)b.Domain);
+        writer.Write((int)b.Principle);
         foreach (var e in b.Effects)
         {
             writer.Write(e.BaseBuff);
@@ -190,7 +190,7 @@ public class BrewGlobalItem : GlobalItem
         for (int i = 0; i < count; i++)
             effects.Add(new AlchemicalEffect(reader.ReadInt32(), reader.ReadInt32(),
                 reader.ReadInt32(), reader.ReadInt32(), new EffectParams(reader.ReadInt32())));
-        Brew = new PotionBrew { Domain = domain, Effects = effects };
+        Brew = new PotionBrew { Principle = domain, Effects = effects };
     }
 
     // Draw potency as bestiary stars after the "Potency" label (matches the almanac's stars).
