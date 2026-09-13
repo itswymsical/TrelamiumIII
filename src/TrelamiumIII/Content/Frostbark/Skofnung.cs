@@ -48,6 +48,7 @@ public class SkofnungProjectile : HeldSwordProjectile
     public static readonly SwordProfile Swing = SwordProfile.Dagger with
     {
         BladeLength = 60f,
+        ArcOffset = 0,
         SwingTicks = 14,
         SwingSound = SoundID.Item1,
     };
@@ -60,6 +61,6 @@ public class SkofnungProjectile : HeldSwordProjectile
     {
         base.SetDefaults();
 
-        Projectile.scale = 1.15f;
+        Projectile.scale = 1f;       
     }
 }

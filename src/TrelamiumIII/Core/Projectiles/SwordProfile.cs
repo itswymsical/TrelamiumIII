@@ -4,33 +4,6 @@ using static TrelamiumIII.Utilities.EaseFunction;
 
 namespace TrelamiumIII.Core.Projectiles;
 
-/// <summary>How a swing paints its arc.</summary>
-public enum SwingArcStyle
-{
-    /// <summary>Nothing. For a weapon that draws its own.</summary>
-    None,
-
-    /// <summary>
-    ///     A pre-drawn arc texture rotated to follow the blade. Cheap, warm, and fixed.
-    /// </summary>
-    /// <remarks>
-    ///     The texture's arc spans a fixed angle, so it reads best on a weapon whose sweep is near
-    ///     it. On a dagger flicking through a fifth of that, the streak is visibly describing a
-    ///     journey longer than the one the blade made.
-    /// </remarks>
-    Twirl,
-
-    /// <summary>
-    ///     A vertex ribbon generated to the swept angle. Matches any arc, at the cost of a shader.
-    /// </summary>
-    /// <remarks>
-    ///     The spine is built from the angles the blade has actually passed through this swing
-    ///     rather than from a history of tip positions, which is what makes it exact at any speed: a
-    ///     six-tick dagger swing has six positions to remember and the same smooth arc to draw.
-    /// </remarks>
-    Ribbon,
-}
-
 /// <summary>
 ///     How a melee weapon swings: the shape of one strike, and the pattern the strikes fall into.
 /// </summary>
@@ -42,11 +15,9 @@ public enum SwingArcStyle
 ///         is a preset and a hit effect rather than another copy of the swing arithmetic.
 ///     </para>
 ///     <para>
-///         One strike runs windup, swing, recover. The windup carries the blade from guard to the far
-///         side of the arc and is the only part that can still be aimed; the swing is the only part
-///         that hurts anything; the recover returns to guard. <see cref="Anticipation" /> is a number
-///         rather than a fourth phase -- it widens the arc backwards so the windup overshoots, which
-///         makes a heavy weapon read as heavy without extra frames.
+///         A strike is a windup then a sweep; only the sweep deals damage, and the aim is locked through
+///         it. A queued strike follows through a recover; otherwise the blade holds for
+///         <see cref="ComboWindow" /> ticks.
 ///     </para>
 ///     <para>
 ///         Everything angular is stated in <i>facing space</i>: positive is toward the ground, and
@@ -112,7 +83,7 @@ public readonly record struct SwordProfile
     /// </remarks>
     public float ArmFollow { get; init; }
 
-    /// <summary>Radians off the aim where the blade rests between strikes. Negative is raised.</summary>
+    /// <summary>Radians off the aim where the blade starts before the first strike. Negative is raised.</summary>
     public float Guard { get; init; }
 
     /// <summary>Horizontal velocity multiplier applied each tick of a strike. Zero means unset.</summary>
@@ -132,18 +103,11 @@ public readonly record struct SwordProfile
     /// <summary>Ticks the damaging sweep takes. The aim is locked for all of them.</summary>
     public int SwingTicks { get; init; }
 
-    /// <summary>Ticks spent returning to guard afterwards.</summary>
+    /// <summary>Ticks from the end of a sweep to the start of the next, when a strike is queued. Aimable.</summary>
     public int RecoverTicks { get; init; }
 
-    /// <summary>
-    ///     Ticks after a strike in which pressing again continues the combo rather than restarting it.
-    /// </summary>
-    /// <remarks>
-    ///     What makes a combo work for a player who clicks rather than holds. Holding runs the
-    ///     pattern straight through; releasing parks the weapon at guard for this long, and a press
-    ///     inside the window picks up at the next step. Let it lapse and the weapon is put away, so
-    ///     the next press opens on the first step again.
-    /// </remarks>
+    /// <summary>Ticks the blade holds after a sweep with nothing queued, waiting for a press before it is put away.</summary>
+    /// <remarks>Holding the button, or pressing during a strike, continues the combo without this wait.</remarks>
     public int ComboWindow { get; init; }
 
     /// <summary>How much melee attack speed shortens a strike, 0 to 1. Zero means unset.</summary>
@@ -191,7 +155,7 @@ public readonly record struct SwordProfile
     /// <summary>Curve of the sweep. The single field that most decides how a weapon feels.</summary>
     public EaseFunction SwingEase { get; init; }
 
-    /// <summary>Curve of the return to guard. Wants to be unhurried and unremarkable.</summary>
+    /// <summary>Curve of the recover into a queued strike.</summary>
     public EaseFunction RecoverEase { get; init; }
 
     /// <summary>Played as the sweep opens. Null is silent, which is what a subclass wants.</summary>
@@ -245,83 +209,32 @@ public readonly record struct SwordProfile
 
     #endregion
 
-    #region arc vfx
+    #region trail
 
-    /// <summary>How the sweep is painted. See <see cref="SwingArcStyle" />.</summary>
-    public SwingArcStyle ArcStyle { get; init; }
+    /// <summary>Master opacity of the swing trail. Zero draws no trail.</summary>
+    public float TrailOpacity { get; init; }
 
-    /// <summary>Colour of the arc.</summary>
-    public Color ArcColor { get; init; }
+    /// <summary>Colour of the trail's body. Premultiplied: alpha below 255 blends toward additive.</summary>
+    public Color TrailColor { get; init; }
 
-    /// <summary>Colour of the bright inner edge. <see cref="SwingArcStyle.Twirl" /> only.</summary>
-    public Color ArcCoreColor { get; init; }
+    /// <summary>Colour of the rim just inside the trail's outer edge. Premultiplied, like <see cref="TrailColor" />.</summary>
+    public Color TrailEdgeColor { get; init; }
 
-    /// <summary>Master opacity of the arc.</summary>
-    public float ArcOpacity { get; init; }
+    /// <summary>Inner edge of the trail, as a fraction of reach.</summary>
+    public float TrailInner { get; init; }
 
-    /// <summary>Where along the blade the arc is drawn, as a fraction of reach.</summary>
-    /// <remarks>
-    ///     Slightly under one puts the streak on the edge rather than beyond the tip, which is where
-    ///     a swing actually leaves its mark.
-    /// </remarks>
-    public float ArcReach { get; init; }
+    /// <summary>Outer edge of the trail, as a fraction of reach.</summary>
+    public float TrailOuter { get; init; }
 
-    /// <summary>Fraction of the sweep the arc takes to reach full strength.</summary>
-    /// <remarks>
-    ///     A streak at full brightness on the frame the blade starts moving is a streak describing a
-    ///     journey it has not made. This matters most with a back-loaded
-    ///     <see cref="SwingEase" />, where the first third of the clock covers almost no ground.
-    /// </remarks>
-    public float ArcFadeIn { get; init; }
+    /// <summary>How much of the sweep's duration the trail covers behind the blade.</summary>
+    /// <remarks>Also how long, as a fraction of the sweep, the trail takes to clear after the sweep ends.</remarks>
+    public float TrailLength { get; init; }
 
-    /// <summary>Texture-space angle of the twirl's leading tip. <see cref="SwingArcStyle.Twirl" /> only.</summary>
-    /// <remarks>
-    ///     The arc texture is anchored by its tip rather than pinned at a fixed rotation, so the
-    ///     streak trails the blade instead of hanging in the world waiting to be caught up with.
-    ///     This is where in the texture that tip is.
-    /// </remarks>
-    public float TwirlTip { get; init; }
+    /// <summary>Points along the trail mesh. Under three means unset.</summary>
+    public int TrailPoints { get; init; }
 
-    /// <summary>Spine points in the ribbon. Under three means unset.</summary>
-    /// <remarks>
-    ///     Fixed for the life of the weapon -- <see cref="Core.Graphics.Primitives.VertexTrail" />
-    ///     sizes its buffers from it once -- so it has to cover the widest arc the weapon can throw,
-    ///     not the one it happens to be throwing. Cheap enough that overshooting costs nothing.
-    /// </remarks>
-    public int RibbonPoints { get; init; }
-
-    /// <summary>Half-width of the ribbon at its thickest, in pixels.</summary>
-    public float RibbonWidth { get; init; }
-
-    /// <summary>Exponent shaping the ribbon's taper from tail to head.</summary>
-    /// <remarks>
-    ///     Below one keeps the streak broad for most of its length and narrows sharply at the very
-    ///     tail; above one tapers the whole way, which reads thinner and faster.
-    /// </remarks>
-    public float RibbonTaper { get; init; }
-
-    /// <summary>Radians of already-swept arc the ribbon trails behind the blade.</summary>
-    /// <remarks>
-    ///     Clamped to the sweep actually performed, so the streak grows out of the start of the
-    ///     swing rather than being born at full length, and never trails back across ground the
-    ///     blade has not covered.
-    /// </remarks>
-    public float RibbonSweep { get; init; }
-
-    /// <summary>Texture sampled along the ribbon. Null takes a soft default.</summary>
-    public string RibbonTexture { get; init; }
-
-    /// <summary>Noise texture the arc shader distorts with, if it wants one.</summary>
-    public string RibbonNoise { get; init; }
-
-    /// <summary>Shader the ribbon is drawn with. Null takes the stock primitive shader.</summary>
-    /// <remarks>
-    ///     Anything set here must transform by <c>uWorldViewProjection</c>, which
-    ///     <see cref="Core.Graphics.Primitives.VertexTrail.Render" /> fills in on its own, or take
-    ///     the <c>transformMatrix</c> and pixelation parameters that <c>pixelTrail</c> wants -- both
-    ///     sets are supplied, and a shader ignores whichever it does not declare.
-    /// </remarks>
-    public string RibbonShader { get; init; }
+    /// <summary>Texture multiplied into the trail, wrapped along the arc. Null draws the trail untextured.</summary>
+    public string? TrailTexture { get; init; }
 
     #endregion
 
@@ -360,17 +273,13 @@ public readonly record struct SwordProfile
         SwingEase = Snap,
         RecoverEase = EaseQuadOut,
 
-        ArcStyle = SwingArcStyle.Twirl,
-        ArcColor = new Color(255, 214, 158),
-        ArcCoreColor = new Color(255, 248, 232),
-        ArcOpacity = 1f,
-        ArcReach = 0.95f,
-        ArcFadeIn = 0.33f,
-        TwirlTip = 0.73f,
-        RibbonPoints = 32,
-        RibbonWidth = 15f,
-        RibbonTaper = 0.85f,
-        RibbonSweep = 1.5f,
+        TrailOpacity = 1f,
+        TrailColor = new Color(255, 214, 158, 90),
+        TrailEdgeColor = new Color(255, 248, 232, 0),
+        TrailInner = 0.3f,
+        TrailOuter = 1.02f,
+        TrailLength = 0.5f,
+        TrailPoints = 32,
     };
 
     /// <summary>
@@ -401,9 +310,9 @@ public readonly record struct SwordProfile
 
         Steps = [SwingStep.Down, SwingStep.Up, SwingStep.Thrust],
 
-        ArcOpacity = 0.75f,
-        RibbonWidth = 9f,
-        RibbonSweep = 1.1f,
+        TrailOpacity = 0.75f,
+        TrailInner = 0.35f,
+        TrailLength = 0.45f,
     };
 
     /// <summary>
@@ -436,11 +345,9 @@ public readonly record struct SwordProfile
 
         Steps = [SwingStep.Down, SwingStep.Up, SwingStep.Spin],
 
-        ArcColor = new Color(198, 232, 255),
-        ArcCoreColor = new Color(240, 250, 255),
-        ArcFadeIn = 0.2f,
-        RibbonWidth = 13f,
-        RibbonSweep = 2f,
+        TrailColor = new Color(198, 232, 255, 90),
+        TrailEdgeColor = new Color(240, 250, 255, 0),
+        TrailLength = 0.35f,
     };
 
     /// <summary>
@@ -466,9 +373,9 @@ public readonly record struct SwordProfile
         Extend = 8f,
         SwingEase = Heavy,
 
-        ArcColor = new Color(255, 186, 150),
-        RibbonWidth = 22f,
-        RibbonSweep = 1.4f,
+        TrailColor = new Color(255, 186, 150, 90),
+        TrailInner = 0.25f,
+        TrailLength = 0.55f,
     };
 
     /// <summary>
@@ -503,8 +410,7 @@ public readonly record struct SwordProfile
 
         Steps = [SwingStep.Down],
 
-        RibbonWidth = 20f,
-        RibbonSweep = 1.3f,
+        TrailInner = 0.5f,
     };
 
     #endregion
@@ -573,16 +479,7 @@ public readonly record struct SwordProfile
     public float SpeedInfluence => AttackSpeedInfluence > 0f ? MathHelper.Clamp(AttackSpeedInfluence, 0f, 1f) : 1f;
 
     /// <inheritdoc cref="ArmTracking" />
-    public int RibbonPointCount => RibbonPoints > 2 ? RibbonPoints : 32;
-
-    /// <inheritdoc cref="ArmTracking" />
-    public string RibbonTextureKey => RibbonTexture ?? Assets.Textures.VFX.BeamTrail.KEY;
-
-    /// <inheritdoc cref="ArmTracking" />
-    public string RibbonNoiseKey => RibbonNoise ?? Assets.Textures.VFX.StormTrail.KEY;
-
-    /// <inheritdoc cref="ArmTracking" />
-    public string RibbonShaderKey => RibbonShader ?? Assets.Shaders.Primitives.KEY;
+    public int TrailPointCount => TrailPoints > 2 ? TrailPoints : 32;
 
     #endregion
 }

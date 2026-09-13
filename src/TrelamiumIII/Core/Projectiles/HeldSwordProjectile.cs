@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using Terraria.DataStructures;
-using TrelamiumIII.Core.Graphics.Interfaces;
+using Terraria.GameContent;
+using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 using static TrelamiumIII.Utilities.EaseFunction;
@@ -8,137 +9,96 @@ using static TrelamiumIII.Utilities.EaseFunction;
 namespace TrelamiumIII.Core.Projectiles;
 
 /// <summary>
-///     Base for a melee weapon that exists as a projectile
+///     Base for a melee weapon held as a projectile through a combo. A subclass supplies a <see cref="SwordProfile" />.
 /// </summary>
 /// <remarks>
-///     <para>
-///         What a subclass supplies is a <see cref="SwordProfile" /> and, usually, nothing else.
-///         Everything between, being the aim, three phases, combo, etc. is here and identical across weapons
-///     </para>
-///     <para>
-///         <b>Phases, and which clients run them.</b> Windup and swing have fixed durations, so
-///         every client advances them on its own and the animation is smooth everywhere. The two
-///         transitions that depend on a button -- whether a finished strike continues the combo, and
-///         whether a lapsed combo window puts the weapon away -- run owner-side and announce
-///         themselves. A remote that reaches the end of a recover simply holds at guard, which is
-///         the pose it would be in anyway, until it is told what happened.
-///     </para>
+///     Windup, swing and recover end on a clock every client advances. Continuing the combo and putting the weapon
+///     away are owner-side decisions synced through <c>ai[]</c>; remote clients hold in <see cref="SwingPhase.Link" />
+///     until the packet arrives.
 /// </remarks>
-public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
+public abstract class HeldSwordProjectile : ModProjectile
 {
-    /// <summary>Where one strike is in its life.</summary>
     public enum SwingPhase
     {
-        /// <summary>Carrying the blade to the far side of the arc. The last chance to aim.</summary>
+        /// <summary>The blade moves from its entry pose to the start of the arc while the aim converges on the cursor.</summary>
         Windup,
 
-        /// <summary>The sweep. The only phase that damages anything, and the aim is locked.</summary>
+        /// <summary>The damaging sweep. The aim is locked.</summary>
         Swing,
 
-        /// <summary>Returning to guard. The gap the next strike opens from.</summary>
+        /// <summary>A strike is queued: the blade moves from the end of the last arc to the start of the next.</summary>
         Recover,
 
-        /// <summary>Parked at guard, waiting to see whether the combo continues.</summary>
+        /// <summary>Nothing is queued: the blade holds at the end of the arc for <see cref="SwordProfile.ComboWindow" /> ticks.</summary>
         Link,
     }
 
-    /// <summary>Cosine of the aim drift worth spending a packet on.</summary>
-    /// <inheritdoc cref="HeldGunProjectile" />
+    /// <summary>Cosine of the aim drift that triggers a net update.</summary>
     private const float AIM_SYNC_TOLERANCE = 0.9995f;
 
-    /// <summary>
-    ///     How near vertical the aim may get before it is nudged back onto the side it was already on.
-    /// </summary>
-    /// <remarks>
-    ///     The arc mirrors on the sign of the aim's X, so a cursor parked directly above the player
-    ///     leaves which way the weapon swings to sub-pixel mouse jitter. Biasing the aim itself
-    ///     rather than latching the facing separately is what keeps facing a pure function of the
-    ///     synced aim, and therefore free of netcode.
-    /// </remarks>
+    /// <summary>Minimum |X| of the aim, pushed toward the current facing so a vertical cursor cannot flip it every tick.</summary>
     private const float AIM_DEADZONE = 0.06f;
 
-    /// <summary>Radius of the arc drawn in the twirl textures, in their own pixels.</summary>
-    private const float TWIRL_RADIUS = 216f;
-
-    /// <inheritdoc cref="TWIRL_RADIUS" />
-    private const float TWIRL_CORE_RADIUS = 196f;
-
-    /// <summary>How far inside the outer sweep the bright core sits.</summary>
-    private const float TWIRL_CORE_INSET = 0.82f;
+    /// <summary>Per-tick lerp factor of the aim during <see cref="SwingPhase.Link" />.</summary>
+    private const float LINK_AIM_TRACKING = 0.3f;
 
     /// <summary>Pixels of blade travel per swept-hitbox sample.</summary>
-    /// <remarks>
-    ///     Sampling a fixed number of times is what lets a fast weapon step over a target between
-    ///     ticks. Deriving the count from how far the edge actually moved spends the samples where
-    ///     the risk is, and leaves a slow weapon paying for two.
-    /// </remarks>
     private const float SAMPLE_SPACING = 10f;
 
-    /// <summary>How the weapon swings. See <see cref="SwordProfile" />.</summary>
+    /// <summary>Trail arc in radians below which the trail's opacity scales down to zero.</summary>
+    private const float TRAIL_FULL_ARC = 0.4f;
+
+    /// <summary>Radians of arc per repeat of <see cref="SwordProfile.TrailTexture" />.</summary>
+    private const float TRAIL_TEXTURE_ARC = MathHelper.Pi;
+
+    /// <summary>Distance of the trail's rim from its outer edge, as a fraction of the trail's width.</summary>
+    private const float TRAIL_EDGE_WIDTH = 0.12f;
+
     protected abstract SwordProfile Profile { get; }
 
-    /// <summary>Whether releasing the button eventually puts the weapon away.</summary>
-    /// <remarks>
-    ///     False leaves it out until something else kills it, which is what a weapon that ends on
-    ///     its own terms -- a finisher, a wind-down -- wants.
-    /// </remarks>
+    /// <summary>Whether strikes continue only while the button is used. False chains strikes until something else kills the weapon.</summary>
     protected virtual bool HoldToKeep => true;
 
-    /// <summary>Which part of the strike is running.</summary>
     public SwingPhase Phase
     {
         get => (SwingPhase)(int)Projectile.ai[0];
         private set => Projectile.ai[0] = (int)value;
     }
 
-    /// <summary>Ticks spent in <see cref="Phase" />.</summary>
+    /// <summary>Ticks elapsed in <see cref="Phase" />.</summary>
     public ref float PhaseTimer => ref Projectile.ai[1];
 
-    /// <summary>Which step of the combo this strike is.</summary>
-    /// <remarks>
-    ///     In <c>ai[2]</c> rather than a field so it rides the standard projectile sync alongside the
-    ///     phase and its clock. A remote without it would animate the right timing on the wrong arc.
-    /// </remarks>
+    /// <summary>Index of the current or upcoming strike in <see cref="SwordProfile.Combo" />.</summary>
     public int ComboIndex
     {
         get => (int)Projectile.ai[2];
         private set => Projectile.ai[2] = value;
     }
 
-    /// <summary>The step being swung.</summary>
     protected SwingStep Step => profile.StepAt(ComboIndex);
 
-    /// <summary>Unit vector from the holder toward whatever they are aiming at.</summary>
-    protected Vector2 Aim { get; private set; } = Vector2.UnitX;
+    /// <summary>Unit vector of the displayed aim.</summary>
+    protected Vector2 Aim => aim.Angle.ToRotationVector2();
 
-    /// <summary>Rotation of <see cref="Aim" />.</summary>
-    protected float AimAngle => Aim.ToRotation();
+    protected float AimAngle => aim.Angle;
 
     protected Player Owner => Main.player[Projectile.owner];
 
-    /// <summary>Melee size modifiers apply to reach, hitbox and sprite alike.</summary>
+    /// <summary>Projectile scale times the melee size modifier. Applies to reach, hitbox and sprite.</summary>
     protected float TotalScale => Projectile.scale * meleeScale;
 
-    /// <summary>Pixels from the grip to the tip, this strike, at this size.</summary>
+    /// <summary>Pixels from the grip to the tip for the current step.</summary>
     protected float Reach => profile.BladeLength * Step.ReachScale * TotalScale;
 
-    /// <summary>World rotation the blade points along right now.</summary>
-    protected float BladeAngle => AngleOf(bladeOffset);
+    /// <summary>World rotation of the blade.</summary>
+    protected float BladeAngle => aim.AngleOf(bladeOffset);
 
-    /// <summary>Where the grip is. The blade pivots here, and so does everything drawn on it.</summary>
-    protected Vector2 HandPosition => HandFor(bladeOffset);
+    /// <summary>World position of the grip, which the blade pivots about.</summary>
+    protected Vector2 HandPosition => HandFor(bladeOffset, aim, extension);
 
-    /// <summary>Where the point is. Worth having for anything spawned off the end of a swing.</summary>
-    protected Vector2 BladeTip => HandPosition + DirectionOf(bladeOffset) * Reach;
+    protected Vector2 BladeTip => HandPosition + aim.DirectionOf(bladeOffset) * Reach;
 
-    /// <summary>
-    ///     How much of the arc the blade has actually covered, 0 to 1.
-    /// </summary>
-    /// <remarks>
-    ///     Distance, not time. The two are very different under a back-loaded
-    ///     <see cref="SwordProfile.SwingEase" />, where the first third of the clock is spent nearly
-    ///     motionless -- anything keyed to the clock fires while the weapon is still hanging.
-    /// </remarks>
+    /// <summary>Fraction of the current arc the blade has covered, 0 to 1, measured by angle rather than time.</summary>
     protected float SweptFraction
     {
         get
@@ -151,65 +111,47 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         }
     }
 
-    /// <summary>Which way the weapon is pointed, and the axis the whole arc is mirrored about.</summary>
-    private int facing = 1;
+    /// <summary><see cref="Profile" /> as of this tick. Cached because presets build a new struct on every access.</summary>
+    private SwordProfile profile;
+
+    private bool initialized;
+
+    private AimFrame aim = new(1, 0f);
 
     /// <summary>Blade angle in facing space: radians off the aim, positive toward the ground.</summary>
-    /// <remarks>
-    ///     Everything animates in this space rather than in world angles, because the profile states
-    ///     its arcs in it and because a facing-space value never has to be unwrapped -- a spin past
-    ///     a half turn stays a number bigger than pi instead of folding back on itself and dragging
-    ///     the arm the wrong way.
-    /// </remarks>
     private float bladeOffset;
 
-    /// <summary>Where the blade was last tick. The near edge of the swept hitbox.</summary>
     private float previousOffset;
 
-    /// <summary>
-    ///     Where the blade stood when the current phase opened.
-    /// </summary>
-    /// <remarks>
-    ///     What the windup and the link lerp away from, so neither has to assume the blade was at
-    ///     guard when it took over. Resuming a combo a third of the way through a relax picks the
-    ///     blade up from a third of the way through a relax.
-    /// </remarks>
+    /// <summary>Pixels the grip is pushed along the blade. See <see cref="SwordProfile.Extend" />.</summary>
+    private float extension;
+
+    // Pose at the start of the current phase. Windup, recover and link interpolate from it.
     private float entryOffset;
+    private float entryExtension;
+    private float entryElevation;
 
-    /// <summary>Where the arc VFX is anchored. Follows the blade, then stays put to burn out.</summary>
-    private float arcOffset;
-
-    /// <summary>Whether the pose taken this tick is part of a sweep. See <see cref="PreAI" />.</summary>
+    /// <summary>Whether this tick's pose is part of a sweep. Latched for <see cref="Colliding" />.</summary>
     private bool damaging;
 
     private float meleeScale = 1f;
 
-    private float ribbonOpacity;
+    // Owner-side input state.
+    private bool useHeld;
+    private bool strikeQueued;
 
-    private Vector2[]? ribbonPositions;
+    // Phase and step this client last acted on. A mismatch means a packet changed them.
+    private SwingPhase observedPhase;
+    private int observedCombo;
 
-    private VertexTrail? ribbon;
+    /// <summary>Sweeps started on this client. Identifies the trace that belongs to the sweep in progress.</summary>
+    private int sweepCount;
 
-    /// <summary>
-    ///     <see cref="Profile" /> as of this tick, and what everything below actually reads.
-    /// </summary>
-    /// <remarks>
-    ///     A profile is nearly always a preset with a <see langword="with" /> expression on it, which
-    ///     means the property builds a fresh struct on every access. That is nothing on its own and a
-    ///     great deal in aggregate: <see cref="Colliding" /> alone would ask for one per sample per
-    ///     target per tick. Refreshed at the top of the tick so a weapon whose profile changes with
-    ///     its state still gets the new one.
-    /// </remarks>
-    private SwordProfile profile;
+    private SwingTrace[]? traces;
 
-    /// <summary>
-    ///     Sensible defaults for a held melee weapon. Override and call base to adjust.
-    /// </summary>
-    /// <remarks>
-    ///     The box is sized off the profile so that anything reading the projectile's own rectangle
-    ///     gets something honest, but it is not what decides a hit --
-    ///     <see cref="Colliding" /> is, and it tests the blade as a swept segment.
-    /// </remarks>
+    private VertexStrip? trailStrip;
+
+    /// <remarks>The box is sized from the profile but does not decide hits; <see cref="Colliding" /> does.</remarks>
     public override void SetDefaults()
     {
         profile = Profile;
@@ -225,9 +167,10 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         Projectile.ignoreWater = true;
         Projectile.netImportant = true;
 
-        // Cleared at the top of every strike instead, so one enemy can be hit once per swing rather
-        // than once per weapon -- which is what a cooldown of -1 would mean for something that stays
-        // out across a whole combo.
+        // Drawn only by the owner's held-projectile layer; otherwise Main.DrawProjectiles draws it a second time.
+        Projectile.hide = true;
+
+        // Cleared at the start of every sweep, so each strike can hit a target once.
         Projectile.usesLocalNPCImmunity = true;
         Projectile.localNPCHitCooldown = -1;
 
@@ -238,31 +181,17 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
 
     public override void OnSpawn(IEntitySource source)
     {
-        Player owner = Owner;
-
-        facing = Math.Abs(Projectile.velocity.X) > 0.01f
-            ? Math.Sign(Projectile.velocity.X)
-            : owner.direction;
-
-        Aim = Projectile.velocity.SafeNormalize(Vector2.UnitX * facing);
-        Projectile.velocity = Aim;
-
         Phase = SwingPhase.Windup;
         PhaseTimer = 0f;
         ComboIndex = 0;
 
-        // The opening strike is the one case that genuinely starts from guard, so the windup has a
-        // real distance to travel rather than the short wind-back a chained strike gets.
-        bladeOffset = previousOffset = arcOffset = entryOffset = profile.Guard;
+        Initialize(Owner);
+
+        // The press that spawned the weapon must not also queue the second strike.
+        useHeld = true;
     }
 
-    /// <summary>
-    ///     Runs the whole weapon and suppresses the default projectile AI.
-    /// </summary>
-    /// <remarks>
-    ///     Returning false is deliberate: the base AI would move the projectile by its velocity, and
-    ///     velocity here is the aim, not a speed. The weapon is positioned by hand every tick.
-    /// </remarks>
+    /// <summary>Runs the weapon. Returns false so vanilla AI never moves it by its velocity, which carries the aim.</summary>
     public override bool PreAI()
     {
         Player owner = Owner;
@@ -276,48 +205,47 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
             return false;
         }
 
+        if (!initialized)
+            Initialize(owner);
+
         meleeScale = owner.GetAdjustedItemScale(owner.HeldItem);
+
+        FollowSyncedState(owner);
+
+        if (!Transition(owner))
+            return false;
+
+        // Advanced before posing, so a phase's first tick moves off its entry pose and its last tick reaches its target.
+        PhaseTimer++;
 
         UpdateAim(owner);
 
         previousOffset = bladeOffset;
         bladeOffset = OffsetForPhase();
+        extension = ExtensionForPhase();
 
-        // Latched here, before Advance may hand the phase on, because vanilla runs Damage() after
-        // the AI and would otherwise ask a strike that has just finished whether it is still
-        // swinging. It is not, by then -- and the answer would throw away the very last segment of
-        // the arc, which under a back-loaded curve is most of it.
+        // Colliding runs after AI and must test the pose taken this tick.
         damaging = Phase == SwingPhase.Swing;
 
-        // Trails the blade through the sweep and is then left where the sweep ended, so the streak
-        // burns out along the arc instead of being dragged back to guard with the weapon.
-        if (damaging)
-            arcOffset = bladeOffset;
-
-        Projectile.Center = HandPosition;
-        Projectile.rotation = BladeAngle;
-        Projectile.direction = Projectile.spriteDirection = facing;
-        Projectile.timeLeft = 2;
+        UpdateTraces();
 
         PoseOwner(owner);
         DampOwner(owner);
 
-        Advance(owner);
+        Projectile.Center = HandPosition;
+        Projectile.rotation = BladeAngle;
+        Projectile.direction = Projectile.spriteDirection = aim.Facing;
+        Projectile.timeLeft = 2;
 
         WhileHeld(owner);
 
         return false;
     }
 
-    /// <summary>
-    ///     Whether the weapon has any business still existing.
-    /// </summary>
+    /// <summary>Whether the weapon should stay out.</summary>
     /// <remarks>
-    ///     The held-item test is owner-side only. It is the authority on what its player is holding,
-    ///     and the kill it decides on syncs like any other; a remote applying the same test against
-    ///     a stale inventory would put the weapon away underneath its owner. It also assumes the
-    ///     item's <c>shoot</c> is this projectile, which is the documented setup -- override for a
-    ///     weapon that spawns its blade from somewhere else.
+    ///     The held-item test is owner-side only, since remote inventories can be stale. It assumes the item's
+    ///     <c>shoot</c> is this projectile; override for a weapon spawned some other way.
     /// </remarks>
     protected virtual bool CanKeepHolding(Player owner)
     {
@@ -327,149 +255,141 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         return Main.myPlayer != Projectile.owner || owner.HeldItem.shoot == Projectile.type;
     }
 
-    #region aim
-
-    /// <summary>
-    ///     Points the weapon, and tells the other clients when the answer has changed enough to matter.
-    /// </summary>
-    /// <remarks>
-    ///     Skipped entirely during a sweep. Freezing the aim is what makes a swing a commitment
-    ///     rather than a cursor-tracking cone, and it is also what lets facing be re-derived rather
-    ///     than sent -- with the aim held still, no arc can change direction underneath itself.
-    /// </remarks>
-    private void UpdateAim(Player owner)
+    /// <summary>Sets up local pose state. Runs from <see cref="OnSpawn" /> on the spawning client and on the first tick elsewhere.</summary>
+    private void Initialize(Player owner)
     {
-        if (Phase != SwingPhase.Swing && Main.myPlayer == Projectile.owner)
-        {
-            Vector2 aim = (Main.MouseWorld - owner.Center).SafeNormalize(Vector2.UnitX * owner.direction);
+        initialized = true;
 
-            if (Math.Abs(aim.X) < AIM_DEADZONE)
-                aim = new Vector2(AIM_DEADZONE * facing, aim.Y).SafeNormalize(Vector2.UnitX * facing);
+        Vector2 fallback = Vector2.UnitX * owner.direction;
+        Vector2 direction = Projectile.velocity.SafeNormalize(fallback);
 
-            if (Vector2.Dot(aim, Projectile.velocity) < AIM_SYNC_TOLERANCE)
-                Projectile.netUpdate = true;
+        if (Math.Abs(direction.X) < AIM_DEADZONE)
+            direction = new Vector2(AIM_DEADZONE * owner.direction, direction.Y).SafeNormalize(fallback);
 
-            Projectile.velocity = aim;
-        }
+        Projectile.velocity = direction;
+        aim = AimFrame.From(direction);
 
-        Aim = Projectile.velocity.SafeNormalize(Vector2.UnitX * owner.direction);
-        facing = Aim.X >= 0f ? 1 : -1;
+        bladeOffset = previousOffset = profile.Guard;
+        extension = 0f;
+
+        CaptureEntry();
+
+        observedPhase = Phase;
+        observedCombo = ComboIndex;
     }
 
-    #endregion
-
-    #region state machine
-
-    /// <summary>
-    ///     Steps the strike along.
-    /// </summary>
-    /// <remarks>
-    ///     Windup and swing end on a clock every client can read, so they advance everywhere and the
-    ///     animation never waits on a packet. The transitions out of recover and link are answers to
-    ///     a button, so only the owner may give them.
-    /// </remarks>
-    private void Advance(Player owner)
+    /// <summary>Re-bases the pose on the current one when a packet has changed the phase or step.</summary>
+    private void FollowSyncedState(Player owner)
     {
+        if (Phase == observedPhase && ComboIndex == observedCombo)
+            return;
+
+        bool sweepStarted = Phase == SwingPhase.Swing && (observedPhase != SwingPhase.Swing || ComboIndex != observedCombo);
+
+        CaptureEntry();
+
+        observedPhase = Phase;
+        observedCombo = ComboIndex;
+
+        if (sweepStarted)
+            StartSweep(owner);
+    }
+
+    #region phases
+
+    /// <summary>Changes phase once the current one has run its ticks. Returns false if the weapon was put away.</summary>
+    /// <remarks>Only the owner reads input. Elsewhere a finished sweep goes to Link until a packet says otherwise.</remarks>
+    private bool Transition(Player owner)
+    {
+        bool local = Main.myPlayer == Projectile.owner;
+
+        if (local)
+            ReadInput(owner);
+
+        bool elapsed = PhaseTimer >= PhaseTicks;
+
         switch (Phase)
         {
-            case SwingPhase.Windup:
-                if (Elapsed)
-                    BeginSwing(owner);
-                else
-                    PhaseTimer++;
+            case SwingPhase.Windup or SwingPhase.Recover when elapsed:
+                SetPhase(SwingPhase.Swing);
+                StartSweep(owner);
 
                 break;
 
-            case SwingPhase.Swing:
-                if (!Elapsed)
-                {
-                    PhaseTimer++;
-
-                    break;
-                }
-
-                SetPhase(SwingPhase.Recover);
+            case SwingPhase.Swing when elapsed:
                 OnSwingEnd(owner, Step);
 
-                break;
-
-            case SwingPhase.Recover:
-                if (!Elapsed)
+                if (local && (strikeQueued || WantsStrike(owner)))
                 {
-                    PhaseTimer++;
-
-                    break;
+                    AdvanceCombo();
+                    SetPhase(SwingPhase.Recover);
                 }
-
-                if (Main.myPlayer != Projectile.owner)
-                    break;
-
-                // Straight into the sweep, with no windup: the recover has just spent its whole
-                // length carrying the blade to exactly where the next strike opens, and a windup
-                // from there would be a dead hold at full cock.
-                if (Swinging(owner))
-                    ChainStrike(owner);
                 else
+                {
                     SetPhase(SwingPhase.Link);
+                }
+
+                strikeQueued = false;
 
                 break;
 
-            case SwingPhase.Link:
-                if (Main.myPlayer != Projectile.owner)
+            case SwingPhase.Link when local:
+                if (WantsStrike(owner))
                 {
-                    PhaseTimer++;
-
-                    break;
+                    AdvanceCombo();
+                    SetPhase(SwingPhase.Windup);
                 }
-
-                // Pressing again inside the window picks the combo up where it left off; letting it
-                // lapse puts the weapon away, so the next press opens on the first step again.
-                if (Swinging(owner))
-                    OpenStrike();
-                else if (Elapsed)
+                else if (elapsed)
+                {
                     Projectile.Kill();
-                else
-                    PhaseTimer++;
+
+                    return false;
+                }
 
                 break;
         }
+
+        return true;
     }
 
-    /// <summary>Whether the holder is still asking for strikes.</summary>
-    /// <remarks>
-    ///     <see cref="Player.channel" /> covers the button being held through a channelled use;
-    ///     <see cref="Player.controlUseItem" /> covers a fresh press inside the combo window, which
-    ///     the item's own use may refuse to start while a weapon is already out. Owner-side only --
-    ///     neither means anything about anybody else's mouse.
-    /// </remarks>
-    private bool Swinging(Player owner) => !HoldToKeep || owner.channel || owner.controlUseItem;
+    /// <summary>Buffers a fresh press made during a strike, so the combo continues when the sweep ends.</summary>
+    private void ReadInput(Player owner)
+    {
+        bool held = owner.controlUseItem;
 
-    /// <remarks>
-    ///     Only the owner announces. Every client runs this for the two fixed-length transitions, and
-    ///     a remote flagging a projectile it does not own queues a packet nobody asked it for.
-    /// </remarks>
+        if (held && !useHeld && Phase != SwingPhase.Link)
+            strikeQueued = true;
+
+        useHeld = held;
+    }
+
+    private bool WantsStrike(Player owner) => !HoldToKeep || owner.controlUseItem;
+
     private void SetPhase(SwingPhase phase)
     {
-        entryOffset = bladeOffset;
+        CaptureEntry();
 
         Phase = phase;
         PhaseTimer = 0f;
+
+        observedPhase = phase;
+        observedCombo = ComboIndex;
 
         if (Main.myPlayer == Projectile.owner)
             Projectile.netUpdate = true;
     }
 
-    /// <summary>
-    ///     Opens the sweep: clears immunity, makes noise, and hands the step to the subclass.
-    /// </summary>
-    /// <remarks>
-    ///     Immunity is cleared here rather than on spawn because the weapon outlives the strike. A
-    ///     projectile that stays out for a whole combo and never resets would hit each enemy once
-    ///     and then be decoration.
-    /// </remarks>
-    private void BeginSwing(Player owner)
+    private void CaptureEntry()
     {
-        SetPhase(SwingPhase.Swing);
+        entryOffset = bladeOffset;
+        entryExtension = extension;
+        entryElevation = aim.Elevation;
+    }
+
+    /// <summary>Per-sweep effects: clears hit immunity, plays the swing sound and calls <see cref="OnSwingStart" />.</summary>
+    private void StartSweep(Player owner)
+    {
+        sweepCount++;
 
         Projectile.ResetLocalNPCHitImmunity();
 
@@ -479,70 +399,20 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         OnSwingStart(owner, Step);
     }
 
-    /// <summary>
-    ///     Continues the combo out of a recover, which has already done the winding.
-    /// </summary>
-    private void ChainStrike(Player owner)
-    {
-        AdvanceCombo();
-
-        BeginSwing(owner);
-    }
-
-    /// <summary>
-    ///     Opens a strike from a standing start, which needs its windup.
-    /// </summary>
-    /// <remarks>
-    ///     The path back in from <see cref="SwingPhase.Link" />, where the blade has been relaxing
-    ///     toward guard and is nowhere near cocked.
-    /// </remarks>
-    private void OpenStrike()
-    {
-        AdvanceCombo();
-
-        SetPhase(SwingPhase.Windup);
-    }
-
-    /// <summary>Wrapped at assignment so the synced value stays small and exact.</summary>
     private void AdvanceCombo() => ComboIndex = (ComboIndex + 1) % profile.ComboLength;
 
-    /// <summary>Ticks the current phase runs for, attack speed and step speed included.</summary>
     private int PhaseTicks => Phase switch
     {
         SwingPhase.Windup => Ticks(profile.WindupTicks),
         SwingPhase.Swing => Ticks(profile.SwingTicks),
         SwingPhase.Recover => Ticks(profile.RecoverTicks),
 
-        // The combo window follows attack speed but not the step's own, so a quick step does not
-        // also hand the player a tighter window to hit.
-        _ => Math.Max(1, (int)(profile.ComboWindow * StatFactor)),
+        // Scaled by attack speed only, so a fast step does not also shorten the window.
+        _ => Math.Max(1, (int)MathF.Round(profile.ComboWindow * StatFactor)),
     };
 
-    /// <summary>
-    ///     Whether the current phase has taken its last pose and may hand over.
-    /// </summary>
-    /// <remarks>
-    ///     Asked <i>after</i> the tick's pose has been computed, and one tick early on purpose. The
-    ///     obvious ordering -- advance the clock, then test it -- ends a phase on the tick it reaches
-    ///     its final position, which is before <see cref="Projectile.Damage" /> has run for that
-    ///     tick. The end of the arc would be drawn and never tested. That is barely visible under an
-    ///     even curve and severe under a back-loaded one, where the last tick of
-    ///     <see cref="SwordProfile.Heavy" /> is most of the sweep and would land on nothing.
-    /// </remarks>
-    private bool Elapsed => PhaseTimer >= PhaseSpan;
-
-    /// <summary>
-    ///     Where the phase is, 0 to 1.
-    /// </summary>
-    /// <remarks>
-    ///     Divided by the span rather than by the tick count so a phase reaches exactly one on its
-    ///     last tick, and therefore runs for the number of ticks the profile asked for rather than
-    ///     that plus one.
-    /// </remarks>
-    private float Progress => MathHelper.Clamp(PhaseTimer / PhaseSpan, 0f, 1f);
-
-    /// <summary>Ticks between the first pose of a phase and its last.</summary>
-    private float PhaseSpan => Math.Max(PhaseTicks - 1, 1);
+    /// <summary>Progress through the phase, in (0, 1].</summary>
+    private float Progress => MathHelper.Clamp(PhaseTimer / PhaseTicks, 0f, 1f);
 
     private float StatFactor
     {
@@ -554,21 +424,69 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         }
     }
 
+    /// <summary>Phase length for the current step, with attack speed and step speed applied.</summary>
     private int Ticks(int ticks)
-        => Math.Max(1, (int)(ticks * StatFactor / Math.Max(Step.SpeedScale, 0.05f)));
+        => Math.Max(1, (int)MathF.Round(ticks * StatFactor / Math.Max(Step.SpeedScale, 0.05f)));
+
+    private float Eased(EaseFunction? ease) => (ease ?? Linear).Ease(Progress);
+
+    #endregion
+
+    #region aim
+
+    /// <summary>Updates the synced target aim (owner-side, outside sweeps) and the displayed aim derived from it.</summary>
+    /// <remarks>
+    ///     Windup and recover interpolate the displayed elevation from its entry value to the target, so a sweep starts
+    ///     exactly on target without a snap. Facing follows the target immediately.
+    /// </remarks>
+    private void UpdateAim(Player owner)
+    {
+        if (Phase != SwingPhase.Swing && Main.myPlayer == Projectile.owner)
+        {
+            Vector2 fallback = Vector2.UnitX * aim.Facing;
+            Vector2 cursor = (Main.MouseWorld - owner.Center).SafeNormalize(fallback);
+
+            if (Math.Abs(cursor.X) < AIM_DEADZONE)
+                cursor = new Vector2(AIM_DEADZONE * aim.Facing, cursor.Y).SafeNormalize(fallback);
+
+            if (Vector2.Dot(cursor, Projectile.velocity) < AIM_SYNC_TOLERANCE)
+                Projectile.netUpdate = true;
+
+            Projectile.velocity = cursor;
+        }
+
+        AimFrame target = AimFrame.From(Projectile.velocity.SafeNormalize(Vector2.UnitX * aim.Facing));
+
+        float elevation = Phase switch
+        {
+            SwingPhase.Swing => target.Elevation,
+            SwingPhase.Windup => MathHelper.Lerp(entryElevation, target.Elevation, Eased(profile.WindupEase)),
+            SwingPhase.Recover => MathHelper.Lerp(entryElevation, target.Elevation, Eased(profile.RecoverEase)),
+            _ => MathHelper.Lerp(aim.Elevation, target.Elevation, LINK_AIM_TRACKING),
+        };
+
+        aim = new AimFrame(target.Facing, elevation);
+    }
+
+    /// <summary>An aim split into a facing sign and an elevation mirrored into that facing.</summary>
+    /// <remarks>Elevation is in [-pi/2, pi/2], negative toward world up. Blade offsets are applied in this frame.</remarks>
+    private readonly record struct AimFrame(int Facing, float Elevation)
+    {
+        public float Angle => Facing == 1 ? Elevation : MathHelper.Pi - Elevation;
+
+        public float AngleOf(float offset) => Angle + offset * Facing;
+
+        public Vector2 DirectionOf(float offset) => AngleOf(offset).ToRotationVector2();
+
+        public static AimFrame From(Vector2 direction)
+            => new(direction.X >= 0f ? 1 : -1, MathF.Atan2(direction.Y, Math.Abs(direction.X)));
+    }
 
     #endregion
 
     #region pose
 
-    /// <summary>The step that follows this one. What a recover winds back toward.</summary>
-    private SwingStep NextStep => profile.StepAt(ComboIndex + 1);
-
-    /// <summary>Radians off the aim a step's sweep begins at, anticipation included.</summary>
-    /// <remarks>
-    ///     The anticipation is subtracted against the sweep, so the windup overshoots the nominal
-    ///     start and the swing has that extra ground to cover in the same number of frames.
-    /// </remarks>
+    /// <summary>Radians off the aim a step's sweep starts at, anticipation included.</summary>
     private float SwingFromOffsetFor(SwingStep step)
     {
         float sweep = profile.Arc * step.Arc;
@@ -580,32 +498,37 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
     private float SwingToOffsetFor(SwingStep step)
         => profile.ArcOffset + step.Offset + profile.Arc * step.Arc * 0.5f;
 
-    /// <inheritdoc cref="SwingFromOffsetFor" />
     private float SwingFromOffset => SwingFromOffsetFor(Step);
 
-    /// <inheritdoc cref="SwingToOffsetFor" />
     private float SwingToOffset => SwingToOffsetFor(Step);
 
-    /// <summary>World rotation for a facing-space offset.</summary>
-    private float AngleOf(float offset) => AimAngle + offset * facing;
-
-    /// <summary>World direction for a facing-space offset.</summary>
-    private Vector2 DirectionOf(float offset) => AngleOf(offset).ToRotationVector2();
-
-    /// <summary>
-    ///     Composite arm rotation for a blade offset, damped by
-    ///     <see cref="SwordProfile.ArmFollow" />.
-    /// </summary>
-    /// <remarks>
-    ///     Two corrections, and both are easy to get wrong. Arm rotation is measured from straight
-    ///     down, so a direction maps onto it by subtracting a quarter turn. And vanilla applies
-    ///     <see cref="Player.gravDir" /> to composite arms itself, so the angle handed over has to
-    ///     be the pre-mirror one -- doing it here as well cancels out and the arm points at the
-    ///     floor under reversed gravity.
-    /// </remarks>
-    private float ArmRotationFor(float offset)
+    /// <summary>Blade offset for this tick. Phases entered from an arbitrary pose interpolate from it.</summary>
+    private float OffsetForPhase() => Phase switch
     {
-        Vector2 direction = AngleOf(offset * profile.ArmTracking).ToRotationVector2();
+        SwingPhase.Windup => MathHelper.Lerp(entryOffset, SwingFromOffset, Eased(profile.WindupEase)),
+        SwingPhase.Swing => MathHelper.Lerp(SwingFromOffset, SwingToOffset, Eased(Step.Ease ?? profile.SwingEase)),
+        SwingPhase.Recover => MathHelper.Lerp(entryOffset, SwingFromOffset, Eased(profile.RecoverEase)),
+        _ => entryOffset,
+    };
+
+    /// <summary>Grip push for this tick: follows the swept angle during a sweep, and unwinds from its entry value otherwise.</summary>
+    private float ExtensionForPhase()
+    {
+        if (Phase == SwingPhase.Swing)
+            return profile.Extend * Step.Extend * TotalScale * EaseQuadOut.Ease(SweptFraction);
+
+        float unwind = Phase == SwingPhase.Link
+            ? MathHelper.Clamp(PhaseTimer / Ticks(profile.RecoverTicks), 0f, 1f)
+            : Progress;
+
+        return entryExtension * (1f - EaseQuadOut.Ease(unwind));
+    }
+
+    /// <summary>Composite arm rotation for a blade offset, damped by <see cref="SwordProfile.ArmFollow" />.</summary>
+    /// <remarks>Measured from straight down. Vanilla applies <see cref="Player.gravDir" /> itself, so the angle is un-mirrored first.</remarks>
+    private float ArmRotationFor(float offset, AimFrame frame)
+    {
+        Vector2 direction = frame.DirectionOf(offset * profile.ArmTracking);
 
         if (Owner.gravDir < 0f)
             direction.Y = -direction.Y;
@@ -613,132 +536,45 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         return direction.ToRotation() - MathHelper.PiOver2;
     }
 
-    /// <summary>
-    ///     Where the grip sits for a blade offset.
-    /// </summary>
-    /// <remarks>
-    ///     Taken from the arm rather than from the blade, which is the whole reason the two are
-    ///     allowed to disagree: the hand goes wherever the shoulder can reach, and the blade pivots
-    ///     about it at whatever angle the arc asks for.
-    /// </remarks>
-    private Vector2 HandFor(float offset)
-        => Owner.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, ArmRotationFor(offset))
+    /// <summary>World position of the grip for a blade offset: the arm's hand, pushed <paramref name="push" /> pixels along the blade.</summary>
+    /// <remarks>Uses the owner's current direction, so <paramref name="frame" /> must have the same facing.</remarks>
+    private Vector2 HandFor(float offset, AimFrame frame, float push)
+        => Owner.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, ArmRotationFor(offset, frame))
            + new Vector2(0f, Owner.gfxOffY)
-           + DirectionOf(offset) * Extension;
+           + frame.DirectionOf(offset) * push;
 
-    /// <summary>
-    ///     Pixels the grip is pushed along the blade right now. See <see cref="SwordProfile.Extend" />.
-    /// </summary>
-    /// <remarks>
-    ///     Keyed to <see cref="SweptFraction" /> rather than to the clock, so the lean arrives with
-    ///     the blade instead of ahead of it -- under a back-loaded curve the two are most of a swing
-    ///     apart. The recover unwinds it on its own timer, which is what keeps the grip from snapping
-    ///     back into the hand on the frame the sweep ends.
-    /// </remarks>
-    private float Extension
-    {
-        get
-        {
-            float reach = profile.Extend * Step.Extend * TotalScale;
-
-            if (reach == 0f)
-                return 0f;
-
-            return Phase switch
-            {
-                SwingPhase.Swing => reach * EaseQuadOut.Ease(SweptFraction),
-                SwingPhase.Recover => reach * (1f - Progress),
-
-                _ => 0f,
-            };
-        }
-    }
-
-    /// <summary>
-    ///     Where the blade sits this tick.
-    /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         The recover winds back toward the <i>next</i> step's opening rather than home to
-    ///         guard, and that is the whole of what makes a combo flow. Guard sits on the opposite
-    ///         side of the aim from where a down-slash finishes, so routing every strike through it
-    ///         sent the blade down, back up to guard, down again past where it had just been, and
-    ///         only then up -- a visible double-back between two strikes that are supposed to read as
-    ///         one exchange. Winding straight back is a short move in the direction the blade was
-    ///         already going, because a step's end and the next step's start differ by little more
-    ///         than the anticipation.
-    ///     </para>
-    ///     <para>
-    ///         Guard is therefore only ever reached by <see cref="SwingPhase.Link" />, which is the
-    ///         one place the weapon genuinely has nothing queued. Both phases that can be entered
-    ///         from an arbitrary pose start from <see cref="entryOffset" /> rather than from a fixed
-    ///         angle, so resuming a combo halfway through a relax does not jump.
-    ///     </para>
-    /// </remarks>
-    private float OffsetForPhase() => Phase switch
-    {
-        SwingPhase.Windup => MathHelper.Lerp(entryOffset, SwingFromOffset, Eased(profile.WindupEase)),
-        SwingPhase.Swing => MathHelper.Lerp(SwingFromOffset, SwingToOffset, Eased(Step.Ease ?? profile.SwingEase)),
-        SwingPhase.Recover => MathHelper.Lerp(SwingToOffset, SwingFromOffsetFor(NextStep), Eased(profile.RecoverEase)),
-
-        _ => MathHelper.Lerp(entryOffset, profile.Guard, Eased(profile.RecoverEase)),
-    };
-
-    private float Eased(EaseFunction ease) => (ease ?? Linear).Ease(Progress);
-
-    /// <summary>
-    ///     Pins the weapon to the holder: turns them, keeps the item animation alive, and drives the
-    ///     front arm and torso off the same clock the blade is on.
-    /// </summary>
-    /// <remarks>
-    ///     <c>itemTime</c> and <c>itemAnimation</c> are refreshed every tick rather than set once.
-    ///     They are what keeps the player in a "using an item" state; let them run out and the arm
-    ///     drops to its idle pose for a frame in the middle of a swing. Override for a weapon that
-    ///     wants the back arm as well -- a two-handed grip, a shield.
-    /// </remarks>
+    /// <summary>Turns the owner, keeps the item use alive, and drives the front arm and torso from the pose.</summary>
+    /// <remarks><c>itemTime</c> and <c>itemAnimation</c> are refreshed every tick; if they lapse the arm drops for a frame.</remarks>
     protected virtual void PoseOwner(Player owner)
     {
-        owner.ChangeDir(facing);
+        owner.ChangeDir(aim.Facing);
         owner.heldProj = Projectile.whoAmI;
         owner.itemTime = owner.itemAnimation = 2;
 
-        owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, ArmRotationFor(bladeOffset));
+        owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, ArmRotationFor(bladeOffset, aim));
 
         owner.bodyFrame.Y = owner.bodyFrame.Height * BodyFrame();
     }
 
-    /// <summary>
-    ///     Torso frames: raised through a downward sweep, lowered through an upward one.
-    /// </summary>
-    /// <remarks>
-    ///     The front arm is composite and overrides whatever the frame draws, so this is only the
-    ///     lean -- but without it a wide arc is an arm moving in front of a body standing perfectly
-    ///     still.
-    /// </remarks>
+    /// <summary>Torso frame: leans into the upcoming strike, follows the swept angle through a sweep, and holds after it.</summary>
     private int BodyFrame()
     {
         const int UP = 2;
-        const int NEUTRAL = 3;
         const int DOWN = 4;
 
-        if (Phase == SwingPhase.Windup)
-            return Step.Downward ? UP : DOWN;
+        bool downward = Step.Downward;
+        int third = Math.Clamp((int)(SweptFraction * 3f), 0, 2);
 
-        if (Phase != SwingPhase.Swing)
-            return NEUTRAL;
-
-        int third = Math.Clamp((int)(Progress * 3f), 0, 2);
-
-        return Step.Downward ? UP + third : DOWN - third;
+        return Phase switch
+        {
+            SwingPhase.Windup or SwingPhase.Recover => downward ? UP : DOWN,
+            SwingPhase.Swing => downward ? UP + third : DOWN - third,
+            _ => downward ? DOWN : UP,
+        };
     }
 
-    /// <summary>
-    ///     Damps horizontal movement through a strike.
-    /// </summary>
-    /// <remarks>
-    ///     Applied to velocity rather than to <see cref="Player.moveSpeed" /> because projectiles
-    ///     update after players, so the stat is already spent by the time this runs.
-    /// </remarks>
+    /// <summary>Damps horizontal movement during windup and sweep.</summary>
+    /// <remarks>Applied to velocity because projectiles update after players, so <see cref="Player.moveSpeed" /> is already spent.</remarks>
     private void DampOwner(Player owner)
     {
         if (Phase is SwingPhase.Windup or SwingPhase.Swing)
@@ -752,13 +588,9 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
     public override bool? CanDamage() => damaging ? null : false;
 
     /// <summary>
-    ///     The real hitbox: the edge of the blade as a thick segment, swept across the gap between
-    ///     last tick's angle and this one so a fast strike cannot skip past a target.
+    ///     Tests the blade edge as a thick segment, swept across the angle covered since last tick so a fast sweep
+    ///     cannot step over a target. The segment starts at <see cref="SwordProfile.HiltFraction" /> of the reach.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="SwordProfile.HiltFraction" /> is where it starts -- the grip is not a weapon,
-    ///     and on something with a long handle that gap is most of the reason it has to be aimed.
-    /// </remarks>
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
     {
         if (!damaging)
@@ -774,8 +606,8 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         {
             float offset = MathHelper.Lerp(previousOffset, bladeOffset, i / (float)(samples - 1));
 
-            Vector2 hand = HandFor(offset);
-            Vector2 direction = DirectionOf(offset);
+            Vector2 hand = HandFor(offset, aim, extension);
+            Vector2 direction = aim.DirectionOf(offset);
 
             Vector2 start = hand + direction * reach * profile.HiltFraction;
             Vector2 end = hand + direction * reach;
@@ -789,19 +621,14 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         return false;
     }
 
-    /// <remarks>
-    ///     Damage is scaled through <see cref="NPC.HitModifiers.SourceDamage" /> so a step's
-    ///     multiplier composes with crits and class bonuses instead of replacing them. The hit
-    ///     direction is taken from facing rather than from the sweep, because a downward arc's own
-    ///     direction would fling everything it touches at the floor.
-    /// </remarks>
+    /// <remarks>Step damage goes through <see cref="NPC.HitModifiers.SourceDamage" /> so it composes with crits and bonuses.</remarks>
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
     {
         SwingStep step = Step;
 
         modifiers.SourceDamage *= step.DamageScale;
         modifiers.Knockback *= step.KnockbackScale;
-        modifiers.HitDirectionOverride = facing;
+        modifiers.HitDirectionOverride = aim.Facing;
     }
 
     #endregion
@@ -810,15 +637,17 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
 
     public override bool PreDraw(ref Color lightColor)
     {
+        Player owner = Owner;
+        Vector2 snap = PixelSnap(owner);
+
+        DrawTrails(snap);
+
         Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
 
-        bool flipX = facing < 0;
-        bool flipY = Owner.gravDir < 0f;
+        bool flipX = aim.Facing < 0;
+        bool flipY = owner.gravDir < 0f;
 
-        if (profile.ArcStyle == SwingArcStyle.Twirl)
-            DrawArc(ArcStrength, flipX, flipY);
-
-        // Pivot on the grip corner, mirrored into whichever corner the grip actually landed in.
+        // Pivot on the grip corner, mirrored into whichever corner the grip lands in.
         var origin = new Vector2(texture.Width * profile.Origin.X, texture.Height * profile.Origin.Y);
 
         if (flipX)
@@ -827,15 +656,13 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         if (flipY)
             origin.Y = texture.Height - origin.Y;
 
-        // A horizontal flip maps a texture angle to pi minus itself and a vertical one negates it,
-        // so the sprite's own rest angle has to follow the mirroring or the blade detaches from the
-        // arc it is supposed to be cutting.
+        // A horizontal flip maps a texture angle to pi minus itself; a vertical flip negates it.
         float correction = flipX ? MathHelper.Pi - profile.SpriteAngle : profile.SpriteAngle;
 
         if (flipY)
             correction = -correction;
 
-        Vector2 hand = HandPosition;
+        Vector2 hand = HandPosition + snap;
 
         DrawBehindBlade(Main.spriteBatch, hand, lightColor);
 
@@ -856,87 +683,12 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
         return false;
     }
 
-    /// <summary>
-    ///     Strength of the swing streak, 0 to 1.
-    /// </summary>
-    /// <remarks>
-    ///     Driven by how far the edge has swept rather than by the clock, for the reason
-    ///     <see cref="SweptFraction" /> gives: a time-based fade has the streak burning at full
-    ///     strength while a back-loaded swing is still hanging at the top of its arc having gone
-    ///     nowhere. Carried through the recover so it burns out behind the strike instead of
-    ///     blinking off on the frame the blade turns around.
-    /// </remarks>
-    protected float ArcStrength
+    /// <summary>Offset that rounds a world position onto the whole-pixel grid vanilla draws the owner's body layers on.</summary>
+    private static Vector2 PixelSnap(Player owner)
     {
-        get
-        {
-            float master = profile.ArcOpacity;
+        Vector2 screen = owner.position + new Vector2(0f, owner.gfxOffY) - Main.screenPosition;
 
-            if (master <= 0f)
-                return 0f;
-
-            return Phase switch
-            {
-                SwingPhase.Swing => master * EaseQuadOut.Ease(
-                    MathHelper.Clamp(SweptFraction / Math.Max(profile.ArcFadeIn, 0.01f), 0f, 1f)),
-
-                SwingPhase.Recover => master * (1f - Progress),
-
-                _ => 0f,
-            };
-        }
-    }
-
-    /// <summary>
-    ///     The swing streak, as two passes of an arc texture: a wide warm sweep for the shape of the
-    ///     swing and a tighter brighter one inside it for the edge.
-    /// </summary>
-    /// <remarks>
-    ///     Anchored by its leading tip rather than pinned at a fixed angle, so the arc trails the
-    ///     blade instead of hanging in the world waiting to be caught up with. Mirroring costs a
-    ///     little bookkeeping: a horizontal flip maps a texture angle to <c>Pi - angle</c> and a
-    ///     vertical one negates it, and the tip has to follow through both or the streak detaches
-    ///     and sweeps the wrong way. Additive and linearly sampled -- these are soft 512px
-    ///     gradients, and point sampling bands them into rings.
-    /// </remarks>
-    protected virtual void DrawArc(float strength, bool flipX, bool flipY)
-    {
-        if (strength <= 0f)
-            return;
-
-
-        float tip = profile.TwirlTip;
-
-        if (flipX)
-            tip = MathHelper.Pi - tip;
-
-        if (flipY)
-            tip = -tip;
-
-        float rotation = AngleOf(arcOffset) - tip;
-        Vector2 centre = HandFor(arcOffset) - Main.screenPosition;
-        float reach = Reach * profile.ArcReach;
-
-        Texture2D wide = Assets.Textures.VFX.SwordSwings.Twirl_01.Asset.Value;
-        Texture2D core = Assets.Textures.VFX.SwordSwings.twirl_03.Asset.Value;
-
-        SpriteEffects effects = Mirroring(flipX, flipY);
-
-        Main.spriteBatch.End();
-        Main.spriteBatch.Begin(
-            SpriteSortMode.Deferred,
-            BlendState.Additive,
-            SamplerState.LinearClamp,
-            DepthStencilState.None,
-            Main.Rasterizer,
-            null,
-            Main.GameViewMatrix.TransformationMatrix
-        );
-
-        Main.spriteBatch.Draw(wide, centre, null, profile.ArcColor * (strength * 0.75f), rotation, wide.Size() * 0.5f, reach / TWIRL_RADIUS, effects, 0f);
-        Main.spriteBatch.Draw(core, centre, null, profile.ArcCoreColor * strength, rotation, core.Size() * 0.5f, reach * TWIRL_CORE_INSET / TWIRL_CORE_RADIUS, effects, 0f);
-
-        Main.spriteBatch.RestartToDefault();
+        return screen.Floor() - screen;
     }
 
     private static SpriteEffects Mirroring(bool flipX, bool flipY)
@@ -954,138 +706,210 @@ public abstract class HeldSwordProjectile : ModProjectile, IDrawPrimitive
 
     #endregion
 
-    #region ribbon
+    #region trail
 
-    /// <summary>
-    ///     The vertex-ribbon arc, for profiles that ask for one.
-    /// </summary>
-    /// <remarks>
-    ///     Runs outside the sprite batch, from <see cref="PrimitiveRenderer" />. Silent for every
-    ///     other <see cref="SwingArcStyle" />, so a weapon pays for this only by choosing it.
-    /// </remarks>
-    public void DrawPrimitives()
+    /// <summary>A recorded sweep: the geometry its trail is rebuilt from, and a clock that keeps running after the sweep ends.</summary>
+    private struct SwingTrace
     {
-        if (profile.ArcStyle != SwingArcStyle.Ribbon)
+        public bool Active;
+        public int Sweep;
+        public AimFrame Aim;
+        public float From;
+        public float To;
+        public EaseFunction? Ease;
+        public float Length;
+
+        /// <summary>Ticks of the sweep the trail covers behind its head.</summary>
+        public float Window;
+
+        public float Reach;
+        public float Extend;
+
+        /// <summary>Ticks since the sweep started.</summary>
+        public float Clock;
+
+        public readonly float OffsetAt(float time)
+            => MathHelper.Lerp(From, To, (Ease ?? Linear).Ease(MathHelper.Clamp(time / Length, 0f, 1f)));
+    }
+
+    /// <summary>Records the sweep in progress and advances or expires earlier ones.</summary>
+    /// <remarks>Two slots, so a trail still clearing when the next sweep starts is not cut off.</remarks>
+    private void UpdateTraces()
+    {
+        traces ??= new SwingTrace[2];
+
+        bool sweeping = Phase == SwingPhase.Swing;
+        bool tracked = false;
+
+        for (int i = 0; i < traces.Length; i++)
+        {
+            ref SwingTrace trace = ref traces[i];
+
+            if (!trace.Active)
+                continue;
+
+            bool current = sweeping && trace.Sweep == sweepCount;
+
+            trace.Clock = current ? PhaseTimer : trace.Clock + 1f;
+            tracked |= current;
+
+            // The trail is built around the shoulder for its facing, which moves when the facing changes.
+            if (trace.Aim.Facing != aim.Facing || trace.Clock - trace.Window >= trace.Length)
+                trace.Active = false;
+        }
+
+        if (!sweeping || tracked || profile.TrailOpacity <= 0f)
             return;
 
-        ribbonOpacity = ArcStrength;
+        int slot = 0;
 
-        if (ribbonOpacity <= 0f)
-            return;
+        for (int i = 1; i < traces.Length; i++)
+        {
+            if (RecencyOf(traces[i]) < RecencyOf(traces[slot]))
+                slot = i;
+        }
 
-        Effect effect = ModContent.Request<Effect>(profile.RibbonShaderKey).Value;
+        float length = PhaseTicks;
 
-        if (effect is null)
-            return;
+        traces[slot] = new SwingTrace
+        {
+            Active = true,
+            Sweep = sweepCount,
+            Aim = aim,
+            From = SwingFromOffset,
+            To = SwingToOffset,
+            Ease = Step.Ease ?? profile.SwingEase,
+            Length = length,
+            Window = profile.TrailLength * length,
+            Reach = Reach,
+            Extend = profile.Extend * Step.Extend * TotalScale,
+            Clock = PhaseTimer,
+        };
 
-        BuildRibbon();
-        ApplyRibbonParameters(effect);
-
-        ribbon?.Render(effect);
+        static int RecencyOf(in SwingTrace trace) => trace.Active ? trace.Sweep : int.MinValue;
     }
 
     /// <summary>
-    ///     Lays the ribbon's spine along the arc the blade has swept.
+    ///     Draws recorded sweeps as bands from <see cref="SwordProfile.TrailInner" /> to <see cref="SwordProfile.TrailOuter" />
+    ///     of the reach. Ends the running sprite batch for the vertex draw and resumes it with the same parameters.
     /// </summary>
-    /// <remarks>
-    ///     <para>
-    ///         Generated from angles rather than from a history of tip positions, which is what makes
-    ///         it exact at any speed. A position cache samples once per tick, so a six-tick dagger
-    ///         swing would have six points to describe a curve with -- and those six would be spaced
-    ///         by however far the blade happened to move, which under a back-loaded ease means five
-    ///         of them bunched at the start and one at the end.
-    ///     </para>
-    ///     <para>
-    ///         Every point uses the current hand, so the ribbon is a true arc about the grip rather
-    ///         than a smear that stretches when the player walks. The tail is clamped to the start of
-    ///         the sweep so the streak grows out of the swing instead of being born at full length.
-    ///     </para>
-    /// </remarks>
-    private void BuildRibbon()
+    private void DrawTrails(Vector2 snap)
     {
-        int points = profile.RibbonPointCount;
+        if (traces is null || profile.TrailOpacity <= 0f)
+            return;
 
-        ribbonPositions ??= new Vector2[points];
-        ribbon ??= new VertexTrail(points, RibbonWidthAt, RibbonColorAt);
+        Effect? effect = null;
+        SpriteBatch batch = Main.spriteBatch;
+        SpriteBatchState state = default;
+        bool resume = false;
 
-        float from = SwingFromOffset;
-        float head = arcOffset;
-        float tail = head - MathF.Sign(SwingToOffset - from) * profile.RibbonSweep;
+        for (int i = 0; i < traces.Length; i++)
+        {
+            if (!BuildTrail(traces[i], out float opacity))
+                continue;
 
-        tail = SwingToOffset > from ? Math.Max(tail, from) : Math.Min(tail, from);
+            if (effect is null)
+            {
+                effect = Assets.Shaders.SwingTrail.Asset.Value;
 
-        Vector2 hand = HandPosition;
-        float reach = Reach * profile.ArcReach;
+                if (effect is null)
+                    return;
+
+                ApplyTrailParameters(effect, snap);
+
+                if (batch.beginCalled)
+                {
+                    state = SpriteBatchState.Capture(batch);
+                    batch.End();
+                    resume = true;
+                }
+            }
+
+            effect.Parameters["opacity"]?.SetValue(opacity);
+            trailStrip!.Render(effect, BlendState.AlphaBlend);
+        }
+
+        if (resume)
+            state.Begin(batch);
+    }
+
+    /// <summary>Fills <see cref="trailStrip" /> for a trace. Returns false if nothing visible remains.</summary>
+    /// <remarks>Each point's grip is placed where it was at that angle, so the band follows the tip's actual path.</remarks>
+    private bool BuildTrail(in SwingTrace trace, out float opacity)
+    {
+        opacity = 0f;
+
+        if (!trace.Active)
+            return false;
+
+        float head = trace.OffsetAt(Math.Min(trace.Clock, trace.Length));
+        float tail = trace.OffsetAt(Math.Max(trace.Clock - trace.Window, 0f));
+
+        opacity = profile.TrailOpacity * MathHelper.Clamp(Math.Abs(head - tail) / TRAIL_FULL_ARC, 0f, 1f);
+
+        if (opacity <= 0.01f)
+            return false;
+
+        int points = profile.TrailPointCount;
+
+        if (trailStrip is null || trailStrip.PointCount != points)
+            trailStrip = new VertexStrip(points);
+
+        float span = trace.To - trace.From;
 
         for (int i = 0; i < points; i++)
-            ribbonPositions[i] = hand + DirectionOf(MathHelper.Lerp(tail, head, i / (float)(points - 1))) * reach;
+        {
+            float along = i / (points - 1f);
+            float offset = MathHelper.Lerp(tail, head, along);
+            float swept = Math.Abs(span) < 0.0001f ? 1f : MathHelper.Clamp((offset - trace.From) / span, 0f, 1f);
 
-        ribbon.Positions = ribbonPositions;
+            Vector2 direction = trace.Aim.DirectionOf(offset);
+            Vector2 pivot = HandFor(offset, trace.Aim, trace.Extend * EaseQuadOut.Ease(swept));
+            float fade = along * along;
+
+            trailStrip.SetPoint(
+                i,
+                pivot + direction * (trace.Reach * profile.TrailOuter),
+                pivot + direction * (trace.Reach * profile.TrailInner),
+                Math.Abs(offset - trace.From) / TRAIL_TEXTURE_ARC,
+                new Color(fade, fade, fade)
+            );
+        }
+
+        return true;
     }
 
-    /// <summary>
-    ///     Feeds the arc shader.
-    /// </summary>
-    /// <remarks>
-    ///     Both parameter sets are offered and every set is null-guarded, so the same code drives the
-    ///     stock primitive shader -- which takes its transform as <c>uWorldViewProjection</c> and has
-    ///     it filled in by <see cref="VertexTrail.Render" /> -- and <c>pixelTrail</c>, which wants
-    ///     the matrix and its pixelation numbers by hand. A shader simply ignores what it does not
-    ///     declare, which is what makes <see cref="SwordProfile.RibbonShader" /> a one-field swap.
-    ///     The clock is wrapped and slowed on purpose: the stock shader scrolls its sampler by
-    ///     <c>time</c> against a clamped address mode, and an unbounded one parks the whole ribbon on
-    ///     the last column of the texture.
-    /// </remarks>
-    private void ApplyRibbonParameters(Effect effect)
+    /// <summary>Sets the trail shader parameters shared by every trace this frame.</summary>
+    private void ApplyTrailParameters(Effect effect, Vector2 snap)
     {
+        Matrix transform = Matrix.CreateTranslation(new Vector3(snap - Main.screenPosition, 0f))
+                           * Main.GameViewMatrix.TransformationMatrix
+                           * Matrix.CreateOrthographicOffCenter(0f, Main.screenWidth, Main.screenHeight, 0f, -1f, 1f);
 
-        Matrix world = Matrix.CreateTranslation(-Main.screenPosition.ToVector3());
-        Matrix view = Main.GameViewMatrix.TransformationMatrix;
-        Matrix projection = Matrix.CreateOrthographicOffCenter(0, Main.screenWidth, Main.screenHeight, 0, -1, 1);
+        Texture2D? texture = profile.TrailTexture is { } key ? ModContent.Request<Texture2D>(key).Value : null;
 
-        effect.Parameters["time"]?.SetValue(Main.GameUpdateCount % 300 / 300f * 0.2f);
-        effect.Parameters["noiseSpeed"]?.SetValue(0.35f);
-        effect.Parameters["sampleTexture"]?.SetValue(ModContent.Request<Texture2D>(profile.RibbonTextureKey).Value);
-        effect.Parameters["noiseTexture"]?.SetValue(ModContent.Request<Texture2D>(profile.RibbonNoiseKey).Value);
-
-        effect.Parameters["repeats"]?.SetValue(1f);
-        effect.Parameters["pixelation"]?.SetValue(2f);
-        effect.Parameters["resolution"]?.SetValue(new Vector2(Main.screenWidth, Main.screenHeight));
-        effect.Parameters["transformMatrix"]?.SetValue(world * view * projection);
+        effect.Parameters["transformMatrix"]?.SetValue(transform);
+        effect.Parameters["bodyColor"]?.SetValue(profile.TrailColor.ToVector4());
+        effect.Parameters["edgeColor"]?.SetValue(profile.TrailEdgeColor.ToVector4());
+        effect.Parameters["edgeWidth"]?.SetValue(TRAIL_EDGE_WIDTH);
+        effect.Parameters["sampleTexture"]?.SetValue(texture ?? TextureAssets.MagicPixel.Value);
     }
-
-    /// <summary>Widest at the blade and tapering to nothing at the tail. See <see cref="SwordProfile.RibbonTaper" />.</summary>
-    private float RibbonWidthAt(float factor)
-        => profile.RibbonWidth * TotalScale * MathF.Pow(factor, profile.RibbonTaper);
-
-    /// <inheritdoc cref="RibbonWidthAt" />
-    private Color RibbonColorAt(float factor)
-        => profile.ArcColor * (ribbonOpacity * MathF.Pow(factor, 2f));
 
     #endregion
 
     #region hooks
 
-    /// <summary>
-    ///     A sweep has just opened. Where the whoosh, the dust, and any projectile thrown off the
-    ///     blade belong.
-    /// </summary>
-    /// <remarks>
-    ///     Runs on every client, because the swing itself does. Guard anything that must happen once
-    ///     -- spawning a projectile wants <c>Main.myPlayer == Projectile.owner</c>.
-    /// </remarks>
+    /// <summary>A sweep has started. Runs on every client; guard anything that must happen once.</summary>
     protected virtual void OnSwingStart(Player owner, SwingStep step) { }
 
-    /// <summary>The sweep has finished, hit or miss. The natural place to punctuate a finisher.</summary>
-    /// <inheritdoc cref="OnSwingStart" />
+    /// <summary>A sweep has ended, hit or miss. Runs on every client.</summary>
     protected virtual void OnSwingEnd(Player owner, SwingStep step) { }
 
-    /// <summary>Per-tick hook for anything the weapon does while it is out: glow, hum, drip.</summary>
-    /// <inheritdoc cref="OnSwingStart" />
+    /// <summary>Called every tick the weapon is out. Runs on every client.</summary>
     protected virtual void WhileHeld(Player owner) { }
 
-    /// <summary>Drawn under the blade, in the batch already running.</summary>
-    /// <param name="hand">World position of the grip, which is what the blade pivots about.</param>
+    /// <summary>Drawn under the blade, in the running batch.</summary>
+    /// <param name="hand">World position of the grip, pixel-snapped like the blade.</param>
     protected virtual void DrawBehindBlade(SpriteBatch spriteBatch, Vector2 hand, Color lightColor) { }
 
     /// <inheritdoc cref="DrawBehindBlade" />
