@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-public class MagnoliaSolutionItem : SolutionItem
+public class MagnoliaSolutionItem : SolventItem
 {
     public MagnoliaSolutionItem()
     {

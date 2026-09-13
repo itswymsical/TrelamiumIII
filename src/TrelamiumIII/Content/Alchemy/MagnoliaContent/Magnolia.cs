@@ -4,12 +4,10 @@ using Terraria.GameContent;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
 using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
-using TrelamiumIII.Core.Gas;
-using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
-using TrelamiumIII.Content.Rarities;
 
 namespace TrelamiumIII.Content.Alchemy.MagnoliaContent;
 

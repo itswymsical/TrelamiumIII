@@ -36,8 +36,14 @@ public sealed class AlchemyVariant
     /// <summary>Required solvent infusion; None means plain solvent only, so one solvent type can key different recipes.</summary>
     public ChemicalQuality SolventInfusion { get; init; }
 
-    /// <summary>Infusion stamped onto the output. Infused outputs are reagents, so they skip brew branding.</summary>
+    /// <summary>Infusion stamped onto the output. Infused outputs are plain solvents, so they skip brew branding.</summary>
     public ChemicalQuality OutputInfusion { get; init; }
+
+    /// <summary>Whether brewing returns the solvent's bottle. Null derives it; see <see cref="AlchemyRecipe.ReturnsBottle" />.</summary>
+    public bool? ReturnsBottle { get; init; }
+
+    /// <summary>Non-null excludes this variant from recipe validation; the value is logged as the justification.</summary>
+    public string? SuppressValidation { get; init; }
 
     /// <summary>
     /// One input combination for a shared output (see <see cref="AlchemyRecipeRegistry.RegisterVariants"/>). Each component carries
@@ -60,6 +66,11 @@ public sealed class AlchemyResolution
     public AlchemyRecipe? Recipe { get; init; }
 
     public Item Output { get; init; } = new();
+
+    /// <summary>Composition of the slotted ingredients; set even when no recipe matches.</summary>
+    public BrewComposition Composition { get; init; }
+
+    public bool ReturnsBottle => Found && Recipe!.ReturnsBottle;
 
     /// <summary>Units taken from each solute slot per batch unit; 0 for slots no recipe wants.</summary>
     public int[] ComponentCosts { get; init; } = Array.Empty<int>();
@@ -112,9 +123,8 @@ public static class AlchemyRecipeRegistry
     /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
-    /// <summary>Registers several input combinations that share one (mode, vial, output) target.</summary>
+    /// <summary>Registers several input combinations that share one (solvent, output) target.</summary>
     public static void RegisterVariants(
-        AlchemyMode mode,
         int inputType,
         int outputType,
         params AlchemyVariant[] variants)
@@ -135,18 +145,19 @@ public static class AlchemyRecipeRegistry
 
             Register(new AlchemyRecipe
             {
-                Mode = mode,
                 SolventType = inputType,
                 SolventInfusion = v.SolventInfusion,
                 OutputItemType = outputType,
                 Components = v.Components,
-                CreateOutput = custom ?? (() =>
+                ReturnsBottleOverride = v.ReturnsBottle,
+                SuppressValidation = v.SuppressValidation,
+                CreateOutput = custom != null ? _ => custom() : composition =>
                 {
                     var r = new Item();
                     r.SetDefaults(outputType);
                     r.stack = variantStack;
 
-                    // Infused outputs are suffixed solvents (reagents), so stamping
+                    // Infused outputs are suffixed solvents, so stamping
                     // a brew here would wrongly brand e.g. Bottled Water via its healLife.
                     if (outputInfusion != ChemicalQuality.None)
                     {
@@ -162,7 +173,6 @@ public static class AlchemyRecipeRegistry
                         int pot = potency > 0 ? potency : AutoPotency(inputType, comps);
                         if (pot > 0)
                         {
-                            var domain = AlmanacEntryRegistry.For(outputType).Principle;
                             var effect = r.buffType > 0
                                 ? BrewTuning.Create(r.buffType, r.buffTime, pot)
                                 : BrewTuning.CreateRestoration(pot);
@@ -170,13 +180,13 @@ public static class AlchemyRecipeRegistry
                             if (durationOverride > 0) effect = effect with { DurationTicks = durationOverride };
                             if (maxOreTier > 0) effect = effect with { Params = effect.Params with { MaxOreTier = maxOreTier } };
 
-                            var brew = new PotionBrew { Domain = domain, Effects = { effect } };
+                            var brew = new PotionBrew { Principle = composition.Principle, Effects = { effect } };
                             augment?.Invoke(new BrewBuilder(brew, r.buffTime));
                             r.GetGlobalItem<BrewGlobalItem>().Brew = brew;
                         }
                     }
                     return r;
-                })
+                },
             });
         }
     }
@@ -211,18 +221,16 @@ public static class AlchemyRecipeRegistry
         return count == 0 ? 0 : sum / count;
     }
 
-    /// <summary>Resolves the vial and solute slots into a brew, with the mode taken from the vial.</summary>
-    public static AlchemyResolution Resolve(Item vial, Item[] components)
-        => Resolve(vial, components, AlchemyIngredients.GetModeForSolvent(vial));
-
     /// <summary>
-    /// As <see cref="Resolve(Item, Item[])"/> with an explicit mode. The fitting recipe drawing the most solute wins; ties go to registration order.
+    /// Resolves the vial and solute slots against every recipe. The fitting recipe drawing the most solute wins; ties go to
+    /// registration order.
     /// </summary>
-    public static AlchemyResolution Resolve(Item vial, Item[] components, AlchemyMode mode)
+    public static AlchemyResolution Resolve(Item vial, Item[] components)
     {
-        if (mode == AlchemyMode.None) return AlchemyResolution.None;
         if (vial == null || vial.IsAir) return AlchemyResolution.None;
         if (components == null || components.Length == 0) return AlchemyResolution.None;
+
+        var composition = BrewCompositions.Of(vial, components);
 
         AlchemyRecipe? best = null;
         int bestDemand = -1;   // so even a hypothetical component-free recipe can win
@@ -236,8 +244,6 @@ public static class AlchemyRecipeRegistry
 
         foreach (var recipe in _recipes)
         {
-            if (recipe.Mode != mode) continue;
-
             // Matching is instance-aware (per-item infusions and stacks), so the slot array
             // goes through as-is rather than being flattened to type ids.
             if (!recipe.TryMatch(vial, components, costs, out var miss))
@@ -260,11 +266,12 @@ public static class AlchemyRecipeRegistry
 
         // No match, no output: products like Inert Solution need explicit recipes, not a catch-all. (The steeping fallback is
         // parked below with the rest of the infusion front-end.)
-        var output = best?.CreateOutput?.Invoke() ?? new Item();
+        var output = best?.CreateOutput?.Invoke(composition) ?? new Item();
         if (output.IsAir)
         {
             return new AlchemyResolution
             {
+                Composition = composition,
                 Shortfall = shortfall,
                 ComponentCosts = shortfallCosts,
             };
@@ -274,6 +281,7 @@ public static class AlchemyRecipeRegistry
         {
             Recipe = best,
             Output = output,
+            Composition = composition,
             ComponentCosts = bestCosts,
         };
     }
@@ -281,10 +289,6 @@ public static class AlchemyRecipeRegistry
     /// <summary>Just the output item; air when nothing matches.</summary>
     public static Item ResolveOutput(Item vial, Item[] components)
         => Resolve(vial, components).Output;
-
-    /// <inheritdoc cref="ResolveOutput(Item, Item[])"/>
-    public static Item ResolveOutput(Item vial, Item[] components, AlchemyMode mode)
-        => Resolve(vial, components, mode).Output;
 
     // Tie-break order when solutes share several flags, following the three axes.
     private static readonly ChemicalQuality[] _infusionPriority =
@@ -294,9 +298,8 @@ public static class AlchemyRecipeRegistry
         ChemicalQuality.Volatile, ChemicalQuality.Kinetic,
     ];
 
-    private static Item TryInfusionFallback(Item solvent, List<Item> solutes, AlchemyMode mode)
+    private static Item TryInfusionFallback(Item solvent, List<Item> solutes)
     {
-        if (mode != AlchemyMode.Synthesis) return new Item();
         if (solvent.type is not (ItemID.BottledWater or ItemID.BottledHoney)) return new Item();
         if (SolutionGlobalItem.GetInfusion(solvent) != ChemicalQuality.None) return new Item();
         if (solutes.Count == 0) return new Item();
@@ -326,24 +329,15 @@ public static class AlchemyRecipeRegistry
 public static class AlchemyIngredients
 {
     private static HashSet<int> _substances;
-    private static Dictionary<int, AlchemyMode> _solventModes;
+    private static HashSet<int> _solvents;
     private static List<int> _allIngredients;
 
     /// <summary>Discard derived caches. Called on mod unload via <see cref="ChemistryRecipeSystem"/>.</summary>
     public static void Clear()
     {
         _substances = null;
-        _solventModes = null;
+        _solvents = null;
         _allIngredients = null;
-    }
-
-    /// <summary>The mode a vial activates, or <see cref="AlchemyMode.None"/> for empty items or items no recipe uses as a vial.</summary>
-    public static AlchemyMode GetModeForSolvent(Item vial)
-    {
-        if (vial == null || vial.IsAir) return AlchemyMode.None;
-
-        EnsureBuilt();
-        return _solventModes.TryGetValue(vial.type, out var mode) ? mode : AlchemyMode.None;
     }
 
     public static bool IsValidSolvent(Item item)
@@ -351,7 +345,7 @@ public static class AlchemyIngredients
         if (item == null || item.IsAir) return false;
 
         EnsureBuilt();
-        return _solventModes.ContainsKey(item.type);
+        return _solvents.Contains(item.type);
     }
 
     public static bool IsValidSubstance(Item item)
@@ -366,7 +360,7 @@ public static class AlchemyIngredients
     {
         if (itemType <= 0) return false;
         EnsureBuilt();
-        return _solventModes.ContainsKey(itemType);
+        return _solvents.Contains(itemType);
     }
 
     public static bool IsSubstanceType(int itemType)
@@ -389,12 +383,11 @@ public static class AlchemyIngredients
         if (_substances != null) return;
 
         var components = new HashSet<int>();
-        var vialModes = new Dictionary<int, AlchemyMode>();
+        var solvents = new HashSet<int>();
 
         foreach (var recipe in AlchemyRecipeRegistry.All)
         {
-            // First mode wins; conflicting registrations are a data bug, not something to merge.
-            vialModes.TryAdd(recipe.SolventType, recipe.Mode);
+            solvents.Add(recipe.SolventType);
 
             foreach (var matcher in recipe.Components)
             {
@@ -411,29 +404,15 @@ public static class AlchemyIngredients
         }
 
         _substances = components;
-        _solventModes = vialModes;
+        _solvents = solvents;
 
         var all = new HashSet<int>(components);
-        foreach (int vial in vialModes.Keys) all.Add(vial);
+        all.UnionWith(solvents);
         _allIngredients = all
             .Where(t => t > 0)
             .OrderBy(t => Lang.GetItemNameValue(t))
             .ToList();
     }
-}
-
-public enum AlchemyMode
-{
-    None,
-
-    /// <summary>Modifying existing items, such as reforging or enchanting.</summary>
-    Augmentation,
-
-    /// <summary>Making potions and elixirs.</summary>
-    Synthesis,
-
-    /// <summary>Making utilities and weapons.</summary>
-    Alchemy
 }
 
 /// <summary>
@@ -491,10 +470,9 @@ public readonly record struct AlchemyShortfall(int ItemType, int Have, int Requi
     public bool Exists => ItemType > 0;
 }
 
-/// <summary>One recipe: (mode, vial, components) to output, with components matched as an unordered multiset.</summary>
+/// <summary>One recipe: (solvent, components) to output, with components matched as an unordered multiset.</summary>
 public sealed class AlchemyRecipe
 {
-    public AlchemyMode Mode { get; init; }
     public int SolventType { get; init; }
 
     /// <summary>Required solvent infusion; None means plain solvent only.</summary>
@@ -506,8 +484,22 @@ public sealed class AlchemyRecipe
     /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own quantity.</summary>
     public ComponentMatcher[] Components { get; init; } = Array.Empty<ComponentMatcher>();
 
-    /// <summary>Output factory, for dynamic results like custom stacks, prefixes or augmented potion stats.</summary>
-    public Func<Item> CreateOutput { get; init; }
+    /// <summary>Builds the output from the composition of the slotted ingredients.</summary>
+    public Func<BrewComposition, Item> CreateOutput { get; init; }
+
+    /// <inheritdoc cref="AlchemyVariant.ReturnsBottle" />
+    public bool? ReturnsBottleOverride { get; init; }
+
+    /// <inheritdoc cref="AlchemyVariant.SuppressValidation" />
+    public string? SuppressValidation { get; init; }
+
+    /// <summary>
+    /// <see cref="ReturnsBottleOverride" />, else true when a solvent other than an empty Bottle produces a solute.
+    /// Only evaluate after load: <see cref="ChemicalRoles.Of(int)" /> caches its inference.
+    /// </summary>
+    public bool ReturnsBottle => ReturnsBottleOverride ?? (SolventType != ItemID.Bottle
+        && ChemicalRoles.Of(SolventType) == ChemicalRole.Solvent
+        && ChemicalRoles.Of(OutputItemType) == ChemicalRole.Solute);
 
     /// <summary>Solute units consumed per batch unit; ranks matches so a heavier stack reaches the heavier recipe.</summary>
     public int TotalQuantity

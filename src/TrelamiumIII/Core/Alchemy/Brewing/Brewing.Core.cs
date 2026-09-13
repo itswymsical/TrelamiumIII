@@ -8,7 +8,8 @@ namespace TrelamiumIII.Core.Alchemy.Brewing;
 /// </summary>
 public sealed class PotionBrew
 {
-    public PrincipleType Domain { get; init; }
+    /// <summary>Principle resolved from the ingredients that produced this brew.</summary>
+    public PrincipleType Principle { get; init; }
 
     /// <summary>The effects this potion applies on consume. Never empty for a branded item.</summary>
     public List<AlchemicalEffect> Effects { get; init; } = new();
@@ -17,15 +18,15 @@ public sealed class PotionBrew
     public AlchemicalEffect Primary => Effects[0];
 
     /// <summary>Deep copy (effects are value types, so a fresh list is a complete clone).</summary>
-    public PotionBrew Clone() => new() { Domain = Domain, Effects = new List<AlchemicalEffect>(Effects) };
+    public PotionBrew Clone() => new() { Principle = Principle, Effects = new List<AlchemicalEffect>(Effects) };
 
     public override bool Equals(object? obj) =>
-        obj is PotionBrew o && Domain == o.Domain && Effects.SequenceEqual(o.Effects);
+        obj is PotionBrew o && Principle == o.Principle && Effects.SequenceEqual(o.Effects);
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        hash.Add(Domain);
+        hash.Add(Principle);
         foreach (var e in Effects) hash.Add(e);
         return hash.ToHashCode();
     }

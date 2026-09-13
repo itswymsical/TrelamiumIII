@@ -1,11 +1,12 @@
 using ModLiquidLib.Utils;
 using TrelamiumIII.Content.Liquids;
+using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 /// <summary>
-///     Solvents for the vial slot and the solutions that come out, each a <see cref="ChemicalItem" /> instance.
+///     Solvent-slot items and bottled solutes, each a <see cref="ChemicalItem" /> instance.
 ///     Internal names keep the old <c>...Item</c> spelling; <see cref="ChemicalItem.LegacyNames" /> covers earlier names.
 /// </summary>
 public sealed class Solution : ICustomAutoload
@@ -13,29 +14,34 @@ public sealed class Solution : ICustomAutoload
     /// <summary>Sprites are named after the item, in this folder.</summary>
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Alchemy/Solutions/";
 
-    #region Solvents
+    /// <summary>Texture for items with no sprite in <see cref="DIRECTORY" />.</summary>
+    private static readonly string Placeholder = AssetReferences.Assets.Textures.PlaceholderSolute.KEY;
 
-    /// <summary>Salt water; boiled down, it starts the salt line.</summary>
+    #region Base solvents
+
     public static int Brine { get; private set; }
 
-    /// <summary>Makes whatever it touches easier to set alight.</summary>
     public static int BottledOil { get; private set; }
 
     #endregion
 
-    #region Solutions
+    #region Acids
 
-    /// <summary>The neutral base the rest of the tree is built on.</summary>
+    public static int OilOfVitriol { get; private set; }
+
+    public static int AquaFortis { get; private set; }
+
+    public static int AquaRegia { get; private set; }
+
+    #endregion
+
+    #region Brewed solvents
+
     public static int Inert { get; private set; }
 
     public static int Dead { get; private set; }
 
-    public static int Arcane { get; private set; }
-
     public static int BloodtoothExtract { get; private set; }
-
-    /// <summary>Pulped plant matter; the one solute here, bottled like the rest.</summary>
-    public static int FibrousSlurry { get; private set; }
 
     #endregion
 
@@ -57,21 +63,28 @@ public sealed class Solution : ICustomAutoload
 
     #endregion
 
+    #region Solutes
+
+    public static int FibrousSlurry { get; private set; }
+
+    #endregion
+
     public static void Autoload(Mod mod)
     {
-        LoadSolvents(mod);
-        LoadSolutions(mod);
+        LoadBaseSolvents(mod);
+        LoadAcids(mod);
+        LoadBrewedSolvents(mod);
         LoadTonics(mod);
+        LoadSolutes(mod);
     }
 
-    private static void LoadSolvents(Mod mod)
+    private static void LoadBaseSolvents(Mod mod)
     {
         Brine = Add(mod, new SolventItem("BrineBottleItem")
         {
             Rare = ItemRarityID.Blue,
             Potency = 2,
             Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
-            Principle = PrincipleType.Harmony,
             Hidden = false,
             LegacyNames = ["BrineBottle"],
             Recipes = self => self.CreateRecipe()
@@ -85,7 +98,6 @@ public sealed class Solution : ICustomAutoload
             Value = Item.sellPrice(silver: 2),
             Potency = 2,
             Quality = ChemicalQuality.Volatile,
-            Principle = PrincipleType.Martial,
             LegacyNames = ["BottledOil"],
             Recipes = self => self.CreateRecipe()
                 .AddIngredient(ItemID.Bottle)
@@ -94,9 +106,39 @@ public sealed class Solution : ICustomAutoload
         });
     }
 
-    private static void LoadSolutions(Mod mod)
+    private static void LoadAcids(Mod mod)
     {
-        Inert = Add(mod, new SolutionItem("InertSolutionItem")
+        OilOfVitriol = Add(mod, new SolventItem("OilOfVitriolItem")
+        {
+            TexturePath = Placeholder,
+            Rare = ItemRarityID.Blue,
+            Value = Item.sellPrice(silver: 2),
+            Potency = 4,
+            Quality = ChemicalQuality.Acidic,
+        });
+
+        AquaFortis = Add(mod, new SolventItem("AquaFortisItem")
+        {
+            TexturePath = Placeholder,
+            Rare = ItemRarityID.Blue,
+            Value = Item.sellPrice(silver: 5),
+            Potency = 4,
+            Quality = ChemicalQuality.Acidic | ChemicalQuality.Volatile,
+        });
+
+        AquaRegia = Add(mod, new SolventItem("AquaRegiaItem")
+        {
+            TexturePath = Placeholder,
+            Rare = ItemRarityID.Orange,
+            Value = Item.sellPrice(silver: 20),
+            Potency = 5,
+            Quality = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
+        });
+    }
+
+    private static void LoadBrewedSolvents(Mod mod)
+    {
+        Inert = Add(mod, new SolventItem("InertSolutionItem")
         {
             Rare = ItemRarityID.Gray,
             Potency = 1,
@@ -105,7 +147,7 @@ public sealed class Solution : ICustomAutoload
             Hidden = false,
         });
 
-        Dead = Add(mod, new SolutionItem("DeadSolutionItem")
+        Dead = Add(mod, new SolventItem("DeadSolutionItem")
         {
             Rare = ItemRarityID.Gray,
             Potency = 4,
@@ -114,15 +156,7 @@ public sealed class Solution : ICustomAutoload
             AlmanacRarity = ItemRarityID.Blue,
         });
 
-        Arcane = Add(mod, new SolutionItem("ArcaneSolution")
-        {
-            Rare = ItemRarityID.Blue,
-            Potency = 1,
-            Quality = ChemicalQuality.Catalytic,
-            AlmanacRarity = ItemRarityID.Blue,
-        });
-
-        BloodtoothExtract = Add(mod, new SolutionItem("BloodtoothExtractItem")
+        BloodtoothExtract = Add(mod, new SolventItem("BloodtoothExtractItem")
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(copper: 40),
@@ -132,7 +166,22 @@ public sealed class Solution : ICustomAutoload
             AlmanacRarity = ItemRarityID.Green,
             LegacyNames = ["BloodtoothExtract"],
         });
+    }
 
+    /// <summary>One tonic per <see cref="PrincipleType" />, differing only in name and principle.</summary>
+    private static void LoadTonics(Mod mod)
+    {
+        HarmoniousTonic = AddTonic(mod, "HarmoniousTonic", PrincipleType.Harmony);
+        VitalTonic = AddTonic(mod, "VitalTonic", PrincipleType.Vital);
+        SpecularTonic = AddTonic(mod, "SpecularTonic", PrincipleType.Specular);
+        MartialTonic = AddTonic(mod, "MartialTonic", PrincipleType.Martial);
+        FortunateTonic = AddTonic(mod, "FortunateTonic", PrincipleType.Fortune);
+        BriskTonic = AddTonic(mod, "BriskTonic", PrincipleType.Brisk);
+        BaneTonic = AddTonic(mod, "BaneTonic", PrincipleType.Bane);
+    }
+
+    private static void LoadSolutes(Mod mod)
+    {
         FibrousSlurry = Add(mod, new SoluteItem("FibrousSlurryItem")
         {
             Potency = 1,
@@ -142,25 +191,14 @@ public sealed class Solution : ICustomAutoload
         });
     }
 
-    /// <summary>One tonic per <see cref="PrincipleType" />, identical but for name: station outputs and potion vials.</summary>
-    private static void LoadTonics(Mod mod)
-    {
-        HarmoniousTonic = AddTonic(mod, "HarmoniousTonic");
-        VitalTonic = AddTonic(mod, "VitalTonic");
-        SpecularTonic = AddTonic(mod, "SpecularTonic");
-        MartialTonic = AddTonic(mod, "MartialTonic");
-        FortunateTonic = AddTonic(mod, "FortunateTonic");
-        BriskTonic = AddTonic(mod, "BriskTonic");
-        BaneTonic = AddTonic(mod, "BaneTonic");
-    }
-
     /// <param name="tonic">The old internal name, which is also the legacy name.</param>
-    /// <remarks>Rated one star explicitly: that was their fallback potency, and 0 would read as "unrated".</remarks>
-    private static int AddTonic(Mod mod, string tonic) =>
-        Add(mod, new SolutionItem(tonic + "Item")
+    /// <remarks>Rated one star explicitly: 0 would draw as unrated.</remarks>
+    private static int AddTonic(Mod mod, string tonic, PrincipleType principle) =>
+        Add(mod, new SolventItem(tonic + "Item")
         {
             Value = Item.sellPrice(silver: 2),
             Potency = AlmanacEntryRegistry.DefaultIngredientPotency,
+            Principle = principle,
             LegacyNames = [tonic],
         });
 

@@ -8,7 +8,7 @@ AlmanacUI: {
 	Hint5: Click to flip da page.
 	SynthesisRecipes: Synthesis Recipes
 	AugmentationRecipes: Augmentation Recipes
-	AlchemyRecipes: Alchemy Recipes
+	RefinementRecipes: Refinement Recipes
 	AllRecipes: All Recipes
 	RecipeVariant: 1 recipe variant
 	RecipeVariants: recipe variants

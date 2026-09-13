@@ -54,6 +54,9 @@ public static class AdvancedAlchemyStationRenderer
     public static Vector2 VialSlotWorldOffset => CompositeToCell + ChamberLiquidOffset + new Vector2(32f, 0f); // chamber fluid centre
     public static Vector2 OutputSlotWorldOffset => CompositeToCell + BaseEdgeOutputOffset + new Vector2(11f, 11f);
 
+    /// <summary>Right of the output slot, outside the station sprite's bounds.</summary>
+    public static Vector2 BottleReturnSlotWorldOffset => OutputSlotWorldOffset + new Vector2(38f, 0f);
+
     // heat plate sheet: 64x34 = 3 frames of 64x10 with 2px vertical padding
     private const int HeatPlateFrameWidth = 64;
     private const int HeatPlateFrameHeight = 10;

@@ -66,7 +66,7 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
     /// <summary>The chemical tag(s) this item carries. <see cref="AlmanacEntry.Chemical" />.</summary>
     public ChemicalQuality Quality;
 
-    /// <summary>Thematic classification, for the book's flavour and sorting. <see cref="AlmanacEntry.Principle" />.</summary>
+    /// <summary><see cref="AlmanacEntry.Principle" />. None on a solute marks it as a reagent.</summary>
     public PrincipleType Principle;
 
     /// <summary>The rarity the book judges this at, which need not be <see cref="Rare" />. <see cref="AlmanacEntry.Rarity" />.</summary>
@@ -119,19 +119,19 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
     }
 }
 
-/// <summary>A reagent: dissolved into a solvent to make something. <see cref="ChemicalRole.Solute" />.</summary>
+/// <summary>Solute-slot item. With a principle of None it is a reagent. <see cref="ChemicalRole.Solute" />.</summary>
 public class SoluteItem(string? name = null) : ChemicalItem(name)
 {
     public override ChemicalRole ChemicalRole => ChemicalRole.Solute;
 }
 
-/// <summary>What solutes are dissolved into -- the vial slot. <see cref="ChemicalRole.Solvent" />.</summary>
+/// <summary>Solvent-slot item. A principle is only valid if a recipe produces it from solutes. <see cref="ChemicalRole.Solvent" />.</summary>
 public class SolventItem(string? name = null) : ChemicalItem(name)
 {
     public override ChemicalRole ChemicalRole => ChemicalRole.Solvent;
 }
 
-/// <summary>What comes out of the station. <see cref="ChemicalRole.Solution" />.</summary>
+/// <summary>Terminal output. In the solvent slot it makes the brew an augmentation. <see cref="ChemicalRole.Solution" />.</summary>
 public class SolutionItem(string? name = null) : ChemicalItem(name)
 {
     public override ChemicalRole ChemicalRole => ChemicalRole.Solution;

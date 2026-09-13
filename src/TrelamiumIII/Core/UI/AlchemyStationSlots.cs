@@ -35,8 +35,7 @@ internal static class AlchemySlotArt
 }
 
 /// <summary>
-/// Accepts any item type referenced as a component by at least one registered alchemy recipe.
-/// Three of these sit on the alchemy station UI. Locked while a brew is in progress.
+/// Accepts solute-role items and any item a registered recipe uses as a component. Locked while a brew is in progress.
 /// </summary>
 internal class AlchemyComponentSlot : BasicItemSlot
 {
@@ -54,7 +53,7 @@ internal class AlchemyComponentSlot : BasicItemSlot
     protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Ingredient(!items[index].IsAir);
 
     public override bool ValidItemForSlot(Item item)
-        => item.IsAir || AlchemyIngredients.IsValidSubstance(item);
+        => item.IsAir || AlchemyIngredients.IsValidSubstance(item) || ChemicalRoles.Of(item) == ChemicalRole.Solute;
 
     protected override void DrawSelf(SpriteBatch spriteBatch)
     {
@@ -96,9 +95,8 @@ internal class AlchemyComponentSlot : BasicItemSlot
 }
 
 /// <summary>
-/// accepts any registered vial.
-/// The contents of this slot decide the active <see cref="AlchemyMode"/>.
-/// Locked while a brew is in progress or while a finished result is waiting to be taken.
+/// Accepts solvent- and solution-role items and any item a registered recipe uses as a solvent.
+/// Locked while a brew is in progress.
 /// </summary>
 internal class AlchemyVialSlot : BasicItemSlot
 {
@@ -115,7 +113,8 @@ internal class AlchemyVialSlot : BasicItemSlot
     protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Bottle(!items[index].IsAir);
 
     public override bool ValidItemForSlot(Item item)
-        => item.IsAir || AlchemyIngredients.IsValidSolvent(item);
+        => item.IsAir || AlchemyIngredients.IsValidSolvent(item)
+            || ChemicalRoles.Of(item) is ChemicalRole.Solvent or ChemicalRole.Solution;
 
     protected override void SlotLogic(ref Item item)
     {
@@ -127,6 +126,19 @@ internal class AlchemyVialSlot : BasicItemSlot
 
         base.SlotLogic(ref item);
     }
+}
+
+/// <summary>Take-only slot holding bottles returned by completed brews.</summary>
+internal class AlchemyBottleReturnSlot : BasicItemSlot
+{
+    public AlchemyBottleReturnSlot(Item[] items)
+        : base(items, 0, ItemSlot.Context.CraftingMaterial, 0.85f)
+    {
+    }
+
+    protected override Asset<Texture2D>? SlotFrame => AlchemySlotArt.Bottle(!items[index].IsAir);
+
+    public override bool ValidItemForSlot(Item item) => false;
 }
 
 /// <summary>
