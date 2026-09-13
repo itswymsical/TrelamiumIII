@@ -305,7 +305,7 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(
                 Reagent.Niter,
                 Reagent.RockSalt,
-                ComponentMatcher.Of(ItemID.IceBlock, 5)));
+                ComponentMatcher.Of(ItemID.IceBlock, 1)));
 
         #endregion
 
@@ -323,12 +323,12 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(ComponentMatcher.Of(Solution.FibrousSlurry, 2))
             { OutputStack = 2 });
 
-        // Six parts niter to one of fuel, as it should be.
+        // Niter at maximum potency to one part fuel.
         AlchemyRecipeRegistry.RegisterVariants(
             inputType: Solution.Inert,
             outputType: Reagent.BlackPowder,
             new AlchemyVariant(
-                ComponentMatcher.Of(Reagent.Niter, 6),
+                ComponentMatcher.Of(Reagent.Niter, 5),
                 Reagent.Sulfur,
                 ModContent.ItemType<CharcoalItem>())
             { OutputStack = 4 });
@@ -339,7 +339,7 @@ public class ChemistryRecipeSystem : ModSystem
             new AlchemyVariant(
                 ComponentMatcher.Of(Reagent.BoneAsh, 2),
                 ModContent.ItemType<CharcoalItem>(),
-                ComponentMatcher.Of(ItemID.SandBlock, 5)));
+                ComponentMatcher.Of(ItemID.SandBlock, 1)));
 
         #endregion
     }
@@ -1903,13 +1903,13 @@ public class ChemistryRecipeSystem : ModSystem
         AlchemyRecipeRegistry.RegisterVariants(
         ItemID.BottledWater,
         ZephyrPotion.Type,
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 5), ItemID.Moonglow)
+        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 1,
             DurationTicks = TimeConversion.SetTime(mins: 3)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 10), ItemID.Moonglow)
+        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 2), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 2,
@@ -1925,7 +1925,7 @@ public class ChemistryRecipeSystem : ModSystem
             Potency = 2,
             DurationTicks = TimeConversion.SetTime(mins: 4, secs: 30)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 5), ItemID.Moonglow)
+        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 3,
@@ -2221,7 +2221,7 @@ public class ChemistryRecipeSystem : ModSystem
         AlchemyRecipeRegistry.RegisterVariants(
             inputType: ItemID.BottledWater,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { SolventInfusion = ChemicalQuality.Inert, Potency = 2 });
+            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { InputInfusion = ChemicalQuality.Inert, Potency = 2 });
     }
 
     /// <summary>Calamity Mod recipes.</summary>

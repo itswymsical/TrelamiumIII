@@ -188,7 +188,7 @@ public class IngredientDiscoveryPlayer : ModPlayer
         {
             if (item is null || item.IsAir) continue;
             if (AlmanacDiscoverySystem.IsIngredientObtained(item.type)) continue;
-            if (AlchemyIngredients.IsSubstanceType(item.type) || AlchemyIngredients.IsSolventType(item.type))
+            if (AlchemyIngredients.IsSubstanceType(item.type) || AlchemyIngredients.IsInputType(item.type))
                 AlmanacDiscoverySystem.ObtainIngredient(item.type);
         }
     }

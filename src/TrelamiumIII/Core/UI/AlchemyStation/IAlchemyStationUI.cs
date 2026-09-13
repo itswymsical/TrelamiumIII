@@ -1,11 +1,8 @@
+using TrelamiumIII.Core.Alchemy;
+
 namespace TrelamiumIII.Core.UI.AlchemyStation;
 
-/// <summary>
-/// The brew-state surface the shared slot widgets (<see cref="AlchemyComponentSlot"/>,
-/// <see cref="AlchemyVialSlot"/>, <see cref="AlchemyOutputSlot"/>) need from whichever station UI hosts them.
-/// Implemented by both the basic <see cref="AlchemyStationUI"/> and the advanced <see cref="AdvancedAlchemyStationUI"/>,
-/// so the slots stay shared even though the two UIs are otherwise independent.
-/// </summary>
+/// <summary>Brew state the shared slot widgets read from the hosting station UI (basic or advanced).</summary>
 internal interface IAlchemyStationUI
 {
     bool IsBrewing { get; }
@@ -13,15 +10,11 @@ internal interface IAlchemyStationUI
     float BrewProgress { get; }
     void TryStartBrew();
 
-    /// <summary>
-    /// Whether the output slot draws its own inline progress bar. The basic panel UI does; the advanced world
-    /// overlay returns false because the bar is drawn on the machine (under the heat plate) instead.
-    /// </summary>
+    /// <summary>Whether the output slot draws its own progress bar. False when the bar is drawn on the station sprite.</summary>
     bool ShowInlineBrewBar { get; }
 
-    /// <summary>
-    /// Units the previewed recipe draws from solute slot <paramref name="index"/>.
-    /// the slot renders as a star meter. 0 when no recipe is asking anything of that slot.
-    /// </summary>
-    int SoluteCost(int index);
+    AlchemyStationMode Mode { get; }
+
+    /// <summary>Minimum potency the previewed recipe requires of component slot <paramref name="index"/>; 0 when unclaimed.</summary>
+    int RequiredPotency(int index);
 }

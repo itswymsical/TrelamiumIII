@@ -91,11 +91,15 @@ public static class AlchemyRecipeValidator
     private static List<BrewComposition> CompositionsOf(AlchemyRecipe recipe)
     {
         int[] types = new int[recipe.Components.Length];
+        int[] levels = new int[recipe.Components.Length];
 
         for (int i = 0; i < types.Length; i++)
+        {
             types[i] = BrewCompositions.FirstMember(recipe.Components[i]);
+            levels[i] = recipe.Components[i].MinPotency;
+        }
 
-        var compositions = new List<BrewComposition> { BrewCompositions.Of(recipe.SolventType, types) };
+        var compositions = new List<BrewComposition> { BrewCompositions.Of(recipe.InputType, 1, types, levels) };
 
         for (int i = 0; i < types.Length; i++)
         {
@@ -110,7 +114,7 @@ public static class AlchemyRecipeValidator
                     continue;
 
                 types[i] = member;
-                compositions.Add(BrewCompositions.Of(recipe.SolventType, types));
+                compositions.Add(BrewCompositions.Of(recipe.InputType, 1, types, levels));
             }
 
             types[i] = baseline;
@@ -133,10 +137,10 @@ public static class AlchemyRecipeValidator
             if (BrewCompositions.Of(recipe).Category != BrewCategory.Synthesis)
                 continue;
 
-            bool principledSolvent = ChemicalRoles.Of(recipe.SolventType) == ChemicalRole.Solvent
-                && BrewCompositions.PrincipleOf(recipe.SolventType) != PrincipleType.None;
+            bool principledSolvent = ChemicalRoles.Of(recipe.InputType) == ChemicalRole.Solvent
+                && BrewCompositions.PrincipleOf(recipe.InputType) != PrincipleType.None;
 
-            depth = Math.Max(depth, 1 + (principledSolvent ? SolventChainDepth(recipe.SolventType, memo, visiting) : 0));
+            depth = Math.Max(depth, 1 + (principledSolvent ? SolventChainDepth(recipe.InputType, memo, visiting) : 0));
         }
 
         visiting.Remove(itemType);
@@ -148,18 +152,19 @@ public static class AlchemyRecipeValidator
     private static string SignatureOf(AlchemyRecipe recipe)
     {
         IEnumerable<string> components = recipe.Components
-            .Select(m => $"{(m.Group != null ? "g:" + m.Group.Name : "t:" + m.ExactType)}x{m.Quantity}i{(int)m.Infusion}")
+            .Select(m => $"{(m.Group != null ? "g:" + m.Group.Name : "t:" + m.ExactType)}p{m.MinPotency}i{(int)m.Infusion}")
             .OrderBy(part => part, StringComparer.Ordinal);
 
-        return $"{recipe.SolventType}i{(int)recipe.SolventInfusion}|{string.Join(",", components)}";
+        return $"{recipe.InputType}i{(int)recipe.InputInfusion}|{string.Join(",", components)}";
     }
 
     private static string Describe(AlchemyRecipe recipe)
     {
         IEnumerable<string> components = recipe.Components
-            .Select(m => (m.Group != null ? m.Group.Name : Name(m.ExactType)) + (m.Quantity > 1 ? $" x{m.Quantity}" : string.Empty));
+            .Select(m => (m.Group != null ? m.Group.Name : Name(m.ExactType))
+                + (m.MinPotency > 1 ? $" (potency {m.MinPotency})" : string.Empty));
 
-        return $"{Name(recipe.SolventType)} + [{string.Join(", ", components)}] -> {Name(recipe.OutputItemType)}";
+        return $"{Name(recipe.InputType)} + [{string.Join(", ", components)}] -> {Name(recipe.OutputItemType)}";
     }
 
     private static string Name(int itemType) => itemType > 0 ? Lang.GetItemNameValue(itemType) : "none";

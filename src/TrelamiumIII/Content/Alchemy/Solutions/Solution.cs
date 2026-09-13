@@ -83,7 +83,7 @@ public sealed class Solution : ICustomAutoload
         Brine = Add(mod, new SolventItem("BrineBottleItem")
         {
             Rare = ItemRarityID.Blue,
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
             Hidden = false,
             LegacyNames = ["BrineBottle"],
@@ -96,7 +96,7 @@ public sealed class Solution : ICustomAutoload
         BottledOil = Add(mod, new SolventItem("BottledOilItem")
         {
             Value = Item.sellPrice(silver: 2),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Volatile,
             LegacyNames = ["BottledOil"],
             Recipes = self => self.CreateRecipe()
@@ -113,7 +113,7 @@ public sealed class Solution : ICustomAutoload
             TexturePath = Placeholder,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
-            Potency = 4,
+            AlmanacPotency = 4,
             Quality = ChemicalQuality.Acidic,
         });
 
@@ -122,7 +122,7 @@ public sealed class Solution : ICustomAutoload
             TexturePath = Placeholder,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 5),
-            Potency = 4,
+            AlmanacPotency = 4,
             Quality = ChemicalQuality.Acidic | ChemicalQuality.Volatile,
         });
 
@@ -131,7 +131,7 @@ public sealed class Solution : ICustomAutoload
             TexturePath = Placeholder,
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 20),
-            Potency = 5,
+            AlmanacPotency = 5,
             Quality = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
         });
     }
@@ -141,7 +141,7 @@ public sealed class Solution : ICustomAutoload
         Inert = Add(mod, new SolventItem("InertSolutionItem")
         {
             Rare = ItemRarityID.Gray,
-            Potency = 1,
+            AlmanacPotency = 1,
             Quality = ChemicalQuality.Inert,
             AlmanacRarity = ItemRarityID.White,
             Hidden = false,
@@ -150,7 +150,7 @@ public sealed class Solution : ICustomAutoload
         Dead = Add(mod, new SolventItem("DeadSolutionItem")
         {
             Rare = ItemRarityID.Gray,
-            Potency = 4,
+            AlmanacPotency = 4,
             Quality = ChemicalQuality.Inert,
             Principle = PrincipleType.Bane,
             AlmanacRarity = ItemRarityID.Blue,
@@ -160,7 +160,7 @@ public sealed class Solution : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(copper: 40),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Volatile,
             Principle = PrincipleType.Bane,
             AlmanacRarity = ItemRarityID.Green,
@@ -184,7 +184,7 @@ public sealed class Solution : ICustomAutoload
     {
         FibrousSlurry = Add(mod, new SoluteItem("FibrousSlurryItem")
         {
-            Potency = 1,
+            AlmanacPotency = 1,
             Quality = ChemicalQuality.Inert,
             Hidden = false,
             LegacyNames = ["FibrousSlurry"],
@@ -197,7 +197,7 @@ public sealed class Solution : ICustomAutoload
         Add(mod, new SolventItem(tonic + "Item")
         {
             Value = Item.sellPrice(silver: 2),
-            Potency = AlmanacEntryRegistry.DefaultIngredientPotency,
+            AlmanacPotency = AlmanacEntryRegistry.DefaultAlmanacPotency,
             Principle = principle,
             LegacyNames = [tonic],
         });

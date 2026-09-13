@@ -67,8 +67,11 @@ public sealed class AlmanacEntry
     /// </summary>
     public int ItemType { get; internal set; }
 
-    /// <summary>Star rating, 1–5. <c>0</c> means "unrated" and draws no stars.</summary>
-    public int Potency { get; init; }
+    /// <summary>Almanac star rating, 1–5. <c>0</c> means "unrated" and draws no stars. Display only.</summary>
+    public int AlmanacPotency { get; init; }
+
+    /// <summary>Items per potency level in a station slot; see <see cref="SolutePotency" />.</summary>
+    public int StackPerPotency { get; init; } = 1;
 
     /// <summary>Chemical tag(s). Drawn as one coloured badge per set flag.</summary>
     public ChemicalQuality Chemical { get; init; }
@@ -127,12 +130,12 @@ public static class AlmanacEntryRegistry
     public static IEnumerable<AlmanacEntry> All => _entries.Values;
 
     /// <summary>
-    /// Potency for un-authored solvents and reagents, since 0 ("unrated") would read as missing data. Authored entries always win.
+    /// AlmanacPotency for un-authored solvents and reagents, since 0 ("unrated") would read as missing data. Authored entries always win.
     /// </summary>
-    public const int DefaultIngredientPotency = 1;
+    public const int DefaultAlmanacPotency = 1;
 
     /// <summary>
-    /// The authored entry, or a default: rated <see cref="DefaultIngredientPotency"/> for solvents and reagents, otherwise unrated.
+    /// The authored entry, or a default: rated <see cref="DefaultAlmanacPotency"/> for solvents and reagents, otherwise unrated.
     /// </summary>
     public static AlmanacEntry For(int outputType)
     {
@@ -140,13 +143,13 @@ public static class AlmanacEntryRegistry
 
         // Reads AlchemyIngredients, which caches off the recipe registry on first use: don't call
         // this during PostSetupContent before the recipes are registered or that cache sticks empty.
-        bool isIngredient = AlchemyIngredients.IsSolventType(outputType)
+        bool isIngredient = AlchemyIngredients.IsInputType(outputType)
                          || AlchemyIngredients.IsSubstanceType(outputType);
 
         return new AlmanacEntry
         {
             ItemType = outputType,
-            Potency = isIngredient ? DefaultIngredientPotency : 0,
+            AlmanacPotency = isIngredient ? DefaultAlmanacPotency : 0,
         };
     }
 }
@@ -239,7 +242,7 @@ public static class AlmanacIndex
 
         foreach (var r in AlchemyRecipeRegistry.All)
         {
-            if (r.SolventType == itemType && r.SolventInfusion == infusion)
+            if (r.InputType == itemType && r.InputInfusion == infusion)
             {
                 yield return r;
                 continue;
@@ -263,7 +266,7 @@ public static class AlmanacIndex
 
         foreach (var r in AlchemyRecipeRegistry.All)
         {
-            if (r.SolventType == itemType)
+            if (r.InputType == itemType)
             {
                 yield return r;
                 continue;
@@ -371,7 +374,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.BottledWater,
-            Potency = 0,
+            AlmanacPotency = 0,
             Hidden = false,
             Rarity = ItemRarityID.White,
         });
@@ -379,7 +382,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Bottle,
-            Potency = 0,
+            AlmanacPotency = 0,
             Hidden = false,
             Chemical = ChemicalQuality.None,
             Rarity = ItemRarityID.White,
@@ -388,7 +391,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.BottledHoney,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Acidic,
             Rarity = ItemRarityID.Yellow,
         });
@@ -400,7 +403,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Daybloom,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Harmony,
@@ -409,7 +412,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Blinkroot,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Specular | PrincipleType.Vital,
@@ -418,7 +421,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Moonglow,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Specular,
@@ -427,7 +430,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Deathweed,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic,
             Rarity = ItemRarityID.LightPurple,
             Hidden = false,
@@ -437,7 +440,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Waterleaf,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Alkaline,
             Rarity = ItemRarityID.Blue,
             Hidden = false,
@@ -447,7 +450,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Fireblossom,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Volatile,
             Rarity = ItemRarityID.Orange,
             Hidden = false,
@@ -457,7 +460,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Shiverthorn,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Catalytic,
             Rarity = ItemRarityID.Blue,
             Hidden = false,
@@ -467,14 +470,14 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Sunflower,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.Brisk,
         });
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.YellowMarigold,
-            Potency = 2,
+            AlmanacPotency = 2,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Vital
         });
@@ -484,7 +487,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Mushroom,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Inert,
             Hidden = false,
             Principle = PrincipleType.Harmony,
@@ -493,7 +496,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.VileMushroom,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.Bane,
         });
@@ -501,7 +504,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.ViciousMushroom,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.Bane,
         });
@@ -511,7 +514,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.CopperOre,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Harmony,
         });
@@ -519,7 +522,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.TinOre,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Catalytic,
             Principle = PrincipleType.Brisk,
         });
@@ -527,7 +530,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.IronOre,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Kinetic,
             Principle = PrincipleType.Martial,
         });
@@ -535,7 +538,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.LeadOre,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.Bane | PrincipleType.Harmony, // context dependent behavior
         });
@@ -543,7 +546,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.SilverOre,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Kinetic,
             Principle = PrincipleType.Specular,
         });
@@ -551,7 +554,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.TungstenOre,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.Martial,
         });
@@ -559,7 +562,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.GoldOre,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Kinetic,
             Rarity = ItemRarityID.Orange,
             Principle = PrincipleType.Vital | PrincipleType.Specular,
@@ -568,7 +571,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.PlatinumOre,
-            Potency = 5,
+            AlmanacPotency = 5,
             Chemical = ChemicalQuality.Alkaline,
             Rarity = ItemRarityID.Orange,
             Principle = PrincipleType.Fortune,
@@ -577,7 +580,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.DemoniteOre,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Catalytic,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
@@ -586,7 +589,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.CrimtaneOre,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Catalytic,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
@@ -602,7 +605,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.RottenChunk,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic | ChemicalQuality.Inhibitor,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
@@ -611,7 +614,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Vertebrae,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Martial,
         });
@@ -621,7 +624,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.SpecularFish,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Catalytic,
             Principle = PrincipleType.Specular,
         });
@@ -629,7 +632,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Damselfish,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Harmony,
         });
@@ -637,7 +640,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Bass,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.None,
         });
@@ -645,7 +648,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Stinkfish,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.None,
         });
@@ -653,7 +656,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.FlarefinKoi,
-            Potency = 5,
+            AlmanacPotency = 5,
             Chemical = ChemicalQuality.Volatile,
             Principle = PrincipleType.Brisk,
         });
@@ -661,7 +664,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Obsidifish,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.Martial,
         });
@@ -669,7 +672,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.ArmoredCavefish,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.Martial,
         });
@@ -677,7 +680,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.AtlanticCod,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.None,
         });
@@ -685,7 +688,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.DoubleCod,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.None,
         });
@@ -693,7 +696,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.NeonTetra,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Alkaline,
             Principle = PrincipleType.None,
         });
@@ -701,7 +704,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Ebonkoi,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic | ChemicalQuality.Inhibitor,
             Principle = PrincipleType.Bane,
         });
@@ -709,7 +712,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Hemopiranha,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Volatile | ChemicalQuality.Inhibitor,
             Principle = PrincipleType.Bane,
         });
@@ -717,7 +720,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.CrimsonTigerfish,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Inhibitor,
             Principle = PrincipleType.Brisk,
         });
@@ -725,7 +728,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.FrostMinnow,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Cryogen,
             Principle = PrincipleType.Brisk | PrincipleType.Vital,
         });
@@ -733,7 +736,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.PrincessFish,
-            Potency = 4,
+            AlmanacPotency = 4,
             Chemical = ChemicalQuality.Kinetic,
             Principle = PrincipleType.Harmony,
         });
@@ -741,7 +744,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Prismite,
-            Potency = 5,
+            AlmanacPotency = 5,
             Chemical = ChemicalQuality.Kinetic | ChemicalQuality.Catalytic,
             Principle = PrincipleType.Harmony,
         });
@@ -751,7 +754,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Gel,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Flammable,
             Principle = PrincipleType.Harmony | PrincipleType.Vital,
         });
@@ -759,7 +762,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Stinger,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Vital,
         });
@@ -767,7 +770,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Amber,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Kinetic,
             Principle = PrincipleType.Martial | PrincipleType.Specular,
         });
@@ -775,7 +778,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.SharkFin,
-            Potency = 2,
+            AlmanacPotency = 2,
             Chemical = ChemicalQuality.Volatile,
             Principle = PrincipleType.Brisk | PrincipleType.Martial,
         });
@@ -783,7 +786,7 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.Lens,
-            Potency = 1,
+            AlmanacPotency = 1,
             Chemical = ChemicalQuality.None,
             Principle = PrincipleType.Specular,
         });
@@ -791,10 +794,21 @@ internal static class AlmanacDefinitions
         AlmanacEntryRegistry.Register(new AlmanacEntry
         {
             ItemType = ItemID.LifeCrystal,
-            Potency = 3,
+            AlmanacPotency = 3,
             Chemical = ChemicalQuality.Inert,
             Principle = PrincipleType.Harmony,
         });
+
+        // Blocks are consumed in stacks of five per potency level.
+        foreach (int block in new[] { ItemID.IceBlock, ItemID.SandBlock, ItemID.Cloud })
+        {
+            AlmanacEntryRegistry.Register(new AlmanacEntry
+            {
+                ItemType = block,
+                AlmanacPotency = AlmanacEntryRegistry.DefaultAlmanacPotency,
+                StackPerPotency = 5,
+            });
+        }
         #endregion
     }
 }

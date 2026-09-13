@@ -90,7 +90,7 @@ public sealed class Reagent : ICustomAutoload
         {
             TexturePath = AssetReferences.Content.Alchemy.Reagents.Sulfur.KEY,
             Value = Item.sellPrice(copper: 40),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Bane,
 
@@ -106,7 +106,7 @@ public sealed class Reagent : ICustomAutoload
         Niter = Add(mod, new SoluteItem("NiterItem")
         {
             Value = Item.sellPrice(copper: 60),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
             Principle = PrincipleType.Bane,
             Recipes = self =>
@@ -129,7 +129,7 @@ public sealed class Reagent : ICustomAutoload
         {
             TexturePath = AssetReferences.Content.Alchemy.Reagents.RockSalt.KEY,
             Value = Item.sellPrice(copper: 20),
-            Potency = 1,
+            AlmanacPotency = 1,
             Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
             Principle = PrincipleType.Harmony,
             Hidden = false,
@@ -142,7 +142,7 @@ public sealed class Reagent : ICustomAutoload
         Quicklime = Add(mod, new SoluteItem("QuicklimeItem")
         {
             Value = Item.sellPrice(copper: 50),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Bane,
             Recipes = self => self.CreateRecipe(2)
@@ -154,7 +154,7 @@ public sealed class Reagent : ICustomAutoload
         BoneAsh = Add(mod, new SoluteItem("BoneAshItem")
         {
             Value = Item.sellPrice(copper: 50),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
             Principle = PrincipleType.Bane | PrincipleType.Vital,
             Recipes = self => self.CreateRecipe(2)
@@ -167,7 +167,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Gray,
             Value = Item.sellPrice(copper: 10),
-            Potency = 1,
+            AlmanacPotency = 1,
             Quality = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Harmony,
             Hidden = false,
@@ -185,7 +185,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Acidic,
             Principle = PrincipleType.Bane,
         });
@@ -194,7 +194,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 4),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Catalytic,
             Principle = PrincipleType.Specular,
         });
@@ -209,7 +209,7 @@ public sealed class Reagent : ICustomAutoload
         SlakedLime = Add(mod, new SoluteItem("SlakedLimeItem")
         {
             Value = Item.sellPrice(copper: 80),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Alkaline | ChemicalQuality.Inert,
             Principle = PrincipleType.Harmony,
         });
@@ -218,7 +218,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Alkaline,
             Principle = PrincipleType.Bane | PrincipleType.Harmony,
         });
@@ -227,7 +227,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 3),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Inert | ChemicalQuality.Volatile,
             Principle = PrincipleType.Brisk,
         });
@@ -240,7 +240,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
-            Potency = 3,
+            AlmanacPotency = 3,
             Quality = ChemicalQuality.Volatile,
             Principle = PrincipleType.Martial,
         });
@@ -248,7 +248,7 @@ public sealed class Reagent : ICustomAutoload
         Pitch = Add(mod, new SoluteItem("PitchItem")
         {
             Value = Item.sellPrice(copper: 80),
-            Potency = 2,
+            AlmanacPotency = 2,
             Quality = ChemicalQuality.Inert,
         });
 
@@ -256,7 +256,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 6),
-            Potency = 4,
+            AlmanacPotency = 4,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Kinetic,
             Principle = PrincipleType.Martial,
         });
@@ -265,7 +265,7 @@ public sealed class Reagent : ICustomAutoload
         {
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 15),
-            Potency = 5,
+            AlmanacPotency = 5,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
             Principle = PrincipleType.Martial | PrincipleType.Specular,
         });

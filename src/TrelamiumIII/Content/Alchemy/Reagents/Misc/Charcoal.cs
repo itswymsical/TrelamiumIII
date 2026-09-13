@@ -7,7 +7,7 @@ public class CharcoalItem : ModItem, IAlmanacDefined
 {
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
-        Potency = 1,
+        AlmanacPotency = 1,
         Chemical = ChemicalQuality.Kinetic,
     };
 

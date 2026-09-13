@@ -538,7 +538,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // Brew category filter, shown only while browsing the Recipes category. Null means all.
     private static readonly BrewCategory?[] _filterTabs =
-        [null, BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement];
+        [null, BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture];
 
     private const float FILTER_TAB_W = 96f;
     private const float FILTER_TAB_H = 26f;
@@ -681,7 +681,7 @@ public class AlchemyAlmanacUI : IInGameNotification
                 // Physically holding a material counts as having obtained it, so a queried
                 // item reveals its "?" slot (and its detail page is viewable immediately).
                 // Non-materials (the Ingredients slot accepts any item) don't count.
-                if (curType > 0 && (AlchemyIngredients.IsSubstanceType(curType) || AlchemyIngredients.IsSolventType(curType)))
+                if (curType > 0 && (AlchemyIngredients.IsSubstanceType(curType) || AlchemyIngredients.IsInputType(curType)))
                     AlmanacDiscoverySystem.ObtainIngredient(curType);
 
                 if (curType > 0) BeginViewSwitchToDetail(curType);
@@ -868,8 +868,8 @@ public class AlchemyAlmanacUI : IInGameNotification
         float cx = MARGIN_X + 6f;
         if (local.X >= cx && local.X < cx + ICON)
         {
-            infusion = recipe.SolventInfusion;
-            return recipe.SolventType;
+            infusion = recipe.InputInfusion;
+            return recipe.InputType;
         }
         cx += ICON + 8f - 4f + 12f;   // icon advance + "+" separator
 
@@ -1207,7 +1207,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
 
         // Potency stars + chemical-type badges.
-        DrawPotencyStars(sb, entry.Potency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
+        DrawPotencyStars(sb, entry.AlmanacPotency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
         DrawChemicalBadges(sb, entry.Chemical, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
 
         // Decorative rules
@@ -1328,7 +1328,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
 
         // Authored ratings: potency stars + principle badge.
-        DrawPotencyStars(sb, entry.Potency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
+        DrawPotencyStars(sb, entry.AlmanacPotency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
         DrawChemicalBadges(sb, entry.Chemical, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
 
         // Decorative rule.
@@ -1783,7 +1783,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         float cx = x + 6f;
         float cy = y + 7f;
 
-        DrawSmallItemIcon(sb, recipe.SolventType, new Vector2(cx, cy), ICON);
+        DrawSmallItemIcon(sb, recipe.InputType, new Vector2(cx, cy), ICON);
 
         cx += ICON + GAP - 4f;
 
@@ -1799,8 +1799,8 @@ public class AlchemyAlmanacUI : IInGameNotification
 
             // A solute drawn at more than one reads as its potency, overlaid on the icon's foot.
             // Single-draw slots are left bare so the authored ones are what catch the eye.
-            if (matcher.Quantity > 1)
-                DrawMiniPotencyStars(sb, matcher.Quantity, cx + ICON * 0.5f, y + 41f,
+            if (matcher.MinPotency > 1)
+                DrawMiniPotencyStars(sb, matcher.MinPotency, cx + ICON * 0.5f, y + 41f,
                     new Color(255, 220, 150));
 
             cx += ICON + GAP - 4f;

@@ -60,8 +60,11 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
 
     #region Almanac entry
 
-    /// <summary>Star rating, 1-5. <c>0</c> draws no stars. <see cref="AlmanacEntry.Potency" />.</summary>
-    public int Potency;
+    /// <summary>Star rating, 1-5. <c>0</c> draws no stars. <see cref="AlmanacEntry.AlmanacPotency" />.</summary>
+    public int AlmanacPotency;
+
+    /// <summary><see cref="AlmanacEntry.StackPerPotency" />.</summary>
+    public int StackPerPotency = 1;
 
     /// <summary>The chemical tag(s) this item carries. <see cref="AlmanacEntry.Chemical" />.</summary>
     public ChemicalQuality Quality;
@@ -91,7 +94,8 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
 
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
-        Potency = Potency,
+        AlmanacPotency = AlmanacPotency,
+        StackPerPotency = StackPerPotency,
         Chemical = Quality,
         Principle = Principle,
         Rarity = AlmanacRarity,

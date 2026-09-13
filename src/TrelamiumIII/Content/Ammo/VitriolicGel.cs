@@ -16,7 +16,7 @@ public class VitriolicGel : ModItem, IChemicalRoleDefined, IAlmanacDefined
 
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
-        Potency = 2,
+        AlmanacPotency = 2,
         Chemical = ChemicalQuality.Acidic,
         Principle = PrincipleType.Martial,
     };
