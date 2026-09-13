@@ -433,37 +433,6 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         ResetBrewState();
     }
 
-    /// <summary>Copies a bound station entity's contents into the live slots. Used when an advanced station opens.</summary>
-    public void LoadFromEntity(AdvancedAlchemyStationEntity entity)
-    {
-        for (int i = 0; i < Components.Length && i < entity.Components.Length; i++)
-            Components[i] = entity.Components[i] ?? new Item();
-        InputContainer[0] = entity.Input[0] ?? new Item();
-        OutputContainer[0] = entity.Output[0] ?? new Item();
-        BottleReturnContainer[0] = entity.BottleReturn[0] ?? new Item();
-        Mode = entity.Mode;
-        ResetBrewState();
-    }
-
-    /// <summary>Mirrors the live slot contents back onto the bound entity so the world tile renders them.</summary>
-    public void SaveToEntity(AdvancedAlchemyStationEntity entity)
-    {
-        for (int i = 0; i < Components.Length && i < entity.Components.Length; i++)
-            entity.Components[i] = Components[i];
-        entity.Input[0] = InputContainer[0];
-        entity.Output[0] = OutputContainer[0];
-        entity.BottleReturn[0] = BottleReturnContainer[0];
-        entity.Mode = Mode;
-        entity.IsBrewing = IsBrewing;
-    }
-
-    /// <summary>Resets transient state and clears slots without returning anything (advanced station contents live in the entity).</summary>
-    public void ResetForClose()
-    {
-        ClearSlots();
-        ResetBrewState();
-    }
-
     private void ClearSlots()
     {
         for (int i = 0; i < Components.Length; i++)
