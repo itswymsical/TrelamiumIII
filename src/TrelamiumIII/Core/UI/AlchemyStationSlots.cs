@@ -42,20 +42,20 @@ internal static class AlchemySlotOverlay
     private static readonly Color MeterMet = new(255, 220, 150);
     private static readonly Color MeterUnmet = new(255, 110, 110);
 
+    /// <summary>Whether <see cref="DrawPotency" /> draws a meter for <paramref name="item" /> at <paramref name="required" />.</summary>
+    public static bool ShowsPotency(Item item, int required) => !item.IsAir && (required > 0 || SolutePotency.LevelOf(item) > 0);
+
     /// <summary>
     /// Meter of <paramref name="item"/>'s stack potency below <paramref name="slot"/>. <paramref name="required"/> of 0 draws a
     /// neutral meter; otherwise the tint shows whether the requirement is met, and empty pips draw at level 0.
     /// </summary>
-    public static void DrawPotency(SpriteBatch spriteBatch, Rectangle slot, float scale, Item item, int required)
+    public static void DrawPotency(SpriteBatch spriteBatch, Rectangle slot, float scale, Item item, int required, PotencyFlash? flash = null)
     {
-        if (item.IsAir)
-            return;
-
         int level = SolutePotency.LevelOf(item);
         Color tint = required <= 0 ? MeterNeutral : level >= required ? MeterMet : MeterUnmet;
 
         PotencyMeter.Draw(spriteBatch, level, slot.Center.X, slot.Bottom + 2f * scale,
-            pipHeight: 8f * scale, gap: scale, tint: tint, drawEmpty: required > 0);
+            pipHeight: 8f * scale, gap: scale, tint: tint, drawEmpty: required > 0 && !item.IsAir, flash: flash);
     }
 
     /// <summary>Stack count at vanilla's slot position, for items not drawn through <see cref="ItemSlot.Draw" />.</summary>
@@ -73,6 +73,7 @@ internal static class AlchemySlotOverlay
 internal class AlchemyComponentSlot : BasicItemSlot
 {
     private readonly IAlchemyStationUI _ui;
+    private readonly PotencyFlash _potencyFlash = new();
 
     public AlchemyComponentSlot(Item[] items, int index, IAlchemyStationUI ui, float scale)
         : base(items, index, ItemSlot.Context.InventoryItem, scale)
@@ -80,16 +81,19 @@ internal class AlchemyComponentSlot : BasicItemSlot
         _ui = ui;
     }
 
-    protected override Asset<Texture2D>? SlotFrame => ChemicalRoles.Of(items[index]) == ChemicalRole.Solvent
-        ? AlchemySlotArt.Bottle(inUse: true)
-        : AlchemySlotArt.Ingredient(!items[index].IsAir);
+    public bool ShowsPotencyMeter => AlchemySlotOverlay.ShowsPotency(items[index], _ui.RequiredPotency(index));
+
+    protected override Asset<Texture2D>? SlotFrame =>
+        _ui.Mode == AlchemyStationMode.SolventMixture || ChemicalRoles.Of(items[index]) == ChemicalRole.Solvent
+            ? AlchemySlotArt.Bottle(!items[index].IsAir)
+            : AlchemySlotArt.Ingredient(!items[index].IsAir);
 
     public override bool ValidItemForSlot(Item item) => AlchemyStationRules.AcceptsComponent(_ui.Mode, items, index, item);
 
     protected override void DrawSelf(SpriteBatch spriteBatch)
     {
         base.DrawSelf(spriteBatch);
-        AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], _ui.RequiredPotency(index));
+        AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], _ui.RequiredPotency(index), _potencyFlash);
     }
 
     protected override void SlotLogic(ref Item item)
@@ -108,6 +112,7 @@ internal class AlchemyComponentSlot : BasicItemSlot
 internal class AlchemyInputSlot : BasicItemSlot
 {
     private readonly IAlchemyStationUI _ui;
+    private readonly PotencyFlash _potencyFlash = new();
 
     public AlchemyInputSlot(Item[] items, IAlchemyStationUI ui, float scale)
         : base(items, 0, ItemSlot.Context.InventoryItem, scale)
@@ -119,6 +124,9 @@ internal class AlchemyInputSlot : BasicItemSlot
         ? AlchemySlotArt.Ingredient(!items[index].IsAir)
         : AlchemySlotArt.Bottle(!items[index].IsAir);
 
+    public bool ShowsPotencyMeter =>
+        ChemicalRoles.Of(items[index]) == ChemicalRole.Solute && AlchemySlotOverlay.ShowsPotency(items[index], required: 0);
+
     public override bool ValidItemForSlot(Item item) => AlchemyStationRules.AcceptsInput(_ui.Mode, item);
 
     protected override void DrawSelf(SpriteBatch spriteBatch)
@@ -126,7 +134,9 @@ internal class AlchemyInputSlot : BasicItemSlot
         base.DrawSelf(spriteBatch);
 
         if (ChemicalRoles.Of(items[index]) == ChemicalRole.Solute)
-            AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], required: 0);
+            AlchemySlotOverlay.DrawPotency(spriteBatch, DrawnBounds(), Scale, items[index], required: 0, _potencyFlash);
+        else
+            _potencyFlash.Observe(0);
     }
 
     protected override void SlotLogic(ref Item item)
@@ -281,12 +291,10 @@ internal class AlchemyOutputSlot : BasicItemSlot
         }
 
         if (item.IsAir)
-        {
-            if (AlmanacDiscoverySystem.IsUnlocked(items[index].type))
-                ItemSlot.MouseHover(ref item, context);
-
             return;
-        }
+
+        if (AlmanacDiscoverySystem.IsUnlocked(item.type))
+            ItemSlot.MouseHover(ref item, context);
 
         if (Main.mouseLeft && Main.mouseLeftRelease)
         {

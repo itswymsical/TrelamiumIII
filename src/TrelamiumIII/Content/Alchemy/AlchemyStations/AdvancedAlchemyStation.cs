@@ -94,6 +94,9 @@ public class AdvancedAlchemyStationBase : ModTile
     public const int Width = 14;
     public const int Height = 2;
 
+    /// <summary>Divisor applied to an output's <see cref="Core.Alchemy.AlmanacEntry.BrewTicks" />.</summary>
+    public const float BrewSpeed = 2f;
+
     public override string Texture => AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Base.KEY;
 
     public override void SetStaticDefaults()

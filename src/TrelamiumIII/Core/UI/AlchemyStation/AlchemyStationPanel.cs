@@ -3,16 +3,17 @@ using Terraria.GameContent.UI.Elements;
 
 namespace TrelamiumIII.Core.UI.AlchemyStation;
 
-/// <summary>
-/// The basic station's frame. Its one job beyond being a panel is drawing the linkage between the
-/// slots: the solvent dropping into the solute row, the solutes chained across it, then the outer
-/// two funnelling down into the solution. Drawn in <see cref="DrawSelf"/>, so it lands on the
-/// panel background but under the slots that sit on top of it.
-/// </summary>
+/// <summary>Link segment in panel-local pixels. <see cref="SourceHasMeter" /> reports whether the slot at <see cref="From" /> draws a potency meter.</summary>
+internal readonly record struct SlotLink(Vector2 From, Vector2 To, Func<bool>? SourceHasMeter = null);
+
+/// <summary>The basic station's panel. Draws <see cref="Links" /> in <see cref="DrawSelf"/>, above the background and below the slots.</summary>
 internal class AlchemyStationPanel : UIPanel
 {
-    /// <summary>Line segments in panel-local pixels. Set once by the station UI after layout.</summary>
-    public (Vector2 From, Vector2 To)[] Links = System.Array.Empty<(Vector2, Vector2)>();
+    /// <summary>Set once by the station UI after layout.</summary>
+    public SlotLink[] Links = [];
+
+    /// <summary>Vertical distance a link's start moves down while its source slot draws a potency meter.</summary>
+    public float MeterClearance;
 
     private static readonly Color LinkColor = new(120, 140, 190);
 
@@ -21,8 +22,18 @@ internal class AlchemyStationPanel : UIPanel
         base.DrawSelf(spriteBatch);
 
         Vector2 origin = GetDimensions().Position();
-        foreach (var (from, to) in Links)
-            DrawLink(spriteBatch, origin + from, origin + to);
+
+        foreach (SlotLink link in Links)
+        {
+            Vector2 from = link.From;
+            float drop = link.To.Y - from.Y;
+
+            // Moves the start along the segment so an angled link keeps its direction.
+            if (drop > MeterClearance && link.SourceHasMeter?.Invoke() == true)
+                from = Vector2.Lerp(from, link.To, MeterClearance / drop);
+
+            DrawLink(spriteBatch, origin + from, origin + link.To);
+        }
     }
 
     /// <summary>

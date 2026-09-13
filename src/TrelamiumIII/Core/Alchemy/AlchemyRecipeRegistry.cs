@@ -93,6 +93,14 @@ public sealed class AlchemyResolution
     public int RequiredPotencyFor(int index) =>
         index >= 0 && index < RequiredPotencies.Length ? RequiredPotencies[index] : 0;
 
+    /// <summary><see cref="Output" />'s <see cref="AlmanacEntry.BrewTicks" /> divided by <paramref name="speed" />; at least 1.</summary>
+    public int BrewTicks(float speed)
+    {
+        int ticks = AlmanacEntryRegistry.TryGet(Output.type, out AlmanacEntry? entry) ? entry.BrewTicks : AlmanacEntry.DefaultBrewTicks;
+
+        return Math.Max(1, (int)MathF.Round(ticks / speed));
+    }
+
     /// <summary>Batches the slotted stacks can pay for at <see cref="InputCost"/> and <see cref="ComponentCosts"/>.</summary>
     public int MaxBatches(Item input, Item[] components)
     {
