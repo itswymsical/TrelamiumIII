@@ -43,6 +43,7 @@ public class AlchemyStationSystem : ModSystem
         _interface = null;
         _basicUi = null;
         _advancedUi = null;
+        PotencyFlash.Unload();
     }
 
     public override void UpdateUI(GameTime gameTime)

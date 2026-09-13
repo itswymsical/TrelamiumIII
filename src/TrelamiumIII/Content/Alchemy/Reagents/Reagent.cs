@@ -238,6 +238,7 @@ public sealed class Reagent : ICustomAutoload
     {
         SpiritOfOil = Add(mod, new SoluteItem("SpiritOfOilItem")
         {
+            TexturePath = Assets.Textures.PlaceholderBrew.KEY,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 3,

@@ -1912,7 +1912,11 @@ public class AlchemyAlmanacUI : IInGameNotification
         float x = centerX - totalW * 0.5f;
 
         for (int i = 0; i < COUNT; i++)
-            PotencyMeter.DrawPip(sb, i < potency, new Vector2(x + i * (w + GAP), y), SCALE, Color.White);
+        {
+            Texture2D tex = PotencyMeter.Star(i < potency);
+            sb.Draw(tex, new Vector2(x + i * (w + GAP), y), null, Color.White,
+                0f, Vector2.Zero, SCALE, SpriteEffects.None, 0f);
+        }
     }
 
     private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _chemMeta =
