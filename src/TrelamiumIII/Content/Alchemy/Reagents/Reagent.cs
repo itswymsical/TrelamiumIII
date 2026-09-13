@@ -105,6 +105,7 @@ public sealed class Reagent : ICustomAutoload
 
         Niter = Add(mod, new SoluteItem("NiterItem")
         {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Niter.KEY,
             Value = Item.sellPrice(copper: 60),
             AlmanacPotency = 2,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
@@ -165,6 +166,7 @@ public sealed class Reagent : ICustomAutoload
 
         Potash = Add(mod, new SoluteItem("PotashItem")
         {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Potash.KEY,
             Rare = ItemRarityID.Gray,
             Value = Item.sellPrice(copper: 10),
             AlmanacPotency = 1,
@@ -248,6 +250,7 @@ public sealed class Reagent : ICustomAutoload
 
         Pitch = Add(mod, new SoluteItem("PitchItem")
         {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Pitch.KEY,
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
             Quality = ChemicalQuality.Inert,
