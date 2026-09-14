@@ -2,29 +2,6 @@ using TrelamiumIII.Core.Dialogue.Projected;
 
 namespace TrelamiumIII.Core.Dialogue;
 
-/// <summary>
-///     One conversation, presented by whichever box suits how far away the speaker is.
-/// </summary>
-/// <remarks>
-///     <para>
-///         Close up, the bubble over the speaker's head is the better read: it is attached to a person
-///         you can see, and it leaves the scene visible around it. At a distance that stops working --
-///         the bubble is small, it may be behind terrain, and the person it belongs to is a few pixels
-///         tall. The panel along the bottom of the screen has none of those problems and none of the
-///         intimacy, which is the trade this makes automatically.
-///     </para>
-///     <para>
-///         Only one box exists at a time. The conversation is lifted out of the outgoing one and put
-///         into the incoming one through a <see cref="DialogueHandoff" />, so nothing is being kept in
-///         step -- there is only ever one typewriter, one voice and one set of choices. The old box is
-///         kept around while it plays its own closing animation, so the swap reads as a cross-fade
-///         even though the state moved in a single frame.
-///     </para>
-///     <para>
-///         The two thresholds are a deadband, not a rounding error. A single distance would swap boxes
-///         every time the player's idle bob carried them across it.
-///     </para>
-/// </remarks>
 public sealed class AdaptiveDialogueBox : IDialoguePresenter
 {
     /// <summary>Inside this, in tiles, the conversation moves to the projected bubble.</summary>

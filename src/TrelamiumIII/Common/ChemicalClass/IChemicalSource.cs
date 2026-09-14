@@ -59,10 +59,10 @@ public readonly struct ChemicalReactionEvent
 /// </summary>
 public static class ChemicalReaction
 {
-    /// <remarks>
+    /// <summary>
     ///     Refuses non-elemental sources (<see cref="ChemicalDamageType.Solute" />) outright, so a solute weapon
     ///     can't gain reactions through careless tuning.
-    /// </remarks>
+    /// </summary>
     public static void Trigger(
         NPC target,
         IChemicalSource source,

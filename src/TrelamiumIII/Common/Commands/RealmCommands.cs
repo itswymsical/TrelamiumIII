@@ -26,12 +26,25 @@ public class RealmCommands : ModCommand
 
     public override CommandType Type => CommandType.Chat | CommandType.World;
 
-    public override string Usage => "/realm";
+    public override string Usage => "/realm [ingress|treelab]";
 
     public override string Description => "teleports you the realm, folk.";
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {
-        SubworldSystem.Enter<IngressRealm>();
+        string realm = args.Length > 0 ? args[0].ToLowerInvariant() : "ingress";
+
+        switch (realm)
+        {
+            case "ingress":
+                SubworldSystem.Enter<IngressRealm>();
+                break;
+            case "treelab":
+                SubworldSystem.Enter<CanopyTreeLabRealm>();
+                break;
+            default:
+                caller.Reply($"Unknown realm '{args[0]}'. Usage: {Usage}", Color.Red);
+                break;
+        }
     }
 }
