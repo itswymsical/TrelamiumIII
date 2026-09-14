@@ -6,9 +6,9 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Common.Generation.Trees;
 
 /// <summary>
-/// Canopy tree in living wood and leaves. The trunk leans in a slow S-curve, grows two low arms capped with leaf
-/// bushes and a crown under a leaf cloud, and flares into surface roots and taproots. A hollow room with a side
-/// entrance opens onto a shaft down the main taproot to a chamber. Limbs are tapered segment paths in a distance field.
+/// Canopy tree in living wood and leaves: an S-curved trunk with two low arms under leaf bushes, a crown under a leaf
+/// cloud, and surface roots. Below ground the trunk runs on to a shaft end with roots hanging off its tip, and a shaft
+/// runs down it from a hollow room with a side entrance. Limbs are tapered segment paths in a distance field.
 /// </summary>
 public sealed class CanopyTreeGenerator
 {
@@ -94,15 +94,30 @@ public sealed class CanopyTreeGenerator
     private const float SurfaceRootRadiusMax = 0.6f;
     private const float CrawlDepth = 5f;
     private const float CrawlUntil = 0.45f;
-    private const float TaprootLengthMin = 90f;
-    private const float TaprootLengthMax = 140f;
-    private const float TaprootRadiusScale = 0.5f;
+    private const float SideTaprootLengthMin = 45f;
+    private const float SideTaprootLengthMax = 105f;
+    private const float SideTaprootRadiusScale = 0.4f;
     private const float RootTipRadius = 0.8f;
     private const float RootWiggleAngle = 0.12f;
     private const float RootWiggleFrequency = 0.05f;
     private const float ChildRootChance = 0.06f;
     private const float ChildRootScale = 0.65f;
     private const int MaxRootLevel = 2;
+
+    // Lower trunk: runs from under the base to the shaft end, steering toward it harder within the pull distance.
+    private const float LowerTrunkRadiusScale = 0.65f;
+    private const float LowerTrunkTipRadius = 5f;
+    private const float LowerTrunkWiggleAngle = 0.06f;
+    private const float LowerTrunkPullMin = 0.08f;
+    private const float LowerTrunkPullMax = 0.4f;
+    private const float LowerTrunkPullDistance = 40f;
+    private const int HangingRootCountMin = 3;
+    private const int HangingRootCountMax = 5;
+    private const float HangingRootReach = 30f;
+    private const float HangingRootLengthMin = 12f;
+    private const float HangingRootLengthMax = 30f;
+    private const float HangingRootRadiusMin = 1.3f;
+    private const float HangingRootRadiusMax = 2.2f;
 
     // Surface
     private const float TrunkRootBlend = 5f;
@@ -119,10 +134,10 @@ public sealed class CanopyTreeGenerator
     private const float HollowHeightFraction = 0.6f;
     private const float EntranceRadius = 2.5f;
     private const float ShaftRadius = 2.5f;
-    private const float ShaftLengthFraction = 0.85f;
-    private const float ChamberRadius = 7f;
+    private const float ShaftOvershoot = 6f;
 
     private readonly Point ground;
+    private readonly Vector2 shaftEnd;
     private readonly UnifiedRandom random;
     private readonly FastNoiseLite wobble;
     private readonly FastNoiseLite bulge;
@@ -133,9 +148,10 @@ public sealed class CanopyTreeGenerator
     private readonly List<LimbPath> hollow = [];
     private readonly List<LeafCloud> canopy = [];
 
-    private CanopyTreeGenerator(Point ground, int seed)
+    private CanopyTreeGenerator(Point ground, Point shaftEnd, int seed)
     {
         this.ground = ground;
+        this.shaftEnd = new Vector2(shaftEnd.X + 0.5f, shaftEnd.Y + 0.5f);
         random = new UnifiedRandom(seed);
         wobble = CreateNoise(WobbleFrequency);
         bulge = CreateNoise(BulgeFrequency);
@@ -143,8 +159,11 @@ public sealed class CanopyTreeGenerator
         rootWiggle = CreateNoise(RootWiggleFrequency);
     }
 
-    /// <summary> Grows a tree whose trunk stands on the surface tile <paramref name="ground"/>; returns the tile area written. </summary>
-    public static Rectangle Grow(Point ground, int seed) => new CanopyTreeGenerator(ground, seed).Build();
+    /// <summary>
+    /// Grows a tree whose trunk stands on the surface tile <paramref name="ground"/> and whose shaft ends at
+    /// <paramref name="shaftEnd"/>, below it; returns the tile area written.
+    /// </summary>
+    public static Rectangle Grow(Point ground, Point shaftEnd, int seed) => new CanopyTreeGenerator(ground, shaftEnd, seed).Build();
 
     private Rectangle Build()
     {
@@ -161,8 +180,10 @@ public sealed class CanopyTreeGenerator
         for (int i = 0; i < rootCount; i++)
             GrowSurfaceRoot(baseRadius, i, rootCount);
 
-        LimbPath mainTaproot = GrowTaproots(baseRadius);
-        AddHollow(trunk, mainTaproot, baseRadius, height);
+        LimbPath lowerTrunk = GrowLowerTrunk(baseRadius);
+        GrowSideTaproot(baseRadius);
+        GrowHangingRoots(lowerTrunk);
+        AddHollow(trunk, lowerTrunk, baseRadius, height);
 
         return Rasterize();
     }
@@ -355,21 +376,68 @@ public sealed class CanopyTreeGenerator
             level: 0, taproot: false, TrunkRootBlend);
     }
 
-    /// <summary> The main taproot carries the shaft, so it never branches. </summary>
-    private LimbPath GrowTaproots(float baseRadius)
+    /// <summary> Continues the trunk from under its base to <see cref="shaftEnd"/>, steering harder near the end so it arrives there. </summary>
+    private LimbPath GrowLowerTrunk(float baseRadius)
     {
         var start = new Vector2(ground.X + 0.5f, ground.Y + TrunkBuriedDepth);
-        float length = random.NextFloat(TaprootLengthMin, TaprootLengthMax);
+        float startRadius = baseRadius * LowerTrunkRadiusScale;
+        float totalDistance = MathF.Max(Vector2.Distance(start, shaftEnd), StepLength);
+        int maxSteps = (int)(totalDistance / StepLength * 2f) + 2;
 
-        LimbPath main = GrowRoot(start, MathHelper.PiOver2 + random.NextFloat(-0.15f, 0.15f), length,
-            baseRadius * TaprootRadiusScale, level: MaxRootLevel, taproot: true, TrunkRootBlend);
+        var lowerTrunk = new LimbPath();
+        lowerTrunk.Add(start, startRadius);
 
+        Vector2 position = start;
+        float angle = MathHelper.PiOver2;
+        float distance = 0f;
+
+        for (int i = 0; i < maxSteps; i++)
+        {
+            Vector2 toEnd = shaftEnd - position;
+            float remaining = toEnd.Length();
+
+            if (remaining <= StepLength)
+                break;
+
+            float pull = MathHelper.Lerp(LowerTrunkPullMax, LowerTrunkPullMin, MathF.Min(remaining / LowerTrunkPullDistance, 1f));
+            angle += MathHelper.WrapAngle(MathF.Atan2(toEnd.Y, toEnd.X) - angle) * pull + rootWiggle.GetNoise(position.X, position.Y) * LowerTrunkWiggleAngle;
+            position += new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * StepLength;
+            distance += StepLength;
+
+            float radius = MathHelper.Lerp(startRadius, LowerTrunkTipRadius, 1f - MathF.Min(remaining / totalDistance, 1f));
+            lowerTrunk.Add(position, radius * (1f + bulge.GetNoise(distance, 1000f) * BulgeStrength));
+        }
+
+        lowerTrunk.Add(shaftEnd, LowerTrunkTipRadius);
+        wood.Add((lowerTrunk, TrunkRootBlend));
+        return lowerTrunk;
+    }
+
+    private void GrowSideTaproot(float baseRadius)
+    {
+        var start = new Vector2(ground.X + 0.5f, ground.Y + TrunkBuriedDepth);
         int side = random.NextBool(2) ? 1 : -1;
-        GrowRoot(start + new Vector2(side * baseRadius * 0.5f, 0f), MathHelper.PiOver2 + side * random.NextFloat(0.25f, 0.5f),
-            length * random.NextFloat(0.5f, 0.75f), baseRadius * TaprootRadiusScale * 0.8f,
-            level: 1, taproot: true, TrunkRootBlend);
 
-        return main;
+        GrowRoot(start + new Vector2(side * baseRadius * 0.5f, 0f), MathHelper.PiOver2 + side * random.NextFloat(0.25f, 0.5f),
+            random.NextFloat(SideTaprootLengthMin, SideTaprootLengthMax), baseRadius * SideTaprootRadiusScale,
+            level: 1, taproot: true, TrunkRootBlend);
+    }
+
+    /// <summary> Roots on alternating sides of the last <see cref="HangingRootReach"/> tiles of the lower trunk, curving down. </summary>
+    private void GrowHangingRoots(LimbPath lowerTrunk)
+    {
+        int count = random.Next(HangingRootCountMin, HangingRootCountMax + 1);
+        int first = Math.Max(lowerTrunk.Count - 1 - (int)(HangingRootReach / StepLength), 0);
+        int side = random.NextBool(2) ? 1 : -1;
+
+        for (int i = 0; i < count; i++, side = -side)
+        {
+            int index = random.Next(first, lowerTrunk.Count);
+            Vector2 start = lowerTrunk.Points[index] + new Vector2(side * lowerTrunk.Radii[index] * 0.6f, 0f);
+
+            GrowRoot(start, MathHelper.PiOver2 - side * random.NextFloat(0.4f, 1f), random.NextFloat(HangingRootLengthMin, HangingRootLengthMax),
+                random.NextFloat(HangingRootRadiusMin, HangingRootRadiusMax), level: MaxRootLevel, taproot: true, ChildRootBlend);
+        }
     }
 
     private LimbPath GrowRoot(Vector2 start, float angle, float length, float startRadius, int level, bool taproot, float blend)
@@ -413,7 +481,7 @@ public sealed class CanopyTreeGenerator
         return side > 0 ? belowHorizontal : MathHelper.Pi - belowHorizontal;
     }
 
-    private void AddHollow(LimbPath trunk, LimbPath mainTaproot, float baseRadius, int height)
+    private void AddHollow(LimbPath trunk, LimbPath lowerTrunk, float baseRadius, int height)
     {
         var interior = new LimbPath();
 
@@ -443,15 +511,14 @@ public sealed class CanopyTreeGenerator
         var shaft = new LimbPath();
         shaft.Add(new Vector2(ground.X + 0.5f, entranceY), ShaftRadius);
 
-        int shaftPoints = Math.Max((int)(mainTaproot.Count * ShaftLengthFraction), 1);
-        for (int i = 0; i < shaftPoints; i++)
-            shaft.Add(mainTaproot.Points[i], ShaftRadius);
+        foreach (Vector2 point in lowerTrunk.Points)
+            shaft.Add(point, ShaftRadius);
 
-        var chamber = new LimbPath();
-        chamber.Add(shaft.Points[^1], ChamberRadius);
-        chamber.Add(shaft.Points[^1], ChamberRadius);
+        // Past the tip, so the lower trunk is open at its end.
+        Vector2 tipDirection = (lowerTrunk.Points[^1] - lowerTrunk.Points[^2]).SafeNormalize(Vector2.UnitY);
+        shaft.Add(lowerTrunk.Points[^1] + tipDirection * ShaftOvershoot, ShaftRadius);
 
-        hollow.AddRange([interior, entrance, shaft, chamber]);
+        hollow.AddRange([interior, entrance, shaft]);
     }
 
     private Rectangle Rasterize()
@@ -512,13 +579,12 @@ public sealed class CanopyTreeGenerator
 
                 if (hollowField[x, y] < 0f)
                 {
-                    tile.ClearTile();
-                    tile.LiquidAmount = 0;
-
-                    // Walls only inside the silhouette or underground, not where the entrance pokes into open air.
-                    if (woodDistance < 0f || y > ground.Y)
+                    // Walls where the hollow cuts through wood or ground, not where it opens into air or a cave.
+                    if (woodDistance < 0f || (tile.HasTile && y > ground.Y))
                         tile.WallType = WallID.LivingWoodUnsafe;
 
+                    tile.ClearTile();
+                    tile.LiquidAmount = 0;
                     continue;
                 }
 

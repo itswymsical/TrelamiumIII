@@ -171,7 +171,7 @@ public static class TileExtensions
 
 
     /// <summary>Mutually merges this tile with every tile in <paramref name="otherIds"/>.</summary>
-    public static void Merge(this ModTile tile, params int[] otherIds)
+    public static void MergeWith(this ModTile tile, params int[] otherIds)
     {
         foreach (int id in otherIds)
         {

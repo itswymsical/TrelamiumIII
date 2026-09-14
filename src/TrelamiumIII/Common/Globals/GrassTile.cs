@@ -5,7 +5,7 @@ using Terraria.ObjectData;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Common.Globals.Tiles;
+namespace TrelamiumIII.Common.Globals;
 
 public abstract class GrassTile : ModTile
 {
@@ -35,7 +35,7 @@ public abstract class GrassTile : ModTile
         Main.tileBlockLight[Type] = true;
         Main.tileBlendAll[Type] = true;
 
-        Merge(DirtType, TileID.Grass);
+        MergeGrass(DirtType, TileID.Grass);
         AllowAnchor(TileID.Sunflower);
 
         TileID.Sets.Grass[Type] = true;
@@ -101,7 +101,7 @@ public abstract class GrassTile : ModTile
             Framing.GetTileSafely(i, j).TileType = (ushort)DirtType;
         }
     }
-    public void Merge(params int[] otherIds)
+    public void MergeGrass(params int[] otherIds)
     {
         foreach (int id in otherIds)
         {

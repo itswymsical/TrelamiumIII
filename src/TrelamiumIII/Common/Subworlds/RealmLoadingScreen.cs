@@ -9,8 +9,8 @@ using TrelamiumIII.Core.Dialogue.Projected;
 namespace TrelamiumIII.Common.Subworlds;
 
 /// <summary>
-///     Draws a <see cref="SubworldRealm" />'s loading screen. When the realm is being left rather than entered,
-///     it shows the main world's name and vanilla loading tips instead of the realm's own content.
+///     Draws a <see cref="SubworldRealm" />'s loading screen: background, splash overlay, tips, then the projected title.
+///     When the realm is being left rather than entered, it shows the Terraria logo and vanilla loading tips instead.
 /// </summary>
 internal sealed class RealmLoadingScreen(SubworldRealm realm)
 {
@@ -25,6 +25,7 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
     private const float TipFadeSeconds = 0.5f;
     private const float BackgroundZoom = 0.06f;
     private const float BackgroundZoomSeconds = 40f;
+    private const float SplashSettle = 0.05f;
 
     /// <summary>Layout lengths below are pixels at this screen height, scaled to the actual one.</summary>
     private const float ReferenceHeight = 1080f;
@@ -38,6 +39,8 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
     private const float TitleYaw = -0.28f;
     private const float TitlePitch = 0.08f;
     private const float TitleSway = 0.015f;
+    private const float TitleImageHeight = 150f;
+    private const float TitleImageWidthFraction = 0.4f;
 
     private const float TipScale = 1f;
     private const float TipWrapFraction = 0.45f;
@@ -74,6 +77,7 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
 
         DrawBackground(spriteBatch, fade);
         DrawShade(spriteBatch, fade);
+        DrawSplash(spriteBatch, fade, eased);
         DrawTip(spriteBatch, fade, ui, bottom);
         DrawLoadingIcon(spriteBatch, fade, ui, bottom);
 
@@ -161,11 +165,46 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
         }
     }
 
+    /// <summary>Stretched to the screen, shrinking from <see cref="SplashSettle" /> oversize to exact during the fade-in.</summary>
+    private void DrawSplash(SpriteBatch spriteBatch, float fade, float eased)
+    {
+        Texture2D? texture = leaving ? null : realm.LoadingSplash;
+
+        if (texture is null)
+            return;
+
+        Vector2 screen = new(Main.screenWidth, Main.screenHeight);
+        Vector2 size = screen * (1f + SplashSettle * (1f - eased));
+        Vector2 position = (screen - size) * 0.5f;
+
+        spriteBatch.Draw(texture, new Rectangle((int)position.X, (int)position.Y, (int)size.X, (int)size.Y), Color.White * fade);
+    }
+
     /// <summary>Drawn in local space at the origin; <see cref="ProjectedTransform" /> places it.</summary>
     private void DrawTitle(SpriteBatch spriteBatch, float fade, float eased, float ui)
     {
-        DynamicSpriteFont font = leaving ? FontAssets.DeathText.Value : realm.TitleFont;
-        string title = leaving ? UpdateSubworldSystem.MainWorldName : realm.DisplayName.Value;
+        Texture2D? image = leaving ? TextureAssets.Logo.Value : realm.LoadingTitleImage;
+
+        if (image is not null)
+            DrawTitleImage(spriteBatch, image, fade, ui);
+        else
+            DrawTitleText(spriteBatch, fade, eased, ui);
+    }
+
+    /// <summary>Fitted to the title box without scaling past <paramref name="ui" />. The shadow is the image tinted black.</summary>
+    private static void DrawTitleImage(SpriteBatch spriteBatch, Texture2D image, float fade, float ui)
+    {
+        float fit = MathF.Min(TitleImageHeight * ui / image.Height, Main.screenWidth * TitleImageWidthFraction / image.Width);
+        float scale = MathF.Min(ui, fit);
+
+        spriteBatch.Draw(image, new Vector2(TitleOutline * ui), null, Color.Black * 0.6f * fade, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+        spriteBatch.Draw(image, Vector2.Zero, null, Color.White * fade, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+    }
+
+    private void DrawTitleText(SpriteBatch spriteBatch, float fade, float eased, float ui)
+    {
+        DynamicSpriteFont font = realm.TitleFont;
+        string title = realm.DisplayName.Value;
 
         if (string.IsNullOrEmpty(title))
             return;
