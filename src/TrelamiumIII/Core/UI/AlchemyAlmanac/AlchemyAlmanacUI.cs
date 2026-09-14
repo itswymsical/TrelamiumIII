@@ -2014,7 +2014,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         BookCoverDrawer.Draw(sb, origin, PAGE_WIDTH, PAGE_HEIGHT, GUTTER, Opacity, UI_SCALE);
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.Default, Main.Rasterizer);
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
         sb.Draw(
             AlchemyAlmanacSystem.CompositeTarget,
             origin, null, Color.White * Opacity, 0f, Vector2.Zero, UI_SCALE, SpriteEffects.None, 0f);
@@ -2029,12 +2029,12 @@ public class AlchemyAlmanacUI : IInGameNotification
             if (current.Category == AlmanacCategory.Recipes || current.Category == AlmanacCategory.Ingredients)
             {
                 sb.End();
-                sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearWrap, DepthStencilState.Default, Main.Rasterizer);
+                sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearWrap, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
 
                 DrawSearchSlotOverlay(sb);
 
                 sb.End();
-                sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer);
+                sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
             }
 
             DrawHoverTooltips(sb);
@@ -2118,7 +2118,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     private void DrawHoverTooltips(SpriteBatch sb)
     {
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer);
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
 
         bool onToc = current.View == ViewMode.Browse && state == BookState.Reading
             && current.Category != AlmanacCategory.Notes;
