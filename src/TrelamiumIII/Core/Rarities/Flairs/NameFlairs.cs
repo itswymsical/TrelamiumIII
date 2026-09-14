@@ -1,24 +1,9 @@
 using ReLogic.Graphics;
-using Terraria.UI.Chat;
+using TrelamiumIII.Core.Rarities.Text;
 
 namespace TrelamiumIII.Core.Rarities.Flairs;
 
-/// <summary>
-///     Paints the item name one glyph at a time through a colour ramp, optionally rippling.
-/// </summary>
-/// <remarks>
-///     <para>
-///         Glyphs are placed by accumulating each character's own advance rather than by measuring
-///         prefixes of the string. <see cref="DynamicSpriteFont" /> lays text out per character with
-///         no pair kerning, so the two agree, and the accumulating form stays linear instead of
-///         re-measuring a growing prefix for every character.
-///     </para>
-///     <para>
-///         The ramp ping-pongs rather than wrapping. A sawtooth ramp that scrolls has a seam where it
-///         resets, and on a six-letter word the seam is a third of the name flicking colour once a
-///         second.
-///     </para>
-/// </remarks>
+/// <summary>Paints the name glyph by glyph through a colour ramp. The ramp ping-pongs, so scrolling it leaves no seam where it wraps.</summary>
 public sealed class GradientNameFlair : RarityFlair
 {
     public Color From { get; init; } = Color.White;
@@ -31,61 +16,35 @@ public sealed class GradientNameFlair : RarityFlair
     /// <summary>Ramp scroll speed, in cycles per second. 0 holds it still.</summary>
     public float Speed { get; init; } = 0.35f;
 
-    /// <summary>Vertical ripple height in pixels. 0 keeps the baseline flat.</summary>
-    public float WaveAmplitude { get; init; }
+    /// <summary>Per-glyph wave, jitter and pulse. Null keeps the glyphs still.</summary>
+    public GlyphMotion? Motion { get; init; }
 
-    public float WaveSpeed { get; init; } = 4f;
-
-    /// <summary>Radians of ripple phase per character. Larger values make a tighter wave.</summary>
-    public float WavePhasePerGlyph { get; init; } = 0.4f;
-
-    /// <summary>Whether to keep vanilla's drop shadow. Off reads as light rather than ink.</summary>
-    public bool Shadow { get; init; } = true;
+    /// <summary>Outline and blends. Null uses the style's <see cref="RarityStyle.Text" />.</summary>
+    public TextStyle? Text { get; init; }
 
     public override bool PaintsName => true;
 
-    public override BlendState Blend => BlendState.AlphaBlend;
-
     public override void PaintName(in RarityNameContext ctx)
     {
-        var line = ctx.Line;
-        var font = line.Font;
-        string text = line.Text;
+        GlyphLayout layout = ctx.Layout;
+        Span<GlyphDraw> draws = TextPainter.Prepare(layout, Color.White);
 
-        if (string.IsNullOrEmpty(text))
+        if (draws.IsEmpty)
             return;
 
         float alpha = ctx.Color.A / 255f;
-        float advance = 0f;
+        float last = Math.Max(ctx.Text.Length - 1, 1);
 
-        for (int i = 0; i < text.Length; i++)
+        for (int i = 0; i < draws.Length; i++)
         {
-            string glyph = text[i].ToString();
+            ref GlyphDraw draw = ref draws[i];
+            int index = layout.Glyphs[i].Index;
 
-            float phase = text.Length == 1 ? 0f : i / (float)(text.Length - 1);
-            float ramp = PingPong(phase * Cycles - ctx.Time * Speed);
-
-            Color color = Color.Lerp(From, To, ramp) * alpha;
-
-            float lift = WaveAmplitude == 0f
-                ? 0f
-                : MathF.Sin(ctx.Time * WaveSpeed + i * WavePhasePerGlyph) * WaveAmplitude;
-
-            Vector2 position = ctx.Position + new Vector2(advance, lift);
-
-            if (Shadow)
-            {
-                ChatManager.DrawColorCodedStringWithShadow(ctx.SpriteBatch, font, glyph, position,
-                    color, line.Rotation, line.Origin, line.BaseScale);
-            }
-            else
-            {
-                ctx.SpriteBatch.DrawString(font, glyph, position, color, line.Rotation, line.Origin,
-                    line.BaseScale, SpriteEffects.None, 0f);
-            }
-
-            advance += font.MeasureString(glyph).X * line.BaseScale.X;
+            draw.Color = Color.Lerp(From, To, PingPong(index / last * Cycles - ctx.Time * Speed)) * alpha;
+            Motion?.Apply(ref draw, index, ctx.Time);
         }
+
+        TextPainter.Draw(ctx, draws, Text ?? ctx.Style.Text);
     }
 
     /// <summary>Maps any real onto 0..1 and back again, with no discontinuity at the turns.</summary>
@@ -97,14 +56,8 @@ public sealed class GradientNameFlair : RarityFlair
     }
 }
 
-/// <summary>
-///     An additive halo of offset copies of the name, so the text reads as lit from behind.
-/// </summary>
-/// <remarks>
-///     Drawn under the glyphs rather than over them: over the top it washes the letterforms out into
-///     a smear at anything past a token intensity, which is the failure mode that makes this sort of
-///     effect look cheap.
-/// </remarks>
+/// <summary>An additive ring of offset copies of the name, drawn under the glyphs so the text reads as lit from behind.</summary>
+/// <remarks>Over the glyphs it washes the letterforms out at anything past a token intensity.</remarks>
 public sealed class GhostNameFlair : RarityFlair
 {
     /// <summary>Null takes the style's glow colour, which is usually what is wanted.</summary>
@@ -131,22 +84,20 @@ public sealed class GhostNameFlair : RarityFlair
 
     public override void UnderName(in RarityNameContext ctx)
     {
-        if (Copies <= 0 || string.IsNullOrEmpty(ctx.Line.Text))
+        if (Copies <= 0 || ctx.Layout.Glyphs.Length == 0)
             return;
 
-        var line = ctx.Line;
-        Color tint = Color ?? ctx.Style.GlowColor;
-
+        var tint = Color ?? ctx.Style.GlowColor;
         float breath = 1f + MathF.Sin(ctx.Time * PulseSpeed) * Pulse;
-        Color halo = tint * (Intensity * breath * (ctx.Color.A / 255f));
+        var halo = tint * (Intensity * breath * (ctx.Color.A / 255f));
 
         for (int i = 0; i < Copies; i++)
         {
             float angle = i / (float)Copies * MathHelper.TwoPi + ctx.Time * Spin;
             Vector2 offset = angle.ToRotationVector2() * Radius;
 
-            ctx.SpriteBatch.DrawString(line.Font, line.Text, ctx.Position + offset, halo,
-                line.Rotation, line.Origin, line.BaseScale, SpriteEffects.None, 0f);
+            ctx.SpriteBatch.DrawString(ctx.Font, ctx.Text, ctx.Position + offset, halo, ctx.Rotation, ctx.Origin, ctx.Scale,
+                SpriteEffects.None, 0f);
         }
     }
 }

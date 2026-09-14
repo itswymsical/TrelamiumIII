@@ -2,7 +2,9 @@ using Terraria.Localization;
 using TrelamiumIII.Core.Graphics.Metaballs;
 using TrelamiumIII.Core.Graphics.Metaballs.Layers;
 using TrelamiumIII.Core.Rarities;
+using TrelamiumIII.Core.Rarities.Fields;
 using TrelamiumIII.Core.Rarities.Flairs;
+using TrelamiumIII.Core.Rarities.Text;
 
 namespace TrelamiumIII.Content.Rarities;
 
@@ -15,6 +17,8 @@ public sealed class EmberRarity : FlavorRarity
 
     protected override RarityStyle BuildStyle() => new()
     {
+        Text = new TextStyle { Outline = new TextOutline { Color = RarityColor, Directions = 2, Spread = 0.5f }, BodyBlend = BlendState.Additive },
+
         Color = RarityColor,
         Glow = new Color(255, 220, 130),
         Flavor = Language.GetOrRegister("Mods.TrelamiumIII.Rarities.Ember", () => "It has not finished burning."),
@@ -22,14 +26,17 @@ public sealed class EmberRarity : FlavorRarity
         // Back to front: flame, then the halo over it, then the name on top of both.
         Flairs =
         [
-            new MetaballFlair
+            new FieldFlair
             {
-                Look = GasLook.Flame,
-                SpawnRate = 2f,
-                Radius = 8f,
-                Life = 26f,
-                Growth = 0.18f,
-                Buoyancy = 0.09f,
+                Field = new MetaballFlairField
+                {
+                    Look = GasLook.Flame,
+                    Rate = 2f,
+                    Radius = 8f,
+                    Life = 26f,
+                    Growth = 0.18f,
+                    Buoyancy = 0.09f,
+                },
             },
 
             new GhostNameFlair
@@ -42,8 +49,7 @@ public sealed class EmberRarity : FlavorRarity
             {
                 From = new Color(255, 120, 40),
                 To = new Color(255, 235, 165),
-                WaveAmplitude = 1f,
-                WaveSpeed = 5f,
+                Motion = new GlyphMotion { WaveAmplitude = 1f, WaveSpeed = 5f },
             },
         ],
     };
@@ -62,16 +68,19 @@ public sealed class SporebornRarity : FlavorRarity
 
         Flairs =
         [
-            new MetaballFlair
+            new FieldFlair
             {
-                Look = GasLook.Spore,
-                SpawnRate = 1.2f,
-                Radius = 10f,
-                Life = 40f,
-                Buoyancy = 0.045f,
+                Field = new MetaballFlairField
+                {
+                    Look = GasLook.Spore,
+                    Rate = 1.2f,
+                    Radius = 10f,
+                    Life = 40f,
+                    Buoyancy = 0.045f,
 
-                WorldLayer = static () => MetaballSystem.GetLayer<SporeLayer>(),
-                WorldSpawnRate = 0.35f,
+                    WorldLayer = static () => MetaballSystem.GetLayer<SporeLayer>(),
+                    WorldRate = 0.35f,
+                },
             },
 
             new GradientNameFlair

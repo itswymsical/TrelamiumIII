@@ -357,14 +357,28 @@ public abstract class Particle : ILoadable
         return VariantTextures[index]?.Value;
     }
 
-    internal void DrawGlowPass(SpriteBatch spriteBatch)
+    internal void DrawGlowPass(SpriteBatch spriteBatch) => DrawGlowAt(spriteBatch, Position - Main.screenPosition);
+
+    /// <summary>Runs <see cref="DrawGlow" /> at <paramref name="drawPosition" />, in the active batch's space.</summary>
+    internal void DrawGlowAt(SpriteBatch spriteBatch, Vector2 drawPosition)
     {
         if (ResolveTexture() is not { } texture)
             return;
 
-        DrawGlow(spriteBatch, texture, Position - Main.screenPosition, Opacity);
+        DrawGlow(spriteBatch, texture, drawPosition, Opacity);
     }
+
     internal void Draw(SpriteBatch spriteBatch)
+    {
+        Color lightColor = UseLighting
+            ? Lighting.GetColor(Position.ToTileCoordinates())
+            : Color.White;
+
+        DrawAt(spriteBatch, Position - Main.screenPosition, lightColor);
+    }
+
+    /// <summary>Draws the current frame at <paramref name="drawPosition" />, in the active batch's space, lit by <paramref name="lightColor" />.</summary>
+    internal void DrawAt(SpriteBatch spriteBatch, Vector2 drawPosition, Color lightColor)
     {
         if (ResolveTexture() is not { } texture)
             return;
@@ -375,12 +389,7 @@ public abstract class Particle : ILoadable
         var source = new Rectangle(0, frameHeight * Math.Clamp(Frame, 0, frames - 1), texture.Width, frameHeight);
         var origin = new Vector2(texture.Width, frameHeight) * 0.5f;
 
-        Color lightColor = UseLighting
-            ? Lighting.GetColor(Position.ToTileCoordinates())
-            : Color.White;
-
         Color drawColor = Color.MultiplyRGBA(lightColor) * Opacity;
-        Vector2 drawPosition = Position - Main.screenPosition;
 
         if (!PreDraw(spriteBatch, texture, drawPosition, drawColor))
             return;

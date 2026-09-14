@@ -88,14 +88,36 @@ public sealed class ParticleSystem : ModSystem
         float rotationVelocity = 0f,
         Color? color = null) where T : Particle, new()
     {
+        T? particle = Create<T>(position, velocity, timeLeft, variant, scale, rotation, rotationVelocity, color);
+
+        if (particle is null)
+            return null;
+
+        if (particles.Count >= MAX_PARTICLES)
+            particles.RemoveRange(0, particles.Count - MAX_PARTICLES + 1);
+
+        particles.Add(particle);
+
+        return particle;
+    }
+
+    /// <summary>Builds and initialises a particle without adding it to the world list, for systems that simulate and draw their own.</summary>
+    /// <returns>The particle, or null on a server or when the class registered no textures.</returns>
+    public static T? Create<T>(
+        Vector2 position,
+        Vector2 velocity,
+        int timeLeft,
+        int variant = RANDOM_VARIANT,
+        float scale = 1f,
+        float rotation = 0f,
+        float rotationVelocity = 0f,
+        Color? color = null) where T : Particle, new()
+    {
         if (Main.dedServ || !loaded || timeLeft <= 0)
             return null;
 
         if (!registry.TryGetValue(typeof(T), out var textures) || textures.Length == 0)
             return null;
-
-        if (particles.Count >= MAX_PARTICLES)
-            particles.RemoveRange(0, particles.Count - MAX_PARTICLES + 1);
 
         var particle = new T
         {
@@ -117,7 +139,6 @@ public sealed class ParticleSystem : ModSystem
         particle.Frame = Main.rand.Next(Math.Max(particle.FrameCount, 1));
 
         particle.OnSpawn();
-        particles.Add(particle);
 
         return particle;
     }

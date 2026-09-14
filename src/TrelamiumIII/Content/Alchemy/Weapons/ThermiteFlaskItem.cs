@@ -1,5 +1,6 @@
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
@@ -16,7 +17,7 @@ public class ThermiteFlaskItem : ModItem
         Item.damage = 10;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
-        Item.rare = ItemRarityID.Orange;
+        Item.rare = ModContent.RarityType<EmberRarity>();
 
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useAnimation = Item.useTime = 27;

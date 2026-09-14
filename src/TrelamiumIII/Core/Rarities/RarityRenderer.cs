@@ -1,16 +1,25 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
-using Terraria.UI.Chat;
+using TrelamiumIII.Core.Graphics;
+using TrelamiumIII.Core.Rarities.Text;
 using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.Rarities;
 
-/// <summary>
-///     Drives every registered <see cref="RarityStyle" />, on every surface an item is shown on.
-/// </summary>
+/// <summary>Drives every registered <see cref="RarityStyle" /> on the item tooltip, inventory slots and dropped items.</summary>
 public sealed class RarityRenderer : GlobalItem
 {
+    /// <summary>Text key shared by every item tooltip, so field content carries over while the hovered item changes.</summary>
+    internal static readonly object TooltipKey = new();
+
+    /// <summary>Batch state the sprite pre-pass replaced with its shader batch, for the post-pass to restore.</summary>
+    private SpriteBatchState shaderHome;
+
+    /// <summary>Whether a shader batch is open. Tracked rather than derived: a shader that is still loading opens none.</summary>
+    private bool shaderBatchOpen;
+
     public override bool InstancePerEntity => true;
+
     #region Tooltip
 
     public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
@@ -20,195 +29,93 @@ public sealed class RarityRenderer : GlobalItem
 
         tooltips.Add(new TooltipLine(Mod, "RarityFlavor", style.Flavor.Value)
         {
-            // Dimmed rather than the rarity colour outright: the flavour line is an aside, and at
-            // full strength it competes with the name it is supposed to be commenting on.
             OverrideColor = style.FlavorColor ?? style.Color * 0.75f,
         });
     }
 
     public override bool PreDrawTooltipLine(Item item, DrawableTooltipLine line, ref int yOffset)
     {
-        // A projected panel has taken this tooltip over and is drawing every line onto its own face,
-        // in perspective. Vanilla asks this hook before it checks whether anything refused the
-        // tooltip, so drawing here regardless is what puts a second copy of the name -- halo and all
-        // -- back at the flat position the tooltip would have had.
+        // A projected panel draws every line itself; drawing here as well leaves a flat copy at the vanilla position.
         if (ProjectedTooltip.OwnsFrame)
             return false;
 
-        if (!RarityStyles.Any || line.Name != "ItemName")
+        if (!RarityStyles.Any || line.OneDropLogo || !RarityStyles.TryGet(item, out var style))
             return true;
 
-        if (line.OneDropLogo)
-            return true;
+        var position = new Vector2(line.X, line.Y);
+        Color color = line.OverrideColor ?? line.Color;
 
-        if (!RarityStyles.TryGet(item, out var style) || style.Flairs.Count == 0)
-            return true;
-
-        DrawName(item, line, style);
-
-        return false;
-    }
-
-    /// <summary>Runs the three name passes: behind, the glyphs themselves, in front.</summary>
-    private static void DrawName(Item item, DrawableTooltipLine line, RarityStyle style)
-    {
-        var spriteBatch = Main.spriteBatch;
-
-        var ctx = new RarityNameContext(
-            item,
-            line,
-            spriteBatch,
-            style,
-            new Vector2(line.X, line.Y),
-            line.Font.MeasureString(line.Text) * line.BaseScale,
-            line.OverrideColor ?? line.Color
-        );
-
-        RunNamePass(style, ctx, over: false);
-        PaintName(style, ctx);
-        RunNamePass(style, ctx, over: true);
-    }
-
-    private static void PaintName(RarityStyle style, in RarityNameContext ctx)
-    {
-        var line = ctx.Line;
-
-        if (style.NamePainter is not { } painter)
+        if (line.Name == "ItemName" && line.Mod == "Terraria")
         {
-            // Exactly what vanilla would have done with this line, shadow and colour codes included.
-            // Reproducing it with a bare DrawString is what costs the drop shadow, and the loss only
-            // shows up over a light background.
-            ChatManager.DrawColorCodedStringWithShadow(ctx.SpriteBatch, line.Font, line.Text,
-                ctx.Position, ctx.Color, line.Rotation, line.Origin, line.BaseScale);
+            if (style.Flairs.Count == 0 && style.Text.IsVanilla)
+                return true;
 
-            return;
+            RarityText.Draw(new RarityNameContext(Main.spriteBatch, style, line.Font, line.Text, position, line.BaseScale, line.Rotation,
+                line.Origin, color, TooltipKey, item));
+
+            return false;
         }
 
-        if (painter.ManagesOwnBatch)
+        if (line.Name == "RarityFlavor" && line.Mod == Mod.Name && style.FlavorText is { } flavorText)
         {
-            painter.PaintName(ctx);
-            return;
+            TextPainter.DrawPlain(Main.spriteBatch, line.Font, line.Text, position, color, line.Rotation, line.Origin, line.BaseScale,
+                flavorText);
+
+            return false;
         }
 
-        RarityBatch.Restart(ctx.SpriteBatch, painter.Blend);
-        painter.PaintName(ctx);
-        RarityBatch.RestoreInterface(ctx.SpriteBatch);
-    }
-
-    /// <summary>
-    ///     Draws one side of the name, grouping consecutive flairs that share a blend into a single
-    ///     batch.
-    /// </summary>
-    /// <remarks>
-    ///     The batch is only reopened when the blend actually changes, so the common case -- a style
-    ///     whose flairs are all additive -- costs one swap in and one swap out no matter how many
-    ///     there are.
-    /// </remarks>
-    private static void RunNamePass(RarityStyle style, in RarityNameContext ctx, bool over)
-    {
-        BlendState? open = null;
-
-        foreach (var flair in style.Flairs)
-        {
-            if (flair.ManagesOwnBatch)
-            {
-                // It is about to Begin for itself, so anything we have open has to be closed first
-                // or the End it performs will be unbalanced.
-                if (open is not null)
-                {
-                    RarityBatch.RestoreInterface(ctx.SpriteBatch);
-                    open = null;
-                }
-
-                if (over)
-                    flair.OverName(ctx);
-                else
-                    flair.UnderName(ctx);
-
-                continue;
-            }
-
-            if (open != flair.Blend)
-            {
-                RarityBatch.Restart(ctx.SpriteBatch, flair.Blend);
-                open = flair.Blend;
-            }
-
-            if (over)
-                flair.OverName(ctx);
-            else
-                flair.UnderName(ctx);
-        }
-
-        if (open is not null)
-            RarityBatch.RestoreInterface(ctx.SpriteBatch);
+        return true;
     }
 
     #endregion
 
     #region Sprite
 
-    public override bool PreDrawInInventory(Item item, SpriteBatch spriteBatch, Vector2 position,
-        Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+    public override bool PreDrawInInventory(Item item, SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor,
+        Color itemColor, Vector2 origin, float scale)
     {
         if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
             return true;
 
-        // Where vanilla is about to put the frame's centre, given the origin it was handed.
-        Vector2 center = position + (frame.Size() * 0.5f - origin) * scale;
-
-        var ctx = new RaritySpriteContext(item, spriteBatch, style, center, frame.Size() * scale,
-            drawColor, 0f, scale, inWorld: false);
-
-        return PreDrawSprite(style, ctx);
+        return PreDrawSprite(style, SlotContext(item, spriteBatch, style, position, frame, drawColor, origin, scale));
     }
 
-    public override void PostDrawInInventory(Item item, SpriteBatch spriteBatch, Vector2 position,
-        Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+    public override void PostDrawInInventory(Item item, SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor,
+        Color itemColor, Vector2 origin, float scale)
     {
         if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
             return;
 
-        Vector2 center = position + (frame.Size() * 0.5f - origin) * scale;
-
-        var ctx = new RaritySpriteContext(item, spriteBatch, style, center, frame.Size() * scale,
-            drawColor, 0f, scale, inWorld: false);
-
-        PostDrawSprite(style, ctx);
+        PostDrawSprite(style, SlotContext(item, spriteBatch, style, position, frame, drawColor, origin, scale));
     }
 
-    public override bool PreDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor,
-        Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+    public override bool PreDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation,
+        ref float scale, int whoAmI)
     {
         if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
             return true;
 
-        var ctx = new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
-            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true);
-
-        return PreDrawSprite(style, ctx);
+        return PreDrawSprite(style, new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
+            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true));
     }
 
-    public override void PostDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor,
-        Color alphaColor, float rotation, float scale, int whoAmI)
+    public override void PostDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale,
+        int whoAmI)
     {
         if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
             return;
 
-        var ctx = new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
-            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true);
-
-        PostDrawSprite(style, ctx);
+        PostDrawSprite(style, new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
+            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true));
     }
 
-    /// <summary>
-    ///     The drawn size of a dropped item's current frame.
-    /// </summary>
-    /// <remarks>
-    ///     Taken from the sprite rather than from <see cref="Entity.Size" />, which is the hitbox and
-    ///     for plenty of items is nothing like the picture -- a flair orbiting at hitbox radius sits
-    ///     inside the sprite on some items and well outside it on others.
-    /// </remarks>
+    /// <summary>A slot context centred where vanilla puts the frame's centre for the origin it was given.</summary>
+    private static RaritySpriteContext SlotContext(Item item, SpriteBatch spriteBatch, RarityStyle style, Vector2 position, Rectangle frame,
+        Color drawColor, Vector2 origin, float scale)
+        => new(item, spriteBatch, style, position + (frame.Size() * 0.5f - origin) * scale, frame.Size() * scale, drawColor, 0f, scale,
+            inWorld: false);
+
+    /// <summary>The drawn size of a dropped item's current frame. <see cref="Entity.Size" /> is the hitbox, not the picture.</summary>
     private static Vector2 WorldSpriteSize(Item item, float scale)
     {
         if (TextureAssets.Item[item.type] is not { Value: { } sheet })
@@ -221,27 +128,7 @@ public sealed class RarityRenderer : GlobalItem
         return frame.Size() * scale;
     }
 
-    /// <summary>
-    ///     Whether the pre-pass opened a shader batch that the post-pass still owes a close.
-    /// </summary>
-    /// <remarks>
-    ///     Tracked rather than re-derived from the style, because the two are not the same question:
-    ///     a style can name a shader whose asset has not finished loading, in which case no batch was
-    ///     opened and closing one would hand the caller a batch it never asked for, with our sampler
-    ///     and sort rather than its own. The hooks are called in strict pairs and draws are
-    ///     sequential, so a single flag is enough.
-    /// </remarks>
-    private bool shaderBatchOpen;
-
-    /// <summary>
-    ///     Draws the underlays, then leaves the batch in whatever state the sprite needs.
-    /// </summary>
-    /// <remarks>
-    ///     Always returns true. The sprite is never redrawn by hand: when a shader is wanted the
-    ///     batch is reopened immediate, the effect applied, and the game left to perform its own
-    ///     draw through it -- which keeps animation frames, world bobbing and every other positioning
-    ///     rule the game owns, none of which a reimplementation gets right for free.
-    /// </remarks>
+    /// <summary>Draws the underlays, then binds the style's sprite shader so the game's own sprite draw goes through it.</summary>
     private bool PreDrawSprite(RarityStyle style, in RaritySpriteContext ctx)
     {
         RunSpritePass(style, ctx, over: false);
@@ -253,9 +140,8 @@ public sealed class RarityRenderer : GlobalItem
 
         source.ApplySpriteShader(effect, ctx);
 
-        RarityBatch.Restart(ctx.SpriteBatch, ctx.InWorld, BlendState.AlphaBlend, SpriteSortMode.Immediate);
-        effect.CurrentTechnique.Passes[0].Apply();
-
+        shaderHome = SpriteBatchState.Capture(ctx.SpriteBatch);
+        RarityBatch.Restart(ctx.SpriteBatch, shaderHome.With(BlendState.AlphaBlend, SpriteSortMode.Immediate, effect));
         shaderBatchOpen = true;
 
         return true;
@@ -266,40 +152,28 @@ public sealed class RarityRenderer : GlobalItem
     {
         if (shaderBatchOpen)
         {
-            RarityBatch.Restore(ctx.SpriteBatch, ctx.InWorld);
+            RarityBatch.Restart(ctx.SpriteBatch, shaderHome);
             shaderBatchOpen = false;
         }
 
         RunSpritePass(style, ctx, over: true);
     }
 
+    /// <summary>Draws one side of the sprite, sharing a batch between consecutive flairs with the same blend.</summary>
     private static void RunSpritePass(RarityStyle style, in RaritySpriteContext ctx, bool over)
     {
-        BlendState? open = null;
+        FlairHooks hook = over ? FlairHooks.OverSprite : FlairHooks.UnderSprite;
+        SpriteBatch spriteBatch = ctx.SpriteBatch;
 
-        foreach (var flair in style.Flairs)
+        SpriteBatchState home = SpriteBatchState.Capture(spriteBatch);
+        SpriteBatchState current = home;
+
+        foreach (RarityFlair flair in style.Flairs)
         {
-            if (flair.ManagesOwnBatch)
-            {
-                if (open is not null)
-                {
-                    RarityBatch.Restore(ctx.SpriteBatch, ctx.InWorld);
-                    open = null;
-                }
-
-                if (over)
-                    flair.OverSprite(ctx);
-                else
-                    flair.UnderSprite(ctx);
-
+            if ((flair.Hooks & hook) == 0)
                 continue;
-            }
 
-            if (open != flair.Blend)
-            {
-                RarityBatch.Restart(ctx.SpriteBatch, ctx.InWorld, flair.Blend);
-                open = flair.Blend;
-            }
+            RarityBatch.Switch(spriteBatch, ref current, flair.ManagesOwnBatch ? home : home.With(flair.Blend));
 
             if (over)
                 flair.OverSprite(ctx);
@@ -307,29 +181,28 @@ public sealed class RarityRenderer : GlobalItem
                 flair.UnderSprite(ctx);
         }
 
-        if (open is not null)
-            RarityBatch.Restore(ctx.SpriteBatch, ctx.InWorld);
+        RarityBatch.Switch(spriteBatch, ref current, home);
     }
 
     #endregion
 
-    /// <summary>Feeds the emitters of items lying in the world.</summary>
-    /// <remarks>
-    ///     Runs on the server too, where none of this exists, so the guard is load-bearing rather
-    ///     than defensive.
-    /// </remarks>
+    /// <summary>Per-tick world hook. Also runs on servers, where flairs must not touch graphics.</summary>
     public override void Update(Item item, ref float gravity, ref float maxFallSpeed)
     {
         if (Main.dedServ || !RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
             return;
 
-        foreach (var flair in style.Flairs)
+        foreach (RarityFlair flair in style.Flairs)
             flair.UpdateWorldItem(item);
     }
 }
 
-/// <summary>Releases what the rarity styles allocated when the mod unloads.</summary>
+/// <summary>Releases what rarity styles allocated when the mod unloads.</summary>
 public sealed class RarityStyleSystem : ModSystem
 {
-    public override void Unload() => RarityStyles.Clear();
+    public override void Unload()
+    {
+        RarityStyles.Clear();
+        GlyphLayout.ClearCache();
+    }
 }

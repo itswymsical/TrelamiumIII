@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Terraria.Localization;
+using TrelamiumIII.Core.Rarities.Text;
 
 namespace TrelamiumIII.Core.Rarities;
 
@@ -47,6 +48,12 @@ public sealed class RarityStyle
 
     /// <summary>Colour of the flavour line. Defaults to a dimmed <see cref="Color" />.</summary>
     public Color? FlavorColor { get; init; } = new Color(240, 75, 75);
+
+    /// <summary>Outline and blends for the name when no flair paints it. Painter flairs without their own fall back to it.</summary>
+    public TextStyle Text { get; init; } = TextStyle.Vanilla;
+
+    /// <summary>Outline and blends for the flavour line. Null leaves the line to vanilla.</summary>
+    public TextStyle? FlavorText { get; init; }
 
     /// <summary>
     ///     The decorations, drawn in order. Earlier entries sit further back on every surface.
