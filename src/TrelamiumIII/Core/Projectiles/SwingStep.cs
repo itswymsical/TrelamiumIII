@@ -107,7 +107,7 @@ public readonly record struct SwingStep
     ///     weapon already out, so it is the cheapest step to land and should not also be the best.
     /// </remarks>
     public static SwingStep Thrust => new() { Arc = 0.3f, Speed = 1.35f, Reach = 1.3f, Damage = 0.85f, Extend = 1.8f };
-    public static SwingStep Poke => new() { Arc = 0.1f, Speed = 1.35f, Reach = 1.7f, Extend = 1.8f };
+    public static SwingStep Poke => new() { Arc = 0f, Speed = 1.35f, Reach = 1.7f, Extend = 1.8f };
 
     /// <summary>
     ///     A full turn of the shoulders: twice the arc, slower, and worth landing.

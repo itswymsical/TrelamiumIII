@@ -321,7 +321,7 @@ public readonly record struct SwordProfile
 
         WindupTicks = 3,
         SwingTicks = 8,
-        RecoverTicks = 4,
+        RecoverTicks = 6,
         ComboWindow = 10,
 
         Arc = 1.3f,

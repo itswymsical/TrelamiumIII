@@ -7,14 +7,14 @@ namespace TrelamiumIII.Content.Misc;
 
 /// <summary>Runs vanilla shortsword stabs (<see cref="ProjAIStyleID.ShortSword" />) as a <see cref="HeldSword" /> combo.</summary>
 /// <remarks>
-///     The AI_161 detour replaces only vanilla's AI body: the projectile keeps its type, owner and <c>ai[]</c> slots, and other
+///     The AI_161 detour replaces only vanilla's AI: the projectile keeps its type, owner and <c>ai[]</c> slots, and other
 ///     mods' PreAI/AI/PostAI still run. Stab types without an entry in <see cref="Profiles" /> fall through to vanilla.
 /// </remarks>
 public sealed class ShortswordRework : GlobalProjectile
 {
     private static readonly Dictionary<int, SwordProfile> Profiles = BuildProfiles();
 
-    /// <remarks>Created on first use, never in SetDefaults, so the cloned global template cannot share one.</remarks>
+    /// <remarks>Created on first use, never in SetDefaults, so the cloned global template cant share one.</remarks>
     private Stab? stab;
 
     public override bool InstancePerEntity => true;
@@ -40,7 +40,7 @@ public sealed class ShortswordRework : GlobalProjectile
 
     public override void OnSpawn(Projectile projectile, IEntitySource source) => Sword(projectile).OnSpawn();
 
-    /// <remarks>Velocity carries the aim, not motion.</remarks>
+    // velocity carries the aim
     public override bool ShouldUpdatePosition(Projectile projectile) => false;
 
     public override bool? CanDamage(Projectile projectile) => Sword(projectile).CanDamage();
@@ -63,7 +63,7 @@ public sealed class ShortswordRework : GlobalProjectile
     /// <summary>Geometry measured off the vanilla stab sprites, in pixels at scale 1.</summary>
     private static Dictionary<int, SwordProfile> BuildProfiles()
     {
-        // 32x32 up-right art; grip at (4.5, 27), tip at (30, 1.5), crossguard a quarter of the way up.
+        // 32x32 up-right sprites: grip at (4.5, 27), tip at (30, 1.5), crossguard a quarter of the way up.
         SwordProfile metal = SwordProfile.Shortsword with
         {
             BladeLength = 36f,
@@ -73,16 +73,7 @@ public sealed class ShortswordRework : GlobalProjectile
 
         var profiles = new Dictionary<int, SwordProfile>
         {
-            // 14x58 straight-up art; grip at row 45.
-            [ProjectileID.GladiusStab] = SwordProfile.Shortsword with
-            {
-                BladeLength = 44f,
-                HiltFraction = 0.22f,
-                Origin = new Vector2(0.5f, 0.78f),
-                SpriteAngle = MathHelper.PiOver2,
-            },
-
-            // 12x28 straight-up art with no guard; grip at row 24.
+            // 12x28 sprite with no guard: grip at row 24.
             [ProjectileID.RulerStab] = SwordProfile.Shortsword with
             {
                 BladeLength = 23f,

@@ -150,11 +150,6 @@ ActLang: {
 		Description: Obstruct different types of stone
 	}
 
-	foliagecutter: {
-		Name: Grass Cutter
-		Description: Cut grass and vine tiles
-	}
-
 	lumber: {
 		Name: Lumberjack
 		Description: Fell tree trunks

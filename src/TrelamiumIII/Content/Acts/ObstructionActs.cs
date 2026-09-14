@@ -122,16 +122,6 @@ public sealed class StoneBlocksAct : TileBreakPredicateAct
         => TileID.Sets.Stone[tileType];
 }
 
-public sealed class FoliageCutterAct : TileBreakPredicateAct
-{
-    public override string ID => "act.foliagecutter";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-    public override float ExpMultiplier => 0.5f;
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.TileCutIgnore.Regrowth[tileType];
-}
-
 public sealed class LumberAct : TileBreakPredicateAct
 {
     /// <summary>Counted in trees felled, not trunk tiles broken. See <see cref="EventsPerAction"/>.</summary>
