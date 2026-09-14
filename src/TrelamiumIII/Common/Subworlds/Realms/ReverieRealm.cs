@@ -18,20 +18,6 @@ public class TrelamiumIIIRealm : SubworldRealm
     public override bool NormalUpdates => true;
     public override bool NoPlayerSaving => false;
 
-    public override void SetStaticDefaults()
-    {
-        try
-        {
-            base.SetStaticDefaults();
-            OtherworldTitle = TextureAssets.Logo?.Value;
-        }
-        catch (Exception ex)
-        {
-            TrelamiumIII.Instance?.Logger.Error($"Error in TrelamiumIIIRealm.SetStaticDefaults: {ex.Message}");
-            OtherworldTitle = null;
-        }
-    }
-
     public override void Update()
     {
         ManageGameConditions();

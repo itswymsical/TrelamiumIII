@@ -1,84 +1,70 @@
-﻿using SubworldLibrary;
+using ReLogic.Graphics;
+using SubworldLibrary;
 using Terraria.GameContent;
 using Terraria.GameInput;
 
 namespace TrelamiumIII.Common.Subworlds;
 
-/// <summary>A subworld with a loading screen and other visual content.</summary>
+/// <summary>
+///     A subworld with its own loading screen. The title is <see cref="Subworld.DisplayName" />; tips are every key
+///     under <c>Mods.TrelamiumIII.Subworlds.{Name}.Tips</c>.
+/// </summary>
 public abstract class SubworldRealm : Subworld
 {
-    private int currentFrame;
-    private double frameTime;
-    private const int totalFrames = 19;
-    private const double timePerFrame = 40;
-    private readonly float fadeInDuration = 12f;
-    private double elapsedTime;
+    private RealmLoadingScreen? loadingScreen;
 
-    public virtual Texture2D? LoadingScreen { get; protected set; }
-    public virtual Texture2D? OtherworldTitle { get; protected set; }
-    public virtual Texture2D? LoadingIcon { get; protected set; }
+    /// <summary>Cover-fitted behind the loading screen. Null leaves it black.</summary>
+    public virtual Texture2D? LoadingBackground => VanillaBackground(SurfaceBackgroundID.Forest1);
+
+    /// <summary>Music slot played while this realm loads, or -1 to keep vanilla's menu track.</summary>
+    public virtual int LoadingMusic => -1;
+
+    public virtual DynamicSpriteFont TitleFont => FontAssets.DeathText.Value;
+
+    public virtual DynamicSpriteFont TipFont => FontAssets.MouseText.Value;
+
+    /// <summary>Colour of the title underline, tip label and debug progress bar.</summary>
+    public virtual Color LoadingAccent => new(255, 190, 60);
 
     public override void SetStaticDefaults()
     {
-        try
-        {
-            LoadingScreen = TextureAssets.Background[SurfaceBackgroundID.Forest1].Value;
-            OtherworldTitle = TextureAssets.Logo?.Value;
-            LoadingIcon = TextureAssets.LoadingSunflower?.Value;
-        }
-        catch (Exception ex)
-        {
-            TrelamiumIII.Instance?.Logger.Error($"Error loading subworld textures: {ex.Message}");
+        // Registers the key so tML adds it to the localization file.
+        _ = DisplayName;
+    }
 
-            LoadingScreen = null;
-            OtherworldTitle = null;
-            LoadingIcon = null;
-        }
+    /// <summary>Only while entering this realm; leaving it keeps vanilla's menu music.</summary>
+    public override bool ChangeAudio()
+    {
+        if (!Main.gameMenu || LoadingMusic < 0 || SubworldSystem.Current != this)
+            return false;
+
+        Main.newMusic = LoadingMusic;
+        return true;
     }
 
     public override void DrawSetup(GameTime gameTime)
     {
         PlayerInput.SetZoom_UI();
-
         Main.instance.GraphicsDevice.Clear(Color.Black);
-        Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.UIScaleMatrix);
+
         DrawMenu(gameTime);
 
+        Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.UIScaleMatrix);
         Main.DrawCursor(Main.DrawThickCursor());
         Main.spriteBatch.End();
     }
 
+    /// <summary>Begins and ends its own sprite batches; <see cref="DrawSetup" /> calls it with none open.</summary>
     public override void DrawMenu(GameTime gameTime)
     {
-        var opacity = MathHelper.Clamp((float)(elapsedTime / fadeInDuration), 0f, 1f);
-
-        elapsedTime += gameTime.ElapsedGameTime.TotalSeconds;
-        frameTime += gameTime.ElapsedGameTime.TotalMilliseconds;
-        if (frameTime >= timePerFrame)
-        {
-            frameTime -= timePerFrame;
-            currentFrame = (currentFrame + 1) % totalFrames;
-        }
-        if (LoadingScreen != null)
-        {
-            Main.spriteBatch.Draw(LoadingScreen, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White * opacity);
-            LoadingTooltips(Main.spriteBatch);
-        }
-
-        if (OtherworldTitle != null)
-        {
-            Vector2 nameTexturePosition = new(10, 10);
-            Main.spriteBatch.Draw(OtherworldTitle, nameTexturePosition, Color.White * opacity);
-        }
-
-        if (LoadingIcon != null)
-        {
-            var frameWidth = LoadingIcon.Width;
-            var frameHeight = LoadingIcon.Height / totalFrames;
-            Rectangle sourceRectangle = new(0, currentFrame * frameHeight, frameWidth, frameHeight);
-            Vector2 iconPosition = new(Main.screenWidth - LoadingIcon.Width - 10, Main.screenHeight - frameHeight - 10);
-            Main.spriteBatch.Draw(LoadingIcon, iconPosition, sourceRectangle, Color.White);
-        }
+        loadingScreen ??= new RealmLoadingScreen(this);
+        loadingScreen.Draw(Main.spriteBatch, gameTime);
     }
-   public virtual void LoadingTooltips(SpriteBatch spriteBatch) { }
+
+    /// <summary>Loads the vanilla surface background on first use.</summary>
+    protected static Texture2D VanillaBackground(int id)
+    {
+        Main.instance.LoadBackground(id);
+        return TextureAssets.Background[id].Value;
+    }
 }
