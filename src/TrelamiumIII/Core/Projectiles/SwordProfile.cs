@@ -64,10 +64,8 @@ public readonly record struct SwordProfile
 
     /// <summary>Radians the blade sits off the texture's own axes at rest.</summary>
     /// <remarks>
-    ///     Terraria weapon sprites point up and to the right, which is a quarter turn off the
-    ///     positive X axis that rotation is measured from -- hence the default. A sprite drawn
-    ///     straight up wants zero, and one drawn along the X axis wants a negative quarter turn.
-    ///     Mirroring is handled for you; state the unflipped angle.
+    ///     The rotation that maps the sprite's blade onto +X: up-right art is <c>PiOver4</c>, straight-up art is
+    ///     <c>PiOver2</c>, art along +X is zero. State the unflipped angle; mirroring is applied when drawn.
     /// </remarks>
     public float SpriteAngle { get; init; }
 
@@ -322,7 +320,7 @@ public readonly record struct SwordProfile
         Thickness = 12f,
 
         WindupTicks = 3,
-        SwingTicks = 6,
+        SwingTicks = 8,
         RecoverTicks = 4,
         ComboWindow = 10,
 
@@ -332,7 +330,7 @@ public readonly record struct SwordProfile
         SwingEase = EaseCircularOut,
 
         SwingSound = SoundID.Item1,
-        Steps = [SwingStep.SlashDown, SwingStep.SlashUp],
+        Steps = [SwingStep.Thrust, SwingStep.Up, SwingStep.Down],
         TrailOpacity = 0.75f,
         TrailInner = 0.35f,
         TrailLength = 0.45f,
