@@ -877,6 +877,11 @@ Items: {
 		DisplayName: Wood Wicker Wall Item
 		Tooltip: ""
 	}
+
+	PeatBlock: {
+		DisplayName: Peat Block
+		Tooltip: ""
+	}
 }
 
 Tiles: {

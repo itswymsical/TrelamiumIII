@@ -1,5 +1,6 @@
 using SubworldLibrary;
 using System.Collections.Generic;
+using Terraria.GameContent;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Trees;
@@ -38,11 +39,17 @@ public class CanopyTreeLabRealm : SubworldRealm
         base.Update();
     }
 
-    /// <summary> Grows the lab tree from <paramref name="seed"/> on terrain that must already be flat. </summary>
+    /// <summary> Grows the lab tree from <paramref name="seed"/> on terrain that must already be flat, over a copy of the Ingress hub cave. </summary>
     public static void GrowTree(int seed)
     {
         Seed = seed;
-        treeArea = CanopyTreeGenerator.Grow(new Point(Main.maxTilesX / 2, GroundY), seed);
+
+        var ground = new Point(Main.maxTilesX / 2, GroundY);
+        var shaftEnd = new Point(ground.X, GroundY + IngressRealm.ShaftDepth);
+        Rectangle hub = IngressRealm.CarveHub(shaftEnd, seed);
+        Rectangle tree = CanopyTreeGenerator.Grow(ground, shaftEnd, seed);
+
+        treeArea = hub.IsEmpty ? tree : Rectangle.Union(tree, hub);
     }
 
     /// <summary> Flattens the previous tree's area, grows a new tree and reframes everything that changed. </summary>

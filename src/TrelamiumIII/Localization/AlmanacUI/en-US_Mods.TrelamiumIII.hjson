@@ -19,3 +19,10 @@ AlmanacUI: {
 	RecipesDiscovered: recipes discovered
 	IngredientsDiscovered: ingredients found
 }
+
+Biomes: {
+	IngressBiome: {
+		DisplayName: Ingress Biome
+		TownNPCDialogueName: the Ingress Biome
+	}
+}

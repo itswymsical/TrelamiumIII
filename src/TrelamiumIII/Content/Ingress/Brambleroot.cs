@@ -32,7 +32,7 @@ public class BramblerootTile : ModTile
         // AnimationFrameHeight = 90;
         TileID.Sets.GemsparkFramingTypes[Type] = Type;
 
-        AddMapEntry(new Color(94, 64, 56));
+        AddMapEntry(new Color(182, 144, 108));
     }
 
     public override bool TileFrame(int i, int j, ref bool resetFrame, ref bool noBreak)

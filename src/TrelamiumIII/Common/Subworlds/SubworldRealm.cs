@@ -16,6 +16,12 @@ public abstract class SubworldRealm : Subworld
     /// <summary>Cover-fitted behind the loading screen. Null leaves it black.</summary>
     public virtual Texture2D? LoadingBackground => VanillaBackground(SurfaceBackgroundID.Forest1);
 
+    /// <summary>Stretched over the whole screen above <see cref="LoadingBackground" />; transparent where it should show through.</summary>
+    public virtual Texture2D? LoadingSplash => null;
+
+    /// <summary>Replaces the text title when set. Fitted to the title box and projected like the text.</summary>
+    public virtual Texture2D? LoadingTitleImage => null;
+
     /// <summary>Music slot played while this realm loads, or -1 to keep vanilla's menu track.</summary>
     public virtual int LoadingMusic => -1;
 
