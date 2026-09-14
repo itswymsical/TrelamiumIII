@@ -1156,3 +1156,20 @@ Configs: {
 		}
 	}
 }
+
+Subworlds: {
+	LoadingScreen.TipLabel: TIP
+
+	Ingress: {
+		DisplayName: Ingress
+
+		Tips: {
+			Brambleroot: Brambleroot runs beneath all of Ingress. Every cavern down there connects to another.
+			LivingTrees: Living trees grow across the surface of Ingress, though never close to where you arrive.
+			Heart: Something was built at the heart of the Ingress caverns.
+		}
+	}
+
+	TrelamiumIII.DisplayName: Reverie
+	CanopyTreeLab.DisplayName: Canopy Tree Lab
+}

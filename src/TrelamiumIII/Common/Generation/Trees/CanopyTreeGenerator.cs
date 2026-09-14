@@ -1,15 +1,14 @@
 using System.Collections.Generic;
 using Terraria.Utilities;
 using TrelamiumIII.Common.Generation.Utils;
-using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Common.Generation.Trees;
 
 /// <summary>
-/// Canopy tree trunk and roots. The trunk leans in a slow S-curve, tapers, and flares into surface roots that arch to
-/// the ground, run just under it, then dive; taproots go straight down. A hollow room with a side entrance opens onto
-/// a shaft down the main taproot to a chamber. Limbs are tapered segment paths blended in a distance field.
+/// Canopy tree trunk, branches and roots in living wood. The trunk leans in a slow S-curve, grows a major side branch,
+/// small low branches and a fanned crown, and flares into surface roots and taproots. A hollow room with a side
+/// entrance opens onto a shaft down the main taproot to a chamber. Limbs are tapered segment paths in a distance field.
 /// </summary>
 public sealed class CanopyTreeGenerator
 {
@@ -34,7 +33,41 @@ public sealed class CanopyTreeGenerator
     private const float BulgeStrength = 0.1f;
     private const float BulgeFrequency = 0.06f;
 
-    // Roots
+    // Branches: positions are fractions of the trunk path, angles are radians from vertical.
+    private const float BranchTipRadius = 1f;
+    private const float BranchRiseAngle = 0.45f;
+    private const float BranchRiseRate = 0.05f;
+    private const float BranchWiggleAngle = 0.06f;
+    private const float BranchWiggleFrequency = 0.05f;
+    private const float BranchForkChance = 0.08f;
+    private const float BranchForkScale = 0.7f;
+    private const int MaxBranchLevel = 2;
+    private const float MajorBranchPositionMin = 0.3f;
+    private const float MajorBranchPositionMax = 0.45f;
+    private const float MajorBranchAngleMin = 0.7f;
+    private const float MajorBranchAngleMax = 1f;
+    private const float MajorBranchLengthMin = 60f;
+    private const float MajorBranchLengthMax = 90f;
+    private const float MajorBranchRadiusScale = 0.55f;
+    private const int MinorBranchCountMin = 1;
+    private const int MinorBranchCountMax = 2;
+    private const float MinorBranchPositionMin = 0.12f;
+    private const float MinorBranchPositionMax = 0.28f;
+    private const float MinorBranchAngleMin = 0.6f;
+    private const float MinorBranchAngleMax = 1.1f;
+    private const float MinorBranchLengthMin = 18f;
+    private const float MinorBranchLengthMax = 36f;
+    private const float MinorBranchRadiusScale = 0.35f;
+    private const float CrownStart = 0.78f;
+    private const int CrownBranchCountMin = 5;
+    private const int CrownBranchCountMax = 8;
+    private const float CrownSpreadMin = 0.3f;
+    private const float CrownSpreadMax = 1.3f;
+    private const float CrownBranchLengthMin = 30f;
+    private const float CrownBranchLengthMax = 65f;
+    private const float CrownBranchRadiusScale = 0.7f;
+
+    // Roots: angles are screen-space radians, 0 pointing right and pi/2 down.
     private const int SurfaceRootCountMin = 6;
     private const int SurfaceRootCountMax = 10;
     private const float SurfaceRootLengthMin = 40f;
@@ -55,7 +88,9 @@ public sealed class CanopyTreeGenerator
 
     // Surface
     private const float TrunkRootBlend = 5f;
+    private const float TrunkBranchBlend = 3f;
     private const float ChildRootBlend = 2.5f;
+    private const float ForkBlend = 1.5f;
     private const float BarkRoughness = 0.9f;
     private const float BarkFrequency = 0.14f;
 
@@ -73,6 +108,7 @@ public sealed class CanopyTreeGenerator
     private readonly UnifiedRandom random;
     private readonly FastNoiseLite wobble;
     private readonly FastNoiseLite bulge;
+    private readonly FastNoiseLite branchWiggle;
     private readonly FastNoiseLite rootWiggle;
 
     private readonly List<(LimbPath Path, float Blend)> wood = [];
@@ -84,6 +120,7 @@ public sealed class CanopyTreeGenerator
         random = new UnifiedRandom(seed);
         wobble = CreateNoise(WobbleFrequency);
         bulge = CreateNoise(BulgeFrequency);
+        branchWiggle = CreateNoise(BranchWiggleFrequency);
         rootWiggle = CreateNoise(RootWiggleFrequency);
     }
 
@@ -97,6 +134,9 @@ public sealed class CanopyTreeGenerator
 
         LimbPath trunk = GrowTrunk(baseRadius, height);
         wood.Add((trunk, 0f));
+
+        GrowSideBranches(trunk);
+        GrowCrown(trunk);
 
         int rootCount = random.Next(SurfaceRootCountMin, SurfaceRootCountMax + 1);
         for (int i = 0; i < rootCount; i++)
@@ -139,6 +179,88 @@ public sealed class CanopyTreeGenerator
         return trunk;
     }
 
+    /// <summary> A major branch toward the side the trunk leans at its base, and small unforked branches lower on the other side. </summary>
+    private void GrowSideBranches(LimbPath trunk)
+    {
+        int majorIndex = trunk.IndexAt(random.NextFloat(MajorBranchPositionMin, MajorBranchPositionMax));
+        int side = LeanSide(trunk, majorIndex);
+
+        GrowBranch(trunk.Points[majorIndex], side * random.NextFloat(MajorBranchAngleMin, MajorBranchAngleMax),
+            random.NextFloat(MajorBranchLengthMin, MajorBranchLengthMax), trunk.Radii[majorIndex] * MajorBranchRadiusScale,
+            level: 0, TrunkBranchBlend);
+
+        int minorCount = random.Next(MinorBranchCountMin, MinorBranchCountMax + 1);
+        for (int i = 0; i < minorCount; i++)
+        {
+            int index = trunk.IndexAt(random.NextFloat(MinorBranchPositionMin, MinorBranchPositionMax));
+
+            GrowBranch(trunk.Points[index], -side * random.NextFloat(MinorBranchAngleMin, MinorBranchAngleMax),
+                random.NextFloat(MinorBranchLengthMin, MinorBranchLengthMax), trunk.Radii[index] * MinorBranchRadiusScale,
+                level: MaxBranchLevel, TrunkBranchBlend);
+        }
+    }
+
+    /// <summary> Branches fanning out of the upper trunk on alternating sides: lower ones long and wide, higher ones shorter and steeper. </summary>
+    private void GrowCrown(LimbPath trunk)
+    {
+        int count = random.Next(CrownBranchCountMin, CrownBranchCountMax + 1);
+        int first = trunk.IndexAt(CrownStart);
+        int side = random.NextBool(2) ? 1 : -1;
+
+        for (int i = 0; i < count; i++, side = -side)
+        {
+            float order = (i + 0.5f) / count;
+            int index = (int)MathHelper.Lerp(first, trunk.Count - 1, order);
+            float spread = MathHelper.Lerp(CrownSpreadMax, CrownSpreadMin, order) + random.NextFloat(-0.12f, 0.12f);
+            float length = MathHelper.Lerp(CrownBranchLengthMax, CrownBranchLengthMin, order) * random.NextFloat(0.8f, 1.2f);
+            float radius = MathF.Max(trunk.Radii[index] * CrownBranchRadiusScale, BranchTipRadius * 2f);
+
+            GrowBranch(trunk.Points[index], side * spread, length, radius, level: 0, TrunkBranchBlend);
+        }
+    }
+
+    /// <summary> Angles are radians from vertical, positive leaning right; the branch bends up toward its rise angle and may fork. </summary>
+    private void GrowBranch(Vector2 start, float angle, float length, float startRadius, int level, float blend)
+    {
+        int side = angle >= 0f ? 1 : -1;
+        int steps = Math.Max((int)(length / StepLength), 2);
+
+        var branch = new LimbPath();
+        branch.Add(start, startRadius);
+        Vector2 position = start;
+
+        for (int i = 1; i <= steps; i++)
+        {
+            float progress = i / (float)steps;
+            float radius = MathHelper.Lerp(startRadius, BranchTipRadius, MathF.Pow(progress, 0.9f));
+
+            angle += (side * BranchRiseAngle - angle) * BranchRiseRate;
+            angle += branchWiggle.GetNoise(position.X, position.Y) * BranchWiggleAngle;
+            position += new Vector2(MathF.Sin(angle), -MathF.Cos(angle)) * StepLength;
+            branch.Add(position, radius);
+
+            if (level < MaxBranchLevel && progress > 0.35f && progress < 0.8f && random.NextFloat() < BranchForkChance)
+            {
+                float forkAngle = angle + (random.NextBool(2) ? 1f : -1f) * random.NextFloat(0.35f, 0.7f);
+                GrowBranch(position, forkAngle, (steps - i) * StepLength * random.NextFloat(0.6f, 0.9f),
+                    radius * BranchForkScale, level + 1, ForkBlend);
+            }
+        }
+
+        wood.Add((branch, blend));
+    }
+
+    /// <summary> Which way the trunk is heading horizontally at <paramref name="index"/>, or a random side when it's vertical. </summary>
+    private int LeanSide(LimbPath trunk, int index)
+    {
+        float dx = trunk.Points[Math.Min(index + 1, trunk.Count - 1)].X - trunk.Points[Math.Max(index - 1, 0)].X;
+
+        if (MathF.Abs(dx) > 0.05f)
+            return MathF.Sign(dx);
+
+        return random.NextBool(2) ? 1 : -1;
+    }
+
     /// <summary> Roots alternate sides; later ones start lower and steeper so the flare fans out around the base. </summary>
     private void GrowSurfaceRoot(float baseRadius, int index, int count)
     {
@@ -173,7 +295,6 @@ public sealed class CanopyTreeGenerator
         return main;
     }
 
-    /// <summary> Angles are screen-space radians: 0 points right, pi/2 points down. </summary>
     private LimbPath GrowRoot(Vector2 start, float angle, float length, float startRadius, int level, bool taproot, float blend)
     {
         int side = MathF.Cos(angle) >= 0f ? 1 : -1;
@@ -299,7 +420,6 @@ public sealed class CanopyTreeGenerator
             hollowField.AddPath(segments, 0f);
 
         FastNoiseLite bark = CreateNoise(BarkFrequency);
-        ushort woodType = (ushort)ModContent.TileType<BramblerootTile>();
 
         for (int x = area.Left; x < area.Right; x++)
         {
@@ -320,7 +440,7 @@ public sealed class CanopyTreeGenerator
                 else if (woodDistance < 0f)
                 {
                     tile.HasTile = true;
-                    tile.TileType = woodType;
+                    tile.TileType = TileID.LivingWood;
                     tile.Slope = SlopeType.Solid;
                     tile.IsHalfBlock = false;
                 }
@@ -351,6 +471,9 @@ public sealed class CanopyTreeGenerator
             Points.Add(point);
             Radii.Add(radius);
         }
+
+        /// <summary> Point index at <paramref name="fraction"/> of the way along the path, clamped. </summary>
+        public int IndexAt(float fraction) => (int)MathHelper.Clamp(fraction * (Count - 1), 0, Count - 1);
 
         public List<TaperedSegment> ToSegments()
         {
