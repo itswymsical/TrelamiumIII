@@ -81,11 +81,18 @@ public sealed class ShortswordRework : GlobalProjectile
                 Origin = new Vector2(0.5f, 0.85f),
                 SpriteAngle = MathHelper.PiOver2,
             },
+            [ProjectileID.CopperShortswordStab] = SwordProfile.Shortsword with
+            {
+                BladeLength = 36f,
+                HiltFraction = 0.25f,
+                Origin = new Vector2(0.14f, 0.84f),
+                RecoverTicks = 8,
+            },
         };
 
         int[] metals =
         [
-            ProjectileID.CopperShortswordStab, ProjectileID.TinShortswordStab,
+            ProjectileID.TinShortswordStab,
             ProjectileID.IronShortswordStab, ProjectileID.LeadShortswordStab,
             ProjectileID.SilverShortswordStab, ProjectileID.TungstenShortswordStab,
             ProjectileID.GoldShortswordStab, ProjectileID.PlatinumShortswordStab,
@@ -119,5 +126,10 @@ public sealed class ShortswordReworkItem : GlobalItem
     public override bool AppliesToEntity(Item entity, bool lateInstantiation)
         => lateInstantiation && ShortswordRework.Reworks(entity.shoot);
 
-    public override void SetDefaults(Item entity) => entity.UseSound = null;
+    public override void SetDefaults(Item entity) { 
+        entity.UseSound = null;
+
+        if (entity.type == ItemID.CopperShortsword)
+            entity.useTime = entity.useAnimation = 16;   
+    }
 }
