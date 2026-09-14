@@ -1,3 +1,6 @@
+using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Components.Items;
+
 namespace TrelamiumIII.Content.Frostbark;
 
 public class FlailstormItem : ModItem
@@ -24,6 +27,14 @@ public class FlailstormItem : ModItem
         Item.noUseGraphic =
             Item.channel = Item.noMelee = true;
         Item.shoot = ModContent.ProjectileType<FlailstormProj>();
+
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        component.ChemicalType = ChemicalDamageType.Cryonic;
+        component.AfflictionDuration = 150;
+        component.ReactionChance = 0.1f;
+        component.ChemicalDamage = 0.75f;
     }
 
     public override bool MeleePrefix() => true;

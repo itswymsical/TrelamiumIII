@@ -1,4 +1,6 @@
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Frostbark;
+using TrelamiumIII.Core.Components.Items;
 
 namespace TrelamiumIII.Content.Frostbark;
 
@@ -20,7 +22,16 @@ public class BorealHewerItem : ModItem
         Item.shootSpeed = 10.5f;
         Item.noUseGraphic = true;
         Item.shoot = ModContent.ProjectileType<BorealHewerProj>();
+
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        component.ChemicalType = ChemicalDamageType.Cryonic;
+        component.AfflictionDuration = 40;
+        component.ReactionChance = 0.013f;
+        component.ChemicalDamage = 0.35f;
     }
+
     public override bool CanUseItem(Player player)
     {
         return player.ownedProjectileCounts[ModContent.ProjectileType<BorealHewerProj>()] <= 0;

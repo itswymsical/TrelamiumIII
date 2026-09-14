@@ -315,6 +315,29 @@ public readonly record struct SwordProfile
         TrailLength = 0.45f,
     };
 
+    public static SwordProfile Shortsword => Broadsword with
+    {
+        BladeLength = 28f,
+        HiltFraction = 0.22f,
+        Thickness = 12f,
+
+        WindupTicks = 3,
+        SwingTicks = 6,
+        RecoverTicks = 4,
+        ComboWindow = 10,
+
+        Arc = 1.3f,
+        Anticipation = 0.3f,
+        Extend = 6f,
+        SwingEase = EaseCircularOut,
+
+        SwingSound = SoundID.Item1,
+        Steps = [SwingStep.SlashDown, SwingStep.SlashUp],
+        TrailOpacity = 0.75f,
+        TrailInner = 0.35f,
+        TrailLength = 0.45f,
+    };
+
     /// <summary>
     ///     Two long draws and a turn. Hangs, then crosses the whole arc in a handful of frames.
     /// </summary>
@@ -343,7 +366,7 @@ public readonly record struct SwordProfile
         Extend = 12f,
         SwingEase = Draw,
 
-        Steps = [SwingStep.Down, SwingStep.Up, SwingStep.Spin],
+        Steps = [SwingStep.Down, SwingStep.Up, SwingStep.SlashDown],
 
         TrailColor = new Color(198, 232, 255, 90),
         TrailEdgeColor = new Color(240, 250, 255, 0),

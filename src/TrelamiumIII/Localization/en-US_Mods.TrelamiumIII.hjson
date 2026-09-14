@@ -679,7 +679,11 @@ Items: {
 
 	Skofnung: {
 		DisplayName: Skofnung
-		Tooltip: ""
+		Tooltip:
+			'''
+			Creates clouds of gas and ice shards on impact
+			inflicts frostburn on critical strike
+			'''
 	}
 
 	Brambleroot: {

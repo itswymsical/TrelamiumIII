@@ -107,6 +107,7 @@ public readonly record struct SwingStep
     ///     weapon already out, so it is the cheapest step to land and should not also be the best.
     /// </remarks>
     public static SwingStep Thrust => new() { Arc = 0.3f, Speed = 1.35f, Reach = 1.3f, Damage = 0.85f, Extend = 1.8f };
+    public static SwingStep Poke => new() { Arc = 0.1f, Speed = 1.35f, Reach = 1.7f, Extend = 1.8f };
 
     /// <summary>
     ///     A full turn of the shoulders: twice the arc, slower, and worth landing.
@@ -115,7 +116,8 @@ public readonly record struct SwingStep
     ///     A finisher. The extra arc is what pays for the speed loss -- it sweeps behind the player
     ///     as well as in front, so a spin is the step that answers being surrounded.
     /// </remarks>
-    public static SwingStep Spin => new() { Arc = 2f, Speed = 0.8f, Damage = 1.4f, Knockback = 1.6f, Extend = 0.6f };
+    public static SwingStep SlashDown => new() { Arc = 2f, Speed = 0.8f, Extend = 0.6f };
+    public static SwingStep SlashUp => new() { Arc = -2f, Speed = 0.8f, Extend = 0.6f };
 
     /// <summary>
     ///     Down, then up. The loop every weapon gets unless it says otherwise.
