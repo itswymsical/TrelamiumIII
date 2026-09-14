@@ -149,10 +149,10 @@ public class OrePass : GenPass
 
         yield return new OreProfile(
             TileType: ModContent.TileType<SulfurTile>(),
-            DepthPeak: 0.40f, DepthRange: 0.35f,
+            DepthPeak: 0.60f, DepthRange: 0.19f,
             BaseThreshold: 0.76f, NoiseFreq: 0.044f,
-            Density: 0.11f,
-            VeinSize: 5, VeinSteps: 9,
+            Density: 0.097f,
+            VeinSize: 5, VeinSteps: 8,
             HostTiles: [TileID.Stone, TileID.Ash],
             BiomeEnrich: [(TileID.Stone, 0.14f), (TileID.Ash, 0.14f)]
         );

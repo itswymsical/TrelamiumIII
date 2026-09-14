@@ -17,6 +17,6 @@ public class SulfurTile : ModTile
         MineResist = 0.25f;
         HitSound = SoundID.Dig;
 
-        AddMapEntry(new Color(94, 64, 56));
+        AddMapEntry(new Color(150, 123, 13));
     }
 }

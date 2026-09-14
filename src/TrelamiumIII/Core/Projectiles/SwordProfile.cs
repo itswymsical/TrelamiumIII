@@ -330,7 +330,7 @@ public readonly record struct SwordProfile
         SwingEase = EaseCircularOut,
 
         SwingSound = SoundID.Item1,
-        Steps = [SwingStep.Thrust, SwingStep.Up, SwingStep.Down],
+        Steps = [SwingStep.Poke, SwingStep.Up, SwingStep.Down],
         TrailOpacity = 0.75f,
         TrailInner = 0.35f,
         TrailLength = 0.45f,
