@@ -152,7 +152,7 @@ ActLang: {
 
 	lumber: {
 		Name: Lumberjack
-		Description: Fell tree trunks
+		Description: Fell trees
 	}
 
 	slimes: {
