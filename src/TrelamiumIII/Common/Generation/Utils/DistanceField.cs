@@ -90,7 +90,7 @@ public sealed class DistanceField
     }
 
     /// <summary> Polynomial smooth minimum with blend width <paramref name="k"/>; a plain minimum when k is 0. </summary>
-    private static float SmoothMin(float a, float b, float k)
+    public static float SmoothMin(float a, float b, float k)
     {
         if (k <= 0f)
             return MathF.Min(a, b);

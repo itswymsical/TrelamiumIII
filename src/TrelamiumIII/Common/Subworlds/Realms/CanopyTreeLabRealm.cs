@@ -35,8 +35,7 @@ public class CanopyTreeLabRealm : SubworldRealm
 
     public override void Update()
     {
-        Main.dayTime = true;
-        Main.time = Main.dayLength / 2;
+        base.Update();
     }
 
     /// <summary> Grows the lab tree from <paramref name="seed"/> on terrain that must already be flat. </summary>
