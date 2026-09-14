@@ -6,25 +6,6 @@ namespace TrelamiumIII.Core.Dialogue;
 /// <summary>
 ///     How a dialogue box asks the speaking NPC to act like it is speaking.
 /// </summary>
-/// <remarks>
-///     <para>
-///         One convention, owned by the box rather than by the thing that opened it. Rooting used to
-///         be applied at the point an NPC was clicked, which meant it only ever happened for that one
-///         entry: a conversation started from a job step, a world event or a command rooted nobody,
-///         and a conversation with two people in it rooted whoever was clicked for the whole of it,
-///         including the lines they were not saying.
-///     </para>
-///     <para>
-///         Driving it from the line instead means the speaker faces the player because they are
-///         speaking, not because they were talked to.
-///     </para>
-///     <para>
-///         Nothing here has to be torn down. The behaviour is an interrupt that ends itself the
-///         moment <c>stillSpeaking</c> goes false -- which covers the line moving to someone else, the
-///         box closing, and the NPC dying mid-sentence -- so whatever it was doing before resumes on
-///         its own.
-///     </para>
-/// </remarks>
 public static class DialogueBehavior
 {
     /// <summary>

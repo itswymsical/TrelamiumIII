@@ -33,18 +33,10 @@ internal readonly struct BubbleGeometry
 ///     The look of a projected bubble: one place for every metric and colour it is made of.
 /// </summary>
 /// <remarks>
-///     <para>
 ///         Everything here is in texels, and the numbers are small on purpose. The panel is authored
 ///         at the resolution it will be seen at as chunky pixels and magnified afterwards, so a border
-///         is two pixels because two pixels is what it should look like -- not because two divided by
+///         is two pixels because two pixels is what it should look like, not because two divided by
 ///         some scale factor happens to land near the right thickness.
-///     </para>
-///     <para>
-///         White on black, with the speaker's colour spent only on the offset ghost behind the shape.
-///         A bubble that took the speaker's colour over its whole face would compete with the world
-///         behind it and stop reading as a projection; a bubble with no trace of them at all makes
-///         every character sound the same. The ghost is the cheapest place to put the difference.
-///     </para>
 /// </remarks>
 internal static class PanelStyle
 {
@@ -53,12 +45,6 @@ internal static class PanelStyle
     ///     the panel is authored once in texels and this is the only thing between that and the
     ///     screen, so raising it makes the box bigger and chunkier together.
     /// </summary>
-    /// <remarks>
-    ///     Deliberately a float. There is no requirement that a texel land on a whole screen pixel:
-    ///     the quad is under a perspective divide by the time it is sampled, so its texels are already
-    ///     landing on fractional boundaries and varying in size across the panel. That is what makes
-    ///     it read as a pixelated object in the scene rather than a pixelated overlay on the screen.
-    /// </remarks>
     public const float PIXEL = 1.75f;
 
     /// <summary>
