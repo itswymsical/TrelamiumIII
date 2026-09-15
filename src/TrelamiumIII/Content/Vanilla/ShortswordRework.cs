@@ -3,7 +3,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Vanilla;
 
 /// <summary>Runs vanilla shortsword stabs (<see cref="ProjAIStyleID.ShortSword" />) as a <see cref="HeldSword" /> combo.</summary>
 /// <remarks>

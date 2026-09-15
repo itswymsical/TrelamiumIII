@@ -902,6 +902,46 @@ Items: {
 		DisplayName: Obsidian Khopesh
 		Tooltip: ""
 	}
+
+	CopperTippedArrow: {
+		DisplayName: Copper Tipped Arrow
+		Tooltip: ""
+	}
+
+	GoldTippedArrow: {
+		DisplayName: Gold Tipped Arrow
+		Tooltip: ""
+	}
+
+	IronTippedArrow: {
+		DisplayName: Iron Tipped Arrow
+		Tooltip: ""
+	}
+
+	LeadTippedArrow: {
+		DisplayName: Lead Tipped Arrow
+		Tooltip: ""
+	}
+
+	PlatinumTippedArrow: {
+		DisplayName: Platinum Tipped Arrow
+		Tooltip: ""
+	}
+
+	SilverTippedArrow: {
+		DisplayName: Silver Tipped Arrow
+		Tooltip: ""
+	}
+
+	TinTippedArrow: {
+		DisplayName: Tin Tipped Arrow
+		Tooltip: ""
+	}
+
+	TungstenTippedArrow: {
+		DisplayName: Tungsten Tipped Arrow
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -977,6 +1017,14 @@ Projectiles: {
 	GelBallProjectile.DisplayName: Gel Ball Projectile
 	CrustaceanClobbererProjectile.DisplayName: Crustacean Clobberer Projectile
 	ObsidianKhopeshProjectile.DisplayName: Obsidian Khopesh Projectile
+	CopperTippedArrowProjectile.DisplayName: Copper Tipped Arrow Projectile
+	GoldTippedArrowProjectile.DisplayName: Gold Tipped Arrow Projectile
+	IronTippedArrowProjectile.DisplayName: Iron Tipped Arrow Projectile
+	LeadTippedArrowProjectile.DisplayName: Lead Tipped Arrow Projectile
+	PlatinumTippedArrowProjectile.DisplayName: Platinum Tipped Arrow Projectile
+	SilverTippedArrowProjectile.DisplayName: Silver Tipped Arrow Projectile
+	TinTippedArrowProjectile.DisplayName: Tin Tipped Arrow Projectile
+	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow Projectile
 }
 
 NPCs: {
