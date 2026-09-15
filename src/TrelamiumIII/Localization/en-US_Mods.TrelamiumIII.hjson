@@ -942,6 +942,30 @@ Items: {
 		DisplayName: Tungsten Tipped Arrow
 		Tooltip: ""
 	}
+
+	SlateBlock: {
+		DisplayName: Slate Block
+		Tooltip: ""
+	}
+
+	CanisterCannon: {
+		DisplayName: Canister Cannon
+		Tooltip:
+			'''
+			Fires gas canisters that explode on impact releasing gas, or fused-based canisters that emit gases.
+			Requires gas canisters to fire
+			'''
+	}
+
+	ContactPoisonCanister: {
+		DisplayName: Contact Poison Canister
+		Tooltip: ""
+	}
+
+	TimedPoisonCanister: {
+		DisplayName: Timed Poison Canister
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1025,6 +1049,8 @@ Projectiles: {
 	SilverTippedArrowProjectile.DisplayName: Silver Tipped Arrow Projectile
 	TinTippedArrowProjectile.DisplayName: Tin Tipped Arrow Projectile
 	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow Projectile
+	CanisterCannonProj.DisplayName: Canister Cannon Proj
+	GasCanisterProj.DisplayName: Gas Canister Proj
 }
 
 NPCs: {
