@@ -50,6 +50,7 @@ public class IngressRealm : SubworldRealm
         new SmoothPass("Smoothing Tiles", 100f),
         new IngressCanopyTree(this),
         new IngressCaveFeatures(this),
+        new IngressCavePools(),
         new IngressCaveFlora(),
         new IngressVegetation(),
         new IngressSpawn(this)
@@ -485,11 +486,114 @@ public class IngressRealm : SubworldRealm
     }
 
     /// <summary>
-    /// Below the surface layer: Ingress grass on peat that touches air, Ousia vines under ceiling grass and foliage on
-    /// floor grass. Runs after smoothing and the tree so slopes and exposed tiles are final.
+    /// Water pools in cave dips below the surface layer. Generation settles no liquid, so each pool is placed full and
+    /// enclosed (<see cref="LiquidBasin"/>). Runs after smoothing so slopes are final, and before the cave flora so pool beds
+    /// grow grass for the water plants to anchor on.
+    /// </summary>
+    private class IngressCavePools() : GenPass("[T3] Ingress Cave Pools", 40f)
+    {
+        private const int ColumnStep = 4;
+        private const int BoundsMargin = 30;
+        private const float PoolChance = 0.5f;
+        private const int DepthMin = 3;
+        private const int DepthMax = 8;
+        private const int SurfaceWidthMin = 8;
+        private const int WidthMax = 50;
+        private const int TilesMax = 1000;
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "Filling cave pools";
+
+            int top = (int)Main.worldSurface;
+            var bounds = new Rectangle(BoundsMargin, top, Main.maxTilesX - BoundsMargin * 2, Main.maxTilesY - BoundsMargin - top);
+            var rolledBasins = new HashSet<Point>();
+            var region = new List<Point>();
+
+            for (int x = bounds.Left; x < bounds.Right; x += ColumnStep)
+            {
+                progress.Set((x - bounds.Left) / (double)bounds.Width);
+
+                for (int y = bounds.Top; y < bounds.Bottom - 1; y++)
+                {
+                    if (!Main.tile[x, y].HasTile && Main.tile[x, y + 1].HasTile)
+                        TryFillBasin(new Point(x, y), bounds, rolledBasins, region);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Floors that drain into the same basin share its lowest, leftmost tile, so each basin is rolled once. A kept basin
+        /// fills to a random depth, falling back to shallower levels while the water would drain away or the pool doesn't fit.
+        /// </summary>
+        private static void TryFillBasin(Point seed, Rectangle bounds, HashSet<Point> rolledBasins, List<Point> region)
+        {
+            if (!LiquidBasin.TryFindRegion(seed, seed.Y, bounds, TilesMax, region))
+                return;
+
+            Point bottom = Lowest(region);
+
+            if (!rolledBasins.Add(bottom) || WorldGen.genRand.NextFloat() >= PoolChance)
+                return;
+
+            for (int depth = WorldGen.genRand.Next(DepthMin, DepthMax + 1); depth >= DepthMin; depth--)
+            {
+                int surfaceY = bottom.Y - depth + 1;
+
+                if (LiquidBasin.TryFindRegion(bottom, surfaceY, bounds, TilesMax, region) && FitsWidth(region, surfaceY))
+                {
+                    LiquidBasin.Fill(region, LiquidID.Water);
+                    return;
+                }
+            }
+        }
+
+        private static Point Lowest(List<Point> region)
+        {
+            Point lowest = region[0];
+
+            foreach (Point point in region)
+            {
+                if (point.Y > lowest.Y || (point.Y == lowest.Y && point.X < lowest.X))
+                    lowest = point;
+            }
+
+            return lowest;
+        }
+
+        /// <summary> At most <see cref="WidthMax"/> tiles across anywhere, so tunnels don't flood, and <see cref="SurfaceWidthMin"/> or more on the surface. </summary>
+        private static bool FitsWidth(List<Point> region, int surfaceY)
+        {
+            int left = int.MaxValue;
+            int right = int.MinValue;
+            int surface = 0;
+
+            foreach (Point point in region)
+            {
+                left = Math.Min(left, point.X);
+                right = Math.Max(right, point.X);
+
+                if (point.Y == surfaceY)
+                    surface++;
+            }
+
+            return right - left + 1 <= WidthMax && surface >= SurfaceWidthMin;
+        }
+    }
+
+    /// <summary>
+    /// Below the surface layer: Ingress grass on peat that touches air or water, Tanglewood trees and foliage on floor grass,
+    /// Ousia vines under ceiling grass, and cattails and lily pads in pools. Runs after smoothing, the canopy tree and the
+    /// pools so slopes, exposed tiles and pool beds are final. Trees go before vines and foliage so they get clear floor.
     /// </summary>
     private class IngressCaveFlora() : GenPass("[T3] Ingress Cave Flora", 120f)
     {
+        private const float TreeChance = 0.15f;
+        private const float TreeDensityFrequency = 0.01f;
+        private const float MediumTreeChance = 0.4f;
+        private const int TreeCanopyClearance = 2;
+        private const int TreeSpacing = 4;
+
         private const float VineChance = 0.45f;
         private const float VineDensityFrequency = 0.025f;
         private const float VineLengthExponent = 1.5f;
@@ -502,6 +606,16 @@ public class IngressRealm : SubworldRealm
         /// <summary> Frames 0-16 of the vanilla jungle plant sheet <see cref="RootFoliageTile"/> borrows. </summary>
         private const int RootFoliageStyles = 17;
 
+        private const float WaterPlantChance = 0.2f;
+        private const int NearbyWaterPlantsMax = 3;
+        private const int LilyPadSpread = 5;
+        private const int LilyPadDepthMin = 3;
+        private const int LilyPadDepthMax = 12;
+        private const int CattailSpread = 7;
+        private const int CattailDepthMin = 2;
+        private const int CattailDepthMax = 7;
+        private const int CattailGrowthMax = 13;
+
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             ushort peat = (ushort)ModContent.TileType<PeatTile>();
@@ -511,14 +625,22 @@ public class IngressRealm : SubworldRealm
 
             progress.Message = "Growing cave grass";
             SpreadGrass(peat, grass, top, bottom);
-            progress.Set(0.4);
+            progress.Set(0.3);
+
+            progress.Message = "Growing cave trees";
+            GrowTrees(grass, top, bottom);
+            progress.Set(0.45);
 
             progress.Message = "Hanging Ousia vines";
             HangVines(grass, top, bottom);
-            progress.Set(0.7);
+            progress.Set(0.65);
 
             progress.Message = "Placing cave foliage";
             PlaceFoliage(grass, top, bottom);
+            progress.Set(0.85);
+
+            progress.Message = "Growing water plants";
+            PlaceWaterPlants(grass, top, bottom);
         }
 
         private static void SpreadGrass(ushort peat, ushort grass, int top, int bottom)
@@ -549,6 +671,33 @@ public class IngressRealm : SubworldRealm
             return false;
         }
 
+        /// <summary> Density noise gathers the trees into groves. Growth rejects wet, crowded and low-ceilinged spots, and the scan skips past each tree. </summary>
+        private static void GrowTrees(ushort grass, int top, int bottom)
+        {
+            FastNoiseLite density = CreateNoise(TreeDensityFrequency);
+
+            for (int y = top + 1; y < bottom; y++)
+            {
+                for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+                {
+                    if (!IsOpenFloor(x, y, grass))
+                        continue;
+
+                    float weight = (density.GetNoise(x, y) + 1f) * 0.5f;
+
+                    if (WorldGen.genRand.NextFloat() >= TreeChance * weight * weight)
+                        continue;
+
+                    bool grown = WorldGen.genRand.NextFloat() < MediumTreeChance
+                        ? Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.MediumTanglewoodTree>(x, y - 1, TreeCanopyClearance)
+                        : Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.SmallTanglewoodTree>(x, y - 1, TreeCanopyClearance);
+
+                    if (grown)
+                        x += TreeSpacing;
+                }
+            }
+        }
+
         /// <summary> Density noise clusters the vines and lengths skew short. <see cref="OusiaVineTile"/> breaks under bottom-sloped grass, so those are skipped. </summary>
         private static void HangVines(ushort grass, int top, int bottom)
         {
@@ -576,7 +725,7 @@ public class IngressRealm : SubworldRealm
                     {
                         Tile strand = Main.tile[x, strandY];
 
-                        if (strand.HasTile)
+                        if (strand.HasTile || strand.LiquidAmount > 0)
                             break;
 
                         strand.HasTile = true;
@@ -668,6 +817,124 @@ public class IngressRealm : SubworldRealm
             }
 
             return kinds[^1];
+        }
+
+        /// <summary>
+        /// Cattails and lily pads on pool surfaces over Ingress grass, following vanilla's "Water Plants" pass. Placed directly
+        /// because <see cref="WorldGen.PlaceCatTail"/> and <see cref="WorldGen.PlaceLilyPad"/> reject modded anchors and walls;
+        /// the plants survive framing through <see cref="Systems.WaterPlantAnchorSystem"/>.
+        /// </summary>
+        private static void PlaceWaterPlants(ushort grass, int top, int bottom)
+        {
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+            {
+                for (int y = top + 1; y < bottom; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+                    Tile above = Main.tile[x, y - 1];
+
+                    if (tile.HasTile || tile.LiquidAmount == 0 || tile.LiquidType != LiquidID.Water || above.HasTile || above.LiquidAmount > 0)
+                        continue;
+
+                    if (WorldGen.genRand.NextFloat() >= WaterPlantChance)
+                        continue;
+
+                    if (WorldGen.genRand.NextBool(2))
+                        TryPlaceLilyPad(x, y, grass);
+                    else
+                        TryPlaceCattail(x, y, grass);
+                }
+            }
+        }
+
+        /// <summary> Vanilla's limits: 3-12 tiles of water and at most three pads nearby. Frames 0-2 are bare pads and 3-17 are flowers, three per colour, with the colour picked by region as vanilla does. </summary>
+        private static void TryPlaceLilyPad(int x, int surfaceY, ushort grass)
+        {
+            if (CountColumnsWith(x, surfaceY, LilyPadSpread, TileID.LilyPad) > NearbyWaterPlantsMax || !TryFindPoolBed(x, surfaceY, grass, out int bedY))
+                return;
+
+            int depth = bedY - surfaceY;
+
+            if (depth < LilyPadDepthMin || depth > LilyPadDepthMax)
+                return;
+
+            int frame = WorldGen.genRand.NextBool(2) ? WorldGen.genRand.Next(3) : 3 + x * 5 / Main.maxTilesX * 3 + WorldGen.genRand.Next(3);
+
+            Tile tile = Main.tile[x, surfaceY];
+            tile.HasTile = true;
+            tile.TileType = TileID.LilyPad;
+            tile.TileFrameX = (short)(frame * 18);
+            tile.TileFrameY = 0;
+            WorldGen.SquareTileFrame(x, surfaceY);
+        }
+
+        /// <summary>
+        /// Vanilla's limits: 2-7 tiles of water and at most three cattails nearby. The base goes on the bed, whose top slope is
+        /// cleared as vanilla does during generation, and <see cref="WorldGen.GrowCatTail"/> grows it up through the surface.
+        /// </summary>
+        private static void TryPlaceCattail(int x, int surfaceY, ushort grass)
+        {
+            if (CountColumnsWith(x, surfaceY, CattailSpread, TileID.Cattail) > NearbyWaterPlantsMax || !TryFindPoolBed(x, surfaceY, grass, out int bedY))
+                return;
+
+            int depth = bedY - surfaceY;
+            Tile bed = Main.tile[x, bedY];
+
+            if (depth < CattailDepthMin || depth > CattailDepthMax || bed.IsHalfBlock)
+                return;
+
+            if (bed.TopSlope)
+                bed.Slope = SlopeType.Solid;
+
+            Tile tile = Main.tile[x, bedY - 1];
+            tile.HasTile = true;
+            tile.TileType = TileID.Cattail;
+            tile.TileFrameX = 0;
+            tile.TileFrameY = 0;
+
+            for (int i = WorldGen.genRand.Next(CattailGrowthMax + 1); i > 0; i--)
+                WorldGen.GrowCatTail(x, bedY - 1);
+
+            WorldGen.SquareTileFrame(x, bedY - 1);
+        }
+
+        /// <summary> Row of the first tile under the water column at <paramref name="x"/>; false if anything but water comes before it or it isn't Ingress grass. </summary>
+        private static bool TryFindPoolBed(int x, int surfaceY, ushort grass, out int bedY)
+        {
+            for (bedY = surfaceY; bedY < Main.maxTilesY - WorldEdge; bedY++)
+            {
+                Tile tile = Main.tile[x, bedY];
+
+                if (tile.HasTile)
+                    return tile.TileType == grass;
+
+                if (tile.LiquidAmount == 0)
+                    return false;
+            }
+
+            return false;
+        }
+
+        /// <summary> Columns within <paramref name="radius"/> of <paramref name="x"/> holding a <paramref name="type"/> tile within <paramref name="radius"/> rows of <paramref name="y"/>. </summary>
+        private static int CountColumnsWith(int x, int y, int radius, ushort type)
+        {
+            int count = 0;
+
+            for (int column = x - radius; column <= x + radius; column++)
+            {
+                for (int row = y - radius; row <= y + radius; row++)
+                {
+                    Tile tile = Main.tile[column, row];
+
+                    if (tile.HasTile && tile.TileType == type)
+                    {
+                        count++;
+                        break;
+                    }
+                }
+            }
+
+            return count;
         }
 
         private static FastNoiseLite CreateNoise(float frequency)
