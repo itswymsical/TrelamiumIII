@@ -41,6 +41,27 @@ public class IngressNighttimeBiome : ModBiome
         return player.ZoneOverworldHeight && !Main.dayTime;
     }
 }
+
+// the underground
+public class IngressGardenBiome : ModBiome
+{
+    public override int Music => Assets.Music.OverworldEvening.Slot; // placeholder
+    public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
+    //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
+    //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
+    //public override string BackgroundPath => "Reverie/Assets/Textures/Bestiary/TaigaMapBG";
+    public override Color? BackgroundColor => new Color(88, 150, 112);
+    //public override ModWaterStyle WaterStyle => ModContent.GetInstance<TaigaWaterStyle>();
+
+    public override bool IsBiomeActive(Player player)
+    {
+        if (!SubworldSystem.IsActive<IngressRealm>())
+            return false;
+
+        return player.ZoneDirtLayerHeight || player.ZoneRockLayerHeight;
+    }
+}
+
 public class IngressTempleBiome : ModBiome
 {
     public override int Music => Assets.Music.LigneousTemple.Slot;

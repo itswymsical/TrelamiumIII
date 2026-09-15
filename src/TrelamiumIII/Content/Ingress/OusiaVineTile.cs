@@ -1,17 +1,36 @@
+using ReLogic.Content;
+using Terraria.GameContent.Drawing;
 using Terraria.GameContent.Metadata;
-using Terraria.Graphics.Renderers;
+using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.Ingress;
 
+/// <summary>
+/// Hangs from Ingress grass. Drawn by vanilla's swaying vine pass; the glow mask is supplied through
+/// <see cref="TileDrawing.GetTileDrawData"/> so it sways with the strip. Particles come from <see cref="OusiaParticleEmitter"/>.
+/// </summary>
 public class OusiaVineTile : ModTile
 {
+    /// <summary> Alpha 0 so the glow adds light inside the alpha-blended vine batch. </summary>
+    private static readonly Color GlowColor = new Color(117, 218, 199, 0) * 0.6f;
+
+    private static Asset<Texture2D>? glowMask;
+    private static int vineType = -1;
+
+    public override void Load() => On_TileDrawing.GetTileDrawData += AddGlowMask;
+
     public override void SetStaticDefaults()
     {
+        vineType = Type;
+
+        if (!Main.dedServ)
+            glowMask = ModContent.Request<Texture2D>($"{Texture}_Glow");
+
         TileID.Sets.VineThreads[Type] = true;
         TileID.Sets.IsVine[Type] = true;
         TileID.Sets.SwaysInWindBasic[Type] = true;
 
-        Main.tileCut[Type] = true;     
+        Main.tileCut[Type] = true;
         Main.tileLavaDeath[Type] = true;
         Main.tileBlockLight[Type] = true;
         Main.tileNoFail[Type] = true;
@@ -44,7 +63,7 @@ public class OusiaVineTile : ModTile
         if (tile.HasTile && !tile.BottomSlope)
             type = tile.TileType;
 
-        if (type == ModContent.TileType<BramblerootTile>() || type == Type) {
+        if (type == ModContent.TileType<IngressGrass>() || type == Type) {
             return true;
         }
 
@@ -65,7 +84,7 @@ public class OusiaVineTile : ModTile
                 {
                     break;
                 }
-                else if (!testTile.HasTile || testTile.TileType != ModContent.TileType<BramblerootTile>())
+                else if (!testTile.HasTile || testTile.TileType != ModContent.TileType<IngressGrass>())
                 {
                     Test--;
                     continue;
@@ -132,29 +151,100 @@ public class OusiaVineTile : ModTile
             new Vector2(x2 * 16, y2 * 16), 1, 1
         );
     }
-    public override bool PreDraw(int i, int j, SpriteBatch spriteBatch) => true;       
-    public override void PostDraw(int i, int j, SpriteBatch spriteBatch)
+
+    /// <summary> Registers the strip with vanilla's vine pass instead of drawing here; the crawl skips strips already registered. </summary>
+    public override bool PreDraw(int i, int j, SpriteBatch spriteBatch)
     {
-        var texture = ModContent.Request<Texture2D>(Texture).Value;
-        Vector2 origin = new(texture.Width * 0.3f, texture.Height * 0.55f);
+        Main.instance.TilesRenderer.CrawlToTopOfVineAndAddSpecialPoint(j, i);
+        return false;
+    }
 
-        var tile = Framing.GetTileSafely(i, j);
-        Color color = new(5, 143, 65);
+    private static void AddGlowMask(On_TileDrawing.orig_GetTileDrawData orig, TileDrawing self, int x, int y, Tile tileCache, ushort typeCache,
+        ref short tileFrameX, ref short tileFrameY, out int tileWidth, out int tileHeight, out int tileTop, out int halfBrickHeight, out int addFrX,
+        out int addFrY, out SpriteEffects tileSpriteEffect, out Texture2D glowTexture, out Rectangle glowSourceRect, out Color glowColor)
+    {
+        orig(self, x, y, tileCache, typeCache, ref tileFrameX, ref tileFrameY, out tileWidth, out tileHeight, out tileTop, out halfBrickHeight,
+            out addFrX, out addFrY, out tileSpriteEffect, out glowTexture, out glowSourceRect, out glowColor);
 
-        var glow = ModContent.Request<Texture2D>($"{Texture}_Glow").Value;
-        var zero = Main.drawToScreen ? Vector2.Zero : new Vector2(Main.offScreenRange, Main.offScreenRange);
+        if (typeCache != vineType || glowMask is not { IsLoaded: true })
+            return;
 
-        spriteBatch.End();
-        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone);
+        glowTexture = glowMask.Value;
+        glowSourceRect = new Rectangle(tileFrameX + addFrX, tileFrameY + addFrY, tileWidth, tileHeight - halfBrickHeight);
+        glowColor = GlowColor;
+    }
+}
 
-        Main.EntitySpriteDraw(
-            glow, 
-            new Vector2(i, j) - Main.screenPosition + zero - new Vector2(0, 0), 
-            new Rectangle(tile.TileFrameX, tile.TileFrameY, 16, 16), 
-            color * .6f,
-            0f,
-            origin,
-            1f,
-            SpriteEffects.None);
+/// <summary> A faint blue orb that rises slowly and weaves sideways. Self-lit, drawn additively, and adds a little light. </summary>
+public class OusiaParticle : Particle
+{
+    private const int LifetimeMin = 180;
+    private const int LifetimeMax = 360;
+    private const float ScaleMin = 0.05f;
+    private const float ScaleMax = 0.09f;
+
+    private const float RiseAcceleration = 0.004f;
+    private const float WeaveAcceleration = 0.012f;
+    private const float WeaveFrequency = 0.035f;
+    private const float PulseFrequency = 0.07f;
+    private const float FadeInFraction = 0.2f;
+
+    private const float Intensity = 0.6f;
+    private const float CoreScale = 0.35f;
+    private const float LightStrength = 0.25f;
+
+    private static readonly Color Deep = new(40, 110, 255);
+    private static readonly Color Pale = new(120, 210, 255);
+    private static readonly Color CoreColor = new(210, 240, 255);
+
+    private float phase;
+
+    public override string[] Textures => [Assets.Textures.VFX.RadialGradient.KEY];
+    public override float Gravity => 0f;
+    public override float Drag => 0.98f;
+    public override bool TileCollide => false;
+    public override bool LiquidCollide => false;
+    public override bool UseLighting => false;
+    public override int FadeOutTicks => 60;
+    public override bool HasGlow => true;
+
+    /// <summary> Fade-in times a slow pulse; <see cref="Particle.Opacity"/> covers the fade-out. </summary>
+    private float Brightness => MathF.Min(Progress / FadeInFraction, 1f) * (0.75f + 0.25f * MathF.Sin((MaxTimeLeft - TimeLeft) * PulseFrequency + phase));
+
+    /// <summary> An orb at <paramref name="position"/> in world pixels, with random drift, size, colour and lifetime. </summary>
+    public static void Spawn(Vector2 position)
+    {
+        ParticleSystem.Spawn<OusiaParticle>(
+            position,
+            new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), -Main.rand.NextFloat(0.05f, 0.25f)),
+            Main.rand.Next(LifetimeMin, LifetimeMax + 1),
+            scale: Main.rand.NextFloat(ScaleMin, ScaleMax),
+            color: Color.Lerp(Deep, Pale, Main.rand.NextFloat()));
+    }
+
+    public override void OnSpawn() => phase = Main.rand.NextFloat(MathHelper.TwoPi);
+
+    public override void Update()
+    {
+        Velocity.Y -= RiseAcceleration;
+        Velocity.X += MathF.Sin((MaxTimeLeft - TimeLeft) * WeaveFrequency + phase) * WeaveAcceleration;
+
+        Lighting.AddLight(Position, Color.ToVector3() * (LightStrength * Brightness * Opacity));
+    }
+
+    /// <summary> Additive only; see <see cref="DrawGlow"/>. </summary>
+    public override bool PreDraw(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, Color lightColor) => false;
+
+    public override void DrawGlow(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, float opacity)
+    {
+        float alpha = Brightness * opacity * Intensity;
+
+        if (alpha <= 0f)
+            return;
+
+        Vector2 origin = texture.Size() * 0.5f;
+
+        spriteBatch.Draw(texture, drawPosition, null, Color * alpha, 0f, origin, Scale, SpriteEffects.None, 0f);
+        spriteBatch.Draw(texture, drawPosition, null, CoreColor * alpha, 0f, origin, Scale * CoreScale, SpriteEffects.None, 0f);
     }
 }

@@ -50,6 +50,7 @@ public class IngressRealm : SubworldRealm
         new SmoothPass("Smoothing Tiles", 100f),
         new IngressCanopyTree(this),
         new IngressCaveFeatures(this),
+        new IngressCaveFlora(),
         new IngressVegetation(),
         new IngressSpawn(this)
     ];
@@ -59,7 +60,7 @@ public class IngressRealm : SubworldRealm
     public override bool NoPlayerSaving => false;
 
     public override int LoadingMusic => Assets.Music.IngressNight.Slot;
-    public override DynamicSpriteFont TipFont => TrelamiumFonts.AndikaRegular ?? base.TipFont;
+    public override DynamicSpriteFont TipFont => base.TipFont;
     public override Color LoadingAccent => new(140, 220, 110);
     public static int GroundY => (int)(Main.maxTilesY * 0.52f);
 
@@ -431,7 +432,7 @@ public class IngressRealm : SubworldRealm
                     Tile tile = Main.tile[x, y];
 
                     if (!tile.HasTile && tile.WallType == WallID.None && HasTileNearby(x, y))
-                        tile.WallType = WallID.MudUnsafe;
+                        tile.WallType = (ushort)ModContent.WallType<PeatWall>();
                 }
             }
         }
@@ -483,14 +484,237 @@ public class IngressRealm : SubworldRealm
         }
     }
 
+    /// <summary>
+    /// Below the surface layer: Ingress grass on peat that touches air, Ousia vines under ceiling grass and foliage on
+    /// floor grass. Runs after smoothing and the tree so slopes and exposed tiles are final.
+    /// </summary>
+    private class IngressCaveFlora() : GenPass("[T3] Ingress Cave Flora", 120f)
+    {
+        private const float VineChance = 0.45f;
+        private const float VineDensityFrequency = 0.025f;
+        private const float VineLengthExponent = 1.5f;
+        private const int VineLengthMin = 3;
+        private const int VineLengthMax = 16;
+
+        private const float FoliageChance = 0.3f;
+        private const float FoliageDensityFrequency = 0.04f;
+
+        /// <summary> Frames 0-16 of the vanilla jungle plant sheet <see cref="RootFoliageTile"/> borrows. </summary>
+        private const int RootFoliageStyles = 17;
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            ushort peat = (ushort)ModContent.TileType<PeatTile>();
+            ushort grass = (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
+            int top = (int)Main.worldSurface;
+            int bottom = Main.maxTilesY - WorldEdge;
+
+            progress.Message = "Growing cave grass";
+            SpreadGrass(peat, grass, top, bottom);
+            progress.Set(0.4);
+
+            progress.Message = "Hanging Ousia vines";
+            HangVines(grass, top, bottom);
+            progress.Set(0.7);
+
+            progress.Message = "Placing cave foliage";
+            PlaceFoliage(grass, top, bottom);
+        }
+
+        private static void SpreadGrass(ushort peat, ushort grass, int top, int bottom)
+        {
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+            {
+                for (int y = top; y < bottom; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+
+                    if (tile.HasTile && tile.TileType == peat && TouchesAir(x, y))
+                        tile.TileType = grass;
+                }
+            }
+        }
+
+        private static bool TouchesAir(int x, int y)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (!Main.tile[x + dx, y + dy].HasTile)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary> Density noise clusters the vines and lengths skew short. <see cref="OusiaVineTile"/> breaks under bottom-sloped grass, so those are skipped. </summary>
+        private static void HangVines(ushort grass, int top, int bottom)
+        {
+            ushort vine = (ushort)ModContent.TileType<OusiaVineTile>();
+            FastNoiseLite density = CreateNoise(VineDensityFrequency);
+
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+            {
+                for (int y = top; y < bottom - 1; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+                    Tile below = Main.tile[x, y + 1];
+
+                    if (!tile.HasTile || tile.TileType != grass || tile.BottomSlope || below.HasTile || below.LiquidAmount > 0)
+                        continue;
+
+                    float weight = (density.GetNoise(x, y) + 1f) * 0.5f;
+
+                    if (WorldGen.genRand.NextFloat() >= VineChance * weight * weight)
+                        continue;
+
+                    int length = VineLengthMin + (int)(MathF.Pow(WorldGen.genRand.NextFloat(), VineLengthExponent) * (VineLengthMax - VineLengthMin + 1));
+
+                    for (int strandY = y + 1; strandY <= y + length && strandY < bottom; strandY++)
+                    {
+                        Tile strand = Main.tile[x, strandY];
+
+                        if (strand.HasTile)
+                            break;
+
+                        strand.HasTile = true;
+                        strand.TileType = vine;
+                    }
+                }
+            }
+        }
+
+        /// <summary> Row by row. A plant needs its whole footprint on open floor, and the scan then skips its spacing so wide sprites don't overlap. </summary>
+        private static void PlaceFoliage(ushort grass, int top, int bottom)
+        {
+            FoliageKind[] kinds =
+            [
+                new(ModContent.TileType<RootFoliageTile>(), Styles: RootFoliageStyles, Width: 1, Height: 1, OriginX: 0, Spacing: 1, Weight: 5f),
+                new(ModContent.TileType<RootFernTile>(), Styles: 1, Width: 1, Height: 1, OriginX: 0, Spacing: 2, Weight: 3f),
+                new(ModContent.TileType<RootRainplantTile>(), Styles: 1, Width: 1, Height: 1, OriginX: 0, Spacing: 2, Weight: 2f),
+                new(ModContent.TileType<RootRockTile>(), Styles: 1, Width: RootRockTile.Width, Height: RootRockTile.Height, OriginX: 1, Spacing: RootRockTile.Width, Weight: 0.6f)
+            ];
+
+            float totalWeight = 0f;
+            foreach (FoliageKind kind in kinds)
+                totalWeight += kind.Weight;
+
+            FastNoiseLite density = CreateNoise(FoliageDensityFrequency);
+
+            for (int y = top + 1; y < bottom; y++)
+            {
+                for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+                {
+                    if (!IsOpenFloor(x, y, grass))
+                        continue;
+
+                    float weight = (density.GetNoise(x, y) + 1f) * 0.5f;
+
+                    if (WorldGen.genRand.NextFloat() >= FoliageChance * weight)
+                        continue;
+
+                    FoliageKind picked = Pick(kinds, totalWeight);
+
+                    if (FootprintFits(x, y, picked, grass) && WorldGen.PlaceTile(x + picked.OriginX, y - 1, picked.Type, mute: true, style: WorldGen.genRand.Next(picked.Styles)))
+                        x += picked.Spacing;
+                }
+            }
+        }
+
+        /// <summary> Flat Ingress grass at (<paramref name="x"/>, <paramref name="y"/>) with an empty, dry tile above it. </summary>
+        private static bool IsOpenFloor(int x, int y, ushort grass)
+        {
+            Tile tile = Main.tile[x, y];
+            Tile above = Main.tile[x, y - 1];
+
+            return tile.HasTile && tile.TileType == grass && !tile.IsHalfBlock && tile.Slope == SlopeType.Solid && !above.HasTile && above.LiquidAmount == 0;
+        }
+
+        /// <summary> Every footprint column from <paramref name="x"/> is open floor with <see cref="FoliageKind.Height"/> empty, dry rows above. </summary>
+        private static bool FootprintFits(int x, int y, FoliageKind kind, ushort grass)
+        {
+            if (x + kind.Width > Main.maxTilesX - WorldEdge)
+                return false;
+
+            for (int column = x; column < x + kind.Width; column++)
+            {
+                if (!IsOpenFloor(column, y, grass))
+                    return false;
+
+                for (int row = y - kind.Height; row < y - 1; row++)
+                {
+                    Tile space = Main.tile[column, row];
+
+                    if (space.HasTile || space.LiquidAmount > 0)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static FoliageKind Pick(FoliageKind[] kinds, float totalWeight)
+        {
+            float roll = WorldGen.genRand.NextFloat(totalWeight);
+
+            foreach (FoliageKind kind in kinds)
+            {
+                roll -= kind.Weight;
+
+                if (roll < 0f)
+                    return kind;
+            }
+
+            return kinds[^1];
+        }
+
+        private static FastNoiseLite CreateNoise(float frequency)
+        {
+            var noise = new FastNoiseLite(WorldGen.genRand.Next());
+            noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+            noise.SetFrequency(frequency);
+            return noise;
+        }
+
+        /// <param name="Width"> Footprint in tiles from its leftmost column; <paramref name="OriginX"/> is the TileObjectData origin column within it. </param>
+        /// <param name="Spacing"> Tiles the scan skips after a placement, so wide sprites don't overlap. </param>
+        private readonly record struct FoliageKind(int Type, int Styles, int Width, int Height, int OriginX, int Spacing, float Weight);
+    }
+
     private class IngressVegetation() : GenPass("[T3] Ingress Vegetation", 80f)
     {
+        private const int TreeStepMin = 9;
+        private const int TreeStepMax = 18;
+        private const float MediumTreeChance = 0.35f;
+
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             progress.Message = "Growing Flora and Trees";
 
             WorldGen.AddTrees();
             WorldGen.GrowGlowTulips();
+            GrowTanglewoodTrees();
+        }
+
+        /// <summary> Tries a tree on surface Ingress grass every few columns; growth itself rejects crowded or covered spots. </summary>
+        private static void GrowTanglewoodTrees()
+        {
+            ushort grass = (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
+
+            for (int x = WorldEdge + 20; x < Main.maxTilesX - WorldEdge - 20; x += WorldGen.genRand.Next(TreeStepMin, TreeStepMax + 1))
+            {
+                int ground = SurfaceRow(x);
+
+                if (Main.tile[x, ground].TileType != grass)
+                    continue;
+
+                if (WorldGen.genRand.NextFloat() < MediumTreeChance)
+                    Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.MediumTanglewoodTree>(x, ground - 1);
+                else
+                    Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.SmallTanglewoodTree>(x, ground - 1);
+            }
         }
     }
 

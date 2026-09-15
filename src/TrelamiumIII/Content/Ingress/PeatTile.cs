@@ -27,3 +27,20 @@ public class PeatTile : ModTile
         AddMapEntry(new Color(126, 95, 74));
     }
 }
+
+public class PeatWall : ModWall
+{
+    public override void SetStaticDefaults()
+    {
+        Main.wallHouse[Type] = false;
+
+        DustType = DustID.Mud;
+
+        AddMapEntry(new Color(102, 86, 68));
+    }
+
+    public override void NumDust(int i, int j, bool fail, ref int num)
+    {
+        num = fail ? 1 : 3;
+    }
+}
