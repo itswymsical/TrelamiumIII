@@ -2,7 +2,6 @@ using TrelamiumIII.Core.Tiles;
 
 namespace TrelamiumIII.Content.Ingress.Trees;
 
-/// <summary> Nine 14x16 trunk frames along the top of the sheet (pink padding) and the canopy in the yellow region below them. </summary>
 public class SmallTanglewoodTree : CustomTree
 {
     private static readonly TreeSheet Layout = new(
@@ -11,18 +10,14 @@ public class SmallTanglewoodTree : CustomTree
         Leaves: []);
 
     public override TreeSheet Sheet => Layout;
-
+    public override int WoodType => ModContent.ItemType<Bramblewood>();
     public override int MinHeight => 4;
 
-    public override int MaxHeight => 8;
+    public override int MaxHeight => 14;
 
     protected override int[] GetAnchorTiles() => [ModContent.TileType<IngressGrass>()];
 }
 
-/// <summary>
-/// Six 26x26 trunk frames along the top of the sheet (pink padding), the canopy in the yellow region, and the three leaf
-/// clumps from the green region mounted on the canopy's branch tips.
-/// </summary>
 public class MediumTanglewoodTree : CustomTree
 {
     private static readonly TreeSheet Layout = new(
@@ -39,7 +34,7 @@ public class MediumTanglewoodTree : CustomTree
 
     public override int MinHeight => 6;
 
-    public override int MaxHeight => 12;
-
+    public override int MaxHeight => 18;
+    public override int WoodType => ModContent.ItemType<Bramblewood>();
     protected override int[] GetAnchorTiles() => [ModContent.TileType<IngressGrass>()];
 }
