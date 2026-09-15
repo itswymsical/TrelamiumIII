@@ -110,8 +110,13 @@ public class SkofnungProjectile : HeldSwordProjectile
             int count = Main.rand.Next(16, 22);
 
             for (int i = 0; i < count; i++)
-                layer.SpawnNode(BladeTip, vel, radius: 12, life: 40);
-            
+            {
+                Vector2 vel2 = splashDir.RotatedByRandom(MathHelper.PiOver2)
+                            * Main.rand.NextFloat(4f, 8f);
+
+                layer.SpawnNode(BladeTip, vel2, radius: 12, life: 40);
+            }
+
             for (int i = 0; i < 4; i++)
                 ParticleSystem.Spawn<IceShardParticle>(BladeTip, vel, 70, scale: 0.5f, rotation: vel.X);
             

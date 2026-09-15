@@ -164,16 +164,10 @@ public class RootRainplantTile : ModTile
     }
 }
 
-/// <summary>
-/// A 4x3 rock whose texture is one whole sprite rather than a frame sheet. Only the bottom-left tile draws it,
-/// bottom-aligned and centred on the footprint; the other tiles draw nothing.
-/// </summary>
 public class RootRockTile : ModTile
 {
     public const int Width = 4;
     public const int Height = 3;
-
-    /// <summary> Pixels the sprite sits below the footprint's bottom edge, so it rests in the grass instead of on it. </summary>
     private const int SinkDepth = 2;
 
     public override void SetStaticDefaults()
@@ -207,7 +201,6 @@ public class RootRockTile : ModTile
 
     public override void NumDust(int i, int j, bool fail, ref int num) => num = fail ? 8 : 12;
 
-    /// <summary> Flipped on odd columns of the bottom-left tile, so neighbouring rocks don't look copied. </summary>
     public override bool PreDraw(int i, int j, SpriteBatch spriteBatch)
     {
         Tile tile = Main.tile[i, j];
