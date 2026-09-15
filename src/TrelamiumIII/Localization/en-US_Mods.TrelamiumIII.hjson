@@ -1056,6 +1056,11 @@ NPCs: {
 		Epithet: The Guardian of Ingress
 	}
 
+	Bushwhack: {
+		DisplayName: Bushwhack
+		Bestiary: A clump of undergrowth that wandered off from the Garden of Ingress. It ambles through the caves on root feet and bothers no one.
+	}
+
 	ShinobiNPC.DisplayName: Shinobi
 	TestTerrarian.DisplayName: Test Terrarian
 	SophieNPC.DisplayName: Sophie

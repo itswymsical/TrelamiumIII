@@ -129,7 +129,7 @@ public class RootRainplantTile : ModTile
         TileObjectData.newTile.CoordinateWidth = 32;
         TileObjectData.newTile.CoordinateHeights = [height];
 
-        TileObjectData.newTile.DrawYOffset = -(height - 16);
+        TileObjectData.newTile.DrawYOffset = -(height - 18);
 
         TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile, 1, 0);
 

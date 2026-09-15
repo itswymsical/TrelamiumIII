@@ -65,21 +65,22 @@ public abstract class CustomTree : ModTile
         HitSound = SoundID.Dig;
     }
 
-    public static bool TryGrow<T>(int x, int baseY) where T : CustomTree => ModContent.GetInstance<T>().TryGrow(x, baseY);
+    public static bool TryGrow<T>(int x, int baseY, int canopyClearance = 0) where T : CustomTree => ModContent.GetInstance<T>().TryGrow(x, baseY, canopyClearance);
 
     /// <summary>
     /// Grows a tree whose bottom trunk tile is (<paramref name="x"/>, <paramref name="baseY"/>), rolling a height and
     /// falling back to shorter ones down to <see cref="MinHeight"/>. The trunk column may only hold saplings, plants or
-    /// other cuttable tiles, which are replaced; the canopy's tiles must be free of solid blocks and tree trunks.
+    /// other cuttable tiles, which are replaced; the canopy's tiles and <paramref name="canopyClearance"/> rows above
+    /// them must be free of solid blocks and tree trunks.
     /// </summary>
-    public bool TryGrow(int x, int baseY)
+    public bool TryGrow(int x, int baseY, int canopyClearance = 0)
     {
         if (!WorldGen.InWorld(x, baseY, WorldMargin) || !IsAnchor(x, baseY + 1))
             return false;
 
         for (int height = WorldGen.genRand.Next(MinHeight, MaxHeight + 1); height >= MinHeight; height--)
         {
-            if (!HasRoom(x, baseY, height))
+            if (!HasRoom(x, baseY, height, canopyClearance))
                 continue;
 
             Place(x, baseY, height);
@@ -89,7 +90,7 @@ public abstract class CustomTree : ModTile
         return false;
     }
 
-    private bool HasRoom(int x, int baseY, int height)
+    private bool HasRoom(int x, int baseY, int height, int canopyClearance)
     {
         int topY = baseY - height + 1;
 
@@ -103,6 +104,8 @@ public abstract class CustomTree : ModTile
         }
 
         Rectangle canopy = CanopyTiles(x, topY);
+        canopy.Y -= canopyClearance;
+        canopy.Height += canopyClearance;
 
         for (int canopyX = canopy.Left; canopyX < canopy.Right; canopyX++)
         {

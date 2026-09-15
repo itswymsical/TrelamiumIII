@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TrelamiumIII.Common.Globals;
+using TrelamiumIII.Common.Systems;
 
 namespace TrelamiumIII.Content.Ingress;
 
@@ -21,6 +22,7 @@ public class IngressGrass : GrassTile
 
         VanillaFallbackOnModDeletion = TileID.Grass;
         TileID.Sets.Conversion.Grass[Type] = true;
+        WaterPlantAnchorSystem.AddAnchorAlias(Type, TileID.Grass);
 
         AddMapEntry(new Color(77, 122, 34));
     }
