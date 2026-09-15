@@ -882,6 +882,26 @@ Items: {
 		DisplayName: Peat Block
 		Tooltip: ""
 	}
+
+	Bramblewood: {
+		DisplayName: Bramblewood
+		Tooltip: ""
+	}
+
+	BramblewoodTorch: {
+		DisplayName: Bramblewood Torch
+		Tooltip: ""
+	}
+
+	CrustaceanClobberer: {
+		DisplayName: Crustacean Clobberer
+		Tooltip: ""
+	}
+
+	ObsidianKhopesh: {
+		DisplayName: Obsidian Khopesh
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -955,6 +975,8 @@ Projectiles: {
 	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
 	StalagMagMKIIProj.DisplayName: Stalag Mag M K I I Proj
 	GelBallProjectile.DisplayName: Gel Ball Projectile
+	CrustaceanClobbererProjectile.DisplayName: Crustacean Clobberer Projectile
+	ObsidianKhopeshProjectile.DisplayName: Obsidian Khopesh Projectile
 }
 
 NPCs: {
