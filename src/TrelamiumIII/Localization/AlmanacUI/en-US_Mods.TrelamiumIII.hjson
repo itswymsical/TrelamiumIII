@@ -25,4 +25,24 @@ Biomes: {
 		DisplayName: Ingress Biome
 		TownNPCDialogueName: the Ingress Biome
 	}
+
+	IngressDaytimeBiome: {
+		DisplayName: Ingress Daytime Biome
+		TownNPCDialogueName: the Ingress Daytime Biome
+	}
+
+	IngressNighttimeBiome: {
+		DisplayName: Ingress Nighttime Biome
+		TownNPCDialogueName: the Ingress Nighttime Biome
+	}
+
+	IngressTempleBiome: {
+		DisplayName: Ingress Temple Biome
+		TownNPCDialogueName: the Ingress Temple Biome
+	}
+
+	IngressGardenBiome: {
+		DisplayName: Ingress Garden Biome
+		TownNPCDialogueName: the Ingress Garden Biome
+	}
 }
