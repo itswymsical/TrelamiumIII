@@ -102,7 +102,7 @@ public abstract class ChemicalProjectile : ModProjectile
     protected virtual float BurstDamageShare => Burst.DamageShare;
 
     /// <summary>The surface the carrier hit, or zero if it expired in open air.</summary>
-    protected Vector2 ImpactNormal { get; private set; }
+    protected Vector2 ImpactNormal { get; set; }
 
     /// <summary>Whether it broke against something rather than simply running out of time.</summary>
     protected bool Grounded => ImpactNormal != Vector2.Zero;

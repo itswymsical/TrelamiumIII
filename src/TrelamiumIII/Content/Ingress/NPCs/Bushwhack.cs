@@ -3,17 +3,12 @@ using Terraria.GameContent.Bestiary;
 
 namespace TrelamiumIII.Content.Ingress.NPCs;
 
-/// <summary>
-/// Passive walker in the Ingress caves. Alternates between standing and walking for random spans, and turns back at walls
-/// too tall to hop, drops, water, and anything it stays stuck against. State changes run on the server and sync through ai.
-/// </summary>
 public class Bushwhack : ModNPC
 {
     private const int FrameCount = 4;
     private const int AirFrame = 2;
     private const float IdleSpeed = 0.1f;
 
-    /// <summary> Pixels walked per animation frame. </summary>
     private const float StrideLength = 5f;
 
     private const float WalkSpeed = 0.8f;
@@ -21,10 +16,8 @@ public class Bushwhack : ModNPC
     private const float AirTraction = 0.02f;
     private const float HopSpeed = 5f;
 
-    /// <summary> Tallest wall, in tiles, it hops over. </summary>
     private const int HopHeightTiles = 2;
 
-    /// <summary> Deepest drop, in tiles, it walks off. </summary>
     private const int DropTilesMax = 3;
 
     private const int WalkTicksMin = 120;
@@ -71,7 +64,6 @@ public class Bushwhack : ModNPC
         NPC.HitSound = SoundID.Grass;
         NPC.DeathSound = SoundID.Grass;
 
-        // Vanilla draws NPC frames 4 pixels below the hitbox, and this sheet has no bottom padding.
         DrawOffsetY = -4f;
 
         SpawnModBiomes = [ModContent.GetInstance<IngressGardenBiome>().Type];
@@ -148,7 +140,6 @@ public class Bushwhack : ModNPC
         if (!blocked)
             return;
 
-        // Blocked again this soon after turning means both ways are blocked.
         if (TurnCooldown > 0f)
             Stand();
         else
@@ -182,7 +173,6 @@ public class Bushwhack : ModNPC
         NPC.netUpdate = true;
     }
 
-    /// <summary> The column just past the hitbox in the walking direction, on the row the feet stand in. </summary>
     private Point FrontTile()
     {
         float x = NPC.direction > 0 ? NPC.Right.X + 1f : NPC.Left.X - 1f;
@@ -194,7 +184,6 @@ public class Bushwhack : ModNPC
     private static bool WaterAhead(Point front) =>
         Framing.GetTileSafely(front.X, front.Y).LiquidAmount > 0 || Framing.GetTileSafely(front.X, front.Y + 1).LiquidAmount > 0;
 
-    /// <summary> Level ground is one row below the feet; nothing to stand on down to <see cref="DropTilesMax"/> rows lower is a drop. </summary>
     private static bool DropAhead(Point front)
     {
         for (int y = front.Y; y <= front.Y + 1 + DropTilesMax; y++)
@@ -208,7 +197,6 @@ public class Bushwhack : ModNPC
         return true;
     }
 
-    /// <summary> The sheet faces right, opposite to vanilla sprites, so the sprite direction is the inverse of the walking direction. </summary>
     public override void FindFrame(int frameHeight)
     {
         NPC.spriteDirection = -NPC.direction;

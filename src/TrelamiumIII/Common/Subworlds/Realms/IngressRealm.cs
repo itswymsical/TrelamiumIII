@@ -45,14 +45,15 @@ public class IngressRealm : SubworldRealm
     public override List<GenPass> Tasks =>
     [
         new IngressFloor(this),
+        new IngressSlate(this),
         new IngressGrass(this),
         new IngressCaves(this),
         new SmoothPass("Smoothing Tiles", 100f),
         new IngressCanopyTree(this),
         new IngressCaveFeatures(this),
         new IngressCavePools(),
-        new IngressCaveFlora(),
         new IngressVegetation(),
+        new IngressFlora(),
         new IngressSpawn(this)
     ];
 
@@ -214,6 +215,63 @@ public class IngressRealm : SubworldRealm
 
                 for (int y = top; y < dirtBottom[x]; y++)
                     Main.tile[x, y].WallType = WallID.FlowerUnsafe;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Slate through the peat: veins below the surface layer, and a few outcrops just under the ground that break the surface
+    /// away from the canopy tree's site. Runs before grass and caves, so caves cut through the slate and exposed slate stays bare.
+    /// </summary>
+    private class IngressSlate(IngressRealm realm) : GenPass("[T3] Ingress Slate", 40f)
+    {
+        /// <summary> Veins per tile of the area below the surface layer. </summary>
+        private const double VeinDensity = 0.0007;
+        private const int VeinStrengthMin = 6;
+        private const int VeinStrengthMax = 16;
+        private const int VeinStepsMin = 10;
+        private const int VeinStepsMax = 40;
+
+        private const int OutcropSpacingMin = 60;
+        private const int OutcropSpacingMax = 160;
+        private const int OutcropDepthMax = 3;
+        private const int OutcropStrengthMin = 5;
+        private const int OutcropStrengthMax = 10;
+        private const int OutcropStepsMin = 6;
+        private const int OutcropStepsMax = 20;
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "Layering slate";
+
+            ushort slate = (ushort)ModContent.TileType<SlateTile>();
+            int top = (int)Main.worldSurface;
+            int bottom = Main.maxTilesY - WorldEdge;
+            int veins = (int)(Main.maxTilesX * (double)(bottom - top) * VeinDensity);
+
+            for (int i = 0; i < veins; i++)
+            {
+                if (i % 64 == 0)
+                    progress.Set(i / (double)veins * 0.9);
+
+                WorldGen.TileRunner(WorldGen.genRand.Next(WorldEdge, Main.maxTilesX - WorldEdge), WorldGen.genRand.Next(top, bottom),
+                    WorldGen.genRand.Next(VeinStrengthMin, VeinStrengthMax + 1), WorldGen.genRand.Next(VeinStepsMin, VeinStepsMax + 1), slate);
+            }
+
+            PlaceOutcrops(slate);
+        }
+
+        private void PlaceOutcrops(ushort slate)
+        {
+            int siteClearance = SiteFlatRadius + SiteBlendWidth;
+
+            for (int x = WorldGen.genRand.Next(OutcropSpacingMin, OutcropSpacingMax + 1); x < Main.maxTilesX - WorldEdge; x += WorldGen.genRand.Next(OutcropSpacingMin, OutcropSpacingMax + 1))
+            {
+                if (Math.Abs(x - realm.layout.SiteX) <= siteClearance)
+                    continue;
+
+                int y = SurfaceRow(x) + WorldGen.genRand.Next(OutcropDepthMax + 1);
+                WorldGen.TileRunner(x, y, WorldGen.genRand.Next(OutcropStrengthMin, OutcropStrengthMax + 1), WorldGen.genRand.Next(OutcropStepsMin, OutcropStepsMax + 1), slate);
             }
         }
     }
@@ -582,11 +640,11 @@ public class IngressRealm : SubworldRealm
     }
 
     /// <summary>
-    /// Below the surface layer: Ingress grass on peat that touches air or water, Tanglewood trees and foliage on floor grass,
-    /// Ousia vines under ceiling grass, and cattails and lily pads in pools. Runs after smoothing, the canopy tree and the
-    /// pools so slopes, exposed tiles and pool beds are final. Trees go before vines and foliage so they get clear floor.
+    /// Below the surface layer: Ingress grass on exposed peat, Tanglewood trees, Ousia vines, and cattails and lily pads in
+    /// pools. Foliage goes on flat grass both there and on the surface. Runs after the pools and the surface trees so pool
+    /// beds, slopes and trunks are final; cave trees go before vines and foliage so they get clear floor.
     /// </summary>
-    private class IngressCaveFlora() : GenPass("[T3] Ingress Cave Flora", 120f)
+    private class IngressFlora() : GenPass("[T3] Ingress Flora", 140f)
     {
         private const float TreeChance = 0.15f;
         private const float TreeDensityFrequency = 0.01f;
@@ -600,7 +658,8 @@ public class IngressRealm : SubworldRealm
         private const int VineLengthMin = 3;
         private const int VineLengthMax = 16;
 
-        private const float FoliageChance = 0.3f;
+        private const float CaveFoliageChance = 0.3f;
+        private const float SurfaceFoliageChance = 0.35f;
         private const float FoliageDensityFrequency = 0.04f;
 
         /// <summary> Frames 0-16 of the vanilla jungle plant sheet <see cref="RootFoliageTile"/> borrows. </summary>
@@ -636,8 +695,12 @@ public class IngressRealm : SubworldRealm
             progress.Set(0.65);
 
             progress.Message = "Placing cave foliage";
-            PlaceFoliage(grass, top, bottom);
-            progress.Set(0.85);
+            PlaceFoliage(grass, top, bottom, CaveFoliageChance);
+            progress.Set(0.8);
+
+            progress.Message = "Placing surface foliage";
+            PlaceFoliage(grass, WorldEdge, top, SurfaceFoliageChance);
+            progress.Set(0.9);
 
             progress.Message = "Growing water plants";
             PlaceWaterPlants(grass, top, bottom);
@@ -735,14 +798,15 @@ public class IngressRealm : SubworldRealm
             }
         }
 
-        /// <summary> Row by row. A plant needs its whole footprint on open floor, and the scan then skips its spacing so wide sprites don't overlap. </summary>
-        private static void PlaceFoliage(ushort grass, int top, int bottom)
+        /// <summary> Row by row from <paramref name="top"/> up to <paramref name="bottom"/>. A plant needs its whole footprint on open floor, and the scan then skips its spacing so wide sprites don't overlap. </summary>
+        private static void PlaceFoliage(ushort grass, int top, int bottom, float chance)
         {
             FoliageKind[] kinds =
             [
                 new(ModContent.TileType<RootFoliageTile>(), Styles: RootFoliageStyles, Width: 1, Height: 1, OriginX: 0, Spacing: 1, Weight: 5f),
                 new(ModContent.TileType<RootFernTile>(), Styles: 1, Width: 1, Height: 1, OriginX: 0, Spacing: 2, Weight: 3f),
                 new(ModContent.TileType<RootRainplantTile>(), Styles: 1, Width: 1, Height: 1, OriginX: 0, Spacing: 2, Weight: 2f),
+                new(ModContent.TileType<RootMushroomTile>(), Styles: RootMushroomTile.Styles, Width: 1, Height: 1, OriginX: 0, Spacing: 1, Weight: 2f),
                 new(ModContent.TileType<RootRockTile>(), Styles: 1, Width: RootRockTile.Width, Height: RootRockTile.Height, OriginX: 1, Spacing: RootRockTile.Width, Weight: 0.6f)
             ];
 
@@ -752,7 +816,7 @@ public class IngressRealm : SubworldRealm
 
             FastNoiseLite density = CreateNoise(FoliageDensityFrequency);
 
-            for (int y = top + 1; y < bottom; y++)
+            for (int y = top; y < bottom; y++)
             {
                 for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
                 {
@@ -761,7 +825,7 @@ public class IngressRealm : SubworldRealm
 
                     float weight = (density.GetNoise(x, y) + 1f) * 0.5f;
 
-                    if (WorldGen.genRand.NextFloat() >= FoliageChance * weight)
+                    if (WorldGen.genRand.NextFloat() >= chance * weight)
                         continue;
 
                     FoliageKind picked = Pick(kinds, totalWeight);
