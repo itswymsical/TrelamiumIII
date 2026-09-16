@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public sealed class StarLayer : GasField
+public sealed class StarflaskField : GasField
 {
     /// <summary>Topmost: plasma is the brightest thing on screen and owns the stack.</summary>
     public override int LoadOrder => 95;
@@ -116,7 +116,7 @@ public sealed class StarLayer : GasField
     /// </summary>
     /// <remarks>
     ///     <see cref="GasField" /> defaults its emitter hits to <see cref="DamageClass.Generic" />
-    ///     because it knows nothing about the chemical system, and <see cref="StarLayer" /> is a
+    ///     because it knows nothing about the chemical system, and <see cref="StarflaskField" /> is a
     ///     plain field rather than a <see cref="ChemicalGasField" /> -- it carries no affliction and
     ///     rolls no reactions. Its arms still have to land as controller damage, though, because the
     ///     starflask that throws them is a controller weapon and its burst counted as one before.

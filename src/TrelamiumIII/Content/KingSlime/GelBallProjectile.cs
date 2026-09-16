@@ -72,7 +72,7 @@ public class GelBallProjectile : ModProjectile
             Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
 
         for (int i = 0; i < count; i++)

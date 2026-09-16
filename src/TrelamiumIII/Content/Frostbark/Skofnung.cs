@@ -95,7 +95,7 @@ public class SkofnungProjectile : HeldSwordProjectile
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
-        var layer = FieldSystem.GetLayer<IceMistLayer>();
+        var layer = FieldSystem.GetLayer<ArcticField>();
 
         if (layer == null) return;
         SoundEngine.PlaySound(SoundID.DD2_WitherBeastCrystalImpact with { Volume = 0.35f });

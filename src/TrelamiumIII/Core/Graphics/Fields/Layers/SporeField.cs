@@ -2,7 +2,7 @@ using ReLogic.Content;
 
 namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
-public sealed class SporeLayer : FieldLayer
+public sealed class SporeField : FieldLayer
 {
     /// <summary>Gas.</summary>
     public override int LoadOrder => 65;
@@ -43,15 +43,10 @@ public sealed class SporeLayer : FieldLayer
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-
-        // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
-        // and the asset is still null on the frames before it finishes loading.
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        // Floored so the cloud stays legible in an unlit cave; it emits its own light anyway, and
-        // spores that vanish into the dark stop communicating that an enemy is infected.
-        Vector3 light = new Vector3(0.3f); // ambient floor; the real light rides in the field per node
+        Vector3 light = new Vector3(0.3f);
         effect.Parameters["WorldLight"]?.SetValue(light);
 
 
@@ -59,17 +54,13 @@ public sealed class SporeLayer : FieldLayer
         effect.Parameters["NoiseScale"]?.SetValue(1.35f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.24f);
 
-        // Drifts up and slightly across, so the body of the cloud boils in place while the
-        // silhouette keeps changing.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.03f, -0.06f));
 
-        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
         effect.Parameters["FlowStrength"]?.SetValue(0.14f);
 
         effect.Parameters["Bands"]?.SetValue(5f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.86f);
 
-        // Fungore's cap :3 rust through burnt orange to a pale amber core, rimmed in gold.
         effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.28f, 0.10f, 0.05f));
         effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.74f, 0.32f, 0.10f));
         effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.94f, 0.63f, 0.18f));
@@ -100,7 +91,7 @@ public sealed class SporeLayer : FieldLayer
         node.Life -= 3f;
     }
 
-    private static SporeLayer? Layer => FieldSystem.GetLayer<SporeLayer>();
+    private static SporeField? Layer => FieldSystem.GetLayer<SporeField>();
 
     /// <summary>
     ///     The wet splat of a sac bursting against a target: a tight spray thrown along
@@ -191,7 +182,7 @@ public sealed class SporeLayer : FieldLayer
     ///     solid. <paramref name="progress" /> runs 0..1 and tightens the ring as it climbs.
     /// </summary>
     /// <remarks>
-    ///     Called once per node wanted, per tick -- the caller decides how thick the cloud gets by
+    ///     Called once per node wanted, per tick. The caller decides how thick the cloud gets by
     ///     how often it asks, the same way <see cref="Cling(Entity, float)" /> works.
     /// </remarks>
     public static void Coalesce(Vector2 center, float progress, float radius = 32f)
@@ -218,9 +209,6 @@ public sealed class SporeLayer : FieldLayer
         );
     }
 
-    /// <summary>
-    ///     A single wisp shed by something still leaking spores -- a tumbling husk, a kicked chunk.
-    /// </summary>
     public static void Trail(Vector2 position, Vector2 velocity, float radius)
     {
         Layer?.SpawnNode(
@@ -231,14 +219,11 @@ public sealed class SporeLayer : FieldLayer
         );
     }
 
-    /// <summary>A sac that missed, breaking against terrain. Small, brief, no anchor.</summary>
     public static void TileSplat(Vector2 position, Vector2 direction)
     {
         if (Layer is not { } layer)
             return;
 
-        // Away from the surface it hit, so the puff blows back at the thrower rather than into
-        // the wall where it would be culled immediately.
         Vector2 rebound = (-direction).SafeNormalize(-Vector2.UnitY);
 
         for (int i = 0; i < 7; i++)

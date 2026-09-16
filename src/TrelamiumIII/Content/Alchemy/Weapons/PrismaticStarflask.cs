@@ -69,7 +69,7 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PrismaticStarflaskItem.KEY;
 
-    protected override GasField? Field => FieldSystem.GetLayer<StarLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<StarflaskField>();
 
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {

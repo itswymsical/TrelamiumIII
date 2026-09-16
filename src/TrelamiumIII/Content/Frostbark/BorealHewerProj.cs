@@ -323,7 +323,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
         Vector2 back = -Projectile.velocity.SafeNormalize(Vector2.Zero);
 
-        FieldSystem.GetLayer<IceMistLayer>()?.SpawnNode(
+        FieldSystem.GetLayer<ArcticField>()?.SpawnNode(
             Projectile.Center + Main.rand.NextVector2Circular(6f, 6f),
             back * Main.rand.NextFloat(0.3f, 1.1f) + Main.rand.NextVector2Circular(0.3f, 0.3f),
             radius: Main.rand.NextFloat(9f, 16f),
@@ -334,7 +334,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     /// <summary>The puff of frost thrown out where the axe bites in.</summary>
     private static void BurstMist(Vector2 position, float scale = 1f)
     {
-        if (FieldSystem.GetLayer<IceMistLayer>() is not { } mist)
+        if (FieldSystem.GetLayer<ArcticField>() is not { } mist)
             return;
 
         int count = (int)(7 * scale);

@@ -10,19 +10,8 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class ThermiteLayer : ChemicalGasField
+public class ThermiteFlaskField : ChemicalGasField
 {
-    /// <summary>
-    ///     Pooled coverage a tile of liquid needs before the thermite sitting on it boils it away.
-    /// </summary>
-    /// <remarks>
-    ///     Replaces a <c>ThermiteFlaskProjectile.shattered</c> static that used to gate this. That
-    ///     flag was one <see langword="bool" /> shared by every flask of the type, cleared on every
-    ///     tick of any flask's flight and set by any flask's death, so in practice the first throw
-    ///     of a session switched liquid conversion on and left it on. What it was reaching for is
-    ///     what this says directly: a wisp trailing off a flask still in the air is not enough
-    ///     thermite to flash a pool, and a burst that has actually settled is.
-    /// </remarks>
     private const float CONVERSION_COVERAGE = 2.5f;
 
     /// <summary>Pixels of terrain charred where an arm of the burst strikes it.</summary>
@@ -43,25 +32,10 @@ public class ThermiteLayer : ChemicalGasField
  
     protected override float LifeDecay => 0.35f;
 
-    /// <summary>Roughly where a thermite reaction actually sits, and the top of this layer's ramp.</summary>
     protected override float DefaultTemperature => 2400f;
 
-    /// <summary>
-    ///     The span the temperature channel encodes across. The bottom is dull-red crust rather
-    ///     than ambient: a node that has cooled below glowing has nothing left to say, and spending
-    ///     the channel's range on the part of the curve nobody can see would flatten the part they can.
-    /// </summary>
     protected override Vector2 TemperatureRange => new(700f, 2400f);
 
-    /// <summary>
-    ///     Cools toward the bottom of the range over the node's life.
-    /// </summary>
-    /// <remarks>
-    ///     Tied to remaining life rather than to a rate, so a node is exactly as cool as it is old
-    ///     however long the layer's decay is tuned to take. This is the first thing that has ever
-    ///     read or written <see cref="FieldNode.Temperature" /> -- it was carried and ignored until
-    ///     the field gained a channel to put it in.
-    /// </remarks>
     protected override void UpdateNode(ref FieldNode node, int index)
     {
         base.UpdateNode(ref node, index);
@@ -100,19 +74,12 @@ public class ThermiteLayer : ChemicalGasField
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
 
-        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
         effect.Parameters["FlowStrength"]?.SetValue(0.20f);
 
-        // Heat drives the palette per cell, so one spray cools across its own body: near-white at
-        // the head where the nodes are fresh, falling back to the ramp's own orange along the tail.
-        // Partial rather than full, or the hottest cells would wash out to flat white and the
-        // three-colour ramp underneath would stop doing anything at all.
         effect.Parameters["TemperatureBlend"]?.SetValue(0.55f);
         effect.Parameters["HotColor"]?.SetValue(new Vector3(1f, 0.93f, 0.72f));
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
 
-        // LiquidFbm kept its thinnest cells slightly more opaque than GasFbm did; preserved here
-        // now that both materials share one shader.
         effect.Parameters["BodyAlphaFloor"]?.SetValue(0.8f);
 
         effect.Parameters["Bands"]?.SetValue(3f);

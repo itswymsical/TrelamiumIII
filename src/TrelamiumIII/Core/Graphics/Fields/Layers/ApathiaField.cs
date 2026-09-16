@@ -8,7 +8,7 @@ namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The odd one out among the layers: <see cref="SporeLayer" /> and <see cref="IceMistLayer" />
+///         The odd one out among the layers: <see cref="SporeField" /> and <see cref="ArcticField" />
 ///         are lit clouds, and this is a <em>hole</em>. Its palette runs from void to a cold pale rim,
 ///         so the field reads as an absence with an edge rather than as smoke with a colour, which is
 ///         what lets it sit under the Illuminant Ink vortex instead of looking like a second,
@@ -20,7 +20,7 @@ namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 ///         leaking something that does not care about gravity.
 ///     </para>
 /// </remarks>
-public sealed class InkLayer : FieldLayer
+public sealed class ApathiaField : FieldLayer
 {
     /// <summary>Lowest: ink is an absence, and everything else reads against it.</summary>
     public override int LoadOrder => 10;
@@ -139,11 +139,8 @@ public sealed class InkLayer : FieldLayer
         node.Life -= 1f;
     }
 
-    private static InkLayer? Layer => FieldSystem.GetLayer<InkLayer>();
+    private static ApathiaField? Layer => FieldSystem.GetLayer<ApathiaField>();
 
-    /// <summary>
-    ///     The first billow, thrown the moment the remains come apart.
-    /// </summary>
     public static void Bloom(Vector2 center, float radius, int count = 22)
     {
         if (Layer is not { } layer)
@@ -151,8 +148,6 @@ public sealed class InkLayer : FieldLayer
 
         for (int i = 0; i < count; i++)
         {
-            // Slow and omnidirectional. A biased burst reads as an explosion; this should read as
-            // something welling outward.
             Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(0.8f, 2.6f);
 
             layer.SpawnNode(
@@ -169,7 +164,7 @@ public sealed class InkLayer : FieldLayer
     /// </summary>
     /// <remarks>
     ///     Called once per tick per piece, so the caller sets how heavy the shroud gets by how often
-    ///     it asks -- the same contract <see cref="SporeLayer.Cling" /> uses.
+    ///     it asks -- the same contract <see cref="SporeField.Cling" /> uses.
     ///     <para>
     ///         Takes a bare position and velocity rather than an <see cref="Entity" />, because the
     ///         pieces are particles and not entities, so there is no host for

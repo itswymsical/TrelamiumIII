@@ -52,7 +52,7 @@ public class VilesporeFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.VilesporeFlaskItem.KEY;
 
-    protected override GasField? Field => FieldSystem.GetLayer<CorruptedSporeLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<VilesporeField>();
 
     protected override BurstProfile Burst => BurstProfile.FlaskShatter with
     {

@@ -55,7 +55,7 @@ public sealed class EmberRarity : FlavorRarity
     };
 }
 
-/// <summary>Fungal and damp; dropped on the ground it keeps smoking, via the Fungore fight's <see cref="SporeLayer" />.</summary>
+/// <summary>Fungal and damp; dropped on the ground it keeps smoking, via the Fungore fight's <see cref="SporeField" />.</summary>
 public sealed class SporebornRarity : FlavorRarity
 {
     public override Color RarityColor => new(150, 195, 95);
@@ -78,7 +78,7 @@ public sealed class SporebornRarity : FlavorRarity
                     Life = 40f,
                     Buoyancy = 0.045f,
 
-                    WorldLayer = static () => FieldSystem.GetLayer<SporeLayer>(),
+                    WorldLayer = static () => FieldSystem.GetLayer<SporeField>(),
                     WorldRate = 0.35f,
                 },
             },

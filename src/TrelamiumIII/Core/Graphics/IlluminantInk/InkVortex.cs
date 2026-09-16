@@ -41,7 +41,7 @@ namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 ///     </para>
 ///     <para>
 ///         <b>The dark half is not drawn here.</b> Nothing additive can subtract light, so the ink
-///         <em>mass</em> -- the actual black silhouette -- comes from <see cref="InkLayer" />, which is
+///         <em>mass</em> -- the actual black silhouette -- comes from <see cref="ApathiaField" />, which is
 ///         alpha-blended in the same band. This host supplies the light: the horizon, the photon ring,
 ///         the accretion band, the sheen and the streaks. That is the same division of labour
 ///         <see cref="IInkLayer" /> already makes between <c>DrawInk</c> and <c>DrawLight</c>, applied
@@ -157,7 +157,7 @@ internal static class InkVortex
         composed = null;
         composedOverlay = null;
 
-        InkLayer.Clear();
+        ApathiaField.Clear();
         Scene.Release();
         Overlay.Release();
 
@@ -190,7 +190,7 @@ internal static class InkVortex
         {
             intakeCarry -= 1f;
 
-            InkLayer.Vortex(Center, Progress, INTAKE_RADIUS, spin: MathHelper.Lerp(0.7f, 1.3f, Fade));
+            ApathiaField.Vortex(Center, Progress, INTAKE_RADIUS, spin: MathHelper.Lerp(0.7f, 1.3f, Fade));
         }
 
         if (Scene.Ready)
@@ -330,7 +330,7 @@ internal static class InkVortex
         );
     }
 
-    /// <summary>Cold violet, the rim colour <see cref="InkLayer" /> outlines its silhouette with.</summary>
+    /// <summary>Cold violet, the rim colour <see cref="ApathiaField" /> outlines its silhouette with.</summary>
     private static readonly Vector3 RimLight = new(0.35f, 0.34f, 0.47f);
 
     /// <summary>

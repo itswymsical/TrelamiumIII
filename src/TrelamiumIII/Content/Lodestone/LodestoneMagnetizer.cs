@@ -594,7 +594,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
 
         FieldColor = Color.Lerp(FieldColor, target, 0.1f);
 
-        MagnetizerLayer.SetOre(FieldColor);
+        MagnetizerField.SetOre(FieldColor);
     }
 
     /// <summary>Feeds the ore stream and strikes chips off whatever the beam has hold of.</summary>
@@ -611,7 +611,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
             // having been spawned there rather than torn out of anything.
             Vector2 velocity = away.RotatedByRandom(0.8f) * Main.rand.NextFloat(0.5f, 2.5f);
 
-            MagnetizerLayer.Stream(
+            MagnetizerField.Stream(
                 Projectile,
                 contact.Position + Main.rand.NextVector2Circular(8f, 8f),
                 velocity,

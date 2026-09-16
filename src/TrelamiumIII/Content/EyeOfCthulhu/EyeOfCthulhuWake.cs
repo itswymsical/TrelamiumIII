@@ -16,7 +16,7 @@ public sealed class EyeOfCthulhuWake : GlobalNPC
             return;
 
         // Read before OnKill sets it, so this means "not seen yet" rather than "not dead yet".
-        EyeOfCthulhuWakeSystem.Arm(npc.Center, firstKill: !DownedBossSystem.SeenEyeOfCthulhuWake);
+        EyeOfCthulhuWakeSystem.Arm(npc.Center, firstKill: true);
     }
 
     public override void OnKill(NPC npc)
@@ -131,8 +131,7 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
             for (int i = 0; i < entry.Count; i++)
                 Shed(entry);
         }
-
-        InkLayer.Bloom(center, radius: 90f);
+        InikiField.Bloom(center, radius: 120f);
     }
 
     /// <summary>Spawns one piece wearing a vanilla gore sprite.</summary>
