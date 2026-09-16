@@ -3,8 +3,8 @@ using Terraria.DataStructures;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
 
@@ -95,7 +95,7 @@ public class SkofnungProjectile : HeldSwordProjectile
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
-        var layer = MetaballSystem.GetLayer<IceMistLayer>();
+        var layer = FieldSystem.GetLayer<IceMistLayer>();
 
         if (layer == null) return;
         SoundEngine.PlaySound(SoundID.DD2_WitherBeastCrystalImpact with { Volume = 0.35f });

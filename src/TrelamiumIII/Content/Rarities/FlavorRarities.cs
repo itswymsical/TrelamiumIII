@@ -1,6 +1,6 @@
 using Terraria.Localization;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Rarities;
 using TrelamiumIII.Core.Rarities.Fields;
 using TrelamiumIII.Core.Rarities.Flairs;
@@ -78,7 +78,7 @@ public sealed class SporebornRarity : FlavorRarity
                     Life = 40f,
                     Buoyancy = 0.045f,
 
-                    WorldLayer = static () => MetaballSystem.GetLayer<SporeLayer>(),
+                    WorldLayer = static () => FieldSystem.GetLayer<SporeLayer>(),
                     WorldRate = 0.35f,
                 },
             },

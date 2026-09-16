@@ -2,7 +2,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Content.Fungore;

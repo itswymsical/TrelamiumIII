@@ -6,6 +6,7 @@ using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
@@ -27,7 +28,10 @@ public class ThermiteLayer : ChemicalGasField
     /// <summary>Pixels of terrain charred where an arm of the burst strikes it.</summary>
     private const float SCORCH_RADIUS = 26f;
 
-    protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
+    /// <summary>Molten liquid; the brightest of the pooling layers, so last of them.</summary>
+    public override int LoadOrder => 40;
+
+    protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;
     protected override int GasType => GasTypeID.Liquid;
     protected override float DefaultDensity => 1.0f;
@@ -38,6 +42,32 @@ public class ThermiteLayer : ChemicalGasField
     protected override float Drag => 0.9956f;
  
     protected override float LifeDecay => 0.35f;
+
+    /// <summary>Roughly where a thermite reaction actually sits, and the top of this layer's ramp.</summary>
+    protected override float DefaultTemperature => 2400f;
+
+    /// <summary>
+    ///     The span the temperature channel encodes across. The bottom is dull-red crust rather
+    ///     than ambient: a node that has cooled below glowing has nothing left to say, and spending
+    ///     the channel's range on the part of the curve nobody can see would flatten the part they can.
+    /// </summary>
+    protected override Vector2 TemperatureRange => new(700f, 2400f);
+
+    /// <summary>
+    ///     Cools toward the bottom of the range over the node's life.
+    /// </summary>
+    /// <remarks>
+    ///     Tied to remaining life rather than to a rate, so a node is exactly as cool as it is old
+    ///     however long the layer's decay is tuned to take. This is the first thing that has ever
+    ///     read or written <see cref="FieldNode.Temperature" /> -- it was carried and ignored until
+    ///     the field gained a channel to put it in.
+    /// </remarks>
+    protected override void UpdateNode(ref FieldNode node, int index)
+    {
+        base.UpdateNode(ref node, index);
+
+        node.Temperature = MathHelper.Lerp(700f, 2400f, node.Alpha);
+    }
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Thermal;
     public override float ChemicalDamage => 1f;
@@ -57,25 +87,33 @@ public class ThermiteLayer : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
-        int stride = Math.Max(1, gasNodes.Count / 16);
 
         Vector3 light = new Vector3(0.55f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(
-            2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(1.05f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
+
+        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
+        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
+
+        // Heat drives the palette per cell, so one spray cools across its own body: near-white at
+        // the head where the nodes are fresh, falling back to the ramp's own orange along the tail.
+        // Partial rather than full, or the hottest cells would wash out to flat white and the
+        // three-colour ramp underneath would stop doing anything at all.
+        effect.Parameters["TemperatureBlend"]?.SetValue(0.55f);
+        effect.Parameters["HotColor"]?.SetValue(new Vector3(1f, 0.93f, 0.72f));
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
+
+        // LiquidFbm kept its thinnest cells slightly more opaque than GasFbm did; preserved here
+        // now that both materials share one shader.
+        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.8f);
 
         effect.Parameters["Bands"]?.SetValue(3f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.94f);
@@ -89,19 +127,17 @@ public class ThermiteLayer : ChemicalGasField
         effect.Parameters["HighlightAlpha"]?.SetValue(0.9f);
     }
 
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         Dust.NewDust(node.Position / 16, 16, 16, DustID.Lava);
         Lighting.AddLight(node.Position, new Vector3(1f, 0.77f, 0.22f));
     }
 
-    protected override void BindAdditionalTextures(GraphicsDevice device)
-    {
-        base.BindAdditionalTextures(device);
-
-        if (noiseTex?.IsLoaded == true)
-            device.Textures[1] = noiseTex.Value;
-    }
+    // BindAdditionalTextures used to pin the noise into sampler register 1 by hand, which was
+    // redundant with the uNoiseTex parameter above and became actively wrong once the shader gained
+    // a second sampler: registers are assigned in declaration order, so writing one by index now
+    // lands on whichever texture happens to sit there -- the attribute target, whose flow would
+    // then be read out of a noise texture. The effect parameter binds it to the right register.
 
     /// <summary>Thermite left on a floor keeps burning as a thermal residue.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<ThermalResidueCondition>();
@@ -112,7 +148,7 @@ public class ThermiteLayer : ChemicalGasField
     /// </summary>
     protected override float TileFieldThreshold => 1.15f;
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
 
@@ -125,7 +161,7 @@ public class ThermiteLayer : ChemicalGasField
     /// fired once per node per frame, which meant a single invisible tail-end node was enough to
     /// flash a full tile of water to obsidian -- and three of them did it three times over.
     /// </remarks>
-    protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         base.OnLiquidContact(ref node, tileX, tileY, tile);
 
@@ -152,7 +188,7 @@ public class ThermiteLayer : ChemicalGasField
         LiquidUtils.BoilLiquidIntoTile(tileX, tileY, TileID.CrispyHoneyBlock, LiquidID.Honey, drain, amountLeft: 50);
     }
 
-    protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile)
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Viscosity *= 1.01f;
         node.Velocity *= 0.89f;

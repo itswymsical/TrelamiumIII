@@ -1,5 +1,6 @@
 ﻿using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -45,7 +46,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// need to re-check, and more to the point, an override that forgot used to be able to reach
     /// past a guard that lived here.
     /// </summary>
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
         chem.ApplyAffliction(ChemicalDamage, AfflictionDuration, AfflictionRate, ChemicalType);
@@ -63,7 +64,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
         SpawnNode(position, velocity, radius, life, owner: CosmeticOwnerID);
     }
 
-    protected override void UpdateGasNode(ref GasNode node, int index)
+    protected override void UpdateNode(ref FieldNode node, int index)
     {
         if (node.Owner == CosmeticOwnerID)
         {
@@ -75,10 +76,10 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
             return;
         }
 
-        base.UpdateGasNode(ref node, index);
+        base.UpdateNode(ref node, index);
     }
 
-    protected override void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile)
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         if (GasType == GasTypeID.Liquid)
         {
@@ -96,7 +97,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
         base.OnLiquidContact(ref node, tileX, tileY, tile);
     }
 
-    protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile)
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         if (GasType == GasTypeID.Liquid)
         {

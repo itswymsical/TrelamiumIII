@@ -10,6 +10,7 @@ using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.KingSlime;
 
@@ -136,7 +137,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
     /// <summary>A short cone of gel wisps off the barrel, in the layer the shot itself uses.</summary>
     private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, int count = 3, float speed = 4f)
     {
-        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
             return;
 
         for (int i = 0; i < count; i++)
@@ -190,7 +191,7 @@ public class GelBallProj : ModProjectile
     /// <summary>Lays gel from a point behind the blob, thinning as it travels.</summary>
     private void Trail()
     {
-        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
             return;
 
         Vector2 behind = Projectile.Center - Projectile.velocity * 0.4f;
@@ -236,7 +237,7 @@ public class GelBallProj : ModProjectile
         if (coatTerrain)
             SlimedCondition.Splatter(position, SPLATTER_RADIUS, intensity: 0.9f, owner: owner);
 
-        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
             return;
 
         for (int i = 0; i < BURST_NODES; i++)

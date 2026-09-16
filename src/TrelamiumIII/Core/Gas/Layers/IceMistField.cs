@@ -3,6 +3,7 @@ using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
@@ -18,6 +19,9 @@ public class IceMistField : ChemicalGasField
     ///     <see cref="ThermiteLayer" /> for what was wrong with that.
     /// </remarks>
     private const float CONVERSION_COVERAGE = 1.6f;
+
+    /// <summary>Thin frost; reads as haze over whatever it drifts across.</summary>
+    public override int LoadOrder => 80;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
@@ -50,24 +54,21 @@ public class IceMistField : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
-        int stride = Math.Max(1, gasNodes.Count / 16);
 
         Vector3 light = new Vector3(0.22f);
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(
-            2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.14f);
         effect.Parameters["NoiseScale"]?.SetValue(1.4f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.18f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.05f, 0.015f));
+
+        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
+        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
 
         effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.8f);
@@ -79,15 +80,15 @@ public class IceMistField : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
     }
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
 
         npc.AddBuff(BuffID.Frostburn, 30);
     }
 
-    protected override void OnPlayerContact(ref GasNode node, Player player) { }
-    protected override void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile) { }
+    protected override void OnPlayerContact(ref FieldNode node, Player player) { }
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile) { }
 
     /// <summary>An arm of the burst that catches something leaves frostburn on it.</summary>
     /// <remarks>

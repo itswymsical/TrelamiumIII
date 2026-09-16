@@ -2,7 +2,7 @@ using ReLogic.Content;
 using System.Collections.Generic;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.Graphics;
-using TrelamiumIII.Core.Graphics.Metaballs;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Rarities.Fields;
 
@@ -26,6 +26,9 @@ public sealed record GasLook
 
     /// <summary>Field level where gas exists, after noise erosion. Lower merges into broader sheets.</summary>
     public float Threshold { get; init; } = 0.22f;
+
+    /// <summary>Field units from <see cref="Threshold" /> to a fully shaded interior. See <see cref="FieldStamp.DepthRange" />.</summary>
+    public float DepthRange { get; init; } = FieldStamp.DepthRange;
 
     public float NoiseScale { get; init; } = 0.2f;
 
@@ -82,6 +85,7 @@ public sealed record GasLook
     internal void Apply(Effect effect)
     {
         effect.Parameters["Threshold"]?.SetValue(Threshold);
+        effect.Parameters["DepthRange"]?.SetValue(DepthRange);
         effect.Parameters["NoiseScale"]?.SetValue(NoiseScale);
         effect.Parameters["NoiseStrength"]?.SetValue(NoiseStrength);
         effect.Parameters["NoiseDrift"]?.SetValue(Drift);
@@ -160,7 +164,7 @@ public sealed class MetaballFlairField : FlairField
     public int MaxNodes { get; init; } = 220;
 
     /// <summary>The world layer a dropped item feeds, or null to keep the gas on text.</summary>
-    public Func<MetaballField?>? WorldLayer { get; init; }
+    public Func<FieldLayer?>? WorldLayer { get; init; }
 
     public float WorldRadius { get; init; } = 7f;
 
@@ -284,8 +288,9 @@ public sealed class MetaballFlairField : FlairField
 
         foreach (Node node in nodes)
         {
-            // Overdriven past 1 so neighbouring blobs sum past the threshold. Flat: text has no world light to carry.
-            spriteBatch.Draw(texture, node.Position, null, FieldStamp.Flat(node.Alpha * 1.25f), 0f, origin, node.Radius * 2f / texture.Width,
+            // Plain coverage; the overdrive that fuses neighbours is FieldStamp.Gain, applied by the shader.
+            // Flat: text has no world light to carry.
+            spriteBatch.Draw(texture, node.Position, null, FieldStamp.Flat(node.Alpha), 0f, origin, node.Radius * 2f / texture.Width,
                 SpriteEffects.None, 0f);
         }
     }
@@ -293,11 +298,16 @@ public sealed class MetaballFlairField : FlairField
     /// <summary>Screen uniforms. Unit zoom and zero offset turn GasFbm's world-locked noise into screen-locked noise.</summary>
     private static void ApplySharedParameters(Effect effect, Texture2D field)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / field.Width, 1f / field.Height));
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
+        FieldLayer.ApplyScreenParameters(effect, PIXEL_SCALE);
+
+        // Overridden after the shared block rather than instead of it. This field is drawn in
+        // interface space, where there is no camera to undo and no world light to stand in, so the
+        // two uniforms that locate the noise in the world are pinned to their identity values.
         effect.Parameters["Zoom"]?.SetValue(Vector2.One);
         effect.Parameters["WorldOffset"]?.SetValue(Vector2.Zero);
         effect.Parameters["WorldLight"]?.SetValue(Vector3.One);
+
+        // The shared block sizes a texel against the screen; this target is sized against itself.
+        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / field.Width, 1f / field.Height));
     }
 }

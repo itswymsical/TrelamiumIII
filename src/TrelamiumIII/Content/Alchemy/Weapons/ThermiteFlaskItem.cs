@@ -7,6 +7,7 @@ using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -45,7 +46,7 @@ public class ThermiteFlaskItem : ModItem
 
     private static void DoThermiteSpread(ChemicalReactionEvent e)
     {
-        var layer = GasSystem.GetLayer<ThermiteLayer>();
+        var layer = FieldSystem.GetLayer<ThermiteLayer>();
         if (layer == null) return;
 
         Vector2 impactDir = e.Target.oldVelocity.SafeNormalize(-Vector2.UnitY);
@@ -73,7 +74,7 @@ public class ThermiteFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.ThermiteFlaskItem.KEY;
 
-    protected override GasField? Field => GasSystem.GetLayer<ThermiteLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<ThermiteLayer>();
 
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {

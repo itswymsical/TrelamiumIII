@@ -1,16 +1,24 @@
-﻿using ReLogic.Content;
 using System.Collections.Generic;
-using TrelamiumIII.Core.Graphics;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
 
-
 /// <summary>
-/// Abstract base for all gas-type metaball layers.
-/// Handles physics, tile collision, surface spreading, entity contact sweeps,
-/// and exposes override hooks for alchemy reactions.
+/// A field whose nodes act on the world: they sweep entities, carry ownership, throw ballistic
+/// emitters and accumulate into a tile field that leaves residues behind.
 /// </summary>
-public abstract class GasField
+/// <remarks>
+/// <para>
+/// Everything about drifting, colliding with terrain and being drawn lives in
+/// <see cref="FieldLayer" /> and is shared with the purely visual layers. This is the half that
+/// makes a cloud something the world has to answer for.
+/// </para>
+/// <para>
+/// Exposes override hooks for alchemy reactions; <see cref="ChemicalGasField" /> is the subclass
+/// that knows the chemical system exists.
+/// </para>
+/// </remarks>
+public abstract class GasField : FieldLayer
 {
     internal class GasTypeID
     {
@@ -18,166 +26,65 @@ public abstract class GasField
         public static int Gas = 1;
         public static int Plasma = 2;
     }
-    public virtual int LoadOrder => 100;
 
-    protected abstract Asset<Effect> Shader { get; }
-    protected abstract string TexturePath { get; }
     /// <summary>
     /// 0 = liquid, 1 = gas, 2 = plasma. Used for alchemy reaction checks.
     /// </summary>
     protected abstract int GasType { get; }
 
-    /// <summary>0.0 = buoyant, 1.0 = dense. Sets node default.</summary>
-    protected virtual float DefaultDensity => 0.25f;
+    /// <summary>
+    /// Gas keeps simulating with no screen: the tile field is world state, not decoration.
+    /// </summary>
+    protected override bool SimulatesHeadless => true;
 
-    /// <summary>0.0 = flows freely, 1.0 = sluggish. Sets node default.</summary>
-    protected virtual float DefaultViscosity => 0.15f;
-
-    /// <summary>Default node temperature in Celsius.</summary>
-    protected virtual float DefaultTemperature => 20f;
+    /// <summary>A liquid that has reached the ground has arrived; a gas spreads along it.</summary>
+    protected override bool PoolsOnFloor => GasType == GasTypeID.Liquid;
 
     /// <summary>
-    /// Upward acceleration applied to buoyant nodes.
-    /// Positive value = force in -Y direction.
+    /// Linear rather than the point sampling the visual layers use, which is what these layers have
+    /// always been tuned against -- it softens each blob before the threshold ever sees it.
     /// </summary>
-    protected virtual float BuoyancyForce => 0.055f;
+    protected internal override SamplerState StampSampler => SamplerState.LinearClamp;
 
     /// <summary>
-    /// Downward acceleration applied to dense nodes.
-    /// Positive value = force in +Y direction.
+    /// A safety ceiling rather than a budget. These lists used to be unbounded, so a stuck emitter
+    /// grew one without limit and the graphics preset did nothing for gas at all; the number is set
+    /// well above what any current burst produces so that inheriting one changes nothing on screen.
     /// </summary>
-    protected virtual float GravityScale => 0.07f;
+    protected override int BaseMaxNodes => 900;
 
-    /// <summary>Per-tick velocity multiplier. Controls drag / air resistance.</summary>
-    protected virtual float Drag => 0.984f;
-
-    /// <summary>Life subtracted per tick during normal physics.</summary>
-    protected virtual float LifeDecay => 1f;
+    protected override void OnNodeSpawn(ref FieldNode node)
+    {
+        node.TypeId = GasType;
+        node.ContactCooldown = Main.rand.Next(0, 20); // stagger initial contact sweeps
+    }
 
     /// <summary>
-    /// Additional life subtracted per tick while in contact with geometry.
-    /// <para>
-    /// For liquid types (0), this applies <see cref="OnTileContact(ref GasNode, int, int, Tile)"></see>
-    /// </para>
+    /// Which of the three families the node belongs to, spread across the variant channel.
     /// </summary>
-    protected virtual float EnclosedLifePenalty => 2f;
-
-    protected virtual BlendState CompositeBlendState => BlendState.AlphaBlend;
-
-    protected List<GasNode> gasNodes = new();
+    /// <remarks>
+    /// Nothing in the shader reads this yet. It costs no draw and no channel that was going to be
+    /// used otherwise, and it is the one piece of per-node identity the renderer cannot work out
+    /// for itself, so a layer that later wants its liquid and its vapour shaded differently within
+    /// one field will find it already there.
+    /// </remarks>
+    protected override float NodeVariant(in FieldNode node) => node.TypeId / 2f;
 
     /// <summary>
     /// The layer's ballistic sources: the arms of a burst, in flight, laying nodes behind them.
     /// </summary>
     /// <remarks>
-    /// Kept apart from <see cref="gasNodes" /> rather than folded into it, for the reason set out on
+    /// Kept apart from the node list rather than folded into it, for the reason set out on
     /// <see cref="GasEmitter" />: these are few and expensive per unit -- they collide, they sweep
     /// entities, they carry damage -- and the nodes are many and cheap. One list of each keeps both
     /// costs where they belong.
     /// </remarks>
     protected List<GasEmitter> emitters = new();
 
-    GasRenderTargetContent _gasTarget;
-    Asset<Effect> shader;
-    Asset<Texture2D> radialTexture;
-
-    public virtual void Load()
+    public override void Unload()
     {
-        shader = Shader;
-        radialTexture = ModContent.Request<Texture2D>(TexturePath);
-        _gasTarget = new GasRenderTargetContent(this) { PixelScale = 2 };
-    }
-
-    public virtual void Unload()
-    {
-        _gasTarget?.Reset();
-        _gasTarget = null;
-        gasNodes.Clear();
+        base.Unload();
         emitters.Clear();
-    }
-
-    /// <summary>
-    /// Stamps every node into the field target, carrying the light it is standing in.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The stamp is not white any more; it follows <see cref="FieldStamp" />, which is where the
-    /// encoding and the reasoning behind it live. The short version: red still sums to exactly the
-    /// coverage it always held, and green now carries that coverage weighted by how lit the node
-    /// is, so the shader can recover brightness per pixel instead of being handed one number for
-    /// the whole screen.
-    /// </para>
-    /// <para>
-    /// The sample costs nothing new -- it was already being taken here and then discarded -- and
-    /// this is the last point in the pipeline that still knows where each blob is.
-    /// </para>
-    /// </remarks>
-    internal void DrawNodes(SpriteBatch sb)
-    {
-        foreach (var node in gasNodes)
-        {
-            Vector2 screenPos = node.Position - Main.screenPosition;
-            float size = node.Radius * 2f;
-
-            // Overdriven past white on purpose: the shader thresholds the summed field, and a node
-            // that only just reaches 1.0 at its centre never fuses with its neighbours.
-            Color nodeColor = FieldStamp.Lit(node.Position, node.Alpha * 1.25f);
-
-            sb.Draw(
-                radialTexture.Value,
-                screenPos,
-                null,
-                nodeColor,
-                0f,
-                radialTexture.Value.Size() / 2f,
-                size / radialTexture.Value.Width,
-                SpriteEffects.None,
-                0f
-            );
-        }
-    }
-
-
-    /// <summary>
-    /// Spawn a gas node at a world position with explicit physics parameters.
-    /// Pass negative density/viscosity to use the layer's defaults.
-    /// </summary>
-    /// <param name="owner">
-    /// The player whose weapon put this node here, or <see cref="GasNode.NoOwner" /> for gas the
-    /// world produced by itself.
-    /// </param>
-    /// <remarks>
-    /// Ownership is not about damage credit -- these nodes deal none directly. It is about what the
-    /// gas is allowed to do to the person who fired it, and it survives the node: a cloud that
-    /// pools into a residue hands its owner to the tile, and the residue hands it back to whatever
-    /// it exhales later. Without that chain a thrown flask ends up afflicting the thrower two
-    /// seconds after they walked over their own puddle.
-    /// </remarks>
-    public void SpawnNode(
-        Vector2 worldPosition,
-        Vector2 velocity,
-        float radius,
-        float life,
-        float density = -1f,
-        float viscosity = -1f,
-        float temperature = -1f,
-        int owner = GasNode.NoOwner)
-    {
-
-        gasNodes.Add(new GasNode
-        {
-            Position = worldPosition,
-            Velocity = velocity,
-            Radius = radius,
-            Life = life,
-            MaxLife = life,
-            Density = density < 0f ? DefaultDensity : density,
-            Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
-            Temperature = temperature < 0f ? DefaultTemperature : temperature,
-            GasTypeId = GasType,
-            Owner = owner,
-            ContactCooldown = Main.rand.Next(0, 20), // stagger initial contact sweeps
-        });
     }
 
     /// <summary>
@@ -188,22 +95,27 @@ public abstract class GasField
     /// its node simulated this tick too, or every arm of a burst is drawn one frame behind where it
     /// actually is -- which at burst speeds is several pixels of lag between the trail and its head.
     /// </remarks>
-    public void Update()
+    public override void Update()
     {
         UpdateEmitters();
 
-        for (int i = gasNodes.Count - 1; i >= 0; i--)
-        {
-            var node = gasNodes[i];
-                UpdateGasNode(ref node, i);
-                ApplyLighting(ref node);
-                gasNodes[i] = node;
-
-                if (node.Life <= 0f)
-                    gasNodes.RemoveAt(i);
-        }
+        base.Update();
 
         UpdateTileField();
+    }
+
+    /// <summary>Base physics, then the entity sweep this layer adds on top of it.</summary>
+    protected override void UpdateNode(ref FieldNode node, int index)
+    {
+        base.UpdateNode(ref node, index);
+
+        if (node.ContactCooldown <= 0)
+        {
+            CheckEntityContacts(ref node);
+            node.ContactCooldown = 15;
+        }
+        else
+            node.ContactCooldown--;
     }
 
     #region Emitters
@@ -267,7 +179,7 @@ public abstract class GasField
         Vector2 origin,
         Vector2 direction,
         bool grounded,
-        int owner = GasNode.NoOwner,
+        int owner = FieldNode.NoOwner,
         int damage = 0,
         float knockback = 0f)
     {
@@ -338,7 +250,7 @@ public abstract class GasField
         in EmitterProfile profile,
         Vector2 position,
         Vector2 velocity,
-        int owner = GasNode.NoOwner,
+        int owner = FieldNode.NoOwner,
         int damage = 0,
         float knockback = 0f,
         byte variant = 0)
@@ -673,7 +585,7 @@ public abstract class GasField
     /// what the player can see burning.
     /// </remarks>
     /// <param name="owner">
-    /// The player who put most of this pool here, or <see cref="GasNode.NoOwner" />. Pass it on to
+    /// The player who put most of this pool here, or <see cref="FieldNode.NoOwner" />. Pass it on to
     /// anything left behind, so the residue knows who is allowed to walk through it.
     /// </param>
     protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density, int owner) { }
@@ -683,7 +595,7 @@ public abstract class GasField
 
     private void UpdateTileField()
     {
-        if (!UsesTileField || gasNodes.Count == 0)
+        if (!UsesTileField || nodes.Count == 0)
             return;
 
         if (++tileFieldTimer < TileFieldInterval)
@@ -724,7 +636,7 @@ public abstract class GasField
     {
         tileField.Clear();
 
-        foreach (GasNode node in gasNodes)
+        foreach (FieldNode node in nodes)
         {
             float radius = node.Radius;
 
@@ -771,162 +683,6 @@ public abstract class GasField
             }
         }
     }
-    protected Vector3 SampleAverageLight(int samples = 32)
-    {
-        if (gasNodes.Count == 0)
-            return Vector3.One;
-
-        int stride = Math.Max(1, gasNodes.Count / samples);
-        Vector3 light = Vector3.Zero;
-        int taken = 0;
-
-        for (int i = 0; i < gasNodes.Count; i += stride)
-        {
-            light += Lighting.GetSubLight(gasNodes[i].Position);
-            taken++;
-        }
-
-        return taken == 0 ? Vector3.One : light / taken;
-    }
-
-    protected virtual void UpdateGasNode(ref GasNode node, int index)
-    {
-        ApplyPhysics(ref node);
-        ResolveTileCollision(ref node);
-
-        if (node.ContactCooldown <= 0)
-        {
-            CheckEntityContacts(ref node);
-            node.ContactCooldown = 15;
-        }
-        else
-            node.ContactCooldown--;
-
-        node.Life -= LifeDecay;
-    }
-    protected virtual void ApplyLighting(ref GasNode gas) { }
-
-    private void ApplyPhysics(ref GasNode node)
-    {
-        float netVertical = MathHelper.Lerp(-BuoyancyForce, GravityScale, node.Density);
-        node.Velocity.Y += netVertical;
-
-        float drag = MathHelper.Lerp(Drag, Drag * 0.96f, node.Viscosity);
-        node.Velocity *= drag;
-    }
-
-    /// <summary>
-    /// Resolves tile collisions against the node's current tile and its
-    /// four cardinal neighbours. Applies lateral spreading on surface contact,
-    /// then moves the node by its (possibly corrected) velocity.
-    ///
-    /// Collision flags (OnCeiling, OnFloor, OnWall) are refreshed each call.
-    /// </summary>
-    private void ResolveTileCollision(ref GasNode node)
-    {
-        const int TileSize = 16;
-        const float Restitution = 0.02f;   // minimal bounce on tile contact
-        const float SpreadBase = 0.40f;
-
-        node.OnCeiling = false;
-        node.OnFloor = false;
-        node.OnWall = false;
-
-        int cx = (int)(node.Position.X / TileSize);
-        int cy = (int)(node.Position.Y / TileSize);
-
-        if (IsSolidTile(cx, cy))
-        {
-            node.EnclosedTicks++;
-            OnGasEnclosed(ref node);
-
-            float ejectDir = node.Density < 0.5f ? -1f : 1f;
-            node.Velocity.Y = ejectDir * 0.8f;
-            node.Life -= EnclosedLifePenalty;
-
-            node.Position += node.Velocity;
-            return;
-        }
-
-        node.EnclosedTicks = 0;
-
-        bool solidAbove = IsSolidTile(cx, cy - 1);
-        bool solidBelow = IsSolidTile(cx, cy + 1);
-        bool solidLeft = IsSolidTile(cx - 1, cy);
-        bool solidRight = IsSolidTile(cx + 1, cy);
-
-        if (solidAbove && node.Velocity.Y < 0f)
-        {
-            node.Velocity.Y = MathF.Abs(node.Velocity.Y) * Restitution;
-            node.OnCeiling = true;
-            ApplyLateralSpread(ref node, solidLeft, solidRight, SpreadBase);
-            OnTileContact(ref node, cx, cy - 1, Framing.GetTileSafely(cx, cy - 1));
-        }
-
-        if (solidBelow && node.Velocity.Y > 0f)
-        {
-            node.Velocity.Y = -MathF.Abs(node.Velocity.Y) * Restitution;
-            node.Position.Y = (cy + 1) * TileSize;
-            node.OnFloor = true;
-            if (GasType == 0)
-            {
-                node.Life -= EnclosedLifePenalty;
-            }
-            ApplyLateralSpread(ref node, solidLeft, solidRight, SpreadBase);
-            OnTileContact(ref node, cx, cy + 1, Framing.GetTileSafely(cx, cy + 1));
-        }
-
-        if (solidLeft && node.Velocity.X < 0f)
-        {
-            node.Velocity.X = MathF.Abs(node.Velocity.X) * Restitution;
-            node.OnWall = true;
-            OnTileContact(ref node, cx + 1, cy, Framing.GetTileSafely(cx + 1, cy));
-        }
-
-        if (solidRight && node.Velocity.X > 0f)
-        {
-            node.Velocity.X = -MathF.Abs(node.Velocity.X) * Restitution;
-            node.OnWall = true;
-            OnTileContact(ref node, cx - 1, cy, Framing.GetTileSafely(cx - 1, cy));
-        }
-
-        CheckLiquidContactAt(ref node, cx, cy);
-        CheckLiquidContactAt(ref node, cx, cy - 1);
-        CheckLiquidContactAt(ref node, cx, cy + 1);
-
-        node.Position += node.Velocity;
-    }
-
-    private void ApplyLateralSpread(ref GasNode node, bool solidLeft, bool solidRight, float force)
-    {
-        float spread = force * (1f - node.Viscosity);
-
-        if (!solidLeft && !solidRight)
-        {
-            // Both sides open: preserve lateral momentum, add small random bias.
-            float momentum = MathHelper.Clamp(node.Velocity.X, -spread * 0.5f, spread * 0.5f);
-            node.Velocity.X += momentum + (Main.rand.NextFloat() - 0.5f) * spread * 0.3f;
-        }
-        else if (!solidLeft)
-            node.Velocity.X -= spread * Main.rand.NextFloat(0.6f, 1f);
-        else if (!solidRight)
-            node.Velocity.X += spread * Main.rand.NextFloat(0.6f, 1f);
-        else
-        {
-            node.Velocity.X += (Main.rand.NextFloat() - 0.5f) * 0.07f;
-            node.Life -= 1f;
-        }
-    }
-
-    private void CheckLiquidContactAt(ref GasNode node, int tileX, int tileY)
-    {
-        if (tileX < 0 || tileY < 0 || tileX >= Main.maxTilesX || tileY >= Main.maxTilesY)
-            return;
-
-        Tile tile = Framing.GetTileSafely(tileX, tileY);
-        if (tile.LiquidAmount > 0)
-            OnLiquidContact(ref node, tileX, tileY, tile);
-    }
 
     /// <summary>
     /// Whether this layer's nodes may act on <paramref name="npc"/> at all.
@@ -937,7 +693,7 @@ public abstract class GasField
     /// <inheritdoc cref="CanAffect(NPC)"/>
     protected virtual bool CanAffect(Player player) => true;
 
-    private void CheckEntityContacts(ref GasNode node)
+    private void CheckEntityContacts(ref FieldNode node)
     {
         float radiusSq = node.Radius * node.Radius;
 
@@ -962,77 +718,8 @@ public abstract class GasField
     /// Called for each entity a node overlaps. Targets have already passed
     /// <see cref="CanAffect(NPC)"/>, so an override does not need to re-check for friendlies.
     /// </summary>
-    protected virtual void OnNPCContact(ref GasNode node, NPC npc) { }
+    protected virtual void OnNPCContact(ref FieldNode node, NPC npc) { }
 
-    protected virtual void OnPlayerContact(ref GasNode node, Player player) { }
+    protected virtual void OnPlayerContact(ref FieldNode node, Player player) { }
 
-    protected virtual void OnTileContact(ref GasNode node, int tileX, int tileY, Tile tile) { }
-
-    protected virtual void OnLiquidContact(ref GasNode node, int tileX, int tileY, Tile tile) { }
-
-    protected virtual void OnGasEnclosed(ref GasNode node) { }
-
-    /// <summary>accumulates gas node blobs into the off-screen field target.</summary>
-    public void AccumulateField()
-    {
-        if (gasNodes.Count == 0 || Main.gameMenu || Main.dedServ)
-            return;
-
-        // Queue up the request
-        _gasTarget.Request();
-
-        // Immediately process the request and draw to the render target
-        _gasTarget.PrepareRenderTarget(Main.graphics.GraphicsDevice, Main.spriteBatch);
-    }
-
-    /// <summary>composites the field target to screen through the layer shader.</summary>
-    public void CompositeToScreen()
-    {
-        if (!_gasTarget.IsReady || _gasTarget.GetTarget() == null) return;
-
-        var sb = Main.spriteBatch;
-        var effect = shader.Value;
-        var device = Main.graphics.GraphicsDevice;
-
-        // Set centrally, ahead of the layer's own block, because every layer needs it and none of
-        // them should have to remember. The gas target bakes the zoom into its own transform, so a
-        // shader reading world position back out of a screen uv has to undo it -- without this it
-        // silently assumes 1 and its noise slides across the world as the camera pans.
-        effect.Parameters["Zoom"]?.SetValue(Main.GameViewMatrix.Zoom);
-
-        ApplyShaderParameters(effect);
-
-        sb.Begin(SpriteSortMode.Immediate, CompositeBlendState, SamplerState.PointClamp,
-                 DepthStencilState.None, RasterizerState.CullNone);
-
-        BindAdditionalTextures(device);
-        effect.CurrentTechnique.Passes[0].Apply();
-
-        sb.Draw(
-            _gasTarget.GetTarget(), Vector2.Zero, null, Color.White, 0f,
-            Vector2.Zero, _gasTarget.PixelScale, SpriteEffects.None, 0f);
-
-        sb.End();
-    }
-    protected virtual void BindAdditionalTextures(GraphicsDevice device) { }
-
-
-    // TODO: take a list/params of effects for diabolical shaderslop activities
-    protected virtual void ApplyShaderParameters(Effect effect) { }
-
-    protected static bool IsSolidTile(int tileX, int tileY)
-    {
-        if (tileX < 0 || tileY < 0 || tileX >= Main.maxTilesX || tileY >= Main.maxTilesY)
-            return true;
-
-        return WorldGen.SolidTile(tileX, tileY);
-    }
-
-    protected static bool HasLiquid(int tileX, int tileY)
-    {
-        if (tileX < 0 || tileY < 0 || tileX >= Main.maxTilesX || tileY >= Main.maxTilesY)
-            return false;
-
-        return Framing.GetTileSafely(tileX, tileY).LiquidAmount > 0;
-    }
 }

@@ -1,14 +1,17 @@
 using ReLogic.Content;
 
-namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
+namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 /// <summary>
 ///     The freezing fog thrown off by Frostbark weapons. Lighter and thinner than
 ///     <see cref="SporeLayer" />: it rises rather than settles, and burns off quickly once it stops
 ///     being fed, so a charged swing reads as a puff of breath rather than a lingering cloud.
 /// </summary>
-public sealed class IceMistLayer : MetaballField
+public sealed class IceMistLayer : FieldLayer
 {
+    /// <summary>Thin frost, alongside the chemical mist.</summary>
+    public override int LoadOrder => 85;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
@@ -47,7 +50,6 @@ public sealed class IceMistLayer : MetaballField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
         // and the asset is still null on the frames before it finishes loading.
@@ -59,9 +61,6 @@ public sealed class IceMistLayer : MetaballField
         Vector3 light = new Vector3(0.45f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         // Lower threshold than the spore layer: mist should merge into broad sheets rather than
         // resolve into distinct blobs.
@@ -71,6 +70,9 @@ public sealed class IceMistLayer : MetaballField
 
         // Drifts up and to the side faster than spores, so the fog keeps curling while it fades.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.05f, -0.09f));
+
+        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
+        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
 
         effect.Parameters["Bands"]?.SetValue(4f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.68f);
@@ -83,7 +85,7 @@ public sealed class IceMistLayer : MetaballField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.75f);
     }
 
-    protected override void ApplyLighting(ref MetaballNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         float alpha = node.Alpha;
 
@@ -91,13 +93,13 @@ public sealed class IceMistLayer : MetaballField
     }
 
     /// <summary>Mist creeps along a surface it touches instead of bouncing off it.</summary>
-    protected override void OnTileContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Velocity *= 0.9f;
     }
 
     /// <summary>Water condenses the fog straight out of the air.</summary>
-    protected override void OnLiquidContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Velocity *= 0.8f;
         node.Life -= 4f;

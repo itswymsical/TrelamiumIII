@@ -3,6 +3,7 @@ using Terraria.GameContent;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.KingSlime;
 
@@ -71,7 +72,7 @@ public class GelBallProjectile : ModProjectile
             Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        if (GasSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
             return;
 
         for (int i = 0; i < count; i++)

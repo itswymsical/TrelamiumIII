@@ -6,42 +6,33 @@ namespace TrelamiumIII.Core.Graphics;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         A field target sums stamps additively and a shader reads the sum back. Historically the
-///         stamps were white, so all four channels held the same number and the shader read
-///         whichever one it felt like -- which meant the field could say how much of something was
-///         on a pixel and nothing else. Every layer therefore had to be told how lit the world was
-///         by a uniform, and a uniform is one value for the whole screen: a cloud spanning a lit
-///         room and a dark shaft got the average of the two, so in practice every layer was floored
-///         near fullbright and none of them respected world lighting at all.
-///     </para>
-///     <para>
-///         The convention here spends a second channel to fix that. <b>Red</b> is coverage, exactly
-///         what the white stamp used to put in every channel, so nothing downstream of density
-///         changes. <b>Green</b> is that same coverage scaled by how lit the stamp is, so
-///         green ÷ red is the coverage-weighted average brightness of everything drawn on that
-///         pixel -- per pixel, from the field itself, at no extra draw.
-///     </para>
-///     <para>
-///         Brightness rather than colour, because there is only one channel going spare. Coverage
-///         claims one, and alpha cannot hold either half: the stamp textures disagree about where
-///         they keep their falloff -- <c>RadialGradient</c> and <c>BloomFlare</c> are fully opaque
-///         and carry it in RGB, <c>Bloom</c> is white and carries it in alpha -- and the product
-///         that the source-alpha blend forms is the only reading that works for both. Two channels
-///         for a three-channel quantity means dropping the hue of the light, which is not the part
-///         that was wrong.
+///         A field target sums stamps additively and a shader reads the sum back.
 ///     </para>
 /// </remarks>
 public static class FieldStamp
 {
     /// <summary>
-    ///     World brightness at a point, 0..1.
+    ///     How far past its own coverage a stamp counts toward the threshold, applied by the shader
+    ///     rather than folded into the stamp.
     /// </summary>
     /// <remarks>
-    ///     The brightest channel, not a luminance dot product. Under a red torch, luminance
-    ///     weighting calls a lit room thirty percent lit and takes the effect in it nearly black,
-    ///     which is a worse answer than the fullbright one this replaced. The question being asked
-    ///     is "is there light on this spot", and the strongest channel answers it.
+    ///     <para>
+    ///         Overdrive is what makes neighbouring blobs fuse. A node reaching exactly 1.0 at its
+    ///         centre and falling off from there never sums past the cut in the gap between it and
+    ///         the next one, so the silhouette comes apart into separate circles.
+    ///     </para>
     /// </remarks>
+    public const float Gain = 1.25f;
+
+    /// <summary>
+    ///     Field units between the threshold and a fully shaded interior. The default every layer
+    ///     gets unless it sets its own.
+    /// </summary>
+    public const float DepthRange = 1f;
+
+    /// <summary>
+    ///     World brightness at a point, 0..1.
+    /// </summary>
     public static float Brightness(Vector2 worldPosition)
     {
         Vector3 light = Lighting.GetSubLight(worldPosition);
@@ -53,12 +44,48 @@ public static class FieldStamp
     ///     The vertex colour for one stamp: coverage in red, coverage-weighted brightness in green.
     /// </summary>
     /// <param name="coverage">
-    ///     What this stamp is worth to the field, before the texture's own falloff. Values past 1
-    ///     are normal and intended -- a blob that only just reaches full at its centre never sums
-    ///     past the shader's threshold with its neighbours, and so never fuses.
+    ///     What this stamp is worth to the field, before the texture's own falloff, in 0..1. The
+    ///     overdrive that makes neighbours fuse is <see cref="Gain" /> and belongs to the shader;
+    ///     passing it here is the mistake <see cref="Gain" />'s remarks describe.
     /// </param>
     public static Color Lit(Vector2 worldPosition, float coverage)
         => new Color(1f, Brightness(worldPosition), 0f, 1f) * coverage;
+
+    /// <summary>
+    ///     What one stamp is worth to the field, from how much life the node has left.
+    /// </summary>
+    public static float Weight(float alpha)
+    {
+        alpha = MathHelper.Clamp(alpha, 0f, 1f);
+
+        return alpha * alpha;
+    }
+
+    /// <summary>
+    ///     The density target's four channels for one stamp.
+    /// </summary>
+    /// <param name="weight">From <see cref="Weight" />. Everything else is scaled by it.</param>
+    /// <param name="brightness">World light on the node, 0..1.</param>
+    /// <param name="temperature">Normalised into 0..1 by the layer's own range.</param>
+    /// <param name="age">0 at spawn, 1 at expiry. The complement of the node's alpha.</param>
+    public static Color Field(float weight, float brightness, float temperature, float age)
+        => new(weight, weight * brightness, weight * temperature, weight * age);
+
+    /// <summary>
+    ///     The attribute target's four channels for one stamp.
+    /// </summary>
+    /// <param name="flow">
+    ///     Velocity, already normalised against the layer's reference speed and clamped to -1..1.
+    ///     Bias-encoded here rather than by the caller, so there is one place the convention lives.
+    /// </param>
+    /// <param name="bind">How tightly the node is held to an anchor, 0..1. Free-drifting is 0.</param>
+    /// <param name="variant">Layer-defined sub-material, 0..1.</param>
+    public static Color Attributes(float weight, Vector2 flow, float bind, float variant)
+        => new(
+            weight * (flow.X * 0.5f + 0.5f),
+            weight * (flow.Y * 0.5f + 0.5f),
+            weight * bind,
+            weight * variant);
 
     /// <summary>
     ///     The vertex colour for a stamp that is not standing anywhere in the world: coverage in red,

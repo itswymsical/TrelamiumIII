@@ -1,7 +1,9 @@
+using TrelamiumIII.Core.Graphics.Fields;
+
 namespace TrelamiumIII.Core.Gas;
 
 /// <summary>
-///     A moving source of gas: something ballistic that lays <see cref="GasNode" />s behind it and
+///     A moving source of gas: something ballistic that lays <see cref="FieldNode" />s behind it and
 ///     then stops existing.
 /// </summary>
 /// <remarks>
@@ -105,9 +107,9 @@ public struct GasEmitter
     public bool TileCollide;
 
     /// <summary>
-    ///     The player whose weapon threw this, or <see cref="GasNode.NoOwner" />.
+    ///     The player whose weapon threw this, or <see cref="FieldNode.NoOwner" />.
     /// </summary>
-    /// <inheritdoc cref="GasNode.Owner" path="/remarks" />
+    /// <inheritdoc cref="FieldNode.Owner" path="/remarks" />
     public int Owner;
 
     /// <summary>Damage dealt to an NPC the emitter passes through, or 0 for a harmless one.</summary>

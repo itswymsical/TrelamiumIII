@@ -3,12 +3,16 @@ using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 public class BloodLayer : ChemicalGasField
 {
-    protected override Asset<Effect> Shader => Assets.Shaders.LiquidFbm.Asset;
+    /// <summary>Liquid; over gel so a splash on a puddle still reads.</summary>
+    public override int LoadOrder => 30;
+
+    protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.Bloom.KEY;
     protected override int GasType => GasTypeID.Liquid;
 
@@ -55,23 +59,25 @@ public class BloodLayer : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
         Vector3 light = new Vector3(0.18f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(
-            2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.12f);
         effect.Parameters["NoiseScale"]?.SetValue(0.75f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.04f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
+
+        // Barely moves, so the drag is slight -- enough that the mass reads as churning rather than as a pattern it is sliding under.
+        effect.Parameters["FlowStrength"]?.SetValue(0.08f);
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
+
+        // LiquidFbm kept its thinnest cells slightly more opaque than GasFbm did; preserved here
+        // now that both materials share one shader.
+        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.8f);
 
         effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.94f);
@@ -85,7 +91,7 @@ public class BloodLayer : ChemicalGasField
         effect.Parameters["HighlightAlpha"]?.SetValue(0.9f);
     }
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         // Apply chemistry first, then layer the visual bleeding tick on top.
         base.OnNPCContact(ref node, npc);

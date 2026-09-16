@@ -1,6 +1,6 @@
 using ReLogic.Content;
 
-namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
+namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 /// <summary>
 ///     The dark gas that bleeds off the Eye of Cthulhu's remains, and the throat of the vortex that
@@ -20,8 +20,11 @@ namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 ///         leaking something that does not care about gravity.
 ///     </para>
 /// </remarks>
-public sealed class InkLayer : MetaballField
+public sealed class InkLayer : FieldLayer
 {
+    /// <summary>Lowest: ink is an absence, and everything else reads against it.</summary>
+    public override int LoadOrder => 10;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
@@ -67,7 +70,6 @@ public sealed class InkLayer : MetaballField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
         // and the asset is still null on the frames before it finishes loading.
@@ -82,9 +84,6 @@ public sealed class InkLayer : MetaballField
         Vector3 light = new Vector3(0.78f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         // Lowest threshold of the three layers: ink should fuse into one continuous mass early, so
         // the remains sit inside a single silhouette rather than a cluster of separate blobs.
@@ -98,6 +97,9 @@ public sealed class InkLayer : MetaballField
         // Almost still, and drifting very slightly up and left against the vortex's own spin so the
         // two motions never lock into one rotation.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.014f, -0.022f));
+
+        // Barely moves, so the drag is slight -- enough that the mass reads as churning rather than as a pattern it is sliding under.
+        effect.Parameters["FlowStrength"]?.SetValue(0.08f);
 
         // Three bands, not five. Ink has no interior detail worth resolving -- void, mass, rim.
         effect.Parameters["Bands"]?.SetValue(3f);
@@ -121,23 +123,23 @@ public sealed class InkLayer : MetaballField
     ///     override is left explicit because every other layer lights itself, and a reader finding
     ///     this one empty should know that is the intent rather than an omission.
     /// </remarks>
-    protected override void ApplyLighting(ref MetaballNode node) { }
+    protected override void ApplyLighting(ref FieldNode node) { }
 
     /// <summary>Ink pools against a surface instead of creeping along it.</summary>
-    protected override void OnTileContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Viscosity = Math.Min(node.Viscosity * 1.04f, 1f);
         node.Velocity *= 0.88f;
     }
 
     /// <summary>Water does not wash ink out; it disperses into it and goes on being dark.</summary>
-    protected override void OnLiquidContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Velocity *= 0.9f;
         node.Life -= 1f;
     }
 
-    private static InkLayer? Layer => MetaballSystem.GetLayer<InkLayer>();
+    private static InkLayer? Layer => FieldSystem.GetLayer<InkLayer>();
 
     /// <summary>
     ///     The first billow, thrown the moment the remains come apart.
@@ -171,7 +173,7 @@ public sealed class InkLayer : MetaballField
     ///     <para>
     ///         Takes a bare position and velocity rather than an <see cref="Entity" />, because the
     ///         pieces are particles and not entities, so there is no host for
-    ///         <see cref="MetaballField.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
+    ///         <see cref="FieldLayer.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
     ///         motion buys the same thing: the node is already travelling with it on the frame it
     ///         appears, instead of being left behind and catching up.
     ///     </para>

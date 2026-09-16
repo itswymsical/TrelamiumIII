@@ -1,9 +1,12 @@
 using ReLogic.Content;
 
-namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
+namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
-public sealed class SporeLayer : MetaballField
+public sealed class SporeLayer : FieldLayer
 {
+    /// <summary>Gas.</summary>
+    public override int LoadOrder => 65;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
@@ -40,7 +43,6 @@ public sealed class SporeLayer : MetaballField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
         // and the asset is still null on the frames before it finishes loading.
@@ -52,9 +54,6 @@ public sealed class SporeLayer : MetaballField
         Vector3 light = new Vector3(0.3f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(1.35f);
@@ -63,6 +62,9 @@ public sealed class SporeLayer : MetaballField
         // Drifts up and slightly across, so the body of the cloud boils in place while the
         // silhouette keeps changing.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.03f, -0.06f));
+
+        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
+        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
 
         effect.Parameters["Bands"]?.SetValue(5f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.86f);
@@ -75,7 +77,7 @@ public sealed class SporeLayer : MetaballField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
     }
 
-    protected override void ApplyLighting(ref MetaballNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         float alpha = node.Alpha;
 
@@ -85,20 +87,20 @@ public sealed class SporeLayer : MetaballField
     /// <summary>
     ///     Spores landing on tiles pack down and creep along the surface.
     /// </summary>
-    protected override void OnTileContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Viscosity = Math.Min(node.Viscosity * 1.02f, 1f);
         node.Velocity *= 0.95f;
     }
 
     /// <summary>Water washes the spores out fast.</summary>
-    protected override void OnLiquidContact(ref MetaballNode node, int tileX, int tileY, Tile tile)
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Velocity *= 0.85f;
         node.Life -= 3f;
     }
 
-    private static SporeLayer? Layer => MetaballSystem.GetLayer<SporeLayer>();
+    private static SporeLayer? Layer => FieldSystem.GetLayer<SporeLayer>();
 
     /// <summary>
     ///     The wet splat of a sac bursting against a target: a tight spray thrown along

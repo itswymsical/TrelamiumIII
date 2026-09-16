@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Terraria.GameContent;
 using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Core.Graphics.Cinematics;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;
