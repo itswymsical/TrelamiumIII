@@ -35,6 +35,9 @@ public sealed class FieldSystem : ModSystem
 
     private static bool loaded;
 
+    /// <summary>Every registered layer, in composite order. For tooling that enumerates them.</summary>
+    public static IReadOnlyList<FieldLayer> Layers => layers;
+
     public static T? GetLayer<T>() where T : FieldLayer
     {
         foreach (var layer in layers)

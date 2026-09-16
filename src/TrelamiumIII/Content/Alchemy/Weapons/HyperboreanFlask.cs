@@ -76,15 +76,12 @@ public class HyperboreanFlaskProjectile : ChemicalProjectile
 
     protected override TrailProfile? Trail => TrailProfile.Vented;
 
-    /// <summary>
-    ///     A wide, fast, uneven bloom of mist, scattered rather than fanned even on terrain since gas ignores surfaces.
-    /// </summary>
     protected override BurstProfile Burst => BurstProfile.Vent with
     {
         Core = EmitterProfile.Default with
         {
-            Lifetime = 22,
-            NodeRadius = 19f,
+            Lifetime = 9,
+            NodeRadius = 18f,
         },
         DamageShare = 1f,
     };

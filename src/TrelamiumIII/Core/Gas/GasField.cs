@@ -565,6 +565,9 @@ public abstract class GasField : FieldLayer
 
         /// <summary>The largest single contribution <see cref="Owner" /> has made, for comparison.</summary>
         public float OwnerWeight;
+
+        /// <summary>Where the dominant contributor was, so the cell can be sight-tested from it.</summary>
+        public Vector2 Source;
     }
 
     /// <summary>Per-tile accumulated node coverage. Rebuilt from scratch each pass.</summary>
@@ -612,6 +615,12 @@ public abstract class GasField : FieldLayer
             if (cell.Coverage < TileFieldThreshold)
                 continue;
 
+            // Coverage is a radial falloff and knows nothing about walls, so a node pooled against
+            // one face of a block was depositing into everything within its radius on the far side
+            // too. Only tiles the gas could actually reach are allowed to be changed by it.
+            if (!HasLineOfSight(cell.Source, pair.Key.X, pair.Key.Y))
+                continue;
+
             Tile tile = Framing.GetTileSafely(pair.Key.X, pair.Key.Y);
 
             if (tile.LiquidAmount > 0)
@@ -641,6 +650,12 @@ public abstract class GasField : FieldLayer
             float radius = node.Radius;
 
             if (radius <= 0f || node.Life <= 0f)
+                continue;
+
+            // A node that has ended up inside geometry is on its way back out and is drawn by
+            // nothing; letting it deposit would convert a sphere of tiles around a point the player
+            // cannot see anything at.
+            if (node.EnclosedTicks > 0)
                 continue;
 
             float alpha = MathHelper.Clamp(node.Alpha, 0f, 1f);
@@ -676,6 +691,7 @@ public abstract class GasField : FieldLayer
                     {
                         cell.Owner = node.Owner;
                         cell.OwnerWeight = contribution;
+                        cell.Source = node.Position;
                     }
 
                     tileField[key] = cell;
