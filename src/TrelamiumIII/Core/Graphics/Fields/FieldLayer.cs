@@ -365,6 +365,13 @@ public abstract class FieldLayer
 
     protected virtual void ApplyLighting(ref FieldNode node) { }
 
+    /// <summary>Speed past which a node is travelling further in a tick than substepping covers.</summary>
+    /// <remarks>
+    ///     MAX_STEP times MAX_STEPS. A layer whose gravity-over-drag ratio settles above this, or a
+    ///     node handed a wild inherited velocity, would otherwise resume crossing walls untested.
+    /// </remarks>
+    private const float MAX_SPEED = MAX_STEP * MAX_STEPS;
+
     private void ApplyPhysics(ref FieldNode node)
     {
         float netVertical = MathHelper.Lerp(-BuoyancyForce, GravityScale, node.Density);
@@ -372,25 +379,64 @@ public abstract class FieldLayer
 
         float drag = MathHelper.Lerp(Drag, Drag * 0.96f, node.Viscosity);
         node.Velocity *= drag;
+
+        if (node.Velocity.LengthSquared() > MAX_SPEED * MAX_SPEED)
+            node.Velocity = Vector2.Normalize(node.Velocity) * MAX_SPEED;
+    }
+
+    /// <summary>Longest a node may travel between collision tests, in pixels.</summary>
+    /// <remarks>
+    ///     Half a tile, so nothing can cross a wall between one test and the next. It used to move
+    ///     its whole velocity in one go, which only held while that stayed under 16px: a layer's
+    ///     terminal velocity is gravity over one-minus-drag, and thermite's alone settles near 27.
+    /// </remarks>
+    private const float MAX_STEP = 8f;
+
+    /// <summary>Ceiling on substeps, so a pathological velocity cannot cost an unbounded loop.</summary>
+    private const int MAX_STEPS = 8;
+
+    /// <summary>
+    ///     Moves the node, in steps short enough that it cannot pass through anything, resolving
+    ///     against terrain at each one.
+    /// </summary>
+    /// <remarks>
+    ///     Stepping stops at the first contact, which keeps the contact hooks firing once per tick
+    ///     as they always have. The step that makes contact spends all the distance still owed, so
+    ///     a node that lands still creeps as far along the surface as it would have.
+    /// </remarks>
+    private void ResolveTileCollision(ref FieldNode node)
+    {
+        node.OnCeiling = false;
+        node.OnFloor = false;
+        node.OnWall = false;
+
+        float distance = node.Velocity.Length();
+        int steps = distance <= MAX_STEP ? 1 : Math.Min((int)MathF.Ceiling(distance / MAX_STEP), MAX_STEPS);
+        float fraction = 1f / steps;
+
+        for (int step = 0; step < steps; step++)
+        {
+            if (ResolveStep(ref node, fraction, fraction * (steps - step)))
+                return;
+        }
     }
 
     /// <summary>
-    ///     Resolves the node against its own tile and the four cardinal neighbours, applies lateral
-    ///     spread on surface contact, then moves it by the corrected velocity.
+    ///     Resolves one substep against the node's own tile and its four cardinal neighbours,
+    ///     applies lateral spread on surface contact, then advances by that fraction of velocity.
     /// </summary>
     /// <remarks>
     ///     Spread is what stops a cloud from stacking into a column against a floor: nodes that
     ///     land shed their vertical momentum sideways and creep along the surface instead.
     /// </remarks>
-    private void ResolveTileCollision(ref FieldNode node)
+    /// <param name="fraction">Share of the velocity this step moves by.</param>
+    /// <param name="remaining">Share still owed this tick, spent in full if the step makes contact.</param>
+    /// <returns>True when the step ended in contact and stepping should stop.</returns>
+    private bool ResolveStep(ref FieldNode node, float fraction, float remaining)
     {
         const int TILE_SIZE = 16;
         const float RESTITUTION = 0.02f; // minimal bounce; gas should settle, not patter
         const float SPREAD_BASE = 0.40f;
-
-        node.OnCeiling = false;
-        node.OnFloor = false;
-        node.OnWall = false;
 
         int cx = (int)(node.Position.X / TILE_SIZE);
         int cy = (int)(node.Position.Y / TILE_SIZE);
@@ -400,13 +446,15 @@ public abstract class FieldLayer
             node.EnclosedTicks++;
             OnEnclosed(ref node);
 
-            // Buoyant gas escapes upward, dense gas sinks; either way it leaves the wall.
+            // Buoyant gas escapes upward, dense gas sinks; either way it leaves the wall. The
+            // whole velocity is replaced, not just its vertical half: keeping the horizontal
+            // component is what let an embedded node carry on drilling out the far side.
             float ejectDir = node.Density < 0.5f ? -1f : 1f;
-            node.Velocity.Y = ejectDir * 0.8f;
+            node.Velocity = new Vector2(0f, ejectDir * 0.8f);
             node.Life -= EnclosedLifePenalty;
 
             node.Position += node.Velocity;
-            return;
+            return true;
         }
 
         node.EnclosedTicks = 0;
@@ -416,10 +464,13 @@ public abstract class FieldLayer
         bool solidLeft = IsSolidTile(cx - 1, cy);
         bool solidRight = IsSolidTile(cx + 1, cy);
 
+        bool contacted = false;
+
         if (solidAbove && node.Velocity.Y < 0f)
         {
             node.Velocity.Y = MathF.Abs(node.Velocity.Y) * RESTITUTION;
             node.OnCeiling = true;
+            contacted = true;
             ApplyLateralSpread(ref node, solidLeft, solidRight, SPREAD_BASE);
             OnTileContact(ref node, cx, cy - 1, Framing.GetTileSafely(cx, cy - 1));
         }
@@ -429,6 +480,7 @@ public abstract class FieldLayer
             node.Velocity.Y = -MathF.Abs(node.Velocity.Y) * RESTITUTION;
             node.Position.Y = (cy + 1) * TILE_SIZE;
             node.OnFloor = true;
+            contacted = true;
 
             if (PoolsOnFloor)
                 node.Life -= EnclosedLifePenalty;
@@ -440,6 +492,7 @@ public abstract class FieldLayer
         if (solidLeft && node.Velocity.X < 0f)
         {
             node.Velocity.X = MathF.Abs(node.Velocity.X) * RESTITUTION;
+            contacted = true;
             node.OnWall = true;
             OnTileContact(ref node, cx + 1, cy, Framing.GetTileSafely(cx + 1, cy));
         }
@@ -447,6 +500,7 @@ public abstract class FieldLayer
         if (solidRight && node.Velocity.X > 0f)
         {
             node.Velocity.X = -MathF.Abs(node.Velocity.X) * RESTITUTION;
+            contacted = true;
             node.OnWall = true;
             OnTileContact(ref node, cx - 1, cy, Framing.GetTileSafely(cx - 1, cy));
         }
@@ -455,7 +509,9 @@ public abstract class FieldLayer
         CheckLiquidContactAt(ref node, cx, cy - 1);
         CheckLiquidContactAt(ref node, cx, cy + 1);
 
-        node.Position += node.Velocity;
+        node.Position += node.Velocity * (contacted ? remaining : fraction);
+
+        return contacted;
     }
 
     private static void ApplyLateralSpread(ref FieldNode node, bool solidLeft, bool solidRight, float force)
@@ -526,6 +582,18 @@ public abstract class FieldLayer
     /// </remarks>
     protected virtual float FlowReferenceSpeed => 6f;
 
+    /// <summary>
+    ///     How far a node's stamp elongates along its heading at <see cref="FlowReferenceSpeed" />,
+    ///     as a fraction of its radius. 0 keeps the stamp round.
+    /// </summary>
+    /// <remarks>
+    ///     What makes a material read as drawn out rather than merely moving: a ferrofluid bead
+    ///     reaching toward a magnet, or a droplet streaking as it falls. The silhouette still comes
+    ///     from the threshold, so stretched neighbours fuse along their length the way round ones
+    ///     fuse across a gap.
+    /// </remarks>
+    protected virtual float StampStretch => 0f;
+
     /// <summary>How tightly a node is held to something, 0..1. Free-drifting nodes are 0.</summary>
     protected virtual float NodeBind(in FieldNode node) => node.IsAnchored ? 1f : 0f;
 
@@ -579,22 +647,52 @@ public abstract class FieldLayer
             EncodeNode(in node, out Color field, out Color attributes);
 
             Vector2 centre = node.Position - Main.screenPosition;
-            float radius = node.Radius;
+            StampAxes(in node, out Vector2 along, out Vector2 across);
 
-            Write(ref v, centre.X - radius, centre.Y - radius, 0f, 0f, field, attributes);
-            Write(ref v, centre.X + radius, centre.Y - radius, 1f, 0f, field, attributes);
-            Write(ref v, centre.X + radius, centre.Y + radius, 1f, 1f, field, attributes);
-            Write(ref v, centre.X - radius, centre.Y + radius, 0f, 1f, field, attributes);
+            Write(ref v, centre - along - across, 0f, 0f, field, attributes);
+            Write(ref v, centre + along - across, 1f, 0f, field, attributes);
+            Write(ref v, centre + along + across, 1f, 1f, field, attributes);
+            Write(ref v, centre - along + across, 0f, 1f, field, attributes);
         }
 
         return v;
     }
 
-    private void Write(ref int index, float x, float y, float u, float w, Color field, Color attributes)
+    /// <summary>
+    ///     The half-extents of a node's stamp quad, elongated along its heading by
+    ///     <see cref="StampStretch" />.
+    /// </summary>
+    /// <remarks>
+    ///     Area is preserved: what the quad gains along the heading it gives up across it, so a
+    ///     stretched node reads as the same amount of material drawn out rather than as more of it.
+    ///     At the default stretch of zero this is the axis-aligned quad it has always been.
+    /// </remarks>
+    private void StampAxes(in FieldNode node, out Vector2 along, out Vector2 across)
+    {
+        float radius = node.Radius;
+
+        if (StampStretch <= 0f || node.Velocity.LengthSquared() < 0.0001f)
+        {
+            along = new Vector2(radius, 0f);
+            across = new Vector2(0f, radius);
+
+            return;
+        }
+
+        float speed = MathHelper.Clamp(node.Velocity.Length() / MathF.Max(FlowReferenceSpeed, 0.0001f), 0f, 1f);
+        float elongation = 1f + speed * StampStretch;
+
+        Vector2 heading = Vector2.Normalize(node.Velocity);
+
+        along = heading * (radius * elongation);
+        across = new Vector2(-heading.Y, heading.X) * (radius / MathF.Sqrt(elongation));
+    }
+
+    private void Write(ref int index, Vector2 position, float u, float w, Color field, Color attributes)
     {
         StampVertices[index++] = new FieldStampVertex
         {
-            Position = new Vector3(x, y, 0f),
+            Position = new Vector3(position, 0f),
             Field = field,
             Attributes = attributes,
             TextureCoordinate = new Vector2(u, w),
@@ -671,7 +769,10 @@ public abstract class FieldLayer
             // The same transform the target was built under: unzoomed screen offset, then scaled
             // about the screen centre. A radius has to travel through the zoom as well.
             Vector2 centre = (node.Position - Main.screenPosition - half) * zoom + half;
-            Vector2 extent = new Vector2(node.Radius) * zoom;
+
+            // Widened by the stretch, or a node elongated along its heading would be clipped by the
+            // rectangle that was measured as though it were still round.
+            Vector2 extent = new Vector2(node.Radius * (1f + StampStretch)) * zoom;
 
             minX = MathF.Min(minX, centre.X - extent.X);
             minY = MathF.Min(minY, centre.Y - extent.Y);
@@ -768,7 +869,20 @@ public abstract class FieldLayer
         spriteBatch.Draw(field, destination, source, Color.White);
 
         spriteBatch.End();
+
+        DrawOverlay(spriteBatch);
     }
+
+    /// <summary>
+    ///     Draws over the finished composite, for the parts of a material a threshold cannot
+    ///     produce -- a specular glint, an ember.
+    /// </summary>
+    /// <remarks>
+    ///     The composite batch has already ended, so an override opens its own. World space needs
+    ///     <see cref="Main.GameViewMatrix" />, since the field target baked the zoom in and this
+    ///     does not.
+    /// </remarks>
+    protected virtual void DrawOverlay(SpriteBatch spriteBatch) { }
 
     protected virtual void BindAdditionalTextures(GraphicsDevice device) { }
 
@@ -853,6 +967,44 @@ public abstract class FieldLayer
             return true;
 
         return WorldGen.SolidTile(tileX, tileY);
+    }
+
+    /// <summary>
+    ///     Whether a straight line from <paramref name="from" /> to the centre of the given tile
+    ///     crosses any solid tile on the way.
+    /// </summary>
+    /// <remarks>
+    ///     The destination is excluded, so this answers "can the gas reach this surface" rather than
+    ///     "is this surface open". Stepped at half a tile, which is dense enough not to slip through
+    ///     a one-tile wall and cheap enough to run on the handful of tiles that clear a threshold.
+    /// </remarks>
+    protected static bool HasLineOfSight(Vector2 from, int tileX, int tileY)
+    {
+        var target = new Vector2(tileX * 16f + 8f, tileY * 16f + 8f);
+        Vector2 delta = target - from;
+        float distance = delta.Length();
+
+        if (distance <= 8f)
+            return true;
+
+        Vector2 step = delta / distance * 8f;
+        Vector2 point = from;
+
+        for (int i = (int)(distance / 8f); i > 0; i--)
+        {
+            point += step;
+
+            int x = (int)(point.X / 16f);
+            int y = (int)(point.Y / 16f);
+
+            if (x == tileX && y == tileY)
+                return true;
+
+            if (IsSolidTile(x, y))
+                return false;
+        }
+
+        return true;
     }
 
     protected static bool HasLiquid(int tileX, int tileY)

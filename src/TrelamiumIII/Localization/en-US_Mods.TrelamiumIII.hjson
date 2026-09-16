@@ -14,6 +14,15 @@ Rarities: {
 JobInfo.NewJob: " seems to have a new task for you."
 
 Items: {
+	FieldWand: {
+		DisplayName: Field Wand
+		Tooltip:
+			'''
+			Dev tool. Emits into any registered field layer
+			Right click cycles the mode; the panel picks the layer
+			'''
+	}
+
 	SulfurItem: {
 		DisplayName: Sulfur
 		Tooltip: ""
