@@ -4,7 +4,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Fungore;

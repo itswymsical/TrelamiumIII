@@ -5,6 +5,7 @@ using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Ammo;
 
@@ -82,7 +83,7 @@ public class VitriolicGelProj : ModProjectile
 
     private void Trail()
     {
-        if (GasSystem.GetLayer<VitriolicGelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<VitriolicGelLayer>() is not { } layer)
             return;
 
         Vector2 behind = Projectile.Center - Projectile.velocity * 0.4f;
@@ -124,7 +125,7 @@ public class VitriolicGelProj : ModProjectile
     private static void Burst(Vector2 position, Vector2 outward, int owner)
     {
 
-        if (GasSystem.GetLayer<VitriolicGelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<VitriolicGelLayer>() is not { } layer)
             return;
 
         for (int i = 0; i < BURST_NODES; i++)
@@ -159,6 +160,9 @@ public class VitriolicGelLayer : ChemicalGasField
     public override float ReactionChance => 0f;
 
     public override float ReactionDamage => 0f;
+
+    /// <summary>Thick liquid, beside the other gel. Lives outside the layer folders, so it is easy to miss.</summary>
+    public override int LoadOrder => 22;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -231,10 +235,10 @@ public class VitriolicGelLayer : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.94f);
     }
 
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.03f * node.Alpha, 0.19f * node.Alpha, 0.09f * node.Alpha);
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
 
@@ -243,6 +247,6 @@ public class VitriolicGelLayer : ChemicalGasField
         npc.velocity.X *= 0.97f;
     }
 
-    protected override void OnPlayerContact(ref GasNode node, Player player) { }
+    protected override void OnPlayerContact(ref FieldNode node, Player player) { }
 }
 

@@ -6,8 +6,8 @@ using Terraria.ObjectData;
 using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
 using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core.Alchemy;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 
 namespace TrelamiumIII.Content.Alchemy.MagnoliaContent;
 
@@ -328,7 +328,7 @@ public class MagnoliaPowderProjectile : ModProjectile
     {
         base.AI();
 
-        var layer = MetaballSystem.GetLayer<MagnoliaLayer>();
+        var layer = FieldSystem.GetLayer<MagnoliaLayer>();
         if (layer == null) return;
 
         delay++;

@@ -6,6 +6,7 @@ using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -51,7 +52,7 @@ public class VilesporeFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.VilesporeFlaskItem.KEY;
 
-    protected override GasField? Field => GasSystem.GetLayer<CorruptedSporeLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<CorruptedSporeLayer>();
 
     protected override BurstProfile Burst => BurstProfile.FlaskShatter with
     {

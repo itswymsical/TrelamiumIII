@@ -2,14 +2,17 @@ using TrelamiumIII.Common.ChemicalClass;
 using ReLogic.Content;
 using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Core.Gas;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 public sealed class StarLayer : GasField
 {
+    /// <summary>Topmost: plasma is the brightest thing on screen and owns the stack.</summary>
+    public override int LoadOrder => 95;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
     protected override string TexturePath => Assets.Textures.VFX.RadialGradient.KEY;
@@ -67,7 +70,6 @@ public sealed class StarLayer : GasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
@@ -75,9 +77,6 @@ public sealed class StarLayer : GasField
         Vector3 light = new Vector3(0.72f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.165f);
 
@@ -85,6 +84,9 @@ public sealed class StarLayer : GasField
         effect.Parameters["NoiseStrength"]?.SetValue(0.20f);
 
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.014f, -0.022f));
+
+        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
+        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
 
         effect.Parameters["Bands"]?.SetValue(3f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.94f);
@@ -104,7 +106,7 @@ public sealed class StarLayer : GasField
     ///     override is left explicit because every other layer lights itself, and a reader finding
     ///     this one empty should know that is the intent rather than an omission.
     /// </remarks>
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         Lighting.AddLight(node.Position, TorchID.Rainbow);
     }
@@ -139,9 +141,9 @@ public sealed class StarLayer : GasField
         Dust.NewDust(emitter.Position, 8, 8, DustID.YellowStarDust, drift.X / 2f, drift.Y, Scale: 0.65f);
     }
 
-    protected override void UpdateGasNode(ref GasNode node, int index)
+    protected override void UpdateNode(ref FieldNode node, int index)
     {
-        base.UpdateGasNode(ref node, index);
+        base.UpdateNode(ref node, index);
         if (Main.rand.NextFloat() < 0.025f)
         {
             Vector2 offset = Main.rand.NextVector2Circular(14f, 14f);
@@ -157,7 +159,7 @@ public sealed class StarLayer : GasField
         }
     }
 
-    //private static InkLayer? Layer => MetaballSystem.GetLayer<InkLayer>();
+    //private static InkLayer? Layer => FieldSystem.GetLayer<InkLayer>();
 
     ///// <summary>
     /////     The first billow, thrown the moment the remains come apart.
@@ -191,7 +193,7 @@ public sealed class StarLayer : GasField
     /////     <para>
     /////         Takes a bare position and velocity rather than an <see cref="Entity" />, because the
     /////         pieces are particles and not entities, so there is no host for
-    /////         <see cref="MetaballLayer.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
+    /////         <see cref="FieldLayer.SpawnAnchoredNode" /> to ride. Inheriting most of the piece's
     /////         motion buys the same thing: the node is already travelling with it on the frame it
     /////         appears, instead of being left behind and catching up.
     /////     </para>

@@ -2,6 +2,7 @@ using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
@@ -20,6 +21,9 @@ public class GelLayer : ChemicalGasField
     public override float ReactionChance => 0f;
 
     public override float ReactionDamage => 0f;
+
+    /// <summary>Thick liquid, pools on the ground and sits under anything airborne.</summary>
+    public override int LoadOrder => 20;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -66,21 +70,20 @@ public class GelLayer : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
         effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.25f));
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.13f);
         effect.Parameters["NoiseScale"]?.SetValue(1.1f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.14f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.006f, 0.022f));
+
+        // Barely moves, so the drag is slight -- enough that the mass reads as churning rather than as a pattern it is sliding under.
+        effect.Parameters["FlowStrength"]?.SetValue(0.08f);
 
         effect.Parameters["Bands"]?.SetValue(6f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.80f);
@@ -92,7 +95,7 @@ public class GelLayer : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.90f);
     }
 
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.04f * node.Alpha, 0.09f * node.Alpha, 0.16f * node.Alpha);
 
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
@@ -102,7 +105,7 @@ public class GelLayer : ChemicalGasField
         TileConditionSystem.Apply<SlimedCondition>(tileX, tileY, intensity, owner: owner, sync: false);
     }
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
 
@@ -111,5 +114,5 @@ public class GelLayer : ChemicalGasField
         npc.velocity.X *= 0.97f;
     }
 
-    protected override void OnPlayerContact(ref GasNode node, Player player) { }
+    protected override void OnPlayerContact(ref FieldNode node, Player player) { }
 }

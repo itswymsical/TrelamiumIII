@@ -4,7 +4,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Interfaces;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 

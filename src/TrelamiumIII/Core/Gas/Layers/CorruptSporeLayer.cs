@@ -4,11 +4,15 @@ using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 public class CorruptedSporeLayer : ChemicalGasField
 {
+    /// <summary>Dense gas: over the liquids, under the thinner clouds.</summary>
+    public override int LoadOrder => 50;
+
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;
     // 1 = true gas: id 0 is the liquid path, which bleeds extra life on floor contact.
@@ -42,24 +46,21 @@ public class CorruptedSporeLayer : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
-        int stride = Math.Max(1, gasNodes.Count / 16);
 
         Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(
-            2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(1.25f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
+
+        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
+        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
 
         effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
@@ -71,12 +72,12 @@ public class CorruptedSporeLayer : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
     }
 
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         Lighting.AddLight(node.Position, 0.14f * node.Alpha, 0.05f * node.Alpha, 0.20f * node.Alpha);
     }
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
         npc.AddBuff(BuffID.Poisoned, 30);
@@ -109,7 +110,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
     {
         if (!Infect(target)) return;
 
-        var layer = GasSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
         if (layer == null) return;
 
         CameraSystem.shake = 3;
@@ -160,7 +161,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
         // The "attached" cloud: short-lived nodes hugging the host and inheriting its motion.
         if (PlagueTicks % 5 == 0)
         {
-            var layer = GasSystem.GetLayer<CorruptedSporeLayer>();
+            var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
             if (layer == null) return;
 
             Vector2 pos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.45f, npc.height * 0.45f);
@@ -181,7 +182,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
         CameraSystem.shake = 5;
         SoundEngine.PlaySound(SoundID.NPCDeath9 with { Volume = 0.8f, Pitch = -0.2f }, npc.Center);
 
-        var layer = GasSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
         if (layer != null)
         {
             int count = Main.rand.Next(16, 22);
@@ -216,7 +217,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
 
     private static void Fizzle(NPC npc)
     {
-        var layer = GasSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
         if (layer == null) return;
 
         // The spores go inert: a last few motes drift off, nothing spreads.

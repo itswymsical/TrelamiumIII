@@ -7,6 +7,7 @@ using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Utilities;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -67,7 +68,7 @@ public class PhytoncideFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PhytoncideFlaskItem.KEY;
 
-    protected override GasField? Field => GasSystem.GetLayer<PhytoncideSporeLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<PhytoncideSporeLayer>();
 
     protected override TrailProfile? Trail => TrailProfile.Shed with
     {

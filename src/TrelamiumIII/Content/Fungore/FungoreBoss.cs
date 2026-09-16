@@ -10,7 +10,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Core.Graphics.Shockwaves;
 using static TrelamiumIII.Utilities.EaseFunction;

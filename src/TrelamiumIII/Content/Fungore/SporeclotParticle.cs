@@ -1,6 +1,6 @@
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 
 namespace TrelamiumIII.Content.Fungore;
 

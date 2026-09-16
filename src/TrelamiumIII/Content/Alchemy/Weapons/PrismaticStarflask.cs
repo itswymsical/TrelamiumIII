@@ -6,6 +6,7 @@ using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -68,7 +69,7 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.PrismaticStarflaskItem.KEY;
 
-    protected override GasField? Field => GasSystem.GetLayer<StarLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<StarLayer>();
 
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {

@@ -7,6 +7,7 @@ using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Utilities;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Alchemy.Weapons;
 
@@ -45,7 +46,7 @@ public class CrimsonEffusionFlaskItem : ModItem
 
     private static void DoBloodsplosion(ChemicalReactionEvent e)
     {
-        var layer = GasSystem.GetLayer<BloodLayer>();
+        var layer = FieldSystem.GetLayer<BloodLayer>();
         if (layer == null) return;
 
         Vector2 impactDir = e.Target.oldVelocity.SafeNormalize(-Vector2.UnitY);
@@ -71,7 +72,7 @@ public class CrimsonEffusionFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.CrimsonEffusionFlaskItem.KEY;
 
-    protected override GasField? Field => GasSystem.GetLayer<BloodLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<BloodLayer>();
 
     protected override BurstProfile Burst => BurstProfile.FlaskShatter with
     {

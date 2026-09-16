@@ -1,11 +1,15 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 public class PoisonGasLayer : ChemicalGasField
 {
     private const int POISON_TICKS = 120;
+
+    /// <summary>Gas.</summary>
+    public override int LoadOrder => 60;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -58,21 +62,20 @@ public class PoisonGasLayer : ChemicalGasField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
         effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.24f));
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         effect.Parameters["Threshold"]?.SetValue(0.16f);
         effect.Parameters["NoiseScale"]?.SetValue(1.25f);
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
+
+        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
+        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
 
         effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
@@ -84,10 +87,10 @@ public class PoisonGasLayer : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
     }
 
-    protected override void ApplyLighting(ref GasNode node)
+    protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.10f * node.Alpha, 0.20f * node.Alpha, 0.04f * node.Alpha);
 
-    protected override void OnNPCContact(ref GasNode node, NPC npc)
+    protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
 

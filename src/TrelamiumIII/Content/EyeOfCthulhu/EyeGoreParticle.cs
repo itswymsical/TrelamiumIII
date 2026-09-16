@@ -1,5 +1,5 @@
 using ReLogic.Content;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.EyeOfCthulhu;

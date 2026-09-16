@@ -3,8 +3,8 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Interfaces;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 
@@ -323,7 +323,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
         Vector2 back = -Projectile.velocity.SafeNormalize(Vector2.Zero);
 
-        MetaballSystem.GetLayer<IceMistLayer>()?.SpawnNode(
+        FieldSystem.GetLayer<IceMistLayer>()?.SpawnNode(
             Projectile.Center + Main.rand.NextVector2Circular(6f, 6f),
             back * Main.rand.NextFloat(0.3f, 1.1f) + Main.rand.NextVector2Circular(0.3f, 0.3f),
             radius: Main.rand.NextFloat(9f, 16f),
@@ -334,7 +334,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     /// <summary>The puff of frost thrown out where the axe bites in.</summary>
     private static void BurstMist(Vector2 position, float scale = 1f)
     {
-        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+        if (FieldSystem.GetLayer<IceMistLayer>() is not { } mist)
             return;
 
         int count = (int)(7 * scale);

@@ -3,8 +3,8 @@ using Terraria.GameContent;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Interfaces;
-using TrelamiumIII.Core.Graphics.Metaballs;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 
@@ -359,7 +359,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     /// <summary>Fog laid along the arc while spinning, so the ring reads as frost and not just a ribbon.</summary>
     private void RingMist()
     {
-        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+        if (FieldSystem.GetLayer<IceMistLayer>() is not { } mist)
             return;
 
         var mountedCenter = Main.player[Projectile.owner].MountedCenter;
@@ -381,7 +381,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         if (CurrentAIState == AIState.Spinning || !Main.rand.NextBool(2))
             return;
 
-        MetaballSystem.GetLayer<IceMistLayer>()?.SpawnNode(
+        FieldSystem.GetLayer<IceMistLayer>()?.SpawnNode(
             Projectile.Center + Main.rand.NextVector2Circular(5f, 5f),
             Projectile.velocity * 0.06f + Main.rand.NextVector2Circular(0.3f, 0.3f),
             radius: Main.rand.NextFloat(10f, 16f + ChargeProgress * 8f),
@@ -390,7 +390,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     private static void BurstMist(Vector2 position)
     {
-        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+        if (FieldSystem.GetLayer<IceMistLayer>() is not { } mist)
             return;
 
         const int count = 20;
@@ -784,7 +784,7 @@ public class FrostCloudProj : ModProjectile
 
     private void Fog()
     {
-        if (MetaballSystem.GetLayer<IceMistLayer>() is not { } mist)
+        if (FieldSystem.GetLayer<IceMistLayer>() is not { } mist)
             return;
 
         float envelope = Envelope;

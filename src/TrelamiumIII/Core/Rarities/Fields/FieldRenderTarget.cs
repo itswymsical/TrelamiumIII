@@ -1,4 +1,5 @@
 using Terraria.GameContent;
+using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Rarities.Fields;
 
@@ -48,11 +49,13 @@ internal sealed class FieldRenderTarget(int pixelScale) : ARenderTargetContentBy
 
     protected override void HandleUseReqest(GraphicsDevice device, SpriteBatch spriteBatch)
     {
-        // Ceiling: an odd screen size would otherwise drop the last row or column and leave a seam at the edge.
-        int width = (int)Math.Ceiling(Main.screenWidth / (float)PixelScale);
-        int height = (int)Math.Ceiling(Main.screenHeight / (float)PixelScale);
+        (int width, int height) = FieldSurface.ScreenSize(PixelScale);
 
-        PrepareARenderTarget_AndListenToEvents(ref _target, device, width, height, RenderTargetUsage.PreserveContents);
+        // Not the vanilla helper: it takes the back buffer's eight-bit format, which clamps this
+        // sum flat the moment two blobs overlap. See FieldSurface.
+        RenderTarget2D? surface = _target;
+        FieldSurface.Ensure(ref surface, device, width, height);
+        _target = surface!;
 
         device.SetRenderTarget(_target);
         device.Clear(Color.Transparent);

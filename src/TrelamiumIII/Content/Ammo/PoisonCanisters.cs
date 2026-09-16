@@ -5,6 +5,7 @@ using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Ammo;
 
@@ -13,7 +14,7 @@ public abstract class PoisonCanister : GasCanisterAmmo
 {
     public override string Texture => AssetReferences.Content.Misc.GasCanister.KEY;
 
-    public override GasField? Field => GasSystem.GetLayer<PoisonGasLayer>();
+    public override GasField? Field => FieldSystem.GetLayer<PoisonGasLayer>();
 
     /// <summary>Slow, growing arms so the burst settles into one cloud around the canister.</summary>
     public override BurstProfile Burst => BurstProfile.Vent with

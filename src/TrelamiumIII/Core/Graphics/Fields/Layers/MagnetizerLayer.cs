@@ -1,6 +1,6 @@
 using ReLogic.Content;
 
-namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
+namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 /// <summary>
 ///     Ore drawn up the Lodestone Magnetizer's intake: a stream of molten-looking blobs travelling
@@ -22,12 +22,12 @@ namespace TrelamiumIII.Core.Graphics.Metaballs.Layers;
 ///     <para>
 ///         <b>One colour for the whole layer.</b> The composite is a single full-screen draw, so the
 ///         shader gets one palette per frame however many nodes there are -- the same constraint that
-///         makes <see cref="MetaballField.SampleAverageLight" /> a layer-wide average. Two players
+///         makes <see cref="FieldLayer.SampleAverageLight" /> a layer-wide average. Two players
 ///         mining different ores at once therefore share the newest colour. That is a fair trade for
 ///         one draw call, and it costs nothing in the case that actually happens.
 ///     </para>
 /// </remarks>
-public sealed class MagnetizerLayer : MetaballField
+public sealed class MagnetizerLayer : FieldLayer
 {
     /// <summary>Inward acceleration per tick while a node is in the grip.</summary>
     private const float PULL = 0.55f;
@@ -43,6 +43,9 @@ public sealed class MagnetizerLayer : MetaballField
 
     /// <summary>Distance at which a node has arrived and is consumed.</summary>
     private const float ARRIVAL = 18f;
+
+    /// <summary>Near the top: the player's own tool should never be buried by a cloud.</summary>
+    public override int LoadOrder => 90;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
@@ -88,7 +91,7 @@ public sealed class MagnetizerLayer : MetaballField
         noiseTexture = null;
     }
 
-    private static MagnetizerLayer? Layer => MetaballSystem.GetLayer<MagnetizerLayer>();
+    private static MagnetizerLayer? Layer => FieldSystem.GetLayer<MagnetizerLayer>();
 
     /// <summary>
     ///     Sets the colour the stream is drawn in. Eased rather than assigned, so sweeping the beam
@@ -119,7 +122,7 @@ public sealed class MagnetizerLayer : MetaballField
         Layer?.SpawnAnchoredNode(host, position, velocity, radius, life, gripTicks);
     }
 
-    protected override void UpdateNode(ref MetaballNode node, int index)
+    protected override void UpdateNode(ref FieldNode node, int index)
     {
         if (node.AnchorHost is { active: true } host && node.AnchorTicks > 0)
         {
@@ -162,7 +165,6 @@ public sealed class MagnetizerLayer : MetaballField
 
     protected override void ApplyShaderParameters(Effect effect)
     {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
 
         // Guarded rather than passed straight through: the FBM sampler cannot take a null texture,
         // and the asset is still null on the frames before it finishes loading.
@@ -175,9 +177,6 @@ public sealed class MagnetizerLayer : MetaballField
         Vector3 light = new Vector3(0.38f); // ambient floor; the real light rides in the field per node
         effect.Parameters["WorldLight"]?.SetValue(light);
 
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(2f / Main.screenWidth, 2f / Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
 
         // Highest threshold of the three layers. Spores and mist want to merge into sheets; ore
         // wants to stay lumps, because lumps are what is being carried.
@@ -187,6 +186,9 @@ public sealed class MagnetizerLayer : MetaballField
 
         // Drifts against the flow, so the grain of each blob churns while the blob itself travels.
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.07f, 0.04f));
+
+        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
+        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
 
         effect.Parameters["Bands"]?.SetValue(4f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.62f);
@@ -200,7 +202,7 @@ public sealed class MagnetizerLayer : MetaballField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
     }
 
-    protected override void ApplyLighting(ref MetaballNode node)
+    protected override void ApplyLighting(ref FieldNode node)
     {
         float alpha = node.Alpha;
 

@@ -2,7 +2,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Utilities;
 using static TrelamiumIII.Utilities.EaseFunction;
