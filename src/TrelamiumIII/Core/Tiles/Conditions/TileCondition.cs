@@ -1,6 +1,7 @@
 using ReLogic.Content;
 using Terraria.GameContent;
 using TrelamiumIII.Utilities.Extensions;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -154,21 +155,17 @@ public abstract class TileCondition : ITileCondition
     }
 
     /// <summary>
-    ///     Sets the frame-varying parameters every field shader in this system shares: the time base,
-    ///     the field's texel size, and the world offset that locks its noise to the world instead of
-    ///     to the screen. Note that without the world offset the noise unintendedly moves with the camera.
+    ///     Hands the shader the frame, on the same terms a <see cref="FieldLayer" /> does: the time
+    ///     base, the field's texel size, and the camera offset and zoom that lock its noise to the
+    ///     world rather than to the screen.
     /// </summary>
+    /// <remarks>
+    ///     Delegated rather than duplicated, and it matters more than tidiness. A condition drawing
+    ///     through <c>GasFbm</c> shares one <see cref="Effect" /> instance with every field layer,
+    ///     so a parameter it never sets holds whatever the last layer left there -- or zero, if it
+    ///     draws first. Several of them are ruinous at zero: no <c>FieldGain</c> discards every
+    ///     pixel. Setting them in one place is what stops that being a question of draw order.
+    /// </remarks>
     protected void ApplyFieldFrameParameters(Effect effect)
-    {
-        effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(FieldPixelScale / (float)Main.screenWidth, FieldPixelScale / (float)Main.screenHeight));
-        effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
-
-        // The camera offset above is only half of the world lock. The field bakes the zoom into its
-        // own transform, so the shader is handed a screen uv and has to undo that zoom before the
-        // offset means anything: otherwise the error is (1 - Zoom) * cameraCentre, which is zero
-        // at Zoom 1 and moves with the camera at every other zoom.
-        effect.Parameters["Zoom"]?.SetValue(Main.GameViewMatrix.Zoom);
-    }
+        => FieldLayer.ApplyScreenParameters(effect, FieldPixelScale);
 }

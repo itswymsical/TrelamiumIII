@@ -4,7 +4,7 @@ using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Common.Systems;
-using TrelamiumIII.Core.Graphics.Metaballs;
+using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Common.Generation;
@@ -169,10 +169,10 @@ public class GrottoPass : GenPass
     private BiomeMask BiomeBlob(int originX, int originY, int width, int height, FastNoiseLite noise, FastNoiseLite roughNoise,
         GenerationProgress progress, double progressStart, double progressEnd, float scale)
     {
-        List<MetaballNode> metaballs = new();
+        List<FieldNode> metaballs = new();
 
         metaballs.Add(
-        new MetaballNode
+        new FieldNode
         {
             Position = new(originX, originY),
             Radius = 150 * scale
@@ -185,7 +185,7 @@ public class GrottoPass : GenPass
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
             float distance = Main.rand.NextFloat(125f, 175f) * scale;
 
-            metaballs.Add(new MetaballNode
+            metaballs.Add(new FieldNode
             {
                 Position = parent.Position + angle.ToRotationVector2() * distance,
                 Radius = Main.rand.NextFloat(130f, 160f) * scale
