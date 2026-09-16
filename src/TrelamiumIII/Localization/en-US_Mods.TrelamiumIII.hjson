@@ -764,67 +764,67 @@ Items: {
 	}
 
 	SpruceBathtubItem: {
-		DisplayName: Spruce Bathtub Item
+		DisplayName: Spruce Bathtub
 		Tooltip: ""
 	}
 
 	SpruceBedItem: {
-		DisplayName: Spruce Bed Item
+		DisplayName: Spruce Bed
 		Tooltip: ""
 	}
 
 	SpruceBookcaseItem: {
-		DisplayName: Spruce Bookcase Item
+		DisplayName: Spruce Bookcase
 		Tooltip: ""
 	}
 
 	SpruceCandelabraItem: {
-		DisplayName: Spruce Candelabra Item
+		DisplayName: Spruce Candelabra
 		Tooltip: ""
 	}
 
 	SpruceChairItem: {
-		DisplayName: Spruce Chair Item
+		DisplayName: Spruce Chair
 		Tooltip: ""
 	}
 
 	SpruceChandelierItem: {
-		DisplayName: Spruce Chandelier Item
+		DisplayName: Spruce Chandelier
 		Tooltip: ""
 	}
 
 	SpruceChestItem: {
-		DisplayName: Spruce Chest Item
+		DisplayName: Spruce Chest
 		Tooltip: ""
 	}
 
 	SpruceDoorItem: {
-		DisplayName: Spruce Door Item
+		DisplayName: Spruce Door
 		Tooltip: ""
 	}
 
 	SpruceDresserItem: {
-		DisplayName: Spruce Dresser Item
+		DisplayName: Spruce Dresser
 		Tooltip: ""
 	}
 
 	SpruceLampItem: {
-		DisplayName: Spruce Lamp Item
+		DisplayName: Spruce Lamp
 		Tooltip: ""
 	}
 
 	SpruceLanternItem: {
-		DisplayName: Spruce Lantern Item
+		DisplayName: Spruce Lantern
 		Tooltip: ""
 	}
 
 	SprucePianoItem: {
-		DisplayName: Spruce Piano Item
+		DisplayName: Spruce Piano
 		Tooltip: ""
 	}
 
 	SprucePlatformItem: {
-		DisplayName: Spruce Platform Item
+		DisplayName: Spruce Platform
 		Tooltip: ""
 	}
 
@@ -834,57 +834,57 @@ Items: {
 	}
 
 	SpruceSinkItem: {
-		DisplayName: Spruce Sink Item
+		DisplayName: Spruce Sink
 		Tooltip: ""
 	}
 
 	SpruceSofaItem: {
-		DisplayName: Spruce Sofa Item
+		DisplayName: Spruce Sofa
 		Tooltip: ""
 	}
 
 	SpruceTableItem: {
-		DisplayName: Spruce Table Item
+		DisplayName: Spruce Table
 		Tooltip: ""
 	}
 
 	SpruceWoodItem: {
-		DisplayName: Spruce Wood Item
+		DisplayName: Spruce Wood
 		Tooltip: ""
 	}
 
 	SpruceWorkBenchItem: {
-		DisplayName: Spruce Work Bench Item
+		DisplayName: Spruce Work Bench
 		Tooltip: ""
 	}
 
 	CopperPipeItem: {
-		DisplayName: Copper Pipe Item
+		DisplayName: Copper Pipe
 		Tooltip: ""
 	}
 
 	OxidizedCopperPlatingItem: {
-		DisplayName: Oxidized Copper Plating Item
+		DisplayName: Oxidized Copper Plating
 		Tooltip: ""
 	}
 
 	SmoothCopperPlatingItem: {
-		DisplayName: Smooth Copper Plating Item
+		DisplayName: Smooth Copper Plating
 		Tooltip: ""
 	}
 
 	WattleFenceItem: {
-		DisplayName: Wattle Fence Item
+		DisplayName: Wattle Fence
 		Tooltip: ""
 	}
 
 	WoodWickerBlockItem: {
-		DisplayName: Wood Wicker Block Item
+		DisplayName: Wood Wicker Block
 		Tooltip: ""
 	}
 
 	WoodWickerWallItem: {
-		DisplayName: Wood Wicker Wall Item
+		DisplayName: Wood Wicker Wall
 		Tooltip: ""
 	}
 
@@ -986,9 +986,9 @@ Tiles: {
 	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
 	AlchemyStationTile.MapEntry: Alchemy Station
 	MagnoliaTile.MapEntry: Magnolia
-	MyconidSporeTile.MapEntry: Myconid Spore Tile
-	SpruceChestTile.MapEntry: Spruce Chest Tile
-	SpruceDresserTile.MapEntry: Spruce Dresser Tile
+	MyconidSporeTile.MapEntry: Myconid Spore
+	SpruceChestTile.MapEntry: Spruce Chest
+	SpruceDresserTile.MapEntry: Spruce Dresser
 }
 
 Projectiles: {
@@ -1033,8 +1033,8 @@ Projectiles: {
 	ThermiteBurstProjectile.DisplayName: Thermite
 	ThermiteFlaskProjectile.DisplayName: Thermite Flask
 	SporadicSlamProjectile.DisplayName: Sporadic Slam
-	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst Projectile
-	VilesporeFlaskProjectile.DisplayName: Vilespore Flask Projectile
+	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst
+	VilesporeFlaskProjectile.DisplayName: Vilespore Flask
 	WallBombProj.DisplayName: Wall Bomb Proj
 	GelatinousBlasterProj.DisplayName: Gelatinous Blaster
 	GelBallProj.DisplayName: Gel Glob
@@ -1047,20 +1047,20 @@ Projectiles: {
 	EarthShardProj.DisplayName: Earth Shard
 	SkofnungProjectile.DisplayName: Skofnung Projectile
 	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
-	StalagMagMKIIProj.DisplayName: Stalag Mag M K I I Proj
-	GelBallProjectile.DisplayName: Gel Ball Projectile
-	CrustaceanClobbererProjectile.DisplayName: Crustacean Clobberer Projectile
-	ObsidianKhopeshProjectile.DisplayName: Obsidian Khopesh Projectile
-	CopperTippedArrowProjectile.DisplayName: Copper Tipped Arrow Projectile
-	GoldTippedArrowProjectile.DisplayName: Gold Tipped Arrow Projectile
-	IronTippedArrowProjectile.DisplayName: Iron Tipped Arrow Projectile
-	LeadTippedArrowProjectile.DisplayName: Lead Tipped Arrow Projectile
-	PlatinumTippedArrowProjectile.DisplayName: Platinum Tipped Arrow Projectile
-	SilverTippedArrowProjectile.DisplayName: Silver Tipped Arrow Projectile
-	TinTippedArrowProjectile.DisplayName: Tin Tipped Arrow Projectile
-	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow Projectile
-	CanisterCannonProj.DisplayName: Canister Cannon Proj
-	GasCanisterProj.DisplayName: Gas Canister Proj
+	StalagMagMKIIProj.DisplayName: StalagMag-MK II
+	GelBallProjectile.DisplayName: Gel Ball
+	CrustaceanClobbererProjectile.DisplayName: Crustacean Clobberer
+	ObsidianKhopeshProjectile.DisplayName: Obsidian Khopesh
+	CopperTippedArrowProjectile.DisplayName: Copper Tipped Arrow
+	GoldTippedArrowProjectile.DisplayName: Gold Tipped Arrow
+	IronTippedArrowProjectile.DisplayName: Iron Tipped Arrow
+	LeadTippedArrowProjectile.DisplayName: Lead Tipped Arrow
+	PlatinumTippedArrowProjectile.DisplayName: Platinum Tipped Arrow
+	SilverTippedArrowProjectile.DisplayName: Silver Tipped Arrow
+	TinTippedArrowProjectile.DisplayName: Tin Tipped Arrow
+	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow
+	CanisterCannonProj.DisplayName: Canister Cannon
+	GasCanisterProj.DisplayName: Gas Canister
 	WardenBoulder.DisplayName: Warden Boulder
 }
 
@@ -1095,7 +1095,7 @@ NPCs: {
 
 	Bushwhack: {
 		DisplayName: Bushwhack
-		Bestiary: A clump of undergrowth that wandered off from the Garden of Ingress. It ambles through the caves on root feet and bothers no one.
+		Bestiary: A bundle of foliage wandering around the Garden of Ingress. It ambles through the caves on root, minding its business.
 	}
 
 	ShinobiNPC.DisplayName: Shinobi

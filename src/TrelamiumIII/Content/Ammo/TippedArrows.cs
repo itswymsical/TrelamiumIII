@@ -1,4 +1,5 @@
 ﻿using Terraria.Audio;
+using Terraria.GameContent;
 using TrelamiumIII.Core;
 
 namespace TrelamiumIII.Content.Ammo;
@@ -60,8 +61,20 @@ public abstract class TippedArrowProjectile : ModProjectile
 
     public override bool PreDraw(ref Color lightColor)
     {
-        // TODO: redraw but flipped vertically
-        return true;
+        Texture2D texture = TextureAssets.Projectile[Type].Value;
+
+        Main.EntitySpriteDraw(
+            texture,
+            Projectile.Center - Main.screenPosition + new Vector2(0f, Projectile.gfxOffY),
+            null,
+            Projectile.GetAlpha(lightColor),
+            Projectile.rotation,
+            texture.Size() * 0.5f,
+            Projectile.scale,
+            SpriteEffects.FlipVertically
+        );
+
+        return false;
     }
 }
 #endregion
