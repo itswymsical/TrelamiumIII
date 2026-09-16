@@ -1,6 +1,7 @@
 ﻿using TrelamiumIII.Core.Gas;
 using System.Linq;
 using Terraria.Audio;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Utilities;
 
@@ -151,7 +152,7 @@ public static class LiquidUtils
     /// converts on contact rather than boiling down, and it mutates the world on every client
     /// independently with no sync.
     /// </remarks>
-    public static void ConvertLiquidIntoTile(ref GasNode node, int tileX, int tileY, Tile tile, ushort tileType, int liquidType, byte amountLeft = 0)
+    public static void ConvertLiquidIntoTile(ref FieldNode node, int tileX, int tileY, Tile tile, ushort tileType, int liquidType, byte amountLeft = 0)
     {
         if (tile.LiquidType != liquidType)
             return;

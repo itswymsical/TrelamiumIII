@@ -72,7 +72,9 @@ public sealed class SlimedCondition : TileCondition
         float time = (float)Main.timeForVisualEffects / 60f;
         var wobble = new Vector2(MathF.Sin(time * 1.4f + phase) * 1.6f, MathF.Cos(time * 1.1f + phase) * 1.2f);
 
-        Color color = FieldStamp.Lit(instance.WorldCenter, (0.55f + 0.45f * instance.Strength) * 1.25f);
+        // No overdrive baked in: it is FieldStamp.Gain now, applied by the shader. Multiplied in
+        // here it was partly clamped away by the byte colour and skewed the recovered brightness.
+        Color color = FieldStamp.Lit(instance.WorldCenter, 0.55f + 0.45f * instance.Strength);
 
         spriteBatch.Draw(
             texture,

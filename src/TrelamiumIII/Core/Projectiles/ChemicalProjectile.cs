@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Projectiles;
 
@@ -83,7 +84,7 @@ public abstract class ChemicalProjectile : ModProjectile
 {
     /// <summary>The layer this carrier's payload lives in.</summary>
     /// <remarks>
-    ///     Resolved per access rather than cached, because <see cref="GasSystem" /> owns the layer
+    ///     Resolved per access rather than cached, because <see cref="FieldSystem" /> owns the layer
     ///     and can be torn down and rebuilt underneath a projectile that outlives a reload.
     /// </remarks>
     protected abstract GasField? Field { get; }

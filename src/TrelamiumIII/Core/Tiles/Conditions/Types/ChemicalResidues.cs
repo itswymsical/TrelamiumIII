@@ -3,6 +3,7 @@ using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -36,7 +37,7 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
 
     public override Asset<Effect>? Shader => null;
 
-    protected override GasField? LingerLayer => GasSystem.GetLayer<IceMistField>();
+    protected override GasField? LingerLayer => FieldSystem.GetLayer<IceMistField>();
 
     private const float RIME_ALPHA = 0.5f;
 
@@ -107,7 +108,7 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
     /// <inheritdoc cref="NecroticResidueCondition.RenderMode" />
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
 
-    protected override GasField? LingerLayer => GasSystem.GetLayer<PhytoncideSporeLayer>();
+    protected override GasField? LingerLayer => FieldSystem.GetLayer<PhytoncideSporeLayer>();
 }
 
 public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
@@ -118,5 +119,5 @@ public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 
     protected override int ContactBuff => BuffID.Bleeding;
 
-    protected override GasField? LingerLayer => GasSystem.GetLayer<CorruptedSporeLayer>();
+    protected override GasField? LingerLayer => FieldSystem.GetLayer<CorruptedSporeLayer>();
 }

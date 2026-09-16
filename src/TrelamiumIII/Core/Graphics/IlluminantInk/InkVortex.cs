@@ -1,6 +1,7 @@
 using Terraria.GameContent;
-using TrelamiumIII.Core.Graphics.Metaballs.Layers;
+using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
+using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 
@@ -51,7 +52,7 @@ namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 ///         <c>CheckMonoliths</c>, which is the one point in the frame where Terraria expects a mod to
 ///         be claiming a target; only the finished blits happen in <c>DrawDust</c>. Binding a target
 ///         from inside the scene draw would mean stealing one mid-scene. This is the same split
-///         <c>MetaballSystem</c> uses between accumulating its field and compositing it.
+///         <c>FieldSystem</c> uses between accumulating its field and compositing it.
 ///     </para>
 /// </remarks>
 internal static class InkVortex
