@@ -52,7 +52,7 @@ public class CrustaceanClobbererProjectile : HeldSwordProjectile
     public static readonly SwordProfile Swing = SwordProfile.Broadsword with
     {
         BladeLength = 64f,
-        ArcOffset = -0.5f,
+        ArcOffset = -0.3f,
         RecoverTicks = 22,
         SwingTicks = 18,
         WindupTicks = 8,
