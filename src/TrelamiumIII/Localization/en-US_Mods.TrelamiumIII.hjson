@@ -1051,6 +1051,7 @@ Projectiles: {
 	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow Projectile
 	CanisterCannonProj.DisplayName: Canister Cannon Proj
 	GasCanisterProj.DisplayName: Gas Canister Proj
+	WardenBoulder.DisplayName: Warden Boulder
 }
 
 NPCs: {

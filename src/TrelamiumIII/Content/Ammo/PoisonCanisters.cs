@@ -1,7 +1,10 @@
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Misc;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Ammo;
 
@@ -15,8 +18,8 @@ public abstract class PoisonCanister : GasCanisterAmmo
     /// <summary>Slow, growing arms so the burst settles into one cloud around the canister.</summary>
     public override BurstProfile Burst => BurstProfile.Vent with
     {
-        AirSpeed = new FloatRange(2f, 6f),
-        GroundSpeed = new FloatRange(2f, 6f),
+        AirSpeed = new FloatRange(1.5f, 5f),
+        GroundSpeed = new FloatRange(1f, 3f),
         Core = EmitterProfile.Default with
         {
             NodeRadius = 18f,
@@ -38,6 +41,20 @@ public abstract class PoisonCanister : GasCanisterAmmo
 public class TimedPoisonCanister : PoisonCanister
 {
     public override CanisterFuse Fuse => CanisterFuse.Timed;
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        Item.damage = 6;
+        component.ChemicalType = ChemicalDamageType.Caustic;
+        component.ChemicalDamage = 6f;
+        component.AfflictionRate = 30;
+        component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
+        component.ReactionChance = 0.002f;
+        component.ReactionDamage = 5f;
+    }
 }
 
 public class ContactPoisonCanister : PoisonCanister
