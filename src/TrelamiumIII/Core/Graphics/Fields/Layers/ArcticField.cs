@@ -4,10 +4,10 @@ namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 /// <summary>
 ///     The freezing fog thrown off by Frostbark weapons. Lighter and thinner than
-///     <see cref="SporeLayer" />: it rises rather than settles, and burns off quickly once it stops
+///     <see cref="SporeField" />: it rises rather than settles, and burns off quickly once it stops
 ///     being fed, so a charged swing reads as a puff of breath rather than a lingering cloud.
 /// </summary>
-public sealed class IceMistLayer : FieldLayer
+public sealed class ArcticField : FieldLayer
 {
     /// <summary>Thin frost, alongside the chemical mist.</summary>
     public override int LoadOrder => 85;

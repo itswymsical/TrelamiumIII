@@ -63,7 +63,7 @@ internal sealed class SporeclotParticle : Particle
             return;
 
         spawnedSpores++;
-        SporeLayer.Trail(Position, Velocity * 0.2f, Variant == HUSK ? 9f : 6f);
+        SporeField.Trail(Position, Velocity * 0.2f, Variant == HUSK ? 9f : 6f);
     }
 
     public override void OnTileCollide(Vector2 oldVelocity)
@@ -72,14 +72,14 @@ internal sealed class SporeclotParticle : Particle
         if (oldVelocity.Length() < 3.5f)
             return;
 
-        SporeLayer.TileSplat(Position, oldVelocity);
+        SporeField.TileSplat(Position, oldVelocity);
     }
 
     public override void OnPlayerCollide(Player player)
     {
         // Kicking a husk that still has something in it shakes a little loose.
         if (Progress < 0.6f && Main.rand.NextBool(2))
-            SporeLayer.Trail(Position, Velocity * 0.25f, 7f);
+            SporeField.Trail(Position, Velocity * 0.25f, 7f);
     }
 
     /// <summary>Water washes the spores out; the husk sinks and goes quiet.</summary>

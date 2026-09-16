@@ -108,7 +108,7 @@ public sealed class CausticResidueCondition : ChemicalReactionTileCondition
     /// <inheritdoc cref="NecroticResidueCondition.RenderMode" />
     public override TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
 
-    protected override GasField? LingerLayer => FieldSystem.GetLayer<PhytoncideSporeLayer>();
+    protected override GasField? LingerLayer => FieldSystem.GetLayer<PhytoncideSporeField>();
 }
 
 public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
@@ -119,5 +119,5 @@ public sealed class NecroticResidueCondition : ChemicalReactionTileCondition
 
     protected override int ContactBuff => BuffID.Bleeding;
 
-    protected override GasField? LingerLayer => FieldSystem.GetLayer<CorruptedSporeLayer>();
+    protected override GasField? LingerLayer => FieldSystem.GetLayer<VilesporeField>();
 }

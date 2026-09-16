@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class PhytoncideSporeLayer : ChemicalGasField
+public class PhytoncideSporeField : ChemicalGasField
 {
     /// <summary>Dense gas, alongside the other spore clouds.</summary>
     public override int LoadOrder => 55;
@@ -172,7 +172,7 @@ public class PhytoncideBloomGlobalNPC : GlobalNPC
 
         SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.9f, Pitch = -0.4f }, target.Center);
 
-        var layer = FieldSystem.GetLayer<PhytoncideSporeLayer>();
+        var layer = FieldSystem.GetLayer<PhytoncideSporeField>();
         if (layer != null)
         {
             int count = Main.rand.Next(14, 22);
@@ -210,7 +210,7 @@ public class PhytoncideBloomGlobalNPC : GlobalNPC
         if (--BloomTicks <= 0) return;
         if (BloomTicks % ReseedInterval != 0) return;
 
-        var layer = FieldSystem.GetLayer<PhytoncideSporeLayer>();
+        var layer = FieldSystem.GetLayer<PhytoncideSporeField>();
         if (layer == null) return;
 
         Vector2 pos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.45f, npc.height * 0.45f);

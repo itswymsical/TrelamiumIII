@@ -36,7 +36,7 @@ public sealed class FungalInfectionHostile : ModBuff
     public override void Update(Player player, ref int buffIndex)
     {
         player.GetModPlayer<FungalInfectionPlayer>().Infect(FungalInfectionPlayer.AMBIENT);
-        SporeLayer.Cling(player, 0.5f);
+        SporeField.Cling(player, 0.5f);
     }
 }
 
@@ -58,7 +58,7 @@ public sealed class FungalInfectionSpore : ModBuff
     public override void Update(Player player, ref int buffIndex)
     {
         player.GetModPlayer<FungalInfectionPlayer>().Infect(FungalInfectionPlayer.SPORE_BORNE);
-        SporeLayer.Cling(player, 0.85f);
+        SporeField.Cling(player, 0.85f);
     }
 }
 
@@ -252,7 +252,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
         }
 
         if (!Main.dedServ && infectionTimer % CLING_INTERVAL == 0)
-            SporeLayer.Cling(npc, (float)Stacks / MAX_STACKS);
+            SporeField.Cling(npc, (float)Stacks / MAX_STACKS);
     }
 
     private void Clear(NPC npc)
@@ -287,7 +287,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
 
         if (!Main.dedServ)
         {
-            SporeLayer.Burst(center, 160f);
+            SporeField.Burst(center, 160f);
 
             if (Main.LocalPlayer.WithinRange(center, SHAKE_RANGE))
                 CameraSystem.shake = Math.Max(CameraSystem.shake, BLOOM_SHAKE);
@@ -406,7 +406,7 @@ public sealed class SporeBlastProj : ModProjectile
 
         float taper = Projectile.timeLeft / (float)MAX_LIFETIME;
 
-        SporeLayer.Trail(Projectile.Center, Projectile.velocity * 0.18f, MathHelper.Lerp(8f, 20f, taper));
+        SporeField.Trail(Projectile.Center, Projectile.velocity * 0.18f, MathHelper.Lerp(8f, 20f, taper));
     }
 
     public override bool? CanHitNPC(NPC target)

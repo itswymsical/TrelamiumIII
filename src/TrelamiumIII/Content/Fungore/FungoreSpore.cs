@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Graphics.Fields.Layers;
 namespace TrelamiumIII.Content.Fungore;
 
 /// <summary>
-///     A clot of spores thrown up by a super slam. Its trail feeds <see cref="SporeLayer" />, so nearby clots fuse into
+///     A clot of spores thrown up by a super slam. Its trail feeds <see cref="SporeField" />, so nearby clots fuse into
 ///     one cloud, and it arcs so the fallout lands a beat later somewhere else.
 /// </summary>
 public sealed class FungoreSpore : ModProjectile
@@ -108,7 +108,7 @@ public sealed class FungoreSpore : ModProjectile
         // Kept thin so the mushroom, the thing to actually dodge, stays legible.
         float taper = Projectile.timeLeft / (float)LIFETIME;
 
-        SporeLayer.Trail(Projectile.Center, Projectile.velocity * -0.12f, MathHelper.Lerp(5f, 11f, taper));
+        SporeField.Trail(Projectile.Center, Projectile.velocity * -0.12f, MathHelper.Lerp(5f, 11f, taper));
 
         Lighting.AddLight(Projectile.Center, 0.22f, 0.12f, 0.03f);
     }
@@ -120,7 +120,7 @@ public sealed class FungoreSpore : ModProjectile
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.35f }, Projectile.Center);
 
         if (!Main.dedServ)
-            SporeLayer.Cling(target, 0.9f);
+            SporeField.Cling(target, 0.9f);
     }
 
     /// <summary>Breaks where it lands and leaves the cloud behind rather than bouncing on.</summary>
@@ -129,7 +129,7 @@ public sealed class FungoreSpore : ModProjectile
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_TileImpact.Asset with { Volume = 0.5f, Pitch = 0.4f }, Projectile.Center);
 
         if (!Main.dedServ)
-            SporeLayer.TileSplat(Projectile.Center, oldVelocity);
+            SporeField.TileSplat(Projectile.Center, oldVelocity);
 
         Projectile.Kill();
 

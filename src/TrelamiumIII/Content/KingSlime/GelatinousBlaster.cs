@@ -137,7 +137,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
     /// <summary>A short cone of gel wisps off the barrel, in the layer the shot itself uses.</summary>
     private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, int count = 3, float speed = 4f)
     {
-        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
 
         for (int i = 0; i < count; i++)
@@ -150,7 +150,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
 }
 
 /// <summary>
-///     A blob of gel in flight. Mostly a hitbox: what the player sees is the <see cref="GelLayer" /> trail it lays every tick.
+///     A blob of gel in flight. Mostly a hitbox: what the player sees is the <see cref="GelField" /> trail it lays every tick.
 /// </summary>
 public class GelBallProj : ModProjectile
 {
@@ -191,7 +191,7 @@ public class GelBallProj : ModProjectile
     /// <summary>Lays gel from a point behind the blob, thinning as it travels.</summary>
     private void Trail()
     {
-        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
 
         Vector2 behind = Projectile.Center - Projectile.velocity * 0.4f;
@@ -237,7 +237,7 @@ public class GelBallProj : ModProjectile
         if (coatTerrain)
             SlimedCondition.Splatter(position, SPLATTER_RADIUS, intensity: 0.9f, owner: owner);
 
-        if (FieldSystem.GetLayer<GelLayer>() is not { } layer)
+        if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
 
         for (int i = 0; i < BURST_NODES; i++)

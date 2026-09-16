@@ -598,7 +598,7 @@ public class ShroomsonMinion : ModProjectile
 
         if (!Main.dedServ && StateTimer % 4f == 0f)
         {
-            SporeLayer.Trail(
+            SporeField.Trail(
                 Projectile.Bottom + Main.rand.NextVector2Circular(6f, 4f),
                 new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(0.6f, 1.6f)),
                 Main.rand.NextFloat(5f, 9f)
@@ -735,7 +735,7 @@ public class ShroomsonMinion : ModProjectile
         int puffs = 1 + (int)(progress * 2f);
 
         for (int i = 0; i < puffs; i++)
-            SporeLayer.Coalesce(MushroomAnchor, progress);
+            SporeField.Coalesce(MushroomAnchor, progress);
 
         Lighting.AddLight(MushroomAnchor, 0.25f * progress, 0.14f * progress, 0.04f * progress);
     }
@@ -751,7 +751,7 @@ public class ShroomsonMinion : ModProjectile
         Vector2 anchor = MushroomAnchor;
 
         for (int i = 0; i < 7; i++)
-            SporeLayer.Trail(anchor, Main.rand.NextVector2Circular(1.7f, 1.7f), Main.rand.NextFloat(6f, 11f));
+            SporeField.Trail(anchor, Main.rand.NextVector2Circular(1.7f, 1.7f), Main.rand.NextFloat(6f, 11f));
     }
 
     private void UpdateToss()
@@ -839,7 +839,7 @@ public class ShroomsonMinion : ModProjectile
             Vector2 anchor = MushroomAnchor;
 
             for (int i = 0; i < 10; i++)
-                SporeLayer.Trail(anchor, Main.rand.NextVector2Circular(1.4f, 1.4f), Main.rand.NextFloat(6f, 12f));
+                SporeField.Trail(anchor, Main.rand.NextVector2Circular(1.4f, 1.4f), Main.rand.NextFloat(6f, 12f));
         }
 
         EndOffer(given: true);
@@ -946,7 +946,7 @@ public class ShroomsonMinion : ModProjectile
 
         for (int i = 0; i < 8; i++)
         {
-            SporeLayer.Trail(
+            SporeField.Trail(
                 Projectile.Bottom,
                 new Vector2(Main.rand.NextFloat(-1.6f, 1.6f), Main.rand.NextFloat(-2.4f, -0.4f)),
                 Main.rand.NextFloat(7f, 13f)
@@ -1354,19 +1354,19 @@ public class ShroomsonMushroom : ModProjectile
         if (Main.dedServ || Projectile.timeLeft % TRAIL_INTERVAL != 0)
             return;
 
-        SporeLayer.Trail(Projectile.Center, Projectile.velocity * -0.1f, Main.rand.NextFloat(5f, 9f));
+        SporeField.Trail(Projectile.Center, Projectile.velocity * -0.1f, Main.rand.NextFloat(5f, 9f));
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.45f }, Projectile.Center);
-        SporeLayer.Splat(target, Projectile.Center, Projectile.velocity, anchorTicks: 24);
+        SporeField.Splat(target, Projectile.Center, Projectile.velocity, anchorTicks: 24);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
         SoundEngine.PlaySound(Assets.SFX.Sporeclot_TileImpact.Asset with { Volume = 0.6f, Pitch = 0.5f }, Projectile.Center);
-        SporeLayer.TileSplat(Projectile.Center, oldVelocity);
+        SporeField.TileSplat(Projectile.Center, oldVelocity);
 
         return true;
     }

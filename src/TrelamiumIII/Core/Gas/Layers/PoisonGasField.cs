@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class PoisonGasLayer : ChemicalGasField
+public class PoisonGasField : ChemicalGasField
 {
     private const int POISON_TICKS = 120;
 

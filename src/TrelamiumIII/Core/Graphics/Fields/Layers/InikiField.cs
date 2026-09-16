@@ -4,34 +4,16 @@ using TrelamiumIII.Core.Graphics.IlluminantInk;
 namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 /// <summary>
-///     Beads of ferrofluid in the world: the menu's <c>InkMoteLayer</c> material, on the field
-///     pipeline, for cutscenes and story content.
+///     In-game version of the menu ink mote fields.
 /// </summary>
-/// <remarks>
-///     <para>
-///         The palette, threshold and wobble are taken from <see cref="InkStyle" /> so the two read
-///         as the same substance. What is deliberately left behind is the menu's interaction: the
-///         cursor magnet, click-to-burst and the mass-conserving merge are a title screen toy, and
-///         a scene needs beads that can be placed, pulled and dispersed on cue.
-///     </para>
-///     <para>
-///         <see cref="Magnetize" /> is what remains of the pointer: a world attractor the beads
-///         spike toward. The stretch is speed-driven here rather than proximity-driven, which comes
-///         to the same thing under a pull -- a bead reaching for the magnet is a bead accelerating
-///         at it -- and costs no per-node state the field does not already carry.
-///     </para>
-/// </remarks>
-public sealed class InkMoteField : FieldLayer
+public sealed class InikiField : FieldLayer
 {
-    /// <summary>Just above <c>InkLayer</c>: beads read as sitting on the ink they came out of.</summary>
     public override int LoadOrder => 12;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
 
-    /// <summary>The same irregular blob the menu stamps, which gives the field its wobble for free.</summary>
     protected override string TexturePath => Assets.Textures.VFX.InkMote.KEY;
 
-    /// <summary>Neutral. Ferrofluid hangs where it is put unless something is pulling on it.</summary>
     protected override float DefaultDensity => 0.5f;
 
     protected override float DefaultViscosity => 0.5f;
@@ -40,7 +22,6 @@ public sealed class InkMoteField : FieldLayer
 
     protected override float GravityScale => 0.015f;
 
-    /// <summary>Matches the menu's per-tick damping, so beads coast the same way.</summary>
     protected override float Drag => 0.955f;
 
     protected override float LifeDecay => 1f;
@@ -49,10 +30,8 @@ public sealed class InkMoteField : FieldLayer
 
     protected override int BaseMaxNodes => 260;
 
-    /// <summary>Spikes, from <see cref="InkStyle.MoteSpikeStretch" />.</summary>
     protected override float StampStretch => InkStyle.MoteSpikeStretch;
 
-    /// <summary>Low, so a bead under a gentle pull already reads as reaching.</summary>
     protected override float FlowReferenceSpeed => 4f;
 
     private Asset<Texture2D>? noiseTexture;
@@ -88,21 +67,16 @@ public sealed class InkMoteField : FieldLayer
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        // Lit high and fixed, like InkLayer. The body is already near-black, and letting the room
-        // drive it would take the pale rim down with it -- which is the whole silhouette.
         effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.78f));
 
         effect.Parameters["Threshold"]?.SetValue(InkStyle.MoteThreshold);
         effect.Parameters["Bands"]?.SetValue(InkStyle.MoteBands);
         effect.Parameters["BodyAlpha"]?.SetValue(InkStyle.MoteBodyAlpha);
 
-        // Far weaker erosion than a gas. These are beads with a clean meniscus, not a cloud with a
-        // torn edge; the noise is here to make the rim breathe, not to eat it.
         effect.Parameters["NoiseScale"]?.SetValue(InkStyle.MoteWobbleScale);
         effect.Parameters["NoiseStrength"]?.SetValue(0.06f);
         effect.Parameters["NoiseDrift"]?.SetValue(InkStyle.MoteWobbleDrift);
 
-        // The surface travels with the bead, which is most of what sells it as liquid.
         effect.Parameters["FlowStrength"]?.SetValue(0.10f);
 
         effect.Parameters["ShadowColor"]?.SetValue(InkStyle.MoteShadowColor);
@@ -112,7 +86,6 @@ public sealed class InkMoteField : FieldLayer
         effect.Parameters["OutlineAlpha"]?.SetValue(InkStyle.MoteRimAlpha);
     }
 
-    /// <summary>Ink takes light out of a room rather than adding any, so nothing is emitted.</summary>
     protected override void ApplyLighting(ref FieldNode node) { }
 
     protected override void UpdateNode(ref FieldNode node, int index)
@@ -196,7 +169,25 @@ public sealed class InkMoteField : FieldLayer
         spriteBatch.End();
     }
 
-    private static InkMoteField? Layer => FieldSystem.GetLayer<InkMoteField>();
+    private static InikiField? Layer => FieldSystem.GetLayer<InikiField>();
+
+    public static void Bloom(Vector2 center, float radius, int count = 22)
+    {
+        if (Layer is not { } layer)
+            return;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(0.8f, 2.6f);
+
+            layer.SpawnNode(
+                center + Main.rand.NextVector2Circular(radius * 0.35f, radius * 0.35f),
+                velocity,
+                radius: Main.rand.NextFloat(16f, 34f),
+                life: Main.rand.NextFloat(160f, 240f)
+            );
+        }
+    }
 
     /// <summary>
     ///     Puts a scatter of beads into the world.
@@ -216,7 +207,29 @@ public sealed class InkMoteField : FieldLayer
                 life: life * Main.rand.NextFloat(0.8f, 1.2f));
         }
     }
+    public static void Trail(Vector2 position, Vector2 velocity, float radius)
+    {
+        Layer?.SpawnNode(
+            position + Main.rand.NextVector2Circular(4f, 4f),
+            velocity * 0.55f + Main.rand.NextVector2Circular(0.2f, 0.2f),
+            radius: radius * Main.rand.NextFloat(0.75f, 1.15f),
+            life: Main.rand.NextFloat(30f, 52f)
+        );
+    }
+    public static void Shroud(Vector2 position, Vector2 velocity, float intensity)
+    {
+        if (Layer is not { } layer)
+            return;
 
+        intensity = MathHelper.Clamp(intensity, 0f, 1f);
+
+        layer.SpawnNode(
+            position + Main.rand.NextVector2Circular(7f, 7f),
+            velocity * 0.9f + Main.rand.NextVector2Circular(0.3f, 0.3f),
+            radius: MathHelper.Lerp(9f, 21f, intensity) * Main.rand.NextFloat(0.8f, 1.2f),
+            life: MathHelper.Lerp(38f, 70f, intensity)
+        );
+    }
     /// <summary>One bead, thrown. For a drip, a flick, or a trail behind something.</summary>
     public static void Drip(Vector2 position, Vector2 velocity, float radius, float life = 240f)
     {

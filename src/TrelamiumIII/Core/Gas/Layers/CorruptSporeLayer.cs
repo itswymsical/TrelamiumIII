@@ -8,14 +8,12 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class CorruptedSporeLayer : ChemicalGasField
+public class VilesporeField : ChemicalGasField
 {
-    /// <summary>Dense gas: over the liquids, under the thinner clouds.</summary>
     public override int LoadOrder => 50;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
     protected override string TexturePath => Assets.Textures.VFX.BloomFlare.KEY;
-    // 1 = true gas: id 0 is the liquid path, which bleeds extra life on floor contact.
     protected override int GasType => GasTypeID.Gas;
 
     protected override float DefaultDensity => 1.10f;
@@ -33,7 +31,6 @@ public class CorruptedSporeLayer : ChemicalGasField
     public override float ReactionChance => 0.02f;
     public override float ReactionDamage => 4f;
 
-    /// <summary>Spores that settle leave a necrotic film on the surface.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
 
     private Asset<Texture2D> noiseTex;
@@ -49,7 +46,7 @@ public class CorruptedSporeLayer : ChemicalGasField
         effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
 
 
-        Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
+        Vector3 light = new Vector3(0.24f);
 
         effect.Parameters["WorldLight"]?.SetValue(light);
 
@@ -59,7 +56,6 @@ public class CorruptedSporeLayer : ChemicalGasField
         effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
         effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
 
-        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
         effect.Parameters["FlowStrength"]?.SetValue(0.14f);
 
         effect.Parameters["Bands"]?.SetValue(8f);
@@ -110,7 +106,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
     {
         if (!Infect(target)) return;
 
-        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<VilesporeField>();
         if (layer == null) return;
 
         CameraSystem.shake = 3;
@@ -151,17 +147,15 @@ public class SporePlagueGlobalNPC : GlobalNPC
     {
         if (PlagueTicks <= 0) return;
 
-        // The fuse lapsed: the host outlived the plague, so it fizzles with no spread.
         if (--PlagueTicks <= 0)
         {
             Fizzle(npc);
             return;
         }
 
-        // The "attached" cloud: short-lived nodes hugging the host and inheriting its motion.
         if (PlagueTicks % 5 == 0)
         {
-            var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
+            var layer = FieldSystem.GetLayer<VilesporeField>();
             if (layer == null) return;
 
             Vector2 pos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.45f, npc.height * 0.45f);
@@ -182,7 +176,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
         CameraSystem.shake = 5;
         SoundEngine.PlaySound(SoundID.NPCDeath9 with { Volume = 0.8f, Pitch = -0.2f }, npc.Center);
 
-        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<VilesporeField>();
         if (layer != null)
         {
             int count = Main.rand.Next(16, 22);
@@ -217,10 +211,9 @@ public class SporePlagueGlobalNPC : GlobalNPC
 
     private static void Fizzle(NPC npc)
     {
-        var layer = FieldSystem.GetLayer<CorruptedSporeLayer>();
+        var layer = FieldSystem.GetLayer<VilesporeField>();
         if (layer == null) return;
 
-        // The spores go inert: a last few motes drift off, nothing spreads.
         for (int i = 0; i < 4; i++)
         {
             Vector2 vel = new(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-0.8f, -0.3f));

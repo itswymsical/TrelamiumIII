@@ -16,7 +16,7 @@ public class IceMistField : ChemicalGasField
     ///     Lower than thermite's, in the same proportion the two layers' tile thresholds differ:
     ///     mist is thin, and a frost that only formed under a dense cloud would almost never appear.
     ///     Replaces a <c>HyperboreanFlaskProjectile.shattered</c> static -- see
-    ///     <see cref="ThermiteLayer" /> for what was wrong with that.
+    ///     <see cref="ThermiteFlaskField" /> for what was wrong with that.
     /// </remarks>
     private const float CONVERSION_COVERAGE = 1.6f;
 

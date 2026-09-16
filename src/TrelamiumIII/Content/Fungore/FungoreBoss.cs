@@ -798,7 +798,7 @@ public sealed class FungoreBoss : ModNPC
 
         CameraSystem.shake = Math.Max(CameraSystem.shake, (int)(14f * scale));
 
-        SporeLayer.Burst(surface, 190f * scale);
+        SporeField.Burst(surface, 190f * scale);
         Rubble(surface, reach: Math.Max((int)(4 * scale), 1), puffs: (int)(28 * scale));
 
         int dirt = (int)(30 * scale);
@@ -831,7 +831,7 @@ public sealed class FungoreBoss : ModNPC
         if (Main.dedServ)
             return;
 
-        SporeLayer.Trail(
+        SporeField.Trail(
             new Vector2(NPC.Center.X + Main.rand.NextFloat(-34f, 34f), GroundY),
             new Vector2(Main.rand.NextFloat(-1.4f, 1.4f), Main.rand.NextFloat(-2.6f, -0.6f)),
             Main.rand.NextFloat(9f, 17f)
@@ -853,7 +853,7 @@ public sealed class FungoreBoss : ModNPC
         SetFrame(EMERGE_HOLD_COLUMN, EMERGE_HOLD_ROW);
 
         if (!Main.dedServ && since % 4 == 0)
-            SporeLayer.Trail(NPC.Center + Main.rand.NextVector2Circular(30f, 30f), Main.rand.NextVector2Circular(0.8f, 0.8f), Main.rand.NextFloat(8f, 15f));
+            SporeField.Trail(NPC.Center + Main.rand.NextVector2Circular(30f, 30f), Main.rand.NextVector2Circular(0.8f, 0.8f), Main.rand.NextFloat(8f, 15f));
     }
 
     private void DoLanding()
@@ -1147,7 +1147,7 @@ public sealed class FungoreBoss : ModNPC
             SetFrame(COLUMN_PUNCH, strike < strikeTicks / 2 ? PUNCH_STRIKE_FIRST : PUNCH_STRIKE_LAST);
 
             if (!Main.dedServ && strike % 3 == 0)
-                SporeLayer.Trail(NPC.Center + new Vector2(facing * 40f, -6f), new Vector2(facing * 1.4f, -0.5f), Main.rand.NextFloat(7f, 13f));
+                SporeField.Trail(NPC.Center + new Vector2(facing * 40f, -6f), new Vector2(facing * 1.4f, -0.5f), Main.rand.NextFloat(7f, 13f));
 
             return;
         }
@@ -1318,7 +1318,7 @@ public sealed class FungoreBoss : ModNPC
         if (Main.dedServ)
             return;
 
-        SporeLayer.Coalesce(NPC.Center, load, radius: 90f);
+        SporeField.Coalesce(NPC.Center, load, radius: 90f);
 
         CameraSystem.shake = Math.Max(CameraSystem.shake, (int)MathHelper.Lerp(1f, 8f, EaseQuadIn.Ease(load)));
     }
@@ -1627,7 +1627,7 @@ public sealed class FungoreBoss : ModNPC
             );
         }
 
-        SporeLayer.Trail(
+        SporeField.Trail(
             new Vector2(burrowX + Main.rand.NextFloat(-30f, 30f), GroundY),
             new Vector2(0f, Main.rand.NextFloat(-1.4f, -0.4f)),
             Main.rand.NextFloat(5f, 10f) * (0.5f + urgency)
@@ -1764,7 +1764,7 @@ public sealed class FungoreBoss : ModNPC
             CameraSystem.shake = Math.Max(CameraSystem.shake, (int)MathHelper.Lerp(3f, 14f, intensity));
 
             if (StateTimer % 3f == 0f)
-                SporeLayer.Trail(NPC.Center + Main.rand.NextVector2Circular(40f, 44f), Main.rand.NextVector2Circular(1.6f, 1.6f), Main.rand.NextFloat(9f, 20f));
+                SporeField.Trail(NPC.Center + Main.rand.NextVector2Circular(40f, 44f), Main.rand.NextVector2Circular(1.6f, 1.6f), Main.rand.NextFloat(9f, 20f));
 
             if (StateTimer % 30f == 0f)
                 SoundEngine.PlaySound(RoarSound with { Volume = 0.8f, Pitch = -0.3f + Main.rand.NextFloat(0.3f) }, NPC.Center);
@@ -1799,11 +1799,11 @@ public sealed class FungoreBoss : ModNPC
         CameraSystem.shake = Math.Max(CameraSystem.shake, 22);
 
         for (int i = 0; i < 6; i++)
-            SporeLayer.Burst(NPC.Center + Main.rand.NextVector2Circular(46f, 46f), 220f);
+            SporeField.Burst(NPC.Center + Main.rand.NextVector2Circular(46f, 46f), 220f);
 
         for (int i = 0; i < 40; i++)
         {
-            SporeLayer.Trail(
+            SporeField.Trail(
                 NPC.Center + Main.rand.NextVector2Circular(60f, 60f),
                 Main.rand.NextVector2Unit() * Main.rand.NextFloat(2f, 8f),
                 Main.rand.NextFloat(14f, 30f)
@@ -1981,7 +1981,7 @@ public sealed class FungoreBoss : ModNPC
         else
             FungoreSlamSmoke.Spawn(impact, scale);
 
-        SporeLayer.Burst(impact, (super ? 200f : 130f) * scale);
+        SporeField.Burst(impact, (super ? 200f : 130f) * scale);
         Rubble(impact, reach: (int)((super ? 5 : 3) * scale), puffs: (int)((super ? 30 : 16) * scale));
     }
 
@@ -2034,7 +2034,7 @@ public sealed class FungoreBoss : ModNPC
             return;
 
         for (int i = 0; i < 3; i++)
-            SporeLayer.Trail(NPC.Center + Main.rand.NextVector2Circular(30f, 34f), new Vector2(hit.HitDirection * 1.4f, -0.8f), Main.rand.NextFloat(6f, 12f));
+            SporeField.Trail(NPC.Center + Main.rand.NextVector2Circular(30f, 34f), new Vector2(hit.HitDirection * 1.4f, -0.8f), Main.rand.NextFloat(6f, 12f));
     }
 
     #endregion

@@ -189,7 +189,7 @@ public sealed class FungoreSporeSac : ModNPC
         if (Age % Math.Max((int)MathHelper.Lerp(14f, 4f, growth), 1) != 0)
             return;
 
-        SporeLayer.Trail(
+        SporeField.Trail(
             NPC.Center - new Vector2(0f, 6f * growth),
             new Vector2(Main.rand.NextFloat(-0.4f, 0.4f), Main.rand.NextFloat(-0.9f, -0.2f)),
             Main.rand.NextFloat(4f, 7f) * (0.5f + growth)
@@ -221,7 +221,7 @@ public sealed class FungoreSporeSac : ModNPC
         if (Main.dedServ)
             return;
 
-        SporeLayer.Burst(centre, GAS_RADIUS);
+        SporeField.Burst(centre, GAS_RADIUS);
 
         Debris(centre, count: 7, force: 4.5f);
     }
@@ -239,7 +239,7 @@ public sealed class FungoreSporeSac : ModNPC
             return;
 
         // Topped up rather than spawned once, or the visible cloud would thin out before the hitbox ends.
-        SporeLayer.Trail(
+        SporeField.Trail(
             NPC.Center + Main.rand.NextVector2Circular(GAS_RADIUS * 0.75f, GAS_RADIUS * 0.5f),
             new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(-0.6f, 0.1f)),
             Main.rand.NextFloat(10f, 20f) * presence
@@ -280,7 +280,7 @@ public sealed class FungoreSporeSac : ModNPC
         // The cloud phase cannot be hurt, so anything arriving here is a hit on the sac itself.
         if (NPC.life > 0)
         {
-            SporeLayer.Trail(NPC.Center, new Vector2(hit.HitDirection * 1.2f, -0.8f), Main.rand.NextFloat(4f, 8f));
+            SporeField.Trail(NPC.Center, new Vector2(hit.HitDirection * 1.2f, -0.8f), Main.rand.NextFloat(4f, 8f));
 
             return;
         }
@@ -290,7 +290,7 @@ public sealed class FungoreSporeSac : ModNPC
         Debris(NPC.Center, count: 5, force: 3.2f, scale: Growth);
 
         for (int i = 0; i < 5; i++)
-            SporeLayer.Trail(NPC.Center + Main.rand.NextVector2Circular(10f, 10f), Main.rand.NextVector2Circular(1.6f, 1.6f), Main.rand.NextFloat(5f, 9f) * Growth);
+            SporeField.Trail(NPC.Center + Main.rand.NextVector2Circular(10f, 10f), Main.rand.NextVector2Circular(1.6f, 1.6f), Main.rand.NextFloat(5f, 9f) * Growth);
     }
 
     /// <summary>Husk and shards, thrown outward and left to settle on the ground.</summary>

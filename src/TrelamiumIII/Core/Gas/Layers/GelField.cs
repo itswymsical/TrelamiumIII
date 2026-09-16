@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-public class GelLayer : ChemicalGasField
+public class GelField : ChemicalGasField
 {
     private const int SLOW_TICKS = 45;
 

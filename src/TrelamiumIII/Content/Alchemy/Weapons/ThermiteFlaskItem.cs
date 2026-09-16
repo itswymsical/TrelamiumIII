@@ -46,7 +46,7 @@ public class ThermiteFlaskItem : ModItem
 
     private static void DoThermiteSpread(ChemicalReactionEvent e)
     {
-        var layer = FieldSystem.GetLayer<ThermiteLayer>();
+        var layer = FieldSystem.GetLayer<ThermiteFlaskField>();
         if (layer == null) return;
 
         Vector2 impactDir = e.Target.oldVelocity.SafeNormalize(-Vector2.UnitY);
@@ -68,13 +68,13 @@ public class ThermiteFlaskItem : ModItem
 
 /// <summary>
 ///     A flask of thermite: vents forward on the way in, then throws molten arms that arc, bounce twice and char
-///     what they touch. The scorch lives on <see cref="ThermiteLayer" />.
+///     what they touch. The scorch lives on <see cref="ThermiteFlaskField" />.
 /// </summary>
 public class ThermiteFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Alchemy.Weapons.ThermiteFlaskItem.KEY;
 
-    protected override GasField? Field => FieldSystem.GetLayer<ThermiteLayer>();
+    protected override GasField? Field => FieldSystem.GetLayer<ThermiteFlaskField>();
 
     protected override TrailProfile? Trail => TrailProfile.Vented with
     {

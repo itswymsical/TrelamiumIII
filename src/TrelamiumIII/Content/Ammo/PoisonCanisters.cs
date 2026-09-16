@@ -9,12 +9,12 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Ammo;
 
-/// <summary>Canister Cannon ammo that bursts into <see cref="PoisonGasLayer" />.</summary>
+/// <summary>Canister Cannon ammo that bursts into <see cref="PoisonGasField" />.</summary>
 public abstract class PoisonCanister : GasCanisterAmmo
 {
     public override string Texture => AssetReferences.Content.Misc.GasCanister.KEY;
 
-    public override GasField? Field => FieldSystem.GetLayer<PoisonGasLayer>();
+    public override GasField? Field => FieldSystem.GetLayer<PoisonGasField>();
 
     /// <summary>Slow, growing arms so the burst settles into one cloud around the canister.</summary>
     public override BurstProfile Burst => BurstProfile.Vent with

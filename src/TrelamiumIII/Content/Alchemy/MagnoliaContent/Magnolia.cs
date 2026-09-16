@@ -328,7 +328,7 @@ public class MagnoliaPowderProjectile : ModProjectile
     {
         base.AI();
 
-        var layer = FieldSystem.GetLayer<MagnoliaLayer>();
+        var layer = FieldSystem.GetLayer<MagnoliaField>();
         if (layer == null) return;
 
         delay++;
