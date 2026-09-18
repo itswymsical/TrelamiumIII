@@ -24,6 +24,6 @@ public class SlateTile : ModTile
         HitSound = SoundID.Tink;
         VanillaFallbackOnModDeletion = TileID.Stone;
 
-        AddMapEntry(new Color(37, 42, 37));
+        AddMapEntry(new Color(87, 92, 88));
     }
 }
