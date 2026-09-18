@@ -1861,8 +1861,54 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(mins: 16)
         });
         #endregion
+
+        Potion_Aug();
     }
 
+    private static void Potion_Aug()
+    {
+        // Ironskin
+        AlchemyRecipeRegistry.RegisterVariants(
+            inputType: ItemID.IronskinPotion,
+            outputType: ItemID.IronskinPotion,
+            new AlchemyVariant(ComponentMatcher.Of(Reagent.BoneAsh, 5))
+            {
+                Augment = b => b.Add(BuffID.Wrath, potency: 1, durationTicks: TimeConversion.SetTime(secs: 25))
+        });
+
+        AlchemyRecipeRegistry.RegisterVariants(
+            inputType: ItemID.IronskinPotion,
+            outputType: ItemID.IronskinPotion,
+            new AlchemyVariant(ComponentMatcher.Of(ItemID.IronOre, 3))
+            {
+                Augment = b => b.Add(BuffID.Endurance, potency: 1, durationTicks: TimeConversion.SetTime(mins: 2))
+        });
+
+        AlchemyRecipeRegistry.RegisterVariants(
+            inputType: ItemID.IronskinPotion,
+            outputType: ItemID.IronskinPotion,
+            new AlchemyVariant(ComponentMatcher.Of(ItemID.GoldOre, 3))
+            {
+                Augment = b => b.Add(BuffID.Endurance, potency: 3, durationTicks: TimeConversion.SetTime(mins: 1))
+        });
+
+        // Regen
+        AlchemyRecipeRegistry.RegisterVariants(
+            inputType: ItemID.RegenerationPotion,
+            outputType: ItemID.RegenerationPotion,
+            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 1))
+            {
+                Augment = b => b.Add(BuffID.ManaRegeneration, potency: 1, durationTicks: TimeConversion.SetTime(secs: 45))
+            },
+            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 2))
+            {
+                Augment = b => b.Add(BuffID.ManaRegeneration, potency: 2, durationTicks: TimeConversion.SetTime(mins: 1, secs: 20))
+            },
+            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 3))
+            {
+                Augment = b => b.Add(BuffID.ManaRegeneration, potency: 3, durationTicks: TimeConversion.SetTime(mins: 2))
+        });
+    }
     /// <summary>Spirit Reforged recipes, buffs and effect behaviours.</summary>
     private static void RegisterSpiritReforged()
     {
