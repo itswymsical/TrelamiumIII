@@ -185,6 +185,7 @@ public static class ActCurves
 
     /// <summary>Ordinary enemy kills, counted per family.</summary>
     public static readonly int[] Combat = [20, 50, 110, 210, 380, 620, 950, 1400, 2000, 2800];
+    public static readonly int[] CombatDamage = [200, 450, 700, 1250, 2200, 4250, 7600, 9500, 10200, 16500];
 
     /// <summary>
     /// Loot containers smashed in passing. Sized well below <see cref="Bulk"/>: a world only generates a

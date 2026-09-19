@@ -198,7 +198,7 @@ public static class AlmanacIngredientInfo
 }
 
 
-/// <summary>Read-only views over <see cref="AlchemyRecipeRegistry"/> for browsing, filtering and searching in the Almanac.</summary>
+/// <summary>Read-only views over <see cref="AlchemyRecipes"/> for browsing, filtering and searching in the Almanac.</summary>
 public static class AlmanacIndex
 {
     private static List<int> _allOutputs;
@@ -228,7 +228,7 @@ public static class AlmanacIndex
     {
         if (outputType <= 0) yield break;
 
-        foreach (var r in AlchemyRecipeRegistry.All)
+        foreach (var r in AlchemyRecipes.All)
         {
             if (ResolveType(r) == outputType)
                 yield return r;
@@ -245,7 +245,7 @@ public static class AlmanacIndex
             yield break;
         }
 
-        foreach (var r in AlchemyRecipeRegistry.All)
+        foreach (var r in AlchemyRecipes.All)
         {
             if (r.InputType == itemType && r.InputInfusion == infusion)
             {
@@ -269,7 +269,7 @@ public static class AlmanacIndex
     {
         if (itemType <= 0) yield break;
 
-        foreach (var r in AlchemyRecipeRegistry.All)
+        foreach (var r in AlchemyRecipes.All)
         {
             if (r.InputType == itemType)
             {
@@ -292,7 +292,7 @@ public static class AlmanacIndex
     public static bool HasRecipeFor(int outputType)
     {
         if (outputType <= 0) return false;
-        foreach (var r in AlchemyRecipeRegistry.All)
+        foreach (var r in AlchemyRecipes.All)
             if (ResolveType(r) == outputType) return true;
         return false;
     }
@@ -319,7 +319,7 @@ public static class AlmanacIndex
         if (_allOutputs != null) return;
 
         var byType = new Dictionary<int, BrewCategory>();
-        foreach (var r in AlchemyRecipeRegistry.All)
+        foreach (var r in AlchemyRecipes.All)
         {
             int t = ResolveType(r);
             if (t <= 0) continue;

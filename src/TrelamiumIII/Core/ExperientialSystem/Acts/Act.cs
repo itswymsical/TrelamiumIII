@@ -306,6 +306,7 @@ public abstract class FishingCrateAct : PredicateAct
     protected sealed override bool Test(in GameEvent evt) => evt.ItemType is int type && type >= 0 && CrateType(type);
 }
 
+
 public abstract class TileInteractAct : PredicateAct
 {
     protected sealed override GameEventType Listens => GameEventType.TileInteract;

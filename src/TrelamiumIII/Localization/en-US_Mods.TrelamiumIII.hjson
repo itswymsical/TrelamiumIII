@@ -610,7 +610,7 @@ Items: {
 		Tooltip:
 			'''
 			Releases a cloud of ice mist that afflicts enemies with frostburn
-			Transforms water into thin ice on contact
+			Transforms water into thin ice on contact & freezes over tiles
 			Best used with Ice Skates [i:950]
 			'''
 	}

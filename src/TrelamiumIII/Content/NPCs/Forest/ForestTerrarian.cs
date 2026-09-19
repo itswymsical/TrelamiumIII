@@ -176,16 +176,16 @@ public class ForestTerrarian : Villager
             Trade().ForCoins(Item.buyPrice(copper: 80))
                             .Grants(ItemID.Silk)),
 
-        new(() => AddInvItem(Solution.SpecularTonic, 5),
+        new(() => AddInvItem(SolventID.SpecularTonic, 5),
             Trade().For(ItemID.Bass, 3)
-                            .Grants(Solution.SpecularTonic)),
+                            .Grants(SolventID.SpecularTonic)),
 
-        new(() => AddInvItem(Solution.FortunateTonic, 5),
+        new(() => AddInvItem(SolventID.FortunateTonic, 5),
             Trade().For(ItemID.Topaz, 2)
-                            .Grants(Solution.FortunateTonic)),
+                            .Grants(SolventID.FortunateTonic)),
 
-        new(() => AddInvItem(Solution.VitalTonic, 5),
+        new(() => AddInvItem(SolventID.VitalTonic, 5),
             Trade().For(ItemID.Sunflower, 3)
-                            .Grants(Solution.VitalTonic)),
+                            .Grants(SolventID.VitalTonic)),
     ];
 }

@@ -31,7 +31,7 @@ internal sealed class AlchemyPreview
         if (ingredientsChanged)
         {
             AlchemyResolution previous = Resolution;
-            Resolution = AlchemyRecipeRegistry.Resolve(input, components);
+            Resolution = AlchemyRecipes.Resolve(input, components);
 
             if (Resolution.Recipe != previous.Recipe || Resolution.Composition != previous.Composition)
                 _output = Resolution.Output.Clone();

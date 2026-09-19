@@ -406,7 +406,10 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
         _bite = MathHelper.Lerp(_bite, _contact.HasValue ? 1f : 0f, 0.12f);
     }
 
-    /// <summary>Anything spelunker-highlighted, plus Hellstone.</summary>
+    /// <summary>
+    ///     Anything flagged in <see cref="Main.tileSpelunker" />, plus Hellstone. Reads the flag rather than
+    ///     <c>Main.IsTileSpelunkable</c>, which a brewed Spelunker's tier gate filters.
+    /// </summary>
     private static bool IsMagnetizable(Tile tile)
     {
         if (tile.TileType == TileID.Hellstone)

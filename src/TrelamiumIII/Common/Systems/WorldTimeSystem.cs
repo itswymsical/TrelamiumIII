@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
@@ -7,14 +8,18 @@ using TrelamiumIII.Core.Jobs;
 namespace TrelamiumIII.Common.Systems;
 
 /// <summary>Counts world days and unlocks jobs as their day milestones are reached.</summary>
+/// <remarks>
+/// The server owns the count and syncs it in world data. Job state is saved per player on each client, so each
+/// client unlocks its own player: on entering the world, and whenever the synced count rises.
+/// </remarks>
 public class WorldTimeSystem : ModSystem
 {
     public static int TotalDaysElapsed;
 
-    /// <summary>Day the world must have reached for these jobs to be offered.</summary>
+    /// <summary>Day the world must have reached for these jobs to be offered. Day 0 is offered on entering the world.</summary>
     private static readonly Dictionary<int, int[]> JobMilestones = new()
     {
-        { 1, [JobID.HomeForager] },
+        { 0, [JobID.HomeForager] },
         { 3, [JobID.GoldMine] },
         // { 7, [ JobID.DryadEaterOfWorldsI, JobID.ArmsDealerGunI ] }
     };
@@ -25,30 +30,34 @@ public class WorldTimeSystem : ModSystem
             return;
 
         TotalDaysElapsed++;
-        ApplyMilestones();
+
+        // Clients unlock their own players' jobs when the new count reaches them in NetReceive.
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendData(MessageID.WorldData);
+        else
+            ApplyMilestonesTo(Main.LocalPlayer);
     }
+
+    // Static, so without this a new world starts on the last world's day count.
+    public override void ClearWorld() => TotalDaysElapsed = 0;
 
     public override void SaveWorldData(TagCompound tag) => tag["TotalDaysElapsed"] = TotalDaysElapsed;
 
     public override void LoadWorldData(TagCompound tag) => TotalDaysElapsed = tag.GetInt("TotalDaysElapsed");
 
-    /// <summary>Unlocks every job whose day has been reached, not only today's.</summary>
-    private static void ApplyMilestones()
+    public override void NetSend(BinaryWriter writer) => writer.Write(TotalDaysElapsed);
+
+    public override void NetReceive(BinaryReader reader)
     {
-        var due = JobMilestones
-            .Where(milestone => TotalDaysElapsed >= milestone.Key)
-            .SelectMany(milestone => milestone.Value);
+        int previous = TotalDaysElapsed;
+        TotalDaysElapsed = reader.ReadInt32();
 
-        for (var i = 0; i < Main.maxPlayers; i++)
-        {
-            var player = Main.player[i];
-
-            if (player.active)
-                UnlockJobs(player, due);
-        }
+        // While joining (gameMenu), JobPlayer.OnEnterWorld catches the player up instead.
+        if (TotalDaysElapsed > previous && !Main.gameMenu)
+            ApplyMilestonesTo(Main.LocalPlayer);
     }
 
-    /// <summary>Catches a joining player up on every milestone the world has already passed.</summary>
+    /// <summary>Unlocks every job whose day the world has reached, not only today's.</summary>
     public static void ApplyMilestonesTo(Player player)
         => UnlockJobs(player, JobMilestones
             .Where(milestone => TotalDaysElapsed >= milestone.Key)

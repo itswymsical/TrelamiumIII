@@ -105,7 +105,8 @@ public class WorldNPCHousing : ModSystem
 
     public override void PostWorldGen() => SpawnMissingResidents();
 
-    public override void OnWorldLoad()
+    // Not OnWorldLoad: tModLoader calls that before it loads modded NPCs and this system's homes.
+    public override void PostWorldLoad()
     {
         if (Main.netMode != NetmodeID.MultiplayerClient)
             SpawnMissingResidents();

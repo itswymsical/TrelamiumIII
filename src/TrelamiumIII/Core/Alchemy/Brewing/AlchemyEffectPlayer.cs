@@ -80,8 +80,7 @@ public class AlchemyEffectPlayer : ModPlayer
 
     public override void PostUpdateEquips()
     {
-        // Restore the Spelunker reveal (local player) before re-gating below, so a lapsed brew stops
-        // masking. Cheap no-op unless a gate was actually applied last frame.
+        // Lift the local player's Spelunker gate before re-gating below, so a lapsed brew stops hiding ores.
         bool isLocal = Player.whoAmI == Main.myPlayer;
         if (isLocal) SpelunkerReveal.BeginFrame();
 

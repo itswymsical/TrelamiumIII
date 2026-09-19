@@ -9,7 +9,7 @@ namespace TrelamiumIII.Content.Alchemy.Solutions;
 ///     Solvent-slot items and bottled solutes, each a <see cref="ChemicalItem" /> instance.
 ///     Internal names keep the old <c>...Item</c> spelling; <see cref="ChemicalItem.LegacyNames" /> covers earlier names.
 /// </summary>
-public sealed class Solution : ICustomAutoload
+public sealed class SolventID : ICustomAutoload
 {
     /// <summary>Sprites are named after the item, in this folder.</summary>
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Alchemy/Solutions/";

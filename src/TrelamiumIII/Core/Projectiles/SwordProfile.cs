@@ -108,7 +108,7 @@ public readonly record struct SwordProfile
     /// <remarks>Holding the button, or pressing during a strike, continues the combo without this wait.</remarks>
     public int ComboWindow { get; init; }
 
-    /// <summary>How much melee attack speed shortens a strike, 0 to 1. Zero means unset.</summary>
+    /// <summary>How much the held item's use speed (attack speed, speed prefixes, use-speed hooks) scales a strike, 0 to 1. Zero means unset.</summary>
     /// <remarks>
     ///     Full is right for nearly everything -- the stat exists to make melee weapons swing
     ///     faster. Damping it is for a weapon whose timing is the point, where a player in full
@@ -188,9 +188,9 @@ public readonly record struct SwordProfile
 
     /// <summary>Ticks one pass of the whole combo takes, windups and recoveries included.</summary>
     /// <remarks>
-    ///     What an item's <c>useAnimation</c> wants to be set from, so the item's own clock keeps
-    ///     step with the weapon's rather than drifting against it. Attack speed is not in it -- this
-    ///     is the profile's own number, and vanilla scales the item's clock by the stat itself.
+    ///     What an item's <c>useAnimation</c> wants to be set from. Attack speed and prefixes are not in it:
+    ///     <see cref="HeldSword" /> scales every phase by the item's <c>useAnimation</c> against its type's
+    ///     default and by use speed, so the item's clock and the combo change together.
     /// </remarks>
     public int ComboPeriod
     {

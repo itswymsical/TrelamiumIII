@@ -13,7 +13,6 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 {
     public override bool CanDespawn => false;
 
-    public override bool Persistent => false;
     public override List<string> SetNPCNameList() => ["Silvian"];
 
     protected override void SetAppearanceDefaults()
@@ -35,9 +34,37 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
     public override float SpawnChance(NPCSpawnInfo spawnInfo)
     {
+        // He never despawns and persists with the world, so every extra spawn would be permanent.
+        if (NPC.AnyNPCs(Type))
+            return 0f;
+
         return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest &&
             !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
     }
+
+    public override void PostAI()
+    {
+        base.PostAI();
+
+        // Removes duplicates already saved into a world: only the lowest slot stays.
+        if (Main.netMode != NetmodeID.MultiplayerClient && HasLowerSlotDuplicate())
+            Despawn();
+    }
+
+    private bool HasLowerSlotDuplicate()
+    {
+        foreach (NPC other in Main.ActiveNPCs)
+        {
+            if (other.whoAmI >= NPC.whoAmI)
+                return false;
+
+            if (other.type == Type)
+                return true;
+        }
+
+        return false;
+    }
+
     public ChatEncounter GetEncounter(Player player)
     {
         if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == this.Type && j.State == JobState.Active))

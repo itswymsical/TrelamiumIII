@@ -8,7 +8,7 @@ namespace TrelamiumIII.Content.Alchemy.Reagents;
 ///     Conventional solutes (raw minerals, acid products, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
 ///     Internal names keep the old <c>...Item</c> spelling so saves and localisation keys still resolve.
 /// </summary>
-public sealed class Reagent : ICustomAutoload
+public sealed class SoluteID : ICustomAutoload
 {
     /// <summary>What a reagent draws while it has no sprite of its own, which is most of them.</summary>
     private static readonly string Placeholder = AssetReferences.Assets.Textures.PlaceholderSolute.KEY;
@@ -135,7 +135,7 @@ public sealed class Reagent : ICustomAutoload
             Principle = PrincipleType.Harmony,
             Hidden = false,
             Recipes = self => self.CreateRecipe(3)
-                .AddIngredient(Solution.Brine)
+                .AddIngredient(SolventID.Brine)
                 .AddTile(TileID.Furnaces)
                 .Register(),
         });
@@ -180,7 +180,7 @@ public sealed class Reagent : ICustomAutoload
         });
     }
 
-    /// <summary>Solutes produced by the acid solvents in <see cref="Solution" />.</summary>
+    /// <summary>Solutes produced by the acid solvents in <see cref="SolventID" />.</summary>
     private static void LoadAcidProducts(Mod mod)
     {
         SpiritOfSalt = Add(mod, new SoluteItem("SpiritOfSaltItem")

@@ -870,6 +870,10 @@ public abstract class FieldLayer
 
         spriteBatch.End();
 
+        // The effect is shared with draws that never set uAttrTex, and FNA binds a sampler parameter's texture on every
+        // pass Apply without an IsDisposed check. Held past Free(), it hands FNA3D a freed texture (access violation).
+        effect.Parameters["uAttrTex"]?.SetValue((Texture?)null);
+
         DrawOverlay(spriteBatch);
     }
 

@@ -5,7 +5,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-public sealed class AlchemyVariant
+public sealed class RecipeVariant
 {
     public ComponentMatcher[] Components { get; }
 
@@ -46,10 +46,10 @@ public sealed class AlchemyVariant
     public string? SuppressValidation { get; init; }
 
     /// <summary>
-    /// One input combination for a shared output (see <see cref="AlchemyRecipeRegistry.RegisterVariants"/>). A plain item type
+    /// One input combination for a shared output (see <see cref="AlchemyRecipes.CreateRecipe"/>). A plain item type
     /// requires potency 1; <c>ComponentMatcher.Of(type, 3)</c> requires potency 3.
     /// </summary>
-    public AlchemyVariant(params ComponentMatcher[] components)
+    public RecipeVariant(params ComponentMatcher[] components)
     {
         Components = components;
     }
@@ -117,8 +117,8 @@ public sealed class AlchemyResolution
     }
 }
 
-/// <summary>Central registry of alchemy recipes, added via <see cref="Register"/> or <see cref="RegisterVariants"/>.</summary>
-public static class AlchemyRecipeRegistry
+/// <summary>Central registry of alchemy recipes, added via <see cref="Register"/> or <see cref="CreateRecipe"/>.</summary>
+public static class AlchemyRecipes
 {
     private static readonly List<AlchemyRecipe> _recipes = new();
     private static readonly HashSet<int> _outputTypes = new();
@@ -141,10 +141,10 @@ public static class AlchemyRecipeRegistry
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
     /// <summary>Registers several input combinations that share one (input, output) target.</summary>
-    public static void RegisterVariants(
+    public static void CreateRecipe(
         int inputType,
         int outputType,
-        params AlchemyVariant[] variants)
+        params RecipeVariant[] variants)
     {
         foreach (var v in variants)
         {
@@ -319,7 +319,7 @@ public static class AlchemyRecipeRegistry
 }
 
 
-/// <summary>Item types referenced by <see cref="AlchemyRecipeRegistry"/>: every recipe input and component.</summary>
+/// <summary>Item types referenced by <see cref="AlchemyRecipes"/>: every recipe input and component.</summary>
 public static class AlchemyIngredients
 {
     private static HashSet<int> _substances;
@@ -363,7 +363,7 @@ public static class AlchemyIngredients
         var components = new HashSet<int>();
         var inputs = new HashSet<int>();
 
-        foreach (var recipe in AlchemyRecipeRegistry.All)
+        foreach (var recipe in AlchemyRecipes.All)
         {
             inputs.Add(recipe.InputType);
 
@@ -461,10 +461,10 @@ public sealed class AlchemyRecipe
     /// <summary>Builds the output from the composition of the slotted ingredients.</summary>
     public Func<BrewComposition, Item> CreateOutput { get; init; }
 
-    /// <inheritdoc cref="AlchemyVariant.ReturnsBottle" />
+    /// <inheritdoc cref="RecipeVariant.ReturnsBottle" />
     public bool? ReturnsBottleOverride { get; init; }
 
-    /// <inheritdoc cref="AlchemyVariant.SuppressValidation" />
+    /// <inheritdoc cref="RecipeVariant.SuppressValidation" />
     public string? SuppressValidation { get; init; }
 
     /// <summary>

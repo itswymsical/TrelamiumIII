@@ -6,7 +6,7 @@ public sealed class OilAmmoGlobalItem : GlobalItem
 {
     public override bool AppliesToEntity(Item item, bool lateInstantiation)
     {
-        return item.type == Solution.BottledOil;
+        return item.type == SolventID.BottledOil;
     }
     public override void SetDefaults(Item item)
     {

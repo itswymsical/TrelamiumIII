@@ -60,11 +60,11 @@ public static class ChemicalRoles
 
         // Before the recipes exist every answer would be "none", and AlchemyIngredients would cache
         // that emptiness too. Leave both caches alone until there is something to read.
-        if (AlchemyRecipeRegistry.All.Count == 0)
+        if (AlchemyRecipes.All.Count == 0)
             return ChemicalRole.None;
 
         bool input = AlchemyIngredients.IsInputType(itemType);
-        bool produced = AlchemyRecipeRegistry.Produces(itemType);
+        bool produced = AlchemyRecipes.Produces(itemType);
 
         role = (input || produced) && IsPotion(itemType) ? ChemicalRole.Solution
             : AlchemyIngredients.IsSubstanceType(itemType) ? ChemicalRole.Solute

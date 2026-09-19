@@ -138,6 +138,9 @@ public abstract class HeldSword(Projectile projectile)
 
     private float meleeScale = 1f;
 
+    /// <summary>Held item's use-animation scale as of this tick. See <see cref="UseTimeScale" />.</summary>
+    private float useTimeScale = 1f;
+
     // Owner-side input state.
     private bool useHeld;
     private bool strikeQueued;
@@ -211,7 +214,10 @@ public abstract class HeldSword(Projectile projectile)
         if (!initialized)
             Initialize(owner);
 
-        meleeScale = owner.GetAdjustedItemScale(owner.HeldItem);
+        Item held = owner.HeldItem;
+
+        meleeScale = owner.GetAdjustedItemScale(held);
+        useTimeScale = UseTimeScale(owner, held);
 
         FollowSyncedState(owner);
 
@@ -410,24 +416,39 @@ public abstract class HeldSword(Projectile projectile)
         SwingPhase.Swing => Ticks(profile.SwingTicks),
         SwingPhase.Recover => Ticks(profile.RecoverTicks),
 
-        // Scaled by attack speed only, so a fast step does not also shorten the window.
+        // Scaled by use speed only, so a fast step does not also shorten the window.
         _ => Math.Max(1, (int)MathF.Round(profile.ComboWindow * StatFactor)),
     };
 
     /// <summary>Progress through the phase, in (0, 1].</summary>
     private float Progress => MathHelper.Clamp(PhaseTimer / PhaseTicks, 0f, 1f);
 
-    private float StatFactor
-    {
-        get
-        {
-            float speed = MathHelper.Clamp(Owner.GetTotalAttackSpeed(DamageClass.Melee), 0.25f, 4f);
+    /// <summary>Multiplier on phase lengths: <see cref="useTimeScale" /> damped by <see cref="SwordProfile.SpeedInfluence" />.</summary>
+    private float StatFactor => MathHelper.Lerp(1f, useTimeScale, profile.SpeedInfluence);
 
-            return MathHelper.Lerp(1f, 1f / speed, profile.SpeedInfluence);
+    /// <summary>
+    ///     Held item's use-animation length relative to its type's default: speed prefixes (<c>useAnimation</c> against
+    ///     <see cref="ContentSamples.ItemsByType" />), use-animation and use-speed hooks, and attack speed of the projectile's
+    ///     damage class. <see cref="CombinedHooks.TotalAnimationTime" /> without its integer rounding.
+    /// </summary>
+    private float UseTimeScale(Player owner, Item item)
+    {
+        float animation = 1f;
+        float speed = owner.GetTotalAttackSpeed(Projectile.DamageType);
+
+        if (!item.IsAir)
+        {
+            if (ContentSamples.ItemsByType.TryGetValue(item.type, out Item? sample) && sample.useAnimation > 0)
+                animation = item.useAnimation / (float)sample.useAnimation;
+
+            animation *= PlayerLoader.UseAnimationMultiplier(owner, item) * ItemLoader.UseAnimationMultiplier(item, owner);
+            speed *= PlayerLoader.UseSpeedMultiplier(owner, item) * ItemLoader.UseSpeedMultiplier(item, owner);
         }
+
+        return MathHelper.Clamp(animation / Math.Max(speed, 0.01f), 0.25f, 4f);
     }
 
-    /// <summary>Phase length for the current step, with attack speed and step speed applied.</summary>
+    /// <summary>Phase length for the current step, with the item's use speed and step speed applied.</summary>
     private int Ticks(int ticks)
         => Math.Max(1, (int)MathF.Round(ticks * StatFactor / Math.Max(Step.SpeedScale, 0.05f)));
 

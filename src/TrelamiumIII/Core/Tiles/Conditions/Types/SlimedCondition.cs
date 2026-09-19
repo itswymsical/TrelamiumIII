@@ -160,8 +160,6 @@ public sealed class SlimedCondition : TileCondition
 
         instance.Life -= 6f * share;
 
-        if (instance.Life <= 0f)
-            TileConditionSystem.Apply<SoakedCondition>(instance.X, instance.Y, share, sync: false);
     }
 
     private static void SlimeDust(Vector2 position, Vector2 direction)

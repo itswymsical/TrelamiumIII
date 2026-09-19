@@ -45,11 +45,6 @@ public sealed class BurnedCondition : TileCondition
         if (!base.CanApplyTo(i, j))
             return false;
 
-        if (!TileConditionSystem.Has<SoakedCondition>(i, j))
-            return true;
-
-        TileConditionSystem.Remove<SoakedCondition>(i, j);
-
         if (!Main.dedServ)
             Steam(new Vector2(i * 16f + 8f, j * 16f + 8f), 2);
 
@@ -257,9 +252,6 @@ public sealed class BurnedCondition : TileCondition
 
         if (!Main.dedServ)
             Steam(instance.WorldCenter, 1);
-
-        if (instance.Life <= 0f)
-            TileConditionSystem.Apply<SoakedCondition>(instance.X, instance.Y, share, sync: false);
     }
 
     private static void Steam(Vector2 position, int count)

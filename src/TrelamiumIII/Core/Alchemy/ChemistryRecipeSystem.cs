@@ -6,6 +6,7 @@ using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 using TrelamiumIII.Content.Lodestone;
 using TrelamiumIII.Content.Rusted;
@@ -121,27 +122,27 @@ public class ChemistryRecipeSystem : ModSystem
             RegisterSpiritReforged();
         }
 
-        //if (ModLoader.TryGetMod("CalamityMod", out Mod calamityMod))
-        //{
-        //    RegisterCalamity();
-        //}
+        if (ModLoader.TryGetMod("CalamityMod", out Mod calamityMod))
+        {
+            RegisterCalamity();
+        }
         PopulateRecipeGroups();
     }
 
     private static void PopulateRecipeGroups()
     {
         AnyAcid.Add(
-            Solution.OilOfVitriol, Solution.AquaFortis,
-            Reagent.SpiritOfSalt, Solution.AquaRegia,
-            Reagent.BlueVitriol);
+            SolventID.OilOfVitriol, SolventID.AquaFortis,
+            SoluteID.SpiritOfSalt, SolventID.AquaRegia,
+            SoluteID.BlueVitriol);
 
         AnyAlkali.Add(
-            Reagent.SlakedLime, Reagent.CausticLye,
-            Reagent.Quicklime, Reagent.Potash);
+            SoluteID.SlakedLime, SoluteID.CausticLye,
+            SoluteID.Quicklime, SoluteID.Potash);
 
         AnyMineralSalt.Add(
-            Reagent.RockSalt, Reagent.Niter,
-            Reagent.FrigorificSalt);
+            SoluteID.RockSalt, SoluteID.Niter,
+            SoluteID.FrigorificSalt);
 
         Iron.Add(ItemID.IronOre, ItemID.LeadOre);
 
@@ -198,113 +199,129 @@ public class ChemistryRecipeSystem : ModSystem
             ItemID.SulphurButterfly, ItemID.TreeNymphButterfly, ItemID.UlyssesButterfly,
             ItemID.ZebraSwallowtailButterfly);
 
-        AnyBaseBottle.Add(ItemID.Bottle, ItemID.BottledWater, Solution.Inert);
+        AnyBaseBottle.Add(ItemID.Bottle, ItemID.BottledWater, SolventID.Inert);
 
         SpecularFishOrMoonglow.Add(ItemID.SpecularFish, ItemID.Moonglow);
     }
 
     private static void RegisterWeapons()
     {
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    Solution.BloodtoothExtract, 
-        //    ModContent.ItemType<CrimsonEffusionFlaskItem>(),
-        //    new AlchemyVariant(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 8 },
-        //    new AlchemyVariant(ItemID.Deathweed) { OutputStack = 4 });
+        AlchemyRecipes.CreateRecipe(
+            SolventID.BloodtoothExtract,
+            ModContent.ItemType<CrimsonEffusionFlaskItem>(),
+            new RecipeVariant(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 8 },
+            new RecipeVariant(ItemID.Deathweed) { OutputStack = 4 });
 
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    Solution.Dead,
-        //    ModContent.ItemType<CrimsonEffusionFlaskItem>(),
-        //    new AlchemyVariant(ItemID.ViciousPowder, ItemID.Deathweed, ModContent.ItemType<BloodtoothFungusItem>()) { OutputStack = 8 },
-        //    new AlchemyVariant(ItemID.Deathweed, ModContent.ItemType<BloodtoothFungusItem>()) { OutputStack = 4 },
-        //    new AlchemyVariant(ItemID.ViciousPowder, ModContent.ItemType<BloodtoothFungusItem>()) { OutputStack = 4 });
+        AlchemyRecipes.CreateRecipe(SolventID.Dead, ModContent.ItemType<CrimsonEffusionFlaskItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 2), ComponentMatcher.Of(ItemID.Deathweed, 2)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Deathweed, 2), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 2)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 2), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 2)) { OutputStack = 8 });
+        
+        AlchemyRecipes.CreateRecipe(SolventID.BloodtoothExtract, ModContent.ItemType<CrimsonEffusionFlaskItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 2), ComponentMatcher.Of(ItemID.Deathweed, 2)) { OutputStack = 12 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Deathweed, 2), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 2)) { OutputStack = 12 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 2), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 2)) { OutputStack = 12 });
 
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    Solution.Dead,
-        //    ModContent.ItemType<CorruptedSporeFlaskItem>(),
-        //    new AlchemyVariant(ItemID.VilePowder, ItemID.Deathweed) { OutputStack = 4, Potency = 1 },
-        //    new AlchemyVariant(ItemID.Deathweed, ItemID.RottenChunk) { OutputStack = 4, Potency = 1 },
-        //    new AlchemyVariant(ItemID.VilePowder, ItemID.RottenChunk, ItemID.Deathweed) { OutputStack = 8, Potency = 1 });
+        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, ModContent.ItemType<CrimsonEffusionFlaskItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 1), ComponentMatcher.Of(ItemID.Deathweed, 1)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Deathweed, 1), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 1)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.ViciousPowder, 1), ComponentMatcher.Of(ModContent.ItemType<BloodtoothFungusItem>(), 1)) { OutputStack = 8 });
 
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    Solution.BaneTonic,
-        //    ModContent.ItemType<CorruptedSporeFlaskItem>(),
-        //    new AlchemyVariant(ItemID.VilePowder, ItemID.Deathweed) { OutputStack = 8, Potency = 3 },
-        //    new AlchemyVariant(ItemID.Deathweed) { OutputStack = 4, Potency = 3});
+        AlchemyRecipes.CreateRecipe(SolventID.Dead, ModContent.ItemType<VilesporeFlaskItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 2), ComponentMatcher.Of(ItemID.Deathweed, 2)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 2), ComponentMatcher.Of(ItemID.RottenChunk, 2)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 2), ComponentMatcher.Of(ItemID.RottenChunk, 2)) { OutputStack = 8 });
 
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    ItemID.BottledWater,
-        //    ModContent.ItemType<HyperboreanFlaskItem>(),
-        //    new AlchemyVariant(ItemID.Shiverthorn, ItemID.CopperOre, ModContent.ItemType<MagnoliaItem>()) { OutputStack = 8 },
-        //    new AlchemyVariant(ItemID.Shiverthorn, ModContent.ItemType<MagnoliaItem>()) { OutputStack = 4 },
-        //    new AlchemyVariant(ItemID.Shiverthorn, ItemID.CopperOre) { OutputStack = 3 });
+        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, ModContent.ItemType<VilesporeFlaskItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 1), ComponentMatcher.Of(ItemID.Deathweed, 1)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 1), ComponentMatcher.Of(ItemID.RottenChunk, 1)) { OutputStack = 8 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VilePowder, 1), ComponentMatcher.Of(ItemID.RottenChunk, 1)) { OutputStack = 8 });
 
-        //AlchemyRecipeRegistry.RegisterVariants(
-        //    Solution.BottledOil,
-        //    ModContent.ItemType<ThermiteFlaskItem>(),
-        //    new AlchemyVariant(ItemID.Fireblossom, ModContent.ItemType<OxidizedIronItem>(), ModContent.ItemType<CharcoalItem>()) { OutputStack = 8 },
-        //    new AlchemyVariant(ItemID.Fireblossom, ModContent.ItemType<OxidizedIronItem>()) { OutputStack = 4 },
-        //    new AlchemyVariant(ItemID.Fireblossom, ModContent.ItemType<CharcoalItem>()) { OutputStack = 4 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ModContent.ItemType<HyperboreanFlaskItem>(),
+            new RecipeVariant(
+                ComponentMatcher.Of(ItemID.Shiverthorn, 2), 
+                ComponentMatcher.Of(ItemID.CopperOre, 1),
+                ComponentMatcher.Of(SoluteID.Niter, 2)) 
+            { OutputStack = 8 },
+
+            new RecipeVariant(
+                ComponentMatcher.Of(ItemID.ShiverthornSeeds, 2),
+                ComponentMatcher.Of(ItemID.CopperOre, 1),
+                ComponentMatcher.Of(SoluteID.Niter, 2)) 
+            { OutputStack = 8 });
+
+        AlchemyRecipes.CreateRecipe(SolventID.HarmoniousTonic, ModContent.ItemType<HyperboreanFlaskItem>(),
+            new RecipeVariant(
+                ComponentMatcher.Of(ItemID.Shiverthorn, 2),
+                ComponentMatcher.Of(SoluteID.Niter, 2))
+            { OutputStack = 8 },
+
+            new RecipeVariant(
+                ComponentMatcher.Of(ItemID.ShiverthornSeeds, 2),
+                ComponentMatcher.Of(SoluteID.Niter, 2))
+            { OutputStack = 8 });
     }
 
     /// <summary>
     /// Mineral refinement: acid solvents (<c>Solution</c>) and alkali/distillate solutes (<c>Reagent</c>). Star ratings live on
-    /// <see cref="AlmanacEntry.Potency"/>; <see cref="AlchemyVariant.Potency"/> brands buff potions and must stay 0 here.
+    /// <see cref="AlmanacEntry.Potency"/>; <see cref="RecipeVariant.Potency"/> brands buff potions and must stay 0 here.
     /// </summary>
     private static void RegisterMinerals()
     {
         #region Acids
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.OilOfVitriol,
-            new AlchemyVariant(
-                ComponentMatcher.Of(Reagent.Sulfur, 2),
-                Reagent.Niter));
+            outputType: SolventID.OilOfVitriol,
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.Sulfur, 2),
+                SoluteID.Niter));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.OilOfVitriol,
-            outputType: Solution.AquaFortis,
-            new AlchemyVariant(ComponentMatcher.Of(Reagent.Niter, 2)));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.OilOfVitriol,
+            outputType: SolventID.AquaFortis,
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.Niter, 2)));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.OilOfVitriol,
-            outputType: Reagent.SpiritOfSalt,
-            new AlchemyVariant(ComponentMatcher.Of(Reagent.RockSalt, 2)));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.OilOfVitriol,
+            outputType: SoluteID.SpiritOfSalt,
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.RockSalt, 2)));
 
         // The one that eats gold. Both of the strong acids, and nothing else.
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.AquaFortis,
-            outputType: Solution.AquaRegia,
-            new AlchemyVariant(Reagent.SpiritOfSalt));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.AquaFortis,
+            outputType: SolventID.AquaRegia,
+            new RecipeVariant(SoluteID.SpiritOfSalt));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.OilOfVitriol,
-            outputType: Reagent.BlueVitriol,
-            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<OxidizedCopperItem>(), 2)));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.OilOfVitriol,
+            outputType: SoluteID.BlueVitriol,
+            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<OxidizedCopperItem>(), 2)));
 
         #endregion
 
         #region Alkalis
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Reagent.SlakedLime,
-            new AlchemyVariant(ComponentMatcher.Of(Reagent.Quicklime, 2))
+            outputType: SoluteID.SlakedLime,
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.Quicklime, 2))
             { OutputStack = 2 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Reagent.CausticLye,
-            new AlchemyVariant(
-                ComponentMatcher.Of(Reagent.Potash, 2),
-                Reagent.Quicklime));
+            outputType: SoluteID.CausticLye,
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.Potash, 2),
+                SoluteID.Quicklime));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Reagent.FrigorificSalt,
-            new AlchemyVariant(
-                Reagent.Niter,
-                Reagent.RockSalt,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SoluteID.FrigorificSalt,
+            new RecipeVariant(
+                SoluteID.Niter,
+                SoluteID.RockSalt,
                 ComponentMatcher.Of(ItemID.IceBlock, 1)));
 
         #endregion
@@ -312,32 +329,32 @@ public class ChemistryRecipeSystem : ModSystem
         #region Distillates and powders
 
         // Oil distils into two outputs, registered as two recipes over the same solvent.
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BottledOil,
-            outputType: Reagent.SpiritOfOil,
-            new AlchemyVariant(ComponentMatcher.Of(ModContent.ItemType<CharcoalItem>(), 2)));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BottledOil,
+            outputType: SoluteID.SpiritOfOil,
+            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<CharcoalItem>(), 2)));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BottledOil,
-            outputType: Reagent.Pitch,
-            new AlchemyVariant(ComponentMatcher.Of(Solution.FibrousSlurry, 2))
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BottledOil,
+            outputType: SoluteID.Pitch,
+            new RecipeVariant(ComponentMatcher.Of(SolventID.FibrousSlurry, 2))
             { OutputStack = 2 });
 
         // Niter at maximum potency to one part fuel.
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Reagent.BlackPowder,
-            new AlchemyVariant(
-                ComponentMatcher.Of(Reagent.Niter, 5),
-                Reagent.Sulfur,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SoluteID.BlackPowder,
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.Niter, 5),
+                SoluteID.Sulfur,
                 ModContent.ItemType<CharcoalItem>())
             { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Reagent.ColdFire,
-            new AlchemyVariant(
-                ComponentMatcher.Of(Reagent.BoneAsh, 2),
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SoluteID.ColdFire,
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.BoneAsh, 2),
                 ModContent.ItemType<CharcoalItem>(),
                 ComponentMatcher.Of(ItemID.SandBlock, 1)));
 
@@ -346,141 +363,141 @@ public class ChemistryRecipeSystem : ModSystem
 
     private static void RegisterSolutions()
     {
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.Inert,
-            new AlchemyVariant(Mushroom));
+            outputType: SolventID.Inert,
+            new RecipeVariant(Mushroom));
 
         #region Inert-bases
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Solution.HarmoniousTonic,
-            new AlchemyVariant(ItemID.CopperOre),
-            new AlchemyVariant(ModContent.ItemType<OxidizedCopperItem>()));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SolventID.HarmoniousTonic,
+            new RecipeVariant(ItemID.CopperOre),
+            new RecipeVariant(ModContent.ItemType<OxidizedCopperItem>()));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.BriskTonic,
-            new AlchemyVariant(ModContent.ItemType<LodestoneItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ItemID.TinOre) { OutputStack = 2 });
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.BriskTonic,
+            new RecipeVariant(ModContent.ItemType<LodestoneItem>()) { OutputStack = 2 },
+            new RecipeVariant(ItemID.TinOre) { OutputStack = 2 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.VitalTonic,
-            new AlchemyVariant(ItemID.GoldOre));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.VitalTonic,
+            new RecipeVariant(ItemID.GoldOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Solution.SpecularTonic,
-            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SolventID.SpecularTonic,
+            new RecipeVariant(ItemID.SpecularFish) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.SpecularTonic,
-            new AlchemyVariant(ItemID.SilverOre),
-            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4});
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.SpecularTonic,
+            new RecipeVariant(ItemID.SilverOre),
+            new RecipeVariant(ItemID.SpecularFish) { OutputStack = 4});
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.MartialTonic,
-            new AlchemyVariant(ItemID.IronOre));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.MartialTonic,
+            new RecipeVariant(ItemID.IronOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.FortunateTonic,
-            new AlchemyVariant(ItemID.PlatinumOre) { OutputStack = 3 },
-            new AlchemyVariant(ItemID.TinOre));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.FortunateTonic,
+            new RecipeVariant(ItemID.PlatinumOre) { OutputStack = 3 },
+            new RecipeVariant(ItemID.TinOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
-            outputType: Solution.BaneTonic,
-            new AlchemyVariant(AnyEvilOre),
-            new AlchemyVariant(ItemID.LeadOre));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
+            outputType: SolventID.BaneTonic,
+            new RecipeVariant(AnyEvilOre),
+            new RecipeVariant(ItemID.LeadOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
-            outputType: Solution.Dead,
-            new AlchemyVariant(RottenChunkVertabrae));
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
+            outputType: SolventID.Dead,
+            new RecipeVariant(RottenChunkVertabrae));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert, 
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert, 
             outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+            new RecipeVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new RecipeVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new RecipeVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
             outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+            new RecipeVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new RecipeVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new RecipeVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
         #endregion
 
         #region Water-bases
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.HarmoniousTonic,
-            new AlchemyVariant(ItemID.CopperOre),
-            new AlchemyVariant(ModContent.ItemType<OxidizedCopperItem>()));
+            outputType: SolventID.HarmoniousTonic,
+            new RecipeVariant(ItemID.CopperOre),
+            new RecipeVariant(ModContent.ItemType<OxidizedCopperItem>()));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.BriskTonic,
-            new AlchemyVariant(ModContent.ItemType<LodestoneItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ItemID.TinOre) { OutputStack = 2 });
+            outputType: SolventID.BriskTonic,
+            new RecipeVariant(ModContent.ItemType<LodestoneItem>()) { OutputStack = 2 },
+            new RecipeVariant(ItemID.TinOre) { OutputStack = 2 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.VitalTonic,
-            new AlchemyVariant(ItemID.GoldOre));
+            outputType: SolventID.VitalTonic,
+            new RecipeVariant(ItemID.GoldOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.SpecularTonic,
-            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
+            outputType: SolventID.SpecularTonic,
+            new RecipeVariant(ItemID.SpecularFish) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.SpecularTonic,
-            new AlchemyVariant(ItemID.SilverOre),
-            new AlchemyVariant(ItemID.SpecularFish) { OutputStack = 4 });
+            outputType: SolventID.SpecularTonic,
+            new RecipeVariant(ItemID.SilverOre),
+            new RecipeVariant(ItemID.SpecularFish) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.MartialTonic,
-            new AlchemyVariant(ItemID.IronOre));
+            outputType: SolventID.MartialTonic,
+            new RecipeVariant(ItemID.IronOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.FortunateTonic,
-            new AlchemyVariant(ItemID.PlatinumOre) { OutputStack = 3 },
-            new AlchemyVariant(ItemID.TinOre));
+            outputType: SolventID.FortunateTonic,
+            new RecipeVariant(ItemID.PlatinumOre) { OutputStack = 3 },
+            new RecipeVariant(ItemID.TinOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.BaneTonic,
-            new AlchemyVariant(AnyEvilOre),
-            new AlchemyVariant(ItemID.LeadOre));
+            outputType: SolventID.BaneTonic,
+            new RecipeVariant(AnyEvilOre),
+            new RecipeVariant(ItemID.LeadOre));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
-            outputType: Solution.Dead,
-            new AlchemyVariant(RottenChunkVertabrae));
+            outputType: SolventID.Dead,
+            new RecipeVariant(RottenChunkVertabrae));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+            new RecipeVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new RecipeVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new RecipeVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ModContent.ItemType<MagnoliaSolutionItem>(),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
-            new AlchemyVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
-            new AlchemyVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
+            new RecipeVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
+            new RecipeVariant(ModContent.ItemType<MagnoliaSeedsItem>()),
+            new RecipeVariant(ModContent.ItemType<MagnoliaPowderItem>()) { OutputStack = 3 });
         #endregion
     }
 
@@ -490,26 +507,26 @@ public class ChemistryRecipeSystem : ModSystem
         // Actual Buff Potions
 
         #region Ironskin
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater, 
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(Iron, ItemID.Daybloom) { Potency = 1 });
+            new RecipeVariant(Iron, ItemID.Daybloom) { Potency = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(Iron, ItemID.Daybloom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(Iron, ItemID.Daybloom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.MartialTonic,
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(ItemID.Daybloom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) },
-            new AlchemyVariant(Iron, ItemID.Daybloom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 6) });
+            new RecipeVariant(ItemID.Daybloom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) },
+            new RecipeVariant(Iron, ItemID.Daybloom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 6) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(ItemID.DaybloomSeeds, Iron)
+            new RecipeVariant(ItemID.DaybloomSeeds, Iron)
             {
                 OutputStack = 4,
                 Potency = 2,
@@ -519,33 +536,33 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion  
 
         #region Swiftness
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 1 });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2, StrengthPercent = 115 },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Feather) { Potency = 2},
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus, ItemID.Feather) { Potency = 3 });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2, StrengthPercent = 115 },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Feather) { Potency = 2},
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Cactus, ItemID.Feather) { Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2 },
-            new AlchemyVariant(ItemID.Feather) { Potency = 1 },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Feather) { Potency = 3 },
-            new AlchemyVariant(ItemID.Cactus, ItemID.Blinkroot, ItemID.Feather) { OutputStack = 3, Potency = 5 },
-            new AlchemyVariant(ItemID.Sunflower) { OutputStack = 2, Potency = 1, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 7) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.Feather) { OutputStack = 2, Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.Blinkroot, ItemID.Feather) { OutputStack = 5, Potency = 5, StrengthPercent = 115, DurationTicks = TimeConversion.SetTime(mins: 4) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2 },
+            new RecipeVariant(ItemID.Feather) { Potency = 1 },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Feather) { Potency = 3 },
+            new RecipeVariant(ItemID.Cactus, ItemID.Blinkroot, ItemID.Feather) { OutputStack = 3, Potency = 5 },
+            new RecipeVariant(ItemID.Sunflower) { OutputStack = 2, Potency = 1, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 7) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.Feather) { OutputStack = 2, Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.Blinkroot, ItemID.Feather) { OutputStack = 5, Potency = 5, StrengthPercent = 115, DurationTicks = TimeConversion.SetTime(mins: 4) });
         
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.BlinkrootSeeds, ItemID.Cactus) 
+            new RecipeVariant(ItemID.BlinkrootSeeds, ItemID.Cactus) 
             { 
                 OutputStack = 4, 
                 Potency = 2, 
@@ -555,29 +572,29 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Regeneration
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.RegenerationPotion,
-            new AlchemyVariant(ItemID.Daybloom, Mushroom) { Potency = 1 });
+            new RecipeVariant(ItemID.Daybloom, Mushroom) { Potency = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.Inert,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.Inert,
             outputType: ItemID.RegenerationPotion,
-            new AlchemyVariant(ItemID.Daybloom, Mushroom) { Potency = 2 },
-            new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.Blinkroot) { Potency = 3 },
-            new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.GoldOre) { OutputStack = 2, Potency = 3, StrengthPercent = 130 });
+            new RecipeVariant(ItemID.Daybloom, Mushroom) { Potency = 2 },
+            new RecipeVariant(ItemID.Daybloom, Mushroom, ItemID.Blinkroot) { Potency = 3 },
+            new RecipeVariant(ItemID.Daybloom, Mushroom, ItemID.GoldOre) { OutputStack = 2, Potency = 3, StrengthPercent = 130 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.VitalTonic,
             outputType: ItemID.RegenerationPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Mushroom) { Potency = 3 },
-            new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.Blinkroot) { OutputStack = 2, Potency = 3 },
-            new AlchemyVariant(ItemID.Daybloom, Mushroom, ItemID.GoldOre) { OutputStack = 2, Potency = 4, StrengthPercent = 125, DurationTicks = TimeConversion.SetTime(mins: 7) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Mushroom) { Potency = 3 },
+            new RecipeVariant(ItemID.Daybloom, Mushroom, ItemID.Blinkroot) { OutputStack = 2, Potency = 3 },
+            new RecipeVariant(ItemID.Daybloom, Mushroom, ItemID.GoldOre) { OutputStack = 2, Potency = 4, StrengthPercent = 125, DurationTicks = TimeConversion.SetTime(mins: 7) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.RegenerationPotion,
-            new AlchemyVariant(ItemID.DaybloomSeeds, ItemID.Mushroom)
+            new RecipeVariant(ItemID.DaybloomSeeds, ItemID.Mushroom)
             {
                 OutputStack = 4,
                 Potency = 2,
@@ -588,98 +605,98 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Endurance
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.EndurancePotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish, Iron) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Daybloom, Iron) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish, Iron) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Daybloom, Iron) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.MartialTonic,
             outputType: ItemID.EndurancePotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish) { Potency = 2, StrengthPercent = 110, DurationTicks = TimeConversion.SetTime(mins: 4) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish, Iron) { Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Daybloom, Iron) { Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish) { Potency = 2, StrengthPercent = 110, DurationTicks = TimeConversion.SetTime(mins: 4) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.ArmoredCavefish, Iron) { Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Daybloom, Iron) { Potency = 3, StrengthPercent = 120, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) });
         #endregion
 
         #region Wrath
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.WrathPotion,
-            new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
-            new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VilePowder) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VileMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
+            new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
+            new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VilePowder) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VileMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
 
-            new AlchemyVariant(ItemID.EbonstoneBlock, ItemID.VileMushroom, ItemID.Deathweed)
+            new RecipeVariant(ItemID.EbonstoneBlock, ItemID.VileMushroom, ItemID.Deathweed)
             {
                 Potency = 1,
                 StrengthPercent = 50, // pre-hardmode version
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             },
-            new AlchemyVariant(ItemID.EbonstoneBlock, ItemID.VilePowder, ItemID.Deathweed)
+            new RecipeVariant(ItemID.EbonstoneBlock, ItemID.VilePowder, ItemID.Deathweed)
             {
                 Potency = 1,
                 StrengthPercent = 60, // pre-hardmode version
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-           inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+           inputType: SolventID.MartialTonic,
            outputType: ItemID.WrathPotion,
-           new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4) },
-           new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VilePowder) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
-           new AlchemyVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VileMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
+           new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4) },
+           new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VilePowder) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
+           new RecipeVariant(ItemID.Ebonkoi, ItemID.Deathweed, ItemID.VileMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
 
         #endregion
 
         #region Rage
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.RagePotion,
-            new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
-            new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousPowder) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
+            new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) },
+            new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousPowder) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
 
-            new AlchemyVariant(ItemID.CrimstoneBlock, ItemID.ViciousMushroom, ItemID.Deathweed)
+            new RecipeVariant(ItemID.CrimstoneBlock, ItemID.ViciousMushroom, ItemID.Deathweed)
             {
                 Potency = 1,
                 StrengthPercent = 50, // pre-hardmode version
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             },
-            new AlchemyVariant(ItemID.CrimstoneBlock, ItemID.ViciousPowder, ItemID.Deathweed)
+            new RecipeVariant(ItemID.CrimstoneBlock, ItemID.ViciousPowder, ItemID.Deathweed)
             {
                 Potency = 1,
                 StrengthPercent = 60, // pre-hardmode version
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-           inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+           inputType: SolventID.MartialTonic,
            outputType: ItemID.RagePotion,
-           new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4) },
-           new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousPowder) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
-           new AlchemyVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
+           new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 4) },
+           new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousPowder) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) },
+           new RecipeVariant(ItemID.Hemopiranha, ItemID.Deathweed, ItemID.ViciousMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45) });
 
         #endregion
 
         #region Archery
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.ArcheryPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Lens) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Lens) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
         #endregion
 
         #region Battle
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.BattlePotion,
-            new AlchemyVariant(ItemID.Deathweed, RottenChunkVertabrae) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 7) });
+            new RecipeVariant(ItemID.Deathweed, RottenChunkVertabrae) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 7) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.BattlePotion,
-            new AlchemyVariant(RottenChunkVertabrae, ItemID.DeathweedSeeds)
+            new RecipeVariant(RottenChunkVertabrae, ItemID.DeathweedSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -688,15 +705,15 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Ammo Reservation
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.AmmoReservationPotion,
-            new AlchemyVariant(ItemID.DoubleCod, ItemID.Moonglow) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.DoubleCod, ItemID.Moonglow) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.AmmoReservationPotion,
-            new AlchemyVariant(ItemID.DoubleCod, ItemID.MoonglowSeeds)
+            new RecipeVariant(ItemID.DoubleCod, ItemID.MoonglowSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -705,15 +722,15 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Heartreach
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.HeartreachPotion,
-            new AlchemyVariant(ItemID.CrimsonTigerfish, ItemID.Daybloom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.CrimsonTigerfish, ItemID.Daybloom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.HeartreachPotion,
-            new AlchemyVariant(ItemID.CrimsonTigerfish, ItemID.DaybloomSeeds) { 
+            new RecipeVariant(ItemID.CrimsonTigerfish, ItemID.DaybloomSeeds) { 
                 Potency = 1,
                 StrengthPercent = 75,
                 DurationTicks = TimeConversion.SetTime(mins: 10) 
@@ -721,15 +738,15 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Inferno
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.InfernoPotion,
-            new AlchemyVariant(ItemID.FlarefinKoi, ItemID.Obsidifish, ItemID.Fireblossom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) });
+            new RecipeVariant(ItemID.FlarefinKoi, ItemID.Obsidifish, ItemID.Fireblossom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 4) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.InfernoPotion,
-            new AlchemyVariant(ItemID.FlarefinKoi, ItemID.Obsidifish, ItemID.FireblossomSeeds)
+            new RecipeVariant(ItemID.FlarefinKoi, ItemID.Obsidifish, ItemID.FireblossomSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -738,29 +755,29 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Lifeforce
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.LifeforcePotion,
-            new AlchemyVariant(ItemID.Prismite, ItemID.Moonglow, ItemID.Shiverthorn) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) },
-            new AlchemyVariant(ItemID.Prismite, ItemID.Waterleaf, ItemID.Shiverthorn) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) },
-            new AlchemyVariant(ItemID.Prismite, ItemID.Moonglow, ItemID.Waterleaf) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.Prismite, ItemID.Moonglow, ItemID.Shiverthorn) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) },
+            new RecipeVariant(ItemID.Prismite, ItemID.Waterleaf, ItemID.Shiverthorn) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) },
+            new RecipeVariant(ItemID.Prismite, ItemID.Moonglow, ItemID.Waterleaf) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.LifeforcePotion,
-            new AlchemyVariant(ItemID.Prismite, ItemID.MoonglowSeeds, ItemID.ShiverthornSeeds)
+            new RecipeVariant(ItemID.Prismite, ItemID.MoonglowSeeds, ItemID.ShiverthornSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             },
-            new AlchemyVariant(ItemID.Prismite, ItemID.MoonglowSeeds, ItemID.WaterleafSeeds)
+            new RecipeVariant(ItemID.Prismite, ItemID.MoonglowSeeds, ItemID.WaterleafSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             },
-            new AlchemyVariant(ItemID.Prismite, ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds)
+            new RecipeVariant(ItemID.Prismite, ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -769,25 +786,25 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Thorns
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.ThornsPotion,
-            new AlchemyVariant(ItemID.Deathweed, ItemID.Cactus) { Potency = 1, StrengthPercent = 100, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.Deathweed, ItemID.Cactus) { Potency = 1, StrengthPercent = 100, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.MartialTonic,
             outputType: ItemID.ThornsPotion,
-            new AlchemyVariant(ItemID.Deathweed, ItemID.Cactus) 
+            new RecipeVariant(ItemID.Deathweed, ItemID.Cactus) 
             { 
                 Potency = 1, 
                 StrengthPercent = 110, 
                 DurationTicks = TimeConversion.SetTime(mins: 8) 
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.ThornsPotion,
-            new AlchemyVariant(ItemID.DeathweedSeeds, ItemID.Cactus)
+            new RecipeVariant(ItemID.DeathweedSeeds, ItemID.Cactus)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -796,48 +813,48 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Titan
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.TitanPotion,
-            new AlchemyVariant(ItemID.Bone, ItemID.Deathweed, ItemID.Shiverthorn) 
+            new RecipeVariant(ItemID.Bone, ItemID.Deathweed, ItemID.Shiverthorn) 
             { 
                 Potency = 1, 
                 StrengthPercent = 100, 
                 DurationTicks = TimeConversion.SetTime(mins: 8) 
             },
-            new AlchemyVariant(ItemID.IronOre, ItemID.Deathweed, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.IronOre, ItemID.Deathweed, ItemID.Shiverthorn)
             {
                 Potency = 1,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.MartialTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.MartialTonic,
             outputType: ItemID.TitanPotion,
-            new AlchemyVariant(ItemID.Bone, ItemID.Deathweed, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.Bone, ItemID.Deathweed, ItemID.Shiverthorn)
             {
                 Potency = 2,
                 StrengthPercent = 110,
                 DurationTicks = TimeConversion.SetTime(mins: 8)
             },
-            new AlchemyVariant(ItemID.IronOre, ItemID.Deathweed, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.IronOre, ItemID.Deathweed, ItemID.Shiverthorn)
             {
                 Potency = 2,
                 StrengthPercent = 110,
                 DurationTicks = TimeConversion.SetTime(mins: 6, secs: 30)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.TitanPotion,
-            new AlchemyVariant(ItemID.Bone, ItemID.DeathweedSeeds, ItemID.ShiverthornSeeds)
+            new RecipeVariant(ItemID.Bone, ItemID.DeathweedSeeds, ItemID.ShiverthornSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 85,
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             },
-            new AlchemyVariant(ItemID.IronOre, ItemID.DeathweedSeeds, ItemID.ShiverthornSeeds)
+            new RecipeVariant(ItemID.IronOre, ItemID.DeathweedSeeds, ItemID.ShiverthornSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 75,
@@ -848,15 +865,15 @@ public class ChemistryRecipeSystem : ModSystem
         // Utility Potions
 
         #region Restoration & Healing
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.VitalTonic,
             outputType: ItemID.RestorationPotion,
-            new AlchemyVariant(ItemID.Daybloom) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
+            new RecipeVariant(ItemID.Daybloom) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.RestorationPotion,
             outputType: ItemID.RestorationPotion,
-            new AlchemyVariant(Mushroom, ItemID.Daybloom) 
+            new RecipeVariant(Mushroom, ItemID.Daybloom) 
             { 
                 OutputStack = 1, 
                 Potency = 3, 
@@ -864,43 +881,43 @@ public class ChemistryRecipeSystem : ModSystem
                 Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20)) 
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.Bottle,
             outputType: ItemID.LesserHealingPotion,
-            new AlchemyVariant(Mushroom, ItemID.Gel) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
+            new RecipeVariant(Mushroom, ItemID.Gel) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.VitalTonic,
             outputType: ItemID.LesserHealingPotion,
-            new AlchemyVariant(Mushroom) { OutputStack = 4, Potency = 1, StrengthPercent = 100 },
-            new AlchemyVariant(Mushroom, ItemID.Gel) { OutputStack = 4, Potency = 2, StrengthPercent = 107 });
+            new RecipeVariant(Mushroom) { OutputStack = 4, Potency = 1, StrengthPercent = 100 },
+            new RecipeVariant(Mushroom, ItemID.Gel) { OutputStack = 4, Potency = 2, StrengthPercent = 107 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.LesserHealingPotion,
             outputType: ItemID.LesserHealingPotion,
-            new AlchemyVariant(ItemID.Daybloom) 
+            new RecipeVariant(ItemID.Daybloom) 
             { 
                 OutputStack = 2, 
                 Potency = 1, 
                 StrengthPercent = 100,
                 Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20))
             },
-            new AlchemyVariant(ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Blinkroot)
             {
                 OutputStack = 2,
                 Potency = 2,
                 StrengthPercent = 120
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.LesserHealingPotion,
             outputType: ItemID.HealingPotion,
-            new AlchemyVariant(ItemID.GlowingMushroom) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
+            new RecipeVariant(ItemID.GlowingMushroom) { OutputStack = 2, Potency = 1, StrengthPercent = 100 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.HealingPotion,
             outputType: ItemID.HealingPotion,
-            new AlchemyVariant(ItemID.Daybloom) 
+            new RecipeVariant(ItemID.Daybloom) 
             { 
                 OutputStack = 2, 
                 Potency = 1, 
@@ -908,10 +925,10 @@ public class ChemistryRecipeSystem : ModSystem
                 Augment = b => b.Add(BuffID.Regeneration, potency: 2, durationTicks: TimeConversion.SetTime(secs: 20))
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.HealingPotion,
             outputType: ItemID.HealingPotion,
-            new AlchemyVariant(ItemID.Daybloom)
+            new RecipeVariant(ItemID.Daybloom)
             {
                 OutputStack = 2,
                 Potency = 1,
@@ -921,40 +938,40 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Mining
-        AlchemyRecipeRegistry.RegisterVariants(ItemID.BottledWater, ItemID.MiningPotion,
-            new AlchemyVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
-            new AlchemyVariant(Silver, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105 },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 12) });
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.MiningPotion,
+            new RecipeVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
+            new RecipeVariant(Silver, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105 },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 12) });
 
-        AlchemyRecipeRegistry.RegisterVariants(Solution.BriskTonic, ItemID.MiningPotion,
-            new AlchemyVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 3, StrengthPercent = 111, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Blinkroot) { OutputStack = 2, Potency = 2, StrengthPercent = 100, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 4, StrengthPercent = 124, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) },
-            new AlchemyVariant(Silver, ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = TimeConversion.SetTime(mins: 4) });
+        AlchemyRecipes.CreateRecipe(SolventID.BriskTonic, ItemID.MiningPotion,
+            new RecipeVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 3, StrengthPercent = 111, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Blinkroot) { OutputStack = 2, Potency = 2, StrengthPercent = 100, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 4, StrengthPercent = 124, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) },
+            new RecipeVariant(Silver, ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = TimeConversion.SetTime(mins: 4) });
 
-        AlchemyRecipeRegistry.RegisterVariants(ModContent.ItemType<MagnoliaSolutionItem>(), ItemID.MiningPotion,
-            new AlchemyVariant(ItemID.BlinkrootSeeds, Silver) { OutputStack = 4, Potency = 2, StrengthPercent = 95, DurationTicks = TimeConversion.SetTime(mins: 10) });     
+        AlchemyRecipes.CreateRecipe(ModContent.ItemType<MagnoliaSolutionItem>(), ItemID.MiningPotion,
+            new RecipeVariant(ItemID.BlinkrootSeeds, Silver) { OutputStack = 4, Potency = 2, StrengthPercent = 95, DurationTicks = TimeConversion.SetTime(mins: 10) });     
         #endregion
 
         #region Builder
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.BuilderPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow) { 
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow) { 
                 OutputStack = 1, 
                 Potency = 1, 
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 45)
             },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.TinOre, ItemID.Moonglow)
+            new RecipeVariant(ItemID.Blinkroot, ItemID.TinOre, ItemID.Moonglow)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 125,
                 DurationTicks = TimeConversion.SetTime(mins: 45)
             },
-            new AlchemyVariant(ItemID.Blinkroot, ModContent.ItemType<LodestoneItem>(), ItemID.Moonglow)
+            new RecipeVariant(ItemID.Blinkroot, ModContent.ItemType<LodestoneItem>(), ItemID.Moonglow)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -962,24 +979,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 40)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.BuilderPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow)
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 150,
                 DurationTicks = TimeConversion.SetTime(mins: 45)
             },
-            new AlchemyVariant(ItemID.Blinkroot, ModContent.ItemType<LodestoneItem>(), ItemID.Moonglow)
+            new RecipeVariant(ItemID.Blinkroot, ModContent.ItemType<LodestoneItem>(), ItemID.Moonglow)
             {
                 OutputStack = 1,
                 Potency = 5,
                 StrengthPercent = 225,
                 DurationTicks = TimeConversion.SetTime(mins: 8)
             },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.TinOre, ItemID.Moonglow)
+            new RecipeVariant(ItemID.Blinkroot, ItemID.TinOre, ItemID.Moonglow)
             {
             OutputStack = 1,
             Potency = 4,
@@ -987,17 +1004,17 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(mins: 30)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.BuilderPotion,
-            new AlchemyVariant(ItemID.BlinkrootSeeds, ItemID.TinOre, ItemID.MoonglowSeeds)
+            new RecipeVariant(ItemID.BlinkrootSeeds, ItemID.TinOre, ItemID.MoonglowSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 80,
                 DurationTicks = TimeConversion.SetTime(mins: 60)
             },
-            new AlchemyVariant(ItemID.BlinkrootSeeds, ModContent.ItemType<LodestoneItem>(), ItemID.MoonglowSeeds)
+            new RecipeVariant(ItemID.BlinkrootSeeds, ModContent.ItemType<LodestoneItem>(), ItemID.MoonglowSeeds)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1007,24 +1024,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Gills
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.GillsPotion,
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Coral)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Seashell)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 105,
                 DurationTicks = TimeConversion.SetTime(mins: 4, secs: 30)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Coral, ItemID.Seashell)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Coral, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1033,17 +1050,17 @@ public class ChemistryRecipeSystem : ModSystem
             });
 
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.GillsPotion,
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.Coral)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 80,
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.Seashell)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1053,24 +1070,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Flipper
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.FlipperPotion,
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Shiverthorn)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 8)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Shiverthorn, ItemID.Seashell)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Shiverthorn, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 115,
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Shiverthorn, ItemID.Coral)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Shiverthorn, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1078,24 +1095,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.FlipperPotion,
-            new AlchemyVariant(ItemID.ShiverthornSeeds, ItemID.WaterleafSeeds)
+            new RecipeVariant(ItemID.ShiverthornSeeds, ItemID.WaterleafSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 80,
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds, ItemID.Seashell)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds, ItemID.Coral)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.ShiverthornSeeds, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1103,22 +1120,22 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.FlipperPotion,
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Waterleaf)
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Waterleaf)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 12)
             },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Waterleaf, ItemID.Seashell)
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Waterleaf, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 15)
             },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Waterleaf, ItemID.Coral)
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Waterleaf, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1127,24 +1144,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Water Walking
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.WaterWalkingPotion,
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.SharkFin)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.SharkFin)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Seashell)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Coral)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1152,24 +1169,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.WaterWalkingPotion,
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.SharkFin)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.SharkFin)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 80,
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.Seashell)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.Coral)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1177,22 +1194,22 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.WaterWalkingPotion,
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.SharkFin)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.SharkFin)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 14)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Seashell)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 12)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Coral)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1201,24 +1218,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Calming
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.CalmingPotion,
-            new AlchemyVariant(ItemID.Damselfish, ItemID.Daybloom)
+            new RecipeVariant(ItemID.Damselfish, ItemID.Daybloom)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 12)
             },
-            new AlchemyVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Seashell)
+            new RecipeVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 115,
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             },
-            new AlchemyVariant(ItemID.Waterleaf, ItemID.Daybloom, ItemID.Coral)
+            new RecipeVariant(ItemID.Waterleaf, ItemID.Daybloom, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1226,24 +1243,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.CalmingPotion,
-            new AlchemyVariant(ItemID.Damselfish, ItemID.DaybloomSeeds)
+            new RecipeVariant(ItemID.Damselfish, ItemID.DaybloomSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 80,
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             },
-            new AlchemyVariant(ItemID.Damselfish, ItemID.DaybloomSeeds, ItemID.Seashell)
+            new RecipeVariant(ItemID.Damselfish, ItemID.DaybloomSeeds, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             },
-            new AlchemyVariant(ItemID.WaterleafSeeds, ItemID.DaybloomSeeds, ItemID.Coral)
+            new RecipeVariant(ItemID.WaterleafSeeds, ItemID.DaybloomSeeds, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1251,22 +1268,22 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.HarmoniousTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.HarmoniousTonic,
             outputType: ItemID.CalmingPotion,
-            new AlchemyVariant(ItemID.Damselfish, ItemID.Daybloom)
+            new RecipeVariant(ItemID.Damselfish, ItemID.Daybloom)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 12)
             },
-            new AlchemyVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Seashell)
+            new RecipeVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Seashell)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 15)
             },
-            new AlchemyVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Coral)
+            new RecipeVariant(ItemID.Damselfish, ItemID.Daybloom, ItemID.Coral)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1275,10 +1292,10 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Featherfall
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.FeatherfallPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Feather, ItemID.Daybloom)
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Feather, ItemID.Daybloom)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1286,10 +1303,10 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.FeatherfallPotion,
-            new AlchemyVariant(ItemID.Feather, ItemID.DaybloomSeeds, ItemID.BlinkrootSeeds)
+            new RecipeVariant(ItemID.Feather, ItemID.DaybloomSeeds, ItemID.BlinkrootSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1297,10 +1314,10 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 7)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.FeatherfallPotion,
-            new AlchemyVariant(ItemID.Feather, ItemID.Daybloom, ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Feather, ItemID.Daybloom, ItemID.Blinkroot)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1309,17 +1326,17 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Warmth
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.WarmthPotion,
-            new AlchemyVariant(ItemID.FrostMinnow, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.FrostMinnow, ItemID.Shiverthorn)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 15)
             },
-            new AlchemyVariant(ItemID.FrostMinnow, ItemID.Fireblossom)
+            new RecipeVariant(ItemID.FrostMinnow, ItemID.Fireblossom)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1327,10 +1344,10 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 20)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.WarmthPotion,
-            new AlchemyVariant(ItemID.FrostMinnow, ItemID.ShiverthornSeeds)
+            new RecipeVariant(ItemID.FrostMinnow, ItemID.ShiverthornSeeds)
             {
                 OutputStack = 1,
                 Potency = 1,
@@ -1338,16 +1355,16 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 10)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.VitalTonic,
             outputType: ItemID.WarmthPotion,
-            new AlchemyVariant(ItemID.FrostMinnow, ItemID.Shiverthorn)
+            new RecipeVariant(ItemID.FrostMinnow, ItemID.Shiverthorn)
             {
                 OutputStack = 1,
                 Potency = 3,
                 DurationTicks = TimeConversion.SetTime(mins: 18)
             },
-            new AlchemyVariant(ItemID.FrostMinnow, ItemID.Fireblossom)
+            new RecipeVariant(ItemID.FrostMinnow, ItemID.Fireblossom)
             {
                 OutputStack = 1,
                 Potency = 3,
@@ -1357,64 +1374,64 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Obsidian Skin
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.ObsidianSkinPotion,
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 6)
         },
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 4, secs: 45)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.HarmoniousTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.HarmoniousTonic,
         outputType: ItemID.ObsidianSkinPotion,
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
         {
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 8)
         },
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
         {
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 6, secs: 30)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
         outputType: ItemID.ObsidianSkinPotion,
-        new AlchemyVariant(ItemID.Obsidian, ItemID.WaterleafSeeds, ItemID.FireblossomSeeds)
+        new RecipeVariant(ItemID.Obsidian, ItemID.WaterleafSeeds, ItemID.FireblossomSeeds)
         {
             Potency = 1,
             StrengthPercent = 90,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(ItemID.Obsidian, ItemID.ShiverthornSeeds, ItemID.FireblossomSeeds)
+        new RecipeVariant(ItemID.Obsidian, ItemID.ShiverthornSeeds, ItemID.FireblossomSeeds)
         {
             Potency = 1,
             StrengthPercent = 90,
             DurationTicks = TimeConversion.SetTime(mins: 4, secs: 30)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.BottledOil,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.BottledOil,
         outputType: ItemID.ObsidianSkinPotion,
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian)
         {
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 12)
         },
-        new AlchemyVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
+        new RecipeVariant(ItemID.Fireblossom, ItemID.Shiverthorn, ItemID.Obsidian)
         {
             Potency = 2,
             StrengthPercent = 100,
@@ -1423,24 +1440,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Gravitation
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.GravitationPotion,
-            new AlchemyVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Deathweed)
+            new RecipeVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Deathweed)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 3)
             },
-            new AlchemyVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Blinkroot)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             },
-            new AlchemyVariant(ItemID.Deathweed, ItemID.Feather, ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Deathweed, ItemID.Feather, ItemID.Blinkroot)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1448,24 +1465,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 4)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.GravitationPotion,
-            new AlchemyVariant(ItemID.Feather, ItemID.DeathweedSeeds, ItemID.BlinkrootSeeds)
+            new RecipeVariant(ItemID.Feather, ItemID.DeathweedSeeds, ItemID.BlinkrootSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 3)
             },
-            new AlchemyVariant(ItemID.Feather, ItemID.FireblossomSeeds, ItemID.BlinkrootSeeds)
+            new RecipeVariant(ItemID.Feather, ItemID.FireblossomSeeds, ItemID.BlinkrootSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 3)
             },
-            new AlchemyVariant(ItemID.Feather, ItemID.DeathweedSeeds, ItemID.FireblossomSeeds)
+            new RecipeVariant(ItemID.Feather, ItemID.DeathweedSeeds, ItemID.FireblossomSeeds)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1473,24 +1490,24 @@ public class ChemistryRecipeSystem : ModSystem
                 DurationTicks = TimeConversion.SetTime(mins: 3)
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.BriskTonic,
             outputType: ItemID.GravitationPotion,
-            new AlchemyVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Deathweed)
+            new RecipeVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Deathweed)
             {
                 OutputStack = 1,
                 Potency = 1,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 5)
             },
-            new AlchemyVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Fireblossom, ItemID.Feather, ItemID.Blinkroot)
             {
                 OutputStack = 1,
                 Potency = 2,
                 StrengthPercent = 100,
                 DurationTicks = TimeConversion.SetTime(mins: 6)
             },
-            new AlchemyVariant(ItemID.Deathweed, ItemID.Feather, ItemID.Blinkroot)
+            new RecipeVariant(ItemID.Deathweed, ItemID.Feather, ItemID.Blinkroot)
             {
                 OutputStack = 1,
                 Potency = 2,
@@ -1502,159 +1519,159 @@ public class ChemistryRecipeSystem : ModSystem
         // Visual Potions
 
         #region Dangersense
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.TrapsightPotion,
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.DartTrap) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.Lens) { Potency = 3 });
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.DartTrap) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.Lens) { Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.TrapsightPotion,
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.DartTrap) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
-            new AlchemyVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.Lens) { Potency = 5 });
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.DartTrap) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
+            new RecipeVariant(ItemID.Shiverthorn, ItemID.Cobweb, ItemID.Lens) { Potency = 5 });
         #endregion
 
         #region Hunter
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.HunterPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.DartTrap) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.Lens) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.DartTrap) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.Lens) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 8) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.HunterPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.DartTrap) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 9, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.Lens) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 10) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.DartTrap) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 9, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot, ItemID.Lens) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 10) });
         #endregion
 
         #region Shine
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.ShinePotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 10, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 10, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.ShinePotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 12) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 20) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 12) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.GlowingMushroom) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 20) });
 
         #endregion
 
         #region Spelunker
 
-        AlchemyRecipeRegistry.RegisterVariants(ItemID.BottledWater, ItemID.SpelunkerPotion,
-            new AlchemyVariant(Gold, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
-            new AlchemyVariant(Gold, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 4, StrengthPercent = 115 },
-            new AlchemyVariant(ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 12) });
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.SpelunkerPotion,
+            new RecipeVariant(Gold, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
+            new RecipeVariant(Gold, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 4, StrengthPercent = 115 },
+            new RecipeVariant(ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 12) });
 
-        AlchemyRecipeRegistry.RegisterVariants(Solution.SpecularTonic, ItemID.SpelunkerPotion,
-            new AlchemyVariant(Gold, ItemID.Blinkroot) { OutputStack = 2, Potency = 3, StrengthPercent = 110 },
-            new AlchemyVariant(ItemID.Blinkroot) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 3, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 9) },
-            new AlchemyVariant(Gold, ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = TimeConversion.SetTime(mins: 4) });
+        AlchemyRecipes.CreateRecipe(SolventID.SpecularTonic, ItemID.SpelunkerPotion,
+            new RecipeVariant(Gold, ItemID.Blinkroot) { OutputStack = 2, Potency = 3, StrengthPercent = 110 },
+            new RecipeVariant(ItemID.Blinkroot) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 3, StrengthPercent = 105, DurationTicks = TimeConversion.SetTime(mins: 9) },
+            new RecipeVariant(Gold, ItemID.Blinkroot, SpecularFishOrMoonglow) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = TimeConversion.SetTime(mins: 4) });
 
         #endregion
 
         #region Night Owl
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.NightOwlPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 10) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.Blinkroot) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 10, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.Blinkroot) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 10) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.Blinkroot) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 10, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.Blinkroot) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.NightOwlPotion,
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 12) },
-            new AlchemyVariant(ItemID.Sunflower, ItemID.Blinkroot) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15, secs: 30) },
-            new AlchemyVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.Blinkroot) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 20) });
+            new RecipeVariant(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 12) },
+            new RecipeVariant(ItemID.Sunflower, ItemID.Blinkroot) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 15, secs: 30) },
+            new RecipeVariant(ItemID.Daybloom, ItemID.Sunflower, ItemID.Blinkroot) { Potency = 4, DurationTicks = TimeConversion.SetTime(mins: 20) });
 
         #endregion
 
         #region Invisibilty
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.InvisibilityPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 3) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.Worm) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 3) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.Worm) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.InvisibilityPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.Worm) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 6) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.Worm) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) });
         #endregion
 
         #region Biome Sight
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.BiomeSightPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.GrassSeeds) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Fireblossom, ItemID.GrassSeeds) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.GrassSeeds) { Potency = 1, DurationTicks = TimeConversion.SetTime(mins: 5) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Fireblossom, ItemID.GrassSeeds) { Potency = 2, DurationTicks = TimeConversion.SetTime(mins: 5, secs: 30) });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+            inputType: SolventID.SpecularTonic,
             outputType: ItemID.BiomeSightPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.GrassSeeds) 
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Moonglow, ItemID.GrassSeeds) 
             { 
                 Potency = 2, 
                 DurationTicks = TimeConversion.SetTime(mins: 8) 
             },
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Fireblossom, ItemID.GrassSeeds) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Fireblossom, ItemID.GrassSeeds) { Potency = 3, DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30) });
         #endregion
 
         // Fishing Potions
 
         #region Sonar
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.SonarPotion,
-        new AlchemyVariant(ItemID.SpecularFish, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.SpecularFish, ItemID.Waterleaf)
         {
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 8, secs: 30)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.SpecularTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.SpecularTonic,
         outputType: ItemID.SonarPotion,
-        new AlchemyVariant(ItemID.Coral, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.Coral, ItemID.Waterleaf)
         {
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 8)
         },
-        new AlchemyVariant(ItemID.SpecularFish, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.SpecularFish, ItemID.Waterleaf)
         {
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
         outputType: ItemID.SonarPotion,
-        new AlchemyVariant(ItemID.Coral, ItemID.WaterleafSeeds)
+        new RecipeVariant(ItemID.Coral, ItemID.WaterleafSeeds)
         {
             Potency = 1,
             StrengthPercent = 90,
             DurationTicks = TimeConversion.SetTime(mins: 11)
         },
-        new AlchemyVariant(ItemID.SpecularFish, ItemID.WaterleafSeeds)
+        new RecipeVariant(ItemID.SpecularFish, ItemID.WaterleafSeeds)
         {
             Potency = 1,
             StrengthPercent = 90,
@@ -1663,60 +1680,60 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Fishing
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.FishingPotion,
-        new AlchemyVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 8)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.FortunateTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.FortunateTonic,
         outputType: ItemID.FishingPotion,
-        new AlchemyVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf)
         {
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 8)
         },
-        new AlchemyVariant(ItemID.Worm, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.Worm, ItemID.Waterleaf)
         {
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 7, secs: 30)
         },
-        new AlchemyVariant(ItemID.EnchantedNightcrawler, ItemID.Waterleaf)
+        new RecipeVariant(ItemID.EnchantedNightcrawler, ItemID.Waterleaf)
         {
             Potency = 4,
             StrengthPercent = 130,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf, ItemID.Worm)
+        new RecipeVariant(ItemID.CrispyHoneyBlock, ItemID.Waterleaf, ItemID.Worm)
         {
             Potency = 2,
             StrengthPercent = 105,
             DurationTicks = TimeConversion.SetTime(mins: 10, secs: 30)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ModContent.ItemType<MagnoliaSolutionItem>(),
             outputType: ItemID.FishingPotion,
-            new AlchemyVariant(ItemID.CrispyHoneyBlock, ItemID.WaterleafSeeds)
+            new RecipeVariant(ItemID.CrispyHoneyBlock, ItemID.WaterleafSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 11)
             },
-            new AlchemyVariant(ItemID.Worm, ItemID.WaterleafSeeds)
+            new RecipeVariant(ItemID.Worm, ItemID.WaterleafSeeds)
             {
                 Potency = 1,
                 StrengthPercent = 90,
                 DurationTicks = TimeConversion.SetTime(mins: 11, secs: 30)
             },
-            new AlchemyVariant(ItemID.CrispyHoneyBlock, ItemID.WaterleafSeeds, ItemID.Worm)
+            new RecipeVariant(ItemID.CrispyHoneyBlock, ItemID.WaterleafSeeds, ItemID.Worm)
             {
                 Potency = 1,
                 StrengthPercent = 80,
@@ -1725,32 +1742,32 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Crate Potion
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.CratePotion,
-        new AlchemyVariant(ItemID.Amber, ItemID.Moonglow, ShiverthornOrWaterleaf)
+        new RecipeVariant(ItemID.Amber, ItemID.Moonglow, ShiverthornOrWaterleaf)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 4)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.FortunateTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.FortunateTonic,
         outputType: ItemID.CratePotion,
-        new AlchemyVariant(ItemID.Amber, ItemID.Moonglow, ShiverthornOrWaterleaf)
+        new RecipeVariant(ItemID.Amber, ItemID.Moonglow, ShiverthornOrWaterleaf)
         {
             Potency = 1,
             StrengthPercent = 105,
             DurationTicks = TimeConversion.SetTime(mins: 6, secs: 45)
         },
-        new AlchemyVariant(ItemID.Amber, ItemID.Moonglow, Gold)
+        new RecipeVariant(ItemID.Amber, ItemID.Moonglow, Gold)
         {
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 4)
         },
-        new AlchemyVariant(ItemID.Amber, ShiverthornOrWaterleaf, ItemID.Bass)
+        new RecipeVariant(ItemID.Amber, ShiverthornOrWaterleaf, ItemID.Bass)
         {
             Potency = 4,
             StrengthPercent = 150,
@@ -1761,32 +1778,32 @@ public class ChemistryRecipeSystem : ModSystem
         // Luck Potions
 
         #region Lesser Luck
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.LuckPotionLesser,
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.WhitePearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.WhitePearl)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.WhitePearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.WhitePearl)
         {
             Potency = 1,
             StrengthPercent = 95,
             DurationTicks = TimeConversion.SetTime(mins: 6)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.FortunateTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.FortunateTonic,
         outputType: ItemID.LuckPotionLesser,
-        new AlchemyVariant(ItemID.Waterleaf, ItemID.WhitePearl)
+        new RecipeVariant(ItemID.Waterleaf, ItemID.WhitePearl)
         {
             Potency = 2,
             StrengthPercent = 108,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(ItemID.Daybloom, ItemID.WhitePearl)
+        new RecipeVariant(ItemID.Daybloom, ItemID.WhitePearl)
         {
             Potency = 2,
             StrengthPercent = 102,
@@ -1795,32 +1812,32 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Luck
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.LuckPotion,
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.BlackPearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.BlackPearl)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 10)
         },
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.BlackPearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.BlackPearl)
         {
             Potency = 1,
             StrengthPercent = 95,
             DurationTicks = TimeConversion.SetTime(mins: 11)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.FortunateTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.FortunateTonic,
         outputType: ItemID.LuckPotion,
-        new AlchemyVariant(ItemID.Waterleaf, ItemID.BlackPearl)
+        new RecipeVariant(ItemID.Waterleaf, ItemID.BlackPearl)
         {
             Potency = 2,
             StrengthPercent = 108,
             DurationTicks = TimeConversion.SetTime(mins: 10)
         },
-        new AlchemyVariant(ItemID.Daybloom, ItemID.BlackPearl)
+        new RecipeVariant(ItemID.Daybloom, ItemID.BlackPearl)
         {
             Potency = 2,
             StrengthPercent = 102,
@@ -1829,32 +1846,32 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Greater Luck
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         inputType: ItemID.BottledWater,
         outputType: ItemID.LuckPotionGreater,
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.PinkPearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Waterleaf, ItemID.PinkPearl)
         {
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 15)
         },
-        new AlchemyVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.PinkPearl)
+        new RecipeVariant(ItemID.LadyBug, ItemID.Daybloom, ItemID.PinkPearl)
         {
             Potency = 1,
             StrengthPercent = 95,
             DurationTicks = TimeConversion.SetTime(mins: 16)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        inputType: Solution.FortunateTonic,
+        AlchemyRecipes.CreateRecipe(
+        inputType: SolventID.FortunateTonic,
         outputType: ItemID.LuckPotionGreater,
-        new AlchemyVariant(ItemID.Waterleaf, ItemID.PinkPearl)
+        new RecipeVariant(ItemID.Waterleaf, ItemID.PinkPearl)
         {
             Potency = 2,
             StrengthPercent = 108,
             DurationTicks = TimeConversion.SetTime(mins: 15)
         },
-        new AlchemyVariant(ItemID.Daybloom, ItemID.PinkPearl)
+        new RecipeVariant(ItemID.Daybloom, ItemID.PinkPearl)
         {
             Potency = 2,
             StrengthPercent = 102,
@@ -1868,43 +1885,43 @@ public class ChemistryRecipeSystem : ModSystem
     private static void Potion_Aug()
     {
         // Ironskin
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.IronskinPotion,
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(ComponentMatcher.Of(Reagent.BoneAsh, 5))
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.BoneAsh, 5))
             {
                 Augment = b => b.Add(BuffID.Wrath, potency: 1, durationTicks: TimeConversion.SetTime(secs: 25))
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.IronskinPotion,
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(ComponentMatcher.Of(ItemID.IronOre, 3))
+            new RecipeVariant(ComponentMatcher.Of(ItemID.IronOre, 3))
             {
                 Augment = b => b.Add(BuffID.Endurance, potency: 1, durationTicks: TimeConversion.SetTime(mins: 2))
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.IronskinPotion,
             outputType: ItemID.IronskinPotion,
-            new AlchemyVariant(ComponentMatcher.Of(ItemID.GoldOre, 3))
+            new RecipeVariant(ComponentMatcher.Of(ItemID.GoldOre, 3))
             {
                 Augment = b => b.Add(BuffID.Endurance, potency: 3, durationTicks: TimeConversion.SetTime(mins: 1))
         });
 
         // Regen
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.RegenerationPotion,
             outputType: ItemID.RegenerationPotion,
-            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 1))
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 1))
             {
                 Augment = b => b.Add(BuffID.ManaRegeneration, potency: 1, durationTicks: TimeConversion.SetTime(secs: 45))
             },
-            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 2))
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2))
             {
                 Augment = b => b.Add(BuffID.ManaRegeneration, potency: 2, durationTicks: TimeConversion.SetTime(mins: 1, secs: 20))
             },
-            new AlchemyVariant(ComponentMatcher.Of(ItemID.FallenStar, 3))
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 3))
             {
                 Augment = b => b.Add(BuffID.ManaRegeneration, potency: 3, durationTicks: TimeConversion.SetTime(mins: 2))
         });
@@ -1946,32 +1963,32 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Zephyr Potion
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         ZephyrPotion.Type,
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 1,
             DurationTicks = TimeConversion.SetTime(mins: 3)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 2), ItemID.Moonglow)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 2), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 2,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+        SolventID.BriskTonic,
         ZephyrPotion.Type,
-        new AlchemyVariant(Cloudstalk.Type, ItemID.Moonglow)
+        new RecipeVariant(Cloudstalk.Type, ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 2,
             DurationTicks = TimeConversion.SetTime(mins: 4, secs: 30)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.Cloud, 1), ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 3,
@@ -1980,24 +1997,24 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Soaring Potion
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         SoaringPotion.Type,
-        new AlchemyVariant(Cloudstalk.Type, ItemID.SoulofFlight, ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ItemID.SoulofFlight, ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 4)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 2,
             StrengthPercent = 110,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 3,
@@ -2005,24 +2022,24 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(mins: 6)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-       Solution.BriskTonic,
+        AlchemyRecipes.CreateRecipe(
+       SolventID.BriskTonic,
         SoaringPotion.Type,
-        new AlchemyVariant(Cloudstalk.Type, ItemID.SoulofFlight, ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ItemID.SoulofFlight, ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 2,
             StrengthPercent = 112,
             DurationTicks = TimeConversion.SetTime(mins: 4)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 3,
             StrengthPercent = 115,
             DurationTicks = TimeConversion.SetTime(mins: 5)
         },
-        new AlchemyVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish)
+        new RecipeVariant(Cloudstalk.Type, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish)
         {
             OutputStack = 1,
             Potency = 5,
@@ -2032,10 +2049,10 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Remedy Potion
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         RemedyPotion.Type,
-        new AlchemyVariant(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot)
+        new RecipeVariant(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot)
         {
             OutputStack = 1,
             Potency = 2,
@@ -2043,10 +2060,10 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(mins: 10)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+        SolventID.VitalTonic,
         RemedyPotion.Type,
-        new AlchemyVariant(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot)
+        new RecipeVariant(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot)
         {
             OutputStack = 1,
             Potency = 3,
@@ -2054,10 +2071,10 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(mins: 12)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ModContent.ItemType<MagnoliaSolutionItem>(),
         RemedyPotion.Type,
-        new AlchemyVariant(ItemID.Stinger, ItemID.WaterleafSeeds, ItemID.BlinkrootSeeds)
+        new RecipeVariant(ItemID.Stinger, ItemID.WaterleafSeeds, ItemID.BlinkrootSeeds)
         {
             OutputStack = 1,
             Potency = 1,
@@ -2067,17 +2084,17 @@ public class ChemistryRecipeSystem : ModSystem
         #endregion
 
         #region Quench Potion
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         QuenchPotion.Type,
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Blinkroot)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Blinkroot)
         {
             OutputStack = 1,
             Potency = 1,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(secs: 45)
         },
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Moonglow)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 1,
@@ -2085,31 +2102,31 @@ public class ChemistryRecipeSystem : ModSystem
             DurationTicks = TimeConversion.SetTime(secs: 45)
         });
 
-        AlchemyRecipeRegistry.RegisterVariants(
-        Solution.VitalTonic,
+        AlchemyRecipes.CreateRecipe(
+        SolventID.VitalTonic,
         QuenchPotion.Type,
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Blinkroot)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Blinkroot)
         {
             OutputStack = 1,
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 1)
         },
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Moonglow)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, ItemID.Moonglow)
         {
             OutputStack = 1,
             Potency = 2,
             StrengthPercent = 100,
             DurationTicks = TimeConversion.SetTime(mins: 1)
         },
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, Gold)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, Gold)
         {
             OutputStack = 1,
             Potency = 3,
             StrengthPercent = 125,
             DurationTicks = TimeConversion.SetTime(secs: 20)
         },
-        new AlchemyVariant(GarFish.Type, ItemID.Waterleaf, ItemID.SoulofLight)
+        new RecipeVariant(GarFish.Type, ItemID.Waterleaf, ItemID.SoulofLight)
         {
             OutputStack = 1,
             Potency = 4,
@@ -2123,54 +2140,54 @@ public class ChemistryRecipeSystem : ModSystem
     private static void RegisterMisc()
     {
         #region Synthesis: Misc
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
             ItemID.UnholyWater,
-            new AlchemyVariant(CorruptTiles, ItemID.CorruptSeeds) { OutputStack = 4 },
-            new AlchemyVariant(ItemID.VileMushroom, AnyDirt, ItemID.Worm) { OutputStack = 4 });
+            new RecipeVariant(CorruptTiles, ItemID.CorruptSeeds) { OutputStack = 4 },
+            new RecipeVariant(ItemID.VileMushroom, AnyDirt, ItemID.Worm) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
             ItemID.BloodWater,
-            new AlchemyVariant(BloodTiles, ItemID.CrimsonSeeds) { OutputStack = 4 },
-            new AlchemyVariant(ItemID.ViciousMushroom, AnyDirt, ItemID.Worm) { OutputStack = 4 });
+            new RecipeVariant(BloodTiles, ItemID.CrimsonSeeds) { OutputStack = 4 },
+            new RecipeVariant(ItemID.ViciousMushroom, AnyDirt, ItemID.Worm) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
             ItemID.HolyWater,
-            new AlchemyVariant(ItemID.PixieDust, ItemID.HallowedSeeds) { OutputStack = 4 });
+            new RecipeVariant(ItemID.PixieDust, ItemID.HallowedSeeds) { OutputStack = 4 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
             ItemID.LovePotion,
-            new AlchemyVariant(ItemID.LifeCrystal, ItemID.FallenStar) { OutputStack = 4 },
-            new AlchemyVariant(ItemID.PrincessFish, ItemID.Shiverthorn) { OutputStack = 8 });
+            new RecipeVariant(ItemID.LifeCrystal, ItemID.FallenStar) { OutputStack = 4 },
+            new RecipeVariant(ItemID.PrincessFish, ItemID.Shiverthorn) { OutputStack = 8 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
             ItemID.StinkPotion,
-            new AlchemyVariant(ItemID.Stinkfish, ItemID.Deathweed) { OutputStack = 2 },
-            new AlchemyVariant(ItemID.Stinkfish, ItemID.DeathweedSeeds) { OutputStack = 1 });
+            new RecipeVariant(ItemID.Stinkfish, ItemID.Deathweed) { OutputStack = 2 },
+            new RecipeVariant(ItemID.Stinkfish, ItemID.DeathweedSeeds) { OutputStack = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.Bottle,
-            Solution.BloodtoothExtract,
-            new AlchemyVariant(ModContent.ItemType<BloodtoothFungusItem>()));
+            SolventID.BloodtoothExtract,
+            new RecipeVariant(ModContent.ItemType<BloodtoothFungusItem>()));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.BottledWater,
-            Solution.BloodtoothExtract,
-            new AlchemyVariant(ModContent.ItemType<BloodtoothFungusItem>()));
+            SolventID.BloodtoothExtract,
+            new RecipeVariant(ModContent.ItemType<BloodtoothFungusItem>()));
 
-        AlchemyRecipeRegistry.RegisterVariants(
-            Solution.Inert,
-            Solution.BloodtoothExtract,
-            new AlchemyVariant(ModContent.ItemType<BloodtoothFungusItem>()));
+        AlchemyRecipes.CreateRecipe(
+            SolventID.Inert,
+            SolventID.BloodtoothExtract,
+            new RecipeVariant(ModContent.ItemType<BloodtoothFungusItem>()));
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.Bottle,
             ItemID.ViciousPowder,
-            new AlchemyVariant(ItemID.ViciousMushroom)
+            new RecipeVariant(ItemID.ViciousMushroom)
             {
                 OutputStack = 5,
 
@@ -2186,10 +2203,10 @@ public class ChemistryRecipeSystem : ModSystem
                 }
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             ItemID.Bottle,
             ItemID.VilePowder,
-            new AlchemyVariant(ItemID.VileMushroom)
+            new RecipeVariant(ItemID.VileMushroom)
             {
                 OutputStack = 5,
 
@@ -2205,8 +2222,8 @@ public class ChemistryRecipeSystem : ModSystem
                 }
             });
 
-        AlchemyRecipeRegistry.RegisterVariants(ItemID.Bottle, ModContent.ItemType<RustedNugget>(),
-            new AlchemyVariant(ItemID.IronOre)
+        AlchemyRecipes.CreateRecipe(ItemID.Bottle, ModContent.ItemType<RustedNugget>(),
+            new RecipeVariant(ItemID.IronOre)
             {
                 CustomOutput = () =>
                 {
@@ -2227,7 +2244,7 @@ public class ChemistryRecipeSystem : ModSystem
     {
         base.Unload();
 
-        AlchemyRecipeRegistry.Clear();
+        AlchemyRecipes.Clear();
         AlchemyIngredients.Clear();
         AlmanacEntryRegistry.Clear();
         AlchemyRecipeGroups.Clear();
@@ -2258,16 +2275,16 @@ public class ChemistryRecipeSystem : ModSystem
             }
             if (group.Count == 0) continue;
 
-            AlchemyRecipeRegistry.RegisterVariants(
+            AlchemyRecipes.CreateRecipe(
                 inputType: ItemID.BottledWater,
                 outputType: ItemID.BottledWater,
-                new AlchemyVariant(group) { OutputInfusion = flag });
+                new RecipeVariant(group) { OutputInfusion = flag });
         }
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
             inputType: ItemID.BottledWater,
             outputType: ItemID.SwiftnessPotion,
-            new AlchemyVariant(ItemID.Blinkroot, ItemID.Cactus) { InputInfusion = ChemicalQuality.Inert, Potency = 2 });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Cactus) { InputInfusion = ChemicalQuality.Inert, Potency = 2 });
     }
 
     /// <summary>Calamity Mod recipes.</summary>
@@ -2298,84 +2315,84 @@ public class ChemistryRecipeSystem : ModSystem
         ModContent.TryFind("CalamityMod", "ZergPotion", out ModItem ZergPotion);
         ModContent.TryFind("CalamityMod", "ZenPotion", out ModItem ZenPotion);
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         PhotosynthesisPotion.Type,
-        new AlchemyVariant(EssenceofSunlight.Type, bloodOrb.Type)
+        new RecipeVariant(EssenceofSunlight.Type, bloodOrb.Type)
         {
             OutputStack = 1,
             Potency = 3,
             DurationTicks = TimeConversion.SetTime(mins: 10)
         },
-        new AlchemyVariant(EssenceofSunlight.Type, ItemID.Daybloom) { OutputStack = 1 });
+        new RecipeVariant(EssenceofSunlight.Type, ItemID.Daybloom) { OutputStack = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         AnechoicCoating.Type,
-        new AlchemyVariant(bloodOrb.Type) { OutputStack = 1 });
+        new RecipeVariant(bloodOrb.Type) { OutputStack = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.SuperManaPotion,
         AstralInjection.Type,
-        new AlchemyVariant(StarblightSoot.Type, AureusCell.Type) { OutputStack = 3 });
+        new RecipeVariant(StarblightSoot.Type, AureusCell.Type) { OutputStack = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         BoundingPotion.Type,
-        new AlchemyVariant(ItemID.PinkGel, ItemID.Moonglow) { OutputStack = 1 });
+        new RecipeVariant(ItemID.PinkGel, ItemID.Moonglow) { OutputStack = 1 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         CalciumPotion.Type,
-        new AlchemyVariant(AncientBoneDust.Type) { OutputStack = 1 },
-        new AlchemyVariant(AncientBoneDust.Type, bloodOrb.Type) { OutputStack = 1, Potency = 3 });
+        new RecipeVariant(AncientBoneDust.Type) { OutputStack = 1 },
+        new RecipeVariant(AncientBoneDust.Type, bloodOrb.Type) { OutputStack = 1, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         CeaselessHungerPotion.Type,
-        new AlchemyVariant(DarkPlasma.Type) { OutputStack = 1 },
-        new AlchemyVariant(DarkPlasma.Type, bloodOrb.Type) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(DarkPlasma.Type) { OutputStack = 1 },
+        new RecipeVariant(DarkPlasma.Type, bloodOrb.Type) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         GravityNormalizerPotion.Type,
-        new AlchemyVariant(AureusCell.Type, bloodOrb.Type) { OutputStack = 1 },
-        new AlchemyVariant(AldebaranAlewife.Type, AureusCell.Type) { OutputStack = 1, Potency = 3 });
+        new RecipeVariant(AureusCell.Type, bloodOrb.Type) { OutputStack = 1 },
+        new RecipeVariant(AldebaranAlewife.Type, AureusCell.Type) { OutputStack = 1, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         ShadowPotion.Type,
-        new AlchemyVariant(Shadowfish.Type, ItemID.Blinkroot) { OutputStack = 1 },
-        new AlchemyVariant(Shadowfish.Type, bloodOrb.Type) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(Shadowfish.Type, ItemID.Blinkroot) { OutputStack = 1 },
+        new RecipeVariant(Shadowfish.Type, bloodOrb.Type) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         SoaringPotion.Type,
-        new AlchemyVariant(SunkenSailfish.Type, ItemID.SoulofFlight) { OutputStack = 1 },
-        new AlchemyVariant(bloodOrb.Type, ItemID.SoulofFlight) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(SunkenSailfish.Type, ItemID.SoulofFlight) { OutputStack = 1 },
+        new RecipeVariant(bloodOrb.Type, ItemID.SoulofFlight) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         SulphurskinPotion.Type,
-        new AlchemyVariant(SulphurousSand.Type, ItemID.Waterleaf) { OutputStack = 1 },
-        new AlchemyVariant(bloodOrb.Type, ItemID.Waterleaf) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(SulphurousSand.Type, ItemID.Waterleaf) { OutputStack = 1 },
+        new RecipeVariant(bloodOrb.Type, ItemID.Waterleaf) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         ZenPotion.Type,
-        new AlchemyVariant(PurifiedGel.Type, ItemID.Daybloom) { OutputStack = 1 },
-        new AlchemyVariant(ComponentMatcher.Of(bloodOrb.Type, 5), ComponentMatcher.Of(ItemID.Fireblossom, 1)) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(PurifiedGel.Type, ItemID.Daybloom) { OutputStack = 1 },
+        new RecipeVariant(ComponentMatcher.Of(bloodOrb.Type, 5), ComponentMatcher.Of(ItemID.Fireblossom, 1)) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         ZergPotion.Type,
-        new AlchemyVariant(ComponentMatcher.Of(PurifiedGel.Type, 2), ComponentMatcher.Of(ItemID.Fireblossom, 2)) { OutputStack = 1 },
-        new AlchemyVariant(ComponentMatcher.Of(bloodOrb.Type, 5), ComponentMatcher.Of(PurifiedGel.Type, 2)) { OutputStack = 2, Potency = 3 });
+        new RecipeVariant(ComponentMatcher.Of(PurifiedGel.Type, 2), ComponentMatcher.Of(ItemID.Fireblossom, 2)) { OutputStack = 1 },
+        new RecipeVariant(ComponentMatcher.Of(bloodOrb.Type, 5), ComponentMatcher.Of(PurifiedGel.Type, 2)) { OutputStack = 2, Potency = 3 });
 
-        AlchemyRecipeRegistry.RegisterVariants(
+        AlchemyRecipes.CreateRecipe(
         ItemID.BottledWater,
         PotionofOmniscience.Type,
-        new AlchemyVariant(ItemID.HunterPotion, ItemID.SpelunkerPotion, ItemID.TrapsightPotion) { OutputStack = 1 });
+        new RecipeVariant(ItemID.HunterPotion, ItemID.SpelunkerPotion, ItemID.TrapsightPotion) { OutputStack = 1 });
     }
 }
 

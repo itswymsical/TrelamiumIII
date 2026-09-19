@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-/// <summary>Report-only consistency checks over <see cref="AlchemyRecipeRegistry" />. Run after load.</summary>
+/// <summary>Report-only consistency checks over <see cref="AlchemyRecipes" />. Run after load.</summary>
 public static class AlchemyRecipeValidator
 {
     /// <summary>Longest allowed chain of principled solvents, counting the output itself.</summary>
@@ -23,7 +23,7 @@ public static class AlchemyRecipeValidator
                 findings.Add(new Finding(rule, message));
         }
 
-        foreach (AlchemyRecipe recipe in AlchemyRecipeRegistry.All)
+        foreach (AlchemyRecipe recipe in AlchemyRecipes.All)
         {
             if (recipe.SuppressValidation != null)
             {

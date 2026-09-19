@@ -96,11 +96,11 @@ public abstract class WorldNPC : ModNPC
     /// falls idle, so a script that finishes simply starts again.
     ///
     /// <para>
-    /// The default holds the anchor. Override for a patrol, a work loop, or a
-    /// <see cref="Select"/> that reacts to what's nearby.
+    /// The default holds the anchor; null leaves the NPC to its vanilla aiStyle. Override
+    /// for a patrol, a work loop, or a <see cref="Select"/> that reacts to what's nearby.
     /// </para>
     /// </summary>
-    protected virtual IBehavior BuildScript() => Behavior.Stay(AnchorTile);
+    protected virtual IBehavior? BuildScript() => Behavior.Stay(AnchorTile);
 
     /// <summary>How far it may drift before walking home rather than resuming in place.</summary>
     protected virtual float AnchorReturnDistance => 200f;
@@ -122,8 +122,11 @@ public abstract class WorldNPC : ModNPC
     /// </summary>
     public virtual string MapHeadTexture => null;
 
-    /// <summary>Saved into the world file and respawned on load.</summary>
-    public virtual bool Persistent => false;
+    /// <summary>
+    /// Kept across world reloads. Otherwise <see cref="WorldNPCPersistenceSystem"/> removes it after load, unless it
+    /// has an open job or a home. Defaults to true for fixtures (<see cref="CanDespawn"/> false).
+    /// </summary>
+    public virtual bool Persistent => !CanDespawn;
 
     /// <summary>
     /// Wanders off when nobody is looking. False for fixtures - a narrative speaker
@@ -216,7 +219,7 @@ public abstract class WorldNPC : ModNPC
         if (Director is not { IsBusy: false })
             return;
 
-        IBehavior script = BuildScript();
+        IBehavior? script = BuildScript();
         if (script == null)
             return;
 
@@ -242,9 +245,18 @@ public abstract class WorldNPC : ModNPC
         if (timeAlive < TimeConversion.SetTime(mins: 3) || IsAnyoneWatching())
             return;
 
+        Despawn();
+    }
+
+    /// <summary>Removes the NPC without killing it (no loot, no death message), syncing the removal from a server.</summary>
+    public void Despawn()
+    {
         NPC.active = false;
         NPC.netSkip = -1;
         NPC.life = 0;
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendData(MessageID.SyncNPC, number: NPC.whoAmI);
     }
 
     public int timeAlive;

@@ -18,6 +18,9 @@ public abstract class Villager : TerrarianNPC
 {
     public override bool CanDespawn => true;
 
+    /// <summary>No script, so the director idles and vanilla's Passive AI (aiStyle 7) runs between interrupts.</summary>
+    protected override IBehavior? BuildScript() => null;
+
     protected abstract Color[] HairPalette { get; }
     protected abstract Color[] EyePalette { get; }
     protected abstract Color[] SkinPallete { get; }
@@ -111,6 +114,9 @@ public abstract class Villager : TerrarianNPC
     {
         base.SaveData(tag);
 
+        // Null when UsesTradingSystem is false.
+        if (Trades is null) return;
+
         var tradeTags = new List<TagCompound>();
         foreach (var trade in Trades)
         {
@@ -125,19 +131,22 @@ public abstract class Villager : TerrarianNPC
     {
         base.LoadData(tag);
 
-        if (!tag.ContainsKey("trades")) return;
+        if (Trades is null || !tag.ContainsKey("trades")) return;
 
         Trades.Clear();
 
-        var byOutput = GetStockPool().ToDictionary(s => s.Offer.Output.ItemId);
+        // Matched by output, each stock entry used once: a pool can grant the same item from two trades.
+        var pool = GetStockPool();
 
         foreach (var entry in tag.GetList<TagCompound>("trades"))
         {
             int outputId = entry.GetInt("output");
-            if (!byOutput.TryGetValue(outputId, out var stock)) continue;
+            int index = pool.FindIndex(s => s.Offer.Output.ItemId == outputId);
+            if (index < 0) continue;
 
-            Trades.Add(stock.Offer);
-            stock.Offer.Load(entry);
+            Trades.Add(pool[index].Offer);
+            pool[index].Offer.Load(entry);
+            pool.RemoveAt(index);
         }
     }
 
