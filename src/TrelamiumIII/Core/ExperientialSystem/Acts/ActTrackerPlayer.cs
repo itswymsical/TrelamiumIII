@@ -109,7 +109,7 @@ public sealed class ActTrackerPlayer : ModPlayer
     /// </para>
     ///
     /// <para>
-    /// Reads without forgetting. The Microlith consumes the same mark from <c>GlobalTile.Drop</c>, which
+    /// Reads without forgetting. The Harvest brew consumes the same mark from <c>GlobalTile.Drop</c>, which
     /// resolves after <c>KillTile</c> has already broadcast this event, so clearing it here would deny
     /// that bonus its own guard.
     /// </para>

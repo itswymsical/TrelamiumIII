@@ -538,7 +538,8 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // Brew category filter, shown only while browsing the Recipes category. Null means all.
     private static readonly BrewCategory?[] _filterTabs =
-        [null, BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture];
+        [null, BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture,
+         BrewCategory.Transmutation];
 
     private const float FILTER_TAB_W = 96f;
     private const float FILTER_TAB_H = 26f;
@@ -893,7 +894,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         cx += 18f;   // arrow
         if (local.X >= cx && local.X < cx + ICON)
         {
-            Item output = recipe.CreateOutput?.Invoke(BrewCompositions.Of(recipe)) ?? new Item();
+            Item output = recipe.PreviewOutput();
             if (output.IsAir) return 0;
             infusion = SolutionGlobalItem.GetInfusion(output);
             return output.type;
@@ -1820,7 +1821,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             new Color(120, 90, 50), 1f);
         cx += 18f;
 
-        Item output = recipe.CreateOutput?.Invoke(BrewCompositions.Of(recipe)) ?? new Item();
+        Item output = recipe.PreviewOutput();
         if (!output.IsAir)
         {
             DrawSmallItemIcon(sb, output.type, new Vector2(cx, cy), ICON);

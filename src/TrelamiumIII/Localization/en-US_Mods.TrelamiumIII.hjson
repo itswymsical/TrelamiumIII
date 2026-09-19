@@ -287,11 +287,11 @@ Items: {
 		Tooltip: Increases run acceleration by 10%
 	}
 
-	MicrolithItem: {
-		DisplayName: Microlith
+	HarvestPotionItem: {
+		DisplayName: Harvest Potion
 		Tooltip:
 			'''
-			When you break an ore chunk, it has a small chance to drop x1-x3 the ore value
+			Ore and gems you mine have a chance to give more than they should
 			No, you cannot cheese it
 			'''
 	}
@@ -976,6 +976,11 @@ Items: {
 		DisplayName: Timed Poison Canister
 		Tooltip: ""
 	}
+
+	AquaTerraeItem: {
+		DisplayName: Aqua Terrae Item
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1107,6 +1112,11 @@ NPCs: {
 }
 
 Buffs: {
+	HarvestBuff: {
+		DisplayName: Harvest
+		Description: Ore and gems you mine have a chance to give more than they should
+	}
+
 	FungalInfection: {
 		DisplayName: Fungal Infection
 		Description: Spores are taking hold! a saturated host bursts and seeds everything nearby
@@ -1181,6 +1191,7 @@ BrewCategories: {
 	Augmentation: Augmentation
 	Refinement: Refinement
 	Mixture: Mixture
+	Transmutation: Transmutation
 }
 
 # The stat rows a controller weapon shows under its damage line (ChemicalStatsTooltip). Each row

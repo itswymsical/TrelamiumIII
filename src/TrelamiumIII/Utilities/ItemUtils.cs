@@ -140,13 +140,16 @@ public static class ItemUtils
     public static bool IsSupportedModPotion(this Item item)
         => item.IsFromSupportedMod() && item.IsDrinkablePotion();
 
+    /// <summary>One of our own potions, which the station brews like any other.</summary>
+    public static bool IsOwnPotion(this Item item) => item.IsT3() && item.IsDrinkablePotion();
+
     /// <summary>
     /// Every potion Substrate's alchemy claims: vanilla's, plus those of a supported mod. This is the
     /// set that gets brew-branded. The narrower question of whose *recipes* we replace is decided in
     /// <c>SubstrateRecipeSystem.PostAddRecipes</c>.
     /// </summary>
     public static bool IsManagedPotion(this Item item)
-        => item.IsVanillaPotion() || item.IsSupportedModPotion();
+        => item.IsVanillaPotion() || item.IsOwnPotion() || item.IsSupportedModPotion();
 
     public static bool CraftsVanillaPotion(this Recipe recipe)
     {

@@ -310,8 +310,8 @@ public static class AlmanacIndex
     {
         if (r.OutputItemType > 0) return r.OutputItemType;
         // Fallback for recipes that built CreateOutput inline without setting OutputItemType.
-        var item = r.CreateOutput?.Invoke(BrewCompositions.Of(r));
-        return item is { IsAir: false } ? item.type : 0;
+        Item item = r.PreviewOutput();
+        return item.IsAir ? 0 : item.type;
     }
 
     private static void EnsureBuilt()
@@ -805,7 +805,7 @@ internal static class AlmanacDefinitions
         });
 
         // Blocks are consumed in stacks of five per potency level.
-        foreach (int block in new[] { ItemID.IceBlock, ItemID.SandBlock, ItemID.Cloud })
+        foreach (int block in new[] { ItemID.IceBlock, ItemID.SandBlock, ItemID.Cloud, ItemID.SiltBlock })
         {
             AlmanacEntryRegistry.Register(new AlmanacEntry
             {

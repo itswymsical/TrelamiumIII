@@ -18,6 +18,9 @@ public enum BrewCategory
 
     /// <summary>The input slot holds a <see cref="ChemicalRole.Solute" />.</summary>
     Mixture,
+
+    /// <summary>A solvent dissolves a finished <see cref="ChemicalRole.Solution" /> held in a component slot.</summary>
+    Transmutation,
 }
 
 /// <summary>
@@ -130,6 +133,7 @@ public static class BrewCompositions
         int primary = 0;
         int primaryLevel = -1;
         int highestLevel = 0;
+        bool dissolving = false;
         PrincipleType primaryPrinciple = PrincipleType.None;
         PrincipleType allPrinciples = PrincipleType.None;
 
@@ -138,6 +142,7 @@ public static class BrewCompositions
             int type = types[i];
             Tally(counts, QualityOf(type));
             highestLevel = Math.Max(highestLevel, levels[i]);
+            dissolving |= ChemicalRoles.Of(type) == ChemicalRole.Solution;
 
             PrincipleType principle = PrincipleOf(type);
 
@@ -171,6 +176,7 @@ public static class BrewCompositions
         BrewCategory category = inputType <= 0 || soluteTypes.Length == 0 ? BrewCategory.None
             : augmenting ? BrewCategory.Augmentation
             : mixing ? BrewCategory.Mixture
+            : dissolving ? BrewCategory.Transmutation
             : resolved == PrincipleType.None ? BrewCategory.Refinement
             : BrewCategory.Synthesis;
 
@@ -240,7 +246,7 @@ public static class BrewCompositions
 public static class BrewCategories
 {
     public static readonly BrewCategory[] All =
-        [BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture];
+        [BrewCategory.Synthesis, BrewCategory.Augmentation, BrewCategory.Refinement, BrewCategory.Mixture, BrewCategory.Transmutation];
 
     /// <summary>Localized under <c>BrewCategories.{member}</c>; falls back to the member name.</summary>
     public static string DisplayName(BrewCategory category)
@@ -257,6 +263,7 @@ public static class BrewCategories
         BrewCategory.Augmentation => new Color(255, 200, 120),
         BrewCategory.Refinement => new Color(255, 130, 130),
         BrewCategory.Mixture => new Color(190, 160, 255),
+        BrewCategory.Transmutation => new Color(150, 230, 180),
         _ => Color.White,
     };
 }

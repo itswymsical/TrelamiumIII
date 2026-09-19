@@ -6,7 +6,10 @@ public enum AlchemyStationMode : byte
     /// <summary>Input: solvent or solution. Components: solutes.</summary>
     Solution,
 
-    /// <summary>Input: solvent. Components: solutes and up to <see cref="AlchemyStationRules.MAX_COMPONENT_SOLVENTS" /> solvents.</summary>
+    /// <summary>
+    /// Input: solvent. Components: solutes and up to <see cref="AlchemyStationRules.MAX_COMPONENT_LIQUIDS" /> liquids, each a
+    /// solvent or a finished solution (see <see cref="BrewCategory.Transmutation" />).
+    /// </summary>
     SolventMixture,
 
     /// <summary>Input: solute. Components: solutes.</summary>
@@ -16,7 +19,7 @@ public enum AlchemyStationMode : byte
 /// <summary>Per-mode slot acceptance for alchemy stations.</summary>
 public static class AlchemyStationRules
 {
-    public const int MAX_COMPONENT_SOLVENTS = 2;
+    public const int MAX_COMPONENT_LIQUIDS = 2;
 
     private static readonly AlchemyStationMode[] Modes =
         [AlchemyStationMode.Solution, AlchemyStationMode.SolventMixture, AlchemyStationMode.SoluteMixture];
@@ -48,18 +51,19 @@ public static class AlchemyStationRules
         if (role == ChemicalRole.Solute)
             return true;
 
-        if (mode != AlchemyStationMode.SolventMixture || role != ChemicalRole.Solvent)
+        // A finished solution is a liquid too: the input solvent dissolves it back into a solute.
+        if (mode != AlchemyStationMode.SolventMixture || role is not (ChemicalRole.Solvent or ChemicalRole.Solution))
             return false;
 
-        int solvents = 0;
+        int liquids = 0;
 
         for (int i = 0; i < components.Length; i++)
         {
-            if (i != index && ChemicalRoles.Of(components[i]) == ChemicalRole.Solvent)
-                solvents++;
+            if (i != index && ChemicalRoles.Of(components[i]) is ChemicalRole.Solvent or ChemicalRole.Solution)
+                liquids++;
         }
 
-        return solvents < MAX_COMPONENT_SOLVENTS;
+        return liquids < MAX_COMPONENT_LIQUIDS;
     }
 
     public static bool Accepts(AlchemyStationMode mode, Item input, Item[] components)

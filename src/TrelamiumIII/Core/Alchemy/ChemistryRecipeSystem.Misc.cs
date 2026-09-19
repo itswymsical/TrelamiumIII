@@ -1,0 +1,100 @@
+using TrelamiumIII.Common.Globals;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Weapons;
+using TrelamiumIII.Content.Rusted;
+using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
+
+namespace TrelamiumIII.Core.Alchemy;
+
+public partial class ChemistryRecipeSystem
+{
+    /// <summary>Miscellaneous craftable items (e.g. unholy water, love potion).</summary>
+    private static void RegisterMisc()
+    {
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.UnholyWater,
+            new RecipeVariant(CorruptTiles, ItemID.CorruptSeeds) { OutputStack = 4 },
+            new RecipeVariant(ItemID.VileMushroom, DirtOrMud, ItemID.Worm) { OutputStack = 4 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.BloodWater,
+            new RecipeVariant(BloodTiles, ItemID.CrimsonSeeds) { OutputStack = 4 },
+            new RecipeVariant(ItemID.ViciousMushroom, DirtOrMud, ItemID.Worm) { OutputStack = 4 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.HolyWater,
+            new RecipeVariant(ItemID.PixieDust, ItemID.HallowedSeeds) { OutputStack = 4 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.LovePotion,
+            new RecipeVariant(ItemID.LifeCrystal, ItemID.FallenStar) { OutputStack = 4 },
+            new RecipeVariant(ItemID.PrincessFish, ItemID.Shiverthorn) { OutputStack = 8 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.StinkPotion,
+            new RecipeVariant(ItemID.Stinkfish, ItemID.Deathweed) { OutputStack = 2 },
+            new RecipeVariant(ItemID.Stinkfish, ItemID.DeathweedSeeds));
+
+        AlchemyRecipes.CreateRecipe(ItemID.Bottle, ItemID.ViciousPowder,
+            new RecipeVariant(ItemID.ViciousMushroom) { OutputStack = 5, CustomOutput = BottleOf(ItemID.ViciousPowder) });
+
+        AlchemyRecipes.CreateRecipe(ItemID.Bottle, ItemID.VilePowder,
+            new RecipeVariant(ItemID.VileMushroom) { OutputStack = 5, CustomOutput = BottleOf(ItemID.VilePowder) });
+
+        AlchemyRecipes.CreateRecipe(ItemID.Bottle, ModContent.ItemType<RustedNugget>(),
+            new RecipeVariant(ItemID.IronOre) { CustomOutput = BottleOf(ModContent.ItemType<RustedNugget>()) });
+    }
+
+    private static void RegisterWeapons()
+    {
+        int crimsonFlask = ModContent.ItemType<CrimsonEffusionFlaskItem>();
+        int bloodtooth = ModContent.ItemType<BloodtoothFungusItem>();
+
+        AlchemyRecipes.CreateRecipe(SolventID.BloodtoothExtract, crimsonFlask,
+        [
+            new RecipeVariant(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 8 },
+            new RecipeVariant(ItemID.Deathweed) { OutputStack = 4 },
+            .. AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 12),
+        ]);
+
+        AlchemyRecipes.CreateRecipe(SolventID.Dead, crimsonFlask,
+            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 8));
+
+        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, crimsonFlask,
+            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 1, stack: 8));
+
+        int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
+
+        AlchemyRecipes.CreateRecipe(SolventID.Dead, vilesporeFlask,
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 2, stack: 8));
+
+        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, vilesporeFlask,
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 1, stack: 8));
+
+        int hyperboreanFlask = ModContent.ItemType<HyperboreanFlaskItem>();
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, hyperboreanFlask,
+            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ItemID.CopperOre, ComponentMatcher.Of(SoluteID.Niter, 2))
+            {
+                OutputStack = 8,
+            });
+
+        AlchemyRecipes.CreateRecipe(SolventID.HarmoniousTonic, hyperboreanFlask,
+            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ComponentMatcher.Of(SoluteID.Niter, 2)) { OutputStack = 8 });
+    }
+
+    /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>
+    private static RecipeVariant[] AnyTwoOf(int a, int b, int c, int potency, int stack) =>
+    [
+        new RecipeVariant(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(b, potency)) { OutputStack = stack },
+        new RecipeVariant(ComponentMatcher.Of(b, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
+        new RecipeVariant(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
+    ];
+
+    /// <summary>An empty Bottle holding <paramref name="storedType" />, for recipes whose product stays in the bottle.</summary>
+    private static Func<Item> BottleOf(int storedType) => () =>
+    {
+        var bottle = new Item();
+        bottle.SetDefaults(ItemID.Bottle);
+        bottle.GetGlobalItem<ContainerBottleItem>().StoredItemType = storedType;
+
+        return bottle;
+    };
+}

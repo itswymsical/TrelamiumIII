@@ -152,7 +152,7 @@ public static class AlchemyRecipeValidator
     private static string SignatureOf(AlchemyRecipe recipe)
     {
         IEnumerable<string> components = recipe.Components
-            .Select(m => $"{(m.Group != null ? "g:" + m.Group.Name : "t:" + m.ExactType)}p{m.MinPotency}i{(int)m.Infusion}")
+            .Select(m => $"{(m.Group != null ? "g:" + m.Group.Name : "t:" + m.ExactType)}p{m.MinPotency}-{m.MaxPotency}i{(int)m.Infusion}")
             .OrderBy(part => part, StringComparer.Ordinal);
 
         return $"{recipe.InputType}i{(int)recipe.InputInfusion}|{string.Join(",", components)}";
@@ -162,7 +162,9 @@ public static class AlchemyRecipeValidator
     {
         IEnumerable<string> components = recipe.Components
             .Select(m => (m.Group != null ? m.Group.Name : Name(m.ExactType))
-                + (m.MinPotency > 1 ? $" (potency {m.MinPotency})" : string.Empty));
+                + (m.IsRanged ? $" (potency {m.MinPotency}-{m.MaxPotency})"
+                    : m.MinPotency > 1 ? $" (potency {m.MinPotency})"
+                    : string.Empty));
 
         return $"{Name(recipe.InputType)} + [{string.Join(", ", components)}] -> {Name(recipe.OutputItemType)}";
     }

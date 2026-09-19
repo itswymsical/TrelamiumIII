@@ -15,22 +15,25 @@ public sealed class RecipeVariant
     /// <summary>Optional override for output construction.</summary>
     public Func<Item> CustomOutput { get; init; }
 
-    /// <summary>Brew potency (1-5) stamped onto buff-potion outputs. 0 uses <see cref="BrewComposition.Potency"/>.</summary>
+    /// <summary>
+    /// Brew potency (1-5) in the recipe's first input at minimum slot levels. 0 uses <see cref="BrewComposition.Potency"/>.
+    /// <see cref="BrewFormula"/> raises it for ranged slot levels and for solvents with a larger <see cref="BrewFormula.SolventBonus"/>.
+    /// </summary>
     public int Potency { get; init; }
 
-    /// <summary>Override the potency curve's strength (percent of the vanilla effect). 0 = use the curve.</summary>
+    /// <summary>Strength (percent of the vanilla effect) at <see cref="Potency"/>; shifted with it. 0 = use the curve.</summary>
     public int StrengthPercent { get; init; }
 
-    /// <summary>Override the brewed duration, in seconds. 0 = use the curve.</summary>
+    /// <summary>Brewed duration in seconds at <see cref="Potency"/>; shifted with it. 0 = use the curve.</summary>
     public int DurationSeconds { get; init; }
 
-    /// <summary>Brewed duration override in ticks; wins over <see cref="DurationSeconds"/>. 0 = unset.</summary>
+    /// <summary>Brewed duration in ticks at <see cref="Potency"/>; wins over <see cref="DurationSeconds"/>. 0 = unset.</summary>
     public int DurationTicks { get; init; }
 
     /// <summary>Override a gated effect's max ore tier (Spelunker). 0 = use the potency default.</summary>
     public int MaxOreTier { get; init; }
 
-    /// <summary>Optional augmentation pass: boost, re-gate, or combine further effects onto the brew.</summary>
+    /// <summary>Optional pass after the primary effect: boost, re-gate, or add further effects.</summary>
     public Action<BrewBuilder>? Augment { get; init; }
 
     /// <summary>Required input infusion; None means plain input only, so one input type can key different recipes.</summary>
@@ -140,70 +143,35 @@ public static class AlchemyRecipes
     /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
-    /// <summary>Registers several input combinations that share one (input, output) target.</summary>
-    public static void CreateRecipe(
-        int inputType,
-        int outputType,
-        params RecipeVariant[] variants)
+    /// <summary>Registers each variant for one input type.</summary>
+    public static void CreateRecipe(int inputType, int outputType, params RecipeVariant[] variants) =>
+        CreateRecipe([inputType], outputType, variants);
+
+    /// <summary>
+    /// Registers each variant for every input type. A variant's authored values apply to the first input; the others differ
+    /// by <see cref="BrewFormula.SolventBonus"/>.
+    /// </summary>
+    public static void CreateRecipe(int[] inputTypes, int outputType, params RecipeVariant[] variants)
     {
-        foreach (var v in variants)
+        int authoredInput = inputTypes[0];
+
+        foreach (int inputType in inputTypes)
         {
-            // Capture-by-value so each closure produces its own variant's stack/potency/overrides.
-            var variantStack = v.OutputStack;
-            var potency = v.Potency;
-            var strengthOverride = v.StrengthPercent;
-            // Ticks-native override wins; else seconds are converted below.
-            var durationOverride = v.DurationTicks > 0 ? v.DurationTicks : v.DurationSeconds * 60;
-            var maxOreTier = v.MaxOreTier;
-            var augment = v.Augment;
-            var custom = v.CustomOutput;
-            var outputInfusion = v.OutputInfusion;
-
-            Register(new AlchemyRecipe
+            foreach (RecipeVariant variant in variants)
             {
-                InputType = inputType,
-                InputInfusion = v.InputInfusion,
-                OutputItemType = outputType,
-                Components = v.Components,
-                ReturnsBottleOverride = v.ReturnsBottle,
-                SuppressValidation = v.SuppressValidation,
-                CreateOutput = custom != null ? _ => custom() : composition =>
+                Register(new AlchemyRecipe
                 {
-                    var r = new Item();
-                    r.SetDefaults(outputType);
-                    r.stack = variantStack;
-
-                    // Infused outputs are suffixed solvents, so stamping
-                    // a brew here would wrongly brand e.g. Bottled Water via its healLife.
-                    if (outputInfusion != ChemicalQuality.None)
-                    {
-                        if (r.TryGetGlobalItem(out SolutionGlobalItem solution))
-                            solution.Infusion = outputInfusion;
-                        return r;
-                    }
-
-                    // Brand buff and restorative potions (heals get a virtual Restoration effect), then apply overrides.
-                    // Explicit potency wins over the composition's.
-                    if (r.buffType > 0 || r.healLife > 0 || r.healMana > 0)
-                    {
-                        int pot = potency > 0 ? potency : composition.Potency;
-                        if (pot > 0)
-                        {
-                            var effect = r.buffType > 0
-                                ? BrewTuning.Create(r.buffType, r.buffTime, pot)
-                                : BrewTuning.CreateRestoration(pot);
-                            if (strengthOverride > 0) effect = effect with { StrengthPercent = strengthOverride };
-                            if (durationOverride > 0) effect = effect with { DurationTicks = durationOverride };
-                            if (maxOreTier > 0) effect = effect with { Params = effect.Params with { MaxOreTier = maxOreTier } };
-
-                            var brew = new PotionBrew { Principle = composition.Principle, Effects = { effect } };
-                            augment?.Invoke(new BrewBuilder(brew, r.buffTime));
-                            r.GetGlobalItem<BrewGlobalItem>().Brew = brew;
-                        }
-                    }
-                    return r;
-                },
-            });
+                    InputType = inputType,
+                    InputInfusion = variant.InputInfusion,
+                    OutputItemType = outputType,
+                    Components = variant.Components,
+                    ReturnsBottleOverride = variant.ReturnsBottle,
+                    SuppressValidation = variant.SuppressValidation,
+                    CreateOutput = variant.CustomOutput is { } custom
+                        ? _ => custom()
+                        : context => BrewFormula.CreateOutput(outputType, variant, context, authoredInput),
+                });
+            }
         }
     }
 
@@ -264,9 +232,14 @@ public static class AlchemyRecipes
             };
         }
 
-        // The output is built at the recipe's minimum potencies, which is what the brew consumes.
+        // The output is built at the consumed levels, not the slotted stacks.
         var composition = BrewCompositions.Of(input, components, bestPotencies);
-        var output = best.CreateOutput?.Invoke(composition) ?? new Item();
+
+        int extraLevels = -best.TotalMinPotency;
+        foreach (int level in bestPotencies)
+            extraLevels += level;
+
+        var output = best.CreateOutput?.Invoke(new BrewContext(composition, extraLevels, input, components)) ?? new Item();
 
         if (output.IsAir)
             return new AlchemyResolution { Composition = composition };
@@ -285,37 +258,6 @@ public static class AlchemyRecipes
     /// <summary>Just the output item; air when nothing matches.</summary>
     public static Item ResolveOutput(Item input, Item[] components)
         => Resolve(input, components).Output;
-
-    // Tie-break order when solutes share several flags, following the three axes.
-    private static readonly ChemicalQuality[] _infusionPriority =
-    [
-        ChemicalQuality.Inert, ChemicalQuality.Catalytic,
-        ChemicalQuality.Alkaline, ChemicalQuality.Acidic,
-        ChemicalQuality.Volatile, ChemicalQuality.Kinetic,
-    ];
-
-    private static Item TryInfusionFallback(Item solvent, List<Item> solutes)
-    {
-        if (solvent.type is not (ItemID.BottledWater or ItemID.BottledHoney)) return new Item();
-        if (SolutionGlobalItem.GetInfusion(solvent) != ChemicalQuality.None) return new Item();
-        if (solutes.Count == 0) return new Item();
-
-        var common = (ChemicalQuality)~0;
-        foreach (var s in solutes)
-            common &= AlmanacEntryRegistry.For(s.type).Chemical;
-
-        foreach (var flag in _infusionPriority)
-        {
-            if ((common & flag) == 0) continue;
-
-            var r = new Item();
-            r.SetDefaults(solvent.type);
-            if (r.TryGetGlobalItem(out SolutionGlobalItem solution))
-                solution.Infusion = flag;
-            return r;
-        }
-        return new Item();
-    }
 }
 
 
@@ -404,24 +346,45 @@ public readonly struct ComponentMatcher
     /// <summary>Required instance infusion; None accepts only plain items, so infused and plain variants never cross-match.</summary>
     public readonly ChemicalQuality Infusion;
 
-    /// <summary>Minimum slot potency, 1 to <see cref="SolutePotency.MAX"/>. Each batch consumes this potency's cost.</summary>
+    /// <summary>Minimum slot potency, 1 to <see cref="SolutePotency.MAX"/>.</summary>
     public readonly int MinPotency;
 
-    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int minPotency = 1)
-    { ExactType = exactType; Group = null; Infusion = infusion; MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX); }
+    /// <summary>
+    /// Highest slot potency a batch consumes, at least <see cref="MinPotency"/>. A batch consumes the slot's level clamped to
+    /// this range; each level above the minimum raises the brew's potency by one (see <see cref="BrewFormula"/>).
+    /// </summary>
+    public readonly int MaxPotency;
 
-    public ComponentMatcher(AlchemyComponentGroup group, int minPotency = 1)
-    { ExactType = 0; Group = group; Infusion = ChemicalQuality.None; MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX); }
+    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int minPotency = 1, int maxPotency = 0)
+    {
+        ExactType = exactType;
+        Group = null;
+        Infusion = infusion;
+        MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX);
+        MaxPotency = Math.Clamp(maxPotency, MinPotency, SolutePotency.MAX);
+    }
+
+    public ComponentMatcher(AlchemyComponentGroup group, int minPotency = 1, int maxPotency = 0)
+    {
+        ExactType = 0;
+        Group = group;
+        Infusion = ChemicalQuality.None;
+        MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX);
+        MaxPotency = Math.Clamp(maxPotency, MinPotency, SolutePotency.MAX);
+    }
 
     /// <summary>An exact-type slot that additionally requires the given infusion.</summary>
     public static ComponentMatcher Infused(int itemType, ChemicalQuality infusion) => new(itemType, infusion);
 
     /// <summary>An exact-type slot requiring <paramref name="minPotency"/>; the more demanding variant wins when both fit.</summary>
-    public static ComponentMatcher Of(int itemType, int minPotency, ChemicalQuality infusion = ChemicalQuality.None)
-        => new(itemType, infusion, minPotency);
+    public static ComponentMatcher Of(int itemType, int minPotency, ChemicalQuality infusion = ChemicalQuality.None, int maxPotency = 0)
+        => new(itemType, infusion, minPotency, maxPotency);
 
     /// <summary>A group slot requiring <paramref name="minPotency"/>, whichever member fills it.</summary>
-    public static ComponentMatcher Of(AlchemyComponentGroup group, int minPotency) => new(group, minPotency);
+    public static ComponentMatcher Of(AlchemyComponentGroup group, int minPotency, int maxPotency = 0) => new(group, minPotency, maxPotency);
+
+    /// <summary>Whether the slot's level above <see cref="MinPotency"/> is consumed and raises the brew's potency.</summary>
+    public bool IsRanged => MaxPotency > MinPotency;
 
     /// <summary>Type-level acceptance (almanac indexing: "which recipes use this item type").</summary>
     public bool Matches(int itemType) =>
@@ -458,8 +421,8 @@ public sealed class AlchemyRecipe
     /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own minimum potency.</summary>
     public ComponentMatcher[] Components { get; init; } = Array.Empty<ComponentMatcher>();
 
-    /// <summary>Builds the output from the composition of the slotted ingredients.</summary>
-    public Func<BrewComposition, Item> CreateOutput { get; init; }
+    /// <summary>Builds the output from the slotted ingredients.</summary>
+    public Func<BrewContext, Item> CreateOutput { get; init; }
 
     /// <inheritdoc cref="RecipeVariant.ReturnsBottle" />
     public bool? ReturnsBottleOverride { get; init; }
@@ -486,13 +449,16 @@ public sealed class AlchemyRecipe
         }
     }
 
+    /// <summary>The output at minimum slot levels with no input item, for almanac display and indexing.</summary>
+    public Item PreviewOutput() => CreateOutput?.Invoke(new BrewContext(BrewCompositions.Of(this), 0, null)) ?? new Item();
+
     /// <summary>Items consumed from the input per batch: one potency level's stack for a solute, otherwise 1.</summary>
     public static int InputCostOf(Item input) =>
         ChemicalRoles.Of(input) == ChemicalRole.Solute ? SolutePotency.StackPerPotency(input.type) : 1;
 
     /// <summary>
     /// Whether the input and slots satisfy this recipe. <paramref name="slotCosts"/> and <paramref name="slotPotencies"/> receive
-    /// each claimed slot's per-batch cost and minimum potency. On a stack-only failure they still describe the requirement and
+    /// each claimed slot's per-batch cost and consumed potency. On a stack-only failure they still describe the requirement and
     /// <paramref name="shortfall"/> names the first short item; on any other failure both are cleared.
     /// </summary>
     public bool TryMatch(Item input, Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, out AlchemyShortfall shortfall)
@@ -543,8 +509,8 @@ public sealed class AlchemyRecipe
     }
 
     /// <summary>
-    /// Claims a slot per matcher, most specific first. A claimed slot receives the matcher's minimum potency (never 0, which
-    /// marks it claimed) and that potency's cost.
+    /// Claims a slot per matcher, most specific first. A claimed slot receives its level clamped to the matcher's range (never
+    /// 0, which marks it claimed) and that level's cost. Without <paramref name="requirePotency"/> it receives the minimum.
     /// </summary>
     private bool Assign(Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, bool requirePotency)
     {
@@ -574,10 +540,13 @@ public sealed class AlchemyRecipe
                 var slot = slots[j];
                 if (slot is null || slot.IsAir) continue;
                 if (!matcher.Matches(slot)) continue;
-                if (requirePotency && SolutePotency.LevelOf(slot) < matcher.MinPotency) continue;
 
-                slotPotencies[j] = matcher.MinPotency;
-                slotCosts[j] = SolutePotency.CostOf(slot.type, matcher.MinPotency);
+                int level = SolutePotency.LevelOf(slot);
+                if (requirePotency && level < matcher.MinPotency) continue;
+
+                int claimed = requirePotency ? Math.Min(level, matcher.MaxPotency) : matcher.MinPotency;
+                slotPotencies[j] = claimed;
+                slotCosts[j] = SolutePotency.CostOf(slot.type, claimed);
                 found = true;
                 break;
             }
