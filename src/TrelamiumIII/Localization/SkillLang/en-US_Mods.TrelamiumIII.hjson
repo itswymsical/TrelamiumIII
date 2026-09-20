@@ -1,0 +1,38 @@
+// Keys are derived from each skill's id with its "skill." prefix stripped, so "skill.dash" reads its
+// name at SkillLang.dash.Name. Nothing types the key by hand - renaming a skill's id here without
+// renaming it in code shows the id itself in the UI rather than failing loudly.
+SkillLang: {
+	// Shown as the branch heading in the skill panel.
+	Group: {
+		Unaligned: Unaligned
+		Locomotion: Locomotion
+		Construction: Construction
+		Excavation: Excavation
+		Ballistics: Ballistics
+		Alchemy: Alchemy
+		Husbandry: Husbandry
+		Communion: Communion
+	}
+
+	baseline: {
+		Name: Baseline
+		Description: Place blocks 20% faster.
+	}
+
+	dash: {
+		Name: Quickstep
+		Description: Double tap a direction to dash. Yields to a dash accessory.
+	}
+
+	doublejump: {
+		Name: Second Wind
+		Description: Grants a double jump
+	}
+
+	pickaxe: {
+		boomerang: {
+			Name: Prospector's Arc
+			Description: Right click to throw your pickaxe!
+		}
+	}
+}

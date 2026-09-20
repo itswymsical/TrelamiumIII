@@ -4,6 +4,7 @@ using System.IO;
 using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.ExperientialSystem;
 using TrelamiumIII.Core.ExperientialSystem.Combat;
+using TrelamiumIII.Core.ExperientialSystem.Skills;
 
 namespace TrelamiumIII;
 
@@ -14,6 +15,7 @@ partial class TrelamiumIII
         LiquidMergeExplosion,
         TileCondition,
         GrantExperience,
+        SkillSet,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -32,6 +34,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.GrantExperience:
                 ReceiveExperientialGrant(reader);
+                break;
+            case MessageType.SkillSet:
+                SkillPlayer.Receive(reader, whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

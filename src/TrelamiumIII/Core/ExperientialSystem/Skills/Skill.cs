@@ -1,3 +1,5 @@
+using Terraria.Localization;
+
 namespace TrelamiumIII.Core.ExperientialSystem.Skills;
 
 /// <summary>
@@ -7,6 +9,8 @@ namespace TrelamiumIII.Core.ExperientialSystem.Skills;
 public enum SkillGroup
 {
     Unaligned,
+    Locomotion,
+    Construction,
     Excavation,
     Ballistics,
     Alchemy,
@@ -33,26 +37,53 @@ public enum SkillGroup
 /// </summary>
 public abstract class Skill
 {
+    /// <summary>Prefix every skill id carries, stripped when deriving the localization key.</summary>
+    private const string IdPrefix = "skill.";
+
+    private LocalizedText? _name;
+    private LocalizedText? _description;
+
     /// <summary>Stable identifier. Persisted in save data, so renaming one orphans a player's unlock.</summary>
     public abstract string ID { get; }
 
-    public abstract string Name { get; }
+    /// <summary>
+    /// Key segment under <c>Mods.TrelamiumIII.SkillLang</c>, derived from <see cref="ID"/> with its
+    /// <c>skill.</c> prefix stripped. Override only to keep an existing key alive after renaming an id.
+    /// </summary>
+    protected virtual string LocalizationKey
+        => ID.StartsWith(IdPrefix, StringComparison.Ordinal) ? ID[IdPrefix.Length..] : ID;
 
-    public abstract string Description { get; }
+    /// <summary>Display name, from the language files. Cached as a <see cref="LocalizedText"/> so it follows a language change.</summary>
+    public virtual string Name => (_name ??= Localize(nameof(Name))).Value;
 
-    /// <summary>Threshold the player must have reached before this can be bought. Never re-checked once unlocked.</summary>
+    public virtual string Description => (_description ??= Localize(nameof(Description))).Value;
+
+    /// <summary>
+    /// Registers the key through <see cref="Mod.GetLocalization"/> so a skill nobody has written strings
+    /// for is stubbed into the language file rather than silently rendering its own id.
+    /// </summary>
+    private LocalizedText Localize(string field)
+        => TrelamiumIII.Instance.GetLocalization($"SkillLang.{LocalizationKey}.{field}", () => ID);
+
+    /// <summary>
+    /// Threshold this skill is authored at. Below <see cref="ExperientialConstants.FirstSkillThreshold"/>
+    /// it only orders the skill within the opening band; <see cref="UnlockThreshold"/> is the real gate.
+    /// </summary>
     public abstract int RequiredThreshold { get; }
+
+    /// <summary>Threshold the player must have reached to buy this. Never re-checked once unlocked.</summary>
+    public int UnlockThreshold => ExperientialConstants.SkillGate(RequiredThreshold);
 
     public virtual SkillGroup Group => SkillGroup.Unaligned;
 
     /// <summary>
-    /// Price as a fraction of the meter at <see cref="RequiredThreshold"/>. 0.4 means "roughly two fifths
-    /// of the Threshold you unlocked it on" no matter where on the curve that sits.
+    /// Price as a fraction of the meter at <see cref="UnlockThreshold"/>. 0.4 means "roughly two fifths
+    /// of the Threshold you can first buy it on" no matter where on the curve that sits.
     /// </summary>
     public virtual float CostFraction => 0.4f;
 
     /// <summary>Exp price. Override only for a skill that genuinely needs a flat number.</summary>
-    public virtual int Cost => (int)MathF.Round(ExperientialConstants.Capacity(RequiredThreshold) * CostFraction);
+    public virtual int Cost => (int)MathF.Round(ExperientialConstants.Capacity(UnlockThreshold) * CostFraction);
 
     /// <summary>
     /// Fraction of <see cref="Cost"/> returned on respec. Below 1 makes respeccing a real decision rather
@@ -80,4 +111,21 @@ public abstract class Skill
     /// changes and behaviour flags belong, so that a respec takes effect immediately with no bookkeeping.
     /// </summary>
     public virtual void Apply(Player player) { }
+}
+
+/// <summary>Localized display names for <see cref="SkillGroup"/>, for the branch headings in the skill panel.</summary>
+public static class SkillGroupExtensions
+{
+    private static readonly LocalizedText?[] Names = new LocalizedText?[Enum.GetValues<SkillGroup>().Length];
+
+    public static string DisplayName(this SkillGroup group)
+    {
+        int index = (int)group;
+
+        if (index < 0 || index >= Names.Length)
+            return group.ToString();
+
+        return (Names[index] ??= TrelamiumIII.Instance.GetLocalization(
+            $"SkillLang.Group.{group}", group.ToString)).Value;
+    }
 }

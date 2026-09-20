@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Terraria.ModLoader.IO;
 
@@ -36,6 +37,9 @@ public sealed class SkillPlayer : ModPlayer
 
     public bool Has(Skill? skill) => skill is not null && Has(skill.ID);
 
+    /// <summary>Whether this player holds a one-off skill, by its class. See <see cref="SkillRegistry.Get{T}"/>.</summary>
+    public bool Has<T>() where T : Skill => Has(SkillRegistry.Get<T>());
+
     public IEnumerable<Skill> UnlockedSkills => _unlocked.Select(SkillRegistry.Get).OfType<Skill>();
 
     /// <summary>Exp that would come back from refunding everything currently held, before the meter clamps it.</summary>
@@ -54,7 +58,7 @@ public sealed class SkillPlayer : ModPlayer
 
         var experiential = Player.GetModPlayer<ExperientialPlayer>();
 
-        if (experiential.Threshold < skill.RequiredThreshold)
+        if (experiential.Threshold < skill.UnlockThreshold)
             return SkillPurchaseResult.ThresholdTooLow;
 
         if (!skill.IsAvailableTo(Player))
@@ -117,6 +121,67 @@ public sealed class SkillPlayer : ModPlayer
         foreach (Skill skill in UnlockedSkills)
             skill.Apply(Player);
     }
+
+    #region Multiplayer
+
+    /// <summary>
+    /// Held skills are synced because other clients read them: a rework decides how this player's items
+    /// look and behave on every machine, not just the owner's.
+    /// </summary>
+    public override void SyncPlayer(int toWho, int fromWho, bool newPlayer) => SendSkills(toWho, fromWho);
+
+    public override void CopyClientState(ModPlayer targetCopy)
+    {
+        var copy = (SkillPlayer)targetCopy;
+
+        copy._unlocked.Clear();
+        copy._unlocked.UnionWith(_unlocked);
+    }
+
+    public override void SendClientChanges(ModPlayer clientPlayer)
+    {
+        if (!_unlocked.SetEquals(((SkillPlayer)clientPlayer)._unlocked))
+            SendSkills(-1, Player.whoAmI);
+    }
+
+    private void SendSkills(int toWho, int fromWho)
+    {
+        ModPacket packet = Mod.GetPacket();
+
+        packet.Write((byte)TrelamiumIII.MessageType.SkillSet);
+        packet.Write((byte)Player.whoAmI);
+        packet.Write((ushort)_unlocked.Count);
+
+        foreach (string id in _unlocked)
+            packet.Write(id);
+
+        packet.Send(toWho, fromWho);
+    }
+
+    internal static void Receive(BinaryReader reader, int sender)
+    {
+        int whoAmI = reader.ReadByte();
+        int count = reader.ReadUInt16();
+
+        List<string> ids = new(count);
+
+        for (int i = 0; i < count; i++)
+            ids.Add(reader.ReadString());
+
+        if (whoAmI < 0 || whoAmI >= Main.maxPlayers)
+            return;
+
+        var skills = Main.player[whoAmI].GetModPlayer<SkillPlayer>();
+
+        skills._unlocked.Clear();
+        skills._unlocked.UnionWith(ids.Where(static id => SkillRegistry.Get(id) is not null));
+
+        // The server holds no skill state of its own; it only passes the owner's set on to everyone else.
+        if (Main.netMode == NetmodeID.Server)
+            skills.SendSkills(-1, sender);
+    }
+
+    #endregion
 
     #region Save data
 

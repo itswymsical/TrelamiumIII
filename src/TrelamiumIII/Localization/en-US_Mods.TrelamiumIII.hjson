@@ -1,6 +1,7 @@
 Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
+	"Skill Tree.DisplayName": Skill  Tree
 }
 
 Rarities: {
@@ -969,17 +970,37 @@ Items: {
 
 	ContactPoisonCanister: {
 		DisplayName: Contact Poison Canister
-		Tooltip: ""
+		Tooltip: Explodes on contact
 	}
 
 	TimedPoisonCanister: {
 		DisplayName: Timed Poison Canister
-		Tooltip: ""
+		Tooltip: Explodes shortly after tile contact
 	}
 
 	AquaTerraeItem: {
-		DisplayName: Aqua Terrae Item
+		DisplayName: Aqua Terrae
 		Tooltip: ""
+	}
+
+	ContactHyperboreanCanister: {
+		DisplayName: Contact Hyperborean Canister
+		Tooltip: Explodes on contact
+	}
+
+	ContactVilesporeCanister: {
+		DisplayName: Contact Vilespore Canister
+		Tooltip: Explodes on contact
+	}
+
+	TimedHyperboreanCanister: {
+		DisplayName: Timed Hyperborean Canister
+		Tooltip: Explodes shortly after tile contact
+	}
+
+	TimedVilesporeCanister: {
+		DisplayName: Timed Vilespore Canister
+		Tooltip: Explodes shortly after tile contact
 	}
 }
 
@@ -1067,6 +1088,7 @@ Projectiles: {
 	CanisterCannonProj.DisplayName: Canister Cannon
 	GasCanisterProj.DisplayName: Gas Canister
 	WardenBoulder.DisplayName: Warden Boulder
+	ThrownTool.DisplayName: Thrown Tool
 }
 
 NPCs: {
