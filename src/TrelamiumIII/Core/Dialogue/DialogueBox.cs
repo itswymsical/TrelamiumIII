@@ -316,7 +316,7 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
                 var modifiers = currentDialogue.Modifiers;
                 for (int i = 0; i < modifiers.Count; i++)
                     if (modifiers[i].Covers(charIndex))
-                        modifiers[i].Affect.OnReveal(revealTick);
+                        modifiers[i].ApplyReveal(revealTick);
 
                 if (!voice.TryReveal(currentDialogue.BaseDelay, currentDialogue.Speed, revealTick.SpeedMultiplier))
                     break;
@@ -517,7 +517,7 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
                 var modifiers = currentDialogue.Modifiers;
                 for (int m = 0; m < modifiers.Count; m++)
                     if (modifiers[m].Covers(globalCharIndex))
-                        modifiers[m].Affect.OnDraw(renderContext);
+                        modifiers[m].ApplyDraw(renderContext);
 
                 charPos += renderContext.Offset;
 

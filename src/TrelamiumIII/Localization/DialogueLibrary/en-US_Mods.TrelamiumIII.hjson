@@ -1,4 +1,12 @@
 DialogueLibrary: {
+	Example: {
+		Inflection: {
+			Line1.Text: Wait a second... [Yo]u! did this![] Didn['t] you?
+			Line2.Text: Don't [look] at me like that.[] I'm [perfectly] fine.
+			Line3.Text: Hear that [climb]? And the way this one [sinks]?
+		}
+	}
+
 	Sonder: {
 		SonderGreeting: {
 			Line1.Text: Greetings, [speakerName:player]. [] I am Sonder,[] a mere wanderer of the world.[] I have traveled far and wide, and I have many stories to tell.

@@ -21,4 +21,18 @@ public readonly struct LineModifier
 
     /// <summary>True when this binding's span covers <paramref name="index"/>.</summary>
     public bool Covers(int index) => index >= StartIndex && index < EndIndex;
+
+    /// <summary>Runs the affect's reveal pass with this binding's span in context.</summary>
+    public void ApplyReveal(DialogueTick tick)
+    {
+        tick.BeginSpan(StartIndex, EndIndex);
+        Affect.OnReveal(tick);
+    }
+
+    /// <summary>Runs the affect's draw pass with this binding's span in context.</summary>
+    public void ApplyDraw(DialogueRenderContext render)
+    {
+        render.BeginSpan(StartIndex, EndIndex);
+        Affect.OnDraw(render);
+    }
 }

@@ -18,6 +18,29 @@ public abstract class DialogueAffect
     public virtual void OnDraw(DialogueRenderContext render) { }
 }
 
+/// <summary>Where a glyph sits inside the span its affect covers.</summary>
+public readonly struct SpanCursor
+{
+    /// <summary>Glyphs the span covers, never below 1.</summary>
+    public int Length { get; }
+
+    /// <summary>This glyph's position in the span, from 0 to <see cref="Length"/> - 1.</summary>
+    public int Offset { get; }
+
+    /// <summary>This glyph's position in the line.</summary>
+    public int Index { get; }
+
+    public SpanCursor(int index, int start, int end)
+    {
+        Length = Math.Max(end - start, 1);
+        Offset = Math.Clamp(index - start, 0, Length - 1);
+        Index = index;
+    }
+
+    /// <summary>0 on the span's first glyph, 1 on its last. A one-glyph span reads 1.</summary>
+    public float Progress => Length > 1 ? Offset / (float)(Length - 1) : 1f;
+}
+
 /// <summary>Per-character state an affect adjusts as a glyph is revealed: typing speed, hold, pitch, one-shot sound.</summary>
 public sealed class DialogueTick
 {
@@ -27,14 +50,20 @@ public sealed class DialogueTick
     public float Pitch { get; set; }
     public SoundStyle? Sound { get; set; }
 
+    /// <summary>This glyph's place in the span of the affect being run.</summary>
+    public SpanCursor Span { get; private set; }
+
     public void Reset(int charIndex)
     {
         CharIndex = charIndex;
+        Span = new SpanCursor(charIndex, charIndex, charIndex + 1);
         SpeedMultiplier = 1f;
         HoldFrames = 0;
         Pitch = 1f;
         Sound = null;
     }
+
+    internal void BeginSpan(int start, int end) => Span = new SpanCursor(CharIndex, start, end);
 }
 
 /// <summary>Per-glyph state an affect adjusts each frame while drawing: draw offset and color.</summary>
@@ -44,12 +73,18 @@ public sealed class DialogueRenderContext
     public Vector2 Offset { get; set; }
     public Color Color { get; set; }
 
+    /// <summary>This glyph's place in the span of the affect being run.</summary>
+    public SpanCursor Span { get; private set; }
+
     public void Reset(int glyphIndex, Color baseColor)
     {
         GlyphIndex = glyphIndex;
+        Span = new SpanCursor(glyphIndex, glyphIndex, glyphIndex + 1);
         Offset = Vector2.Zero;
         Color = baseColor;
     }
+
+    internal void BeginSpan(int start, int end) => Span = new SpanCursor(GlyphIndex, start, end);
 }
 
 /// <summary>Hold the typewriter for <c>frames</c> after this glyph (replaces &lt;pause&gt;).</summary>

@@ -402,7 +402,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             for (int i = 0; i < modifiers.Count; i++)
             {
                 if (modifiers[i].Covers(charIndex))
-                    modifiers[i].Affect.OnReveal(revealTick);
+                    modifiers[i].ApplyReveal(revealTick);
             }
 
             if (!voice.TryReveal(current.BaseDelay, current.Speed, revealTick.SpeedMultiplier))
@@ -1110,7 +1110,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             for (int m = 0; m < modifiers.Count; m++)
             {
                 if (modifiers[m].Covers(i))
-                    modifiers[m].Affect.OnDraw(renderContext);
+                    modifiers[m].ApplyDraw(renderContext);
             }
 
             // Drops into place as it fades up. The rise is in texels, so it is a whole chunky pixel
