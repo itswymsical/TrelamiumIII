@@ -61,6 +61,28 @@ public abstract class Job
     public int ProviderNPC { get; }
     #endregion
 
+    #region Unlocking
+    /// <summary>
+    /// What puts this job on its provider's board. <see langword="null"/> when nothing does on its own,
+    /// and the job waits for an explicit <see cref="JobPlayer.UnlockJob"/> from dialogue or a command.
+    /// </summary>
+    /// <remarks>
+    /// Read once, off the prototype built at load, so it must not close over anything per-player. The
+    /// player it is asked about arrives as the argument to <see cref="JobCondition.IsMet"/>.
+    /// </remarks>
+    public virtual JobCondition UnlockCondition => null;
+
+    /// <summary>
+    /// Withdraw the offer again when <see cref="UnlockCondition"/> stops holding. Off by default, since
+    /// most gates are milestones and those do not un-happen. A job the player has already accepted is
+    /// never taken back either way.
+    /// </summary>
+    public virtual bool RevokeWhenUnmet => false;
+
+    /// <summary>Called each time the job goes on offer, a returning revoked offer included.</summary>
+    public virtual void OnUnlocked() { }
+    #endregion
+
     #region State
     public JobState State { get; set; } = JobState.Locked;
 
@@ -276,6 +298,10 @@ public abstract class Job
 
         State = JobState.Completed;
         OnJobComplete();
+
+        // Reached from UpdateProgress without passing through JobPlayer, so a job gated on this one
+        // finishing has to be told from here.
+        Context?.Jobs.InvalidateUnlocks();
     }
 
     /// <summary>

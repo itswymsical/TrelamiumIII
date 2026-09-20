@@ -53,6 +53,15 @@ public sealed class HomeForager : Job
         housingTask = (ValidHousingTask)TaskList[FirstHousingSet].Task[0];
     }
 
+    /// <summary>The opening job, so it is offered from the world's first day.</summary>
+    public override JobCondition UnlockCondition => JobCondition.WorldDay(0);
+
+    public override void OnUnlocked()
+    {
+        if (Context.IsLocal)
+            DialogueManager.Instance.StartDialogue("Guide.HomeForager");
+    }
+
     public override void OnJobStart()
     {
         Context.Play("Guide.HomeForager_Greeting", zoomIn: true, style: DialogueStyle.Projected);

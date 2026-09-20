@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
-using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.UI.Jobs;
@@ -29,6 +28,10 @@ public partial class JobPlayer : ModPlayer
             if (job.State == JobState.Active)
                 job.Handle(evt);
         }
+
+        // Anything at all may have moved an unlock condition. Which one is not worth working out here:
+        // the rules read live state, so the next evaluation asks them all.
+        InvalidateUnlocks();
     }
     #endregion
 
@@ -72,6 +75,7 @@ public partial class JobPlayer : ModPlayer
         job.OnJobStart();
 
         EventNPC.InvalidateJobCache();
+        InvalidateUnlocks();
 
         if (Player.whoAmI != Main.myPlayer)
             return;
@@ -89,7 +93,10 @@ public partial class JobPlayer : ModPlayer
             return;
 
         job.State = JobState.Available;
+        job.OnUnlocked();
+
         EventNPC.InvalidateJobCache();
+        InvalidateUnlocks();
     }
 
     /// <summary>Withdraws an offered job. Does not touch one already underway.</summary>
@@ -101,7 +108,9 @@ public partial class JobPlayer : ModPlayer
             return;
 
         job.State = JobState.Locked;
+
         EventNPC.InvalidateJobCache();
+        InvalidateUnlocks();
     }
 
     /// <summary>
@@ -120,7 +129,9 @@ public partial class JobPlayer : ModPlayer
             return false;
 
         job.Complete();
+
         EventNPC.InvalidateJobCache();
+        InvalidateUnlocks();
 
         return job.State == JobState.Completed;
     }
@@ -188,11 +199,13 @@ public partial class JobPlayer : ModPlayer
         }
 
         tag["Jobs"] = saved;
+        SaveFlags(tag);
     }
 
     public override void LoadData(TagCompound tag)
     {
         jobs.Clear();
+        LoadFlags(tag);
 
         foreach (var jobTag in tag.GetList<TagCompound>("Jobs"))
         {
@@ -299,15 +312,17 @@ public partial class JobPlayer : ModPlayer
     #region Upkeep
     public override void OnEnterWorld()
     {
-        // Anything gated behind a day this world has already seen is opened here, so a player who
-        // was not present at the sunrise that gated it is not locked out of it permanently.
-        WorldTimeSystem.ApplyMilestonesTo(Player);
+        // Conditions are re-read from scratch rather than replayed, so a gate that opened while this
+        // player was elsewhere -- a day passing, a boss going down -- is caught on the way in.
+        InvalidateUnlocks();
 
         RefreshSidebar();
     }
 
     public override void PostUpdate()
     {
+        UpdateUnlocks();
+
         foreach (var job in jobs)
         {
             if (job.State is JobState.Active or JobState.Available)

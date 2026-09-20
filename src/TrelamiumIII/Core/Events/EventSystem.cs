@@ -58,6 +58,7 @@ public class EventSystem : ModSystem
 
         JobTypes.Clear();
         JobMetadata.Clear();
+        JobUnlockRegistry.Clear();
         On_WorldGen.StartRoomCheck -= HookStartRoomCheck;
         On_WorldGen.MoveTownNPC -= HookMoveTownNPC;
         HousingCooldowns.Clear();
@@ -328,6 +329,11 @@ public class EventSystem : ModSystem
 
                 JobTypes[instance.ID] = type;
                 JobMetadata[instance.ID] = new JobInfo(instance.NameKey, instance.DescriptionKey, instance.ProviderNPC);
+
+                // Kept with the metadata for the same reason: a gate has to be answerable for a job no
+                // player has an instance of, which is every job before the one that opens it.
+                if (instance.UnlockCondition is { } condition)
+                    JobUnlockRegistry.Register(new JobUnlockRule(instance.ID, condition, instance.RevokeWhenUnmet));
             }
             catch (Exception ex)
             {

@@ -4,19 +4,10 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.DevTools;
 
-/// <summary>
-///     Dev tool: emits into any registered <see cref="FieldLayer" /> so its physics and its shader
-///     can be watched without having to craft the thing that normally produces it.
-/// </summary>
-/// <remarks>
-///     Left click acts, right click cycles the mode, and the picker that chooses the layer appears
-///     while the wand is held. Deals no damage and has no recipe.
-/// </remarks>
 public class FieldWand : ModItem
 {
-    public override string Texture => Assets.Textures.NullTex.KEY;
+    public override string Texture => Assets.Textures.PlaceholderItem.KEY;
 
-    /// <summary>Nodes thrown per use in the directed modes.</summary>
     private const int SPRAY_COUNT = 3;
 
     private const int PUFF_COUNT = 14;

@@ -38,6 +38,8 @@ public sealed class GoldMine : Job
         providerNPC: NPCID.Merchant)
     { }
 
+    public override JobCondition UnlockCondition => JobCondition.WorldDay(3);
+
     public override void OnJobStart()
         => Context.Play("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
 

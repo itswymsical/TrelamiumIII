@@ -34,7 +34,6 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
     public override float SpawnChance(NPCSpawnInfo spawnInfo)
     {
-        // He never despawns and persists with the world, so every extra spawn would be permanent.
         if (NPC.AnyNPCs(Type))
             return 0f;
 
@@ -46,7 +45,6 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
     {
         base.PostAI();
 
-        // Removes duplicates already saved into a world: only the lowest slot stays.
         if (Main.netMode != NetmodeID.MultiplayerClient && HasLowerSlotDuplicate())
             Despawn();
     }

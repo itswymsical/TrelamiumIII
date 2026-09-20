@@ -264,3 +264,49 @@ public class ListJobsCommand : ModCommand
         }
     }
 }
+public class JobFlagCommand : ModCommand
+{
+    public override string Command => "jobflag";
+    public override CommandType Type => CommandType.Chat | CommandType.World;
+    public override string Usage => "/jobflag <set|clear|list> [name]";
+    public override string Description => "Raises, lowers or lists the story flags job unlock conditions read";
+
+    public override void Action(CommandCaller caller, string input, string[] args)
+    {
+        var jobPlayer = caller.Player.GetModPlayer<JobPlayer>();
+        var action = args.Length > 0 ? args[0].ToLower() : "list";
+
+        if (action == "list")
+        {
+            if (jobPlayer.Flags.Count == 0)
+                caller.Reply("No flags raised", Color.Gray);
+            else
+                caller.Reply($"Flags: {string.Join(", ", jobPlayer.Flags)}", Color.CornflowerBlue);
+
+            return;
+        }
+
+        if (args.Length < 2)
+        {
+            caller.Reply("Usage: " + Usage, Color.Red);
+            return;
+        }
+
+        var flag = args[1];
+
+        switch (action)
+        {
+            case "set":
+                caller.Reply(jobPlayer.SetFlag(flag) ? $"Raised '{flag}'" : $"'{flag}' was already up", Color.Green);
+                break;
+
+            case "clear":
+                caller.Reply(jobPlayer.ClearFlag(flag) ? $"Lowered '{flag}'" : $"'{flag}' was not up", Color.Green);
+                break;
+
+            default:
+                caller.Reply("Usage: " + Usage, Color.Red);
+                break;
+        }
+    }
+}
