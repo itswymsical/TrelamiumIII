@@ -59,7 +59,7 @@ public class AcornLauncherItem : ModItem
         var recipe = CreateRecipe();
         recipe.AddRecipeGroup(RecipeGroupID.Wood, 22);
         recipe.AddIngredient(ItemID.Acorn, 8);
-        recipe.AddIngredient(ItemID.IllegalGunParts);
+        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 5);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }

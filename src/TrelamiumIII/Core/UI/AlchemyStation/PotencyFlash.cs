@@ -22,10 +22,8 @@ internal sealed class PotencyFlash
     private const float WHITE_RISE = 0.08f;
     private const float WHITE_FADE = 0.42f;
 
+    /// <summary>Flash progress the sheen starts at; <see cref="SpriteSheen"/> owns its slope and width.</summary>
     private const float SHEEN_START = 0.3f;
-
-    /// <summary>Texels the sheen band shifts left per texel down.</summary>
-    private const float SHEEN_SLOPE = 0.5f;
 
     private const int GLOW_PADDING = 4;
     private const int GLOW_BLUR_RADIUS = 2;
@@ -162,7 +160,8 @@ internal sealed class PotencyFlash
         if (white > 0f)
             sb.Draw(mask, position, null, Color.White * (strength * white), 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
-        DrawSheen(sb, mask, position, scale, progress, strength);
+        SpriteSheen.Draw(sb, mask, position, scale, (progress - SHEEN_START) / (1f - SHEEN_START),
+            Color.White * (0.8f * strength));
 
         float pulse = EaseFunction.EaseQuadOut.Ease(progress);
         Vector2 origin = mask.Size() * 0.5f;
@@ -171,106 +170,16 @@ internal sealed class PotencyFlash
             scale * (1f + 0.6f * pulse), SpriteEffects.None, 0f);
     }
 
-    /// <summary>Slanted band of the mask crossing the star left to right, drawn in row slices at least one screen pixel tall.</summary>
-    private static void DrawSheen(SpriteBatch sb, Texture2D mask, Vector2 position, float scale, float progress, float strength)
-    {
-        float t = (progress - SHEEN_START) / (1f - SHEEN_START);
-
-        if (t is <= 0f or >= 1f)
-            return;
-
-        float halfWidth = mask.Width * 0.15f;
-        float topCenter = -halfWidth + t * (mask.Width + halfWidth * 2f + mask.Height * SHEEN_SLOPE);
-        int slice = Math.Max(1, (int)MathF.Ceiling(1f / scale));
-        Color color = Color.White * (0.8f * strength * MathF.Sin(t * MathF.PI));
-
-        for (int row = 0; row < mask.Height; row += slice)
-        {
-            int height = Math.Min(slice, mask.Height - row);
-            float center = topCenter - (row + height * 0.5f) * SHEEN_SLOPE;
-            int left = Math.Clamp((int)MathF.Round(center - halfWidth), 0, mask.Width);
-            int right = Math.Clamp((int)MathF.Round(center + halfWidth), 0, mask.Width);
-
-            if (right > left)
-            {
-                sb.Draw(mask, position + new Vector2(left, row) * scale, new Rectangle(left, row, right - left, height), color,
-                    0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-            }
-        }
-    }
-
     /// <summary>The star's white mask and its padded, blurred glow mask, built on first use.</summary>
     private static (Texture2D Mask, Texture2D Glow) Masks(Texture2D star)
     {
         if (_mask == null || _glowMask == null)
         {
-            var pixels = new Color[star.Width * star.Height];
-            star.GetData(pixels);
-
-            _mask = CreateMask(pixels, star.Width, star.Height, padding: 0, blurRadius: 0);
-            _glowMask = CreateMask(pixels, star.Width, star.Height, GLOW_PADDING, GLOW_BLUR_RADIUS);
+            _mask = SpriteMask.Build(star);
+            _glowMask = SpriteMask.Build(star, GLOW_PADDING, GLOW_BLUR_RADIUS);
         }
 
         return (_mask, _glowMask);
-    }
-
-    /// <summary>
-    /// Premultiplied white texture carrying <paramref name="source" />'s alpha, padded on every side and, when
-    /// <paramref name="blurRadius" /> is above 0, box-blurred twice per axis.
-    /// </summary>
-    private static Texture2D CreateMask(Color[] source, int width, int height, int padding, int blurRadius)
-    {
-        int maskWidth = width + padding * 2;
-        int maskHeight = height + padding * 2;
-        var alpha = new float[maskWidth * maskHeight];
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-                alpha[(y + padding) * maskWidth + x + padding] = source[y * width + x].A / 255f;
-        }
-
-        for (int pass = 0; pass < 2 && blurRadius > 0; pass++)
-        {
-            alpha = BoxBlur(alpha, maskWidth, maskHeight, blurRadius, horizontal: true);
-            alpha = BoxBlur(alpha, maskWidth, maskHeight, blurRadius, horizontal: false);
-        }
-
-        var pixels = new Color[alpha.Length];
-
-        for (int i = 0; i < pixels.Length; i++)
-        {
-            byte a = (byte)(Math.Clamp(alpha[i], 0f, 1f) * 255f);
-            pixels[i] = new Color(a, a, a, a);
-        }
-
-        var mask = new Texture2D(Main.graphics.GraphicsDevice, maskWidth, maskHeight);
-        mask.SetData(pixels);
-
-        return mask;
-    }
-
-    /// <summary>One box-blur pass along rows or columns. Samples outside the texture count as 0.</summary>
-    private static float[] BoxBlur(float[] values, int width, int height, int radius, bool horizontal)
-    {
-        var result = new float[values.Length];
-        int length = horizontal ? width : height;
-        int lines = horizontal ? height : width;
-
-        for (int line = 0; line < lines; line++)
-        {
-            for (int i = 0; i < length; i++)
-            {
-                float sum = 0f;
-
-                for (int k = Math.Max(0, i - radius); k <= Math.Min(length - 1, i + radius); k++)
-                    sum += values[horizontal ? line * width + k : k * width + line];
-
-                result[horizontal ? line * width + i : i * width + line] = sum / (radius * 2 + 1);
-            }
-        }
-
-        return result;
     }
 
     private static Color Additive(Color color, float opacity) => (color * opacity) with { A = 0 };

@@ -3,7 +3,6 @@ using TrelamiumIII.Core.ExperientialSystem.Skills;
 
 namespace TrelamiumIII.Content.Skills;
 
-/// <summary>Double tap left or right to dash. Yields to an equipped dash accessory.</summary>
 public sealed class DashSkill : Skill
 {
     public const string Id = "skill.dash";
@@ -12,12 +11,11 @@ public sealed class DashSkill : Skill
 
     public override int RequiredThreshold => 5;
 
-    public override SkillGroup Group => SkillGroup.Locomotion;
+    public override SkillGroup Group => SkillGroup.Movement;
 
     public override float CostFraction => 0.5f;
 }
 
-/// <summary>One extra midair jump, stacking with the bottle accessories.</summary>
 public sealed class DoubleJumpSkill : Skill
 {
     public const string Id = "skill.doublejump";
@@ -26,7 +24,7 @@ public sealed class DoubleJumpSkill : Skill
 
     public override int RequiredThreshold => 9;
 
-    public override SkillGroup Group => SkillGroup.Locomotion;
+    public override SkillGroup Group => SkillGroup.Movement;
 
     public override float CostFraction => 0.5f;
 
@@ -54,9 +52,7 @@ public sealed class SkillJump : ExtraJump
 }
 
 /// <summary>
-/// Drives <see cref="DashSkill"/>. Direction is latched from the double tap in
-/// <see cref="ResetEffects"/> and spent in <see cref="PreUpdateMovement"/>, after equips have settled
-/// <see cref="Player.dashType"/>.
+/// Drives <see cref="DashSkill"/>.
 /// </summary>
 public sealed class SkillDashPlayer : ModPlayer
 {

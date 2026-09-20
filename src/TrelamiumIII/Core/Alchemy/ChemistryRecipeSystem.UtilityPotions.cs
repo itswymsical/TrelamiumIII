@@ -71,7 +71,6 @@ public partial class ChemistryRecipeSystem
         #endregion
 
         #region Harvest
-        // Platinum is Fortune's metal, so it leads the brew; silt is metered five blocks per potency level.
         AlchemyRecipes.CreateRecipe(SolventID.FortunateTonic, ModContent.ItemType<HarvestPotionItem>(),
             new RecipeVariant(ItemID.SiltBlock, ItemID.PlatinumOre) { Potency = 2 },
             new RecipeVariant(ItemID.SiltBlock, ItemID.PlatinumOre, ItemID.Amber) { Potency = 4 });

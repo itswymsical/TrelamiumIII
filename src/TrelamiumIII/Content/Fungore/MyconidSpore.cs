@@ -4,6 +4,7 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.Localization;
 using Terraria.ObjectData;
+using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 
@@ -108,26 +109,27 @@ public class MyconidSporeTile : ModTile
         }
     }
 }
-//public class MyconidSporeGlobal : GlobalTile
-//{
-//    public override void RandomUpdate(int i, int j, int type)
-//    {
-//        base.RandomUpdate(i, j, type);
+public class MyconidSporeGlobal : GlobalTile
+{
+    public override void RandomUpdate(int i, int j, int type)
+    {
+        base.RandomUpdate(i, j, type);
+        var chance = DownedBossSystem.DownedFungore ? WorldGen.genRand.NextBool(10000) : WorldGen.genRand.NextBool(4800);
 
-//        if (type == TileID.Grass)
-//        {
-//            if (WorldGen.genRand.NextBool(700))
-//            {
-//                if (!Main.tile[i, j - 1].HasTile)
-//                {
-//                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
+        if (type == TileID.Grass)
+        {
+            if (chance)
+            {
+                if (!Main.tile[i, j - 1].HasTile)
+                {
+                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
 
-//                    if (Main.netMode == NetmodeID.Server)
-//                    {
-//                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
+                    if (Main.netMode == NetmodeID.Server)
+                    {
+                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
+                    }
+                }
+            }
+        }
+    }
+}

@@ -9,7 +9,7 @@ namespace TrelamiumIII.Core.ExperientialSystem.Skills;
 public enum SkillGroup
 {
     Unaligned,
-    Locomotion,
+    Movement,
     Construction,
     Excavation,
     Ballistics,

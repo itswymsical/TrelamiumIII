@@ -561,7 +561,7 @@ internal sealed class SkillTreeField : UIElement
 
     private static Color ColorOf(SkillGroup group) => group switch
     {
-        SkillGroup.Locomotion => new Color(120, 200, 255),
+        SkillGroup.Movement => new Color(120, 200, 255),
         SkillGroup.Construction => new Color(226, 180, 110),
         SkillGroup.Excavation => new Color(240, 200, 90),
         SkillGroup.Ballistics => new Color(232, 110, 100),

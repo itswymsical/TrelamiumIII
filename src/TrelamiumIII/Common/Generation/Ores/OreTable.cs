@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Lodestone;
+using TrelamiumIII.Content.Rusted;
 using static TrelamiumIII.Common.Generation.Ores.Depth;
 using static TrelamiumIII.Common.Generation.Ores.WorldLayer;
 
@@ -35,6 +36,9 @@ public static class OreTable
             veins.Add(new(ore, At(RockLow), At(Bottom), 200f, (4, 9), (4, 8)));
             veins.Add(new(ore, At(Surface), At(Underworld), 25f, (4, 8), (4, 8), [TileID.Mud]));
         }
+
+        ushort rustedIron = (ushort)ModContent.TileType<RustedIronOre>();
+        veins.Add(new(rustedIron, Between(SurfaceLow, SurfaceHigh, 0.6f), Between(RockLow, Rock, 0.85f), 80f, (4, 7), (6, 9), StoneTiles, Clustering: 0.5f));
 
         foreach (ushort ore in new[] { TileID.Silver, TileID.Tungsten })
         {
