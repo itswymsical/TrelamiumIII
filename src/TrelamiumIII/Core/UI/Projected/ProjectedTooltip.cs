@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using ReLogic.Graphics;
 using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Rarities;
+using TrelamiumIII.Core.Text.Tooltips;
 
 namespace TrelamiumIII.Core.UI.Projected;
 
@@ -223,7 +224,9 @@ internal sealed class ProjectedTooltip : IProjectedPanel
             if (string.IsNullOrWhiteSpace(line.Text))
                 continue;
 
-            List<string> wrapped = ProjectedText.Wrap(font, line.Text, TEXT_W);
+            // The card paints raw glyphs, and its width is its own, so a reservation made for the
+            // vanilla box would only be drawn as its tag.
+            List<string> wrapped = ProjectedText.Wrap(font, TooltipReserveTagHandler.Strip(line.Text), TEXT_W);
 
             foreach (string row in wrapped)
                 widest = MathF.Max(widest, ProjectedText.Width(font, row));

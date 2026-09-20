@@ -57,6 +57,107 @@ public sealed class ItemTooltipBlocks : GlobalItem
 
             tooltips.Insert(blocks[i].Anchor.Resolve(tooltips), line);
         }
+
+        ReserveFloatingWidth(tooltips, blocks);
+    }
+
+    /// <summary>
+    ///     Widens the tooltip box, as blank width on one of its lines, until a floating block has
+    ///     somewhere to sit.
+    /// </summary>
+    /// <remarks>
+    ///     Terraria sizes the box to its widest line, measured after this hook returns, so line text
+    ///     is the only lever on it. Without this a tooltip shorter than the block leaves
+    ///     <see cref="FirstRowWithRoom" /> nowhere to put it and it is drawn over the first line.
+    /// </remarks>
+    private static void ReserveFloatingWidth(List<TooltipLine> tooltips, List<TooltipBlock> blocks)
+    {
+        var font = FontAssets.MouseText.Value;
+
+        float[] widths = new float[tooltips.Count];
+        float box = 0f;
+
+        for (int i = 0; i < widths.Length; i++)
+        {
+            widths[i] = MeasureText(font, tooltips[i].Text);
+            box = Math.Max(box, widths[i]);
+        }
+
+        float required = box;
+
+        foreach (TooltipBlock block in blocks)
+        {
+            if (block.Placement != TooltipPlacement.Inline)
+                required = Math.Max(required, WidthToHost(widths, block.MeasureWidth(font, 1f), block.LineCount));
+        }
+
+        int host = required > box ? HostLine(tooltips) : -1;
+
+        if (host >= 0)
+            tooltips[host].Text += TooltipReserveTagHandler.Compose(required - widths[host]);
+    }
+
+    /// <summary>
+    ///     The narrowest box that would leave some run of <paramref name="rowCount" /> lines clear of
+    ///     a block <paramref name="blockWidth" /> wide. Runs the same candidates as
+    ///     <see cref="FirstRowWithRoom" />, and counts a run that overhangs the last line as clear.
+    /// </summary>
+    private static float WidthToHost(float[] widths, float blockWidth, int rowCount)
+    {
+        float best = float.MaxValue;
+
+        for (int start = 0; start <= Math.Max(0, widths.Length - rowCount); start++)
+        {
+            float need = blockWidth;
+
+            for (int row = 0; row < rowCount && start + row < widths.Length; row++)
+                need = Math.Max(need, widths[start + row] + FLOAT_CLEARANCE + blockWidth);
+
+            best = Math.Min(best, need);
+        }
+
+        return best;
+    }
+
+    /// <summary>The lowest line a reservation can be appended to, or -1 when there is none.</summary>
+    /// <remarks>
+    ///     A newline restarts the measured width, so appending past one would widen nothing. The name
+    ///     and flavour lines are drawn from their raw text by <c>RarityRenderer</c>, which would show
+    ///     the tag.
+    /// </remarks>
+    private static int HostLine(List<TooltipLine> tooltips)
+    {
+        int modLine = -1;
+
+        for (int i = tooltips.Count - 1; i >= 0; i--)
+        {
+            TooltipLine line = tooltips[i];
+
+            if (line.Name is "ItemName" or "RarityFlavor" || line.Text.Contains('\n'))
+                continue;
+
+            // Vanilla draws its lines through the snippet parser, so the tag costs them nothing. A
+            // mod line is only as safe as the hook drawing it, so it is the second choice.
+            if (line.Mod == "Terraria")
+                return i;
+
+            modLine = modLine < 0 ? i : modLine;
+        }
+
+        return modLine;
+    }
+
+    /// <summary>A line's width, less any width reserved for a block floating beside it.</summary>
+    private static float MeasureText(DynamicSpriteFont font, string text)
+    {
+        if (!TooltipReserveTagHandler.IsPresent(text))
+            return ChatManager.GetStringSize(font, text, Vector2.One).X;
+
+        List<TextSnippet> snippets = ChatManager.ParseMessage(text, Color.White);
+
+        snippets.RemoveAll(snippet => snippet is TooltipReserveSnippet);
+
+        return ChatManager.GetStringSize(font, [.. snippets], Vector2.One).X;
     }
 
     /// <summary>
@@ -73,6 +174,8 @@ public sealed class ItemTooltipBlocks : GlobalItem
         var font = FontAssets.MouseText.Value;
         float widest = 0f;
 
+        // Plain measurement, unlike FirstRowWithRoom: a reservation is part of the box a block is
+        // aligned against, not part of the text it has to clear.
         foreach (TooltipLine line in lines)
             widest = Math.Max(widest, ChatManager.GetStringSize(font, line.Text, Vector2.One).X);
 
@@ -130,7 +233,7 @@ public sealed class ItemTooltipBlocks : GlobalItem
 
             for (int row = 0; row < rowCount && fits; row++)
             {
-                float text = ChatManager.GetStringSize(font, lines[start + row].Text, Vector2.One).X;
+                float text = MeasureText(font, lines[start + row].Text);
 
                 fits = text + FLOAT_CLEARANCE + blockWidth <= width;
             }

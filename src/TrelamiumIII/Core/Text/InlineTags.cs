@@ -53,6 +53,11 @@ namespace TrelamiumIII.Core.Text;
 ///             emits it for each block an item's <see cref="Tooltips.ITooltipBlockProvider" />s
 ///             contribute, and the tag draws as its fallback text anywhere else.
 ///         </item>
+///         <item>
+///             <c>[ttspace:24]</c> -- that many pixels of blank width, no height. Not written by
+///             hand either: <see cref="Tooltips.ItemTooltipBlocks" /> emits it to widen a tooltip
+///             box for a floating block.
+///         </item>
 ///     </list>
 /// </remarks>
 public sealed class InlineTagSystem : ModSystem
@@ -69,6 +74,9 @@ public sealed class InlineTagSystem : ModSystem
     /// <summary>A custom-drawn tooltip block. See <see cref="Tooltips.TooltipBlockTagHandler" />.</summary>
     internal const string BLOCK_TAG = "ttblock";
 
+    /// <summary>Blank tooltip width. See <see cref="Tooltips.TooltipReserveTagHandler" />.</summary>
+    internal const string SPACE_TAG = "ttspace";
+
     /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
     internal const string FORMAT_TAG = Authoring.FormatCodec.TAG;
 
@@ -83,6 +91,7 @@ public sealed class InlineTagSystem : ModSystem
         HAND_TAG,
         KEY_TAG,
         BLOCK_TAG,
+        SPACE_TAG,
         FORMAT_TAG,
     ];
 
@@ -101,6 +110,7 @@ public sealed class InlineTagSystem : ModSystem
         ChatManager.Register<HandwritingTagHandler>(HAND_TAG);
         ChatManager.Register<HandwritingTagHandler>(KEY_TAG);
         ChatManager.Register<Tooltips.TooltipBlockTagHandler>(BLOCK_TAG);
+        ChatManager.Register<Tooltips.TooltipReserveTagHandler>(SPACE_TAG);
         ChatManager.Register<FormatTagHandler>(FORMAT_TAG);
     }
 

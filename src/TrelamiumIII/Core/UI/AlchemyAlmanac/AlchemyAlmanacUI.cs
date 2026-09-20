@@ -1,13 +1,13 @@
-using Microsoft.Xna.Framework.Input;
 using ReLogic.Content;
+using ReLogic.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
-using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Alchemy.Brewing;
+using TrelamiumIII.Core.Books.Lore;
 
 namespace TrelamiumIII.Core.UI.AlchemyAlmanac;
 
@@ -22,8 +22,8 @@ namespace TrelamiumIII.Core.UI.AlchemyAlmanac;
 public class AlchemyAlmanacUI : IInGameNotification
 {
     #region Constants
-    public const int PAGE_WIDTH = 290;
-    public const int PAGE_HEIGHT = 430;
+    public const int PAGE_WIDTH = 310;
+    public const int PAGE_HEIGHT = 500;
     public const int GUTTER = 6;
 
     private const float OPEN_SPEED = 0.042f;
@@ -46,8 +46,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     // Notes guide layout
     private const int NOTE_TOC_ROWS_PER_PAGE = 12;
     private const int NOTE_TOC_ROWS_PER_SPREAD = NOTE_TOC_ROWS_PER_PAGE * 2;
-    private const int NOTE_LINES_PER_PAGE = 16;                    // prose lines per page
-    private const int NOTE_TITLE_LINES = 2;                        // lines the chapter title reserves on page 0
+    private const float NOTE_TITLE_SPACE = 28f;                    // title and its rule, on a chapter's first page
     private const float NOTE_SCALE = 0.8f;
     private const float NOTE_TOC_ROW_H = 28f;                      // table-of-contents row pitch
 
@@ -68,7 +67,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     public enum ViewMode { Browse, Detail }
 
     /// <summary>Top-level section of the book. Each is its own spread space.</summary>
-    public enum AlmanacCategory { Recipes, Ingredients, Notes }
+    public enum AlmanacCategory { Recipes, Ingredients, Glossary }
 
     private enum BookState { Opening, Reading, Flipping, Closing }
     private enum FlipDir { Forward, Backward }
@@ -217,7 +216,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     public AlchemyAlmanacUI()
     {
         Current = this;
-        current = new SpreadKey(AlmanacCategory.Notes, ViewMode.Browse, 0, 0);
+        current = new SpreadKey(AlmanacCategory.Glossary, ViewMode.Browse, 0, 0);
         next = current;
 
         AlchemyAlmanacSystem.InitTargets(PAGE_WIDTH, PAGE_HEIGHT);
@@ -249,7 +248,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     public SpreadKey NextSpread => next;
 
     /// <summary>True when <see cref="current"/> is the cover/title pair (Recipes browse, index 0).</summary>
-    public bool OnCoverSpread => current.Category == AlmanacCategory.Notes && current.View == ViewMode.Browse && current.Index == 0;
+    public bool OnCoverSpread => current.Category == AlmanacCategory.Glossary && current.View == ViewMode.Browse && current.Index == 0;
     #endregion
 
     #region IInGameNotification anchor
@@ -317,7 +316,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         bool rightClick = RightPressed;
 
         // Notes table of contents: highlight the hovered chapter and tick when it changes.
-        int hov = current.Category == AlmanacCategory.Notes && current.View == ViewMode.Browse
+        int hov = current.Category == AlmanacCategory.Glossary && current.View == ViewMode.Browse
             ? HitTestNoteRow(mouse) : -1;
         if (hov != _hoveredNote)
         {
@@ -344,7 +343,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         // player doesn't accidentally page-flip on top of it); ingredients are always viewable.
         if (leftClick && current.View == ViewMode.Browse)
         {
-            if (current.Category == AlmanacCategory.Notes)
+            if (current.Category == AlmanacCategory.Glossary)
             {
                 int note = HitTestNoteRow(mouse);
                 if (note >= 0) { BeginNotesJump(note); return; }
@@ -509,7 +508,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         if (view == ViewMode.Browse)
         {
             // Notes is the chronological read: cover + table of contents + chapters.
-            if (category == AlmanacCategory.Notes)
+            if (category == AlmanacCategory.Glossary)
                 return NotesBrowseTotal();
 
             // The cover now lives in Notes, so Recipes/Ingredients are just their TOC spreads.
@@ -517,7 +516,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             return items <= 0 ? 1 : (items + ICONS_PER_SPREAD - 1) / ICONS_PER_SPREAD;
         }
 
-        if (category == AlmanacCategory.Notes)
+        if (category == AlmanacCategory.Glossary)
             return 1;   // Notes has no separate detail view; chapters live in the browse flow.
 
         int rows = category == AlmanacCategory.Recipes
@@ -531,7 +530,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     #region Category + mode tabs
     private static readonly (string label, AlmanacCategory cat)[] _categoryTabs =
     {
-        ("Notes", AlmanacCategory.Notes),
+        ("Glossary", AlmanacCategory.Glossary),
         ("Ingredients", AlmanacCategory.Ingredients),
         ("Recipes", AlmanacCategory.Recipes),
     };
@@ -716,7 +715,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// </summary>
     private void OnSearchCleared()
     {
-        if (current.View == ViewMode.Detail && current.Category != AlmanacCategory.Notes)
+        if (current.View == ViewMode.Detail && current.Category != AlmanacCategory.Glossary)
             BeginViewSwitchToBrowse();
     }
     #endregion
@@ -788,7 +787,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     private int HitTestTOCIcon(Point mouse)
     {
         if (current.View != ViewMode.Browse) return 0;
-        if (current.Category == AlmanacCategory.Notes) return 0;
+        if (current.Category == AlmanacCategory.Glossary) return 0;
 
         bool right;
         if (GetPageRect(false).Contains(mouse)) right = false;
@@ -824,7 +823,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         infusion = ChemicalQuality.None;
 
         if (current.View != ViewMode.Detail) return 0;
-        if (current.Category == AlmanacCategory.Notes) return 0;
+        if (current.Category == AlmanacCategory.Glossary) return 0;
 
         bool right;
         if (GetPageRect(false).Contains(mouse)) right = false;
@@ -913,11 +912,20 @@ public class AlchemyAlmanacUI : IInGameNotification
     #endregion
 
     #region Layout
+    /// <summary>
+    ///     Top-left of the spread: centred, but never so far out that the tabs flanking the book
+    ///     leave the screen on a small one.
+    /// </summary>
     private static Vector2 GetSpreadOrigin()
     {
         float w = (PAGE_WIDTH * 2 + GUTTER) * UI_SCALE;
         float h = PAGE_HEIGHT * UI_SCALE;
-        return new Vector2(Main.screenWidth / 2f - w / 2f, Main.screenHeight / 2f - h / 2f);
+        float minX = (FILTER_TAB_W + 6f + BookCoverDrawer.COVER_MARGIN) * UI_SCALE;
+        float minY = (OVERLAY_BUTTON_H + 8f + BookCoverDrawer.COVER_MARGIN) * UI_SCALE;
+
+        return new Vector2(
+            Math.Max(minX, Main.screenWidth / 2f - w / 2f),
+            Math.Max(minY, Main.screenHeight / 2f - h / 2f));
     }
 
     private static Vector2 GetPageOrigin(bool right)
@@ -948,7 +956,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// </summary>
     public void DrawPageToTarget(SpriteBatch sb, SpreadKey key, bool isLeft)
     {
-        if (key.Category == AlmanacCategory.Notes)
+        if (key.Category == AlmanacCategory.Glossary)
         {
             if (key.View == ViewMode.Browse)
             {
@@ -956,8 +964,14 @@ public class AlchemyAlmanacUI : IInGameNotification
                 if (kind == 0) { if (!isLeft) DrawTitleContent(sb); return; }  // cover: left = CoverTarget
                 if (kind == 1) { DrawNotesTOC(sb, a, isLeft); return; }        // table of contents, spread a
                 var ch = AlmanacNotes.At(a);                                   // chapter a, page-spread b
-                if (ch != null && ch.Kind == NoteKind.Principles) { DrawPrinciplesPage(sb, ch, isLeft); return; }
-                if (ch != null && ch.Kind == NoteKind.Chemistry) { DrawChemistryPage(sb, ch, isLeft); return; }
+                switch (ch?.Kind)
+                {
+                    case NoteKind.Principles: DrawPrinciplesPage(sb, ch, isLeft); return;
+                    case NoteKind.Temperaments: DrawTemperamentsPage(sb, ch, isLeft); return;
+                    case NoteKind.Chemistry: DrawChemistryPage(sb, ch, isLeft); return;
+                    case NoteKind.Lexicon: DrawLexiconPage(sb, ch, b, isLeft); return;
+                }
+
                 DrawNoteProsePage(sb, a, b * 2 + (isLeft ? 0 : 1));
             }
             return;
@@ -1319,13 +1333,18 @@ public class AlchemyAlmanacUI : IInGameNotification
             new Vector2((PAGE_WIDTH - nSize.X) * 0.5f, PAGE_HEIGHT * 0.30f),
             RarityColor(entry.ResolvedRarity), TITLE_SCALE);
 
-        string role = ChemicalRoles.Of(itemType) == ChemicalRole.None ? "" : ChemicalRoles.DisplayName(itemType);
+        ChemicalRole roleKind = ChemicalRoles.Of(itemType);
+        string role = roleKind == ChemicalRole.None ? "" : ChemicalRoles.DisplayName(itemType);
         if (role.Length > 0)
         {
-            Vector2 rSize = font.MeasureString(role) * HEADER_SCALE;
-            Utils.DrawBorderString(sb, role,
-                new Vector2((PAGE_WIDTH - rSize.X) * 0.5f, PAGE_HEIGHT * 0.37f),
-                new Color(200, 180, 140), HEADER_SCALE);
+            Asset<Texture2D>? roleIcon = ChemicalRoles.Icon(roleKind);
+            float glyph = GlyphAdvance(roleIcon, HEADER_SCALE);
+            float width = font.MeasureString(role).X * HEADER_SCALE + glyph;
+            float x = (PAGE_WIDTH - width) * 0.5f;
+            float y = PAGE_HEIGHT * 0.37f;
+
+            DrawGlyph(sb, roleIcon, new Vector2(x, y + 1f), GLYPH_BOX * HEADER_SCALE, new Color(200, 180, 140));
+            Utils.DrawBorderString(sb, role, new Vector2(x + glyph, y), new Color(200, 180, 140), HEADER_SCALE);
         }
 
         // Authored ratings: potency stars + principle badge.
@@ -1422,7 +1441,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     private int HitTestNoteRow(Point mouse)
     {
-        if (current.Category != AlmanacCategory.Notes || current.View != ViewMode.Browse) return -1;
+        if (current.Category != AlmanacCategory.Glossary || current.View != ViewMode.Browse) return -1;
         if (!NotesIndexIsToc(current.Index, out int tocSpread)) return -1;
 
         bool right;
@@ -1490,10 +1509,10 @@ public class AlchemyAlmanacUI : IInGameNotification
         if (state != BookState.Reading) return;
 
         int target = NotesChapterBrowseIndex(chapter);
-        if (target == current.Index && current.Category == AlmanacCategory.Notes && current.View == ViewMode.Browse) return;
+        if (target == current.Index && current.Category == AlmanacCategory.Glossary && current.View == ViewMode.Browse) return;
 
         flipDir = target >= current.Index ? FlipDir.Forward : FlipDir.Backward;
-        next = new SpreadKey(AlmanacCategory.Notes, ViewMode.Browse, target, 0);
+        next = new SpreadKey(AlmanacCategory.Glossary, ViewMode.Browse, target, 0);
         pageFlipProgress = 0f;
         state = BookState.Flipping;
         SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
@@ -1501,7 +1520,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // Browse reads as one chronological sequence across these sections; tabs jump between them.
     private static readonly AlmanacCategory[] _browseOrder =
-        { AlmanacCategory.Notes, AlmanacCategory.Ingredients, AlmanacCategory.Recipes };
+        { AlmanacCategory.Glossary, AlmanacCategory.Ingredients, AlmanacCategory.Recipes };
 
     private static AlmanacCategory? AdjacentBrowseCategory(AlmanacCategory cat, int dir)
     {
@@ -1525,45 +1544,53 @@ public class AlchemyAlmanacUI : IInGameNotification
     {
         var note = AlmanacNotes.At(noteIndex);
         if (note == null) return 1;
-        if (note.Kind is NoteKind.Principles or NoteKind.Chemistry) return 1;
+        if (note.Kind is NoteKind.Principles or NoteKind.Temperaments or NoteKind.Chemistry) return 1;
+        if (note.Kind == NoteKind.Lexicon) return AlmanacLexicon.SpreadCount;
 
         int lineCount = NoteLines(noteIndex).Count;
-        int cap0 = NOTE_LINES_PER_PAGE - NOTE_TITLE_LINES;
-        int pages = lineCount <= cap0
-            ? 1
-            : 1 + (lineCount - cap0 + NOTE_LINES_PER_PAGE - 1) / NOTE_LINES_PER_PAGE;
+        int cap0 = NoteLinesPerPage(firstPage: true);
+        int cap = NoteLinesPerPage(firstPage: false);
+        int pages = lineCount <= cap0 ? 1 : 1 + (lineCount - cap0 + cap - 1) / cap;
+
         return Math.Max(1, (pages + 1) / 2);
     }
+
+    private static float NoteLineHeight => FontAssets.MouseText.Value.MeasureString("A").Y * NOTE_SCALE + 3f;
+
+    private static float NoteTop(bool firstPage) => firstPage ? MARGIN_Y + NOTE_TITLE_SPACE : MARGIN_Y;
+
+    /// <summary>
+    ///     Prose lines a page holds. Measured rather than fixed: a count that outran the page drew
+    ///     its last lines off the bottom, and <see cref="NoteSpreadCount" /> has to agree with
+    ///     <see cref="DrawNoteProsePage" /> exactly or the chapter loses or repeats lines.
+    /// </summary>
+    private static int NoteLinesPerPage(bool firstPage)
+        => Math.Max(1, (int)((PAGE_HEIGHT - MARGIN_Y - NoteTop(firstPage)) / NoteLineHeight));
 
     private void DrawNoteProsePage(SpriteBatch sb, int noteIndex, int globalPage)
     {
         var note = AlmanacNotes.At(noteIndex);
         if (note == null) return;
 
-        var font = FontAssets.MouseText.Value;
         var lines = NoteLines(noteIndex);
-        float lineH = font.MeasureString("A").Y * NOTE_SCALE + 3f;
-        int cap0 = NOTE_LINES_PER_PAGE - NOTE_TITLE_LINES;
+        float lineH = NoteLineHeight;
+        bool firstPage = globalPage == 0;
+        int cap0 = NoteLinesPerPage(firstPage: true);
+        int cap = NoteLinesPerPage(firstPage: false);
 
-        int start;
-        float top;
-        if (globalPage == 0)
+        float top = NoteTop(firstPage);
+        int start = firstPage ? 0 : cap0 + (globalPage - 1) * cap;
+
+        if (firstPage)
         {
             Utils.DrawBorderString(sb, note.Title, new Vector2(MARGIN_X, MARGIN_Y - 6f),
                 new Color(235, 225, 200), HEADER_SCALE);
             var px = TextureAssets.MagicPixel.Value;
             sb.Draw(px, new Rectangle((int)MARGIN_X, (int)(MARGIN_Y + 18f),
                 PAGE_WIDTH - (int)MARGIN_X * 2, 1), Color.SaddleBrown * 0.5f);
-            top = MARGIN_Y + 28f;
-            start = 0;
-        }
-        else
-        {
-            top = MARGIN_Y;
-            start = cap0 + (globalPage - 1) * NOTE_LINES_PER_PAGE;
         }
 
-        int count = globalPage == 0 ? cap0 : NOTE_LINES_PER_PAGE;
+        int count = firstPage ? cap0 : cap;
         for (int i = 0; i < count; i++)
         {
             int li = start + i;
@@ -1621,13 +1648,273 @@ public class AlchemyAlmanacUI : IInGameNotification
         (ChemicalQuality.Alkaline,  ChemicalQuality.Volatile, "cleansing utilities"),
     };
 
-    /// <summary>Draws one chemical-type name in its badge colour; returns the advance width.</summary>
+    /// <summary>Draws one temperament's glyph and name in its badge colour; returns the advance width.</summary>
     private static float DrawChemName(SpriteBatch sb, ChemicalQuality flag, Vector2 pos, float scale)
     {
         ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
-        Utils.DrawBorderString(sb, label, pos, color, scale);
-        return FontAssets.MouseText.Value.MeasureString(label).X * scale;
+
+        float glyph = GlyphAdvance(ChemicalQualityGlyphs.Icon(flag), scale);
+
+        DrawGlyph(sb, ChemicalQualityGlyphs.Icon(flag), pos + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
+        Utils.DrawBorderString(sb, label, pos + new Vector2(glyph, 0f), color, scale);
+
+        return glyph + FontAssets.MouseText.Value.MeasureString(label).X * scale;
     }
+
+    /// <summary>Longest edge of a glyph drawn inline with text at scale 1.</summary>
+    private const float GLYPH_BOX = 16f;
+
+    /// <summary>Space a glyph takes before the text beside it, or nothing when there is no glyph.</summary>
+    private static float GlyphAdvance(Asset<Texture2D>? icon, float scale)
+        => icon is null ? 0f : GLYPH_BOX * scale + 4f;
+
+    /// <summary>Draws <paramref name="icon" /> fitted into a <paramref name="box" />-pixel square.</summary>
+    private static void DrawGlyph(SpriteBatch sb, Asset<Texture2D>? icon, Vector2 topLeft, float box, Color tint)
+    {
+        if (icon is not { Value: { } tex })
+            return;
+
+        float scale = box / Math.Max(tex.Width, tex.Height);
+
+        sb.Draw(tex, topLeft + new Vector2(box * 0.5f), null, tint, 0f, tex.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+    }
+
+    /// <summary>
+    ///     One texel of <see cref="TextureAssets.MagicPixel" />. The texture is larger than a pixel,
+    ///     so scaling it without a source rectangle scales the whole sheet.
+    /// </summary>
+    private static readonly Rectangle OneTexel = new(0, 0, 1, 1);
+
+    /// <summary>Draws a straight line as a stretched texel, optionally broken into dashes.</summary>
+    private static void DrawLine(SpriteBatch sb, Vector2 a, Vector2 b, Color color, float thickness, float dash = 0f)
+    {
+        var px = TextureAssets.MagicPixel.Value;
+        Vector2 delta = b - a;
+        float length = delta.Length();
+
+        if (length <= 0f)
+            return;
+
+        float rotation = delta.ToRotation();
+        var origin = new Vector2(0f, 0.5f);
+
+        if (dash <= 0f)
+        {
+            sb.Draw(px, a, OneTexel, color, rotation, origin, new Vector2(length, thickness), SpriteEffects.None, 0f);
+            return;
+        }
+
+        Vector2 step = delta / length;
+
+        for (float at = 0f; at < length; at += dash * 2f)
+        {
+            float run = Math.Min(dash, length - at);
+
+            sb.Draw(px, a + step * at, OneTexel, color, rotation, origin,
+                new Vector2(run, thickness), SpriteEffects.None, 0f);
+        }
+    }
+
+    // ---- Temperaments chapter: the six-point wheel, its quarrels and its pairings ----
+
+    /// <summary>Wheel order, clockwise from the top. Each temperament's opposite sits three places on.</summary>
+    private static readonly ChemicalQuality[] _hexOrder =
+    [
+        ChemicalQuality.Volatile,
+        ChemicalQuality.Acidic,
+        ChemicalQuality.Catalytic,
+        ChemicalQuality.Kinetic,
+        ChemicalQuality.Alkaline,
+        ChemicalQuality.Inert,
+    ];
+
+    private static Vector2 HexVertex(int slot, Vector2 centre, float radius)
+    {
+        float angle = MathHelper.TwoPi * slot / _hexOrder.Length - MathHelper.PiOver2;
+
+        return centre + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+    }
+
+    private static int HexSlot(ChemicalQuality flag) => Array.IndexOf(_hexOrder, flag);
+
+    private static Color ChemColor(ChemicalQuality flag)
+    {
+        ChemicalTypeInfo.TryGet(flag, out _, out Color color);
+        return color;
+    }
+
+    private static void DrawTemperamentsPage(SpriteBatch sb, AlmanacNote note, bool isLeft)
+    {
+        if (isLeft)
+        {
+            DrawTemperamentsText(sb, note);
+            return;
+        }
+
+        DrawTemperamentWheel(sb);
+    }
+
+    /// <summary>Left page: the three quarrels, then what the pairings produce.</summary>
+    private static void DrawTemperamentsText(SpriteBatch sb, AlmanacNote note)
+    {
+        var font = FontAssets.MouseText.Value;
+        var px = TextureAssets.MagicPixel.Value;
+
+        Utils.DrawBorderString(sb, note?.Title ?? "The Six Temperaments",
+            new Vector2(MARGIN_X, MARGIN_Y - 6f), new Color(235, 225, 200), HEADER_SCALE);
+        sb.Draw(px, new Rectangle((int)MARGIN_X, (int)(MARGIN_Y + 18f),
+            PAGE_WIDTH - (int)MARGIN_X * 2, 1), Color.SaddleBrown * 0.5f);
+
+        const float introScale = 0.7f;
+        float introY = MARGIN_Y + 28f;
+        var intro = WrapText(note?.Body ?? string.Empty, PAGE_WIDTH - MARGIN_X * 2f, introScale);
+        float il = font.MeasureString("A").Y * introScale + 2f;
+
+        for (int i = 0; i < intro.Count; i++)
+            Utils.DrawBorderString(sb, intro[i], new Vector2(MARGIN_X, introY + i * il),
+                new Color(220, 210, 185), introScale);
+
+        const float rowH = 56f;
+        float startY = introY + intro.Count * il + 10f;
+
+        for (int i = 0; i < _chemAxes.Length; i++)
+        {
+            var axis = _chemAxes[i];
+            float y = startY + i * rowH;
+
+            float x = MARGIN_X;
+            x += DrawChemName(sb, axis.A, new Vector2(x, y), 0.8f);
+            Utils.DrawBorderString(sb, " / ", new Vector2(x, y), new Color(175, 165, 145), 0.8f);
+            x += font.MeasureString(" / ").X * 0.8f;
+            DrawChemName(sb, axis.B, new Vector2(x, y), 0.8f);
+
+            Utils.DrawBorderString(sb, axis.ADesc, new Vector2(MARGIN_X + 10f, y + 18f), Color.White, 0.66f);
+            Utils.DrawBorderString(sb, axis.BDesc, new Vector2(MARGIN_X + 10f, y + 33f),
+                new Color(175, 165, 145), 0.66f);
+        }
+
+        float pairY = startY + _chemAxes.Length * rowH + 4f;
+
+        Utils.DrawBorderString(sb, "When temperaments meet:", new Vector2(MARGIN_X, pairY),
+            new Color(235, 225, 200), 0.8f);
+        pairY += 24f;
+
+        for (int i = 0; i < _chemPairings.Length; i++)
+        {
+            var pair = _chemPairings[i];
+            float y = pairY + i * 28f;
+
+            float x = MARGIN_X;
+            x += DrawChemName(sb, pair.A, new Vector2(x, y), 0.68f);
+            Utils.DrawBorderString(sb, " + ", new Vector2(x, y), new Color(175, 165, 145), 0.68f);
+            x += font.MeasureString(" + ").X * 0.68f;
+            x += DrawChemName(sb, pair.B, new Vector2(x, y), 0.68f);
+
+            Utils.DrawBorderString(sb, $"-> {pair.Makes}", new Vector2(MARGIN_X + 10f, y + 13f),
+                Color.White, 0.62f);
+        }
+    }
+
+    /// <summary>
+    ///     Right page: the wheel itself. Opposites are the dashed diameters, pairings the solid
+    ///     chords, and every other edge a faint rule so the shape still reads as a hexagon.
+    /// </summary>
+    private static void DrawTemperamentWheel(SpriteBatch sb)
+    {
+        var font = FontAssets.MouseText.Value;
+        var centre = new Vector2(PAGE_WIDTH * 0.5f, 205f);
+        const float radius = 105f;
+
+        // Perimeter first, so the pairings that run along it draw over their own faint edge.
+        for (int i = 0; i < _hexOrder.Length; i++)
+            DrawLine(sb, HexVertex(i, centre, radius), HexVertex((i + 1) % _hexOrder.Length, centre, radius),
+                new Color(150, 125, 95) * 0.55f, 1f);
+
+        for (int i = 0; i < _hexOrder.Length / 2; i++)
+            DrawLine(sb, HexVertex(i, centre, radius), HexVertex(i + 3, centre, radius),
+                new Color(190, 170, 140) * 0.5f, 1f, 5f);
+
+        foreach (var pair in _chemPairings)
+        {
+            Vector2 a = HexVertex(HexSlot(pair.A), centre, radius);
+            Vector2 b = HexVertex(HexSlot(pair.B), centre, radius);
+
+            // Halves in each temperament's own colour, so a chord reads from both ends at once.
+            DrawLine(sb, a, (a + b) * 0.5f, ChemColor(pair.A) * 0.9f, 3f);
+            DrawLine(sb, (a + b) * 0.5f, b, ChemColor(pair.B) * 0.9f, 3f);
+        }
+
+        for (int i = 0; i < _hexOrder.Length; i++)
+            DrawTemperamentNode(sb, _hexOrder[i], HexVertex(i, centre, radius));
+
+        DrawWheelLegend(sb, font, centre.Y + radius + 30f);
+    }
+
+    /// <summary>One labelled vertex: a bordered plate carrying the temperament's glyph and name.</summary>
+    private static void DrawTemperamentNode(SpriteBatch sb, ChemicalQuality flag, Vector2 centre)
+    {
+        var font = FontAssets.MouseText.Value;
+        var px = TextureAssets.MagicPixel.Value;
+        const float scale = 0.66f;
+
+        ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
+
+        float text = font.MeasureString(label).X * scale;
+        float glyph = GlyphAdvance(ChemicalQualityGlyphs.Icon(flag), scale);
+        var size = new Vector2(text + glyph + 12f, 20f);
+        var plate = new Rectangle((int)(centre.X - size.X * 0.5f), (int)(centre.Y - size.Y * 0.5f),
+            (int)size.X, (int)size.Y);
+
+        sb.Draw(px, plate, new Color(28, 20, 12) * 0.85f);
+        DrawBorder(sb, plate, color * 0.9f);
+
+        var pen = new Vector2(plate.X + 6f, plate.Y + 2f);
+
+        DrawGlyph(sb, ChemicalQualityGlyphs.Icon(flag), pen + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
+        Utils.DrawBorderString(sb, label, pen + new Vector2(glyph, 0f), color, scale);
+    }
+
+    private static void DrawWheelLegend(SpriteBatch sb, DynamicSpriteFont font, float y)
+    {
+        const float scale = 0.62f;
+        const float rowH = 16f;
+        const float lineX = MARGIN_X + 2f;
+        const float textX = MARGIN_X + 44f;
+
+        DrawLine(sb, new Vector2(lineX, y + 6f), new Vector2(lineX + 34f, y + 6f),
+            new Color(190, 170, 140) * 0.7f, 1f, 5f);
+        Utils.DrawBorderString(sb, "opposed temperaments", new Vector2(textX, y), new Color(200, 190, 165), scale);
+
+        DrawLine(sb, new Vector2(lineX, y + rowH + 6f), new Vector2(lineX + 34f, y + rowH + 6f),
+            new Color(255, 160, 70) * 0.9f, 3f);
+        Utils.DrawBorderString(sb, "a pairing worth brewing", new Vector2(textX, y + rowH),
+            new Color(200, 190, 165), scale);
+
+        DrawLine(sb, new Vector2(lineX, y + rowH * 2f + 6f), new Vector2(lineX + 34f, y + rowH * 2f + 6f),
+            new Color(150, 125, 95) * 0.7f, 1f);
+        Utils.DrawBorderString(sb, "nothing written down yet", new Vector2(textX, y + rowH * 2f),
+            new Color(200, 190, 165), scale);
+
+        var note = WrapText("Volatile and Kinetic are opposed and a pairing both, which is exactly why they are dangerous.",
+            PAGE_WIDTH - MARGIN_X * 2f, 0.6f);
+        float nl = font.MeasureString("A").Y * 0.6f + 1f;
+
+        for (int i = 0; i < note.Count; i++)
+            Utils.DrawBorderString(sb, note[i], new Vector2(MARGIN_X, y + rowH * 3f + 8f + i * nl),
+                new Color(170, 155, 130), 0.6f);
+    }
+
+    // ---- Chemistry chapter: what goes in which slot, and what comes back out ----
+
+    private static readonly (ChemicalRole Role, string Blurb, string Note)[] _roles =
+    {
+        (ChemicalRole.Solvent, "The body of the brew, and the slot it is poured into.",
+            "Water, oil, anything willing to carry what you dissolve in it."),
+        (ChemicalRole.Solute, "What you dissolve. Each carries a temperament, and most a principle.",
+            "A solute with no principle at all is a reagent: it shapes without steering."),
+        (ChemicalRole.Solution, "What you get back. It can be drunk, or poured in as a solvent again.",
+            "Augmenting a finished solution is how the long recipes are built."),
+    };
 
     private static void DrawChemistryPage(SpriteBatch sb, AlmanacNote note, bool isLeft)
     {
@@ -1636,7 +1923,6 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         if (isLeft)
         {
-            // Title + localized intro, then the three opposing axes.
             Utils.DrawBorderString(sb, note?.Title ?? "Solvents & Solutes",
                 new Vector2(MARGIN_X, MARGIN_Y - 6f), new Color(235, 225, 200), HEADER_SCALE);
             sb.Draw(px, new Rectangle((int)MARGIN_X, (int)(MARGIN_Y + 18f),
@@ -1646,72 +1932,104 @@ public class AlchemyAlmanacUI : IInGameNotification
             float introY = MARGIN_Y + 28f;
             var intro = WrapText(note?.Body ?? string.Empty, PAGE_WIDTH - MARGIN_X * 2f, introScale);
             float il = font.MeasureString("A").Y * introScale + 2f;
+
             for (int i = 0; i < intro.Count; i++)
                 Utils.DrawBorderString(sb, intro[i], new Vector2(MARGIN_X, introY + i * il),
                     new Color(220, 210, 185), introScale);
 
-            const float rowH = 72f;
-            float startY = introY + intro.Count * il + 14f;
-            for (int i = 0; i < _chemAxes.Length; i++)
+            // Flowed rather than stepped by a fixed pitch: the blurbs wrap to different heights, and
+            // a pitch short enough for the tallest would leave the others adrift.
+            float y = introY + intro.Count * il + 16f;
+
+            foreach (var (role, blurb, tail) in _roles)
             {
-                var axis = _chemAxes[i];
-                float y = startY + i * rowH;
+                Asset<Texture2D>? icon = ChemicalRoles.Icon(role);
+                float glyph = GlyphAdvance(icon, 1f);
 
-                float x = MARGIN_X;
-                x += DrawChemName(sb, axis.A, new Vector2(x, y), 0.95f);
-                Utils.DrawBorderString(sb, " / ", new Vector2(x, y), new Color(175, 165, 145), 0.95f);
-                x += font.MeasureString(" / ").X * 0.95f;
-                DrawChemName(sb, axis.B, new Vector2(x, y), 0.95f);
+                DrawGlyph(sb, icon, new Vector2(MARGIN_X, y), GLYPH_BOX, new Color(235, 225, 200));
+                Utils.DrawBorderString(sb, ChemicalRoles.DisplayName(role),
+                    new Vector2(MARGIN_X + glyph, y - 2f), new Color(235, 225, 200), 0.85f);
 
-                Utils.DrawBorderString(sb, axis.ADesc, new Vector2(MARGIN_X + 12f, y + 20f),
-                    Color.White, 0.72f);
-                Utils.DrawBorderString(sb, axis.BDesc, new Vector2(MARGIN_X + 12f, y + 38f),
-                    new Color(175, 165, 145), 0.72f);
+                y = Paragraph(sb, blurb, MARGIN_X + 10f, y + 20f, Color.White, 0.68f);
+                y = Paragraph(sb, tail, MARGIN_X + 10f, y + 2f, new Color(175, 165, 145), 0.64f) + 12f;
             }
+
             return;
         }
 
-        // Right page: how solutes act on solvents, then the pairing outcomes.
-        const float bodyScale = 0.72f;
-        float lh = font.MeasureString("A").Y * bodyScale + 2f;
+        // Right page: the rules that decide whether a mixture takes at all.
         float py = MARGIN_Y + 2f;
 
-        void Paragraph(string text, Color color)
+        py = Paragraph(sb, "Solutes that share a single temperament create an infusion when mixed into a "
+            + "solvent. You'll know what type of chemical solution you have when ya see it.",
+            MARGIN_X, py, new Color(220, 210, 185), 0.72f) + 8f;
+
+        py = Paragraph(sb, "Mind the stubborn ones: an inert solution refuses every catalyst. It accepts "
+            + "solvent augmentations and nothing else.",
+            MARGIN_X, py, new Color(175, 165, 145), 0.72f) + 8f;
+
+        py = Paragraph(sb, "A slot will take more than one of a thing, and the station counts what you "
+            + "stacked. That count is the potency, and the recipe will tell you the least it will accept.",
+            MARGIN_X, py, new Color(220, 210, 185), 0.72f) + 8f;
+
+        Paragraph(sb, "Reagents carry a temperament but no principle. They change how a brew behaves "
+            + "without changing what it is for, which makes them the cheapest thing to experiment with.",
+            MARGIN_X, py, new Color(175, 165, 145), 0.72f);
+    }
+
+    /// <summary>Draws a wrapped paragraph from <paramref name="y" />; returns the y after its last line.</summary>
+    private static float Paragraph(SpriteBatch sb, string text, float x, float y, Color color, float scale)
+    {
+        var font = FontAssets.MouseText.Value;
+        var lines = WrapText(text, PAGE_WIDTH - x - MARGIN_X, scale);
+        float lineH = font.MeasureString("A").Y * scale + 2f;
+
+        for (int i = 0; i < lines.Count; i++)
+            Utils.DrawBorderString(sb, lines[i], new Vector2(x, y + i * lineH), color, scale);
+
+        return y + lines.Count * lineH;
+    }
+
+    // ---- Lexicon chapter: the Latin terms, two rows to an entry ----
+
+    private static void DrawLexiconPage(SpriteBatch sb, AlmanacNote note, int spread, bool isLeft)
+    {
+        var font = FontAssets.MouseText.Value;
+        var px = TextureAssets.MagicPixel.Value;
+
+        int page = spread * 2 + (isLeft ? 0 : 1);
+        float top = MARGIN_Y + 2f;
+
+        if (page == 0)
         {
-            var lines = WrapText(text, PAGE_WIDTH - MARGIN_X * 2f, bodyScale);
-            foreach (var l in lines)
-            {
-                Utils.DrawBorderString(sb, l, new Vector2(MARGIN_X, py), color, bodyScale);
-                py += lh;
-            }
-            py += 6f;
+            Utils.DrawBorderString(sb, note?.Title ?? "A Little Latin",
+                new Vector2(MARGIN_X, MARGIN_Y - 6f), new Color(235, 225, 200), HEADER_SCALE);
+            sb.Draw(px, new Rectangle((int)MARGIN_X, (int)(MARGIN_Y + 18f),
+                PAGE_WIDTH - (int)MARGIN_X * 2, 1), Color.SaddleBrown * 0.5f);
+
+            top = Paragraph(sb, note?.Body ?? string.Empty, MARGIN_X, MARGIN_Y + 28f,
+                new Color(220, 210, 185), 0.68f) + 10f;
         }
 
-        Paragraph("Solutes that share a single temperament create an infusion " +
-                  "when mixed into a solvent. You'll know what type of chemical solution you have when ya see it.",
-                  new Color(220, 210, 185));
-        Paragraph("Mind the stubborn ones: an inert solution refuses every catalyst. " +
-                  "It accepts solvent augmentations and nothing else.",
-                  new Color(175, 165, 145));
+        int start = AlmanacLexicon.StartOfPage(page);
+        int count = AlmanacLexicon.RowsOnPage(page);
 
-        Utils.DrawBorderString(sb, "When temperaments meet:", new Vector2(MARGIN_X, py + 4f),
-            new Color(235, 225, 200), 0.85f);
-        py += 30f;
-
-        const float pairRowH = 46f;
-        for (int i = 0; i < _chemPairings.Length; i++)
+        for (int i = 0; i < count && start + i < AlmanacLexicon.Count; i++)
         {
-            var pair = _chemPairings[i];
-            float y = py + i * pairRowH;
+            LexiconRow row = AlmanacLexicon.At(start + i);
+            float y = top + i * 30f;
 
-            float x = MARGIN_X;
-            x += DrawChemName(sb, pair.A, new Vector2(x, y), 0.9f);
-            Utils.DrawBorderString(sb, " + ", new Vector2(x, y), new Color(175, 165, 145), 0.9f);
-            x += font.MeasureString(" + ").X * 0.9f;
-            DrawChemName(sb, pair.B, new Vector2(x, y), 0.9f);
+            if (row.IsHeading)
+            {
+                Utils.DrawBorderString(sb, row.Term, new Vector2(MARGIN_X, y + 6f), new Color(235, 205, 150), 0.72f);
+                sb.Draw(px, new Rectangle((int)MARGIN_X, (int)(y + 24f),
+                    PAGE_WIDTH - (int)MARGIN_X * 2, 1), Color.SaddleBrown * 0.4f);
+                continue;
+            }
 
-            Utils.DrawBorderString(sb, $"-> {pair.Makes}", new Vector2(MARGIN_X + 12f, y + 19f),
-                Color.White, 0.72f);
+            Utils.DrawBorderString(sb, row.Term, new Vector2(MARGIN_X, y), new Color(220, 210, 185), 0.7f);
+            Utils.DrawBorderString(sb, row.Gloss, new Vector2(MARGIN_X + 10f, y + 14f),
+                new Color(170, 158, 134), 0.6f);
         }
     }
 
@@ -1725,7 +2043,13 @@ public class AlchemyAlmanacUI : IInGameNotification
             var p = _principles[i];
             float y = startY + (i - from) * rowH;
 
-            sb.Draw(px, new Rectangle((int)MARGIN_X, (int)y + 3, 12, 12), p.Color);
+            // The metal the principle is named for stands in for a glyph; the swatch is the fallback
+            // for the principle that has no metal.
+            if (p.Ore > 0)
+                DrawSmallItemIcon(sb, p.Ore, new Vector2(MARGIN_X - 2f, y - 1f), 16f);
+            else
+                sb.Draw(px, new Rectangle((int)MARGIN_X, (int)y + 3, 12, 12), p.Color);
+
             if (p.Name == "None")
                 Utils.DrawBorderString(sb, $"{p.Name}", new Vector2(MARGIN_X + 20f, y - 2f), p.Color, 0.95f);
             else
@@ -1932,16 +2256,16 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // Flag column drives badge matching bitwise (PrincipleType is [Flags] now, so
     // ToString() name-matching would silently fail on combined principles).
-    private static readonly (PrincipleType Flag, string Name, string Metal, string Domain, string Reacts, Color Color)[] _principles =
+    private static readonly (PrincipleType Flag, string Name, string Metal, int Ore, string Domain, string Reacts, Color Color)[] _principles =
     {
-        (PrincipleType.Vital,    "Vital",    "Gold",     "life, regen, vigour, light",  "nourishes, perfects",  new Color(255, 215,  90)),
-        (PrincipleType.Specular, "Specular", "Silver",   "perception, sight, the mind", "reveals, reflects",    new Color(180, 210, 255)),
-        (PrincipleType.Martial,  "Martial",  "Iron",     "damage, crit, defence",       "ignites, amplifies",   new Color(230,  95,  80)),
-        (PrincipleType.Brisk,    "Brisk",    "Tin",      "speed, motion, travel",       "quickens, catalyses",  new Color(110, 220, 210)),
-        (PrincipleType.Fortune,  "Fortune",  "Platinum", "luck, yield, abundance",      "expands, multiplies",  new Color(150, 210, 120)),
-        (PrincipleType.Harmony,  "Harmony",  "Copper",   "calm, allure, accord",        "binds, neutralises",   new Color(235, 150, 190)),
-        (PrincipleType.Bane,     "Bane",     "Lead",     "toxin, decay, the curse",     "corrodes, lingers",    new Color(175, 125, 215)),
-        (PrincipleType.None,     "None",     "",    "a neutral solvent",           "carries others",       new Color(165, 165, 165)),
+        (PrincipleType.Vital,    "Vital",    "Gold",     ItemID.GoldOre,     "life, regen, vigour, light",  "nourishes, perfects",  new Color(255, 215,  90)),
+        (PrincipleType.Specular, "Specular", "Silver",   ItemID.SilverOre,   "perception, sight, the mind", "reveals, reflects",    new Color(180, 210, 255)),
+        (PrincipleType.Martial,  "Martial",  "Iron",     ItemID.IronOre,     "damage, crit, defence",       "ignites, amplifies",   new Color(230,  95,  80)),
+        (PrincipleType.Brisk,    "Brisk",    "Tin",      ItemID.TinOre,      "speed, motion, travel",       "quickens, catalyses",  new Color(110, 220, 210)),
+        (PrincipleType.Fortune,  "Fortune",  "Platinum", ItemID.PlatinumOre, "luck, yield, abundance",      "expands, multiplies",  new Color(150, 210, 120)),
+        (PrincipleType.Harmony,  "Harmony",  "Copper",   ItemID.CopperOre,   "calm, allure, accord",        "binds, neutralises",   new Color(235, 150, 190)),
+        (PrincipleType.Bane,     "Bane",     "Lead",     ItemID.LeadOre,     "toxin, decay, the curse",     "corrodes, lingers",    new Color(175, 125, 215)),
+        (PrincipleType.None,     "None",     "",         0,                  "a neutral solvent",           "carries others",       new Color(165, 165, 165)),
     };
 
     /// <summary>
@@ -1955,29 +2279,45 @@ public class AlchemyAlmanacUI : IInGameNotification
         const float SCALE = 0.7f;
         const float PAD_X = 6f, GAP = 5f, H = 18f;
 
-        // Collect every badge in display order (chem flags, then principles).
-        var badges = new List<(string Label, Color Color)>();
+        // Collect every badge in display order (chem flags, then principles). A temperament shows its
+        // glyph and a principle the metal it is named for.
+        var badges = new List<(string Label, Color Color, Asset<Texture2D>? Icon, int Ore)>();
         foreach (var m in _chemMeta)
             if ((chem & m.Flag) != 0)
-                badges.Add((m.Label, m.Color));
+                badges.Add((m.Label, m.Color, ChemicalQualityGlyphs.Icon(m.Flag), 0));
         foreach (var m in _principles)
             if (m.Flag != PrincipleType.None && (principle & m.Flag) != 0)
-                badges.Add((m.Name, m.Color));
+                badges.Add((m.Name, m.Color, null, m.Ore));
 
         if (badges.Count == 0) return;
 
+        const float ICON = 12f;
+
+        float IconWidth((string Label, Color Color, Asset<Texture2D>? Icon, int Ore) badge)
+            => badge.Icon is not null || badge.Ore > 0 ? ICON + 3f : 0f;
+
         float totalW = -GAP;
-        foreach (var (label, _) in badges)
-            totalW += font.MeasureString(label).X * SCALE + PAD_X * 2 + GAP;
+        foreach (var badge in badges)
+            totalW += font.MeasureString(badge.Label).X * SCALE + IconWidth(badge) + PAD_X * 2 + GAP;
 
         float x = centerX - totalW * 0.5f;
-        foreach (var (label, color) in badges)
+        foreach (var badge in badges)
         {
-            float lw = font.MeasureString(label).X * SCALE;
-            var rect = new Rectangle((int)x, (int)y, (int)(lw + PAD_X * 2), (int)H);
-            sb.Draw(px, rect, color * 0.18f);
-            DrawBorder(sb, rect, color * 0.85f);
-            Utils.DrawBorderString(sb, label, new Vector2(x + PAD_X, y + 1f), color, SCALE);
+            float lw = font.MeasureString(badge.Label).X * SCALE;
+            float iw = IconWidth(badge);
+            var rect = new Rectangle((int)x, (int)y, (int)(lw + iw + PAD_X * 2), (int)H);
+
+            sb.Draw(px, rect, badge.Color * 0.18f);
+            DrawBorder(sb, rect, badge.Color * 0.85f);
+
+            var pen = new Vector2(x + PAD_X, y + 1f);
+
+            if (badge.Ore > 0)
+                DrawSmallItemIcon(sb, badge.Ore, new Vector2(pen.X - 1f, y + 2f), ICON);
+            else
+                DrawGlyph(sb, badge.Icon, new Vector2(pen.X, y + 3f), ICON, badge.Color);
+
+            Utils.DrawBorderString(sb, badge.Label, pen + new Vector2(iw, 0f), badge.Color, SCALE);
             x += rect.Width + GAP;
         }
     }
@@ -2122,7 +2462,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
 
         bool onToc = current.View == ViewMode.Browse && state == BookState.Reading
-            && current.Category != AlmanacCategory.Notes;
+            && current.Category != AlmanacCategory.Glossary;
         if (onToc)
         {
             int hit = HitTestTOCIcon(Main.MouseScreen.ToPoint());
@@ -2136,7 +2476,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             }
         }
         else if (current.View == ViewMode.Detail && state == BookState.Reading
-                 && current.Category != AlmanacCategory.Notes)
+                 && current.Category != AlmanacCategory.Glossary)
         {
             // Variant-row icons: name in the entry's judged rarity colour, with the
             // infusion suffix when the slot requires (or the output carries) one.

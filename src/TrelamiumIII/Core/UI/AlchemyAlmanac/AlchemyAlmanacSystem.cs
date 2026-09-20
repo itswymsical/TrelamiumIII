@@ -253,7 +253,7 @@ public class AlchemyAlmanacSystem : ModSystem
     /// </summary>
     private static Texture2D ResolveLeftFlat(AlchemyAlmanacUI.SpreadKey key, RenderTarget2D livePage)
     {
-        if (key.Category == AlchemyAlmanacUI.AlmanacCategory.Notes
+        if (key.Category == AlchemyAlmanacUI.AlmanacCategory.Glossary
             && key.View == AlchemyAlmanacUI.ViewMode.Browse && key.Index == 0)
             return CoverTarget;
         return livePage;

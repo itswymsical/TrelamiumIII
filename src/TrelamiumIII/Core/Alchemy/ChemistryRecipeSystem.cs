@@ -1,12 +1,8 @@
 using Terraria.Localization;
-using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Alchemy.Reagents.Misc;
-using TrelamiumIII.Content.Alchemy.Solutions;
-using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
 using TrelamiumIII.Core.Alchemy.Brewing;
 using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 using TrelamiumIII.Utilities;
-using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;
 
@@ -121,7 +117,7 @@ public partial class ChemistryRecipeSystem : ModSystem
         if (ModLoader.HasMod("CalamityMod"))
             RegisterCalamity();
 
-        PopulateRecipeGroups();
+        AlchemyRecipeGroups.Populate();
     }
 
     public override void Unload()
@@ -138,81 +134,4 @@ public partial class ChemistryRecipeSystem : ModSystem
 
     /// <summary>A brew duration in ticks.</summary>
     private static int Time(int mins = 0, int secs = 0) => TimeConversion.SetTime(mins: mins, secs: secs);
-
-    private static void PopulateRecipeGroups()
-    {
-        AnyAcid.Add(
-            SolventID.OilOfVitriol, SolventID.AquaFortis,
-            SoluteID.SpiritOfSalt, SolventID.AquaRegia,
-            SoluteID.BlueVitriol);
-
-        AnyAlkali.Add(
-            SoluteID.SlakedLime, SoluteID.CausticLye,
-            SoluteID.Quicklime, SoluteID.Potash);
-
-        AnyMineralSalt.Add(
-            SoluteID.RockSalt, SoluteID.Niter,
-            SoluteID.FrigorificSalt);
-
-        Iron.Add(ItemID.IronOre, ItemID.LeadOre);
-
-        Silver.Add(ItemID.SilverOre, ItemID.TungstenOre);
-
-        Gold.Add(ItemID.GoldOre, ItemID.PlatinumOre);
-
-        Critters.Add(
-            ItemID.Bunny, ItemID.Squirrel, ItemID.Mouse, ItemID.Rat, ItemID.Frog, ItemID.Worm, ItemID.Snail);
-
-        AnyOre.Add(
-            ItemID.CopperOre, ItemID.TinOre, ItemID.IronOre, ItemID.LeadOre,
-            ItemID.SilverOre, ItemID.TungstenOre, ItemID.GoldOre, ItemID.PlatinumOre);
-
-        AnyEvilOre.Add(ItemID.DemoniteOre, ItemID.CrimtaneOre);
-
-        AnyStandardFish.Add(
-            ItemID.Bass, ItemID.RedSnapper, ItemID.AtlanticCod, ItemID.NeonTetra,
-            ItemID.Flounder, ItemID.Ebonkoi, ItemID.DoubleCod, ItemID.Salmon);
-
-        Mushroom.Add(ItemID.Mushroom, ModContent.ItemType<FlyAgaricItem>());
-
-        AnyEvilMushroom.Add(ItemID.VileMushroom, ItemID.ViciousMushroom);
-
-        AnyHerb.Add(
-            ItemID.Daybloom, ItemID.Blinkroot, ItemID.Moonglow, ItemID.Deathweed,
-            ItemID.Waterleaf, ItemID.Fireblossom, ItemID.Shiverthorn);
-
-        // Cross-mod herbs go through the flower registry, so a bad internal name is reported rather than silently missing.
-        int cloudstalk = FlowerRegistry.TypeOf("SpiritReforged", "Cloudstalk");
-        if (cloudstalk > 0)
-            AnyHerb.Add(cloudstalk);
-
-        RottenChunkVertabrae.Add(ItemID.RottenChunk, ItemID.Vertebrae);
-
-        BloodTiles.Add(
-            ItemID.CrimsandBlock, ItemID.CrimstoneBlock);
-
-        CorruptTiles.Add(
-            ItemID.EbonsandBlock, ItemID.EbonstoneBlock);
-
-        ShiverthornOrWaterleaf.Add(ItemID.Shiverthorn, ItemID.Waterleaf);
-
-        ShiverthornOrSeeds.Add(ItemID.Shiverthorn, ItemID.ShiverthornSeeds);
-
-        AnySoil.Add(
-            ItemID.DirtBlock, ItemID.MudBlock,
-            ItemID.EbonsandBlock, ItemID.CrimsandBlock, ItemID.PearlsandBlock,
-            ItemID.EbonstoneBlock, ItemID.CrimstoneBlock, ItemID.PearlstoneBlock);
-
-        DirtOrMud.Add(ItemID.DirtBlock, ItemID.MudBlock);
-
-        AnyButterfly.Add(
-            ItemID.GoldButterfly, ItemID.HellButterfly, ItemID.JuliaButterfly,
-            ItemID.MonarchButterfly, ItemID.PurpleEmperorButterfly, ItemID.RedAdmiralButterfly,
-            ItemID.SulphurButterfly, ItemID.TreeNymphButterfly, ItemID.UlyssesButterfly,
-            ItemID.ZebraSwallowtailButterfly);
-
-        AnyBaseBottle.Add(ItemID.Bottle, ItemID.BottledWater, SolventID.Inert);
-
-        SpecularFishOrMoonglow.Add(ItemID.SpecularFish, ItemID.Moonglow);
-    }
 }

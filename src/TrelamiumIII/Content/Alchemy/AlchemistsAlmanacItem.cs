@@ -22,4 +22,12 @@ public class AlchemistsAlmanacItem : ModItem
         AlchemyAlmanacUI.ShowAlmanac();
         return true;
     }
+    public override void AddRecipes()
+    {
+        CreateRecipe()
+        .AddIngredient(ItemID.Book, 1)
+        .AddIngredient(ItemID.Leather, 2)
+        .AddTile(TileID.WorkBenches)
+        .Register();
+    }
 }

@@ -818,15 +818,19 @@ internal static class AlmanacDefinitions
     }
 }
 
-/// <summary>How a guide chapter renders in the Almanac's Notes section.</summary>
+/// <summary>How a guide chapter renders in the Almanac's Glossary section.</summary>
 public enum NoteKind
 {
     /// <summary>Localized body text, paginated across the spread.</summary>
     Prose,
     /// <summary>The "Seven Principles" glossary table (special renderer; body is a short intro).</summary>
     Principles,
-    /// <summary>Chemical-type axes + solute/solvent interaction rules (special renderer; body is a short intro).</summary>
+    /// <summary>The temperament hexagon and its pairings (special renderer; body is a short intro).</summary>
+    Temperaments,
+    /// <summary>What solvents, solutes and solutions are (special renderer; body is a short intro).</summary>
     Chemistry,
+    /// <summary>Two-column Latin term table, paginated across as many spreads as it needs.</summary>
+    Lexicon,
 }
 
 public sealed class AlmanacNote
@@ -860,10 +864,11 @@ public static class AlmanacNotes
     private static readonly AlmanacNote[] _chapters =
     {
         new() { Id = "Foreword" },
-        new() { Id = "HowToUse" },
         new() { Id = "Principles", Kind = NoteKind.Principles },
+        new() { Id = "Temperaments", Kind = NoteKind.Temperaments },
         new() { Id = "Chemistry", Kind = NoteKind.Chemistry },
         new() { Id = "OnPotency" },
+        new() { Id = "Lexicon", Kind = NoteKind.Lexicon },
     };
 
     public static int Count => _chapters.Length;
