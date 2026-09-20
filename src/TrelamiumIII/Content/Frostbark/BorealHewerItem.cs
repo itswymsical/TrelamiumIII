@@ -32,10 +32,29 @@ public class BorealHewerItem : ModItem
         component.ChemicalDamage = 0.35f;
     }
 
+    /// <summary><see cref="Player.altFunctionUse"/> while an alt use is running.</summary>
+    private const int ALT_USE = 2;
+
+    /// <summary>Right click calls a thrown axe back rather than throwing another.</summary>
+    public override bool AltFunctionUse(Player player) => true;
+
     public override bool CanUseItem(Player player)
+        => player.altFunctionUse == ALT_USE
+            ? BorealHewerProj.AnyOut(player)
+            : !BorealHewerProj.AnyOut(player);
+
+    public override bool? UseItem(Player player)
     {
-        return player.ownedProjectileCounts[ModContent.ProjectileType<BorealHewerProj>()] <= 0;
+        if (player.altFunctionUse != ALT_USE)
+            return null;
+
+        BorealHewerProj.RecallFor(player);
+
+        return true;
     }
+
+    /// <summary>The recall is the whole of the right click; it must not also throw.</summary>
+    public override bool CanShoot(Player player) => player.altFunctionUse != ALT_USE;
     public override void AddRecipes()
     {
         var recipe = CreateRecipe();

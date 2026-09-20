@@ -2,6 +2,8 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Interfaces;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
@@ -14,7 +16,43 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 {
     public override string Texture => AssetReferences.Content.Frostbark.BorealHewerItem.KEY;
 
-    public int MaxStickies => 1;
+    #region flight
+
+    /// <summary>
+    /// Per-tick speed kept on the way out. With the item's 10.5 throw this carries about 20 tiles over
+    /// <see cref="OUT_TICKS"/>, ending slow enough that the turn reads as the throw running out of arm.
+    /// </summary>
+    private const float OUT_DRAG = 0.985f;
+
+    /// <summary>Ticks of outward travel before the axe turns around on its own.</summary>
+    private const int OUT_TICKS = 40;
+
+    /// <summary>
+    /// Pixels the axe may get from its owner before it turns around early. A backstop for an owner who
+    /// leaves under their own power, since the drag alone never carries the axe this far.
+    /// </summary>
+    private const float MAX_RANGE = 620f;
+
+    /// <summary>Pixels per tick squared the return adds toward the owner.</summary>
+    private const float RETURN_ACCELERATION = 0.55f;
+
+    /// <summary>Cap on the return speed, in pixels per tick.</summary>
+    private const float RETURN_SPEED = 16f;
+
+    /// <summary>Distance from the owner at which the axe is caught, in pixels.</summary>
+    private const float CATCH_DISTANCE = 30f;
+
+    /// <summary>Enemies one throw cuts through before it heads home.</summary>
+    private const int MAX_PIERCE = 4;
+
+    /// <summary>Ticks an axe buried in terrain waits before it recalls itself unasked.</summary>
+    private const int STUCK_PATIENCE = 240;
+
+    /// <summary>Fraction of the axe's damage each arm of an ice burst carries.</summary>
+    private const float BURST_DAMAGE_SHARE = 0.3f;
+
+    #endregion
+
     private bool isStuck = false;
     private bool isReturning = false;
 
@@ -22,15 +60,16 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     private const int SHAKE_DURATION = 30;
     private int stickTimer = 0;
     private int soundTimer = 0;
-    protected NPC Target => Main.npc[(int)Projectile.ai[1]];
 
-    protected bool stickToNPC;
+    /// <summary>Ticks spent travelling out. Past <see cref="OUT_TICKS"/> the axe returns.</summary>
+    private int outTicks = 0;
+
+    /// <summary>Enemies cut on the way out. See <see cref="MAX_PIERCE"/>.</summary>
+    private int pierced = 0;
+
     protected bool stickToTile;
 
-    protected bool stickingToNPC;
     protected bool stickingToTile;
-
-    private Vector2 offset;
 
     private float oldRotation;
 
@@ -40,7 +79,28 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
     Vector2[]? _trailPositions;
     VertexTrail? _trail;
 
-    private bool InFlight => !stickingToNPC && !stickingToTile && Projectile.velocity != Vector2.Zero;
+    private bool InFlight => !stickingToTile && Projectile.velocity != Vector2.Zero;
+
+    /// <summary>Sends every axe this player has out back to them. The item's right click calls this.</summary>
+    public static void RecallFor(Player player)
+    {
+        int type = ModContent.ProjectileType<BorealHewerProj>();
+
+        for (int i = 0; i < Main.maxProjectiles; i++)
+        {
+            Projectile projectile = Main.projectile[i];
+
+            if (projectile.active && projectile.type == type && projectile.owner == player.whoAmI
+                && projectile.ModProjectile is BorealHewerProj hewer && !hewer.isReturning)
+            {
+                hewer.InitiateReturn();
+            }
+        }
+    }
+
+    /// <summary>Whether this player has an axe out that the right click could call back.</summary>
+    public static bool AnyOut(Player player)
+        => player.ownedProjectileCounts[ModContent.ProjectileType<BorealHewerProj>()] > 0;
 
     public override void SetStaticDefaults()
     {
@@ -56,7 +116,6 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         Projectile.height = 32;
 
         stickToTile =
-            stickToNPC =
             Projectile.friendly =
             Projectile.tileCollide =
             Projectile.usesLocalNPCImmunity = true;
@@ -80,23 +139,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         UpdateTrail();
         TrailMist();
 
-        if (stickingToNPC)
-        {
-            if (Target.active && !Target.dontTakeDamage)
-            {
-                Projectile.tileCollide = false;
-
-                Projectile.Center = Target.Center - offset;
-
-                Projectile.gfxOffY = Target.gfxOffY;
-            }
-            else
-            {
-                Projectile.Kill();
-            }
-        }
-
-        if (stickingToTile || stickingToNPC)
+        if (stickingToTile)
             Projectile.rotation = oldRotation;
 
         var player = Main.player[Projectile.owner];
@@ -113,17 +156,21 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
             }
 
             Projectile.rotation += 0.4f * Projectile.direction;
-            if (distanceToPlayer > 450f)
-            {
-                isReturning = true;
-                HandleReturn(player);
-            }
+
+            // Bleeds off speed on the way out, so the turn reads as the throw running out of arm
+            // rather than as a reversal.
+            Projectile.velocity *= OUT_DRAG;
+
+            if (++outTicks >= OUT_TICKS || distanceToPlayer > MAX_RANGE)
+                InitiateReturn();
         }
 
         else if (isStuck && !isReturning)
         {
             stickTimer++;
-            if (distanceToPlayer < 70f || stickTimer >= 20)
+
+            // Buried axes wait to be called back; the patience is only so one cannot be lost.
+            if (distanceToPlayer < 70f || stickTimer >= STUCK_PATIENCE)
                 InitiateReturn();
         }
 
@@ -139,6 +186,9 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
 
     private void InitiateReturn()
     {
+        if (isReturning)
+            return;
+
         SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with
         {
             MaxInstances = 1,
@@ -147,75 +197,65 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         }, Projectile.position);
 
         Projectile.tileCollide = false;
-        stickToNPC = false;
         stickToTile = false;
-        stickingToNPC = false;
         isReturning = true;
-        shakeTimer = SHAKE_DURATION;
+
+        // Only an axe being pulled out of something shudders first; one that simply ran out of throw
+        // turns immediately.
+        shakeTimer = isStuck ? SHAKE_DURATION : 0;
+
+        Projectile.netUpdate = true;
     }
 
     private Vector2 shakeOffset = Vector2.Zero;
 
+    /// <summary>
+    /// Steers the axe home under acceleration rather than a fixed speed, so it hauls itself back and
+    /// arrives fast from wherever the throw ended.
+    /// </summary>
     private void HandleReturn(Player player)
     {
         Projectile.tileCollide = false;
-        stickToNPC = false;
         stickToTile = false;
-        stickingToNPC = false;
+        stickingToTile = false;
+        isStuck = false;
 
         if (shakeTimer > 0)
         {
             shakeOffset = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-2f, 2f));
             shakeTimer--;
+
+            return;
         }
-        else
+
+        shakeOffset = Vector2.Zero;
+
+        Vector2 toPlayer = player.MountedCenter - Projectile.Center;
+
+        if (toPlayer.Length() < CATCH_DISTANCE)
         {
-            shakeOffset = Vector2.Zero;
+            Projectile.Kill();
 
-            var directionToPlayer = player.Center - Projectile.Center;
-            directionToPlayer.Normalize();
-            var speed = 15f;
-            Projectile.velocity = directionToPlayer * speed;
-
-            Projectile.rotation += 0.4f;
-
-            if (Projectile.Hitbox.Intersects(player.Hitbox))
-            {
-                Projectile.Kill();
-            }
-            if (soundTimer >= 14)
-            {
-                soundTimer = 0;
-                SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing, Projectile.position);
-            }
+            return;
         }
-    }
 
-    public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
-    {
-        if (!stickingToNPC && !stickingToTile && stickToNPC)
+        Projectile.velocity += toPlayer.SafeNormalize(Vector2.Zero) * RETURN_ACCELERATION;
+
+        if (Projectile.velocity.Length() > RETURN_SPEED)
+            Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.Zero) * RETURN_SPEED;
+
+        Projectile.rotation += 0.4f;
+
+        if (soundTimer >= 14)
         {
-            Projectile.ai[1] = target.whoAmI;
-
-            oldRotation = Projectile.rotation;
-
-            offset = target.Center - Projectile.Center + Projectile.velocity * 0.75f;
-
-            Projectile.velocity = Vector2.Zero;
-
-            stickingToNPC = true;
-
-            Projectile.netUpdate = true;
-        }
-        else
-        {
-            RemoveStackProjectiles();
+            soundTimer = 0;
+            SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing, Projectile.position);
         }
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
-        if (!stickingToTile && !stickingToNPC && stickToTile)
+        if (!stickingToTile && stickToTile)
         {
             oldRotation = Projectile.rotation;
 
@@ -225,23 +265,30 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         }
 
         SoundEngine.PlaySound(SoundID.Item50, Projectile.position);
+
+        IceBurst(Projectile.Center, -oldVelocity.SafeNormalize(-Vector2.UnitY), grounded: true, 0.8f);
         BurstMist(Projectile.Center, 0.8f);
+
         StickToTile();
         return false;
     }
 
+    /// <summary>The axe cuts through what it hits, and turns for home once it has cut enough.</summary>
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
         SoundEngine.PlaySound(SoundID.Item50, target.position);
 
-        // A crit is the hit that frostburns, so it gets the heavier cloud to match.
-        BurstMist(Projectile.Center, hit.Crit ? 1.4f : 1f);
+        // A crit is the hit that frostburns, so it gets the heavier burst to match.
+        float weight = hit.Crit ? 1.4f : 1f;
+
+        IceBurst(Projectile.Center, Projectile.velocity.SafeNormalize(-Vector2.UnitY), grounded: false, weight);
+        BurstMist(Projectile.Center, weight);
 
         if (hit.Crit)
-        {
             target.AddBuff(BuffID.Frostburn, 40 + damageDone / 10);
-        }
-        isStuck = true;
+
+        if (!isReturning && ++pierced >= MAX_PIERCE)
+            InitiateReturn();
     }
 
     public override bool PreDraw(ref Color lightColor)
@@ -263,42 +310,6 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         }
 
         return false;
-    }
-
-    protected void RemoveStackProjectiles()
-    {
-        var sticking = new Point[MaxStickies];
-        var index = 0;
-
-        for (var i = 0; i < Main.maxProjectiles; i++)
-        {
-            var currentProjectile = Main.projectile[i];
-
-            if (i != Projectile.whoAmI
-                && currentProjectile.active
-                && currentProjectile.owner == Main.myPlayer
-                && currentProjectile.type == Projectile.type
-                && currentProjectile.ai[0] == 1f
-                && currentProjectile.ai[1] == Target.whoAmI
-            )
-            {
-                sticking[index++] = new Point(i, currentProjectile.timeLeft);
-
-                if (index >= sticking.Length)
-                    break;
-            }
-        }
-
-        if (index >= sticking.Length)
-        {
-            var oldIndex = 0;
-
-            for (var i = 1; i < sticking.Length; i++)
-                if (sticking[i].Y < sticking[oldIndex].Y)
-                    oldIndex = i;
-
-            Main.projectile[sticking[oldIndex].X].Kill();
-        }
     }
 
     private void UpdateTrail()
@@ -329,6 +340,37 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
             radius: Main.rand.NextFloat(9f, 16f),
             life: Main.rand.NextFloat(20f, 34f)
         );
+    }
+
+    /// <summary>
+    /// Flash-frozen mist thrown off where the axe bites, on the same layer the Hyperborean flask uses,
+    /// so the arms carry its frostburn and its rime rather than being decoration.
+    /// </summary>
+    private void IceBurst(Vector2 position, Vector2 direction, bool grounded, float scale)
+    {
+        if (FieldSystem.GetLayer<IceMistField>() is not { } mist)
+            return;
+
+        mist.SpawnBurst(
+            BurstProfile.Vent with
+            {
+                AirCount = new FloatRange(7f * scale, 12f * scale),
+                GroundCount = new FloatRange(7f * scale, 12f * scale),
+                AirSpeed = new FloatRange(1.6f, 5.2f),
+                GroundSpeed = new FloatRange(1.6f, 5.2f),
+
+                // A bite in open air opens all the way round; one into terrain fans off the surface.
+                Arc = grounded ? MathHelper.Pi * 0.8f : MathHelper.TwoPi,
+                UpwardBias = 0.25f,
+                DamageShare = BURST_DAMAGE_SHARE,
+                Core = EmitterProfile.Default with { Lifetime = 8, NodeRadius = 15f * scale },
+            },
+            position,
+            direction,
+            grounded,
+            Projectile.owner,
+            Projectile.damage,
+            Projectile.knockBack * 0.25f);
     }
 
     /// <summary>The puff of frost thrown out where the axe bites in.</summary>

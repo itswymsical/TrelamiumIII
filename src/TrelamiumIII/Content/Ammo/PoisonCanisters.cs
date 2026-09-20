@@ -23,10 +23,10 @@ public abstract class PoisonCanister : GasCanisterAmmo
         GroundSpeed = new FloatRange(1f, 3f),
         Core = EmitterProfile.Default with
         {
-            NodeRadius = 18f,
-            NodeLife = 60f,
+            NodeRadius = 14f,
+            Lifetime = 22,
             Drag = 0.9f,
-            Growth = 0.5f,
+            Inheritance = 1,
         },
         DamageShare = 1f,
     };
@@ -61,4 +61,18 @@ public class TimedPoisonCanister : PoisonCanister
 public class ContactPoisonCanister : PoisonCanister
 {
     public override CanisterFuse Fuse => CanisterFuse.Contact;
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+        if (!Item.TryEnable(out ChemicalSourceComponent component))
+            return;
+
+        Item.damage = 6;
+        component.ChemicalType = ChemicalDamageType.Caustic;
+        component.ChemicalDamage = 6f;
+        component.AfflictionRate = 30;
+        component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
+        component.ReactionChance = 0.002f;
+        component.ReactionDamage = 5f;
+    }
 }
