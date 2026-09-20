@@ -1,10 +1,10 @@
-using System.Collections.Generic;
 using ReLogic.Graphics;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.UI;
 using TrelamiumIII.Core.ExperientialSystem;
 using TrelamiumIII.Core.ExperientialSystem.Skills;
+using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.UI.SkillTree;
@@ -55,13 +55,14 @@ internal sealed class SkillTreePanel : UIElement
 
         Rectangle bounds = GetDimensions().ToRectangle();
 
+        // Point-sampled for the frame's pixel art only; the header text keeps the interface's own sampler.
         SkillTreeBatch.Scope scope = SkillTreeBatch.Point(spriteBatch);
 
-        DrawUtils.DrawPanel(spriteBatch, bounds, new Color(18, 16, 34) * 0.92f, opacity: fade);
-
-        DrawHeader(spriteBatch, bounds, fade);
+        DrawUtils.DrawPanel(spriteBatch, bounds, new Color(10, 16, 34) * 0.92f, opacity: fade);
 
         SkillTreeBatch.Restore(spriteBatch, scope);
+
+        DrawHeader(spriteBatch, bounds, fade);
     }
 
     private static void DrawHeader(SpriteBatch spriteBatch, Rectangle bounds, float fade)
@@ -79,35 +80,31 @@ internal sealed class SkillTreePanel : UIElement
         Vector2 size = FontAssets.MouseText.Value.MeasureString(meter) * 0.85f;
         var right = new Vector2(bounds.Right - BODY_INSET - 6f - size.X, bounds.Y + 14f);
 
-        Utils.DrawBorderString(spriteBatch, meter, right, Color.Goldenrod * fade, 0.85f);
+        Utils.DrawBorderString(spriteBatch, meter, right, new Color(68, 177, 242) * fade, 0.85f);
     }
 }
 
 /// <summary>
-/// The pannable node field. Rows are Threshold bands from <see cref="SkillRegistry.Bands"/>, so the tree
-/// reads top to bottom as the order the player unlocks it in.
+/// The pannable, zoomable node field. Nodes sit at the tree-space coordinates
+/// <see cref="SkillTreeLayout"/> resolves, and the lines between them run inward by Threshold.
 /// </summary>
-/// <remarks>Positions are in field space, origin at the top centre of the content; <c>_pan</c> scrolls it.</remarks>
 internal sealed class SkillTreeField : UIElement
 {
     #region layout
 
-    /// <summary>Vertical pixels between Threshold bands.</summary>
-    private const float BAND_SPACING = 124f;
-
-    /// <summary>Horizontal pixels between two nodes in the same band.</summary>
-    private const float NODE_SPACING = 92f;
+    /// <summary>Field pixels per tree-space unit at zoom 1.</summary>
+    private const float UNIT = 62f;
 
     /// <summary>Drawn diameter of a node socket. Matches the socket texture, which is drawn point-sampled at 1:1.</summary>
     private const float NODE_SIZE = 36f;
 
-    /// <summary>Click radius around a node's centre, a little wider than the socket itself.</summary>
+    /// <summary>Click radius around a node's centre at zoom 1, a little wider than the socket itself.</summary>
     private const float HIT_RADIUS = 22f;
 
-    /// <summary>Pixels of empty field kept above the first band and below the last.</summary>
-    private const float EDGE_MARGIN = 54f;
+    /// <summary>Pixels of empty field kept past the outermost node.</summary>
+    private const float EDGE_MARGIN = 72f;
 
-    /// <summary>Blob radius a held node contributes to the backdrop.</summary>
+    /// <summary>Blob radius a held node contributes to the backdrop, at zoom 1.</summary>
     private const float BLOB_RADIUS = NODE_SIZE * 2.6f;
 
     #endregion
@@ -120,11 +117,16 @@ internal sealed class SkillTreeField : UIElement
     /// <summary>Glide speed under which the field is treated as stopped.</summary>
     private const float GLIDE_CUTOFF = 0.15f;
 
-    /// <summary>Field pixels scrolled per wheel notch.</summary>
-    private const float WHEEL_STEP = 0.35f;
-
     /// <summary>Pixels of travel past which a press counts as a drag and not a click.</summary>
     private const float DRAG_SLOP = 5f;
+
+    /// <summary>Zoom steps a wheel notch moves between. 0.5, 1 and 2 land the socket on whole pixels.</summary>
+    private static readonly float[] ZoomLevels = [0.5f, 0.75f, 1f, 1.5f, 2f];
+
+    private const int DEFAULT_ZOOM_LEVEL = 2;
+
+    /// <summary>Share of the remaining zoom distance covered per frame.</summary>
+    private const float ZOOM_EASE = 0.22f;
 
     #endregion
 
@@ -143,21 +145,19 @@ internal sealed class SkillTreeField : UIElement
         Shut,
     }
 
-    private readonly record struct PlacedSkill(Skill Skill, Vector2 Position);
-
-    private readonly List<PlacedSkill> _nodes = [];
-
+    private readonly SkillTreeLayout _layout = new();
     private readonly SkillGlyphFlash _flash = new();
-    private readonly SkillTreeBackdrop _backdrop = new();
 
     private readonly SkillBlob[] _blobs = new SkillBlob[SkillTreeBackdrop.BLOB_SLOTS];
     private readonly float[] _blobDistances = new float[SkillTreeBackdrop.BLOB_SLOTS];
-
-    private float _contentHeight;
-    private float _contentWidth;
+    private int _blobCount;
 
     private Vector2 _pan;
     private Vector2 _glide;
+
+    private float _zoom = 1f;
+    private int _zoomLevel = DEFAULT_ZOOM_LEVEL;
+    private Vector2 _zoomAnchor;
 
     private bool _dragging;
     private bool _dragged;
@@ -170,52 +170,19 @@ internal sealed class SkillTreeField : UIElement
     /// <summary>Rebuilds the layout each time the tree opens, so a reload or a new skill is picked up.</summary>
     public void OnOpened()
     {
-        BuildLayout();
+        _layout.Build();
 
         _pan = Vector2.Zero;
         _glide = Vector2.Zero;
         _dragging = false;
         _hovered = null;
 
+        _zoomLevel = DEFAULT_ZOOM_LEVEL;
+        _zoom = ZoomLevels[DEFAULT_ZOOM_LEVEL];
+
         _flash.Reset();
-        _backdrop.Reset();
-
-        // Opens on the lowest band the player has not cleared, rather than at the top of a long tree.
-        int threshold = Main.LocalPlayer.GetModPlayer<ExperientialPlayer>().Threshold;
-        ReadOnlySpan<int> bands = SkillRegistry.Bands;
-
-        for (int i = 0; i < bands.Length; i++)
-        {
-            if (bands[i] <= threshold)
-                _pan.Y = -i * BAND_SPACING;
-        }
 
         ClampPan();
-    }
-
-    private void BuildLayout()
-    {
-        _nodes.Clear();
-
-        ReadOnlySpan<int> bands = SkillRegistry.Bands;
-
-        _contentHeight = bands.Length == 0 ? 0f : (bands.Length - 1) * BAND_SPACING + NODE_SIZE;
-        _contentWidth = 0f;
-
-        for (int i = 0; i < bands.Length; i++)
-        {
-            IReadOnlyList<Skill> skills = SkillRegistry.AtThreshold(bands[i]);
-
-            float width = (skills.Count - 1) * NODE_SPACING;
-            _contentWidth = MathF.Max(_contentWidth, width + NODE_SIZE);
-
-            for (int j = 0; j < skills.Count; j++)
-            {
-                var position = new Vector2(j * NODE_SPACING - width * 0.5f, i * BAND_SPACING);
-
-                _nodes.Add(new PlacedSkill(skills[j], position));
-            }
-        }
     }
 
     #region interaction
@@ -251,12 +218,37 @@ internal sealed class SkillTreeField : UIElement
             _glide *= GLIDE_DECAY;
         }
 
+        EaseZoom();
         ClampPan();
 
         if (SkillTreeSystem.Interactive)
             _hovered = ContainsPoint(Main.MouseScreen) && !_dragging ? NodeAt(Main.MouseScreen) : null;
 
         ObserveNodes();
+
+        _blobCount = CollectBlobs();
+
+        SkillTreeRenderer.Submit(GetDimensions().ToRectangle(), _pan, _blobs.AsSpan(0, _blobCount));
+    }
+
+    /// <summary>Walks the zoom toward its step, holding whatever was under the cursor when the wheel turned.</summary>
+    private void EaseZoom()
+    {
+        float target = ZoomLevels[_zoomLevel];
+
+        if (MathF.Abs(_zoom - target) < 0.0005f)
+        {
+            _zoom = target;
+
+            return;
+        }
+
+        float previous = _zoom;
+        _zoom = MathHelper.Lerp(_zoom, target, ZOOM_EASE);
+
+        Vector2 offset = _zoomAnchor - Centre();
+
+        _pan = offset - (offset - _pan) * (_zoom / previous);
     }
 
     /// <summary>Ticks every node's hover and burst animations. Runs from UpdateUI, so it keeps going under autopause.</summary>
@@ -264,33 +256,34 @@ internal sealed class SkillTreeField : UIElement
     {
         var skills = Main.LocalPlayer.GetModPlayer<SkillPlayer>();
 
-        foreach (PlacedSkill node in _nodes)
+        foreach (PlacedSkill node in _layout.Nodes)
             _flash.Observe(node.Skill.ID, skills.Has(node.Skill), ReferenceEquals(_hovered, node.Skill));
     }
 
-    /// <summary>Keeps the content reachable: a field larger than the view is centred, otherwise it scrolls edge to edge.</summary>
+    /// <summary>Keeps the content reachable: the layout is centred on the origin, so the slack is symmetric.</summary>
     private void ClampPan()
     {
         CalculatedStyle view = GetDimensions();
 
-        float slackY = MathF.Max(_contentHeight + EDGE_MARGIN * 2f - view.Height, 0f);
-        float slackX = MathF.Max(_contentWidth + EDGE_MARGIN * 2f - view.Width, 0f);
+        Vector2 content = _layout.Extent * (UNIT * _zoom) * 2f + new Vector2(NODE_SIZE + EDGE_MARGIN * 2f);
 
-        _pan.Y = Math.Clamp(_pan.Y, -slackY, 0f);
-        _pan.X = Math.Clamp(_pan.X, -slackX * 0.5f, slackX * 0.5f);
+        float slackX = MathF.Max(content.X - view.Width, 0f) * 0.5f;
+        float slackY = MathF.Max(content.Y - view.Height, 0f) * 0.5f;
+
+        _pan.X = Math.Clamp(_pan.X, -slackX, slackX);
+        _pan.Y = Math.Clamp(_pan.Y, -slackY, slackY);
     }
 
     public override void ScrollWheel(UIScrollWheelEvent evt)
     {
         base.ScrollWheel(evt);
 
-        if (!SkillTreeSystem.Interactive)
+        if (!SkillTreeSystem.Interactive || evt.ScrollWheelValue == 0)
             return;
 
-        _pan.Y += evt.ScrollWheelValue * WHEEL_STEP;
+        _zoomLevel = Math.Clamp(_zoomLevel + MathF.Sign(evt.ScrollWheelValue), 0, ZoomLevels.Length - 1);
+        _zoomAnchor = Main.MouseScreen;
         _glide = Vector2.Zero;
-
-        ClampPan();
     }
 
     public override void LeftMouseDown(UIMouseEvent evt)
@@ -349,24 +342,26 @@ internal sealed class SkillTreeField : UIElement
 
     private Skill? NodeAt(Vector2 point)
     {
-        Vector2 origin = FieldOrigin();
+        float radius = HIT_RADIUS * _zoom;
 
-        foreach (PlacedSkill node in _nodes)
+        foreach (PlacedSkill node in _layout.Nodes)
         {
-            if (Vector2.DistanceSquared(origin + node.Position, point) <= HIT_RADIUS * HIT_RADIUS)
+            if (Vector2.DistanceSquared(ScreenOf(node.Space), point) <= radius * radius)
                 return node.Skill;
         }
 
         return null;
     }
 
-    /// <summary>Screen position of field-space (0, 0): the top centre of the content, panned.</summary>
-    private Vector2 FieldOrigin()
+    /// <summary>Screen position of tree-space (0, 0): the middle of the view, panned.</summary>
+    private Vector2 Centre()
     {
         CalculatedStyle view = GetDimensions();
 
-        return new Vector2(view.X + view.Width * 0.5f, view.Y + EDGE_MARGIN) + _pan;
+        return new Vector2(view.X + view.Width * 0.5f, view.Y + view.Height * 0.5f);
     }
+
+    private Vector2 ScreenOf(Vector2 space) => Centre() + _pan + space * (UNIT * _zoom);
 
     #endregion
 
@@ -384,44 +379,93 @@ internal sealed class SkillTreeField : UIElement
         // Nodes are drawn here rather than as children, so the field clips them itself.
         SkillTreeBatch.Scope scope = SkillTreeBatch.Point(spriteBatch, GetClippingRectangle(spriteBatch));
 
-        Vector2 origin = FieldOrigin();
-        var skills = Main.LocalPlayer.GetModPlayer<SkillPlayer>();
+        DrawBackdrop(spriteBatch, view, fade);
 
-        int blobs = CollectBlobs(origin, skills, view.Center.ToVector2());
-
-        _backdrop.Draw(spriteBatch, view, _pan, fade, _blobs.AsSpan(0, blobs));
-
-        if (_nodes.Count == 0)
+        if (_layout.Nodes.Count > 0)
         {
-            DrawEmptyNotice(spriteBatch, fade);
-        }
-        else
-        {
-            int threshold = Main.LocalPlayer.GetModPlayer<ExperientialPlayer>().Threshold;
+            var skills = Main.LocalPlayer.GetModPlayer<SkillPlayer>();
 
-            DrawSpine(spriteBatch, origin, threshold, fade);
+            DrawLinks(spriteBatch, skills, fade);
 
-            foreach (PlacedSkill node in _nodes)
-                DrawNode(spriteBatch, origin + node.Position, node, StateOf(node.Skill, skills), fade);
+            foreach (PlacedSkill node in _layout.Nodes)
+                DrawNode(spriteBatch, node, StateOf(node.Skill, skills), fade);
         }
 
         SkillTreeBatch.Restore(spriteBatch, scope);
+
+        if (_layout.Nodes.Count == 0)
+            DrawEmptyNotice(spriteBatch, fade);
+    }
+
+    /// <summary>Blits the pixelated backdrop through the bloom pass. Nothing is drawn until it has been built.</summary>
+    private static void DrawBackdrop(SpriteBatch spriteBatch, Rectangle view, float fade)
+    {
+        if (SkillTreeRenderer.Result is not { IsDisposed: false } target || SkillTreeRenderer.Bloom() is not { } bloom)
+            return;
+
+        SpriteBatchState restore = SpriteBatchState.Capture(spriteBatch);
+
+        spriteBatch.End();
+        spriteBatch.Begin(SpriteSortMode.Immediate, restore.BlendState, restore.SamplerState,
+            restore.DepthStencilState, restore.RasterizerState, null, restore.Transform);
+
+        bloom.Apply();
+
+        spriteBatch.Draw(target, view, Color.White * fade);
+
+        spriteBatch.End();
+        restore.Begin(spriteBatch);
+    }
+
+    private void DrawEmptyNotice(SpriteBatch spriteBatch, float fade)
+    {
+        CalculatedStyle view = GetDimensions();
+
+        const string notice = "No skills are registered.";
+
+        Vector2 size = FontAssets.MouseText.Value.MeasureString(notice) * 0.9f;
+        var position = new Vector2(view.X + (view.Width - size.X) * 0.5f, view.Y + view.Height * 0.4f);
+
+        Utils.DrawBorderString(spriteBatch, notice, position, Color.Gray * fade, 0.9f);
+    }
+
+    /// <summary>Each node's line to the nearest skill below it in Threshold, brightening as that path is bought.</summary>
+    private void DrawLinks(SpriteBatch spriteBatch, SkillPlayer skills, float fade)
+    {
+        foreach (SkillLink link in _layout.Links)
+        {
+            PlacedSkill from = _layout.Nodes[link.From];
+            PlacedSkill to = _layout.Nodes[link.To];
+
+            bool reached = skills.Has(to.Skill);
+
+            Color tone = reached && skills.Has(from.Skill)
+                ? new Color(120, 190, 255) * 0.8f
+                : reached
+                    ? new Color(68, 120, 190) * 0.6f
+                    : new Color(46, 58, 96) * 0.55f;
+
+            spriteBatch.DrawLine(ScreenOf(from.Space), ScreenOf(to.Space), tone * fade,
+                Math.Max(1, (int)MathF.Round(2f * _zoom)));
+        }
     }
 
     /// <summary>
-    /// Fills <see cref="_blobs"/> with the held nodes nearest <paramref name="focus"/> and returns how many
+    /// Fills <see cref="_blobs"/> with the held nodes nearest the middle of the view and returns how many
     /// landed. The backdrop carries a fixed number of slots, so the rest of the tree cannot contribute.
     /// </summary>
-    private int CollectBlobs(Vector2 origin, SkillPlayer skills, Vector2 focus)
+    private int CollectBlobs()
     {
+        var skills = Main.LocalPlayer.GetModPlayer<SkillPlayer>();
+        Vector2 focus = Centre();
         int count = 0;
 
-        foreach (PlacedSkill node in _nodes)
+        foreach (PlacedSkill node in _layout.Nodes)
         {
             if (!skills.Has(node.Skill))
                 continue;
 
-            Vector2 at = origin + node.Position;
+            Vector2 at = ScreenOf(node.Space);
             float distance = Vector2.DistanceSquared(at, focus);
             int slot = count;
 
@@ -440,9 +484,9 @@ internal sealed class SkillTreeField : UIElement
             if (slot >= SkillTreeBackdrop.BLOB_SLOTS)
                 continue;
 
-            float strength = 0.9f + 0.1f * MathF.Sin(Main.GlobalTimeWrappedHourly * 1.7f + node.Position.Y * 0.03f);
+            float strength = 0.9f + 0.1f * MathF.Sin(Main.GlobalTimeWrappedHourly * 1.7f + node.Space.Y);
 
-            _blobs[slot] = new SkillBlob(at, BLOB_RADIUS, strength, ColorOf(node.Skill.Group));
+            _blobs[slot] = new SkillBlob(at, BLOB_RADIUS * _zoom, strength, ColorOf(node.Skill.Group));
             _blobDistances[slot] = distance;
 
             count = Math.Min(count + 1, SkillTreeBackdrop.BLOB_SLOTS);
@@ -451,51 +495,7 @@ internal sealed class SkillTreeField : UIElement
         return count;
     }
 
-    private void DrawEmptyNotice(SpriteBatch spriteBatch, float fade)
-    {
-        CalculatedStyle view = GetDimensions();
-
-        const string notice = "No skills are registered.";
-
-        Vector2 size = FontAssets.MouseText.Value.MeasureString(notice) * 0.9f;
-        var position = new Vector2(view.X + (view.Width - size.X) * 0.5f, view.Y + view.Height * 0.4f);
-
-        Utils.DrawBorderString(spriteBatch, notice, position, Color.Gray * fade, 0.9f);
-    }
-
-    /// <summary>The line the bands hang off, with each band's Threshold labelled beside its row.</summary>
-    private void DrawSpine(SpriteBatch spriteBatch, Vector2 origin, int threshold, float fade)
-    {
-        ReadOnlySpan<int> bands = SkillRegistry.Bands;
-
-        // A segment brightens once the band below it is open, so the spine reads as a climbed ladder.
-        for (int i = 0; i + 1 < bands.Length; i++)
-        {
-            Color tone = threshold >= bands[i + 1] ? new Color(158, 140, 232) : new Color(90, 84, 140);
-
-            spriteBatch.DrawLine(
-                origin + new Vector2(0f, i * BAND_SPACING),
-                origin + new Vector2(0f, (i + 1) * BAND_SPACING),
-                tone * (0.55f * fade),
-                2);
-        }
-
-        // Pinned to the left edge and scrolled only vertically, so the ladder stays readable as a ruler
-        // however far the field is panned sideways.
-        float labelX = GetDimensions().X + 8f;
-
-        for (int i = 0; i < bands.Length; i++)
-        {
-            bool open = threshold >= bands[i];
-
-            var position = new Vector2(labelX, origin.Y + i * BAND_SPACING - 10f);
-
-            Utils.DrawBorderString(spriteBatch, $"Threshold {bands[i]}", position,
-                (open ? Color.Goldenrod : Color.Gray * 0.8f) * fade, 0.8f);
-        }
-    }
-
-    private void DrawNode(SpriteBatch spriteBatch, Vector2 centre, in PlacedSkill node, NodeState state, float fade)
+    private void DrawNode(SpriteBatch spriteBatch, in PlacedSkill node, NodeState state, float fade)
     {
         Texture2D socket = Assets.Textures.UI.Elements.Empty.Asset.Value;
         Texture2D glow = SkillGlyphFlash.Glow(socket);
@@ -503,15 +503,15 @@ internal sealed class SkillTreeField : UIElement
 
         string id = node.Skill.ID;
         Color tone = ColorOf(node.Skill.Group);
-        float scale = _flash.ScaleOf(id);
-        Vector2 at = centre + _flash.OffsetOf(id);
+        float scale = _flash.ScaleOf(id) * _zoom;
+        Vector2 at = ScreenOf(node.Space) + _flash.OffsetOf(id);
 
         // Held nodes breathe and ready ones pulse, so what is bought and what is affordable read apart
         // at a glance; the rest sit still.
         float ambient = state switch
         {
-            NodeState.Held => 0.55f + 0.12f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2f + node.Position.Y),
-            NodeState.Ready => 0.30f + 0.12f * MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + node.Position.X * 0.05f),
+            NodeState.Held => 0.55f + 0.12f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2f + node.Space.Y),
+            NodeState.Ready => 0.30f + 0.12f * MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + node.Space.X),
             NodeState.Costly => 0.12f,
             _ => 0f,
         };
@@ -603,8 +603,13 @@ internal sealed class SkillTreeField : UIElement
         position.X = MathF.Min(position.X, screen.Width - width - 6f);
         position.Y = MathF.Min(position.Y, screen.Height - height - 6f);
 
+        // Frame point-sampled, text left on the interface's own sampler.
+        SkillTreeBatch.Scope scope = SkillTreeBatch.Point(spriteBatch);
+
         DrawUtils.DrawPanel(spriteBatch, new Rectangle((int)position.X, (int)position.Y, (int)width, (int)height),
-            new Color(16, 14, 30) * 0.95f, opacity: fade);
+            new Color(10, 16, 34) * 0.95f, opacity: fade);
+
+        SkillTreeBatch.Restore(spriteBatch, scope);
 
         Utils.DrawBorderString(spriteBatch, name, position + new Vector2(12f, 10f), ColorOf(skill.Group) * fade, 0.95f);
         Utils.DrawBorderString(spriteBatch, description, position + new Vector2(12f, 34f), Color.LightGray * fade, 0.85f);
@@ -622,7 +627,7 @@ internal sealed class SkillTreeField : UIElement
 
     private static Color FooterColor(Skill skill, SkillPlayer skills) => skills.CanUnlock(skill) switch
     {
-        SkillPurchaseResult.AlreadyOwned => Color.SkyBlue,
+        SkillPurchaseResult.AlreadyOwned => new Color(68, 177, 242),
         SkillPurchaseResult.Success => Color.LightGreen,
         _ => Color.Gray,
     };

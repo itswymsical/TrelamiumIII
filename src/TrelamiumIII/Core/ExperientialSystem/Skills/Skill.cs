@@ -77,6 +77,12 @@ public abstract class Skill
     public virtual SkillGroup Group => SkillGroup.Unaligned;
 
     /// <summary>
+    /// Position in tree space, origin at the centre of the field and one unit to a node's spacing.
+    /// Null places the skill automatically on the ring its <see cref="UnlockThreshold"/> owns.
+    /// </summary>
+    public virtual Vector2? Space => null;
+
+    /// <summary>
     /// Price as a fraction of the meter at <see cref="UnlockThreshold"/>. 0.4 means "roughly two fifths
     /// of the Threshold you can first buy it on" no matter where on the curve that sits.
     /// </summary>

@@ -105,6 +105,9 @@ float Hash(float2 p)
 
 // One star per grid cell, placed and graded by the cell's own hash. A noise texture thresholded high
 // gives clumps rather than isolated points, so the field is generated instead of sampled.
+//
+// The falloff is deliberately wide: the backdrop is flattened onto a pixel grid afterwards, and a star
+// narrower than a cell would blink in and out of it as the field pans.
 float Stars(float2 p)
 {
     float2 cell = floor(p);
@@ -114,7 +117,7 @@ float Stars(float2 p)
 
     float2 at = float2(Hash(cell + 11.3), Hash(cell + 27.7));
     float d = length(p - cell - at);
-    float star = pow(saturate(1.0 - d * 3.0), max(uStarPower, 1.0)) * bright;
+    float star = pow(saturate(1.0 - d * 2.0), max(uStarPower, 1.0)) * bright;
 
     return star * (1.0 - uTwinkle * 0.5 * (1.0 + sin(uTime * (1.5 + pick * 6.0) + pick * 30.0)));
 }
@@ -176,7 +179,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
 
     // The gas the blob sits in lights up with it, so a held node reads as illuminating the nebula
     // rather than as a sprite laid over it.
-    color += blobColor * (halo * 0.35 + core * 0.55) * (0.45 + 0.55 * h);
+    color += blobColor * (halo * 0.35 + core * 0.75) * (0.45 + 0.55 * h);
 
     float vigR = length((uv - 0.5) * uAspect) / max(0.5 * length(uAspect), 1e-4);
     color *= 1.0 - uVignette * smoothstep(0.35, 1.0, vigR);

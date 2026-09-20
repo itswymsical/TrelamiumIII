@@ -82,10 +82,6 @@ internal sealed class SkillTreeUI : UIState
     {
         base.Draw(spriteBatch);
 
-        SkillTreeBatch.Scope scope = SkillTreeBatch.Point(spriteBatch);
-
         _panel?.DrawTooltip(spriteBatch);
-
-        SkillTreeBatch.Restore(spriteBatch, scope);
     }
 }

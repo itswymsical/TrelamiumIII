@@ -37,10 +37,13 @@ public sealed class SkillTreeSystem : ModSystem
         _ui.Activate();
 
         _interface = new UserInterface();
+
+        SkillTreeRenderer.Load();
     }
 
     public override void Unload()
     {
+        SkillTreeRenderer.Unload();
         SkillGlyphFlash.Unload();
 
         _interface = null;
