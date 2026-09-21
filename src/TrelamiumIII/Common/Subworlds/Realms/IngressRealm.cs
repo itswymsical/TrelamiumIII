@@ -8,6 +8,9 @@ using TrelamiumIII.Common.Generation.Caves;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Content.Ingress;
+using TrelamiumIII.Content.Ingress.Transition;
+using TrelamiumIII.Core.Graphics.Cinematics;
+using TrelamiumIII.Core.Graphics.FbmScreen;
 using TrelamiumIII.Core.Text;
 using TrelamiumIII.Utilities;
 
@@ -65,6 +68,17 @@ public class IngressRealm : SubworldRealm
     public override DynamicSpriteFont TipFont => base.TipFont;
     public override Color LoadingAccent => new(140, 220, 110);
     public static int GroundY => (int)(Main.maxTilesY * 0.52f);
+
+    internal override FbmScreenStyle? ScreenStyle => IngressScreen.Style;
+
+    internal override void PopulateScreen(FbmScreenRenderer screen) => IngressScreen.Populate(screen);
+
+    internal override bool StartEntryCutscene()
+    {
+        CutsceneSystem.PlayCutscene<IngressEntryCutscene>();
+
+        return true;
+    }
 
     public override void Update()
     {

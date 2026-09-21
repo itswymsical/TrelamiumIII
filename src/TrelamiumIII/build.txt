@@ -1,5 +1,10 @@
 displayName = Trelamium III
 author = wymsical
 version = 0.1
+
+includeSource = true
+hideCode = true
+hideResources = false
+
 buildIgnore = *.ttf
 modReferences = ModLiquidLib, SubworldLibrary, StructureHelper

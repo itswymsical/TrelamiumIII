@@ -5,11 +5,13 @@ using Terraria.Localization;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.Dialogue.Projected;
+using TrelamiumIII.Core.Graphics.FbmScreen;
 
 namespace TrelamiumIII.Common.Subworlds;
 
 /// <summary>
-///     Draws a <see cref="SubworldRealm" />'s loading screen: background, splash overlay, tips, then the projected title.
+///     Draws a <see cref="SubworldRealm" />'s loading screen: background (or its <see cref="SubworldRealm.ScreenStyle" />
+///     mist), splash overlay, tips, then the projected title.
 ///     When the realm is being left rather than entered, it shows the Terraria logo and vanilla loading tips instead.
 /// </summary>
 internal sealed class RealmLoadingScreen(SubworldRealm realm)
@@ -52,6 +54,7 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
     private double lastDrawSeconds = double.NegativeInfinity;
     private float elapsed;
     private bool leaving;
+    private bool screenContinues;
     private LocalizedText[] tips = [];
     private int firstTip;
 
@@ -73,9 +76,13 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
         float ui = Math.Clamp(Main.screenHeight / ReferenceHeight, 0.6f, 2f);
         float bottom = Main.screenHeight - (Margin + (debug ? ProgressReserve : 0f)) * ui;
 
+        bool screenDrawn = DrawScreen(spriteBatch, gameTime, fade);
+
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
 
-        DrawBackground(spriteBatch, fade);
+        if (!screenDrawn)
+            DrawBackground(spriteBatch, fade);
+
         DrawShade(spriteBatch, fade);
         DrawSplash(spriteBatch, fade, eased);
         DrawTip(spriteBatch, fade, ui, bottom);
@@ -98,6 +105,7 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
     {
         elapsed = 0f;
         leaving = SubworldSystem.Current != realm;
+        screenContinues = !leaving && RealmTransition.IsContinuing(realm);
 
         string prefix = leaving ? VanillaTipPrefix : realm.GetLocalizationKey("Tips") + ".";
         tips = Language.FindAll((key, _) => key.StartsWith(prefix, StringComparison.Ordinal));
@@ -125,6 +133,32 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
             * Matrix.CreateRotationY(yaw)
             * Matrix.CreateTranslation(anchor.X, anchor.Y, 0f)
             * perspective;
+    }
+
+    /// <summary>
+    ///     Renders and composites the realm's <see cref="FbmScreenRenderer" /> with no batch open. One already on screen
+    ///     from <see cref="RealmTransition" /> skips the fade-in. False when entering a realm without a screen style.
+    /// </summary>
+    private bool DrawScreen(SpriteBatch spriteBatch, GameTime gameTime, float fade)
+    {
+        if (leaving || RealmTransition.ForLoadingScreen(realm) is not { } screen)
+            return false;
+
+        GraphicsDevice device = Main.instance.GraphicsDevice;
+
+        screen.Coverage = 1f;
+        screen.Opacity = screenContinues ? 1f : fade;
+        screen.Advance(MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.1f));
+
+        if (!screen.Render(spriteBatch, device, Main.screenWidth, Main.screenHeight))
+            return false;
+
+        // The backbuffer is not guaranteed to keep its contents across a target switch.
+        device.Clear(Color.Black);
+
+        screen.Draw(spriteBatch, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight));
+
+        return true;
     }
 
     private void DrawBackground(SpriteBatch spriteBatch, float fade)

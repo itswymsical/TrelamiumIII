@@ -2,6 +2,7 @@ using ReLogic.Graphics;
 using SubworldLibrary;
 using Terraria.GameContent;
 using Terraria.GameInput;
+using TrelamiumIII.Core.Graphics.FbmScreen;
 
 namespace TrelamiumIII.Common.Subworlds;
 
@@ -31,6 +32,20 @@ public abstract class SubworldRealm : Subworld
 
     /// <summary>Colour of the title underline, tip label and debug progress bar.</summary>
     public virtual Color LoadingAccent => new(255, 190, 60);
+
+    /// <summary>
+    /// Mist drawn by <see cref="RealmTransition"/> and behind the loading screen in place of <see cref="LoadingBackground"/>.
+    /// Null disables both.
+    /// </summary>
+    internal virtual FbmScreenStyle? ScreenStyle => null;
+
+    /// <summary>Adds this realm's <see cref="ScreenObject"/>s to a freshly reset renderer.</summary>
+    internal virtual void PopulateScreen(FbmScreenRenderer screen)
+    {
+    }
+
+    /// <summary>Starts a <see cref="RealmEntryCutscene"/> for this realm; false enters without one.</summary>
+    internal virtual bool StartEntryCutscene() => false;
 
     public override void SetStaticDefaults()
     {
