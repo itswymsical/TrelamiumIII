@@ -21,6 +21,20 @@ public static class TrelamiumFonts
 
     public static DynamicSpriteFont AaarghFont { get; private set; } = null!;
 
+    public static DynamicSpriteFont Hybrid { get; private set; } = null!;
+
+    public static DynamicSpriteFont ManufacturingConsent { get; private set; } = null!;
+
+    public static DynamicSpriteFont PatrickHand { get; private set; } = null!;
+
+    public static DynamicSpriteFont Peralta { get; private set; } = null!;
+
+    public static DynamicSpriteFont RajdhaniBold { get; private set; } = null!;
+
+    public static DynamicSpriteFont RajdhaniMedium { get; private set; } = null!;
+
+    public static DynamicSpriteFont ZenDots { get; private set; } = null!;
+
     internal static void Load(Mod mod)
     {
         if (Main.dedServ) return;
@@ -31,6 +45,13 @@ public static class TrelamiumFonts
         AndikaBoldItalic = BakedFont.Load(mod, $"{DIRECTORY}/Andika-BoldItalic");
         PaprikaFont = BakedFont.Load(mod, $"{DIRECTORY}/Paprika-Regular");
         AaarghFont = BakedFont.Load(mod, $"{DIRECTORY}/Aaargh");
+        Hybrid = BakedFont.Load(mod, $"{DIRECTORY}/Hybrid");
+        ManufacturingConsent = BakedFont.Load(mod, $"{DIRECTORY}/ManufacturingConsent-Regular");
+        PatrickHand = BakedFont.Load(mod, $"{DIRECTORY}/PatrickHand-Regular");
+        Peralta = BakedFont.Load(mod, $"{DIRECTORY}/Peralta-Regular");
+        RajdhaniBold = BakedFont.Load(mod, $"{DIRECTORY}/Rajdhani-Bold");
+        RajdhaniMedium = BakedFont.Load(mod, $"{DIRECTORY}/PatrickHand-Medium");
+        ZenDots = BakedFont.Load(mod, $"{DIRECTORY}/ZenDots-Regular");
     }
 
     internal static void Unload()
@@ -41,5 +62,12 @@ public static class TrelamiumFonts
         AndikaBoldItalic = null!;
         PaprikaFont = null!;
         AaarghFont = null!;
+        Hybrid = null!;
+        ManufacturingConsent = null!;
+        PatrickHand = null!; 
+        Peralta = null!;
+        RajdhaniBold = null!;
+        RajdhaniMedium = null!;
+        ZenDots = null!;
     }
 }
