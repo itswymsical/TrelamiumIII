@@ -1,13 +1,12 @@
 <img align="center" src="./assets/logo.png"/>
 
-# Trelamium III
-**Trelamium III** is a content mod for tModLoader.
-Yeah, I see it too. The logo says II, not III. Shut up about it.
+# Trelamium
+**Trelamium** is a content mod for tModLoader.
 
 ---
 Overview
 ---
-Trelamium III is a reboot of the former content mod, Trelamium, obviously. It adds content and you guessed it! Bosses!
+Trelamium is a reimagination of the former content mod, Trelamium.
 
 ## References
 * [ModLiquidLib](https://github.com/Lion8cake/ModLiquidLib) by [Lion8cake](https://github.com/Lion8cake)
