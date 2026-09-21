@@ -7,4 +7,4 @@ hideCode = true
 hideResources = false
 
 buildIgnore = *.ttf
-modReferences = ModLiquidLib, SubworldLibrary, StructureHelper
+modReferences = ModLiquidLib, SubworldLibrary

@@ -7,9 +7,6 @@
     <Reference Include="ModLiquidLib">
       <HintPath>References/ModLiquidLib.dll</HintPath>
     </Reference>
-    <Reference Include="StructureHelper">
-      <HintPath>References/StructureHelper.dll</HintPath>
-    </Reference>
     <Reference Include="SubworldLibrary">
       <HintPath>References/SubworldLibrary.dll</HintPath>
     </Reference>

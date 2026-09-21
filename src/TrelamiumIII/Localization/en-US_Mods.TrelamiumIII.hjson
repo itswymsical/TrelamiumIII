@@ -24,6 +24,20 @@ Items: {
 			'''
 	}
 
+	StructureVoidTileItem: {
+		DisplayName: Structure Void Block
+		Tooltip:
+			'''
+			Dev tool. Marks a cell whose block the structure leaves as it finds it
+			Any placed block replaces it
+			'''
+	}
+
+	StructureVoidWallItem: {
+		DisplayName: Structure Void Wall
+		Tooltip: Dev tool. Marks a cell whose wall the structure leaves as it finds it
+	}
+
 	SulfurItem: {
 		DisplayName: Sulfur
 		Tooltip: ""
@@ -1323,4 +1337,5 @@ Subworlds: {
 
 	TrelamiumIII.DisplayName: Reverie
 	CanopyTreeLab.DisplayName: Canopy Tree Lab
+	StructureLab.DisplayName: Structure Lab
 }

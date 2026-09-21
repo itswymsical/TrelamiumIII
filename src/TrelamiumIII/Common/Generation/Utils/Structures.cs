@@ -1,13 +1,12 @@
-using StructureHelper;
-using Generator = StructureHelper.API.Generator;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.NPCs.Housing;
+using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Common.Generation.Utils;
 
 /// <summary>
 /// A reference point on a structure, so callers can place by bottom-centre or a specific tile instead of
-/// StructureHelper's top-left.
+/// the structure's top-left.
 /// </summary>
 public readonly struct StructureAnchor
 {
@@ -75,14 +74,12 @@ public readonly record struct PlacedStructure(string Path, Point Origin, Point16
 }
 
 /// <summary>
-/// StructureHelper, placed by anchor. Paths are relative to the mod root without the
+/// Packaged structures placed by anchor. Paths are relative to the mod root without the
 /// extension, e.g. <c>"Assets/Structures/ArgiesLab"</c>.
 /// </summary>
 public static class Structures
 {
-    private static Mod Mod => TrelamiumIII.Instance;
-
-    public static Point16 Dimensions(string path) => Generator.GetStructureDimensions(path, Mod);
+    public static Point16 Dimensions(string path) => StructureLoader.Get(path).Size;
 
     /// <summary>Top-left tile the structure needs so that <paramref name="anchor"/> lands on <paramref name="target"/>.</summary>
     public static Point OriginFor(string path, Point target, StructureAnchor anchor)
@@ -94,33 +91,34 @@ public static class Structures
     public static bool Fits(string path, Point target, StructureAnchor anchor)
     {
         Point origin = OriginFor(path, target, anchor);
-        return Generator.IsInBounds(path, Mod, new Point16(origin.X, origin.Y));
+        Point16 size = Dimensions(path);
+
+        return StructureWorld.InWorld(new Rectangle(origin.X, origin.Y, size.X, size.Y));
     }
 
-    public static PlacedStructure Place(string path, Point target, StructureAnchor anchor, GenFlags flags = GenFlags.None, bool ignoreNull = false)
+    public static PlacedStructure Place(string path, Point target, StructureAnchor anchor)
     {
-        Point16 size = Dimensions(path);
-        Point offset = anchor.Offset(size);
+        StructureData data = StructureLoader.Get(path);
+        Point offset = anchor.Offset(data.Size);
         var origin = new Point(target.X - offset.X, target.Y - offset.Y);
 
-        Generator.GenerateStructure(path, new Point16(origin.X, origin.Y), Mod, fullPath: false, ignoreNull, flags);
+        StructureWorld.Place(data, origin);
 
-        return new PlacedStructure(path, origin, size);
+        return new PlacedStructure(path, origin, data.Size);
     }
 
     /// <summary>Top-left placement, for callers that already have the origin.</summary>
-    public static PlacedStructure Place(string path, Point origin, GenFlags flags = GenFlags.None, bool ignoreNull = false)
-        => Place(path, origin, StructureAnchor.TopLeft, flags, ignoreNull);
+    public static PlacedStructure Place(string path, Point origin) => Place(path, origin, StructureAnchor.TopLeft);
 
-    /// <summary>Like <see cref="Place(string, Point, StructureAnchor, GenFlags, bool)"/>, but refuses rather than clipping at the world edge.</summary>
-    public static bool TryPlace(string path, Point target, StructureAnchor anchor, out PlacedStructure placed, GenFlags flags = GenFlags.None, bool ignoreNull = false)
+    /// <summary>Like <see cref="Place(string, Point, StructureAnchor)"/>, but refuses rather than leaving the world.</summary>
+    public static bool TryPlace(string path, Point target, StructureAnchor anchor, out PlacedStructure placed)
     {
         placed = default;
 
         if (!Fits(path, target, anchor))
             return false;
 
-        placed = Place(path, target, anchor, flags, ignoreNull);
+        placed = Place(path, target, anchor);
         return true;
     }
 }
