@@ -1087,7 +1087,8 @@ Projectiles: {
 	TungstenTippedArrowProjectile.DisplayName: Tungsten Tipped Arrow
 	CanisterCannonProj.DisplayName: Canister Cannon
 	GasCanisterProj.DisplayName: Gas Canister
-	WardenBoulder.DisplayName: Warden Boulder
+	WardenTileCluster.DisplayName: Torn Earth
+	EarthenPike.DisplayName: Earthen Pike
 	ThrownTool.DisplayName: Thrown Tool
 }
 

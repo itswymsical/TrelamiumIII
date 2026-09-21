@@ -692,6 +692,9 @@ public sealed class FungoreBoss : ModNPC
         Accent = new Color(255, 176, 74),
 
         RevealTick = EMERGE_RUMBLE_TICKS,
+
+        // Settled by DoLanding: the landing is a fall of unknown length, not a fixed hold.
+        AutoSettle = false,
     };
 
     private void UpdateEmerge()

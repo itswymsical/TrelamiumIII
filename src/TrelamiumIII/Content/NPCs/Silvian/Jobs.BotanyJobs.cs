@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.NPCs.Silvian;
 
- public sealed class SilvianBotany1 : Job
+public sealed class SilvianBotany1 : Job
 {
     public SilvianBotany1() : base(
         JobID.SilvianBotany1, "SilvianBotany1.Name", "SilvianBotany1.Description",

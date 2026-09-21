@@ -99,6 +99,7 @@ internal sealed class BossIntroSystem : ModSystem
     ///     The boss has arrived and the fight is live. Takes the bars, the lines and the interface
     ///     back to normal; the track card keeps its own schedule and usually outlives them.
     /// </summary>
+    /// <remarks>Runs by itself for a <see cref="BossIntro.AutoSettle" /> intro; bosses call it only for a manual one.</remarks>
     public static void Settle()
     {
         if (current is not { } intro || outroStart >= 0)
@@ -138,14 +139,16 @@ internal sealed class BossIntroSystem : ModSystem
         else if (timer == intro.RevealTick)
             Reveal(intro);
 
-        // Backstop only. The boss itself is what normally ends the entrance, and it does that by
-        // landing -- which is a distance, not a duration.
-        if (outroStart < 0 && timer >= intro.MaxLength)
+        if (outroStart < 0 && timer >= SettleTick(intro))
             Settle();
 
         if (timer >= EndTick(intro))
             current = null;
     }
+
+    /// <summary>Tick the system settles on by itself: the end of the hold, or <see cref="BossIntro.MaxLength" /> as a manual intro's backstop.</summary>
+    private static int SettleTick(BossIntro intro)
+        => intro.AutoSettle ? Math.Min(intro.RevealTick + intro.HoldTicks, intro.MaxLength) : intro.MaxLength;
 
     /// <summary>Ground rumble, building as whatever is under the floor gets closer to the surface.</summary>
     private static void Rumble(BossIntro intro)

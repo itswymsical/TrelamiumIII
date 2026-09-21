@@ -85,6 +85,10 @@ public class MyconidSporeTile : ModTile
     public override void KillTile(int i, int j, ref bool fail, ref bool effectOnly, ref bool noItem)
     {
         base.KillTile(i, j, ref fail, ref effectOnly, ref noItem);
+
+        if (DownedBossSystem.DownedFungore)
+            return;
+
         if (!fail)
         {
             if (Main.netMode != NetmodeID.MultiplayerClient)

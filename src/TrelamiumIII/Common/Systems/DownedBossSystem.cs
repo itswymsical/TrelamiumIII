@@ -11,11 +11,14 @@ public sealed class DownedBossSystem : ModSystem
 {
     public static bool DownedFungore;
 
+    public static bool DownedWoodenWarden;
+
     public static bool SeenEyeOfCthulhuWake;
 
     public override void ClearWorld()
     {
         DownedFungore = false;
+        DownedWoodenWarden = false;
         SeenEyeOfCthulhuWake = false;
     }
 
@@ -25,6 +28,9 @@ public sealed class DownedBossSystem : ModSystem
         if (DownedFungore)
             tag[nameof(DownedFungore)] = true;
 
+        if (DownedWoodenWarden)
+            tag[nameof(DownedWoodenWarden)] = true;
+
         if (SeenEyeOfCthulhuWake)
             tag[nameof(SeenEyeOfCthulhuWake)] = true;
     }
@@ -32,18 +38,21 @@ public sealed class DownedBossSystem : ModSystem
     public override void LoadWorldData(TagCompound tag)
     {
         DownedFungore = tag.ContainsKey(nameof(DownedFungore));
+        DownedWoodenWarden = tag.ContainsKey(nameof(DownedWoodenWarden));
         SeenEyeOfCthulhuWake = tag.ContainsKey(nameof(SeenEyeOfCthulhuWake));
     }
 
     public override void NetSend(BinaryWriter writer)
     {
         writer.Write(DownedFungore);
+        writer.Write(DownedWoodenWarden);
         writer.Write(SeenEyeOfCthulhuWake);
     }
 
     public override void NetReceive(BinaryReader reader)
     {
         DownedFungore = reader.ReadBoolean();
+        DownedWoodenWarden = reader.ReadBoolean();
         SeenEyeOfCthulhuWake = reader.ReadBoolean();
     }
 }

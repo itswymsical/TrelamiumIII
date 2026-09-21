@@ -4,19 +4,9 @@ namespace TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 ///     One boss's title sequence: what the card says, and the beats it says it on.
 /// </summary>
 /// <remarks>
-///     <para>
-///         Purely a description. <see cref="BossIntroSystem" /> owns the clock, the letterbox, the
-///         shader and the shake; a boss owns nothing but an instance of this and the two calls that
-///         start and end it. That split is what keeps the second boss from being a copy of the first
-///         one's cutscene class.
-///     </para>
-///     <para>
-///         <b>Ticks are measured from <see cref="BossIntroSystem.Play" />.</b> The one number the
-///         intro cannot know is when the boss actually finishes arriving -- that depends on how far
-///         it had to fall -- so the tail is not on the timeline at all. The boss calls
-///         <see cref="BossIntroSystem.Settle" /> when it lands, and <see cref="MaxLength" /> is only
-///         there in case it never does.
-///     </para>
+///     Purely a description; <see cref="BossIntroSystem" /> owns the clock and every effect. Ticks are
+///     measured from <see cref="BossIntroSystem.Play" />. With <see cref="AutoSettle" /> the system also
+///     ends the entrance; without it the boss calls <see cref="BossIntroSystem.Settle" /> on arrival.
 /// </remarks>
 internal sealed class BossIntro
 {
@@ -71,12 +61,18 @@ internal sealed class BossIntro
     public int OutroTicks { get; init; } = 45;
 
     /// <summary>
-    ///     Hard stop, in case the boss never reports having landed.
+    ///     Whether the system settles the entrance itself, <see cref="HoldTicks" /> after <see cref="RevealTick" />.
+    ///     Turn off for an arrival that ends on an event (a landing) and call <see cref="BossIntroSystem.Settle" /> there.
     /// </summary>
-    /// <remarks>
-    ///     A boss killed, despawned or knocked into a pit mid-entrance would otherwise leave the
-    ///     interface hidden behind a letterbox with nothing left alive to take it down.
-    /// </remarks>
+    public bool AutoSettle { get; init; } = true;
+
+    /// <summary>Frames after <see cref="RevealTick" /> an auto-settled entrance holds before its outro.</summary>
+    public int HoldTicks { get; init; } = 100;
+
+    /// <summary>
+    ///     Hard stop for a manual settle that never comes, e.g. a boss killed or despawned mid-entrance. Also caps
+    ///     <see cref="HoldTicks" />.
+    /// </summary>
     public int MaxLength { get; init; } = 60 * 14;
 
     public float LineIntensity { get; init; } = 0.8f;

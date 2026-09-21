@@ -21,8 +21,6 @@ public class EyeOfCthulhuIntro : GlobalNPC
         introStarted = true;
         
         BossIntroSystem.Play(CreateIntro());
-        
-        // BossIntroSystem.Settle();
     }
     private static BossIntro CreateIntro() => new()
     {
@@ -36,6 +34,7 @@ public class EyeOfCthulhuIntro : GlobalNPC
         LineRamp = 0,
         LineDensity = 0,
         LineIntensity = 0,
-        MaxLength = TimeConversion.SetTime(secs: 3, ticks: 30),
+        // Settles 3.5 s in, counting the default 60-tick reveal.
+        HoldTicks = TimeConversion.SetTime(secs: 2, ticks: 30),
     };
 }
