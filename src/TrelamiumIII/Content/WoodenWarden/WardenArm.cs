@@ -226,6 +226,9 @@ public sealed class WardenArm : ModNPC
     /// <summary>Radians each hand swings out from the meeting point between smashes.</summary>
     private const float TAUNT_SWING = 1f;
 
+    /// <summary>How far, 0..1, a swung-out fist turns from facing the other toward pointing along its arc.</summary>
+    private const float TAUNT_FACING_FOLLOW = 0.35f;
+
     /// <summary>Ticks the hands take to gather in front of the body before they lock onto the rhythm.</summary>
     private const int TAUNT_GATHER_TICKS = 20;
 
@@ -1171,7 +1174,10 @@ public sealed class WardenArm : ModNPC
         Vector2 meet = boss.Center + new Vector2(TAUNT_CONTACT * Side, TAUNT_Y);
         float angle = (meet - joint).ToRotation() - Side * TAUNT_SWING * open;
 
-        Swing(joint, angle, Vector2.Distance(meet, joint), StateTimer < TAUNT_GATHER_TICKS ? 0.2f : 1f);
+        // Knuckles square to each other when they meet, turning partway toward the arc as the hands swing out.
+        float facing = (Side * MathHelper.PiOver2).AngleLerp(angle - MathHelper.PiOver2, open * TAUNT_FACING_FOLLOW);
+
+        Swing(joint, angle, Vector2.Distance(meet, joint), StateTimer < TAUNT_GATHER_TICKS ? 0.2f : 1f, facing);
 
         if (Side < 0 && bossTick > 0f && bossTick < WoodenWardenBoss.TAUNT_TICKS && bossTick % TAUNT_PERIOD == 0f)
             Clack(boss.Center + new Vector2(0f, TAUNT_Y));
@@ -1505,16 +1511,17 @@ public sealed class WardenArm : ModNPC
     ///     Poses the arm with its hand <paramref name="reach" /> from <paramref name="joint" /> along <paramref name="angle" />
     ///     and the forearm on that line. <paramref name="follow" /> below 1 eases in from the current pose. Returns the hand.
     /// </summary>
-    private Vector2 Swing(Vector2 joint, float angle, float reach, float follow = 1f)
+    /// <remarks><paramref name="facing" /> overrides the sprite rotation; the hand still sits on the arc.</remarks>
+    private Vector2 Swing(Vector2 joint, float angle, float reach, float follow = 1f, float? facing = null)
     {
-        Vector2 direction = angle.ToRotationVector2();
-        Vector2 centre = joint + direction * (reach - HAND_REACH);
-        float rotation = angle - MathHelper.PiOver2;
+        Vector2 hand = joint + angle.ToRotationVector2() * reach;
+        float rotation = facing ?? angle - MathHelper.PiOver2;
+        Vector2 centre = hand - (rotation + MathHelper.PiOver2).ToRotationVector2() * HAND_REACH;
 
         NPC.velocity = (centre - NPC.Center) * follow;
         NPC.rotation = follow >= 1f ? rotation : NPC.rotation.AngleLerp(rotation, 0.3f);
 
-        return joint + direction * reach;
+        return hand;
     }
 
     private void AimFist(Vector2 position)
