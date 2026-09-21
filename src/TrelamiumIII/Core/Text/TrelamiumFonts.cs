@@ -50,7 +50,7 @@ public static class TrelamiumFonts
         PatrickHand = BakedFont.Load(mod, $"{DIRECTORY}/PatrickHand-Regular");
         Peralta = BakedFont.Load(mod, $"{DIRECTORY}/Peralta-Regular");
         RajdhaniBold = BakedFont.Load(mod, $"{DIRECTORY}/Rajdhani-Bold");
-        RajdhaniMedium = BakedFont.Load(mod, $"{DIRECTORY}/PatrickHand-Medium");
+        RajdhaniMedium = BakedFont.Load(mod, $"{DIRECTORY}/Rajdhani-Medium");
         ZenDots = BakedFont.Load(mod, $"{DIRECTORY}/ZenDots-Regular");
     }
 
