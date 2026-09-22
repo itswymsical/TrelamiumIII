@@ -211,7 +211,7 @@ public sealed class IngressScar : ModSystem
         Effect effect = Assets.Shaders.TextFbm.Asset.Value;
         EffectParameterCollection parameters = effect.Parameters;
 
-        parameters["uNoiseTex"]?.SetValue(Assets.Textures.Noise.FbmNoise2.Asset.Value);
+        parameters["uNoiseTex"]?.SetValue(Assets.Textures.Noise.Milky_5.Asset.Value);
         parameters["uImageSize0"]?.SetValue(texture.Size());
         parameters["uSourceRect"]?.SetValue(new Vector4(0f, 0f, texture.Width, texture.Height));
         parameters["uGlyphPosition"]?.SetValue(Vector2.Zero);
