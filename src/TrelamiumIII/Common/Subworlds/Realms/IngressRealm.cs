@@ -36,6 +36,7 @@ public class IngressRealm : SubworldRealm
     private const float HubRadiusY = 36f;
     private const float HubFloorOffset = 22f;
     private const float ShaftEndBelowHubCenter = 4f;
+    private const int UnderworldClearance = 20;
 
     private Layout layout;
     private CaveNetwork? caves;
@@ -46,7 +47,13 @@ public class IngressRealm : SubworldRealm
 
     public override int Width => 4200;
     public override string Name => "Ingress";
-    public override int Height => 1280;
+    public override int Height => 1480;
+
+    /// <summary>
+    /// Lowest row generated content may reach. Below <see cref="Main.UnderworldLayer"/> vanilla applies hell light, hell
+    /// spawns and underworld music, so the bottom of the realm is left as solid filler.
+    /// </summary>
+    private static int ContentBottom => Main.UnderworldLayer - UnderworldClearance;
 
     /// <summary> SubworldLibrary rebuilds this list on every access, so the passes share state through the realm. </summary>
     public override List<GenPass> Tasks =>
@@ -59,7 +66,7 @@ public class IngressRealm : SubworldRealm
         new IngressCanopyTree(this),
         new IngressCaveFeatures(this),
         new IngressFortress(this),
-        new IngressCavePools(),
+        new IngressCavePools(this),
         new IngressVegetation(),
         new IngressFlora(),
         new IngressSpawn(this)
@@ -154,7 +161,6 @@ public class IngressRealm : SubworldRealm
         private const int MoundClearance = 60;
         private const int HubOffsetMax = 30;
         private const int FortressShiftMax = 60;
-        private const int FortressBottomMargin = 100;
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
@@ -216,11 +222,11 @@ public class IngressRealm : SubworldRealm
             }
         }
 
-        /// <summary> Deep under the canopy tree, shifted part of the way toward the spawn side. </summary>
+        /// <summary> On <see cref="ContentBottom"/> under the canopy tree, shifted part of the way toward the spawn side. </summary>
         private static FortressLayout PlanFortress(Layout layout)
         {
             int centerX = layout.SiteX + layout.SpawnSide * WorldGen.genRand.Next(FortressShiftMax + 1);
-            var origin = new Point(centerX - FortressLayout.TotalWidth / 2, Main.maxTilesY - FortressBottomMargin - FortressLayout.TotalHeight);
+            var origin = new Point(centerX - FortressLayout.TotalWidth / 2, ContentBottom - FortressLayout.TotalHeight);
 
             return FortressLayout.Create(origin, new UnifiedRandom(WorldGen.genRand.Next()));
         }
@@ -415,7 +421,7 @@ public class IngressRealm : SubworldRealm
             UnifiedRandom random = WorldGen.genRand;
 
             int top = layout.RockLayerY + NodeTopBelowRockLayer;
-            var area = new Rectangle(NodeMargin, top, Main.maxTilesX - NodeMargin * 2, Main.maxTilesY - NodeMargin - top);
+            var area = new Rectangle(NodeMargin, top, Main.maxTilesX - NodeMargin * 2, ContentBottom - top);
             var network = new CaveNetwork(area, random) { Spacing = NodeSpacing };
 
             ChamberNode hub = CreateHub(layout.ShaftEnd);
@@ -535,7 +541,7 @@ public class IngressRealm : SubworldRealm
             for (int i = 0; i < PocketCount; i++)
             {
                 int x = random.Next(NodeMargin, Main.maxTilesX - NodeMargin);
-                int y = random.Next(top, Main.maxTilesY - NodeMargin);
+                int y = random.Next(top, ContentBottom - PocketRadiusMax - (int)PocketWarp);
 
                 if (!excluded.Contains(x, y))
                     carver.CarveBlob(new Vector2(x, y), random.Next(PocketRadiusMin, PocketRadiusMax + 1), PocketWarp);
@@ -626,9 +632,9 @@ public class IngressRealm : SubworldRealm
     /// <summary>
     /// Water pools in cave dips below the surface layer. Generation settles no liquid, so each pool is placed full and
     /// enclosed (<see cref="LiquidBasin"/>). Runs after smoothing so slopes are final, and before the cave flora so pool beds
-    /// grow grass for the water plants to anchor on.
+    /// grow grass for the water plants to anchor on. The fortress stays dry: its roots and peat form basins in mid-air.
     /// </summary>
-    private class IngressCavePools() : GenPass("[T3] Ingress Cave Pools", 40f)
+    private class IngressCavePools(IngressRealm realm) : GenPass("[T3] Ingress Cave Pools", 40f)
     {
         private const int ColumnStep = 4;
         private const int BoundsMargin = 30;
@@ -647,6 +653,7 @@ public class IngressRealm : SubworldRealm
             var bounds = new Rectangle(BoundsMargin, top, Main.maxTilesX - BoundsMargin * 2, Main.maxTilesY - BoundsMargin - top);
             var rolledBasins = new HashSet<Point>();
             var region = new List<Point>();
+            Rectangle fortress = realm.Fortress?.Bounds ?? Rectangle.Empty;
 
             for (int x = bounds.Left; x < bounds.Right; x += ColumnStep)
             {
@@ -654,7 +661,7 @@ public class IngressRealm : SubworldRealm
 
                 for (int y = bounds.Top; y < bounds.Bottom - 1; y++)
                 {
-                    if (!Main.tile[x, y].HasTile && Main.tile[x, y + 1].HasTile)
+                    if (!Main.tile[x, y].HasTile && Main.tile[x, y + 1].HasTile && !fortress.Contains(x, y))
                         TryFillBasin(new Point(x, y), bounds, rolledBasins, region);
                 }
             }

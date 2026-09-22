@@ -13,20 +13,25 @@ public class FortressCommands : ModCommand
 
     public override CommandType Type => CommandType.Chat;
 
-    public override string Usage => "/fortress [info] | goto <gate|arena|altar|1-10> | warden <on|off>";
+    public override string Usage => "/fortress [info] | goto <gate|arena|altar|1-10> | solve|unsolve <1-10|all> | warden <on|off>";
 
-    public override string Description => "Ligneous Fortress debugging: route, teleports and the Wooden Warden's defeat flag.";
+    public override string Description => "Ligneous Fortress debugging: route, teleports, room seals and the Wooden Warden's defeat flag.";
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {
         string verb = args.Length > 0 ? args[0].ToLowerInvariant() : "info";
 
-        if (verb == "warden")
+        switch (verb)
         {
-            bool downed = args.Length > 1 && args[1].Equals("on", StringComparison.OrdinalIgnoreCase);
-            DownedBossSystem.DownedWoodenWarden = downed;
-            caller.Reply($"Wooden Warden {(downed ? "defeated" : "undefeated")}.", Color.LightGreen);
-            return;
+            case "warden":
+                bool downed = args.Length > 1 && args[1].Equals("on", StringComparison.OrdinalIgnoreCase);
+                DownedBossSystem.DownedWoodenWarden = downed;
+                caller.Reply($"Wooden Warden {(downed ? "defeated" : "undefeated")}.", Color.LightGreen);
+                return;
+
+            case "solve" or "unsolve" when args.Length > 1:
+                SetSolved(caller, args[1], verb == "solve");
+                return;
         }
 
         if (!SubworldSystem.IsActive<IngressRealm>() || ModContent.GetInstance<IngressRealm>().Fortress is not { } fortress)
@@ -38,7 +43,7 @@ public class FortressCommands : ModCommand
         switch (verb)
         {
             case "info":
-                string route = string.Join(" ", fortress.Rooms.Select(room => $"{room.Index + 1}:{room.Kind}@{room.Cell.X},{room.Cell.Y}"));
+                string route = string.Join(" ", fortress.Rooms.Select(room => $"{room.Index + 1}:{room.Kind}@{room.Cell.X},{room.Cell.Y}{(FortressProgress.IsSolved(room.Index) ? " solved" : "")}"));
                 caller.Reply($"Fortress {fortress.Bounds}; route {route}", Color.LightGreen);
                 break;
 
@@ -54,6 +59,33 @@ public class FortressCommands : ModCommand
                 caller.Reply($"Usage: {Usage}", Color.Red);
                 break;
         }
+    }
+
+    /// <summary> Stands in for a room's puzzle: seals or unseals room <paramref name="which"/> (1-based) or every room. </summary>
+    private void SetSolved(CommandCaller caller, string which, bool solved)
+    {
+        if (FortressProgress.RoomCount == 0)
+        {
+            caller.Reply("No fortress rooms are registered in this world.", Color.Red);
+            return;
+        }
+
+        if (which.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            for (int room = 0; room < FortressProgress.RoomCount; room++)
+                FortressProgress.Solve(room, solved);
+        }
+        else if (int.TryParse(which, out int number) && number >= 1 && number <= FortressProgress.RoomCount)
+        {
+            FortressProgress.Solve(number - 1, solved);
+        }
+        else
+        {
+            caller.Reply($"Rooms are 1-{FortressProgress.RoomCount} or 'all'.", Color.Red);
+            return;
+        }
+
+        caller.Reply($"Room {which} {(solved ? "solved" : "sealed")}.", Color.LightGreen);
     }
 
     /// <summary> The tile the player's feet should occupy, just inside an opening so nothing is fallen far. </summary>

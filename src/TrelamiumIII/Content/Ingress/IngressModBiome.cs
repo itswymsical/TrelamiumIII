@@ -65,7 +65,7 @@ public class IngressGardenBiome : ModBiome
 public class IngressTempleBiome : ModBiome
 {
     public override int Music => Assets.Music.LigneousTemple.Slot;
-    public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
+    public override SceneEffectPriority Priority => SceneEffectPriority.Environment;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
     //public override string BackgroundPath => "Reverie/Assets/Textures/Bestiary/TaigaMapBG";
@@ -77,6 +77,6 @@ public class IngressTempleBiome : ModBiome
         if (!SubworldSystem.IsActive<IngressRealm>())
             return false;
 
-        return (player.ZoneDirtLayerHeight || player.ZoneRockLayerHeight) && TileCounts.Instance.ligneousTempleCount > 140;
+        return TileCounts.Instance.ligneousTempleCount > 200;
     }
 }

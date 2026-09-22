@@ -1,13 +1,15 @@
+using System.Linq;
 using Terraria.Utilities;
+using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Common.Generation.Fortress;
 
 /// <summary>
-/// Writes a <see cref="FortressLayout"/> into the world: a solid Brambleroot polygon, then the room interiors, the
-/// openings between them, the arena and the Altar of Ingress. Rooms without a template get a placeholder course.
-/// Run it after smoothing so the brickwork keeps square edges.
+/// Writes a <see cref="FortressLayout"/> into the world: a solid Brambleroot polygon, the room interiors and the openings
+/// between them, <see cref="FortressDressing"/>, then each room's template or placeholder, and the arena with the Altar
+/// of Ingress. Run it after smoothing so the brickwork keeps square edges.
 /// </summary>
 public static class FortressBuilder
 {
@@ -16,20 +18,20 @@ public static class FortressBuilder
     /// <summary> <see cref="TileID.Platforms"/> style of the living wood platform. </summary>
     private const int PlatformStyle = 23;
 
-    private const int PitDepth = 3;
-    private const int PitWidthMin = 3;
-    private const int PitWidthMax = 6;
-    private const int PitGapMin = 4;
-    private const int PitGapMax = 8;
     private const int DoorClearance = 8;
-    private const int HatchClearance = 4;
+    private const int HatchClearance = 2;
+    private const int FloorOpeningHeight = 8;
 
     private const int LadderFirstDrop = 5;
     private const int LadderSpacing = 6;
-    private const int BaffleSpacing = 8;
-    private const int BaffleThickness = 2;
-    private const int BaffleOverhang = 10;
-    private const int SpikeStripWidth = 3;
+
+    private const int ChestOffset = 14;
+    private const int PlinthWidth = 6;
+    private const int ChestClearance = 2;
+    private const int ChestHeadroom = 6;
+
+    private const int RoomCornerSize = 5;
+    private const int ArenaCornerSize = 10;
 
     private const int TorchSpacing = 14;
     private const int TorchHeight = 8;
@@ -37,6 +39,7 @@ public static class FortressBuilder
     private const int DaisWidth = 18;
     private const int DaisStep = 3;
     private const int DaisStepHeight = 2;
+    private const int DaisClearance = 3;
     private const int ArenaLadderSpacing = 7;
 
     /// <summary> Liquid is drained this far around the roof opening, so cave pools don't pour into the gate. </summary>
@@ -60,16 +63,20 @@ public static class FortressBuilder
         DrainAboveGate(layout);
 
         FortressRoomTemplates templates = FortressRoomTemplates.Load();
+        string?[] picked = [.. layout.Rooms.Select(room => templates.Pick(room.Kind, random))];
+
+        FortressDressing.Apply(layout, KeepOut(layout, picked), random);
 
         foreach (FortressRoom room in layout.Rooms)
         {
-            if (templates.Pick(room.Kind, random) is { } path)
+            if (picked[room.Index] is { } path)
                 StructureWorld.Place(StructureLoader.Get(path), room.Interior.Location);
             else
                 BuildPlaceholder(room, brick, random);
         }
 
         BuildArena(layout, brick);
+        FortressProgress.Register(layout.Rooms.Select(room => room.Interior));
     }
 
     /// <summary> Top-left tile of the altar on the arena's dais. </summary>
@@ -129,87 +136,82 @@ public static class FortressBuilder
         }
     }
 
+    /// <summary> Openings and the space around them, ladder columns, placeholder chest spots and the altar. </summary>
+    private static FortressKeepOut KeepOut(FortressLayout layout, string?[] picked)
+    {
+        var keep = new FortressKeepOut();
+
+        for (int i = 0; i < layout.Rooms.Count - 1; i++)
+            keep.Add(Inflated(FortressLayout.Link(layout.Rooms[i], layout.Rooms[i + 1]), 1));
+
+        foreach (FortressRoom room in layout.Rooms)
+        {
+            Rectangle interior = room.Interior;
+            RoomSide[] openings = [room.Entry, room.Exit];
+
+            foreach (RoomSide side in openings)
+                keep.Add(OpeningZone(interior, side));
+
+            if (picked[room.Index] is null)
+                keep.Add(ChestZone(room));
+        }
+
+        keep.Add(Inflated(layout.Gate, 1));
+        keep.Add(Inflated(layout.ArenaHatch, 1));
+        keep.Add(new Rectangle(layout.ArenaHatch.Left - HatchClearance, layout.Arena.Top, FortressLayout.HatchWidth + HatchClearance * 2, layout.Arena.Height));
+
+        Point altar = AltarOrigin(layout);
+        int altarTop = altar.Y - DaisClearance;
+        keep.Add(new Rectangle(layout.Arena.Center.X - DaisWidth / 2 - DaisClearance, altarTop, DaisWidth + DaisClearance * 2, layout.Arena.Bottom - altarTop));
+
+        return keep;
+    }
+
+    /// <summary> A side door's floor corner, a ceiling hatch's whole ladder column, or the floor around a floor hatch. </summary>
+    private static Rectangle OpeningZone(Rectangle interior, RoomSide side)
+    {
+        int hatchLeft = FortressLayout.HatchLeft(interior) - HatchClearance;
+        int hatchWidth = FortressLayout.HatchWidth + HatchClearance * 2;
+        int doorTop = interior.Bottom - FortressLayout.DoorHeight - 2;
+
+        return side switch
+        {
+            RoomSide.Left => new Rectangle(interior.Left, doorTop, DoorClearance, interior.Bottom - doorTop),
+            RoomSide.Right => new Rectangle(interior.Right - DoorClearance, doorTop, DoorClearance, interior.Bottom - doorTop),
+            RoomSide.Top => new Rectangle(hatchLeft, interior.Top, hatchWidth, interior.Height),
+            _ => new Rectangle(hatchLeft, interior.Bottom - FloorOpeningHeight, hatchWidth, FloorOpeningHeight)
+        };
+    }
+
+    /// <summary> The plinth and the space above it, on the side of the room away from the entry. </summary>
+    private static Rectangle ChestZone(FortressRoom room)
+    {
+        Rectangle interior = room.Interior;
+        int direction = room.Entry == RoomSide.Right ? -1 : 1;
+        int plinthLeft = interior.Center.X + direction * ChestOffset - PlinthWidth / 2;
+
+        return new Rectangle(plinthLeft - ChestClearance, interior.Bottom - ChestHeadroom, PlinthWidth + ChestClearance * 2, ChestHeadroom);
+    }
+
+    private static Rectangle Inflated(Rectangle area, int amount)
+    {
+        area.Inflate(amount, amount);
+        return area;
+    }
+
     #region Placeholder rooms
 
     private static void BuildPlaceholder(FortressRoom room, ushort brick, UnifiedRandom random)
     {
-        if (room.Entry == RoomSide.Top && room.Exit == RoomSide.Bottom)
-        {
-            BuildBaffles(room.Interior, brick);
-        }
-        else
-        {
-            BuildPitRun(room, random);
-
-            if (room.Entry == RoomSide.Top)
-                BuildLadder(room.Interior);
-        }
-
-        PlaceTorches(room.Interior);
-    }
-
-    /// <summary>
-    /// Spike pits dug into the floor between the room's openings. The floor stays solid near side doors and under
-    /// hatches, so entering and leaving never lands in a pit.
-    /// </summary>
-    private static void BuildPitRun(FortressRoom room, UnifiedRandom random)
-    {
         Rectangle interior = room.Interior;
-        int hatchLeft = FortressLayout.HatchLeft(interior);
-        bool[] keep = new bool[interior.Width];
-        RoomSide[] openings = [room.Entry, room.Exit];
 
-        foreach (RoomSide side in openings)
-        {
-            (int from, int to) = side switch
-            {
-                RoomSide.Left => (0, DoorClearance),
-                RoomSide.Right => (interior.Width - DoorClearance, interior.Width),
-                _ => (hatchLeft - interior.X - HatchClearance, hatchLeft - interior.X + FortressLayout.HatchWidth + HatchClearance)
-            };
+        FillCorners(interior, RoomCornerSize, brick);
 
-            for (int column = Math.Max(from, 0); column < Math.Min(to, interior.Width); column++)
-                keep[column] = true;
-        }
+        if (room.Entry == RoomSide.Top)
+            BuildLadder(interior);
 
-        ushort spikes = TileID.WoodenSpikes;
-        int floorY = interior.Bottom;
-        int x = random.Next(PitGapMin, PitGapMax + 1);
-
-        while (x < interior.Width)
-        {
-            int width = random.Next(PitWidthMin, PitWidthMax + 1);
-
-            if (x + width <= interior.Width && !AnyKept(keep, x, width))
-            {
-                for (int column = interior.X + x; column < interior.X + x + width; column++)
-                {
-                    for (int y = floorY; y < floorY + PitDepth; y++)
-                        Main.tile[column, y].ClearTile();
-
-                    Tile bed = Main.tile[column, floorY + PitDepth];
-                    bed.ClearTile();
-                    bed.HasTile = true;
-                    bed.TileType = spikes;
-                }
-
-                x += width + random.Next(PitGapMin, PitGapMax + 1);
-                continue;
-            }
-
-            x++;
-        }
-    }
-
-    private static bool AnyKept(bool[] keep, int start, int width)
-    {
-        for (int column = start; column < start + width; column++)
-        {
-            if (keep[column])
-                return true;
-        }
-
-        return false;
+        BuildChest(room, random);
+        PlaceTorches(interior);
     }
 
     /// <summary> Platforms under the ceiling hatch, close enough apart that dropping down them never hurts. </summary>
@@ -222,50 +224,59 @@ public static class FortressBuilder
             PlacePlatforms(left, right, y);
     }
 
-    /// <summary>
-    /// Ledges hanging off alternating side walls below the ceiling hatch, each reaching past the centre so the drop
-    /// zig-zags down to the floor hatch. A spike strip on every ledge has to be jumped.
-    /// </summary>
-    private static void BuildBaffles(Rectangle interior, ushort brick)
+    /// <summary> A slate plinth in <see cref="ChestZone"/> with a sealed <see cref="LigneousChestTile"/> holding <see cref="FortressLoot"/>. </summary>
+    private static void BuildChest(FortressRoom room, UnifiedRandom random)
     {
-        int center = interior.Center.X;
-        int ledge = 0;
+        Rectangle zone = ChestZone(room);
+        int plinthLeft = zone.Left + ChestClearance;
+        int plinthY = room.Interior.Bottom - 1;
+        ushort slate = (ushort)ModContent.TileType<SlateTile>();
 
-        for (int y = interior.Top + LadderFirstDrop + 2; y < interior.Bottom - BaffleSpacing / 2; y += BaffleSpacing, ledge++)
+        for (int x = plinthLeft; x < plinthLeft + PlinthWidth; x++)
         {
-            bool fromLeft = ledge % 2 == 0;
-            int left = fromLeft ? interior.Left : center - BaffleOverhang;
-            int right = fromLeft ? center + BaffleOverhang : interior.Right;
+            Tile tile = Main.tile[x, plinthY];
+            tile.ClearTile();
+            tile.HasTile = true;
+            tile.TileType = slate;
+        }
 
-            for (int x = left; x < right; x++)
+        int chest = WorldGen.PlaceChest(plinthLeft + PlinthWidth / 2 - 1, plinthY - 1, (ushort)ModContent.TileType<LigneousChestTile>(), style: LigneousChestTile.Style);
+
+        if (chest >= 0)
+            FortressLoot.Fill(Main.chest[chest], random);
+    }
+
+    /// <summary> Solid triangles in both top corners of <paramref name="area"/>. </summary>
+    private static void FillCorners(Rectangle area, int size, ushort brick)
+    {
+        for (int dx = 0; dx < size; dx++)
+        {
+            for (int dy = 0; dx + dy < size; dy++)
             {
-                for (int row = y; row < y + BaffleThickness; row++)
-                {
-                    Tile tile = Main.tile[x, row];
-                    tile.HasTile = true;
-                    tile.TileType = brick;
-                }
-            }
-
-            // Between the landing under the previous opening and the edge this ledge drops off.
-            int strip = fromLeft ? center + BaffleOverhang / 2 - 1 : center - BaffleOverhang / 2 - SpikeStripWidth + 1;
-
-            for (int x = strip; x < strip + SpikeStripWidth; x++)
-            {
-                Tile tile = Main.tile[x, y - 1];
-                tile.HasTile = true;
-                tile.TileType = TileID.WoodenSpikes;
+                SetBrick(area.Left + dx, area.Top + dy, brick);
+                SetBrick(area.Right - 1 - dx, area.Top + dy, brick);
             }
         }
     }
 
-    /// <summary> At eye height along the room, skipping anything already built there. </summary>
-    private static void PlaceTorches(Rectangle interior)
+    private static void SetBrick(int x, int y, ushort brick)
+    {
+        Tile tile = Main.tile[x, y];
+
+        if (tile.HasTile)
+            return;
+
+        tile.HasTile = true;
+        tile.TileType = brick;
+    }
+
+    /// <summary> At eye height along the area, skipping anything already built there. </summary>
+    private static void PlaceTorches(Rectangle area)
     {
         int torch = ModContent.TileType<BramblewoodTorchTile>();
-        int y = interior.Bottom - TorchHeight;
+        int y = area.Bottom - TorchHeight;
 
-        for (int x = interior.Left + TorchSpacing / 2; x < interior.Right; x += TorchSpacing)
+        for (int x = area.Left + TorchSpacing / 2; x < area.Right; x += TorchSpacing)
         {
             if (!Main.tile[x, y].HasTile)
                 WorldGen.PlaceTile(x, y, torch, mute: true);
@@ -281,6 +292,8 @@ public static class FortressBuilder
         Rectangle arena = layout.Arena;
         int center = arena.Center.X;
 
+        FillCorners(arena, ArenaCornerSize, brick);
+
         for (int step = 0; step < 2; step++)
         {
             int halfWidth = DaisWidth / 2 - step * DaisStep;
@@ -291,6 +304,7 @@ public static class FortressBuilder
                 for (int y = top; y < top + DaisStepHeight; y++)
                 {
                     Tile tile = Main.tile[x, y];
+                    tile.ClearTile();
                     tile.HasTile = true;
                     tile.TileType = brick;
                 }

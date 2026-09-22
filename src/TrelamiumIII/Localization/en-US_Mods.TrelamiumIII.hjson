@@ -16,6 +16,11 @@ Rarities: {
 JobInfo.NewJob: " seems to have a new task for you."
 
 Items: {
+	LigneousChest: {
+		DisplayName: Ligneous Chest
+		Tooltip: Sealed until the fortress room it stands in is solved
+	}
+
 	FieldWand: {
 		DisplayName: Field Wand
 		Tooltip:
@@ -1035,6 +1040,11 @@ Tiles: {
 		MapEntry: Altar of Ingress
 		Summon: Awaken the Warden
 		Enter: Step through the Scar
+	}
+
+	LigneousChestTile: {
+		MapEntry: Ligneous Chest
+		Sealed: Sealed
 	}
 }
 
