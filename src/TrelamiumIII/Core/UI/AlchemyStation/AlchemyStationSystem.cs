@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.UI;
-using TrelamiumIII.Content.Alchemy.AlchemyStations;
+using TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
 
 namespace TrelamiumIII.Core.UI.AlchemyStation;
 

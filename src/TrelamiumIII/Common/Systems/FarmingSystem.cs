@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Terraria.Enums;
-using TrelamiumIII.Content.FarmingOverhaul.Seedbeds;
+using TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
 
 namespace TrelamiumIII.Common.Systems;
 

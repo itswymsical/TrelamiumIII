@@ -1,12 +1,12 @@
 using ReLogic.Content;
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Content.Rusted;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Content.Items.Rusted;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 

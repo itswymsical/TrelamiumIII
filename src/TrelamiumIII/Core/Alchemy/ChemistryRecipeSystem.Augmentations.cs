@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Items.Alchemy.Reagents;
 
 namespace TrelamiumIII.Core.Alchemy;
 

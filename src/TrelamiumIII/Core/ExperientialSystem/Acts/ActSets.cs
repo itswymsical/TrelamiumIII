@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.Alchemy.MagnoliaContent;
+using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
 
 namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 

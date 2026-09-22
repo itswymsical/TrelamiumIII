@@ -26,7 +26,7 @@
        A static Compile Remove doesn't apply with this SDK, so the files are dropped just before compilation, like the SDK's own removals. -->
   <Target Name="ExcludeSpruceReference" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Compile Remove="Content\Taiga\SpruceTree.cs;Content\Taiga\SpruceSapling.cs" />
+      <Compile Remove="Content\Items\Taiga\SpruceTree.cs;Content\Items\Taiga\SpruceSapling.cs" />
     </ItemGroup>
   </Target>
 

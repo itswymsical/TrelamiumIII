@@ -1,8 +1,8 @@
 ﻿using Terraria.IO;
 using Terraria.WorldBuilding;
-using TrelamiumIII.Content.Alchemy.MagnoliaContent;
-using TrelamiumIII.Content.Alchemy.Reagents.Misc;
-using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
+using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
+using TrelamiumIII.Content.Items.Alchemy.Tiles;
 
 namespace TrelamiumIII.Common.Generation;
 

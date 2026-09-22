@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Terraria.ModLoader.IO;
-using TrelamiumIII.Content.Alchemy.Reagents.Misc;
+using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 
 namespace TrelamiumIII.Content.Fungore;
 

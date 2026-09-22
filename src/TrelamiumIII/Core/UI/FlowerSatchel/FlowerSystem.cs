@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using Terraria.UI;
-using TrelamiumIII.Content.FarmingOverhaul.SatchelContent;
+using TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent;
 
 namespace TrelamiumIII.Core.UI.FlowerSatchel;
 

@@ -32,7 +32,10 @@ SkillLang: {
 	pickaxe: {
 		boomerang: {
 			Name: Prospector's Arc
-			Description: Right click to throw your pickaxe!
+			Description:
+			'''
+			Right-click to throw your pickaxe, be careful when retrieving it!
+			'''
 		}
 	}
 }

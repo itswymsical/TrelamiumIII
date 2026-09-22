@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Lodestone;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 

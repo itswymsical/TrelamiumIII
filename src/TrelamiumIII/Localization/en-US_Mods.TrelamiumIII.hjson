@@ -942,42 +942,42 @@ Items: {
 
 	CopperTippedArrow: {
 		DisplayName: Copper Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	GoldTippedArrow: {
 		DisplayName: Gold Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	IronTippedArrow: {
 		DisplayName: Iron Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	LeadTippedArrow: {
 		DisplayName: Lead Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	PlatinumTippedArrow: {
 		DisplayName: Platinum Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	SilverTippedArrow: {
 		DisplayName: Silver Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	TinTippedArrow: {
 		DisplayName: Tin Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	TungstenTippedArrow: {
 		DisplayName: Tungsten Tipped Arrow
-		Tooltip: ""
+		Tooltip: "Deals increased knockback"
 	}
 
 	SlateBlock: {
