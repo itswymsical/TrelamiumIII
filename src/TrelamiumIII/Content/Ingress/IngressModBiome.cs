@@ -25,7 +25,7 @@ public class IngressDaytimeBiome : ModBiome
 
 public class IngressNighttimeBiome : ModBiome
 {
-    public override int Music => Assets.Music.IngressNight.Slot;
+    public override int Music => Assets.Music.WoodhavenNight.Slot;
     public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";

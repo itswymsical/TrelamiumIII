@@ -154,7 +154,12 @@ public sealed class Talk : Behavior, IFramedBehavior
         if (frames.Length == 0)
             return false;
 
-        ctx.NPC.frame.Y = frames[Math.Clamp(frameIndex, 0, frames.Length - 1)] * frameHeight;
+        // The default loop assumes two frames; on a shorter sheet the missing one would sample past the texture.
+        int frame = frames[Math.Clamp(frameIndex, 0, frames.Length - 1)];
+        if (frame >= Main.npcFrameCount[ctx.NPC.type])
+            return false;
+
+        ctx.NPC.frame.Y = frame * frameHeight;
         return true;
     }
 

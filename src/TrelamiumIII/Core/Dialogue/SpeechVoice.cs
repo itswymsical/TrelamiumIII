@@ -39,6 +39,13 @@ public sealed class SpeechVoice
     private const float MAX_CREDIT = 2f;
 
     private float credit;
+
+    /// <summary>
+    ///     Cost of the character the clock is waiting on. The bank may always reach it plus one frame, or a character
+    ///     dearer than <see cref="MAX_CREDIT" /> (any line slower than ~1.15) would never be revealed.
+    /// </summary>
+    private float waiting;
+
     private int cursor;
 
     private bool pending;
@@ -49,6 +56,7 @@ public sealed class SpeechVoice
     public void Reset()
     {
         credit = 0f;
+        waiting = 0f;
         cursor = 0;
         pending = false;
         pendingSound = null;
@@ -56,7 +64,7 @@ public sealed class SpeechVoice
     }
 
     /// <summary>Grants this frame's typing budget. Call once per update, before revealing.</summary>
-    public void Tick() => credit = MathF.Min(credit + 1f, MAX_CREDIT);
+    public void Tick() => credit = MathF.Min(credit + 1f, MathF.Max(MAX_CREDIT, waiting + 1f));
 
     /// <summary>
     ///     Spends the budget for one character, if there is enough.
@@ -71,9 +79,13 @@ public sealed class SpeechVoice
         float cost = MathF.Max(baseDelay, 0.01f) / rate;
 
         if (credit < cost)
+        {
+            waiting = cost;
             return false;
+        }
 
         credit -= cost;
+        waiting = 0f;
         return true;
     }
 

@@ -38,6 +38,9 @@ public sealed class Edith : ModNPC, INarrativeSpeaker
 
     public override bool CheckActive() => false;
 
+    /// <summary> One frame: anything else would sample past the sheet. </summary>
+    public override void FindFrame(int frameHeight) => NPC.frame.Y = 0;
+
     public override bool CanChat() => true;
 
     public ChatEncounter GetEncounter(Player player) =>
