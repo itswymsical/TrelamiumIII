@@ -50,7 +50,7 @@ internal sealed class JobIndicator : WorldIndicator
     }
 
     private static IEnumerable<Job> AvailableJobs(NPC npc)
-        => Main.LocalPlayer.GetModPlayer<JobPlayer>().AvailableJobsFrom(npc.type);
+        => Main.LocalPlayer.GetModPlayer<JobPlayer>().AvailableJobsFrom(npc);
 
     protected override void PostUpdate()
     {

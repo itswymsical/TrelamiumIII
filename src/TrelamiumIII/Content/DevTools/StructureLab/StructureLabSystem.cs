@@ -1,4 +1,5 @@
 using Terraria.GameContent;
+using TrelamiumIII.Content.DevTools.StructureLab.Editor;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab;
 
@@ -32,6 +33,7 @@ public sealed class StructureLabSystem : ModSystem
 
         DrawGrid(batch, canvas);
         DrawFrame(batch, canvas);
+        StructureEditorMode.DrawWorld(batch);
 
         string label = $"{StructureEditor.DocumentName}  {canvas.Width}x{canvas.Height}";
         Utils.DrawBorderString(batch, label, new Vector2(canvas.Left * 16, canvas.Top * 16 - 28) - Main.screenPosition, FrameColor);

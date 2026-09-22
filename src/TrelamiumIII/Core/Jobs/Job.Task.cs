@@ -19,7 +19,7 @@ public abstract class JobTask(string descriptionKey, int requiredCount = 1)
     public string DescriptionKey { get; } = descriptionKey;
 
     /// <summary>Resolved at read time, so a language switch takes effect without touching save data.</summary>
-    public string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
+    public virtual string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
 
     public int RequiredCount { get; set; } = requiredCount;
 

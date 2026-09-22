@@ -580,8 +580,7 @@ public class JobSidebar
     {
         if (Job.ProviderNPC <= 0) return "Unknown";
 
-        var npcName = Lang.GetNPCNameValue(Job.ProviderNPC);
-        return $"{Job.Name} - {npcName}";
+        return $"{Job.Name} - {Job.ProviderName}";
     }
 
     private void DrawActiveTasks(SpriteBatch spriteBatch, PanelLayout layout)

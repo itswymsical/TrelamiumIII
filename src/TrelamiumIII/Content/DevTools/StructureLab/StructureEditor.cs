@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Common.Subworlds.Realms;
+using TrelamiumIII.Content.DevTools.StructureLab.Editor;
 using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab;
@@ -155,6 +156,8 @@ public static class StructureEditor
         Canvas = new Rectangle((Main.maxTilesX - data.Width) / 2, (Main.maxTilesY - data.Height) / 2, data.Width, data.Height);
         StructureWorld.Place(data, Canvas.Location, editable: true);
         DocumentName = name;
+
+        StructureEditorMode.OnDocumentOpened();
     }
 
     private static void RequireCanvas()

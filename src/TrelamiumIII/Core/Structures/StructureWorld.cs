@@ -177,21 +177,41 @@ public static class StructureWorld
             Frame(area);
     }
 
-    /// <summary>Reframes tiles and walls in <paramref name="area"/> and the ring around it.</summary>
+    /// <summary>
+    ///     Reframes tiles and walls in <paramref name="area"/> and the ring around it. Tile actions and liquid checks are off,
+    ///     as in <see cref="WorldGen.EveryTileFrame"/>, so sand doesn't fall and broken objects drop nothing.
+    /// </summary>
     public static void Frame(Rectangle area)
     {
-        for (int i = area.Left - 1; i <= area.Right; i++)
-        {
-            for (int j = area.Top - 1; j <= area.Bottom; j++)
-            {
-                if (!WorldGen.InWorld(i, j, 1))
-                    continue;
+        bool tileActions = WorldGen.noTileActions;
+        bool liquidCheck = WorldGen.noLiquidCheck;
 
-                WorldGen.TileFrame(i, j);
-                Framing.WallFrame(i, j);
+        WorldGen.noTileActions = true;
+        WorldGen.noLiquidCheck = true;
+
+        try
+        {
+            for (int i = area.Left - 1; i <= area.Right; i++)
+            {
+                for (int j = area.Top - 1; j <= area.Bottom; j++)
+                {
+                    if (!WorldGen.InWorld(i, j, 1))
+                        continue;
+
+                    WorldGen.TileFrame(i, j);
+                    Framing.WallFrame(i, j);
+                }
             }
         }
+        finally
+        {
+            WorldGen.noTileActions = tileActions;
+            WorldGen.noLiquidCheck = liquidCheck;
+        }
     }
+
+    /// <summary>Drops the chests, signs and tile entities anchored in <paramref name="area"/>, without dropping their items.</summary>
+    public static void RemoveAttachments(Rectangle area) => RemoveAttachments(area, keepVoidOf: null);
 
     /// <summary>Drops the chests, signs and tile entities anchored in <paramref name="area"/>, except on the void tile channels of <paramref name="keepVoidOf"/>.</summary>
     private static void RemoveAttachments(Rectangle area, StructureData? keepVoidOf)

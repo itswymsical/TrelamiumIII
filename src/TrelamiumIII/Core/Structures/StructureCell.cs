@@ -28,7 +28,7 @@ public enum CellFlags : ushort
 }
 
 /// <summary>One tile of a <see cref="StructureData"/>. Types are runtime IDs; <see cref="StructureFile"/> maps them to names.</summary>
-public struct StructureCell
+public record struct StructureCell
 {
     public CellFlags Flags;
 

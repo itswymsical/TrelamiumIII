@@ -51,7 +51,7 @@ public abstract class Job
 
     public string Name => TrelamiumIII.Instance.GetLocalization($"Jobs.{NameKey}").Value;
 
-    public string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
+    public virtual string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
 
     public List<TaskList> TaskList { get; }
 
@@ -59,6 +59,12 @@ public abstract class Job
 
     /// <summary>NPC <em>type</em> that offers this job, matching how the board and indicator look it up.</summary>
     public int ProviderNPC { get; }
+
+    /// <summary>Whether this NPC offers the job. Matches by type; override to tie a job to one NPC instance.</summary>
+    public virtual bool IsProvidedBy(NPC npc) => npc.type == ProviderNPC;
+
+    /// <summary>Provider name shown in job lists.</summary>
+    public virtual string ProviderName => Lang.GetNPCNameValue(ProviderNPC);
     #endregion
 
     #region Unlocking

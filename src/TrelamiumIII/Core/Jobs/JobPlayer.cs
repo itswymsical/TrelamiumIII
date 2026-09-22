@@ -151,6 +151,10 @@ public partial class JobPlayer : ModPlayer
     public IEnumerable<Job> AvailableJobsFrom(int npcType) =>
         jobs.Where(job => job.ProviderNPC == npcType && job.State == JobState.Available);
 
+    /// <summary>Every job this NPC instance is currently offering, per <see cref="Job.IsProvidedBy"/>.</summary>
+    public IEnumerable<Job> AvailableJobsFrom(NPC npc) =>
+        jobs.Where(job => job.State == JobState.Available && job.IsProvidedBy(npc));
+
     public bool HasAvailableJobs() => AvailableJobs().Any();
 
     public bool NPCHasAvailableJob(int npcType) => AvailableJobsFrom(npcType).Any();
@@ -158,19 +162,19 @@ public partial class JobPlayer : ModPlayer
     /// <summary>Lets the providing NPC know one of its jobs was taken.</summary>
     private static void NotifyProvider(Job job, NPC provider)
     {
-        provider ??= FindProviderByType(job.ProviderNPC);
+        provider ??= FindProvider(job);
 
         if (provider is { active: true } && provider.ModNPC is WorldNPC worldNpc)
             worldNpc.HasActiveJob = true;
     }
 
-    private static NPC FindProviderByType(int npcType)
+    private static NPC FindProvider(Job job)
     {
         for (var i = 0; i < Main.maxNPCs; i++)
         {
             var npc = Main.npc[i];
 
-            if (npc.active && npc.type == npcType)
+            if (npc.active && job.IsProvidedBy(npc))
                 return npc;
         }
 

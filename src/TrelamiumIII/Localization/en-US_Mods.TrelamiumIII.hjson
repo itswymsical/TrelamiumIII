@@ -2,6 +2,7 @@ Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
 	"Skill Tree.DisplayName": Skill  Tree
+	StructureEditor.DisplayName: Structure Editor
 }
 
 Rarities: {
@@ -1118,6 +1119,7 @@ NPCs: {
 	FungoreSporeSac.DisplayName: Spore Sac
 	DesertTerrarian.DisplayName: Desert Villager
 	ForestTerrarian.DisplayName: Forest Villager
+	Jobber.DisplayName: Wanderer
 	JungleTerrarian.DisplayName: Jungle Villager
 	SporadicSlime.DisplayName: Sporadic Slime
 	TundraTerrarian.DisplayName: Tundra Villager

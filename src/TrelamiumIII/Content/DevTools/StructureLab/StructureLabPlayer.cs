@@ -1,10 +1,12 @@
 using Terraria.DataStructures;
+using Terraria.GameInput;
+using TrelamiumIII.Content.DevTools.StructureLab.Editor;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab;
 
 /// <summary>
 ///     Building in the structure lab: the player is an invisible camera that flies through tiles on the movement keys
-///     (jump to go faster), with long reach, fast tools and no damage.
+///     (jump to go faster), with long reach, fast tools and no damage. The Structure Editor key returns to the editor.
 /// </summary>
 public sealed class StructureLabPlayer : ModPlayer
 {
@@ -18,6 +20,12 @@ public sealed class StructureLabPlayer : ModPlayer
     private Vector2 flightPosition;
     private bool flying;
     private bool fast;
+
+    public override void ProcessTriggers(TriggersSet triggersSet)
+    {
+        if (StructureEditor.InLab && !StructureEditorMode.Active && StructureEditorMode.ToggleKey?.JustPressed == true)
+            StructureEditorMode.Enter();
+    }
 
     public override void SetControls()
     {

@@ -46,6 +46,47 @@ public sealed class StructureData
 
         return data;
     }
+
+    /// <summary>A copy of <paramref name="area"/> (local coordinates, inside this structure), with the attachments anchored in it.</summary>
+    public StructureData Crop(Rectangle area)
+    {
+        var crop = new StructureData(area.Width, area.Height);
+
+        for (int x = 0; x < area.Width; x++)
+        {
+            for (int y = 0; y < area.Height; y++)
+                crop[x, y] = this[area.X + x, area.Y + y];
+        }
+
+        foreach (StructureChest chest in Chests)
+        {
+            if (!area.Contains(chest.X, chest.Y))
+                continue;
+
+            crop.Chests.Add(new StructureChest
+            {
+                X = chest.X - area.X,
+                Y = chest.Y - area.Y,
+                Name = chest.Name,
+                Items = Array.ConvertAll(chest.Items, item => item?.Clone()),
+                Loot = chest.Loot.ConvertAll(rule => rule.Clone())
+            });
+        }
+
+        foreach (StructureSign sign in Signs)
+        {
+            if (area.Contains(sign.X, sign.Y))
+                crop.Signs.Add(sign with { X = sign.X - area.X, Y = sign.Y - area.Y });
+        }
+
+        foreach (StructureEntity entity in Entities)
+        {
+            if (area.Contains(entity.X, entity.Y))
+                crop.Entities.Add(entity with { X = entity.X - area.X, Y = entity.Y - area.Y, Data = (TagCompound)entity.Data.Clone() });
+        }
+
+        return crop;
+    }
 }
 
 /// <summary>A chest or dresser, by the top-left tile of its multitile.</summary>

@@ -142,7 +142,9 @@ public class EventNPC : GlobalNPC
         if (jobIndicator is { IsActive: false })
             jobIndicator = null;
 
-        bool hasJobs = npc.active && JobsByNPCType.ContainsKey(npc.type);
+        bool hasJobs = npc.active
+            && JobsByNPCType.TryGetValue(npc.type, out var offered)
+            && offered.Exists(job => job.IsProvidedBy(npc));
 
         if (!hasJobs)
         {

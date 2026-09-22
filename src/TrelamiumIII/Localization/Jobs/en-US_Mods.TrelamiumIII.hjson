@@ -24,6 +24,27 @@ Jobs: {
 		HoverHint: More info
 	}
 
+	// Repeatable gathering jobs from wandering jobbers (Content/NPCs/Jobbers).
+	Jobber: {
+		Name: Odd Job
+		Description: "'Got a bit of work, if you're interested.'"
+		Abandoned: "{0} is gone, and the odd job with them."
+
+		// {0} = amount, {1} = item name.
+		Requests: {
+			Ore: "'I'm short on ore. {0} {1} would set me right.'"
+			Wood: "'Need timber for a project. Bring me {0} {1}?'"
+			Gem: "'I've got a buyer for gems. Find me {0} {1} and I'll cut you in.'"
+			Block: "'Building something. Could use {0} {1}.'"
+			Accessory: "'Been after a {1} for ages. Spare one?'"
+		}
+
+		Tasks: {
+			Gather: Collect {0}
+			HandIn: Return to {0}
+		}
+	}
+
 	SilvianBotany1: {
 		Name: Botanist job i dont have a name for yet
 		Description: "'It'll be worth the rewarddd! Trust me!'"

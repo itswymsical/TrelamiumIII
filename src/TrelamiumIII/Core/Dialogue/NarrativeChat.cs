@@ -156,7 +156,7 @@ public static class NarrativeChat
         // Work already underway with this NPC has more to say than its greeting does.
         foreach (Job job in player.GetModPlayer<JobPlayer>().ActiveJobs())
         {
-            if (job.ProviderNPC != npc.type)
+            if (!job.IsProvidedBy(npc))
                 continue;
 
             ChatEncounter fromJob = job.GetChatEncounter(npc, player);

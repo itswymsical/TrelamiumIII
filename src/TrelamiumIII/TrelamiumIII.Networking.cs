@@ -5,6 +5,7 @@ using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.ExperientialSystem;
 using TrelamiumIII.Core.ExperientialSystem.Combat;
 using TrelamiumIII.Core.ExperientialSystem.Skills;
+using TrelamiumIII.Content.NPCs.Jobbers;
 
 namespace TrelamiumIII;
 
@@ -16,6 +17,7 @@ partial class TrelamiumIII
         TileCondition,
         GrantExperience,
         SkillSet,
+        JobberClaim,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -37,6 +39,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.SkillSet:
                 SkillPlayer.Receive(reader, whoAmI);
+                break;
+            case MessageType.JobberClaim:
+                Jobber.ReceiveClaim(reader);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

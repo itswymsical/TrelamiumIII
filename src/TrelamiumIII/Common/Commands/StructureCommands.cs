@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TrelamiumIII.Content.DevTools.StructureLab;
+using TrelamiumIII.Content.DevTools.StructureLab.Editor;
 using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Common.Commands;
@@ -18,7 +19,7 @@ public partial class StructureCommands : ModCommand
 
     public override CommandType Type => CommandType.Chat | CommandType.Console;
 
-    public override string Usage => "/sedit new <name> <width> <height> | open <name> | save [name] | voidout | kit | exit"
+    public override string Usage => "/sedit new <name> <width> <height> | open <name> | save [name] | edit | voidout | kit | exit"
                                     + " | place <name> | import [name] | selftest [name]";
 
     public override string Description => "Structure lab: edit structures on a canvas and save them into the mod source.";
@@ -72,10 +73,16 @@ public partial class StructureCommands : ModCommand
                     caller.Player.QuickSpawnItem(caller.Player.GetSource_Misc("StructureLab"), ModContent.ItemType<StructureVoidWallItem>(), 999);
                     break;
 
-                case "exit":
-                    if (StructureEditor.InLab)
-                        SubworldSystem.Exit();
+                case "edit":
+                    StructureEditorMode.Enter();
+                    break;
 
+                case "exit":
+                    if (!StructureEditor.InLab)
+                        break;
+
+                    StructureEditorMode.Exit();
+                    SubworldSystem.Exit();
                     break;
 
                 case "place":
