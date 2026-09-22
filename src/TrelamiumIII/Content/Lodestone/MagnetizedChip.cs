@@ -1,5 +1,6 @@
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.Lodestone;
 
@@ -42,7 +43,7 @@ internal sealed class MagnetizedChip : Particle
 
     public override void Update()
     {
-        if (Host is not { active: true } host)
+        if (Host is not { } host || !host.IsActive())
         {
             Velocity.Y += 0.34f;
 

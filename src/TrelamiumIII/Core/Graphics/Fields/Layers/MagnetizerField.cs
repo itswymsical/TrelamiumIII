@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
@@ -77,7 +78,7 @@ public sealed class MagnetizerField : FieldLayer
 
     protected override void UpdateNode(ref FieldNode node, int index)
     {
-        if (node.AnchorHost is { active: true } host && node.AnchorTicks > 0)
+        if (node.AnchorHost is { } host && host.IsActive() && node.AnchorTicks > 0)
         {
             node.AnchorTicks--;
 

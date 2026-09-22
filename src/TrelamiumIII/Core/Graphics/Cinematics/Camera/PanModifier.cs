@@ -16,6 +16,7 @@ internal class PanModifier : ICameraModifier
     public bool UseOffsetOrigin { get; set; }
 
     public string UniqueIdentity => "TrelamiumIII Camera Pan";
+    public bool IsAScreenShake => false;
     public bool Finished => Timer >= TotalDuration;
 
     public void PassiveUpdate()

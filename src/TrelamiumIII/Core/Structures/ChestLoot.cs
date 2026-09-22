@@ -72,10 +72,10 @@ public sealed class LootRule
 
     private static bool Put(Chest chest, ref int slot, Item item)
     {
-        while (slot < Chest.maxItems && !chest.item[slot].IsAir)
+        while (slot < chest.maxItems && !chest.item[slot].IsAir)
             slot++;
 
-        if (slot >= Chest.maxItems)
+        if (slot >= chest.maxItems)
             return false;
 
         chest.item[slot++] = item;

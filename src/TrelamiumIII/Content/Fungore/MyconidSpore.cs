@@ -115,9 +115,9 @@ public class MyconidSporeTile : ModTile
 }
 public class MyconidSporeGlobal : GlobalTile
 {
-    public override void RandomUpdate(int i, int j, int type)
+    public override void RandomUpdate(int i, int j, int type, bool underground)
     {
-        base.RandomUpdate(i, j, type);
+        base.RandomUpdate(i, j, type, underground);
         var chance = DownedBossSystem.DownedFungore ? WorldGen.genRand.NextBool(10000) : WorldGen.genRand.NextBool(4800);
 
         if (type == TileID.Grass)

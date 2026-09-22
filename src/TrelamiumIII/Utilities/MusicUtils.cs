@@ -30,7 +30,7 @@ public static class MusicFadeHandler
         if (!_isCutsceneMusicActive)
         {
             // Store current music state
-            _storedMusicBox = Main.musicBox2;
+            _storedMusicBox = MusicBoxOverride.Value;
             _storedCurMusic = Main.curMusic;
             _isCutsceneMusicActive = true;
         }
@@ -68,9 +68,9 @@ public static class MusicFadeHandler
     {
         if (_isCutsceneMusicActive && _cutsceneMusicID >= 0)
         {
-            if (Main.musicBox2 != _cutsceneMusicID)
+            if (MusicBoxOverride.Value != _cutsceneMusicID)
             {
-                Main.musicBox2 = _cutsceneMusicID;
+                MusicBoxOverride.Value = _cutsceneMusicID;
             }
         }
 
@@ -106,7 +106,7 @@ public static class MusicFadeHandler
             }
             else
             {
-                Main.musicBox2 = _storedMusicBox.Value;
+                MusicBoxOverride.Value = _storedMusicBox.Value;
 
                 if (fadeMode == MusicFadeMode.Instant && _storedCurMusic.HasValue && _storedCurMusic.Value < Main.musicFade.Length)
                 {
@@ -120,7 +120,7 @@ public static class MusicFadeHandler
         }
         else
         {
-            Main.musicBox2 = -1; // Return to ambient music
+            MusicBoxOverride.Value = -1; // Return to ambient music
         }
 
         if (fadeMode != MusicFadeMode.FadeOut)
@@ -136,7 +136,7 @@ public static class MusicFadeHandler
     {
         if (fadeMode == MusicFadeMode.Instant)
         {
-            Main.musicBox2 = 0;
+            MusicBoxOverride.Value = 0;
             if (Main.curMusic < Main.musicFade.Length)
             {
                 Main.musicFade[Main.curMusic] = 0f;
@@ -151,7 +151,7 @@ public static class MusicFadeHandler
         }
         else
         {
-            Main.musicBox2 = 0;
+            MusicBoxOverride.Value = 0;
         }
     }
 
@@ -162,7 +162,7 @@ public static class MusicFadeHandler
             Main.musicFade[Main.curMusic] = 0f;
         }
 
-        Main.musicBox2 = musicID;
+        MusicBoxOverride.Value = musicID;
         if (musicID < Main.musicFade.Length)
         {
             Main.musicFade[musicID] = 1f;
@@ -172,7 +172,7 @@ public static class MusicFadeHandler
 
     private static void SetMusicCrossFade(int musicID)
     {
-        Main.musicBox2 = musicID;
+        MusicBoxOverride.Value = musicID;
         _isFading = false;
     }
 
@@ -183,7 +183,7 @@ public static class MusicFadeHandler
             Main.musicFade[Main.curMusic] = 0f;
         }
 
-        Main.musicBox2 = musicID;
+        MusicBoxOverride.Value = musicID;
         if (musicID < Main.musicFade.Length)
         {
             Main.musicFade[musicID] = 0f;
@@ -203,7 +203,7 @@ public static class MusicFadeHandler
             Main.musicFade[Main.curMusic] = 0f;
         }
 
-        Main.musicBox2 = musicID;
+        MusicBoxOverride.Value = musicID;
         if (musicID < Main.musicNoCrossFade.Length)
         {
             Main.musicNoCrossFade[musicID] = true;
@@ -242,13 +242,13 @@ public static class MusicFadeHandler
 
             if (!_isCutsceneMusicActive && _storedMusicBox.HasValue)
             {
-                Main.musicBox2 = _storedMusicBox.Value;
+                MusicBoxOverride.Value = _storedMusicBox.Value;
                 _storedMusicBox = null;
                 _storedCurMusic = null;
             }
             else
             {
-                Main.musicBox2 = 0;
+                MusicBoxOverride.Value = 0;
             }
         }
     }
@@ -282,7 +282,7 @@ public static class MusicFadeHandler
     /// </summary>
     public static void StopAllMusic()
     {
-        Main.musicBox2 = 0;
+        MusicBoxOverride.Value = 0;
         for (int i = 0; i < Main.musicFade.Length; i++)
         {
             Main.musicFade[i] = 0f;
@@ -290,5 +290,23 @@ public static class MusicFadeHandler
         _isFading = false;
         _isCutsceneMusicActive = false;
         _cutsceneMusicID = -1;
+    }
+}
+
+/// <summary>
+///     A music box value held on the local player until changed. Stands in for 1.4.4's global
+///     <c>Main.musicBox2</c>: its 1.4.5 replacement, <see cref="Player.musicBox" />, is cleared every tick.
+/// </summary>
+public sealed class MusicBoxOverride : ModPlayer
+{
+    /// <summary>The music box value to force, or -1 for none.</summary>
+    public static int Value { get; set; } = -1;
+
+    public override void OnEnterWorld() => Value = -1;
+
+    public override void PostUpdateEquips()
+    {
+        if (Player.whoAmI == Main.myPlayer && Value >= 0)
+            Player.musicBox = Value;
     }
 }

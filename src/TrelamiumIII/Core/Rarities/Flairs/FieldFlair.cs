@@ -51,7 +51,7 @@ public sealed class FieldFlair : RarityFlair
             DrawOnSlot(ctx);
     }
 
-    public override void UpdateWorldItem(Item item)
+    public override void UpdateWorldItem(WorldItem item)
     {
         if (Enabled(FieldSurfaces.World))
             Field.SpawnWorld(item);

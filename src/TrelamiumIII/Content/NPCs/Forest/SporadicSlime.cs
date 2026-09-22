@@ -111,10 +111,10 @@ public class SporadicSlime : ModNPC
         base.FindFrame(frameHeight);
     }
 
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    public override float SpawnChance(NPC.Spawner spawner)
     {
         if (Main.dayTime)
-            return spawnInfo.Player.ZoneOverworldHeight && spawnInfo.Player.ZoneForest ? 0.11f : 0f;
+            return spawner.Player.ZoneOverworldHeight && spawner.Player.ZoneForest ? 0.11f : 0f;
         
         else return 0f;
     }

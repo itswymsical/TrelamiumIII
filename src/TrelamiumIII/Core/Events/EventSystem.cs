@@ -68,10 +68,10 @@ public class EventSystem : ModSystem
 
     public static IEnumerable<Job> GetAllAvailableJobs(JobPlayer player) => player.AvailableJobs();
 
-    private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y)
+    private bool HookStartRoomCheck(On_WorldGen.orig_StartRoomCheck orig, int x, int y, IRoomCheckFeedback feedback)
     {
-        // vanilla boundary logic. Flood-fills the room containing (x, y) into WorldGen.roomX/roomY.
-        bool isValid = orig(x, y);
+        // vanilla boundary logic. Flood-fills the room containing (x, y) into WorldGen.roomTiles.
+        bool isValid = orig(x, y, feedback);
 
         // Resolve the room's canonical identity and its residents from the tiles vanilla just filled in.
         // StartRoomCheck is called with whichever tile the check was started from, so keying anything
@@ -90,7 +90,7 @@ public class EventSystem : ModSystem
             // Snapshot it so this probe stays invisible to them.
             HousingScratch scratch = HousingScratch.Capture();
 
-            isValid = WorldGen.RoomNeeds(0);
+            isValid = WorldGen.RoomNeeds();
 
             if (!isValid)
             {
@@ -139,14 +139,14 @@ public class EventSystem : ModSystem
     /// <summary>
     /// Marks everything underneath as player-initiated. <see cref="WorldGen.MoveTownNPC"/> is what the housing UI calls
     /// </summary>
-    private bool HookMoveTownNPC(On_WorldGen.orig_MoveTownNPC orig, int x, int y, int n)
+    private bool HookMoveTownNPC(On_WorldGen.orig_MoveTownNPC orig, int x, int y, int n, IRoomCheckFeedback feedback)
     {
         bool wasManual = isManualHousingCheck;
         isManualHousingCheck = true;
 
         try
         {
-            return orig(x, y, n);
+            return orig(x, y, n, feedback);
         }
         finally
         {
@@ -191,37 +191,42 @@ public class EventSystem : ModSystem
     }
 
     /// <summary>
-    /// Reads the room vanilla just flood-filled into <see cref="WorldGen.roomX"/>/<see cref="WorldGen.roomY"/>
+    /// Reads the room vanilla just flood-filled into <see cref="WorldGen.roomTiles"/>, within the
+    /// <see cref="WorldGen.roomX1"/>..<see cref="WorldGen.roomY2"/> bounds it grew alongside.
     /// </summary>
     private static bool TryScanRoom(out Point roomId, out bool isOccupied)
     {
         roomId = default;
         isOccupied = false;
 
-        int tileCount = Math.Min(WorldGen.numRoomTiles, WorldGen.roomX.Length);
-        if (tileCount <= 0)
+        if (WorldGen.numRoomTiles <= 0)
             return false;
 
         RoomTiles.Clear();
 
-        int minX = int.MaxValue;
-        int minY = int.MaxValue;
+        bool found = false;
 
-        for (int i = 0; i < tileCount; i++)
+        // Column by column, so the first tile found is the leftmost, topmost within its column.
+        for (int tx = WorldGen.roomX1; tx <= WorldGen.roomX2; tx++)
         {
-            int tx = WorldGen.roomX[i];
-            int ty = WorldGen.roomY[i];
-
-            RoomTiles.Add(new Point(tx, ty));
-
-            if (tx < minX || (tx == minX && ty < minY))
+            for (int ty = WorldGen.roomY1; ty <= WorldGen.roomY2; ty++)
             {
-                minX = tx;
-                minY = ty;
+                if (!WorldGen.Housing_CheckIfInRoom(tx, ty))
+                    continue;
+
+                if (!found)
+                {
+                    roomId = new Point(tx, ty);
+                    found = true;
+                }
+
+                RoomTiles.Add(new Point(tx, ty));
             }
         }
 
-        roomId = new Point(minX, minY);
+        if (!found)
+            return false;
+
         isOccupied = RoomHasResident();
         return true;
     }
@@ -416,10 +421,10 @@ public class EventSystem : ModSystem
     /// <summary>
     /// Hooks into Projectile.ExplodeTiles to track when tiles are being exploded
     /// </summary>
-    private void HookExplodeTiles(On_Projectile.orig_ExplodeTiles orig, Projectile self, Vector2 compareSpot, int radius, int minI, int maxI, int minJ, int maxJ, bool wallSplode)
+    private void HookExplodeTiles(On_Projectile.orig_ExplodeTiles orig, Projectile self, Vector2 compareSpot, int radius, int minI, int maxI, int minJ, int maxJ, bool wallSplode, bool explodeHardmodeOres)
     {
         isExploding = true;
-        orig(self, compareSpot, radius, minI, maxI, minJ, maxJ, wallSplode);
+        orig(self, compareSpot, radius, minI, maxI, minJ, maxJ, wallSplode, explodeHardmodeOres);
         isExploding = false;
     }
 

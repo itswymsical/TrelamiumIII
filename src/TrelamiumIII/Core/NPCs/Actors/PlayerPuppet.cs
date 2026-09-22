@@ -231,12 +231,6 @@ public sealed class PlayerPuppet
 
         Rectangle drawHitbox = Item.GetDrawHitbox(visual.type, Player);
 
-        if (Player.itemAnimation > 0)
-        {
-            Player.itemWidth = Main.dedServ ? visual.width : drawHitbox.Width;
-            Player.itemHeight = Main.dedServ ? visual.height : drawHitbox.Height;
-        }
-
         ItemLoader.HoldItem(held, Player);
 
         if (Player.itemAnimation > 0)

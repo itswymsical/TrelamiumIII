@@ -68,7 +68,7 @@ public abstract class SeedBedTile : ModTile
         TriggerFramingUpdate(i + 1, j);
     }
 
-    public override void RandomUpdate(int i, int j)
+    public override void RandomUpdate(int i, int j, bool underground)
     {
         var tile = Framing.GetTileSafely(i, j);
         if (!tile.HasTile || tile.TileType != Type) return;

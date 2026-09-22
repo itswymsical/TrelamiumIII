@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using Terraria.Graphics;
 using Terraria.Graphics.Shaders;
 
 namespace TrelamiumIII.Core.Graphics.Shockwaves;
 
 /// <summary>
 ///     Bends the solid tile layer around expanding rings, by handing
-///     <c>Main.instance.tileTarget</c> a distorted stand-in for the duration of the one draw call
+///     <c>Main.tileTarget</c> a distorted stand-in for the duration of the one draw call
 ///     that puts it on the screen.
 /// </summary>
 internal sealed class TileShockwaveSystem : ModSystem
@@ -17,20 +18,15 @@ internal sealed class TileShockwaveSystem : ModSystem
 
     private static readonly List<ITileWave> waves = [];
 
-    private static RenderTarget2D? front;
-    private static RenderTarget2D? back;
+    private static WorldSceneLayerTarget? front;
+    private static WorldSceneLayerTarget? back;
 
     /// <summary>
-    ///     The surface holding this frame's distorted layer, or null if the scene should be left
-    ///     alone. Produced in <see cref="PrepareDistortion" />, consumed in
-    ///     <see cref="SwapInDistortion" />.
+    ///     The surface holding this frame's distorted layer, positioned where the tile target was
+    ///     when it was built, or null if the scene should be left alone. Produced in
+    ///     <see cref="PrepareDistortion" />, consumed in <see cref="SwapInDistortion" />.
     /// </summary>
-    private static RenderTarget2D? distorted;
-
-    /// <summary>
-    ///     The value <see cref="Main.sceneTilePos" /> held when <see cref="distorted" /> was built.
-    /// </summary>
-    private static Vector2 snapshotScenePos;
+    private static WorldSceneLayerTarget? distorted;
 
     private static bool loaded;
 
@@ -57,7 +53,7 @@ internal sealed class TileShockwaveSystem : ModSystem
 
         loaded = true;
 
-        On_Main.CheckMonoliths += PrepareDistortion;
+        On_Main.DoDraw_UpdateCameraPosition += PrepareDistortion;
         On_Main.DoDraw_Tiles_Solid += SwapInDistortion;
     }
 
@@ -90,7 +86,7 @@ internal sealed class TileShockwaveSystem : ModSystem
     /// <summary>
     ///     Runs the displacement passes into our own targets, before the scene starts.
     /// </summary>
-    private static void PrepareDistortion(On_Main.orig_CheckMonoliths orig)
+    private static void PrepareDistortion(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 
@@ -114,21 +110,23 @@ internal sealed class TileShockwaveSystem : ModSystem
         if (Main.drawToScreen)
             return;
 
-        var source = Main.instance.tileTarget;
+        var sourceLayer = Main.tileTarget;
 
-        if (source is null || source.IsDisposed)
+        if (sourceLayer is null || sourceLayer.Texture.IsDisposed)
             return;
 
+        var source = (RenderTarget2D)sourceLayer.Texture;
         var device = Main.instance.GraphicsDevice;
 
         if (!EnsureTarget(ref front, device, source.Width, source.Height))
             return;
 
         // Captured once. Every wave in this pass must be positioned against the same origin, and
-        // the frame's tile re-render may move Main.sceneTilePos after this hook returns.
-        var sceneOrigin = Main.sceneTilePos;
+        // the frame's tile re-render may move the tile target after this hook returns.
+        var sceneOrigin = sourceLayer.Position;
 
         Texture2D read = source;
+        WorldSceneLayerTarget? last = null;
         int applied = 0;
 
         foreach (var wave in waves)
@@ -145,7 +143,8 @@ internal sealed class TileShockwaveSystem : ModSystem
             if (applied == 1 && !EnsureTarget(ref back, device, source.Width, source.Height))
                 break;
 
-            var write = applied % 2 == 0 ? front! : back!;
+            last = applied % 2 == 0 ? front! : back!;
+            var write = (RenderTarget2D)last.Texture;
 
             ApplyPass(device, read, write, wave, sceneOrigin);
 
@@ -157,11 +156,11 @@ internal sealed class TileShockwaveSystem : ModSystem
         // friends do. Nothing is bound this early in the frame, so there is nothing to put back.
         device.SetRenderTarget(null);
 
-        if (applied == 0)
+        if (last is null)
             return;
 
-        distorted = (RenderTarget2D)read;
-        snapshotScenePos = Main.sceneTilePos;
+        last._position = sceneOrigin;
+        distorted = last;
     }
 
     /// <summary>
@@ -170,7 +169,7 @@ internal sealed class TileShockwaveSystem : ModSystem
     private static void SwapInDistortion(On_Main.orig_DoDraw_Tiles_Solid orig, Main self)
     {
         var replacement = distorted;
-        var originalTarget = Main.instance.tileTarget;
+        var originalTarget = Main.tileTarget;
 
         if (replacement is null || Main.drawToScreen || originalTarget is null)
         {
@@ -178,23 +177,16 @@ internal sealed class TileShockwaveSystem : ModSystem
             return;
         }
 
-        // If tiles were re-rendered after the snapshot and the camera has since travelled further
-        // than the overscan, the snapshot no longer covers the screen and would show unpainted
-        // edges. One frame without the effect beats one frame with holes in the terrain. This is
-        // the same test vanilla uses to force an out-of-schedule rebuild.
-        var wanted = Main.screenPosition - new Vector2(Main.offScreenRange);
-
-        if (Math.Abs(snapshotScenePos.X - wanted.X) > Main.offScreenRange ||
-            Math.Abs(snapshotScenePos.Y - wanted.Y) > Main.offScreenRange)
+        // If the camera has since travelled further than the overscan, the snapshot no longer
+        // covers the screen and would show unpainted edges. One frame without the effect beats one
+        // frame with holes in the terrain. This is the test vanilla uses to force a rebuild.
+        if (replacement.IsPartiallyOffscreen)
         {
             orig(self);
             return;
         }
 
-        var originalScenePos = Main.sceneTilePos;
-
-        Main.instance.tileTarget = replacement;
-        Main.sceneTilePos = snapshotScenePos;
+        Main.tileTarget = replacement;
 
         // finally, not just trailing assignments: orig swallows its own draw exceptions but
         // DrawTileEntities inside it does not, and leaving one of our targets in that field would
@@ -205,8 +197,7 @@ internal sealed class TileShockwaveSystem : ModSystem
         }
         finally
         {
-            Main.instance.tileTarget = originalTarget;
-            Main.sceneTilePos = originalScenePos;
+            Main.tileTarget = originalTarget;
         }
     }
 
@@ -241,29 +232,19 @@ internal sealed class TileShockwaveSystem : ModSystem
         Main.spriteBatch.End();
     }
 
-    private static bool EnsureTarget(ref RenderTarget2D? target, GraphicsDevice device, int width, int height)
+    private static bool EnsureTarget(ref WorldSceneLayerTarget? target, GraphicsDevice device, int width, int height)
     {
         if (width <= 0 || height <= 0)
             return false;
 
-        if (target is { IsDisposed: false } && target.Width == width && target.Height == height)
+        if (target is { Texture: { IsDisposed: false } texture } && texture.Width == width && texture.Height == height)
             return true;
 
         target?.Dispose();
 
-        // Matched to how vanilla allocates its own tile targets in InitTargets, except for the
-        // usage: PreserveContents, because these are read on a later hook in the same frame than
-        // the one that writes them.
-        target = new RenderTarget2D(
-            device,
-            width,
-            height,
-            false,
-            device.PresentationParameters.BackBufferFormat,
-            DepthFormat.None,
-            0,
-            RenderTargetUsage.PreserveContents
-        );
+        // Allocated through vanilla's own wrapper so it can stand in for Main.tileTarget, which is
+        // written and read on separate hooks of a frame the same way.
+        target = new WorldSceneLayerTarget(device, width, height);
 
         return true;
     }

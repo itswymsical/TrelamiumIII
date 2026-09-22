@@ -258,7 +258,7 @@ public sealed class MetaballFlairField : FlairField
         RarityBatch.Restart(spriteBatch, home);
     }
 
-    protected internal override void SpawnWorld(Item item)
+    protected internal override void SpawnWorld(WorldItem item)
     {
         if (WorldLayer?.Invoke() is not { } layer)
             return;

@@ -48,7 +48,7 @@ public abstract class GrassTile : ModTile
         base.ModifyFrameMerge(i, j, ref up, ref down, ref left, ref right, ref upLeft, ref upRight, ref downLeft, ref downRight);
         // todo: figure out how vanilla does grass framing
     }
-    public override void RandomUpdate(int i, int j)
+    public override void RandomUpdate(int i, int j, bool underground)
     {
         if (!Main.rand.NextBool(spreadChance)) return;
 

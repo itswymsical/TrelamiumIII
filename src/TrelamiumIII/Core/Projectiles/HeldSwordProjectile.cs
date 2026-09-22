@@ -83,7 +83,7 @@ public abstract class HeldSwordProjectile : ModProjectile
 
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) => Sword.ModifyHitNPC(target, ref modifiers);
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Sword.Draw(lightColor);
 

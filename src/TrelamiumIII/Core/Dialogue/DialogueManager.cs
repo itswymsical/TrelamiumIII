@@ -3,6 +3,7 @@ using System.Linq;
 using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -101,9 +102,9 @@ public sealed class DialogueManager
         OnDialogueStart?.Invoke(queuedDialogue.DialogueKey);
         if (queuedDialogue.Music.HasValue)
         {
-            previousMusic = Main.musicBox2;
+            previousMusic = MusicBoxOverride.Value;
             currentMusic = queuedDialogue.Music.Value;
-            Main.musicBox2 = queuedDialogue.Music.Value;
+            MusicBoxOverride.Value = queuedDialogue.Music.Value;
         }
 
         return true;
@@ -163,7 +164,7 @@ public sealed class DialogueManager
                 UpdateZoom();
 
                 if (currentMusic.HasValue)
-                    Main.musicBox2 = currentMusic.Value;
+                    MusicBoxOverride.Value = currentMusic.Value;
             }
         }
     }
@@ -232,7 +233,7 @@ public sealed class DialogueManager
 
         if (currentMusic.HasValue)
         {
-            Main.musicBox2 = previousMusic;
+            MusicBoxOverride.Value = previousMusic;
             currentMusic = null;
         }
 

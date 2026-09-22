@@ -128,7 +128,7 @@ public abstract class StalagmiteProj : StickyProjectile
         Projectile.DamageType = DamageClass.Ranged;
         Projectile.width = Projectile.height = 12;
 
-        Projectile.hide = true;
+        Projectile.drawLayer = ProjectileDrawLayerID.BehindNPCs;
         Projectile.friendly = true;
         Projectile.tileCollide = true;
         Projectile.usesLocalNPCImmunity = true;

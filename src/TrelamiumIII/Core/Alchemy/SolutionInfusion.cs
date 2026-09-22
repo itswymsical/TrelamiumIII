@@ -100,8 +100,8 @@ public class SolutionGlobalItem : GlobalItem
     // Only identically-infused waters merge (plain and infused never mix in a stack).
     public override bool CanStack(Item destination, Item source) =>
         GetInfusion(destination) == GetInfusion(source);
-    public override bool CanStackInWorld(Item destination, Item source) =>
-        GetInfusion(destination) == GetInfusion(source);
+    public override bool CanStackInWorld(WorldItem destination, WorldItem source) =>
+        GetInfusion(destination.inner) == GetInfusion(source.inner);
 
     public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
     {
@@ -174,8 +174,7 @@ public class SolutionGlobalItem : GlobalItem
         return false;
     }
 
-    public override bool PreDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor,
-        Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+    public override bool PreDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
     {
         var vis = InfusionVisuals.Get(item.type, Infusion);
         if (vis?.Texture is not Texture2D tex) return true;

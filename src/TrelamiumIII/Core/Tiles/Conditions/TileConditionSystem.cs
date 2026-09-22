@@ -166,7 +166,7 @@ public sealed class TileConditionSystem : ModSystem
         if (Main.dedServ)
             return;
 
-        On_Main.CheckMonoliths += static orig =>
+        On_Main.DoDraw_UpdateCameraPosition += static orig =>
         {
             orig();
             BuildFields();

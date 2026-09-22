@@ -104,7 +104,7 @@ public abstract class FurnitureActor : ModTile
                 TileID.Sets.HasOutlines[Type] = true;
                 TileID.Sets.CanBeSatOnForNPCs[Type] = true;
                 TileID.Sets.CanBeSatOnForPlayers[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsChair);
+                TileID.Sets.RoomNeeds.CountsAsChair[Type] = true;
                 AdjTiles = [TileID.Chairs];
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("MapObject.Chair"));
                 break;
@@ -113,7 +113,7 @@ public abstract class FurnitureActor : ModTile
                 Main.tileTable[Type] = true;
                 Main.tileSolidTop[Type] = true;
                 TileID.Sets.IgnoredByNpcStepUp[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.Tables];
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("MapObject.Table"));
                 break;
@@ -122,7 +122,7 @@ public abstract class FurnitureActor : ModTile
                 Main.tileTable[Type] = true;
                 Main.tileSolidTop[Type] = true;
                 TileID.Sets.IgnoredByNpcStepUp[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.WorkBenches];
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("ItemName.WorkBench"));
                 break;
@@ -130,9 +130,9 @@ public abstract class FurnitureActor : ModTile
             case FurnitureType.Bed:
                 TileID.Sets.HasOutlines[Type] = true;
                 TileID.Sets.CanBeSleptIn[Type] = true;
-                TileID.Sets.InteractibleByNPCs[Type] = true;
+                TileID.Sets.InteractableByNPCs[Type] = true;
                 TileID.Sets.IsValidSpawnPoint[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsChair);
+                TileID.Sets.RoomNeeds.CountsAsChair[Type] = true;
                 AdjTiles = [TileID.Beds];
                 AddMapEntry(new Color(191, 142, 111), Language.GetText("ItemName.Bed"));
                 break;
@@ -144,9 +144,9 @@ public abstract class FurnitureActor : ModTile
                 TileID.Sets.HasOutlines[Type] = true;
                 TileID.Sets.BasicDresser[Type] = true;
                 TileID.Sets.AvoidedByNPCs[Type] = true;
-                TileID.Sets.InteractibleByNPCs[Type] = true;
+                TileID.Sets.InteractableByNPCs[Type] = true;
                 TileID.Sets.IsAContainer[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.Dressers];
                 AddMapEntry(new Color(200, 200, 200), CreateMapEntryName(), FurnitureHelpers.MapDresserName);
                 break;
@@ -156,7 +156,7 @@ public abstract class FurnitureActor : ModTile
                 TileID.Sets.HasOutlines[Type] = true;
                 TileID.Sets.BasicChest[Type] = true;
                 TileID.Sets.AvoidedByNPCs[Type] = true;
-                TileID.Sets.InteractibleByNPCs[Type] = true;
+                TileID.Sets.InteractableByNPCs[Type] = true;
                 TileID.Sets.IsAContainer[Type] = true;
                 TileID.Sets.GeneralPlacementTiles[Type] = false;
                 AdjTiles = [TileID.Containers];
@@ -174,26 +174,26 @@ public abstract class FurnitureActor : ModTile
             case FurnitureType.Bathtub:
                 Main.tileSolid[Type] = false;
                 Main.tileLighted[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.Bathtubs];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.Bathtub"));
                 break;
 
             case FurnitureType.Bookcase:
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.Bookcases];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.Bookcase"));
                 break;
 
             case FurnitureType.Piano:
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTable);
+                TileID.Sets.RoomNeeds.CountsAsTable[Type] = true;
                 AdjTiles = [TileID.Pianos];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.Piano"));
                 break;
 
             case FurnitureType.Lamp:
                 Main.tileLighted[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTorch);
+                TileID.Sets.RoomNeeds.CountsAsTorch[Type] = true;
                 AdjTiles = [TileID.Lamps];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.LampPost"));
                 break;
@@ -202,14 +202,14 @@ public abstract class FurnitureActor : ModTile
                 TileID.Sets.CanBeSatOnForNPCs[Type] = true;
                 TileID.Sets.CanBeSatOnForPlayers[Type] = true;
                 TileID.Sets.HasOutlines[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsChair);
+                TileID.Sets.RoomNeeds.CountsAsChair[Type] = true;
                 AdjTiles = [TileID.Benches];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.Bench"));
                 break;
 
             case FurnitureType.Chandelier:
                 Main.tileLighted[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTorch);
+                TileID.Sets.RoomNeeds.CountsAsTorch[Type] = true;
                 AdjTiles = [TileID.Chandeliers];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("MapObject.Chandelier"));
                 break;
@@ -220,14 +220,14 @@ public abstract class FurnitureActor : ModTile
                 Main.tileLighted[Type] = true;
                 Main.tileLavaDeath[Type] = true;
 
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTorch);
+                TileID.Sets.RoomNeeds.CountsAsTorch[Type] = true;
                 AdjTiles = [TileID.HangingLanterns];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("MapObject.Lantern"));
                 break;
 
             case FurnitureType.Candelabra:
                 Main.tileLighted[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTorch);
+                TileID.Sets.RoomNeeds.CountsAsTorch[Type] = true;
                 AdjTiles = [TileID.Candelabras];
                 AddMapEntry(new Color(100, 100, 60), Language.GetText("ItemName.Candelabra"));
                 break;
@@ -246,8 +246,8 @@ public abstract class FurnitureActor : ModTile
                 Main.tileWaterDeath[Type] = true;
                 TileID.Sets.FramesOnKillWall[Type] = true;
                 TileID.Sets.DisableSmartInteract[Type] = true;
-                TileID.Sets.Torch[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsTorch);
+                TileID.Sets.Torches[Type] = true;
+                TileID.Sets.RoomNeeds.CountsAsTorch[Type] = true;
                 AdjTiles = [TileID.Torches];
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("ItemName.Torch"));
                 break;
@@ -256,8 +256,8 @@ public abstract class FurnitureActor : ModTile
                 Main.tileLighted[Type] = true;
                 Main.tileWaterDeath[Type] = true;
                 TileID.Sets.HasOutlines[Type] = true;
-                TileID.Sets.InteractibleByNPCs[Type] = true;
-                TileID.Sets.Campfire[Type] = true;
+                TileID.Sets.InteractableByNPCs[Type] = true;
+                TileID.Sets.Campfires[Type] = true;
                 AdjTiles = [TileID.Campfire];
                 AddMapEntry(new Color(254, 121, 2), Language.GetText("ItemName.Campfire"));
                 break;
@@ -267,14 +267,14 @@ public abstract class FurnitureActor : ModTile
                 Main.tileSolid[Type] = true;
                 Main.tileTable[Type] = true;
                 TileID.Sets.Platforms[Type] = true;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsDoor);
+                TileID.Sets.RoomNeeds.CountsAsDoor[Type] = true;
                 AdjTiles = [TileID.Platforms];
                 AddMapEntry(new Color(200, 200, 200));
                 break;
 
             case FurnitureType.OpenDoor:
                 DustType = DustID;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsDoor);
+                TileID.Sets.RoomNeeds.CountsAsDoor[Type] = true;
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("MapObject.Door"));
 
                 Main.tileSolid[Type] = false;
@@ -289,7 +289,7 @@ public abstract class FurnitureActor : ModTile
 
             case FurnitureType.ClosedDoor:
                 DustType = DustID;
-                AddToArray(ref TileID.Sets.RoomNeeds.CountsAsDoor);
+                TileID.Sets.RoomNeeds.CountsAsDoor[Type] = true;
                 AddMapEntry(new Color(200, 200, 200), Language.GetText("MapObject.Door"));
 
                 Main.tileBlockLight[Type] = true;
@@ -641,7 +641,6 @@ public abstract class FurnitureActor : ModTile
                     if (left == player.chestX && top == player.chestY && player.chest != -1)
                     {
                         player.chest = -1;
-                        Recipe.FindRecipes();
                         SoundEngine.PlaySound(SoundID.MenuClose);
                     }
                     else
@@ -661,7 +660,6 @@ public abstract class FurnitureActor : ModTile
                         if (chestIndex == player.chest)
                         {
                             player.chest = -1;
-                            Recipe.FindRecipes();
                             SoundEngine.PlaySound(SoundID.MenuClose);
                         }
                         else if (chestIndex != player.chest && player.chest == -1)
@@ -674,7 +672,6 @@ public abstract class FurnitureActor : ModTile
                             player.OpenChest(left, top, chestIndex);
                             SoundEngine.PlaySound(SoundID.MenuTick);
                         }
-                        Recipe.FindRecipes();
                     }
                 }
             }
@@ -682,7 +679,6 @@ public abstract class FurnitureActor : ModTile
             {
                 Main.playerInventory = false;
                 player.chest = -1;
-                Recipe.FindRecipes();
                 player.SetTalkNPC(-1);
                 Main.npcChatCornerItem = 0;
                 Main.npcChatText = "";
@@ -725,7 +721,6 @@ public abstract class FurnitureActor : ModTile
                 if (left == player.chestX && top == player.chestY && player.chest != -1)
                 {
                     player.chest = -1;
-                    Recipe.FindRecipes();
                     SoundEngine.PlaySound(SoundID.MenuClose);
                 }
                 else
@@ -750,7 +745,6 @@ public abstract class FurnitureActor : ModTile
                         SoundEngine.PlaySound(player.chest < 0 ? SoundID.MenuOpen : SoundID.MenuTick);
                         player.OpenChest(left, top, chest);
                     }
-                    Recipe.FindRecipes();
                 }
             }
         }

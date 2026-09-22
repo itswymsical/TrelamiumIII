@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Terraria.GameContent;
+﻿using Terraria.GameContent;
 
 namespace TrelamiumIII.Core.Projectiles;
 
@@ -202,7 +201,7 @@ public abstract class StickyProjectile : ModProjectile
         return false;
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         var texture = TextureAssets.Projectile[Type].Value;
         Vector2 drawPosition;
@@ -250,9 +249,4 @@ public abstract class StickyProjectile : ModProjectile
     /// Override if the projectile's texture needs a non-center draw origin.
     /// </summary>
     protected virtual Vector2 GetDrawOrigin(Texture2D texture) => new(12);
-
-    public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs, List<int> behindProjectiles, List<int> overPlayers, List<int> overWiresUI)
-    {
-        behindNPCs.Add(index);
-    }
 }

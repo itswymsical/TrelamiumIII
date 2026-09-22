@@ -74,12 +74,12 @@ public class Bushwhack : ModNPC
         bestiaryEntry.Info.Add(new FlavorTextBestiaryInfoElement(this.GetLocalizationKey("Bestiary")));
     }
 
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    public override float SpawnChance(NPC.Spawner spawner)
     {
-        if (!spawnInfo.Player.InModBiome<IngressGardenBiome>() || spawnInfo.Water || spawnInfo.SpawnTileY <= Main.worldSurface)
+        if (!spawner.Player.InModBiome<IngressGardenBiome>() || spawner.waterTile || spawner.SpawnTileY <= Main.worldSurface)
             return 0f;
 
-        if (spawnInfo.SpawnTileType != ModContent.TileType<IngressGrass>() || NPC.CountNPCS(Type) >= AliveMax)
+        if (spawner.SpawnTileType != ModContent.TileType<IngressGrass>() || NPC.CountNPCS(Type) >= AliveMax)
             return 0f;
 
         return SpawnWeight;

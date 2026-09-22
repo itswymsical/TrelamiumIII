@@ -48,7 +48,7 @@ internal static class TileColorUtils
         try
         {
             MapTile mapTile = Main.Map[x, y];
-            Color mapColor = MapHelper.GetMapTileXnaColor(ref mapTile);
+            Color mapColor = MapHelper.GetMapTileXnaColor(mapTile, x, y);
 
             // An unrevealed tile maps to black, which is not a colour so much as an absence of one.
             if (mapColor.R > 0 || mapColor.G > 0 || mapColor.B > 0)

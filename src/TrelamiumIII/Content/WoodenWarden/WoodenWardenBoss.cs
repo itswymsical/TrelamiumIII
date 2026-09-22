@@ -460,7 +460,7 @@ public sealed class WoodenWardenBoss : ModNPC
 
     public override void OnKill() => NPC.SetEventFlagCleared(ref DownedBossSystem.DownedWoodenWarden, -1);
 
-    public override void BossLoot(ref int potionType) => potionType = ItemID.LesserHealingPotion;
+    public override void BossLoot(ref int potionType, ref int potionStack, ref int heartStack) => potionType = ItemID.LesserHealingPotion;
 
     public override void Unload() => WardenSplinter.ClearCache();
 
@@ -568,7 +568,7 @@ public sealed class WoodenWardenBoss : ModNPC
     /// </summary>
     public override bool CanHitPlayer(Player target, ref int cooldownSlot)
     {
-        cooldownSlot = ImmunityCooldownID.Bosses;
+        cooldownSlot = ImmunityCooldownID.BossNoCheese;
 
         if (ContactDamage <= 0)
             return false;
@@ -1211,7 +1211,6 @@ public sealed class WoodenWardenBoss : ModNPC
     {
         NPC.life = 0;
         NPC.active = false;
-        NPC.netSkip = -1;
 
         if (Main.netMode == NetmodeID.Server)
             NetMessage.SendData(MessageID.SyncNPC, number: NPC.whoAmI);

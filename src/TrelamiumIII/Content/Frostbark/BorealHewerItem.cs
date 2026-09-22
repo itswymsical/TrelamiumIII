@@ -60,7 +60,7 @@ public class BorealHewerItem : ModItem
         var recipe = CreateRecipe();
         recipe.AddIngredient(ItemID.BorealWood, 16);
         recipe.AddIngredient(ItemID.IceBlock, 8);
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 4);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 4);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }

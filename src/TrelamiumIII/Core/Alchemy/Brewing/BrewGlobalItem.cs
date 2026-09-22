@@ -82,7 +82,7 @@ public class BrewGlobalItem : GlobalItem
 
     // Brewed potions only merge with identical brews (so a strong and a weak Spelunker never stack).
     public override bool CanStack(Item destination, Item source) => SameBrew(destination, source);
-    public override bool CanStackInWorld(Item destination, Item source) => SameBrew(destination, source);
+    public override bool CanStackInWorld(WorldItem destination, WorldItem source) => SameBrew(destination.inner, source.inner);
 
     private static bool SameBrew(Item a, Item b)
     {
@@ -122,12 +122,12 @@ public class BrewGlobalItem : GlobalItem
             if (extra == null) continue;
             string time = e.BaseBuff > 0 && e.DurationTicks > 0 ? $" ({ShortDuration(e.DurationTicks)})" : "";
             tooltips.Add(new TooltipLine(Mod, $"BrewExtra{i}", $"Also: {extra}{time}")
-            { OverrideColor = new Color(190, 245, 190) });
+            { Color = new Color(190, 245, 190) });
         }
 
         // Potency stars are drawn over this label in PostDrawTooltipLine.
         tooltips.Add(new TooltipLine(Mod, "BrewPotency", "Potency")
-        { OverrideColor = new Color(255, 220, 130) });
+        { Color = new Color(255, 220, 130) });
     }
 
     public override void SaveData(Item item, TagCompound tag)

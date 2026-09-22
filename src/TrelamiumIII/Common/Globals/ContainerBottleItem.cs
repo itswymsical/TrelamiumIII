@@ -33,8 +33,8 @@ public class ContainerBottleItem : GlobalItem
         return base.CanStack(destination, source);
     }
 
-    public override bool CanStackInWorld(Item destination, Item source)
-        => CanStack(destination, source);
+    public override bool CanStackInWorld(WorldItem destination, WorldItem source)
+        => CanStack(destination.inner, source.inner);
 
     public override bool CanRightClick(Item item)
         => IsFilled;
@@ -72,7 +72,7 @@ public class ContainerBottleItem : GlobalItem
         return true;
     }
 
-    public override bool PreDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+    public override bool PreDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
     {
         Vector2 pos = item.position - Main.screenPosition + new Vector2(item.width / 2f, item.height / 2f);
 

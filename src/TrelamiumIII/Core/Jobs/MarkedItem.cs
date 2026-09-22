@@ -122,7 +122,7 @@ public class MarkedItem : GlobalItem
     public override bool CanStack(Item destination, Item source)
         => MarkedJobId(destination) == MarkedJobId(source);
 
-    public override bool CanStackInWorld(Item destination, Item source) => CanStack(destination, source);
+    public override bool CanStackInWorld(WorldItem destination, WorldItem source) => CanStack(destination.inner, source.inner);
 
     public override bool CanUseItem(Item item, Player player) => !IsMarked;
 
@@ -162,11 +162,11 @@ public class MarkedItem : GlobalItem
             ? Text("Generic").Value
             : Text("ForJob").Format(jobName);
 
-        tooltips.Add(new TooltipLine(Mod, "JobMarked", text) { OverrideColor = MarkColor });
+        tooltips.Add(new TooltipLine(Mod, "JobMarked", text) { Color = MarkColor });
 
         tooltips.Add(new TooltipLine(Mod, "JobMarkedLock", Text("Locked").Value)
         {
-            OverrideColor = new Color(150, 140, 110)
+            Color = new Color(150, 140, 110)
         });
     }
 

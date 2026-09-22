@@ -68,13 +68,13 @@ public sealed class RealmTransition : ModSystem
 
         Clock.Start();
 
-        On_Main.CheckMonoliths += BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
         On_Main.DoDraw += DrawOverlay;
     }
 
     public override void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
         On_Main.DoDraw -= DrawOverlay;
 
         Reset();
@@ -182,7 +182,7 @@ public sealed class RealmTransition : ModSystem
     }
 
     /// <summary>Builds the in-world overlay where Terraria expects mods to bind their own targets, before the world draws.</summary>
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 

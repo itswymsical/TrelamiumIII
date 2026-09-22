@@ -32,17 +32,17 @@ public sealed class NarrativeChatSystem : ModSystem
         NarrativeChat.Unload();
     }
 
-    private static void SuppressVanillaChat(On_Player.orig_SetTalkNPC orig, Player self, int npcIndex, bool fromNet)
+    private static void SuppressVanillaChat(On_Player.orig_SetTalkNPC orig, Player self, int npcIndex)
     {
-        if (!TryTakeOver(self, npcIndex, fromNet))
+        if (!TryTakeOver(self, npcIndex))
         {
-            orig(self, npcIndex, fromNet);
+            orig(self, npcIndex);
             return;
         }
 
         // Clear rather than skip: the player may have been mid-conversation with someone
         // else, and vanilla still expects that window closed behind us.
-        orig(self, -1, fromNet);
+        orig(self, -1);
     }
 
     /// <summary>
@@ -51,10 +51,10 @@ public sealed class NarrativeChatSystem : ModSystem
     /// shouldn't stack the same box five deep, but a line clicked for behind another
     /// still has to get its turn.
     /// </summary>
-    private static bool TryTakeOver(Player player, int npcIndex, bool fromNet)
+    private static bool TryTakeOver(Player player, int npcIndex)
     {
         // Dialogue is a client-side UI, and only for the player actually clicking.
-        if (Main.dedServ || fromNet || player.whoAmI != Main.myPlayer)
+        if (Main.dedServ || player.whoAmI != Main.myPlayer)
             return false;
 
         if (npcIndex < 0 || npcIndex >= Main.maxNPCs)

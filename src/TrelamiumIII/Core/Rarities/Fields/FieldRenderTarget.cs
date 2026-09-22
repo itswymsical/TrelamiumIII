@@ -3,7 +3,7 @@ using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Rarities.Fields;
 
-/// <summary>A screen-sized surface, divided by a pixel scale, that a field draws into at <c>CheckMonoliths</c>.</summary>
+/// <summary>A screen-sized surface, divided by a pixel scale, that a field draws into at <c>DoDraw_UpdateCameraPosition</c>.</summary>
 internal sealed class FieldRenderTarget(int pixelScale) : ARenderTargetContentByRequest
 {
     private Action<SpriteBatch>? contents;
@@ -47,7 +47,7 @@ internal sealed class FieldRenderTarget(int pixelScale) : ARenderTargetContentBy
             Main.QueueMainThreadAction(target.Dispose);
     }
 
-    protected override void HandleUseReqest(GraphicsDevice device, SpriteBatch spriteBatch)
+    protected override void HandleUseRequest(GraphicsDevice device, SpriteBatch spriteBatch)
     {
         (int width, int height) = FieldSurface.ScreenSize(PixelScale);
 

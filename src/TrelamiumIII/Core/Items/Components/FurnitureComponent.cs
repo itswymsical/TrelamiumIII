@@ -35,12 +35,12 @@ public abstract class FurnitureItem : ModItem
             Item.DefaultToPlaceableTile(TileType);
         
     }
-    public override void PostUpdate()
+    public override void PostUpdate(WorldItem item)
     {
         // Create a white (1.0, 1.0, 1.0) light when the item is in world, and isn't underwater.
-        if (!Item.wet && !IsWaterTorch)
+        if (!item.wet && !IsWaterTorch)
         {
-            Lighting.AddLight(Item.Center, TorchColor.X, TorchColor.Y, TorchColor.Z);
+            Lighting.AddLight(item.Center, TorchColor.X, TorchColor.Y, TorchColor.Z);
         }
     }
 
@@ -159,13 +159,13 @@ public abstract class FurnitureItem : ModItem
             case FurnitureType.Clock:
                 recipe.AddIngredient(MaterialType, 10);
                 recipe.AddIngredient(ItemID.Glass, 6);
-                recipe.AddRecipeGroup(RecipeGroupID.IronBar, 3);
+                recipe.AddRecipeGroup(RecipeGroups.IronBar, 3);
                 recipe.AddTile(TileID.Sawmill);
                 break;
 
             case FurnitureType.Chest:
                 recipe.AddIngredient(MaterialType, 8);
-                recipe.AddRecipeGroup(RecipeGroupID.IronBar, 2);
+                recipe.AddRecipeGroup(RecipeGroups.IronBar, 2);
                 recipe.AddTile(TileID.WorkBenches);
                 break;
 

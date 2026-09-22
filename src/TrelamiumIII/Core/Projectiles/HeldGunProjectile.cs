@@ -311,7 +311,7 @@ public abstract class HeldGunProjectile : ModProjectile
     ///     already rotated to the aim: a horizontal flip would mirror the barrel back through the
     ///     holder. This is the same reason vanilla guns do it.
     /// </remarks>
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
         var origin = new Vector2(texture.Width * Profile.Origin.X, texture.Height * Profile.Origin.Y);

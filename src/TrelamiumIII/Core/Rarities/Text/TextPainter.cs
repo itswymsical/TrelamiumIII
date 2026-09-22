@@ -120,8 +120,9 @@ public static class TextPainter
             return;
         }
 
-        TextSnippet[] snippets = ChatManager.ParseMessage(text, color).ToArray();
-        ChatManager.ConvertNormalSnippets(snippets);
+        var parsed = ChatManager.ParseMessage(text, color);
+        ChatManager.ConvertNormalSnippets(parsed);
+        TextSnippet[] snippets = parsed.ToArray();
 
         SpriteBatchState home = SpriteBatchState.Capture(spriteBatch);
         SpriteBatchState current = home;

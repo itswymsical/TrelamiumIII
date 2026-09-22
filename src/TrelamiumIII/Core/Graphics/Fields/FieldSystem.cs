@@ -11,7 +11,7 @@ namespace TrelamiumIII.Core.Graphics.Fields;
 ///         The two draw hooks are not interchangeable.
 ///         <list type="bullet">
 ///             <item>
-///                 <b>CheckMonoliths</b> is the one point in the frame where Terraria expects mods
+///                 <b>DoDraw_UpdateCameraPosition</b> is the one point in the frame where Terraria expects mods
 ///                 to be binding their own render targets, as it runs before the scene is drawn and
 ///                 nothing has claimed the backbuffer yet. Building the field anywhere later would
 ///                 mean stealing a target mid-scene and putting back whatever was there.
@@ -72,7 +72,7 @@ public sealed class FieldSystem : ModSystem
         if (Main.dedServ)
             return;
 
-        On_Main.CheckMonoliths += static orig =>
+        On_Main.DoDraw_UpdateCameraPosition += static orig =>
         {
             orig();
 

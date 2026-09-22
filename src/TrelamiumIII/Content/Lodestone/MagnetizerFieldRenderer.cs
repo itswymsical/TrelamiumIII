@@ -124,7 +124,7 @@ internal sealed class MagnetizerFieldRenderer : ModSystem
         Filters.Scene[FilterKey] = new Filter(new FieldData(Assets.Shaders.MagnetizerField.Asset, "P0"), EffectPriority.High);
         Filters.Scene[FilterKey].Load();
 
-        On_Main.CheckMonoliths += static orig =>
+        On_Main.DoDraw_UpdateCameraPosition += static orig =>
         {
             orig();
 

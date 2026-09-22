@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using Terraria.GameInput;
 using TrelamiumIII.Utilities;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.UI.World;
 
@@ -87,7 +88,7 @@ public class WorldIndicator : IWorldUI
 
     public event Action? OnClick;
 
-    private bool IsTracking => _tracked is { active: true };
+    private bool IsTracking => _tracked?.IsActive() == true;
 
     public WorldIndicator(Vector2 worldAnchor, int width, int height, AnimationType? animationType = null)
     {
@@ -161,7 +162,7 @@ public class WorldIndicator : IWorldUI
         _bobTime += 0.1f;
 
         // A tracked entity that has gone means the indicator has nothing left to mark.
-        if (_tracked != null && !_tracked.active)
+        if (_tracked != null && !_tracked.IsActive())
         {
             IsActive = false;
             return;

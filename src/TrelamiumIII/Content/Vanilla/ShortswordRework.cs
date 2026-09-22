@@ -51,7 +51,7 @@ public sealed class ShortswordRework : GlobalProjectile
     public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)
         => Sword(projectile).ModifyHitNPC(target, ref modifiers);
 
-    public override bool PreDraw(Projectile projectile, ref Color lightColor)
+    public override bool PreDraw(Projectile projectile, Player player, ref Color lightColor)
     {
         Sword(projectile).Draw(lightColor);
 

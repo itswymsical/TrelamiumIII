@@ -11,6 +11,7 @@ internal class MoveModifier : ICameraModifier
     public bool Returning = false;
 
     public string UniqueIdentity => "TrelamiumIII Camera Move";
+    public bool IsAScreenShake => false;
     public bool Finished => Returning && Timer >= MovementDuration;
     public void PassiveUpdate()
     {

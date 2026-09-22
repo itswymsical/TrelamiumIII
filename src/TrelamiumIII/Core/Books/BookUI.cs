@@ -389,8 +389,8 @@ public abstract class BookUI : IInGameNotification, IBookView
             FontAssets.MouseText.Value,
             ChatManager.ParseMessage(text, Color.White).ToArray(),
             position,
-            0f,
             Color.White,
+            0f,
             Vector2.Zero,
             Vector2.One,
             out _);

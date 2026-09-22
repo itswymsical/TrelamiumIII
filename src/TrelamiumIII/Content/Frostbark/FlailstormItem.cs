@@ -46,7 +46,7 @@ public class FlailstormItem : ModItem
         var recipe = CreateRecipe();
         recipe.AddIngredient(ItemID.BorealWood, 8);
         recipe.AddIngredient(ItemID.IceBlock, 20);
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 8);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 8);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }

@@ -97,7 +97,7 @@ public sealed class SonsMushroom : GlobalItem
 
         tooltips.Add(new TooltipLine(Mod, "SonsMushroom", flavour.Value)
         {
-            OverrideColor = new Color(232, 168, 90),
+            Color = new Color(232, 168, 90),
         });
     }
 }

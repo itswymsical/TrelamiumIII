@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Core.Books;
 
 /// <summary>
-///     Owns the shared page-curl mesh and composes open books in <c>CheckMonoliths</c>, while render targets can still be swapped.
+///     Owns the shared page-curl mesh and composes open books in <c>DoDraw_UpdateCameraPosition</c>, while render targets can still be swapped.
 /// </summary>
 public sealed class BookRenderSystem : ModSystem
 {
@@ -19,12 +19,12 @@ public sealed class BookRenderSystem : ModSystem
         Mesh = new PageFlipMesh();
         Mesh.Load();
 
-        On_Main.CheckMonoliths += BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
     }
 
     public override void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
 
         // Closing normally only releases the targets on the next Update, and there is no next Update
         // during an unload, so the books are torn down here instead.
@@ -49,7 +49,7 @@ public sealed class BookRenderSystem : ModSystem
 
     internal static void Unregister(BookUI book) => openBooks.Remove(book);
 
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 

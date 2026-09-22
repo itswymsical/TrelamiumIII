@@ -291,7 +291,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
             InitiateReturn();
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Main.instance.LoadProjectile(Projectile.type);
         var texture = TextureAssets.Projectile[Projectile.type].Value;

@@ -26,8 +26,8 @@ internal interface IProjectedPanel : IDisposable
 ///         only shares the quad mesh with it.
 ///     </para>
 ///     <para>
-///         Faces are built from <c>CheckMonoliths</c> for the reason given on the dialogue system: it
-///         is the point in the frame where vanilla does its own off-screen work, and the last one
+///         Faces are built from <c>DoDraw_UpdateCameraPosition</c> for the reason given on the dialogue system: it
+///         runs just before vanilla does its own off-screen work, and is the last point
 ///         where a render target can still be set without discarding the frame so far.
 ///     </para>
 /// </remarks>
@@ -40,12 +40,12 @@ public sealed class ProjectedPanelSystem : ModSystem
         if (Main.dedServ)
             return;
 
-        On_Main.CheckMonoliths += BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
     }
 
     public override void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
 
         foreach (IProjectedPanel panel in live)
             panel.Dispose();
@@ -94,7 +94,7 @@ public sealed class ProjectedPanelSystem : ModSystem
             live.Add(panel);
     }
 
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 

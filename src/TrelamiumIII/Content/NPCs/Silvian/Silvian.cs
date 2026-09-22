@@ -32,13 +32,13 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         NPC.DeathSound = SoundID.PlayerKilled;
     }
 
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    public override float SpawnChance(NPC.Spawner spawner)
     {
         if (NPC.AnyNPCs(Type))
             return 0f;
 
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest &&
-            !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
+        return spawner.Player.ZoneOverworldHeight && Main.dayTime && spawner.Player.ZoneForest &&
+            !spawner.Player.ZoneCorrupt && !spawner.Player.ZoneCrimson && !spawner.Player.ZoneHallow ? 0.15f : 0f;
     }
 
     public override void PostAI()

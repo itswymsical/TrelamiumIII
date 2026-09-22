@@ -489,7 +489,7 @@ public sealed class FungoreBoss : ModNPC
         NPC.SetEventFlagCleared(ref DownedBossSystem.DownedFungore, -1);
     }
 
-    public override void BossLoot(ref int potionType) => potionType = ItemID.LesserHealingPotion;
+    public override void BossLoot(ref int potionType, ref int potionStack, ref int heartStack) => potionType = ItemID.LesserHealingPotion;
 
     /// <summary>Places him under the floor near whoever summoned him, and starts the entrance.</summary>
     public override void OnSpawn(IEntitySource source)
@@ -640,7 +640,7 @@ public sealed class FungoreBoss : ModNPC
 
     public override bool CanHitPlayer(Player target, ref int cooldownSlot)
     {
-        cooldownSlot = ImmunityCooldownID.Bosses;
+        cooldownSlot = ImmunityCooldownID.BossNoCheese;
 
         // Tied to ContactDamage so the two can't disagree.
         return ContactDamage > 0;

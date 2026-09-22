@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using Terraria.GameContent;
+﻿using Terraria.GameContent;
 
 namespace TrelamiumIII.Content.Sharpnut;
 
@@ -30,7 +29,7 @@ public class SharpnutDaggerItem : ModItem
         base.AddRecipes();
         CreateRecipe()
             .AddIngredient(ItemID.Acorn, 8)
-            .AddRecipeGroup(RecipeGroupID.Wood, 18)
+            .AddRecipeGroup(RecipeGroups.Wood, 18)
             .AddTile(TileID.Anvils)
             .Register();
     }
@@ -76,7 +75,7 @@ public class SharpnutDaggerProjectile : ModProjectile
         Projectile.DamageType = DamageClass.Ranged;
         Projectile.width = 18;
         Projectile.height = 18;
-        Projectile.hide = true;
+        Projectile.drawLayer = ProjectileDrawLayerID.BehindNPCs;
         stickToNPC =
         Projectile.friendly =
         Projectile.tileCollide =
@@ -283,7 +282,7 @@ public class SharpnutDaggerProjectile : ModProjectile
         }
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         var texture = TextureAssets.Projectile[Type].Value;
         Vector2 drawPosition;
@@ -342,10 +341,5 @@ public class SharpnutDaggerProjectile : ModProjectile
     public override bool PreKill(int timeLeft)
     {
         return base.PreKill(timeLeft);
-    }
-
-    public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs, List<int> behindProjectiles, List<int> overPlayers, List<int> overWiresUI)
-    {
-        behindNPCs.Add(index);
     }
 }

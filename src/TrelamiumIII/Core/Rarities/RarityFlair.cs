@@ -62,7 +62,7 @@ public abstract class RarityFlair
     public virtual void ApplySpriteShader(Effect effect, in RaritySpriteContext ctx) { }
 
     /// <summary>Per-tick hook for an item lying in the world.</summary>
-    public virtual void UpdateWorldItem(Item item) { }
+    public virtual void UpdateWorldItem(WorldItem item) { }
 
     /// <summary>Releases anything the flair allocated. Called once, on mod unload.</summary>
     public virtual void Unload() { }

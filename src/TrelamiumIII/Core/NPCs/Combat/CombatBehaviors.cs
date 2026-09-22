@@ -1,5 +1,6 @@
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.NPCs.Combat;
 
@@ -182,7 +183,7 @@ public sealed class AttackTarget : Behavior
 
         Entity target = targeting(ctx);
 
-        if (target is not { active: true })
+        if (target?.IsActive() != true)
         {
             BehaviorMovement.Decelerate(npc);
             BehaviorMovement.ApplyTerrainCollision(npc);

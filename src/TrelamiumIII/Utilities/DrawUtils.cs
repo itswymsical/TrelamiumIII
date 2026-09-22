@@ -29,8 +29,6 @@ internal static class DrawUtils
 
     public static Vector2 ToVector2(this Vector3 vector) => new Vector2(vector.X, vector.Y);
 
-    public static Vector3 ToVector3(this Vector2 vector) => new Vector3(vector.X, vector.Y, 0f);
-
     public static Vector2 ToDrawPosition(this Vector2 vector) => vector - Main.screenPosition;
 
     public static Matrix DefaultEffectMatrix

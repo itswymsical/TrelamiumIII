@@ -102,7 +102,7 @@ public class RewardBag : ModItem
         // that owns them.
         if (player.whoAmI != Main.myPlayer)
         {
-            player.QuickSpawnItem(source, item, item.stack);
+            Item.RequestNewItem(source, player.Center, item);
             return;
         }
 
@@ -111,7 +111,7 @@ public class RewardBag : ModItem
         var announced = item.Clone();
         var requested = item.stack;
 
-        var leftover = player.GetItem(player.whoAmI, item, GetItemSettings.NPCEntityToPlayerInventorySettings);
+        var leftover = player.GetItem(item, GetItemSettings.GiftRecieved);
         var taken = requested - (leftover.IsAir ? 0 : leftover.stack);
 
         if (taken > 0)
@@ -126,7 +126,7 @@ public class RewardBag : ModItem
         // Only the part that fit is announced here; the overflow drops and announces itself through
         // the normal pickup path, so nothing is counted twice.
         if (!leftover.IsAir)
-            player.QuickSpawnItem(source, leftover, leftover.stack);
+            Item.RequestNewItem(source, player.Center, leftover);
     }
     #endregion
 
@@ -166,7 +166,7 @@ public class RewardBag : ModItem
         return true;
     }
 
-    public override bool CanStackInWorld(Item source) => CanStack(source);
+    public override bool CanStackInWorld(WorldItem destination, WorldItem source) => CanStack(source.inner);
     #endregion
 
     #region Tooltip
@@ -179,7 +179,7 @@ public class RewardBag : ModItem
             tooltips.Add(new TooltipLine(Mod, "RewardBagJob",
                 this.GetLocalization("PaymentFor", () => "Payment for {0}").Format(jobName))
             {
-                OverrideColor = JobLineColor
+                Color = JobLineColor
             });
         }
 
@@ -188,7 +188,7 @@ public class RewardBag : ModItem
             tooltips.Add(new TooltipLine(Mod, "RewardBagEmpty",
                 this.GetLocalization("Empty", () => "Empty").Value)
             {
-                OverrideColor = HintColor
+                Color = HintColor
             });
 
             return;
@@ -206,14 +206,14 @@ public class RewardBag : ModItem
 
             tooltips.Add(new TooltipLine(Mod, $"RewardBagContent{i}", Describe(content))
             {
-                OverrideColor = ItemRarity.GetColor(content.rare)
+                Color = ItemRarity.GetColor(content.rare)
             });
         }
 
         tooltips.Add(new TooltipLine(Mod, "RewardBagOpen",
             this.GetLocalization("RightClickToOpen", () => "Right click to open").Value)
         {
-            OverrideColor = HintColor
+            Color = HintColor
         });
     }
 

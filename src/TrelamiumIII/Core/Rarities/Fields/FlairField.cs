@@ -203,14 +203,14 @@ public abstract class FlairField
     /// <summary>Advances content by one tick.</summary>
     protected abstract void Update();
 
-    /// <summary>Builds render targets. Called at <c>CheckMonoliths</c>, the one point in a frame where binding one is safe.</summary>
+    /// <summary>Builds render targets. Called at <c>DoDraw_UpdateCameraPosition</c>, the one point in a frame where binding one is safe.</summary>
     protected internal virtual void Accumulate() { }
 
     /// <summary>Draws content for <paramref name="emitter" /> into the active batch, which must be left in the state it was found.</summary>
     protected internal abstract void Draw(SpriteBatch spriteBatch, in FieldEmitter emitter);
 
     /// <summary>Spawns into a world system for an item lying in the world, at <see cref="WorldRate" />.</summary>
-    protected internal virtual void SpawnWorld(Item item) { }
+    protected internal virtual void SpawnWorld(WorldItem item) { }
 
     /// <summary>Drops content and frees render targets.</summary>
     protected internal virtual void Release() { }

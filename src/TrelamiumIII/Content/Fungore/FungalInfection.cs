@@ -15,7 +15,7 @@ public sealed class FungalInfection : ModBuff
         Main.pvpBuff[Type] = false;
         Main.buffNoSave[Type] = true;
 
-        BuffID.Sets.LongerExpertDebuff[Type] = false;
+        BuffID.Sets.BuffTimeIsExtendedWithGameDifficulty[Type] = false;
     }
 }
 
@@ -30,7 +30,7 @@ public sealed class FungalInfectionHostile : ModBuff
         Main.buffNoSave[Type] = true;
 
         // Off: InfectionTicks scales duration by difficulty, where vanilla's flag would blindly double it.
-        BuffID.Sets.LongerExpertDebuff[Type] = false;
+        BuffID.Sets.BuffTimeIsExtendedWithGameDifficulty[Type] = false;
     }
 
     public override void Update(Player player, ref int buffIndex)
@@ -52,7 +52,7 @@ public sealed class FungalInfectionSpore : ModBuff
         Main.buffNoSave[Type] = true;
 
         // Not lengthened in expert: it's reapplied every few seconds, so doubling would make it permanent.
-        BuffID.Sets.LongerExpertDebuff[Type] = false;
+        BuffID.Sets.BuffTimeIsExtendedWithGameDifficulty[Type] = false;
     }
 
     public override void Update(Player player, ref int buffIndex)
@@ -422,5 +422,5 @@ public sealed class SporeBlastProj : ModProjectile
         FungalInfectionNPC.AddBuffStack(target, 1, Projectile.owner);
     }
 
-    public override bool PreDraw(ref Color lightColor) => false;
+    public override bool PreDraw(Player player, ref Color lightColor) => false;
 }

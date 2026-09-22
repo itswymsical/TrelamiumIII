@@ -59,7 +59,7 @@ internal sealed class GoreSilhouetteRenderer : ModSystem
             Sampler = SamplerState.PointClamp,
         };
 
-        On_Main.CheckMonoliths += static orig =>
+        On_Main.DoDraw_UpdateCameraPosition += static orig =>
         {
             orig();
 

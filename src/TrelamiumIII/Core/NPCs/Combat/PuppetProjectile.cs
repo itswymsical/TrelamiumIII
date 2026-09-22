@@ -87,7 +87,7 @@ public sealed class PuppetProjectile : GlobalProjectile
         return null;
     }
 
-    public override void PostDraw(Projectile projectile, Color lightColor)
+    public override void PostDraw(Projectile projectile, Player player, Color lightColor)
     {
         if (PuppetDebug.ShowHitboxes && OwnerNPC >= 0)
             PuppetDebug.DrawHitbox(Main.spriteBatch, projectile.Hitbox, Color.Orange);

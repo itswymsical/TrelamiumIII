@@ -167,7 +167,7 @@ public static class LiquidUtils
         // If the liquid amount drops to zero or below kill the gas
         if (tile.LiquidAmount <= 0)
         {
-            tile.active(false);
+            tile.HasTile = false;
             node.Life = 0;
             return;
         }
@@ -252,7 +252,7 @@ public static class LiquidUtils
             if (!isBottomless)
             {
                 item.stack--; //...remove the item's count
-                player.PutItemInInventoryFromItemUsage(ItemID.EmptyBucket, player.selectedItem); //...create a bucket item
+                player.PutItemInInventoryFromItemUsage(ItemID.EmptyBucket); //...create a bucket item
             }
             player.ApplyItemTime(item); //...do item usetime
 

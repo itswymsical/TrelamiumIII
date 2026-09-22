@@ -111,7 +111,7 @@ public sealed class ParticleFlairField<T> : FlairField where T : Particle, new()
         RarityBatch.Switch(spriteBatch, ref current, home);
     }
 
-    protected internal override void SpawnWorld(Item item)
+    protected internal override void SpawnWorld(WorldItem item)
     {
         for (int i = RollCount(WorldRate); i > 0; i--)
         {

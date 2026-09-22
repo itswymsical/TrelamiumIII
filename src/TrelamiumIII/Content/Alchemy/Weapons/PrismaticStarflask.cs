@@ -51,7 +51,9 @@ public class PrismaticStarflaskItem : ModItem
                                   .SafeNormalize(-Vector2.UnitY);
 
         SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset);
-        e.Target.AddBuff(BuffID.RainbowWhipNPCDebuff, 60);
+        // 1.4.5 turned whip tags from NPC debuffs into effects owned by a player, lasting the whip's own tag duration.
+        if (e.DeliveryProjectile is { } delivery)
+            Main.player[delivery.owner].TagEffectStack.TryApplyTagToNPC(ItemID.RainbowWhip, e.Target);
 
         int count = Main.rand.Next(8, 16);
         for (int i = 0; i < count; i++)

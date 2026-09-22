@@ -72,7 +72,7 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
             Main.QueueMainThreadAction(attribute.Dispose);
     }
 
-    protected override void HandleUseReqest(GraphicsDevice device, SpriteBatch spriteBatch)
+    protected override void HandleUseRequest(GraphicsDevice device, SpriteBatch spriteBatch)
     {
         stampShader ??= Assets.Shaders.FieldStamp.Asset;
 

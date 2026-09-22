@@ -72,7 +72,7 @@ public class GelatinousBlaster : ModItem
         Recipe recipe = CreateRecipe();
 
         recipe.AddIngredient(ItemID.Gel, 60);
-        recipe.AddRecipeGroup(RecipeGroupID.Wood, 5);
+        recipe.AddRecipeGroup(RecipeGroups.Wood, 5);
         recipe.AddIngredient(ItemID.IllegalGunParts);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
@@ -256,7 +256,7 @@ public class GelBallProj : ModProjectile
         }
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Main.instance.LoadProjectile(Projectile.type);
 

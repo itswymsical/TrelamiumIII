@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using Terraria.DataStructures;
 using Terraria.ModLoader.IO;
 
 namespace TrelamiumIII.Core.NPCs.Housing;
@@ -127,9 +128,9 @@ public class WorldNPCHousing : ModSystem
 
     // Vanilla denial
 
-    private static void RefuseReservedRooms(On_WorldGen.orig_ScoreRoom orig, int ignoreNPC, int npcTypeAskingToScoreRoom)
+    private static void RefuseReservedRooms(On_WorldGen.orig_ScoreRoom orig, int ignoreNPC, int npcTypeAskingToScoreRoom, IRoomCheckFeedback feedback)
     {
-        orig(ignoreNPC, npcTypeAskingToScoreRoom);
+        orig(ignoreNPC, npcTypeAskingToScoreRoom, feedback);
 
         if (homes.Count == 0 || !IsReservedAgainst(TestedRoom(), npcTypeAskingToScoreRoom))
             return;

@@ -24,7 +24,7 @@ public class RustedAxe : ModItem
     {
         CreateRecipe()
         .AddIngredient<RustedIronBar>(8)
-        .AddRecipeGroup(RecipeGroupID.Wood, 4)
+        .AddRecipeGroup(RecipeGroups.Wood, 4)
         .AddTile(TileID.Anvils)
         .Register();
     }

@@ -167,7 +167,7 @@ public abstract class CustomTree : ModTile
         if (Main.netMode == NetmodeID.Server)
             NetMessage.SendTileSquare(-1, x, topY, 1, height);
 
-        if (!WorldGen.gen && !Main.dedServ && WorldGen.PlayerLOS(x, topY))
+        if (!WorldGen.isGeneratingOrLoadingWorld && !Main.dedServ && WorldGen.PlayerLOS(x, topY))
             LeafBurst(x, topY);
     }
 
@@ -189,7 +189,7 @@ public abstract class CustomTree : ModTile
     /// <summary> A trunk tile without a trunk or anchor below breaks, and killing it reframes the tile above, so the rest of the column falls with it. </summary>
     public override bool TileFrame(int i, int j, ref bool resetFrame, ref bool noBreak)
     {
-        if (!WorldGen.gen && !growing && !(Main.tile[i, j + 1].HasTile && Main.tile[i, j + 1].TileType == Type) && !IsAnchor(i, j + 1))
+        if (!WorldGen.isGeneratingOrLoadingWorld && !growing && !(Main.tile[i, j + 1].HasTile && Main.tile[i, j + 1].TileType == Type) && !IsAnchor(i, j + 1))
             WorldGen.KillTile(i, j);
 
         return false;

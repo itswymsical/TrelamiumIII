@@ -26,7 +26,7 @@ public class WoodenBuckler : ModItem
     {
         CreateRecipe()
         .AddIngredient(ItemID.Wood, 12)
-        .AddRecipeGroup(RecipeGroupID.IronBar)
+        .AddRecipeGroup(RecipeGroups.IronBar)
         .AddTile(TileID.Anvils)
         .Register();
     }
@@ -144,7 +144,7 @@ public class WoodenBucklerPlayer : ModPlayer
 
                 float knockback = Player.GetWeaponKnockback(buckler, buckler.knockBack);
 
-                Player.ApplyDamageToNPC(target, damage, knockback, hitDirection, false);
+                Player.ApplyDamageToNPC(target, damage, knockback, hitDirection, crit: false, damageVariation: false);
 
                 // SoundEngine.PlaySound(SoundID.Item37, Player.position);
 

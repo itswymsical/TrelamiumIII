@@ -432,7 +432,7 @@ public class MagnoliaTile : ModTile
                 {
                     var foliageGrass = tileType == TileID.Plants || tileType == TileID.Plants2;
                     var moddedFoliage = tileType >= TileID.Count && (Main.tileCut[tileType] || TileID.Sets.BreakableWhenPlacing[tileType]);
-                    var harvestableVanillaHerb = Main.tileAlch[tileType] && WorldGen.IsHarvestableHerbWithSeed(tileType, tile.TileFrameX / 18);
+                    var harvestableVanillaHerb = Main.tileAlch[tileType] && WorldGen.IsHarvestableHerbWithSeed(tileType, tile.TileFrameX / 18, j);
 
                     if (foliageGrass || moddedFoliage || harvestableVanillaHerb)
                     {
@@ -516,7 +516,7 @@ public class MagnoliaTile : ModTile
         return stage == PlantStage.Grown;
     }
 
-    public override void RandomUpdate(int i, int j)
+    public override void RandomUpdate(int i, int j, bool underground)
     {
         var tile = Framing.GetTileSafely(i, j);
         var stage = GetStage(i, j);

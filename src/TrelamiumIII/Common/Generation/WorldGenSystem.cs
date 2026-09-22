@@ -51,7 +51,7 @@ public class WorldGenSystem : ModSystem
         }
     }
 
-    public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight)
+    public override void ModifyWorldGenTasks(List<GenPass> tasks)
     {
         var shroomIndex = tasks.FindIndex(genPass => genPass.Name.Equals("Spreading Grass"));
         if (shroomIndex != -1)

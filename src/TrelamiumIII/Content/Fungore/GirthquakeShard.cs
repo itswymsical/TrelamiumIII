@@ -88,7 +88,7 @@ public class EarthShardProj : ModProjectile
             Dust.NewDustPerfect(Projectile.Center, DustID.Stone, Main.rand.NextVector2Circular(2f, 2f), 100, Color.White, 0.9f);
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Texture2D texture = TileTextureUtils.ResolveChunk(SourceTile, ChunkSeed, out Rectangle source);
 

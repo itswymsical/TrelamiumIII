@@ -1,5 +1,6 @@
 using System.IO;
 using SubworldLibrary;
+using Terraria.GameContent;
 using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.NPCs;
 
@@ -191,15 +192,16 @@ public class Jobber : Villager
             : Main.rand.Next(IdleChat);
     }
 
-    public override void SetChatButtons(ref string button, ref string button2)
+    public override void RegisterChatButtons(NPCInteractionList interactions)
     {
-        if (JobberJob.ActiveFor(Main.LocalPlayer, this) is not null)
-            button = "Hand in";
+        interactions.InsertBefore(new ChatButton<Jobber>(
+            npc => JobberJob.ActiveFor(Main.LocalPlayer, npc) is not null ? "Hand in" : null,
+            npc => npc.HandIn()), NPCInteractionDatabase.CloseButton);
     }
 
-    public override void OnChatButtonClicked(bool firstButton, ref string shop)
+    private void HandIn()
     {
-        if (!firstButton || JobberJob.ActiveFor(Main.LocalPlayer, this) is not { } job)
+        if (JobberJob.ActiveFor(Main.LocalPlayer, this) is not { } job)
             return;
 
         Main.npcChatText = job.TryHandIn()
@@ -209,9 +211,9 @@ public class Jobber : Villager
     #endregion
 
     #region Spawning & upkeep
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    public override float SpawnChance(NPC.Spawner spawner)
     {
-        Player player = spawnInfo.Player;
+        Player player = spawner.Player;
 
         if (NPC.CountNPCS(Type) >= MaxAlive || SubworldSystem.AnyActive())
             return 0f;

@@ -525,7 +525,6 @@ public sealed class WardenArm : ModNPC
     {
         NPC.life = 0;
         NPC.active = false;
-        NPC.netSkip = -1;
 
         if (Main.netMode == NetmodeID.Server)
             NetMessage.SendData(MessageID.SyncNPC, number: NPC.whoAmI);
@@ -542,7 +541,7 @@ public sealed class WardenArm : ModNPC
 
     public override bool CanHitPlayer(Player target, ref int cooldownSlot)
     {
-        cooldownSlot = ImmunityCooldownID.Bosses;
+        cooldownSlot = ImmunityCooldownID.BossNoCheese;
 
         // Tied to ContactDamage so the two can't disagree.
         return ContactDamage > 0;

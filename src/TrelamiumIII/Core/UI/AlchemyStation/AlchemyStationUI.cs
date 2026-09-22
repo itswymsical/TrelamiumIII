@@ -416,18 +416,19 @@ internal class AlchemyStationUI : UIState, IAlchemyStationUI
         var src = player.GetSource_Misc("AlchemyStationClose");
 
         // Hand back a finished result before resetting state. Previews are not real items and never get returned.
+        // Cloned: 1.4.5's QuickSpawnItem moves the instance itself into the inventory, and ClearSlots would then empty it.
         if (IsResultReady && !OutputContainer[0].IsAir)
-            player.QuickSpawnItem(src, OutputContainer[0], OutputContainer[0].stack);
+            player.QuickSpawnItem(src, OutputContainer[0].Clone());
 
         if (!InputContainer[0].IsAir)
-            player.QuickSpawnItem(src, InputContainer[0], InputContainer[0].stack);
+            player.QuickSpawnItem(src, InputContainer[0].Clone());
 
         if (!BottleReturnContainer[0].IsAir)
-            player.QuickSpawnItem(src, BottleReturnContainer[0], BottleReturnContainer[0].stack);
+            player.QuickSpawnItem(src, BottleReturnContainer[0].Clone());
 
         for (int i = 0; i < Components.Length; i++)
             if (!Components[i].IsAir)
-                player.QuickSpawnItem(src, Components[i], Components[i].stack);
+                player.QuickSpawnItem(src, Components[i].Clone());
 
         ClearSlots();
         ResetBrewState();

@@ -323,7 +323,7 @@ public class ShroomsonMinion : ModProjectile
 
         Main.projFrames[Type] = 9;
         // This is necessary for right-click targeting
-        ProjectileID.Sets.MinionTargettingFeature[Type] = true;
+        ProjectileID.Sets.MinionTargetingFeature[Type] = true;
 
         Main.projPet[Type] = true; // Denotes that this projectile is a pet or minion
 
@@ -1248,7 +1248,7 @@ public class ShroomsonMinion : ModProjectile
         return next is < FRAME_WALK_FIRST or > FRAME_WALK_LAST ? FRAME_WALK_FIRST : next;
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         if (State == ShroomsonState.Burrow)
             return false;
@@ -1283,7 +1283,7 @@ public class ShroomsonMinion : ModProjectile
         return false;
     }
 
-    public override void PostDraw(Color lightColor)
+    public override void PostDraw(Player player, Color lightColor)
     {
         float flash = FlashProgress;
 

@@ -50,7 +50,7 @@ public class AdvancedAlchemyStationChamberItem : ModItem
     {
         CreateRecipe()
             .AddIngredient(ItemID.Glass, 30)
-            .AddRecipeGroup(RecipeGroupID.IronBar, 8)
+            .AddRecipeGroup(RecipeGroups.IronBar, 8)
             .AddIngredient(ItemID.GoldBar, 2)
             .AddIngredient(ItemID.PlatinumBrick, 20)
             .AddIngredient(ItemID.Bottle, 1)

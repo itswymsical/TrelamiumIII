@@ -5,6 +5,7 @@ using Terraria.GameContent;
 using Terraria.UI;
 using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Text;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Authoring;
 
@@ -359,7 +360,7 @@ public sealed class AuthoringUIState : UIState
 
         float baseline = font.LineSpacing * 0.75f;
 
-        if (font.SpriteCharacters.TryGetValue('H', out DynamicSpriteFont.SpriteCharacterData data)
+        if (font.TryGetCharacterData('H', out var data)
             && data.Glyph.Height > 0)
         {
             baseline = data.Padding.Y + data.Glyph.Height;

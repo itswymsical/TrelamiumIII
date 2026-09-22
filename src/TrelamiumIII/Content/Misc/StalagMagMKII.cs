@@ -69,7 +69,7 @@ public class StalagMagMKII : ModItem
         Recipe recipe = CreateRecipe();
 
         recipe.AddIngredient(ItemID.StoneBlock, 30);
-        recipe.AddRecipeGroup(RecipeGroupID.Wood, 2);
+        recipe.AddRecipeGroup(RecipeGroups.Wood, 2);
         recipe.AddIngredient(ItemID.IllegalGunParts);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();

@@ -509,7 +509,7 @@ public class WorkshopStationPet : ModProjectile
         Projectile.velocity = resolved;
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         if (sprite is null)
             return false;

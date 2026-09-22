@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using Terraria.GameContent;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Combat;
+using TrelamiumIII.Core.NPCs;
 
 namespace TrelamiumIII.Content.NPCs.Testing;
 
@@ -61,7 +63,7 @@ public class TestTerrarian : TerrarianNPC
     public override List<string> SetNPCNameList() => ["Test Subject"];
 
     /// <summary>Never spawns on its own; use <c>/wnpc spawn</c>.</summary>
-    public override float SpawnChance(NPCSpawnInfo spawnInfo) => 0f;
+    public override float SpawnChance(NPC.Spawner spawner) => 0f;
 
     protected override void SetWorldNPCDefaults()
     {
@@ -98,21 +100,20 @@ public class TestTerrarian : TerrarianNPC
         return held.IsAir ? "nothing" : held.Name;
     }
 
-    public override void SetChatButtons(ref string button, ref string button2)
+    public override void RegisterChatButtons(NPCInteractionList interactions)
     {
-        button = "Next mode";
-        button2 = "Reset anchor";
+        interactions.InsertBefore(new ChatButton<TestTerrarian>(_ => "Next mode", npc => npc.CycleMode()), NPCInteractionDatabase.CloseButton);
+        interactions.InsertAfter(new ChatButton<TestTerrarian>(_ => "Reset anchor", npc => npc.ResetAnchor()), NPCInteractionDatabase.CloseButton);
     }
 
-    public override void OnChatButtonClicked(bool firstButton, ref string shop)
+    private void CycleMode()
     {
-        if (firstButton)
-        {
-            Mode = (TestMode)(((int)Mode + 1) % Enum.GetValues<TestMode>().Length);
-            Main.NewText($"{NPC.GivenName}: {Mode}", Color.LightGreen);
-            return;
-        }
+        Mode = (TestMode)(((int)Mode + 1) % Enum.GetValues<TestMode>().Length);
+        Main.NewText($"{NPC.GivenName}: {Mode}", Color.LightGreen);
+    }
 
+    private void ResetAnchor()
+    {
         SetAnchorTile(NPC.Center);
         Main.NewText($"{NPC.GivenName} anchored at {AnchorTile.X}, {AnchorTile.Y}.", Color.LightGreen);
     }

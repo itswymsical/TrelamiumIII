@@ -27,7 +27,7 @@ public class EventItem : GlobalItem
         base.OnCreated(item, context);
     }
 
-    public override bool OnPickup(Item item, Player player)
+    public override bool OnPickup(WorldItem item, Player player)
     {
         // Every ongoing job gets to see the pickup; whether it counts is the job's own call.
         // Filtering here by item identity used to swallow them: world item slots reuse the same
@@ -35,7 +35,7 @@ public class EventItem : GlobalItem
         // first one being picked up twice and never reached the job.
         if (player.GetModPlayer<JobPlayer>().ActiveJobs().Any())
         {
-            OnItemPickup?.Invoke(item, player);
+            OnItemPickup?.Invoke(item.inner, player);
         }
 
         return base.OnPickup(item, player);

@@ -58,7 +58,7 @@ public class Skofnung : ModItem
         CreateRecipe()
             .AddIngredient(ItemID.BorealWood, 10)
             .AddIngredient(ItemID.IceBlock, 12)
-            .AddRecipeGroup(RecipeGroupID.IronBar, 8)
+            .AddRecipeGroup(RecipeGroups.IronBar, 8)
             .Register();
     }
 }

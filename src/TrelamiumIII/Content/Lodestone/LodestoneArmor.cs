@@ -163,15 +163,15 @@ public class LodestoneHelmet : ModItem
 
     public override void UpdateArmorSet(Player player)
     {
-        player.setBonus = "You emit a magnetic field that gravitates items towards you"
-                        + "\nIncreases pickup range substantially";
+        // Player.setBonus is gone in 1.4.5 and tML has no modded set-bonus text yet; restore when it does:
+        // "You emit a magnetic field that gravitates items towards you\nIncreases pickup range substantially"
 
         int grabbed = 0;
 
         for (int i = 0; i < Main.maxItems; i++)
         {
             var item = Main.item[i];
-            if (!item.active || item.beingGrabbed || item.noGrabDelay != 0) continue;
+            if (!item.active || item.beingGrabbed || item.grabDelayTime != 0) continue;
 
             float distance = Vector2.Distance(player.Center, item.Center);
             if (distance > FieldRadius) continue;

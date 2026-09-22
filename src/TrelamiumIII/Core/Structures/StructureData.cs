@@ -96,8 +96,8 @@ public sealed class StructureChest
     public int Y;
     public string Name = string.Empty;
 
-    /// <summary>Fixed contents by slot; null is an empty slot.</summary>
-    public Item?[] Items = new Item?[Chest.maxItems];
+    /// <summary>Fixed contents by slot; null is an empty slot. Sized to the source chest, which 1.4.5 lets vary.</summary>
+    public Item?[] Items = new Item?[Chest.DefaultMaxItems];
 
     /// <summary>Rolled into the slots the fixed contents leave empty, every time the structure is generated.</summary>
     public List<LootRule> Loot = [];

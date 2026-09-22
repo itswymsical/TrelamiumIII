@@ -272,7 +272,7 @@ public static class StructureFile
     {
         List<TagCompound> items = [];
 
-        for (int slot = 0; slot < Chest.maxItems; slot++)
+        for (int slot = 0; slot < chest.Items.Length; slot++)
         {
             if (chest.Items[slot] is { IsAir: false } item)
                 items.Add(new TagCompound { ["slot"] = slot, ["item"] = ItemIO.Save(item) });
@@ -302,8 +302,13 @@ public static class StructureFile
         {
             int slot = entry.GetInt("slot");
 
-            if (slot is >= 0 and < Chest.maxItems)
-                chest.Items[slot] = LoadItem(entry.GetCompound("item"), source);
+            if (slot is < 0 or >= Chest.AbsoluteMaxItemsWeCanEverReachInAChestForNow)
+                continue;
+
+            if (slot >= chest.Items.Length)
+                Array.Resize(ref chest.Items, slot + 1);
+
+            chest.Items[slot] = LoadItem(entry.GetCompound("item"), source);
         }
 
         return chest;

@@ -178,7 +178,7 @@ internal static partial class EditorPalette
             return "Platforms";
 
         if (Main.tileFrameImportant[type])
-            return TileID.Sets.Torch[type] || Main.tileLighted[type] ? "Lights" : "Objects";
+            return TileID.Sets.Torches[type] || Main.tileLighted[type] ? "Lights" : "Objects";
 
         if (TileID.Sets.Ore[type] || Main.tileSpelunker[type])
             return "Ores & Gems";
@@ -216,7 +216,7 @@ internal static partial class EditorPalette
     {
         HashSet<int> tiles = [];
 
-        if (RecipeGroup.recipeGroups.TryGetValue(RecipeGroupID.Wood, out RecipeGroup? group))
+        if (RecipeGroups.Wood is { } group)
         {
             foreach (int item in group.ValidItems)
             {

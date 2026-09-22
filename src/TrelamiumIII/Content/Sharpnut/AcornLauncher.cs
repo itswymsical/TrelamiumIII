@@ -57,9 +57,9 @@ public class AcornLauncherItem : ModItem
     public override void AddRecipes()
     {
         var recipe = CreateRecipe();
-        recipe.AddRecipeGroup(RecipeGroupID.Wood, 22);
+        recipe.AddRecipeGroup(RecipeGroups.Wood, 22);
         recipe.AddIngredient(ItemID.Acorn, 8);
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 5);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 5);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }
@@ -143,7 +143,7 @@ public class AcornLauncherProjectile : ModProjectile
         return false;
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         var texture = ModContent.Request<Texture2D>(Texture).Value;
         var origin = new Vector2(texture.Width * 0.3f, texture.Height * 0.55f);
@@ -203,7 +203,7 @@ public class AcornProjectile : ModProjectile
     {
         base.OnSpawn(source);
     }
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Main.instance.LoadProjectile(Projectile.type);
         var texture = TextureAssets.Projectile[Projectile.type].Value;

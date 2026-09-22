@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.Graphics.Particles;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.ExperientialSystem;
 
@@ -211,7 +212,7 @@ public sealed class ThresholdMote : Particle
         if (Tuning.Light > 0f)
             Lighting.AddLight(Position, Color.ToVector3() * Tuning.Light * Opacity);
 
-        if (Host is not { active: true } host || Progress < Tuning.OutwardPhase)
+        if (Host is not { } host || !host.IsActive() || Progress < Tuning.OutwardPhase)
             return;
 
         Vector2 toHost = host.Center - Position;

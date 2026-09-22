@@ -9,8 +9,8 @@ namespace TrelamiumIII.Core.Dialogue.Projected;
 ///     <para>
 ///         The faces have to be composed while render targets can still be swapped, which rules out
 ///         the interface layer the boxes actually draw in -- by then the back buffer is bound and
-///         setting a target would discard the frame so far. <c>CheckMonoliths</c> is where vanilla
-///         does its own off-screen work, so this hooks in alongside it.
+///         setting a target would discard the frame so far. <c>DoDraw_UpdateCameraPosition</c> runs just
+///         before vanilla does its own off-screen work, so this hooks in there.
 ///     </para>
 ///     <para>
 ///         Boxes register rather than being handed over by the <see cref="DialogueManager" />, which
@@ -32,13 +32,13 @@ public sealed class ProjectedDialogueSystem : ModSystem
         Quad = new ProjectedQuad();
         Quad.Load();
 
-        On_Main.CheckMonoliths += BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
         On_Main.OpenPlayerChat += SuppressChatWhileSpeaking;
     }
 
     public override void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
         On_Main.OpenPlayerChat -= SuppressChatWhileSpeaking;
 
         // A box is normally released the frame it finishes closing, and there is no next frame during
@@ -85,7 +85,7 @@ public sealed class ProjectedDialogueSystem : ModSystem
         orig();
     }
 
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 

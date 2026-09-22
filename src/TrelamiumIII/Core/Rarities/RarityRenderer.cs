@@ -29,7 +29,7 @@ public sealed class RarityRenderer : GlobalItem
 
         tooltips.Add(new TooltipLine(Mod, "RarityFlavor", style.Flavor.Value)
         {
-            OverrideColor = style.FlavorColor ?? style.Color * 0.75f,
+            Color = style.FlavorColor ?? style.Color * 0.75f,
         });
     }
 
@@ -43,7 +43,7 @@ public sealed class RarityRenderer : GlobalItem
             return true;
 
         var position = new Vector2(line.X, line.Y);
-        Color color = line.OverrideColor ?? line.Color;
+        Color color = line.Color;
 
         if (line.Name == "ItemName" && line.Mod == "Terraria")
         {
@@ -89,24 +89,22 @@ public sealed class RarityRenderer : GlobalItem
         PostDrawSprite(style, SlotContext(item, spriteBatch, style, position, frame, drawColor, origin, scale));
     }
 
-    public override bool PreDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation,
-        ref float scale, int whoAmI)
+    public override bool PreDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
     {
-        if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
+        if (!RarityStyles.Any || !RarityStyles.TryGet(item.inner, out var style))
             return true;
 
-        return PreDrawSprite(style, new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
-            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true));
+        return PreDrawSprite(style, new RaritySpriteContext(item.inner, spriteBatch, style, item.Center - Main.screenPosition,
+            WorldSpriteSize(item.inner, scale), lightColor, rotation, scale, inWorld: true));
     }
 
-    public override void PostDrawInWorld(Item item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale,
-        int whoAmI)
+    public override void PostDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale, int whoAmI)
     {
-        if (!RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
+        if (!RarityStyles.Any || !RarityStyles.TryGet(item.inner, out var style))
             return;
 
-        PostDrawSprite(style, new RaritySpriteContext(item, spriteBatch, style, item.Center - Main.screenPosition,
-            WorldSpriteSize(item, scale), lightColor, rotation, scale, inWorld: true));
+        PostDrawSprite(style, new RaritySpriteContext(item.inner, spriteBatch, style, item.Center - Main.screenPosition,
+            WorldSpriteSize(item.inner, scale), lightColor, rotation, scale, inWorld: true));
     }
 
     /// <summary>A slot context centred where vanilla puts the frame's centre for the origin it was given.</summary>
@@ -187,9 +185,9 @@ public sealed class RarityRenderer : GlobalItem
     #endregion
 
     /// <summary>Per-tick world hook. Also runs on servers, where flairs must not touch graphics.</summary>
-    public override void Update(Item item, ref float gravity, ref float maxFallSpeed)
+    public override void Update(WorldItem item, ref float gravity, ref float maxFallSpeed)
     {
-        if (Main.dedServ || !RarityStyles.Any || !RarityStyles.TryGet(item, out var style))
+        if (Main.dedServ || !RarityStyles.Any || !RarityStyles.TryGet(item.inner, out var style))
             return;
 
         foreach (RarityFlair flair in style.Flairs)

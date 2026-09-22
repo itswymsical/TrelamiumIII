@@ -29,7 +29,7 @@ public class TopazPendantItem : ModItem
         {
             var targetItem = Main.item[i];
 
-            if (targetItem.active && !targetItem.beingGrabbed && targetItem.noGrabDelay == 0)
+            if (targetItem.active && !targetItem.beingGrabbed && targetItem.grabDelayTime == 0)
             {
                 var distance = Vector2.Distance(player.Center, targetItem.Center);
                 if (distance <= 60f)

@@ -9,7 +9,7 @@ namespace TrelamiumIII.Core.UI.SkillTree;
 /// a blur. The field blits <see cref="Result"/> through the bloom pass.
 /// </summary>
 /// <remarks>
-/// Runs from <c>CheckMonoliths</c>, which is where Terraria expects a mod to bind its own render targets;
+/// Runs from <c>DoDraw_UpdateCameraPosition</c>, which is where Terraria expects a mod to bind its own render targets;
 /// doing it inside the interface layer would fight whatever surface the UI is already drawing to.
 /// </remarks>
 internal static class SkillTreeRenderer
@@ -35,11 +35,11 @@ internal static class SkillTreeRenderer
     /// <summary>The finished backdrop, or null until the field has submitted a frame and it has been built.</summary>
     public static RenderTarget2D? Result { get; private set; }
 
-    public static void Load() => On_Main.CheckMonoliths += BuildFrame;
+    public static void Load() => On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
 
     public static void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
 
         Release();
     }
@@ -70,7 +70,7 @@ internal static class SkillTreeRenderer
         return _bloom;
     }
 
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 
@@ -108,7 +108,7 @@ internal static class SkillTreeRenderer
 
         Pixelate(spriteBatch, device, width, height);
 
-        // Vanilla's own CheckMonoliths leaves the device on the back buffer, so an empty binding set is
+        // Vanilla leaves the device on the back buffer after its camera update, so an empty binding set is
         // the state to put back rather than something to pass to SetRenderTargets.
         if (bound.Length == 0)
             device.SetRenderTarget(null);

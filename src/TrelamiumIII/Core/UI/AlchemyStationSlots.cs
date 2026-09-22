@@ -278,7 +278,7 @@ internal class AlchemyOutputSlot : BasicItemSlot
         {
             // Hover tooltip and cursor pickup.
             if (!item.IsAir)
-                ItemSlot.MouseHover(ref item, context);
+                ItemSlot.MouseHover(item, context);
 
             if (Main.mouseLeft && Main.mouseLeftRelease && Main.mouseItem.IsAir && !item.IsAir)
             {
@@ -294,7 +294,7 @@ internal class AlchemyOutputSlot : BasicItemSlot
             return;
 
         if (AlmanacDiscoverySystem.IsUnlocked(item.type))
-            ItemSlot.MouseHover(ref item, context);
+            ItemSlot.MouseHover(item, context);
 
         if (Main.mouseLeft && Main.mouseLeftRelease)
         {

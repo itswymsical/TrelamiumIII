@@ -49,7 +49,7 @@ namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 ///     </para>
 ///     <para>
 ///         <b>Why the frame is split across two hooks.</b> The render targets are bound in
-///         <c>CheckMonoliths</c>, which is the one point in the frame where Terraria expects a mod to
+///         <c>DoDraw_UpdateCameraPosition</c>, which is the one point in the frame where Terraria expects a mod to
 ///         be claiming a target; only the finished blits happen in <c>DrawDust</c>. Binding a target
 ///         from inside the scene draw would mean stealing one mid-scene. This is the same split
 ///         <c>FieldSystem</c> uses between accumulating its field and compositing it.
@@ -337,7 +337,7 @@ internal static class InkVortex
     ///     Drives the vortex through the frame.
     /// </summary>
     /// <remarks>
-    ///     <c>CheckMonoliths</c> builds the surfaces and <c>DrawDust</c> adds them, which puts the
+    ///     <c>DoDraw_UpdateCameraPosition</c> builds the surfaces and <c>DrawDust</c> adds them, which puts the
     ///     vortex in front of tiles and entities and behind the interface -- the same band the ink
     ///     field it belongs to composites in. See the class remarks for why the two cannot be one hook.
     /// </remarks>
@@ -348,7 +348,7 @@ internal static class InkVortex
             if (Main.dedServ)
                 return;
 
-            On_Main.CheckMonoliths += static orig =>
+            On_Main.DoDraw_UpdateCameraPosition += static orig =>
             {
                 orig();
 

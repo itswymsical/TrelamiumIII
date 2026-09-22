@@ -96,7 +96,7 @@ public class DaybloomSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -167,7 +167,7 @@ public class BlinkrootSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -234,7 +234,7 @@ public class FireblossomSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -301,7 +301,7 @@ public class ShiverthornSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -369,7 +369,7 @@ public class MoonglowSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -436,7 +436,7 @@ public class DeathweedSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)
@@ -503,7 +503,7 @@ public class WaterleafSeedProjectile : ModProjectile, IDrawPrimitive
         trail2.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor) =>
+    public override bool PreDraw(Player player, ref Color lightColor) =>
         SeedTrailHelper.PreDrawDefault(this, lightColor);
 
     public override void OnKill(int timeLeft)

@@ -70,7 +70,7 @@ public class OusiaVineTile : ModTile
         WorldGen.KillTile(i, j);
         return true;
     }
-    public override void RandomUpdate(int i, int j)
+    public override void RandomUpdate(int i, int j, bool underground)
     {
         var tile = Framing.GetTileSafely(i, j + 1);
         if (WorldGen.genRand.NextBool(10) && !tile.HasTile && !(tile.LiquidType == LiquidID.Lava))

@@ -1,6 +1,7 @@
 using ReLogic.Content;
 using System.Collections.Generic;
 using TrelamiumIII.Common.Configs;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Graphics.Fields;
 
@@ -207,7 +208,7 @@ public abstract class FieldLayer
         float temperature = -1f,
         int owner = FieldNode.NoOwner)
     {
-        if (host is not { active: true } || life <= 0f || (Main.dedServ && !SimulatesHeadless))
+        if (host?.IsActive() != true || life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
 
         TrimToBudget();
@@ -318,7 +319,7 @@ public abstract class FieldLayer
     /// </summary>
     private static void FollowAnchor(ref FieldNode node)
     {
-        if (node.AnchorHost is not { active: true } host)
+        if (node.AnchorHost is not { } host || !host.IsActive())
         {
             Release(ref node);
             return;
@@ -356,7 +357,7 @@ public abstract class FieldLayer
     /// </summary>
     private static void Release(ref FieldNode node)
     {
-        if (node.AnchorHost is { active: true } host)
+        if (node.AnchorHost is { } host && host.IsActive())
             node.Velocity += host.velocity * 0.35f;
 
         node.AnchorHost = null;

@@ -251,16 +251,11 @@ internal sealed class ProjectedTooltip : IProjectedPanel
     /// </summary>
     private static Color ColorFor(Item item, TooltipLine line)
     {
-        if (line.OverrideColor.HasValue)
-            return line.OverrideColor.Value;
-
         if (line.Name == "ItemName" && line.Mod == "Terraria")
             return NameColor(item);
 
-        if (line.IsModifier)
-            return line.IsModifierBad ? new Color(190, 120, 120) : new Color(120, 190, 120);
-
-        return PanelStyle.Text;
+        // 1.4.5 resolves modifier and mod colours onto the line itself; plain lines are left white.
+        return line.Color == Color.White ? PanelStyle.Text : line.Color;
     }
 
     /// <summary>

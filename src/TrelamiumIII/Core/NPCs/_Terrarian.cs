@@ -1,4 +1,5 @@
-﻿using TrelamiumIII.Core.Components.NPCs;
+﻿using Terraria.GameContent;
+using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Trading;
@@ -93,22 +94,11 @@ public abstract class Villager : TerrarianNPC
         (int)PlayerClothingStyleID.FemaleLabcoat,
     ]);
 
-    public override void SetChatButtons(ref string button, ref string button2)
+    public override void RegisterChatButtons(NPCInteractionList interactions)
     {
-        if (!UsesTradingSystem)
-            return;
-
-        if (Trades is { Count: > 0 })
-            button = "Trade";
-    }
-
-    public override void OnChatButtonClicked(bool firstButton, ref string shop)
-    {
-        if (!UsesTradingSystem)
-            return;
-
-        if (firstButton && Trades is { Count: > 0 })
-            OpenTradeUI();
+        interactions.InsertBefore(new ChatButton<Villager>(
+            npc => npc.UsesTradingSystem && npc.Trades is { Count: > 0 } ? "Trade" : null,
+            npc => npc.OpenTradeUI()), NPCInteractionDatabase.CloseButton);
     }
     public override void SaveData(TagCompound tag)
     {

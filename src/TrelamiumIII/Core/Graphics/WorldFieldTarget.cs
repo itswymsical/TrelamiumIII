@@ -61,7 +61,7 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
     ///     Rebuilds the surface from scratch.
     /// </summary>
     /// <remarks>
-    ///     Call from <c>Main.CheckMonoliths</c>. That is the one point in the frame where Terraria
+    ///     Call from <c>Main.DoDraw_UpdateCameraPosition</c>. That is the one point in the frame where Terraria
     ///     expects mods to be binding their own render targets -- it runs before the scene is drawn
     ///     and nothing has claimed the backbuffer yet, so anywhere later means stealing a target
     ///     mid-scene and putting back whatever was there.
@@ -80,7 +80,7 @@ internal sealed class WorldFieldTarget(Action<SpriteBatch> drawContents) : ARend
         PrepareRenderTarget(Main.graphics.GraphicsDevice, Main.spriteBatch);
     }
 
-    protected override void HandleUseReqest(GraphicsDevice device, SpriteBatch spriteBatch)
+    protected override void HandleUseRequest(GraphicsDevice device, SpriteBatch spriteBatch)
     {
         int scale = Math.Max(PixelScale, 1);
 

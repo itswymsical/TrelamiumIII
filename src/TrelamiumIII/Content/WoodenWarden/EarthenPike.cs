@@ -145,7 +145,7 @@ public sealed class EarthenPike : ModProjectile
 
     public override bool CanHitPlayer(Player target) => !Embedded;
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Texture2D texture = TextureAssets.Projectile[Type].Value;
         SpriteBatch spriteBatch = Main.spriteBatch;

@@ -27,7 +27,7 @@ public abstract class DoorActor : ModTile
         Main.tileLavaDeath[Type] = true;
         TileID.Sets.HasOutlines[Type] = true;
         TileID.Sets.DisableSmartCursor[Type] = true;
-        AddToArray(ref TileID.Sets.RoomNeeds.CountsAsDoor);
+        TileID.Sets.RoomNeeds.CountsAsDoor[Type] = true;
         DustType = DustID;
         AddMapEntry(new Color(200, 200, 200), Language.GetText("MapObject.Door"));
     }

@@ -14,6 +14,7 @@ internal class CameraPathModifier : ICameraModifier
     private int SegmentTimer;
 
     public string UniqueIdentity => "TrelamiumIII Camera Path";
+    public bool IsAScreenShake => false;
     public bool Finished => CurrentSegment >= WayPoints.Count - 1;
 
     public void PassiveUpdate()

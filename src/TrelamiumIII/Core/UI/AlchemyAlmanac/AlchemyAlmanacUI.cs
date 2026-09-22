@@ -386,7 +386,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         // return item if left in slot
         Main.LocalPlayer.QuickSpawnItem(
         Main.LocalPlayer.GetSource_Misc("AlmanacSearchClear"),
-        SearchItem, SearchItem.stack);
+        SearchItem.Clone());
 
         SoundEngine.PlaySound(Assets.SFX.BookClose.Asset, Main.LocalPlayer.Center);
     }
@@ -647,7 +647,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         if (!SearchItem.IsAir)
         {
             Item s = SearchItem;
-            ItemSlot.MouseHover(ref s, ItemSlot.Context.InventoryItem);
+            ItemSlot.MouseHover(s, ItemSlot.Context.InventoryItem);
         }
 
         if (LeftPressed)
@@ -701,7 +701,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             {
                 Main.LocalPlayer.QuickSpawnItem(
                     Main.LocalPlayer.GetSource_Misc("AlmanacSearchClear"),
-                    SearchItem, SearchItem.stack);
+                    SearchItem.Clone());
             }
             SearchItem = new Item();
             OnSearchCleared();

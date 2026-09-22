@@ -160,7 +160,7 @@ public sealed class PuppetCombat
         float knockback = Player.GetWeaponKnockback(item, item.knockBack) * KnockbackMultiplier;
         int ammoItemId = 0;
 
-        if (item.melee && !ProjectileID.Sets.NoMeleeSpeedVelocityScaling[type])
+        if (item.CountsAsClass(DamageClass.Melee) && !ProjectileID.Sets.NoMeleeSpeedVelocityScaling[type])
             speed *= Player.GetTotalAttackSpeed(DamageClass.Melee);
 
         if (item.CountsAsClass(DamageClass.Throwing) && speed < 16f)

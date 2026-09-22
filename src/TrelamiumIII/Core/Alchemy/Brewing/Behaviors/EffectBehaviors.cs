@@ -37,10 +37,10 @@ public static class EffectBehaviors
                                     (p, delta) => p.pickSpeed += delta)),
 
         [BuffID.Rage] = new DeltaBehavior((0.1f, "critical chance", asPercent: true, reductionString: false,
-                                    (p, delta) => p.allCrit += delta)),
+                                    (p, delta) => p.GetCritChance(DamageClass.Generic) += delta)),
 
         [BuffID.Wrath] = new DeltaBehavior(
-            (0.1f, "damage", asPercent: true, reductionString: false, (p, delta) => p.allDamage += delta)),
+            (0.1f, "damage", asPercent: true, reductionString: false, (p, delta) => p.GetDamage(DamageClass.Generic) += delta)),
 
         [BuffID.Titan] = new DeltaBehavior(
             (0.5f, "knockback", asPercent: true, reductionString: false, (p, delta) => p.allKB += delta)),
@@ -49,7 +49,7 @@ public static class EffectBehaviors
             (0.2f, "max life", asPercent: true, reductionString: false, (p, delta) => p.statLifeMax2 += (int)delta)),
 
         [BuffID.MagicPower] = new DeltaBehavior(
-            (0.2f, "magic damage", asPercent: true, reductionString: false, (p, delta) => p.magicDamage += delta)),
+            (0.2f, "magic damage", asPercent: true, reductionString: false, (p, delta) => p.GetDamage(DamageClass.Magic) += delta)),
 
         [BuffID.ManaRegeneration] = new DeltaBehavior(
             (4f, "mana regeneration", asPercent: false, reductionString: false, (p, delta) => p.manaRegen += (int)delta)),

@@ -40,7 +40,7 @@ public sealed class PlacedTileTracker : ModSystem
     {
         bool result = orig(i, j, type, mute, forced, plr, style);
 
-        if (WorldGen.gen || !WorldGen.InWorld(i, j))
+        if (WorldGen.isGeneratingOrLoadingWorld || !WorldGen.InWorld(i, j))
             return result;
 
         // PlaceTile's return value is documented as unreliable, so confirm against the tile itself.

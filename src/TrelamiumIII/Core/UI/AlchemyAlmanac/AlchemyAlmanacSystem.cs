@@ -40,12 +40,12 @@ public class AlchemyAlmanacSystem : ModSystem
 
         _mesh = new PageFlipMesh();
         _mesh.Load();
-        On_Main.CheckMonoliths += BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition += BuildFrame;
     }
 
     public override void Unload()
     {
-        On_Main.CheckMonoliths -= BuildFrame;
+        On_Main.DoDraw_UpdateCameraPosition -= BuildFrame;
 
         // The mesh contains graphics resources, so it must be disposed on the main thread too.
         // Snapshot to a local before nulling the field: the queued lambda runs after
@@ -93,7 +93,7 @@ public class AlchemyAlmanacSystem : ModSystem
     private static RenderTarget2D NewPageTarget(GraphicsDevice d, int w, int h) =>
         new(d, w, h, false, SurfaceFormat.Color, DepthFormat.None);
 
-    private static void BuildFrame(On_Main.orig_CheckMonoliths orig)
+    private static void BuildFrame(On_Main.orig_DoDraw_UpdateCameraPosition orig)
     {
         orig();
 

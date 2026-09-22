@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
@@ -127,7 +128,7 @@ public sealed class SporeField : FieldLayer
     /// </summary>
     public static void Cling(Entity host, float intensity)
     {
-        if (Layer is not { } layer || host is not { active: true })
+        if (Layer is not { } layer || host?.IsActive() != true)
             return;
 
         intensity = MathHelper.Clamp(intensity, 0f, 1f);

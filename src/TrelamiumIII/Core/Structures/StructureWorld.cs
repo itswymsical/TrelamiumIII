@@ -58,9 +58,12 @@ public static class StructureWorld
             if (chest is null || !Anchored(data, area, chest.x, chest.y))
                 continue;
 
-            var record = new StructureChest { X = chest.x - area.X, Y = chest.y - area.Y, Name = chest.name ?? string.Empty };
+            var record = new StructureChest
+            {
+                X = chest.x - area.X, Y = chest.y - area.Y, Name = chest.name ?? string.Empty, Items = new Item?[chest.maxItems]
+            };
 
-            for (int slot = 0; slot < Chest.maxItems; slot++)
+            for (int slot = 0; slot < chest.maxItems; slot++)
             {
                 if (chest.item[slot] is { IsAir: false } item)
                     record.Items[slot] = item.Clone();
@@ -178,35 +181,19 @@ public static class StructureWorld
     }
 
     /// <summary>
-    ///     Reframes tiles and walls in <paramref name="area"/> and the ring around it. Tile actions and liquid checks are off,
-    ///     as in <see cref="WorldGen.EveryTileFrame"/>, so sand doesn't fall and broken objects drop nothing.
+    ///     Reframes tiles and walls in <paramref name="area"/> and the ring around it through <see cref="WorldGen.Reframe"/>,
+    ///     so objects don't break. During generation that is cosmetic framing only; outside it, 1.4.5 has no switch that
+    ///     stops unsupported sand from falling.
     /// </summary>
     public static void Frame(Rectangle area)
     {
-        bool tileActions = WorldGen.noTileActions;
-        bool liquidCheck = WorldGen.noLiquidCheck;
-
-        WorldGen.noTileActions = true;
-        WorldGen.noLiquidCheck = true;
-
-        try
+        for (int i = area.Left - 1; i <= area.Right; i++)
         {
-            for (int i = area.Left - 1; i <= area.Right; i++)
+            for (int j = area.Top - 1; j <= area.Bottom; j++)
             {
-                for (int j = area.Top - 1; j <= area.Bottom; j++)
-                {
-                    if (!WorldGen.InWorld(i, j, 1))
-                        continue;
-
-                    WorldGen.TileFrame(i, j);
-                    Framing.WallFrame(i, j);
-                }
+                if (WorldGen.InWorld(i, j, 1))
+                    WorldGen.Reframe(i, j);
             }
-        }
-        finally
-        {
-            WorldGen.noTileActions = tileActions;
-            WorldGen.noLiquidCheck = liquidCheck;
         }
     }
 
@@ -265,8 +252,8 @@ public static class StructureWorld
             Chest chest = Main.chest[index];
             chest.name = record.Name;
 
-            for (int slot = 0; slot < Chest.maxItems; slot++)
-                chest.item[slot] = record.Items[slot]?.Clone() ?? new Item();
+            for (int slot = 0; slot < chest.maxItems; slot++)
+                chest.item[slot] = (slot < record.Items.Length ? record.Items[slot]?.Clone() : null) ?? new Item();
 
             if (record.Loot.Count == 0)
                 continue;

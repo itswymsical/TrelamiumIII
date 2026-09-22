@@ -41,15 +41,15 @@ public class LodestoneItem : ModItem, IAlmanacDefined
         MagnetizeItemsHeld(player);
     }
 
-    public override void Update(ref float gravity, ref float maxFallSpeed)
+    public override void Update(WorldItem item, ref float gravity, ref float maxFallSpeed)
     {
-        base.Update(ref gravity, ref maxFallSpeed);
-        if (Item.IsAir && !Item.active)
+        base.Update(item, ref gravity, ref maxFallSpeed);
+        if (item.IsAir && !item.active)
         {
             return;
         }
 
-        MagnetizeItems_World();
+        MagnetizeItems_World(item);
     }
 
     private void MagnetizeItemsHeld(Player player)
@@ -59,11 +59,11 @@ public class LodestoneItem : ModItem, IAlmanacDefined
         MagnetizeItems(player.Center, range, maxSpeed);
     }
 
-    private void MagnetizeItems_World()
+    private void MagnetizeItems_World(WorldItem item)
     {
         (var range, var maxSpeed) = CalculateEnhancedValues();
 
-        MagnetizeItems(Item.Center, range, maxSpeed);
+        MagnetizeItems(item.Center, range, maxSpeed);
     }
 
     private void MagnetizeItems(Vector2 center, float range, float maxSpeed)
@@ -72,8 +72,8 @@ public class LodestoneItem : ModItem, IAlmanacDefined
         {
             var targetItem = Main.item[i];
 
-            if (targetItem.active && !targetItem.beingGrabbed && targetItem.noGrabDelay == 0 &&
-                targetItem != Item && ItemUtils.IsAMetalItem(targetItem))
+            if (targetItem.active && !targetItem.beingGrabbed && targetItem.grabDelayTime == 0 &&
+                targetItem.inner != Item && ItemUtils.IsAMetalItem(targetItem.inner))
             {
                 var distance = Vector2.Distance(center, targetItem.Center);
                 if (distance <= range)

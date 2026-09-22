@@ -13,7 +13,7 @@ internal static class VanillaInventoryLayout
     private const float SCALE_COMPACT = 0.755f;
 
     public static bool ContainerOpen
-        => (Main.LocalPlayer.chest != -1 || Main.npcShop > 0) && !Main.recBigList;
+        => (Main.LocalPlayer.chest != -1 || Main.npcShop > 0) && !Main.PipsUseGrid;
 
     /// <summary>
     /// Where the trash slot sits this frame and the scale it draws at. Vanilla drops it clear of the

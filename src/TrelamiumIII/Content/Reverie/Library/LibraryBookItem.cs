@@ -49,7 +49,7 @@ public sealed class LibraryBookItem : ModItem
         if (Book is not { } book)
             return;
 
-        tooltips.Add(new TooltipLine(Mod, "LibraryCategory", LibraryCatalog.CategoryName(book.Category)) { OverrideColor = new Color(255, 214, 140) });
+        tooltips.Add(new TooltipLine(Mod, "LibraryCategory", LibraryCatalog.CategoryName(book.Category)) { Color = new Color(255, 214, 140) });
         tooltips.Add(new TooltipLine(Mod, "LibraryBorrowed", this.GetLocalization("Borrowed").Value));
     }
 
@@ -65,13 +65,13 @@ public sealed class LibraryBookItem : ModItem
         return false;
     }
 
-    public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
+    public override bool PreDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
     {
         if (Book is not { } book)
             return true;
 
         Texture2D cover = book.Cover();
-        Vector2 position = Item.Bottom - Main.screenPosition - new Vector2(0f, cover.Height * 0.5f * scale);
+        Vector2 position = item.Bottom - Main.screenPosition - new Vector2(0f, cover.Height * 0.5f * scale);
         spriteBatch.Draw(cover, position, null, lightColor, rotation, cover.Size() * 0.5f, scale, SpriteEffects.None, 0f);
 
         return false;

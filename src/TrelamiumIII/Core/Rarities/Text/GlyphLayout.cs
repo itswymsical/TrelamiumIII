@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ReLogic.Graphics;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Rarities.Text;
 
@@ -64,9 +65,7 @@ public sealed class GlyphLayout
             if (character == '\r')
                 continue;
 
-            DynamicSpriteFont.SpriteCharacterData data = font.SpriteCharacters.TryGetValue(character, out var found)
-                ? found
-                : font.DefaultCharacterData;
+            DynamicSpriteFont.SpriteCharacterData data = font.GetCharacterData(character);
 
             Vector3 kerning = data.Kerning;
 
@@ -150,7 +149,7 @@ public sealed class GlyphLayout
 
         float baseline = font.LineSpacing * 0.75f;
 
-        if (font.SpriteCharacters.TryGetValue('H', out DynamicSpriteFont.SpriteCharacterData data) && data.Glyph.Height > 0)
+        if (font.TryGetCharacterData('H', out var data) && data.Glyph.Height > 0)
             baseline = data.Padding.Y + data.Glyph.Height;
 
         baselines[font] = baseline;

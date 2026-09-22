@@ -132,10 +132,10 @@ public class JungleTerrarian : Villager
         return pool[Main.rand.Next(pool.Count)];
     }
 
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    public override float SpawnChance(NPC.Spawner spawner)
     {
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneJungle && 
-            !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow
+        return spawner.Player.ZoneOverworldHeight && Main.dayTime && spawner.Player.ZoneJungle && 
+            !spawner.Player.ZoneCorrupt && !spawner.Player.ZoneCrimson && !spawner.Player.ZoneHallow
             ? 0.15f : 0f;
     }
 

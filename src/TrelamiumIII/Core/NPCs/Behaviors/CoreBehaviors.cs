@@ -1,4 +1,5 @@
 using Terraria.GameContent.UI;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.NPCs.Behaviors;
 
@@ -272,7 +273,7 @@ public sealed class Follow : Behavior
         NPC npc = ctx.NPC;
         Entity target = resolveTarget?.Invoke(ctx);
 
-        if (target is not { active: true } || target is Player { dead: true })
+        if (target?.IsActive() != true || target is Player { dead: true })
         {
             BehaviorMovement.Decelerate(npc);
             return;

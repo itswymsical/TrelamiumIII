@@ -252,7 +252,6 @@ public abstract class WorldNPC : ModNPC
     public void Despawn()
     {
         NPC.active = false;
-        NPC.netSkip = -1;
         NPC.life = 0;
 
         if (Main.netMode == NetmodeID.Server)

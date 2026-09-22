@@ -439,12 +439,12 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
 
         for (int i = 0; i < Main.maxItems; i++)
         {
-            Item item = Main.item[i];
+            WorldItem item = Main.item[i];
 
-            if (!item.active || item.noGrabDelay != 0 || item.type == ItemID.None)
+            if (!item.active || item.grabDelayTime != 0 || item.type == ItemID.None)
                 continue;
 
-            if (!ItemUtils.IsAMetalItem(item) && !item.IsGem())
+            if (!ItemUtils.IsAMetalItem(item.inner) && !item.inner.IsGem())
                 continue;
 
             float distance = Vector2.Distance(item.Center, Projectile.Center);
@@ -707,12 +707,12 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
             if (itemIndex >= Main.item.Length || !Main.item[itemIndex].active)
                 continue;
 
-            Item item = Main.item[itemIndex];
+            WorldItem item = Main.item[itemIndex];
 
             item.beingGrabbed = false;
             item.velocity *= 0.5f;
             item.velocity.Y -= 1f;
-            item.noGrabDelay = 0;
+            item.grabDelayTime = 0;
         }
 
         _magnetizedItems.Clear();
@@ -731,7 +731,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
     /// <summary>
     ///     Draws the gun; the ribbon goes through <see cref="DrawPrimitives" /> and the shimmer through <see cref="MagnetizerFieldRenderer" />.
     /// </summary>
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         var texture = ModContent.Request<Texture2D>(Texture).Value;
 

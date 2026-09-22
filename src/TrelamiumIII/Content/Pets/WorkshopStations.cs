@@ -27,11 +27,10 @@ public sealed class CraftingStationRegistry : ModSystem
 
         for (int i = 0; i < Recipe.numRecipes; i++)
         {
-            foreach (int tile in Main.recipe[i].requiredTile)
-            {
-                if (tile >= 0)
-                    stations.Add(tile);
-            }
+            int tile = Main.recipe[i].requiredTile;
+
+            if (tile >= 0)
+                stations.Add(tile);
         }
 
         // A station that stands in for another is worth carrying even if nothing asks for it
@@ -275,8 +274,8 @@ public sealed class WorkshopPlayer : ModPlayer
 }
 
 /// <summary>
-///     Lifts the workshop's stations out before vanilla's adjacency pass and restores them after, so its before/after comparison
-///     doesn't see them vanish every frame and rebuild the recipe list (resetting the selection). Rebuilds only on real changes.
+///     Lifts the workshop's stations out before vanilla's adjacency pass and restores them after it. 1.4.5 rebuilds the recipe
+///     list every inventory frame, so a station change needs no refresh here.
 /// </summary>
 public sealed class WorkshopAdjacencySystem : ModSystem
 {
@@ -293,8 +292,5 @@ public sealed class WorkshopAdjacencySystem : ModSystem
         orig(self);
 
         workshop.ApplyStations();
-
-        if (workshop.StationsChanged() && self.whoAmI == Main.myPlayer)
-            Recipe.FindRecipes();
     }
 }

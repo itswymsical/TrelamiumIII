@@ -3,6 +3,7 @@ using System.Text;
 using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.UI.Chat;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Core.Books.Text;
 
@@ -103,7 +104,7 @@ public static class BookText
     /// <returns>False when the font has no baked entry for the character.</returns>
     public static bool TryGetGlyphInk(DynamicSpriteFont font, char character, out float height, out float topBearing)
     {
-        if (font.SpriteCharacters.TryGetValue(character, out DynamicSpriteFont.SpriteCharacterData data)
+        if (font.TryGetCharacterData(character, out var data)
             && data.Glyph.Height > 0)
         {
             height = data.Glyph.Height;
@@ -158,7 +159,7 @@ public static class BookText
             // Icon snippets report their own size and never split (asked at the combined scale); snippets that draw text opt
             // into word wrap instead.
             if (snippet is not IWrappableSnippet
-                && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale * snippet.Scale))
+                && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale))
             {
                 if (!builder.IsEmpty && builder.Width + unique.X > Limit())
                     lines.Add(builder.Flush(false));
@@ -308,7 +309,7 @@ public static class BookText
             var wrappable = snippet as IWrappableSnippet;
 
             if (wrappable is null
-                && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale * snippet.Scale))
+                && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale))
             {
                 pieceScratch.Add(new TextPiece(snippet, i, 0f, unique.X));
                 natural += unique.X;
@@ -320,7 +321,7 @@ public static class BookText
                 if (word.Length == 0)
                     continue;
 
-                float width = wrappable?.MeasureText(word, scale) ?? font.MeasureString(word).X * scale * snippet.Scale;
+                float width = wrappable?.MeasureText(word, scale) ?? font.MeasureString(word).X * scale;
 
                 pieceScratch.Add(new TextPiece(snippet.CopyMorph(word), i, 0f, width));
                 natural += width;
@@ -429,10 +430,10 @@ public static class BookText
         if (snippet is IWrappableSnippet wrappable)
             return wrappable.MeasureText(snippet.Text, scale);
 
-        if (snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale * snippet.Scale))
+        if (snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale))
             return unique.X;
 
-        return font.MeasureString(snippet.Text).X * scale * snippet.Scale;
+        return font.MeasureString(snippet.Text).X * scale;
     }
 
     /// <summary>
@@ -453,12 +454,12 @@ public static class BookText
         public float MeasureWord(TextSnippet source, string word) =>
             source is IWrappableSnippet wrappable
                 ? wrappable.MeasureText(word, scale)
-                : font.MeasureString(word).X * scale * source.Scale;
+                : font.MeasureString(word).X * scale;
 
         public float MeasureSpace(TextSnippet source) =>
             source is IWrappableSnippet wrappable
                 ? wrappable.MeasureText(" ", scale)
-                : font.MeasureString(" ").X * scale * source.Scale;
+                : font.MeasureString(" ").X * scale;
 
         public void AddAtomic(TextSnippet snippet, float width)
         {
@@ -498,9 +499,9 @@ public static class BookText
                 width += SnippetWidth(snippet, font, scale);
 
                 float h = snippet is not IWrappableSnippet
-                          && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale * snippet.Scale)
+                          && snippet.UniqueDraw(true, out Vector2 unique, null, default, Color.White, scale)
                     ? unique.Y
-                    : font.MeasureString(snippet.Text).Y * scale * snippet.Scale;
+                    : font.MeasureString(snippet.Text).Y * scale;
 
                 height = Math.Max(height, h);
             }

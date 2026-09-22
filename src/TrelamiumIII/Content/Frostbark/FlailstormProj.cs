@@ -120,7 +120,6 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     {
         ProjectileID.Sets.TrailCacheLength[Projectile.type] = 6;
         ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
-        ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
     }
 
     public override void SetDefaults()
@@ -574,7 +573,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
         trail.Render(effect);
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         var texture = TextureAssets.Projectile[Projectile.type].Value;
         var drawPos = Projectile.Center - Main.screenPosition + new Vector2(0f, Projectile.gfxOffY);
@@ -608,8 +607,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     private void DrawChain()
     {
-        var playerArmPos = Main.GetPlayerArmPosition(Projectile);
-        playerArmPos.Y -= Main.player[Projectile.owner].gfxOffY;
+        var playerArmPos = Main.player[Projectile.owner].GetArmPosition();
 
         var chainTexture = ModContent.Request<Texture2D>(CHAIN_TEXTURE_PATH);
         var chainOrigin = chainTexture.Size() * 0.5f;
@@ -817,5 +815,5 @@ public class FrostCloudProj : ModProjectile
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
         => modifiers.HitDirectionOverride = Math.Sign(target.Center.X - Projectile.Center.X);
 
-    public override bool PreDraw(ref Color lightColor) => false;
+    public override bool PreDraw(Player player, ref Color lightColor) => false;
 }

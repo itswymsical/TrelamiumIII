@@ -89,7 +89,7 @@ public class GelBallProjectile : ModProjectile
         target.AddBuff(BuffID.Slimed, 5 * 60);
     }
 
-    public override bool PreDraw(ref Color lightColor)
+    public override bool PreDraw(Player player, ref Color lightColor)
     {
         Main.instance.LoadProjectile(Projectile.type);
         var texture = TextureAssets.Projectile[Projectile.type].Value;

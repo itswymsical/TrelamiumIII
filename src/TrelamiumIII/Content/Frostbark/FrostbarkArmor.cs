@@ -14,7 +14,7 @@ public class FrostbarkGreaves : ModItem
     public override void AddRecipes()
     {
         var recipe = CreateRecipe();
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 4);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 4);
         recipe.AddIngredient(ItemID.BorealWood, 16);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
@@ -40,7 +40,7 @@ public class FrostbarkHauberk : ModItem
     {
         var recipe = CreateRecipe();
         recipe.AddIngredient(ItemID.IceBlock, 8);
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 5);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 5);
         recipe.AddIngredient(ItemID.BorealWood, 16);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
@@ -72,7 +72,8 @@ public class FrostbarkHelm : ModItem
 
     public override void UpdateArmorSet(Player player)
     {
-        player.setBonus = "You become immune to the 'Chilled' debuff and gain resistance towards cold sources.";
+        // Player.setBonus is gone in 1.4.5 and tML has no modded set-bonus text yet; restore when it does:
+        // "You become immune to the 'Chilled' debuff and gain resistance towards cold sources."
         player.resistCold = true;
         player.buffImmune[BuffID.Chilled] = true;
     }
@@ -80,7 +81,7 @@ public class FrostbarkHelm : ModItem
     {
         var recipe = CreateRecipe();
         recipe.AddIngredient(ItemID.IceBlock, 12);
-        recipe.AddRecipeGroup(RecipeGroupID.IronBar, 6);
+        recipe.AddRecipeGroup(RecipeGroups.IronBar, 6);
         recipe.AddIngredient(ItemID.BorealWood, 8);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();

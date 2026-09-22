@@ -79,7 +79,7 @@ public class FlowerSatchelItem : ModItem
         SoundEngine.PlaySound(SoundID.MenuOpen);
     }
 
-    public override bool CanPickup(Player player)
+    public override bool CanPickup(WorldItem item, Player player)
         => !player.HasItemInAnyInventory(ModContent.ItemType<FlowerSatchelItem>());
 
     #region Serialization & Network
