@@ -10,7 +10,7 @@ namespace TrelamiumIII.Common.Systems;
 /// so a rising count only marks each client's own player as worth re-evaluating; the unlocking itself
 /// is <see cref="JobPlayer"/>'s.
 /// </remarks>
-public class WorldTimeSystem : ModSystem
+public class WorldTimeSystem : ModSystem, Subworlds.ISharedWorldData
 {
     public static int TotalDaysElapsed;
 

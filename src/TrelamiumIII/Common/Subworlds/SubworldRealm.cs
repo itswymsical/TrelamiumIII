@@ -53,6 +53,11 @@ public abstract class SubworldRealm : Subworld
         _ = DisplayName;
     }
 
+    public override void CopySubworldData() => SharedWorldData.Copy();
+
+    /// <summary>Runs in the destination, after it loaded or generated; see <see cref="SharedWorldData"/>.</summary>
+    public override void ReadCopiedSubworldData() => SharedWorldData.Read();
+
     /// <summary>Only while entering this realm; leaving it keeps vanilla's menu music.</summary>
     public override bool ChangeAudio()
     {

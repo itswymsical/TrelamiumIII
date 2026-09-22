@@ -96,7 +96,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
     //}
 }
 
-public class SilvianSystem : ModSystem
+public class SilvianSystem : ModSystem, Common.Subworlds.ISharedWorldData
 {
     public static bool firstChatHappened;
 

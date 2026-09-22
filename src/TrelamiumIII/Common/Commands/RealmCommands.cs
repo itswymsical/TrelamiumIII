@@ -26,7 +26,7 @@ public class RealmCommands : ModCommand
 
     public override CommandType Type => CommandType.Chat | CommandType.World;
 
-    public override string Usage => "/realm [ingress|treelab] [instant]";
+    public override string Usage => "/realm [ingress|reverie|treelab] [instant]";
 
     public override string Description => "teleports you the realm, folk.";
 
@@ -42,6 +42,9 @@ public class RealmCommands : ModCommand
                 break;
             case "ingress":
                 RealmTransition.Enter<IngressRealm>();
+                break;
+            case "reverie":
+                RealmTransition.Enter<ReverieRealm>();
                 break;
             case "treelab":
                 SubworldSystem.Enter<CanopyTreeLabRealm>();

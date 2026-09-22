@@ -7,7 +7,7 @@ namespace TrelamiumIII.Common.Systems;
 ///     Per-world progression flags. Set them through <see cref="NPC.SetEventFlagCleared" />, which announces the
 ///     kill and syncs clients; <see cref="NetSend" /> brings late joiners up to date.
 /// </summary>
-public sealed class DownedBossSystem : ModSystem
+public sealed class DownedBossSystem : ModSystem, Subworlds.ISharedWorldData
 {
     public static bool DownedFungore;
 

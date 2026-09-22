@@ -5,6 +5,7 @@ using Terraria.IO;
 using Terraria.Utilities;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Caves;
+using TrelamiumIII.Common.Generation.Fortress;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Content.Ingress;
@@ -40,6 +41,9 @@ public class IngressRealm : SubworldRealm
     private CaveNetwork? caves;
     private Rectangle treeArea;
 
+    /// <summary> The Ligneous Fortress of the last generation; null before one and in multiplayer clients. </summary>
+    internal FortressLayout? Fortress { get; private set; }
+
     public override int Width => 4200;
     public override string Name => "Ingress";
     public override int Height => 1280;
@@ -54,6 +58,7 @@ public class IngressRealm : SubworldRealm
         new SmoothPass("Smoothing Tiles", 100f),
         new IngressCanopyTree(this),
         new IngressCaveFeatures(this),
+        new IngressFortress(this),
         new IngressCavePools(),
         new IngressVegetation(),
         new IngressFlora(),
@@ -148,6 +153,8 @@ public class IngressRealm : SubworldRealm
         private const int WallDepthMax = 6;
         private const int MoundClearance = 60;
         private const int HubOffsetMax = 30;
+        private const int FortressShiftMax = 60;
+        private const int FortressBottomMargin = 100;
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
@@ -166,6 +173,8 @@ public class IngressRealm : SubworldRealm
 
             realm.layout = new Layout(surfaceY, siteX, siteY, WorldGen.genRand.Next(-HubOffsetMax, HubOffsetMax + 1),
                 WorldGen.genRand.Next(), WorldGen.genRand.NextBool(2) ? 1 : -1);
+
+            realm.Fortress = PlanFortress(realm.layout);
 
             Main.worldSurface = surfaceY + HeightAmplitude + WorldSurfaceMargin;
             Main.rockLayer = realm.layout.RockLayerY;
@@ -205,6 +214,15 @@ public class IngressRealm : SubworldRealm
                 float blend = MathF.Min(distance / SiteBlendWidth, 1f);
                 return (int)MathF.Round(MathHelper.Lerp(siteY, NaturalHeight(x), blend * blend * (3f - 2f * blend)));
             }
+        }
+
+        /// <summary> Deep under the canopy tree, shifted part of the way toward the spawn side. </summary>
+        private static FortressLayout PlanFortress(Layout layout)
+        {
+            int centerX = layout.SiteX + layout.SpawnSide * WorldGen.genRand.Next(FortressShiftMax + 1);
+            var origin = new Point(centerX - FortressLayout.TotalWidth / 2, Main.maxTilesY - FortressBottomMargin - FortressLayout.TotalHeight);
+
+            return FortressLayout.Create(origin, new UnifiedRandom(WorldGen.genRand.Next()));
         }
 
         private static void PlaceMounds(int surfaceY, int siteX)
@@ -366,6 +384,10 @@ public class IngressRealm : SubworldRealm
         private const float GrottoHeightMin = 14f;
         private const float GrottoHeightMax = 20f;
 
+        private const int FortressClearance = 20;
+        private const float GateOpeningRadius = 6f;
+        private const float GateOpeningWarp = 2f;
+
         private const int PocketCount = 35;
         private const int PocketTopBelowSurface = 60;
         private const int PocketRadiusMin = 2;
@@ -401,6 +423,13 @@ public class IngressRealm : SubworldRealm
             network.Nodes.Add(hub);
             network.Reserved.Add(trunkColumn);
 
+            if (realm.Fortress is { } fortress)
+            {
+                Rectangle fortressArea = fortress.Bounds;
+                fortressArea.Inflate(FortressClearance, FortressClearance);
+                network.Reserved.Add(fortressArea);
+            }
+
             foreach ((float heading, int length) in Branches(random))
                 network.GrowBranch(hub, heading, length, BranchSettings, (entry, nodeHeading) => CreateNode(random, entry, nodeHeading));
 
@@ -419,6 +448,9 @@ public class IngressRealm : SubworldRealm
                 carver.CarveTunnel(from.Exit, to.Entry);
                 progress.Set(++done / (double)total * 0.8);
             }
+
+            if (realm.Fortress is { } gated)
+                ConnectFortress(carver, network, gated);
 
             CarvePockets(carver, random, layout.SurfaceY + PocketTopBelowSurface, trunkColumn);
 
@@ -465,6 +497,28 @@ public class IngressRealm : SubworldRealm
             }
 
             return new CavernNode(entry, random.NextFloat(CavernRadiusMin, CavernRadiusMax));
+        }
+
+        /// <summary>
+        /// A tunnel from the node above the fortress nearest its gate, ending in a blob that opens onto the roof; the
+        /// tunnel alone stops a few tiles short of its target.
+        /// </summary>
+        private static void ConnectFortress(CaveCarver carver, CaveNetwork network, FortressLayout fortress)
+        {
+            Vector2 gate = fortress.GateApproach.ToVector2();
+            CaveNode? nearest = null;
+
+            foreach (CaveNode node in network.Nodes)
+            {
+                if (node.Bounds.Bottom < fortress.Bounds.Top && (nearest is null || Vector2.DistanceSquared(node.Exit, gate) < Vector2.DistanceSquared(nearest.Exit, gate)))
+                    nearest = node;
+            }
+
+            if (nearest is null)
+                return;
+
+            carver.CarveTunnel(nearest.Exit, gate);
+            carver.CarveBlob(gate, GateOpeningRadius, GateOpeningWarp);
         }
 
         /// <summary> The lower trunk's column from the top of the world to the hub, widened so no node cuts into it. </summary>
@@ -554,6 +608,18 @@ public class IngressRealm : SubworldRealm
                 node.Decorate();
 
             realm.caves = null;
+        }
+    }
+
+    /// <summary> After smoothing so the brickwork stays square, and before the pools and flora so they see its gate. </summary>
+    private class IngressFortress(IngressRealm realm) : GenPass("[T3] Ligneous Fortress", 60f)
+    {
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "Raising the Ligneous Fortress";
+
+            if (realm.Fortress is { } fortress)
+                FortressBuilder.Build(fortress, WorldGen.genRand);
         }
     }
 

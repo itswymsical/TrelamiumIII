@@ -1030,6 +1030,12 @@ Tiles: {
 	MyconidSporeTile.MapEntry: Myconid Spore
 	SpruceChestTile.MapEntry: Spruce Chest
 	SpruceDresserTile.MapEntry: Spruce Dresser
+
+	WardenAltarTile: {
+		MapEntry: Altar of Ingress
+		Summon: Awaken the Warden
+		Enter: Step through the Scar
+	}
 }
 
 Projectiles: {
@@ -1337,7 +1343,7 @@ Subworlds: {
 		}
 	}
 
-	TrelamiumIII.DisplayName: Reverie
+	Reverie.DisplayName: Reverie
 	CanopyTreeLab.DisplayName: Canopy Tree Lab
 	StructureLab.DisplayName: Structure Lab
 }

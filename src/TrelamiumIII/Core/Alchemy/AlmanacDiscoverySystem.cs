@@ -8,7 +8,7 @@ namespace TrelamiumIII.Core.Alchemy;
 /// <summary>
 /// Per-world Almanac discovery: brewed outputs and obtained materials. Hidden ingredient entries show as "?" until obtained.
 /// </summary>
-public class AlmanacDiscoverySystem : ModSystem
+public class AlmanacDiscoverySystem : ModSystem, Common.Subworlds.ISharedWorldData
 {
     private static readonly HashSet<int> _unlocked = new();      // brewed outputs
     private static readonly HashSet<int> _ingredients = new();   // obtained materials

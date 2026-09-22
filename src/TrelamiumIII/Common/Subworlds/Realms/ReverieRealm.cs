@@ -1,78 +1,68 @@
-﻿using SubworldLibrary;
+using SubworldLibrary;
 using System.Collections.Generic;
-using Terraria.GameContent;
 using Terraria.IO;
 using Terraria.WorldBuilding;
-using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Common.Subworlds.Realms;
 
-public class TrelamiumIIIRealm : SubworldRealm
+/// <summary>
+/// Reverie, the Library of Knowledge, entered through the scarred Altar of Ingress. A bare hall until the library
+/// itself is generated.
+/// </summary>
+public class ReverieRealm : SubworldRealm
 {
+    private const int FloorDepth = 40;
+    private const int HallHeight = 60;
+
     public override int Width => 720;
-    public override string Name => "TrelamiumIII";
+    public override string Name => "Reverie";
     public override int Height => 256;
 
-    public override List<GenPass> Tasks => [ new TrelamiumIIIDunesPass() ];
+    public override List<GenPass> Tasks => [new ReverieHallPass()];
     public override bool ShouldSave => false;
     public override bool NormalUpdates => true;
     public override bool NoPlayerSaving => false;
 
+    /// <summary> Top row of the hall floor. </summary>
+    public static int FloorY => Main.maxTilesY - FloorDepth;
+
+    public override void OnEnter() => SubworldSystem.hideUnderworld = true;
+
     public override void Update()
     {
-        ManageGameConditions();
-        // RenderScreenEffects();
-    }
-
-    private void RenderScreenEffects()
-    {
-        ChromaticScreenEffect.Set(0.4f, 1.25f, 1);
-    }
-
-    private void ManageGameConditions()
-    {
-        var player = Main.LocalPlayer;
-        if (player.ZoneForest || player.ZoneSkyHeight || player.ZonePurity)
-            player.ZoneDesert = true;
-
-
-        if (player.ZoneRockLayerHeight)
-            player.ZoneUndergroundDesert = true;
-
         if (Main.raining)
-        {
             Main.StopRain();
-            Main.raining = false;
-            Main.slimeRain = false;
-        }
 
-        if (Main.slimeRain)
-            Main.slimeRain = false;
-
+        Main.slimeRain = false;
         Main.townNPCCanSpawn[default] = false;
     }
 
-    public override void OnEnter() => SubworldSystem.hideUnderworld = true;  
-}
-
-public class TrelamiumIIIDunesPass : GenPass
-{
-    public TrelamiumIIIDunesPass() : base("[T3] Dunes", 247.43f) { }
-
-    protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+    private class ReverieHallPass() : GenPass("[T3] Reverie Hall", 1f)
     {
-        progress.Message = "Generating Blank";
-
-        int surfaceY = Main.maxTilesY / 3;
-
-        for (int y = surfaceY; y < Main.maxTilesY; y++)
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
+            progress.Message = "Shelving the library";
+
+            int floorY = FloorY;
+
+            Main.worldSurface = floorY + 10;
+            Main.rockLayer = floorY + 20;
+            Main.spawnTileX = Main.maxTilesX / 2;
+            Main.spawnTileY = floorY;
+
             for (int x = 0; x < Main.maxTilesX; x++)
             {
-                Tile tile = Main.tile[x, y];
+                for (int y = floorY - HallHeight; y < Main.maxTilesY; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+                    tile.WallType = WallID.Wood;
 
-                tile.HasTile = true;
-                tile.TileType = TileID.DiamondGemspark;
+                    if (y < floorY)
+                        continue;
+
+                    tile.HasTile = true;
+                    tile.TileType = TileID.WoodBlock;
+                }
             }
         }
     }
