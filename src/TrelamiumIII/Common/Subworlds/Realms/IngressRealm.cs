@@ -8,6 +8,7 @@ using TrelamiumIII.Common.Generation.Caves;
 using TrelamiumIII.Common.Generation.Fortress;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
+using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Content.Ingress.Transition;
 using TrelamiumIII.Core.Graphics.Cinematics;
@@ -107,6 +108,13 @@ public class IngressRealm : SubworldRealm
     }
 
     public override void OnEnter() => SubworldSystem.hideUnderworld = true;
+
+    /// <summary> After <see cref="ModSystem.OnWorldLoad"/>, which clears protected areas; a realm loaded from file keeps its saved ones. </summary>
+    public override void OnLoad()
+    {
+        if (Fortress is { } fortress && StructureProtectionSystem.ProtectedAreas.Count == 0)
+            StructureProtectionSystem.ProtectedAreas.AddRange(fortress.ProtectedAreas);
+    }
 
     /// <summary> Carves only the hub cave for <paramref name="shaftEnd"/>, for previews outside the realm; returns the cleared area. </summary>
     public static Rectangle CarveHub(Point shaftEnd, int seed)

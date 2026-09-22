@@ -84,6 +84,13 @@ public sealed class FortressLayout
     /// <summary> Just above the roof over <see cref="Gate"/>, where the caves connect. </summary>
     public Point GateApproach => new(Gate.Center.X, Bounds.Top - 2);
 
+    /// <summary> The block around the grid down to where the outline tapers, and the block around the arena. </summary>
+    public Rectangle[] ProtectedAreas =>
+    [
+        new(Bounds.Left, Bounds.Top, Bounds.Width, Grid.Bottom + Shell - Wall - Bounds.Top),
+        new(Arena.Left - Shell, Grid.Bottom, Arena.Width + Shell * 2, Bounds.Bottom - Grid.Bottom)
+    ];
+
     private FortressLayout(Point origin, List<Point> route)
     {
         Bounds = new Rectangle(origin.X, origin.Y, TotalWidth, TotalHeight);

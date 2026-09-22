@@ -1153,6 +1153,16 @@ NPCs: {
 		Epithet: The Guardian of Ingress
 	}
 
+	Edith: {
+		DisplayName: Edith
+
+		Chat: {
+			Welcome: Welcome to Reverie. Keep your voice down; the books are sleeping.
+			Shelves: Every book that has ever existed is shelved here somewhere. Finding it is another matter.
+			Checkout: The ledger isn't open yet. Come back once the desk is in order.
+		}
+	}
+
 	Bushwhack: {
 		DisplayName: Bushwhack
 		Bestiary: A bundle of foliage wandering around the Garden of Ingress. It ambles through the caves on root, minding its business.
@@ -1353,7 +1363,16 @@ Subworlds: {
 		}
 	}
 
-	Reverie.DisplayName: Reverie
+	Reverie: {
+		DisplayName: Reverie
+
+		Tips: {
+			Shelves: Every book that has ever existed rests somewhere in Reverie.
+			Edith: Edith keeps the front desk. Ask her before you go wandering the stacks.
+			Ropes: The walkways are reached by rope. Mind the drop.
+		}
+	}
+
 	CanopyTreeLab.DisplayName: Canopy Tree Lab
 	StructureLab.DisplayName: Structure Lab
 }
