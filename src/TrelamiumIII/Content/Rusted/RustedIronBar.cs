@@ -20,7 +20,7 @@ public class RustedIronBar : ModItem
     {
         CreateRecipe()
         .AddIngredient<RustedNugget>(3)
-        .AddTile(TileID.Anvils)
+        .AddTile(TileID.Furnaces)
         .Register();
     }
 }

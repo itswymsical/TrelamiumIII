@@ -129,7 +129,7 @@ public class RootRainplantTile : ModTile
         TileObjectData.newTile.CoordinateWidth = 32;
         TileObjectData.newTile.CoordinateHeights = [height];
 
-        TileObjectData.newTile.DrawYOffset = -(height - 18);
+        TileObjectData.newTile.DrawYOffset = -(height - 22);
 
         TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile, 1, 0);
 
@@ -181,7 +181,7 @@ public class RootRockTile : ModTile
         TileObjectData.newTile.CopyFrom(TileObjectData.Style3x3);
         TileObjectData.newTile.Width = Width;
         TileObjectData.newTile.Height = Height;
-        TileObjectData.newTile.Origin = new Point16(1, Height - 2);
+        TileObjectData.newTile.Origin = new Point16(1, Height - 4);
         TileObjectData.newTile.CoordinateHeights = [16, 16, 16];
         TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile, Width, 0);
         TileObjectData.newTile.AnchorValidTiles = [ModContent.TileType<IngressGrass>()];
