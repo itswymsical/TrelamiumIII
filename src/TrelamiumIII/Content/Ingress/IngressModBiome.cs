@@ -80,3 +80,17 @@ public class IngressTempleBiome : ModBiome
         return TileCounts.Instance.ligneousTempleCount > 200;
     }
 }
+
+public class ReverieBiome : ModBiome
+{
+    public override int Music => Assets.Music.ReverieLibrary.Slot;
+    public override SceneEffectPriority Priority => SceneEffectPriority.Environment;
+    public override Color? BackgroundColor => new Color(88, 150, 112);
+    public override bool IsBiomeActive(Player player)
+    {
+        if (!SubworldSystem.IsActive<ReverieRealm>())
+            return false;
+
+        return true;
+    }
+}

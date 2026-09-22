@@ -102,6 +102,15 @@ public static class SpeakerRegistry
 
         Register(new SpeakerProfile
         {
+            Id = "Edith",
+            FrameCount = 1,
+            Font = TrelamiumFonts.AndikaRegular,
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
+            Color = new(214, 178, 120),
+        });
+
+        Register(new SpeakerProfile
+        {
             Id = "NerdySlime",
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
             FrameCount = 1,

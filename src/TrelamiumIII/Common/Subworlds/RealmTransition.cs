@@ -55,6 +55,12 @@ public sealed class RealmTransition : ModSystem
     /// <summary>True from the start of an entry cutscene until the world is left.</summary>
     public static bool HoldingPlayer => stage is Stage.Departing or Stage.Handoff;
 
+    /// <summary>Seconds since the entry cutscene started; 0 outside one.</summary>
+    public static float DepartureSeconds => stage == Stage.Departing ? (float)StageAge : 0f;
+
+    /// <summary>Focus handed to the next <see cref="BeginDeparture"/>; see <see cref="Enter{T}"/>.</summary>
+    private static Vector2? pendingFocus;
+
     public override void Load()
     {
         if (Main.dedServ)
@@ -75,16 +81,22 @@ public sealed class RealmTransition : ModSystem
         Clock.Reset();
     }
 
-    /// <summary>Enters <typeparamref name="T"/> through its entry cutscene, or directly when it has none.</summary>
-    public static bool Enter<T>() where T : SubworldRealm
+    /// <summary>
+    /// Enters <typeparamref name="T"/> through its entry cutscene, or directly when it has none. The iris closes on
+    /// <paramref name="focus"/>, a world position, instead of the local player when one is given.
+    /// </summary>
+    public static bool Enter<T>(Vector2? focus = null) where T : SubworldRealm
     {
         if (stage != Stage.None)
             return false;
 
         T target = ModContent.GetInstance<T>();
+        pendingFocus = focus;
 
         if (!Main.dedServ && target.ScreenStyle is not null && target.StartEntryCutscene())
             return true;
+
+        pendingFocus = null;
 
         return SubworldSystem.Enter<T>();
     }
@@ -96,7 +108,8 @@ public sealed class RealmTransition : ModSystem
             return null;
 
         SetStage(Stage.Departing);
-        FocusWorld = null;
+        FocusWorld = pendingFocus;
+        pendingFocus = null;
 
         return opened;
     }

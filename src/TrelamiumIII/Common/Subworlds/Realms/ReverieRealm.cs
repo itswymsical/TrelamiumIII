@@ -32,6 +32,9 @@ public class ReverieRealm : SubworldRealm
     /// <summary> Fixed by the constants, so clients know it without generating. </summary>
     private static readonly ReverieHall Hall = ReverieHall.Create(SideMargin, WorldHeight - FloorDepth);
 
+    /// <summary> Where the scar back to Ingress stands, in world pixels. </summary>
+    public static Vector2 ScarCenter => Hall.ScarCenter;
+
     public override int Width => ReverieHall.Width + SideMargin * 2;
     public override string Name => "Reverie";
     public override int Height => WorldHeight;

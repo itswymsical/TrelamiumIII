@@ -1,7 +1,6 @@
 using Terraria.Audio;
 using TrelamiumIII.Common.Subworlds;
 using TrelamiumIII.Common.Subworlds.Realms;
-using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Utilities;
@@ -9,15 +8,12 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Content.Reverie;
 
 /// <summary>
-/// Pulls the altar's slit wide, then grows Reverie's mist out of it until it covers the screen and hands off to the
-/// realm's loading screen.
+/// Grows Reverie's mist out of the transition's focus (the scar, which widens on its own while a departure focuses on
+/// it) until it covers the screen, then hands off to the realm's loading screen.
 /// </summary>
 internal sealed class ReverieEntryCutscene : RealmEntryCutscene
 {
-    /// <summary>The slit is fully pulled open, in seconds.</summary>
-    private const float OPEN_END = 1.2f;
-
-    /// <summary>The mist starts growing out of the slit.</summary>
+    /// <summary>The mist starts growing out of the focus, in seconds.</summary>
     private const float SPILL_START = 0.6f;
 
     /// <summary>The mist covers the screen and the realm is entered.</summary>
@@ -36,15 +32,10 @@ internal sealed class ReverieEntryCutscene : RealmEntryCutscene
         LetterboxAnimationDuration = 60;
     }
 
-    /// <summary>World position the mist grows from; the local player when null. Set before entering, cleared at the end.</summary>
-    public static Vector2? Origin { get; set; }
-
     protected override SubworldRealm Realm => ModContent.GetInstance<ReverieRealm>();
 
     protected override void OnDepartureStart()
     {
-        RealmTransition.FocusWorld = Origin;
-
         SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset with { Volume = 0.55f, Pitch = 0.35f });
 
         ChromaticScreenEffect.Set(0.12f, 3f, 60);
@@ -53,8 +44,6 @@ internal sealed class ReverieEntryCutscene : RealmEntryCutscene
 
     protected override void UpdateDeparture(float seconds)
     {
-        WardenAltarScar.OpenBoost = EaseFunction.EaseQuadOut.Ease(Ramp(seconds, 0f, OPEN_END));
-
         Screen.Coverage = EaseFunction.EaseCubicIn.Ease(Ramp(seconds, SPILL_START, COVER_END));
         Screen.Zoom = MIST_PUSH * EaseFunction.EaseQuadIn.Ease(Ramp(seconds, 0f, COVER_END));
 
@@ -65,9 +54,6 @@ internal sealed class ReverieEntryCutscene : RealmEntryCutscene
     protected override void OnCutsceneEnd()
     {
         ChromaticScreenEffect.Stop(30);
-
-        WardenAltarScar.OpenBoost = 0f;
-        Origin = null;
 
         // Settles back over the arrival reveal, since ZoomHandler's state outlives the world.
         ZoomHandler.SetZoomAnimation(Main.GameZoomTarget, 90);

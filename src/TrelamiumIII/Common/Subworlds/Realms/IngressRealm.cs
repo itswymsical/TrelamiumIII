@@ -112,9 +112,17 @@ public class IngressRealm : SubworldRealm
     /// <summary> After <see cref="ModSystem.OnWorldLoad"/>, which clears protected areas; a realm loaded from file keeps its saved ones. </summary>
     public override void OnLoad()
     {
+        ArriveAtAltar = false;
+
         if (Fortress is { } fortress && StructureProtectionSystem.ProtectedAreas.Count == 0)
             StructureProtectionSystem.ProtectedAreas.AddRange(fortress.ProtectedAreas);
     }
+
+    /// <summary>
+    /// Set before entering through the scar from Reverie: the next generation spawns the player beside the altar rather
+    /// than on the surface. Singleplayer only; a sub-server generates in another process.
+    /// </summary>
+    public static bool ArriveAtAltar { get; set; }
 
     /// <summary> Carves only the hub cave for <paramref name="shaftEnd"/>, for previews outside the realm; returns the cleared area. </summary>
     public static Rectangle CarveHub(Point shaftEnd, int seed)
@@ -1150,9 +1158,20 @@ public class IngressRealm : SubworldRealm
         private const int SpawnDistance = 160;
         private const int TreeClearance = 12;
 
+        /// <summary> Columns left of the altar, clear of its dais, where a player arriving through the scar stands. </summary>
+        private const int AltarSpawnGap = 9;
+
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             progress.Message = "Choosing the spawn point";
+
+            if (ArriveAtAltar && realm.Fortress is { } fortress)
+            {
+                Point altar = FortressBuilder.AltarOrigin(fortress);
+                Main.spawnTileX = altar.X - AltarSpawnGap;
+                Main.spawnTileY = fortress.Arena.Bottom;
+                return;
+            }
 
             Layout layout = realm.layout;
             Rectangle tree = realm.treeArea;

@@ -1,13 +1,15 @@
+using TrelamiumIII.Content.Reverie.Library;
+using TrelamiumIII.Core.Dialogue;
+
 namespace TrelamiumIII.Content.Reverie;
 
 /// <summary>
-/// Reverie's librarian, placed at the front desk when the realm generates. Stationary, invulnerable and never despawns;
-/// talking to her only greets for now, until book checkout exists.
+/// Reverie's librarian, placed at the front desk when the realm generates. Stationary, invulnerable and never despawns.
+/// Talking to her opens a projected dialogue whose choices lead to the <see cref="LibraryCatalogPanel"/> for a shelf,
+/// or return borrowed books.
 /// </summary>
-public sealed class Edith : ModNPC
+public sealed class Edith : ModNPC, INarrativeSpeaker
 {
-    private static readonly string[] ChatKeys = ["Welcome", "Shelves", "Checkout"];
-
     public override string Texture => $"{nameof(TrelamiumIII)}/Content/Ingress/NPCs/Edith/Edith";
 
     public override void SetStaticDefaults()
@@ -15,9 +17,6 @@ public sealed class Edith : ModNPC
         Main.npcFrameCount[Type] = 1;
 
         NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, new NPCID.Sets.NPCBestiaryDrawModifiers { Hide = true });
-
-        foreach (string key in ChatKeys)
-            _ = this.GetLocalization($"Chat.{key}");
     }
 
     public override void SetDefaults()
@@ -41,7 +40,8 @@ public sealed class Edith : ModNPC
 
     public override bool CanChat() => true;
 
-    public override string GetChat() => this.GetLocalization($"Chat.{Main.rand.Next(ChatKeys)}").Value;
+    public ChatEncounter GetEncounter(Player player) =>
+        ChatEncounter.Play(player.GetModPlayer<LibraryPlayer>().Loans.Count > 0 ? "Edith.GreetingLoans" : "Edith.Greeting").Projected();
 
     public override void AI()
     {

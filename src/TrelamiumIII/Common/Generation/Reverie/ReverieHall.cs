@@ -35,6 +35,14 @@ public sealed class ReverieHall
     private const int TierCount = 4;
     private const float TierChance = 0.55f;
 
+    /// <summary> Chance a walkway is a rack: shelves stacked above it, books on every level. </summary>
+    private const float RackChance = 0.45f;
+
+    private const int RackLevelsMin = 3;
+    private const int RackLevelsMax = 4;
+    private const int RackSpacingMin = 3;
+    private const int RackSpacingMax = 4;
+
     /// <summary> Walkways reach this far past the bay into the pillar zone, so neighbouring ones join. </summary>
     private const int TierOverhang = PillarWidth / 2;
 
@@ -61,6 +69,11 @@ public sealed class ReverieHall
     private const int DeskWidth = 14;
     private const int DeskHeight = 4;
     private const int SpawnPastDesk = 10;
+
+    /// <summary> Columns into the first bay, and world pixels above the floor, of the scar's centre. </summary>
+    private const int ScarBayX = 40;
+
+    private const float ScarLift = 118f;
 
     private static readonly ushort[] PaneWalls = [WallID.BlueStainedGlass, WallID.PurpleStainedGlass, WallID.YellowStainedGlass];
 
@@ -101,6 +114,9 @@ public sealed class ReverieHall
 
     /// <summary> Ground tile for the player's spawn, a little right of the desk. </summary>
     public Point Spawn => new(BayLeft(0) + DeskInset + DeskWidth + SpawnPastDesk, FloorY);
+
+    /// <summary> World position of the scar back to Ingress, past the spawn, its lower tip a couple of tiles off the floor. </summary>
+    public Vector2 ScarCenter => new((BayLeft(0) + ScarBayX) * 16f, FloorY * 16f - ScarLift);
 
     public static ReverieHall Create(int left, int floorY) => new(left, floorY);
 
@@ -220,8 +236,8 @@ public sealed class ReverieHall
     }
 
     /// <summary>
-    /// A random set of walkway heights across the bay, a rope from the floor to the highest one, and runs of books with
-    /// the odd candle along each walkway.
+    /// A random set of walkway heights across the bay, some stacked into racks, a rope from the floor to the highest
+    /// shelf, and runs of books with the odd candle along every shelf.
     /// </summary>
     private void BuildWalkways(int bay, UnifiedRandom random)
     {
@@ -235,16 +251,23 @@ public sealed class ReverieHall
             if (random.NextFloat() >= TierChance)
                 continue;
 
-            int y = FloorY - tier * TierSpacing;
-            highest = y;
+            // Racks stay off the top tier, where they would crowd the capitals.
+            int levels = tier < TierCount && random.NextFloat() < RackChance ? random.Next(RackLevelsMin, RackLevelsMax + 1) : 1;
+            int spacing = random.Next(RackSpacingMin, RackSpacingMax + 1);
 
-            for (int x = left; x < right; x++)
+            for (int level = 0; level < levels; level++)
             {
-                if (x != ropeX)
-                    SetPlatform(x, y);
-            }
+                int y = FloorY - tier * TierSpacing - level * spacing;
+                highest = y;
 
-            PlaceBooks(left, right, y - 1, ropeX, random);
+                for (int x = left; x < right; x++)
+                {
+                    if (x != ropeX)
+                        SetPlatform(x, y);
+                }
+
+                PlaceBooks(left, right, y - 1, ropeX, random);
+            }
         }
 
         if (highest < 0)

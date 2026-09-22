@@ -45,4 +45,9 @@ Biomes: {
 		DisplayName: Ingress Garden Biome
 		TownNPCDialogueName: the Ingress Garden Biome
 	}
+
+	ReverieBiome: {
+		DisplayName: Reverie Biome
+		TownNPCDialogueName: the Reverie Biome
+	}
 }

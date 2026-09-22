@@ -1,0 +1,26 @@
+DialogueLibrary: {
+	Edith: {
+		Greeting: {
+			Line1: {
+				Text: Welcome to Reverie.[] What sort of book are you after?
+				Choice1.Text: Philosophy.
+				Choice2.Text: History.
+				Choice3.Text: Fiction.
+				Choice4.Text: Just browsing.
+			}
+		}
+
+		GreetingLoans: {
+			Line1: {
+				Text: Back again.[] Another book, or are you bringing some home?
+				Choice1.Text: Philosophy.
+				Choice2.Text: History.
+				Choice3.Text: Fiction.
+				Choice4.Text: Returning my books.
+				Choice5.Text: Just browsing.
+			}
+		}
+
+		Returned.Line1.Text: Every page accounted for.[] Thank you.
+	}
+}

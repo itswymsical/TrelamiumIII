@@ -9,13 +9,9 @@ public struct BookPalette()
     public Color PageColor { get; init; } = new(235, 234, 211);
     public Color PageEdgeColor { get; init; } = new(150, 128, 92);
 
-    public BookPalette Default() => new()
-    {
-        Cover = new Color(58, 36, 18),
-        Spine = new Color(30, 18, 8),
-        Trim = new Color(150, 110, 60),
-        Shadow = new Color(0, 0, 0, 120),
-        PageColor = new Color(235, 234, 211),
-        PageEdgeColor = new Color(150, 128, 92)
-    };
+    /// <summary>
+    /// Static on purpose: <c>BookUI.BookPalette</c> shares this type's name, and an instance <c>Default()</c> would bind
+    /// to that property there and call it forever.
+    /// </summary>
+    public static BookPalette Default() => new();
 }

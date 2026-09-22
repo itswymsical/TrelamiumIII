@@ -16,6 +16,12 @@ Rarities: {
 JobInfo.NewJob: " seems to have a new task for you."
 
 Items: {
+	LibraryBookItem: {
+		DisplayName: Library Book
+		Tooltip: ""
+		Borrowed: Borrowed from Reverie. Return it to Edith
+	}
+
 	LigneousChest: {
 		DisplayName: Ligneous Chest
 		Tooltip: Sealed until the fortress room it stands in is solved
@@ -1153,15 +1159,7 @@ NPCs: {
 		Epithet: The Guardian of Ingress
 	}
 
-	Edith: {
-		DisplayName: Edith
-
-		Chat: {
-			Welcome: Welcome to Reverie. Keep your voice down; the books are sleeping.
-			Shelves: Every book that has ever existed is shelved here somewhere. Finding it is another matter.
-			Checkout: The ledger isn't open yet. Come back once the desk is in order.
-		}
-	}
+	Edith.DisplayName: Edith
 
 	Bushwhack: {
 		DisplayName: Bushwhack
@@ -1212,6 +1210,83 @@ Misc: {
 	SonsMushroom: Shroomson's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
 	WorkshopSlot: Station Slot
+}
+
+Scar.Return: Return to Ingress
+
+Library: {
+	Loans: Loans {0}/{1}
+	CheckOut: Check Out
+	CheckedOut: Checked out
+	LoansFull: Loans full
+	Available: Available
+	Close: Close
+	Empty: Nothing on these shelves yet.
+
+	Categories: {
+		Philosophy: Philosophy
+		History: History
+		Fiction: Fiction
+	}
+
+	Books: {
+		IlluminanceI.Blurb: The first volume of the Illuminance series.
+		IlluminanceII.Blurb: The second volume of the Illuminance series.
+
+		RootAndReason: {
+			Title: Root and Reason
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		QuietSeasons: {
+			Title: Of Quiet Seasons
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		WeightOfLight: {
+			Title: The Weight of Light
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		AnniesDiary.Blurb: A diary, kept in a hurried hand.
+
+		PrimordialSands: {
+			Title: Primordial Sands, Volume I
+			Blurb: The first account of the Primordial Sands.
+		}
+
+		TreatiseOnSalts: {
+			Title: A Treatise on Salts
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		AnnalsOfTheDeep: {
+			Title: Annals of the Deep Roots
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		CorridorOfDarkness.Blurb: A tale of the Corridor of Darkness.
+
+		FirstAccount: {
+			Title: A First Account
+			Blurb: The library's example book.
+		}
+
+		DrownedLantern: {
+			Title: The Drowned Lantern
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		GlassOrchard: {
+			Title: The Glass Orchard
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+
+		CandleForTheMoth: {
+			Title: A Candle for the Moth
+			Blurb: Placeholder entry. Opens the example book until this one is written.
+		}
+	}
 }
 
 SeedAmmo: {
