@@ -64,7 +64,7 @@ public class SporadicSlime : ModNPC
         NPC.lifeMax = 25;
         NPC.damage = 7;
         NPC.defense = 2;
-        NPC.knockBackResist = 0.5f;
+        NPC.knockBackResist = 0.92f;
         NPC.HitSound = SoundID.NPCHit1;
         NPC.DeathSound = SoundID.NPCDeath1;
         NPC.value = Item.buyPrice(copper: 50);
@@ -123,7 +123,6 @@ public class SporadicSlime : ModNPC
     {
         npcLoot.Add(ItemDropRule.Common(ItemID.Mushroom, 1, 1, 3));
         npcLoot.Add(ItemDropRule.Common(ItemID.Gel, 2, 1, 4));
-
     }
 
     public override void AI()
@@ -457,7 +456,7 @@ public class SporadicSlamProjectile : ModProjectile
     {
         base.SetDefaults();
         Projectile.hostile = true;
-        Projectile.damage = 7;
+        Projectile.damage = 5;
         Projectile.DamageType = DamageClass.Melee;
 
         Projectile.tileCollide = false;

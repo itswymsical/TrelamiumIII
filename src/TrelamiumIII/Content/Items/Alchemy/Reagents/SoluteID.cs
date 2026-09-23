@@ -112,14 +112,14 @@ public sealed class SoluteID : ICustomAutoload
             Principle = PrincipleType.Bane,
             Recipes = self =>
             {
-                self.CreateRecipe(2)
-                    .AddIngredient(ItemID.RottenChunk, 3)
+                self.CreateRecipe(3)
+                    .AddIngredient(ItemID.RottenChunk, 2)
                     .AddIngredient(ItemID.StoneBlock, 5)
                     .AddTile(TileID.Furnaces)
                     .Register();
 
-                self.CreateRecipe(2)
-                    .AddIngredient(ItemID.Vertebrae, 3)
+                self.CreateRecipe(3)
+                    .AddIngredient(ItemID.Vertebrae, 2)
                     .AddIngredient(ItemID.StoneBlock, 5)
                     .AddTile(TileID.Furnaces)
                     .Register();

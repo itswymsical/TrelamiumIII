@@ -138,7 +138,7 @@ public class ForestTerrarian : Villager
 
     public override float SpawnChance(NPCSpawnInfo spawnInfo)
     {
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.125f : 0f;
+        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.045f : 0f;
     }
 
     protected override List<Action> SetWorldInventory() =>
@@ -179,6 +179,14 @@ public class ForestTerrarian : Villager
         new(() => AddInvItem(SolventID.SpecularTonic, 5),
             Trade().For(ItemID.Bass, 3)
                             .Grants(SolventID.SpecularTonic)),
+
+        new(() => AddInvItem(ItemID.BottledWater, 12),
+            Trade().For(ItemID.Daybloom, 2)
+                            .Grants(ItemID.BottledWater, 4)),
+
+        new(() => AddInvItem(ItemID.BottledWater, 12),
+            Trade().For(ItemID.Waterleaf, 2)
+                            .Grants(ItemID.BottledWater, 4)),
 
         new(() => AddInvItem(SolventID.FortunateTonic, 5),
             Trade().For(ItemID.Topaz, 2)

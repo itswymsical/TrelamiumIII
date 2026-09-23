@@ -108,9 +108,9 @@ public partial class ChemistryRecipeSystem
 
         // Niter at maximum potency to one part fuel.
         AlchemyRecipes.CreateRecipe(SolventID.Inert, SoluteID.BlackPowder,
-            new RecipeVariant(ComponentMatcher.Of(SoluteID.Niter, 5), SoluteID.Sulfur, ModContent.ItemType<CharcoalItem>())
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.Niter, 3), SoluteID.Sulfur, ModContent.ItemType<CharcoalItem>())
             {
-                OutputStack = 4,
+                OutputStack = 2,
             });
 
         AlchemyRecipes.CreateRecipe(SolventID.Inert, SoluteID.ColdFire,

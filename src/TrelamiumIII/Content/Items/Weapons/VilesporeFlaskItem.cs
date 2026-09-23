@@ -14,7 +14,7 @@ public class VilesporeFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 6;
+        Item.damage = 7;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;
@@ -35,11 +35,11 @@ public class VilesporeFlaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 2f;
+        component.ChemicalDamage = 2.2f;
         component.AfflictionRate = 50;
         component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 0.007f;
-        component.ReactionDamage = 9f;
+        component.ReactionDamage = 8f;
         component.ReactionHandler = DoCorruptSporeSpread;
     }
 

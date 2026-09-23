@@ -2,6 +2,7 @@ using TrelamiumIII.Common.Globals;
 using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
+using TrelamiumIII.Content.Items.Ammo;
 using TrelamiumIII.Content.Items.Rusted;
 using TrelamiumIII.Content.Items.Weapons;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
@@ -46,38 +47,81 @@ public partial class ChemistryRecipeSystem
     {
         int crimsonFlask = ModContent.ItemType<CrimsonEffusionFlaskItem>();
         int bloodtooth = ModContent.ItemType<BloodtoothFungusItem>();
+        int starflask = ModContent.ItemType<PrismaticStarflaskItem>();
+        int phytoncide = ModContent.ItemType<PhytoncideFlaskItem>();
+        int canister = ModContent.ItemType<GasCanisterBase>();
 
+        int[] tonics = [SolventID.HarmoniousTonic, SolventID.MartialTonic, SolventID.AquaFortis];
+        int hyperboreanFlask = ModContent.ItemType<HyperboreanFlaskItem>();
+        int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
+        int[] basics = [ItemID.BottledWater, SolventID.Inert];
+
+        // Effusion Flask
         AlchemyRecipes.CreateRecipe(SolventID.BloodtoothExtract, crimsonFlask,
         [
-            new RecipeVariant(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 8 },
-            new RecipeVariant(ItemID.Deathweed) { OutputStack = 4 },
-            .. AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 12),
+            new RecipeVariant(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 16 },
+            new RecipeVariant(ItemID.Deathweed) { OutputStack = 8 },
+            .. AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 18),
         ]);
 
         AlchemyRecipes.CreateRecipe(SolventID.Dead, crimsonFlask,
-            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 8));
-
+            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 16));
         AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, crimsonFlask,
-            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 1, stack: 8));
+            AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 1, stack: 16));
 
-        int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
-
+        // Vilespore
         AlchemyRecipes.CreateRecipe(SolventID.Dead, vilesporeFlask,
-            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 2, stack: 8));
-
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 2, stack: 16));
         AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, vilesporeFlask,
-            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 1, stack: 8));
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 1, stack: 16));
 
-        int hyperboreanFlask = ModContent.ItemType<HyperboreanFlaskItem>();
-
-        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, hyperboreanFlask,
+        // Hyperborean
+        AlchemyRecipes.CreateRecipe(basics, hyperboreanFlask,
             new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ItemID.CopperOre, ComponentMatcher.Of(SoluteID.Niter, 2))
-            {
-                OutputStack = 8,
-            });
+            { OutputStack = 16, });
 
-        AlchemyRecipes.CreateRecipe(SolventID.HarmoniousTonic, hyperboreanFlask,
-            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ComponentMatcher.Of(SoluteID.Niter, 2)) { OutputStack = 8 });
+        AlchemyRecipes.CreateRecipe(tonics, hyperboreanFlask,
+            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ComponentMatcher.Of(SoluteID.Niter, 2)) { OutputStack = 16 });
+
+        // Starflask
+        AlchemyRecipes.CreateRecipe(tonics, starflask,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 });
+
+        // Phytoncide
+        AlchemyRecipes.CreateRecipe([SolventID.VitalTonic, SolventID.MartialTonic], phytoncide,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(SoluteID.Potash, 2)) { OutputStack = 16 });
+
+        AlchemyRecipes.CreateRecipe(basics, phytoncide,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), 
+            ComponentMatcher.Of(ItemID.Stinger, 1), 
+            ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 });
+
+        // --- Gas Canisters ---
+        // Vilespore
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactVilesporeCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VileMushroom, 2),
+            ComponentMatcher.Of(ItemID.Deathweed, 1),
+            ComponentMatcher.Of(SoluteID.Niter, 1)));
+
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<TimedVilesporeCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.VileMushroom, 2),
+            ComponentMatcher.Of(ItemID.Deathweed, 1),
+            ComponentMatcher.Of(SoluteID.Pitch, 1)));
+
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactVilesporeCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<VilesporeFlaskItem>(), 1)));
+
+        // Hyperborean
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactHyperboreanCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
+            ComponentMatcher.Of(SoluteID.Niter, 1)));
+
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<TimedHyperboreanCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
+            ComponentMatcher.Of(SoluteID.Pitch, 1)));
+
+        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactHyperboreanCanister>(),
+            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<HyperboreanFlaskItem>(), 1)));
     }
 
     /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>
