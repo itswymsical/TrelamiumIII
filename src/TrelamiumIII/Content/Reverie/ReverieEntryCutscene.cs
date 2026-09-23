@@ -7,22 +7,14 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Reverie;
 
-/// <summary>
-/// Grows Reverie's mist out of the transition's focus (the scar, which widens on its own while a departure focuses on
-/// it) until it covers the screen, then hands off to the realm's loading screen.
-/// </summary>
 internal sealed class ReverieEntryCutscene : RealmEntryCutscene
 {
-    /// <summary>The mist starts growing out of the focus, in seconds.</summary>
     private const float SPILL_START = 0.6f;
 
-    /// <summary>The mist covers the screen and the realm is entered.</summary>
     private const float COVER_END = 3.6f;
 
-    /// <summary><see cref="Core.Graphics.FbmScreen.FbmScreenRenderer.Zoom"/> reached at full cover.</summary>
     private const float MIST_PUSH = 0.6f;
 
-    /// <summary>Camera zoom reached at full cover, as a multiple of the player's own.</summary>
     private const float CAMERA_PUSH = 1.25f;
 
     public ReverieEntryCutscene()
@@ -55,7 +47,6 @@ internal sealed class ReverieEntryCutscene : RealmEntryCutscene
     {
         ChromaticScreenEffect.Stop(30);
 
-        // Settles back over the arrival reveal, since ZoomHandler's state outlives the world.
         ZoomHandler.SetZoomAnimation(Main.GameZoomTarget, 90);
     }
 

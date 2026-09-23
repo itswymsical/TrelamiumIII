@@ -3,7 +3,7 @@ namespace TrelamiumIII.Content.Reverie;
 /// <summary> Shelved books as a solid block. Uses 1.4.5's Librarian Block art as a placeholder. </summary>
 public sealed class LibrarianBlockTile : ModTile
 {
-    public override string Texture => $"{nameof(TrelamiumIII)}/Assets/Textures/Placeholder/LibrarianBlock";
+    public override string Texture => Assets.Textures.Placeholder.LibrarianBlock.KEY;
 
     public override void SetStaticDefaults()
     {
@@ -20,7 +20,7 @@ public sealed class LibrarianBlockTile : ModTile
 /// <summary> Background bookshelves. Uses 1.4.5's Librarian Wall art as a placeholder. </summary>
 public sealed class LibrarianWall : ModWall
 {
-    public override string Texture => $"{nameof(TrelamiumIII)}/Assets/Textures/Placeholder/LibrarianWall";
+    public override string Texture => Assets.Textures.Placeholder.LibrarianWall.KEY;
 
     public override void SetStaticDefaults()
     {

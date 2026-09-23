@@ -80,14 +80,12 @@ DialogueLibrary: {
 			Line2.Text: As promised,[] here's your reward, pal.
 			Line3.Text: I'll be needing some extra hands again soon,[] so keep in touch.
 		}
+
 		Banter1: {
 			Line1: {
-			Text: How goes it, [speakerName:player]?
-				Choice1.Text: It goes.
-				Choice1.Text: It's going.
+				Text: How goes it, [speakerName:player]?
 				Choice1.Text: It gone.
 			}
 		}
-		 # im too lazy to write dialogue rn bruh.
 	}
 }

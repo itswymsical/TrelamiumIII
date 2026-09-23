@@ -8,7 +8,7 @@ namespace TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
 public abstract class SeedBedTile : ModTile
 {
     /// <summary>Growth attempts per random tick. Higher = faster progression.</summary>
-    public virtual int GrowthAttempts => 5;
+    public virtual int GrowthAttempts => 3;
 
     /// <summary>1-in-N chance per attempt to advance a growth stage.</summary>
     public virtual int GrowthChance => 10;

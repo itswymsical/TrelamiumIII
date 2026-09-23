@@ -57,8 +57,6 @@ public class SeedBedTile_Dirt : SeedBedTile
 public class SeedBedTile_Mud : SeedBedTile
 {
     public override Color MapColor => new(100, 80, 60);
-    public override int GrowthAttempts => 6;
-    public override int GrowthChance => 9;
     public override int SoilDust => DustID.Mud;
 
     public override HerbType[] PreferredHerbs => [HerbType.Moonglow, HerbType.Waterleaf];
@@ -74,7 +72,6 @@ public class SeedBedTile_Sand : SeedBedTile
 {
     public override Color MapColor => new(220, 200, 140);
     public override int SoilDust => DustID.Sand;
-
     public override HerbType[] PreferredHerbs => [HerbType.Waterleaf];
 
     public override void SetStaticDefaults()
@@ -87,8 +84,6 @@ public class SeedBedTile_Sand : SeedBedTile
 public class SeedBedTile_Ash : SeedBedTile
 {
     public override Color MapColor => new(80, 70, 70);
-    public override int GrowthAttempts => 7;
-    public override int GrowthChance => 8;
     public override int SoilDust => DustID.Ash;
 
     public override HerbType[] PreferredHerbs => [HerbType.Fireblossom, HerbType.Deathweed];

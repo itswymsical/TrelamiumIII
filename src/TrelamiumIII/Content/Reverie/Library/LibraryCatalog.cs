@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.GameContent;
 using Terraria.Localization;
+using TrelamiumIII.Core;
 using TrelamiumIII.Core.Books.Lore;
 
 namespace TrelamiumIII.Content.Reverie.Library;
@@ -58,7 +59,7 @@ public static class LibraryCatalog
     private const string Lore = $"{nameof(TrelamiumIII)}/Content/Lore/";
     private const string IlluminanceCover = Lore + "IlluminanceBookItem";
     private const string ArchaicCover = Lore + "ArchaicBook1";
-    private const string AlmanacCover = $"{nameof(TrelamiumIII)}/Content/Alchemy/AlchemyBookItem";
+    private const string AlmanacCover = AssetReferences.Content.Items.Alchemy.AlchemyBookItem.KEY;
 
     public static readonly IReadOnlyList<LibraryBook> Books =
     [

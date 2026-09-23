@@ -458,7 +458,7 @@ Items: {
 			Can be used to store potion herbs and flowers.
 			You can store up to 3 types of flowers, granting stat bonuses depending on the type, total stack, and combination.
 			You can only have one satchel in your inventory at a time.
-			Right-click to open/activate the satchel.
+			Right-click to open the satchel.
 			'''
 	}
 
@@ -496,7 +496,7 @@ Items: {
 	}
 
 	AdvancedAlchemyStationComponentItem: {
-		DisplayName: High-Effeciency Vacuum
+		DisplayName: Reagentic Vacuum
 		Tooltip:
 			'''
 			A necessary component in the Solution Synthesizer
@@ -508,19 +508,49 @@ Items: {
 		DisplayName: Alchemy Station
 		Tooltip:
 			'''
-			Right-click to open the Alchemy Station interface.
-			The Alchemy Station allows you to combine different components with different solutions.
-			Combine these items to produce chemical solutions, potions/enhanced potions, or serums.
+			Right-click in World to open the brewing interface.
+			The Alchemy Station allows you to combine different solutes/reagents with different solvents.
+			Combine substances to produce chemical solutions, potions, or even enhancements of existing items.
 			'''
 	}
 
 	BaneTonicItem: {
-		DisplayName: Bane Tonic
+		DisplayName: Tonic of Bane
+		Tooltip: ""
+	}
+
+	BriskTonicItem: {
+		DisplayName: Tonic of Brisk
+		Tooltip: ""
+	}
+
+	FortunateTonicItem: {
+		DisplayName: Tonic of Fortune
+		Tooltip: ""
+	}
+
+	HarmoniousTonicItem: {
+		DisplayName: Tonic of Harmony
+		Tooltip: ""
+	}
+
+	MartialTonicItem: {
+		DisplayName: Tonic of Martial
+		Tooltip: ""
+	}
+
+	SpecularTonicItem: {
+		DisplayName: Tonic of Lucidity
+		Tooltip: "The perfect vessel for specular-natured/sight-based potions"
+	}
+
+	VitalTonicItem: {
+		DisplayName: Tonic of Vitality
 		Tooltip: ""
 	}
 
 	BloodtoothExtractItem: {
-		DisplayName: Bloodtooth Extract
+		DisplayName: Extract of Bloodtooth
 		Tooltip: ""
 	}
 
@@ -536,11 +566,6 @@ Items: {
 
 	BrineBottleItem: {
 		DisplayName: Brine Bottle
-		Tooltip: ""
-	}
-
-	BriskTonicItem: {
-		DisplayName: Brisk Tonic
 		Tooltip: ""
 	}
 
@@ -564,15 +589,7 @@ Items: {
 		Tooltip: Provides temporary swiftness
 	}
 
-	FortunateTonicItem: {
-		DisplayName: Fortunate Tonic
-		Tooltip: ""
-	}
-
-	HarmoniousTonicItem: {
-		DisplayName: Harmonious Tonic
-		Tooltip: ""
-	}
+	
 
 	InertSolutionItem: {
 		DisplayName: Inert Solution
@@ -594,23 +611,8 @@ Items: {
 		Tooltip: ""
 	}
 
-	MartialTonicItem: {
-		DisplayName: Martial Tonic
-		Tooltip: ""
-	}
-
 	OxidizedCopperItem: {
 		DisplayName: Oxidized Copper
-		Tooltip: ""
-	}
-
-	SpecularTonicItem: {
-		DisplayName: Specular Tonic
-		Tooltip: ""
-	}
-
-	VitalTonicItem: {
-		DisplayName: Vital Tonic
 		Tooltip: ""
 	}
 

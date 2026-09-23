@@ -26,6 +26,8 @@ internal static class ReverieScreen
         Contrast = 0.2f,
         Bands = 5,
 
+        // Noise = Assets.Textures.Noise.Milky_6.Asset,
+
         VoidColor = new Color(18, 12, 8),
         LowColor = new Color(58, 40, 26),
         HighColor = new Color(128, 96, 60),
