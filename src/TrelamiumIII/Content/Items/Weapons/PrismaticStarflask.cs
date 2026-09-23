@@ -8,7 +8,7 @@ using TrelamiumIII.Utilities;
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Fields;
 
-namespace TrelamiumIII.Content.Alchemy.Weapons;
+namespace TrelamiumIII.Content.Items.Weapons;
 
 public class PrismaticStarflaskItem : ModItem
 {

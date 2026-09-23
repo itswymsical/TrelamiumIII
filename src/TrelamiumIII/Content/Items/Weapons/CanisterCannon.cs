@@ -5,7 +5,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons;
 
 /// <summary>Launcher for <see cref="GasCanisterAmmo" />. The held projectile picks and consumes the ammo per shot.</summary>
 public class CanisterCannon : ModItem
@@ -60,7 +60,7 @@ public class CanisterCannonProj : HeldGunProjectile
         Origin = new Vector2(0.3f, 0.5f),
     };
 
-    public override string Texture => AssetReferences.Content.Items.Weapons.Misc.CanisterCannon.KEY;
+    public override string Texture => AssetReferences.Content.Items.Weapons.CanisterCannon.KEY;
 
     protected override GunShotProfile Profile => ShotProfile;
 

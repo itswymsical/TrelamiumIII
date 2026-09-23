@@ -3,12 +3,13 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Content.Fungore;
+using TrelamiumIII.Content.Items.Weapons.Misc;
 using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 public class StalagMagMKII : ModItem
 {

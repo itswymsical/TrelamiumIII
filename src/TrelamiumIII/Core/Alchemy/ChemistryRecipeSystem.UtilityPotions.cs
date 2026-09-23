@@ -1,5 +1,5 @@
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
-using TrelamiumIII.Content.Lodestone;
+using TrelamiumIII.Content.Items.Lodestone;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;

@@ -9,7 +9,7 @@ using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
 
-namespace TrelamiumIII.Content.Alchemy.Weapons;
+namespace TrelamiumIII.Content.Items.Weapons;
 
 public class ThermiteFlaskItem : ModItem
 {

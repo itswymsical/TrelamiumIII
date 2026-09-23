@@ -3,7 +3,7 @@ using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
-using TrelamiumIII.Content.Lodestone;
+using TrelamiumIII.Content.Items.Lodestone;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;

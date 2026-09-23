@@ -2,7 +2,7 @@ using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 using Terraria.DataStructures;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 public class LodestoneItem : ModItem, IAlmanacDefined
 {

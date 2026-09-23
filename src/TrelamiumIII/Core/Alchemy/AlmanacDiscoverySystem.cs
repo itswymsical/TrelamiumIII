@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Terraria.ModLoader.IO;
-using TrelamiumIII.Content.Alchemy;
 
 namespace TrelamiumIII.Core.Alchemy;
 

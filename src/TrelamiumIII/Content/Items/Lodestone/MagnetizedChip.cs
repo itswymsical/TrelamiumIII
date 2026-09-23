@@ -1,7 +1,7 @@
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 /// <summary>
 ///     Draws an 8x8 crop of the struck tile's sheet via <see cref="TileTextureUtils.ResolveChunk" />, like <see cref="Fungore.EarthShardProj" />.

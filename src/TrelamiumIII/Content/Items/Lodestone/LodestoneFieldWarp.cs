@@ -2,7 +2,7 @@ using ReLogic.Content;
 using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 /// <summary>
 /// The Lodestone set bonus field as a screen filter, so it can refract, disperse and frost the frame. The glass is a torus:

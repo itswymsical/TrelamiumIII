@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Content.GemPendants;
+namespace TrelamiumIII.Content.Items.GemPendants;
 
 [AutoloadEquip(EquipType.Neck)]
 public class SapphirePendantItem : ModItem

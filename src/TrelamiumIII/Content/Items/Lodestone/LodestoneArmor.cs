@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 [AutoloadEquip(EquipType.Legs)]
 public class LodestoneLeggings : ModItem

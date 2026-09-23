@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 public class LodestoneMagnetizer : ModItem
 {

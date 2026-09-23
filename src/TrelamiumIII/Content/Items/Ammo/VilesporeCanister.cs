@@ -1,11 +1,11 @@
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Content.Misc;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Content.Items.Weapons;
 
 namespace TrelamiumIII.Content.Items.Ammo;
 

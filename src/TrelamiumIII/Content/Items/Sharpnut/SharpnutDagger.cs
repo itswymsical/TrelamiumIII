@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Content.Sharpnut;
+namespace TrelamiumIII.Content.Items.Sharpnut;
 
 public class SharpnutDaggerItem : ModItem
 {

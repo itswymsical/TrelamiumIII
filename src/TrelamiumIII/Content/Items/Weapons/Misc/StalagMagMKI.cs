@@ -8,7 +8,7 @@ using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 /// <summary>
 ///     A cannon that eats masonry: each shot takes its numbers from the loaded round (see <see cref="StalagMagAmmo" />), so it

@@ -6,7 +6,7 @@ using TrelamiumIII.Core.Graphics.Interfaces;
 using TrelamiumIII.Core.Graphics.Primitives;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Sharpnut;
+namespace TrelamiumIII.Content.Items.Sharpnut;
 
 [LegacyName("SaplingMakerItem")]
 public class SaplingMaker : ModItem

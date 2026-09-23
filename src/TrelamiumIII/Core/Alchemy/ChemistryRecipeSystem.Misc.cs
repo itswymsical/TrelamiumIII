@@ -1,9 +1,9 @@
 using TrelamiumIII.Common.Globals;
-using TrelamiumIII.Content.Alchemy.Weapons;
 using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Rusted;
+using TrelamiumIII.Content.Items.Weapons;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;

@@ -2,7 +2,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Content.Sharpnut;
+namespace TrelamiumIII.Content.Items.Sharpnut;
 
 public class AcornLauncherItem : ModItem
 {

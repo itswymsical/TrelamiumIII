@@ -2,7 +2,7 @@ using Terraria.Audio;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 /// <summary>A knapped stone spike round: less shrapnel than the block, but it sticks and carries a long affliction.</summary>
 public abstract class StalagmiteItem : ModItem, IStalagMagAmmo

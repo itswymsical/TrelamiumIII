@@ -1,14 +1,8 @@
-﻿using Terraria.Audio;
-using Terraria.DataStructures;
-using TrelamiumIII.Common.ChemicalClass;
+﻿using Terraria.DataStructures;
 using TrelamiumIII.Core;
-using TrelamiumIII.Core.Components.Items;
-using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Graphics.Fields.Layers;
-using TrelamiumIII.Core.Graphics.Particles;
 using TrelamiumIII.Core.Projectiles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 public class ObsidianKhopesh : ModItem
 {

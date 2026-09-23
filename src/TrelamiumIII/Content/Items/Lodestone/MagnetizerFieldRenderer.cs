@@ -3,7 +3,7 @@ using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
 using TrelamiumIII.Core.Graphics;
 
-namespace TrelamiumIII.Content.Lodestone;
+namespace TrelamiumIII.Content.Items.Lodestone;
 
 internal sealed class MagnetizerFieldRenderer : ModSystem
 {

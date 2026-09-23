@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using TrelamiumIII.Content.Items.Weapons.Misc;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 /// <summary>A round's family, which decides how it loads and what it does on impact.</summary>
 public enum StalagMagFamily

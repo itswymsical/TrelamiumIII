@@ -2,7 +2,6 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Content.Misc;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
@@ -11,6 +10,7 @@ using TrelamiumIII.Core.Projectiles;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Content.Items.Weapons.Misc;
 
 namespace TrelamiumIII.Content.KingSlime;
 

@@ -12,7 +12,7 @@ namespace TrelamiumIII.Content.Items.Alchemy.Solutions;
 public sealed class SolventID : ICustomAutoload
 {
     /// <summary>Sprites are named after the item, in this folder.</summary>
-    private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Alchemy/Solutions/";
+    private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Items/Alchemy/Solutions/";
 
     /// <summary>Texture for items with no sprite in <see cref="DIRECTORY" />.</summary>
     private static readonly string Placeholder = Assets.Textures.PlaceholderBrew.KEY;

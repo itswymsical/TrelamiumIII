@@ -1,6 +1,6 @@
 using ReLogic.Graphics;
 
-namespace TrelamiumIII.Content.GemPendants;
+namespace TrelamiumIII.Content.Items.GemPendants;
 
 [AutoloadEquip(EquipType.Neck)]
 public class DiamondPendantItem : ModItem

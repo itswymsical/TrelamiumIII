@@ -1,7 +1,7 @@
 ﻿using TrelamiumIII.Content.EyeOfCthulhu;
 using TrelamiumIII.Core.Graphics.Particles;
 
-namespace TrelamiumIII.Content.Misc;
+namespace TrelamiumIII.Content.Items.Weapons.Misc;
 
 public class WoodenBuckler : ModItem
 {
