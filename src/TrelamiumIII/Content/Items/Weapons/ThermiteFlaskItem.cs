@@ -37,8 +37,8 @@ public class ThermiteFlaskItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Thermal;
         component.ChemicalDamage = 2f;
-        component.AfflictionRate = 10;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 2);
+        component.debuffRate = 10;
+        component.debuffDuration = TimeConversion.SetTime(secs: 2);
         component.ReactionChance = 0.007f;
         component.ReactionDamage = 5f;
         component.ReactionHandler = DoThermiteSpread;

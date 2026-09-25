@@ -37,8 +37,8 @@ public class PrismaticStarflaskItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Kinetic;
         component.ChemicalDamage = 2f;
-        component.AfflictionRate = 30;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 2);
+        component.debuffRate = 30;
+        component.debuffDuration = TimeConversion.SetTime(secs: 2);
         component.ReactionChance = 0.015f;
         component.ReactionDamage = 6f;
         component.ReactionHandler = OnPrismaticReaction;
@@ -50,8 +50,7 @@ public class PrismaticStarflaskItem : ModItem
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
                                   .SafeNormalize(-Vector2.UnitY);
 
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset);
-        e.Target.AddBuff(BuffID.RainbowWhipNPCDebuff, 60);
+        SoundEngine.PlaySound(SoundID.Shimmer1);
 
         int count = Main.rand.Next(8, 16);
         for (int i = 0; i < count; i++)
@@ -59,7 +58,7 @@ public class PrismaticStarflaskItem : ModItem
             Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
                         * Main.rand.NextFloat(4f, 2f);
 
-            Dust.NewDustDirect(vel, e.Target.width, e.Target.height, DustID.Frost, vel.X, vel.Y);
+            Dust.NewDustDirect(vel, e.Target.width, e.Target.height, DustID.RainbowMk2, vel.X, vel.Y);
         }
     }
 }
@@ -88,6 +87,11 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
         {
             Lifetime = 30,
             NodeRadius = 12f,
+        },
+        Droplet = EmitterProfile.Ballistic with
+        {
+            Lifetime = 8,
+            NodeRadius = 3f,
         },
         DamageShare = 1f,
     };

@@ -37,8 +37,8 @@ public class HyperboreanFlaskItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
         component.ChemicalDamage = 2f;
-        component.AfflictionRate = 40;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 2);
+        component.debuffRate = 40;
+        component.debuffDuration = TimeConversion.SetTime(secs: 2);
         component.ReactionChance = 0.015f;
         component.ReactionDamage = 6f;
         component.ReactionHandler = OnCryonicReaction;

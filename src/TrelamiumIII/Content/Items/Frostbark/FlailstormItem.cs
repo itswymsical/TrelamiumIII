@@ -32,7 +32,7 @@ public class FlailstormItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
-        component.AfflictionDuration = 150;
+        component.debuffDuration = 150;
         component.ReactionChance = 0.1f;
         component.ChemicalDamage = 0.75f;
     }

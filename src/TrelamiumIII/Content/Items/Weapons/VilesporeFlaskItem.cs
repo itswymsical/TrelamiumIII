@@ -36,8 +36,8 @@ public class VilesporeFlaskItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Necrotic;
         component.ChemicalDamage = 2.2f;
-        component.AfflictionRate = 50;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
+        component.debuffRate = 50;
+        component.debuffDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 0.007f;
         component.ReactionDamage = 8f;
         component.ReactionHandler = DoCorruptSporeSpread;

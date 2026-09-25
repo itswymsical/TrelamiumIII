@@ -26,7 +26,7 @@ public class BorealHewerItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
-        component.AfflictionDuration = 40;
+        component.debuffDuration = 40;
         component.ReactionChance = 0.013f;
         component.ChemicalDamage = 0.35f;
     }

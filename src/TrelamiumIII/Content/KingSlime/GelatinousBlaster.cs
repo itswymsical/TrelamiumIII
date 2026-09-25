@@ -47,8 +47,8 @@ public class GelatinousBlaster : ModItem
         // Solute: no element, so no matchup or reaction; the affliction and the coat are the whole effect.
         component.ChemicalType = ChemicalDamageType.Solute;
         component.ChemicalDamage = 1.5f;
-        component.AfflictionRate = 30f;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 3);
+        component.debuffRate = 30f;
+        component.debuffDuration = TimeConversion.SetTime(secs: 3);
         component.ReactionChance = 0f;
         component.ReactionDamage = 0f;
     }

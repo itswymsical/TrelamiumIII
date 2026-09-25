@@ -541,7 +541,7 @@ Items: {
 
 	SpecularTonicItem: {
 		DisplayName: Tonic of Lucidity
-		Tooltip: "The perfect vessel for specular-natured/sight-based potions"
+		Tooltip: The perfect vessel for specular-natured/sight-based potions
 	}
 
 	VitalTonicItem: {
@@ -561,7 +561,7 @@ Items: {
 
 	BottledOilItem: {
 		DisplayName: Bottled Oil
-		Tooltip: ""
+		Tooltip: "Don't tell anyone you have this..."
 	}
 
 	BrineBottleItem: {
@@ -588,8 +588,6 @@ Items: {
 		DisplayName: Fly Agaric
 		Tooltip: Provides temporary swiftness
 	}
-
-	
 
 	InertSolutionItem: {
 		DisplayName: Inert Solution
@@ -1029,6 +1027,11 @@ Items: {
 	TimedVilesporeCanister: {
 		DisplayName: Timed Vilespore Canister
 		Tooltip: Explodes shortly after tile contact
+	}
+
+	GasCanisterBase: {
+		DisplayName: Gas Canister Base
+		Tooltip: ""
 	}
 }
 

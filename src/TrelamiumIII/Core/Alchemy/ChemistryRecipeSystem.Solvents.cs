@@ -106,6 +106,9 @@ public partial class ChemistryRecipeSystem
         AlchemyRecipes.CreateRecipe(SolventID.BottledOil, SoluteID.Pitch,
             new RecipeVariant(ComponentMatcher.Of(SolventID.FibrousSlurry, 2)) { OutputStack = 2 });
 
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, SolventID.FibrousSlurry,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Cobweb, 3)) { OutputStack = 1 });
+
         // Niter at maximum potency to one part fuel.
         AlchemyRecipes.CreateRecipe(SolventID.Inert, SoluteID.BlackPowder,
             new RecipeVariant(ComponentMatcher.Of(SoluteID.Niter, 3), SoluteID.Sulfur, ModContent.ItemType<CharcoalItem>())

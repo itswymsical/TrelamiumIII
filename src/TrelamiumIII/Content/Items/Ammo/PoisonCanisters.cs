@@ -51,8 +51,8 @@ public class TimedPoisonCanister : PoisonCanister
         Item.damage = 6;
         component.ChemicalType = ChemicalDamageType.Caustic;
         component.ChemicalDamage = 6f;
-        component.AfflictionRate = 30;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
+        component.debuffRate = 30;
+        component.debuffDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 0.002f;
         component.ReactionDamage = 5f;
     }
@@ -70,8 +70,8 @@ public class ContactPoisonCanister : PoisonCanister
         Item.damage = 6;
         component.ChemicalType = ChemicalDamageType.Caustic;
         component.ChemicalDamage = 6f;
-        component.AfflictionRate = 30;
-        component.AfflictionDuration = TimeConversion.SetTime(secs: 6);
+        component.debuffRate = 30;
+        component.debuffDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 0.002f;
         component.ReactionDamage = 5f;
     }

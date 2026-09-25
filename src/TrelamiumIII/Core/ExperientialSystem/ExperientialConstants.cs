@@ -30,13 +30,13 @@ public static class ExperientialConstants
     public const int MinThreshold = 0;
 
     /// <summary>Highest reachable Threshold. The meter still fills at max, it just stops ascending.</summary>
-    public const int MaxThreshold = 30;
+    public const int MaxThreshold = 200;
 
     /// <summary>Meter capacity at <see cref="MinThreshold"/>.</summary>
-    public const int BaseCapacity = 50;
+    public const int BaseCapacity = 75;
 
     /// <summary>Meter capacity at <see cref="MaxThreshold"/>. Doubles as the endgame skill budget.</summary>
-    public const int PeakCapacity = 76_000;
+    public const int PeakCapacity = 500_000;
 
     /// <summary>
     /// TUNING: whether Exp past the capacity carries into the next Threshold, or is burned by the ascend.

@@ -14,7 +14,7 @@ public static class ChemicalStatsTooltip
     /// <summary>Vanilla's virtual-keyboard shift key: an up-arrow, for the burst.</summary>
     private const string REACTION_ICON = "Images/UI/VK_Shift";
 
-    private const string DURATION_ICON = $"{nameof(TrelamiumIII)}/Assets/Textures/DurationTooltipIcon";
+    private const string DURATION_ICON = Assets.Textures.DurationTooltipIcon.KEY;
 
     private static readonly Color OddsColor = new(170, 170, 170);
 
