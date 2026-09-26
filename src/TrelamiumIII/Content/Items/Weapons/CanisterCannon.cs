@@ -46,6 +46,15 @@ public class CanisterCannon : ModItem
 
         return false;
     }
+    public override void AddRecipes()
+    {
+        CreateRecipe()
+            .AddRecipeGroup(RecipeGroupID.IronBar, 15)
+            .AddIngredient(ItemID.IllegalGunParts)
+            .AddRecipeGroup(nameof(ItemID.GoldBar), 2)
+            .AddTile(TileID.Anvils)
+            .Register();
+    }
 }
 
 public class CanisterCannonProj : HeldGunProjectile

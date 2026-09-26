@@ -58,6 +58,16 @@ public sealed class BookTypeface(
         BoldItalic = () => TrelamiumFonts.AndikaBoldItalic,
     };
 
+    public static BookTypeface Rajdhani { get; } = new(
+    () => TrelamiumFonts.RajdhaniMedium,
+    () => TrelamiumFonts.RajdhaniBold,
+    () => TrelamiumFonts.RajdhaniMedium);
+
+    public static BookTypeface AaarghFont { get; } = new(
+    () => TrelamiumFonts.AaarghFont,
+    () => TrelamiumFonts.AaarghFont,
+    () => TrelamiumFonts.AaarghFont);
+
     /// <summary>
     ///     Paprika throughout, roles told apart by scale and colour. Only 353 glyphs, so fine for authored lore but not arbitrary strings.
     /// </summary>

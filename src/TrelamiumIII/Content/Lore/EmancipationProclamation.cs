@@ -1,9 +1,11 @@
-﻿using TrelamiumIII.Core.Books.Lore;
+﻿using TrelamiumIII.Core;
+using TrelamiumIII.Core.Books.Lore;
 
 namespace TrelamiumIII.Content.Lore;
 
 public class EmancipationProclamation : ModItem
 {
+    public override string Texture => AssetReferences.Content.Lore.ArchaicBook1.KEY;
     public override void SetStaticDefaults()
     {
         Item.ResearchUnlockCount = 3;

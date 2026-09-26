@@ -61,7 +61,7 @@ public class ObsidianKhopeshProjectile : HeldSwordProjectile
     {
         BladeLength = 28f,
         ArcOffset = 0,
-        RecoverTicks = 5,
+        RecoverTicks = 4,
         SwingSound = SoundID.Item1,
         Steps = [SwingStep.SlashDown, SwingStep.SlashUp, SwingStep.Thrust],
 

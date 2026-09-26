@@ -430,8 +430,8 @@ public sealed class FungoreBoss : ModNPC
         NPC.height = 96;
 
         NPC.damage = 14;
-        NPC.defense = 8;
-        NPC.lifeMax = 932;
+        NPC.defense = 9;
+        NPC.lifeMax = 972;
 
         NPC.knockBackResist = 0f;
         NPC.aiStyle = -1;

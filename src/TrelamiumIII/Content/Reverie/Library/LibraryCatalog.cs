@@ -11,6 +11,7 @@ public enum LibraryCategory
 {
     Philosophy,
     History,
+    Erotica,
     Fiction
 }
 
@@ -74,7 +75,7 @@ public static class LibraryCatalog
         new("TreatiseOnSalts", LibraryCategory.History, PlaceholderKey, AlmanacCover),
         new("AnnalsOfTheDeep", LibraryCategory.History, PlaceholderKey, CoverItem: ItemID.DemonScythe),
 
-        new("CorridorOfDarkness", LibraryCategory.Fiction, "Lore.CorridorOfDarkness", CoverItem: ItemID.BookofSkulls),
+        new("EmancipationProclamation", LibraryCategory.Fiction, "Misc.EProclamation", ArchaicCover),
         new("FirstAccount", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.Book),
         new("DrownedLantern", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.WaterBolt),
         new("GlassOrchard", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.CrystalStorm),

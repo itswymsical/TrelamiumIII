@@ -7,10 +7,10 @@ public sealed class EProclamationBook : ModLoreBook
 {
     public override string Key => "Misc.EProclamation";
 
-    protected override BookTypeface? Typeface => BookTypeface.Encyclopedia;
+    protected override BookTypeface? Typeface => BookTypeface.Rajdhani;
 
     protected override void Build(BookBuilder book) => book
         .Heading("Title")
 
-        .Prose("Body", BlockStyle.Body with { DropCap = true, Align = TextAlign.Justify });
+        .Prose("Body", BlockStyle.Body with { Align = TextAlign.Justify });
 }

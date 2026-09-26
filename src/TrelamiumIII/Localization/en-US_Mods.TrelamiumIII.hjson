@@ -1043,6 +1043,11 @@ Items: {
 		DisplayName: Quicksilver Item
 		Tooltip: ""
 	}
+
+	EmancipationProclamation: {
+		DisplayName: Emancipation Proclamation
+		Tooltip: ""
+	}
 }
 
 Tiles: {
