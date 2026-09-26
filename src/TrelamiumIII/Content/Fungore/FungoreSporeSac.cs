@@ -139,7 +139,6 @@ public sealed class FungoreSporeSac : ModNPC
         NPC.life = NPC.lifeMax;
     }
 
-    /// <summary>Never despawned by distance -- it takes itself off on its own clock.</summary>
     public override bool CheckActive() => false;
 
     public override void AI()
@@ -314,7 +313,6 @@ public sealed class FungoreSporeSac : ModNPC
 
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        // Once it opens, the cloud is the whole visual -- the sac has come apart.
         if (Open)
             return false;
 

@@ -32,13 +32,6 @@ internal static class TileTextureUtils
     /// <summary>
     ///     Picks the crop a piece of debris is cut from.
     /// </summary>
-    /// <remarks>
-    ///     The frames at the top-left of a standard tile sheet are all fully opaque blocks whichever
-    ///     way the tile blends, so any of them is safe to quarter. Anything that does not fit that
-    ///     layout -- a sheet too small for the frame the seed picked, a tile with no sheet at all --
-    ///     falls back to a stone block, which is wrong but never invisible and never reads past the
-    ///     end of a texture.
-    /// </remarks>
     public static Texture2D ResolveChunk(ushort tileType, int seed, out Rectangle source)
     {
         if (tileType < TileLoader.TileCount)

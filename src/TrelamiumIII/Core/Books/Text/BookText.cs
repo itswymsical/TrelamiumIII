@@ -143,14 +143,10 @@ public static class BookText
 
         List<TextSnippet> snippets = ChatManager.ParseMessage(normalized, baseColor);
 
-        // ParseMessage is a static call with no idea which book it is parsing for, so the runs that
-        // need to know the surrounding typeface are told here -- the one place that has it.
         Core.Text.FormattedSnippet.Bind(snippets, bookFont);
 
         var builder = new LineBuilder(font, scale);
 
-        // The column narrows for the opening lines when something is set into them, so the limit is
-        // read per line rather than captured once.
         float Limit() => lines.Count < leadingIndentLines ? maxWidth - leadingIndent : maxWidth;
 
         foreach (TextSnippet snippet in snippets)

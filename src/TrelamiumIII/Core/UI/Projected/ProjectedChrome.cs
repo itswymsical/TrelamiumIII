@@ -6,12 +6,6 @@ namespace TrelamiumIII.Core.UI.Projected;
 ///     The widget vocabulary for projected panels: cards, slots and button frames, in the same
 ///     white-on-black with a coloured ghost that <see cref="PanelStyle" /> draws bubbles in.
 /// </summary>
-/// <remarks>
-///     Everything here is a few chamfered rectangles, and none of it carries text: labels belong to
-///     the face's text layer. The style has one trick -- an inverted shape for anything selected,
-///     because on pure white over pure black a colour shift has nowhere to go -- and this keeps every
-///     widget using it the same way.
-/// </remarks>
 internal static class ProjectedChrome
 {
     /// <summary>Secondary text: labels, provenance, hints.</summary>

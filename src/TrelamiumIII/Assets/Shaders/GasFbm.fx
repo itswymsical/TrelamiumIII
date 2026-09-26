@@ -98,9 +98,6 @@ float Fbm(float2 p)
     return sum;
 }
 
-// Screen uv -> world position, in units of screen heights. The zoom has to be undone here:
-// without it the noise carries a (1 - Zoom) * cameraCentre error that moves with the camera, so
-// the pattern slides across the world whenever the player pans while zoomed.
 float2 WorldUv(float2 uv)
 {
     float2 aspect = float2(Aspect, 1.0);
@@ -149,51 +146,28 @@ float3 FieldLight(float2 uv)
 
 float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
 {
-    // snap to the field-texel grid: every decision below happens per 2px cell,
-    // which is what makes the result read as chunky vanilla pixels.
     float2 cell = (floor(uv / FieldTexel) + 0.5) * FieldTexel;
 
-    // world-locked, drifting FBM: the texture boils in place while the camera
-    // pans across it, instead of swimming with the screen. The stretch runs the
-    // pattern vertically for anything that should read as a run or a drip.
     float2 p = WorldUv(cell) * NoiseScale;
     p = p * NoiseStretch + NoiseDrift * Time;
 
-    // Displace the lookup by where the material on this cell is going, so the surface detail
-    // travels with the gas instead of the gas sliding underneath a pattern pinned to the world.
-    // A displacement, not a scroll: multiplying by Time would make the noise accelerate away
-    // forever, where warping the sample point drags the pattern exactly as far as the flow says
-    // and no further.
-    //
-    // Scaled to nothing rather than branched around. ps_3_0 cannot sample inside dynamic flow
-    // control -- tex2D needs derivatives and a divergent branch has none -- so an `if` here is
-    // either rejected or flattened into exactly this multiply anyway. A layer that leaves
-    // FlowStrength at zero still reads the attribute target, and still correctly gets no
-    // displacement from it, including when nothing is bound there at all.
     p -= FieldFlow(cell, Coverage(cell)) * FlowStrength;
 
     float fbm = Fbm(p);
 
-    // erode the field with the noise, then cut it hard. (fbm - 0.5): erosion digs
-    // and bulges around zero so Threshold keeps meaning "field level".
     float erosion = NoiseStrength * (fbm - 0.5);
     float d = Density(cell) - erosion;
     if (d < Threshold)
         discard;
 
-    // The light the blobs on THIS cell are standing in, not one value for the whole screen.
     float3 light = FieldLight(cell);
 
-    // one-texel neighbor tests against the same erosion: any neighbor falling
-    // outside the cut makes this cell a 2px edge.
+
     float2 tx = float2(FieldTexel.x, 0.0);
     float2 ty = float2(0.0, FieldTexel.y);
 
     float upD = Density(cell - ty) - erosion;
 
-    // An upward-facing edge is a liquid surface and takes the bright line instead of the outline.
-    // With HighlightAlpha at zero the top edge falls through to the outline below, which is what
-    // a gas wants -- so the two materials are one branch apart rather than two shaders apart.
     if (HighlightAlpha > 0.0 && upD < Threshold)
         return float4(HighlightColor * light * HighlightAlpha, HighlightAlpha);
 
@@ -202,14 +176,6 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
     if (min(sideMin, upD) < Threshold)
         return float4(OutlineColor * light * OutlineAlpha, OutlineAlpha);
 
-    // here we shade by depth-past-threshold and have the effect textured by the FBM so the body
-    // churns/mixes, then just posterize it into flat bands.
-    //
-    // The roll-off is exponential rather than a divide by (1 - Threshold). The field target is
-    // float now and no longer clamps at 1, so density inside a thick cloud runs well past it and a
-    // linear ramp normalized against 1 pins the whole interior at full shade -- which is what the
-    // old eight-bit target did by saturating, and why bodies read as pure noise. This approaches 1
-    // without ever reaching it, so there is gradient at any depth. DepthRange is the taste knob.
     float t = 1.0 - exp(-(d - Threshold) / max(DepthRange, 0.001));
     float shade = saturate(t * (0.55 + 0.9 * fbm));
     shade = floor(shade * Bands) / max(Bands - 1.0, 1.0);
@@ -217,11 +183,6 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
     float3 color = lerp(ShadowColor, BodyColor, saturate(shade * 2.0));
     color = lerp(color, CoreColor, saturate(shade * 2.0 - 1.0));
 
-    // Heat pulls the ramp toward HotColor per cell rather than per layer, so one cloud can cool
-    // across its own body -- the near-white core of a fresh thermite spray and the dull crust at
-    // its trailing edge are the same field, read at two temperatures.
-    // Unconditional for the same reason as the flow displacement above: a TemperatureBlend of zero
-    // takes the lerp to its first argument, which is the untouched palette.
     color = lerp(color, HotColor, saturate(FieldTemperature(cell, Coverage(cell)) * TemperatureBlend));
 
     float alpha = BodyAlpha * lerp(BodyAlphaFloor, 1.0, shade);

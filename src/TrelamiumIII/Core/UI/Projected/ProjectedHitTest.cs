@@ -6,20 +6,6 @@ namespace TrelamiumIII.Core.UI.Projected;
 ///     Maps the cursor back onto a projected quad's face, so widgets laid out in texels can be
 ///     hit-tested in texels.
 /// </summary>
-/// <remarks>
-///     <para>
-///         <see cref="PanelCamera.Contains" /> answers whether the cursor is on the quad at all. A
-///         board with a list, a row of slots and two buttons needs to know <em>where</em> on it, and
-///         under perspective that is not a linear question: the far half of a tilted panel covers
-///         fewer screen pixels than the near half.
-///     </para>
-///     <para>
-///         The quad's four projected corners define a homography from the unit square to the screen
-///         (Heckbert's square-to-quad), and its adjugate is the map back. The mesh is bilinear in
-///         space rather than a true plane once the hand-made warp is applied, so the interior differs
-///         from the homography by a fraction of a texel -- less than the padding any button carries.
-///     </para>
-/// </remarks>
 internal static class ProjectedHitTest
 {
     /// <summary>

@@ -14,20 +14,15 @@ public sealed class ExampleLoreBook : ModLoreBook
     protected override void Build(BookBuilder book) => book
         .Heading("Title")
 
-        // A drop cap only makes sense on the paragraph that opens a chapter.
         .Prose("Opening", BlockStyle.Body with { DropCap = true, Align = TextAlign.Justify })
 
         .Prose("Second", BlockStyle.Body with { Align = TextAlign.Justify })
 
-        // Anchored to the paragraph above by default, so it travels with it when the book
-        // reflows into another language.
         .StickyNote("Marginal", offset: new Vector2(6f, -14f), rotation: -0.05f, width: 124f)
 
         .Rule(span: 0.4f)
         .Quote("Excerpt")
 
-        // A run set in the softer face, which closes again afterwards. Everything inside inherits
-        // it -- the panel's own blocks included, since a panel carries the typeface inward.
         .Section(BookTypeface.Glossary, glossary => glossary
             .Panel(panel => panel
                 .Heading("WarningTitle", rule: false, BlockStyle.Heading with { Scale = 0.5f })
@@ -36,8 +31,6 @@ public sealed class ExampleLoreBook : ModLoreBook
         .PageBreak()
         .Heading("SecondChapter")
 
-        // Back in Andika, because the section closed. An element can still opt out on its own:
-        // naming a typeface in the style outranks both the section and the book.
         .Prose("Closing", BlockStyle.Body with
         {
             Align = TextAlign.Justify,

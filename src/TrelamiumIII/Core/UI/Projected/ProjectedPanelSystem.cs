@@ -18,19 +18,6 @@ internal interface IProjectedPanel : IDisposable
 ///     Rebuilds the faces of every registered <see cref="IProjectedPanel" /> once per frame, and
 ///     wraps the quad pass every one of them draws with.
 /// </summary>
-/// <remarks>
-///     <para>
-///         Alongside <see cref="ProjectedDialogueSystem" /> rather than inside it. That system is
-///         shaped around the dialogue box and its response atlas; this one holds anything else that
-///         wants to be a plane in the scene -- the job board, its hover card, the item tooltip -- and
-///         only shares the quad mesh with it.
-///     </para>
-///     <para>
-///         Faces are built from <c>CheckMonoliths</c> for the reason given on the dialogue system: it
-///         is the point in the frame where vanilla does its own off-screen work, and the last one
-///         where a render target can still be set without discarding the frame so far.
-///     </para>
-/// </remarks>
 public sealed class ProjectedPanelSystem : ModSystem
 {
     private static readonly List<IProjectedPanel> live = [];
@@ -57,11 +44,6 @@ public sealed class ProjectedPanelSystem : ModSystem
     ///     Brackets the mouse-text layer, so a claimed item tooltip is in vanilla's hands for
     ///     exactly as long as it takes to draw and no longer.
     /// </summary>
-    /// <remarks>
-    ///     Two layers rather than one because the second has to run even when no tooltip was drawn:
-    ///     it puts back the player's opaque-box setting, which the first switches off. See
-    ///     <see cref="ProjectedTooltip.Assert" /> for why either is needed.
-    /// </remarks>
     public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
     {
         int index = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Mouse Text"));
@@ -123,11 +105,6 @@ public sealed class ProjectedPanelSystem : ModSystem
     /// <summary>
     ///     Runs <paramref name="draw" /> as a quad pass in the middle of an interface layer.
     /// </summary>
-    /// <remarks>
-    ///     The layer opened a sprite batch and primitives cannot be issued inside one, so it is closed
-    ///     and reopened around the quads exactly as the UI layers leave it. Every panel that draws
-    ///     from a UI-scaled layer goes through here so that reopening is written once.
-    /// </remarks>
     internal static void DrawQuads(SpriteBatch spriteBatch, Action<ProjectedQuad, GraphicsDevice> draw)
     {
         ProjectedQuad? quad = ProjectedDialogueSystem.Quad;

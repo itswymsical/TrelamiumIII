@@ -165,13 +165,6 @@ public class JobSidebar
     /// <summary>
     /// Reads the stage the job says it is on. It does not advance it.
     /// </summary>
-    /// <remarks>
-    /// This used to increment <see cref="Job.CurrentTaskSet"/> itself when it noticed a finished
-    /// stage -- from inside the draw pass, every frame the sidebar was visible. That made the UI a
-    /// second writer of job state racing <see cref="Job.UpdateProgress"/>, and because it moved the
-    /// index without going through the job, <see cref="Job.OnSetAdvanced"/> was skipped whenever the
-    /// UI won -- silently swallowing the Guide's per-stage dialogue.
-    /// </remarks>
     private void PopulateVisibleTasks()
     {
         if (currentJob.CurrentSet is not { } currentSet)

@@ -6,70 +6,40 @@ namespace TrelamiumIII.Content.Items.Alchemy.Reagents;
 
 /// <summary>
 ///     Conventional solutes (raw minerals, acid products, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
-///     Internal names keep the old <c>...Item</c> spelling so saves and localisation keys still resolve.
 /// </summary>
 public sealed class SoluteID : ICustomAutoload
 {
-    /// <summary>What a reagent draws while it has no sprite of its own, which is most of them.</summary>
     private static readonly string Placeholder = AssetReferences.Assets.Textures.PlaceholderSolute.KEY;
 
     #region Raw minerals
-
-    /// <summary>Brimstone from ash. Also places as a tile.</summary>
     public static int Sulfur { get; private set; }
-
-    /// <summary>Saltpetre. Barely burns on its own; makes everything beside it burn harder.</summary>
     public static int Niter { get; private set; }
-
-    /// <summary>Boiled out of brine.</summary>
     public static int RockSalt { get; private set; }
-
-    /// <summary>Burnt limestone. Meets water and gets hot about it.</summary>
     public static int Quicklime { get; private set; }
-
     public static int BoneAsh { get; private set; }
-
     public static int Potash { get; private set; }
+    public static int Cinnabar { get; private set; }
+    public static int Quicksilver { get; private set; }
 
     #endregion
 
     #region Acid products
-
     public static int SpiritOfSalt { get; private set; }
-
     public static int BlueVitriol { get; private set; }
 
     #endregion
 
     #region Alkalis
-
-    /// <summary>Quicklime that has already had its argument with water. Inert, and a fire suppressant.</summary>
     public static int SlakedLime { get; private set; }
-
     public static int CausticLye { get; private set; }
-
-    /// <summary>A freezing mixture. Draws heat in rather than giving it off.</summary>
     public static int FrigorificSalt { get; private set; }
-
     #endregion
 
     #region Distillates and powders
-
-    /// <summary>Naphtha. The lightest thing to come off the still and the most eager to catch.</summary>
     public static int SpiritOfOil { get; private set; }
-
-    /// <summary>What is left in the bottom of the still. Slow, sticky, and reluctant.</summary>
     public static int Pitch { get; private set; }
-
-    /// <summary>
-    ///     Six parts niter to one of fuel. The intended anchor for <c>ChemicalDamageType.Kinetic</c>,
-    ///     which currently has no matchup rows at all.
-    /// </summary>
     public static int BlackPowder { get; private set; }
-
-    /// <summary>Phosphorus. Catches on contact with plain air, with no spark offered to it.</summary>
     public static int ColdFire { get; private set; }
-
     #endregion
 
     public static void Autoload(Mod mod)
@@ -80,27 +50,43 @@ public sealed class SoluteID : ICustomAutoload
         LoadDistillates(mod);
     }
 
-    /// <summary>
-    ///     The raw tier. Each is roasted or boiled out of something the world already provides, so this
-    ///     tier adds no ores, no worldgen, and only the one tile.
-    /// </summary>
     private static void LoadMinerals(Mod mod)
     {
         Sulfur = Add(mod, new SoluteItem("SulfurItem")
         {
             TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Sulfur.KEY,
-            Value = Item.sellPrice(copper: 40),
+            Value = Item.sellPrice(copper: 2),
             AlmanacPotency = 2,
             Quality = ChemicalQuality.Volatile | ChemicalQuality.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Bane,
 
-            // Last: this resizes the item and makes it placeable.
             Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<SulfurTile>()),
 
             Recipes = self => self.CreateRecipe(2)
                 .AddIngredient(ItemID.AshBlock, 10)
                 .AddTile(TileID.Furnaces)
                 .Register(),
+        });
+
+        Cinnabar = Add(mod, new SoluteItem("CinnabarItem")
+        {
+            TexturePath = Placeholder,
+            Value = Item.sellPrice(copper: 11),
+            AlmanacPotency = 3,
+            Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
+            Principle = PrincipleType.Martial,
+
+            //Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<CinnabarTile>()),
+
+        });
+
+        Quicksilver = Add(mod, new SoluteItem("QuicksilverItem")
+        {
+            TexturePath = Placeholder,
+            Value = Item.sellPrice(copper: 4),
+            AlmanacPotency = 2,
+            Quality = ChemicalQuality.Volatile | ChemicalQuality.Alkaline,
+            Principle = PrincipleType.Specular,
         });
 
         Niter = Add(mod, new SoluteItem("NiterItem")
@@ -180,7 +166,6 @@ public sealed class SoluteID : ICustomAutoload
         });
     }
 
-    /// <summary>Solutes produced by the acid solvents in <see cref="SolventID" />.</summary>
     private static void LoadAcidProducts(Mod mod)
     {
         SpiritOfSalt = Add(mod, new SoluteItem("SpiritOfSaltItem")
@@ -202,10 +187,6 @@ public sealed class SoluteID : ICustomAutoload
         });
     }
 
-    /// <summary>
-    ///     The neutralising and heat-suppressing half of the line; the only reagents that push a burn metric
-    ///     <em>down</em>.
-    /// </summary>
     private static void LoadAlkalis(Mod mod)
     {
         SlakedLime = Add(mod, new SoluteItem("SlakedLimeItem")
@@ -235,7 +216,6 @@ public sealed class SoluteID : ICustomAutoload
         });
     }
 
-    /// <summary>The fuel tier. Spirit of Oil and Pitch come from the same distillation, so they register as a pair.</summary>
     private static void LoadDistillates(Mod mod)
     {
         SpiritOfOil = Add(mod, new SoluteItem("SpiritOfOilItem")

@@ -667,8 +667,6 @@ public class GirthquakeProj : ModProjectile
     /// <summary>Charge doesn't scale damage or knockback; holding only buys more shrapnel.</summary>
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
     {
-        // Away from the player rather than along the sweep -- the hammer is coming down, so a
-        // velocity-derived hit direction would fling things at the floor.
         modifiers.HitDirectionOverride = facing;
     }
 

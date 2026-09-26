@@ -57,7 +57,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     private const float BURST_SPEED = 4.5f;
 
     // Spine points. Generated across the arc each frame rather than sampled from position history,
-    // so this only has to resolve a circle -- 48 is a point every 7.5 degrees at full closure.
+    // so this only has to resolve a circle. 48 is a point every 7.5 degrees at full closure.
     private const int TRAIL_POINTS = 48;
 
     // Arc at zero charge. Grows to a full turn as the charge tops out.

@@ -1,9 +1,3 @@
-// Light Sweep — a diagonal light streak that sweeps across the frame. Adapted from a
-// Godot canvas_item "shine/light sweep" shader (blend_premul_alpha). Procedural, drawn
-// as a full-screen premultiplied-alpha pass over a white pixel. The sweep phase is
-// supplied by the host (free-running time*speed, or beat-synced) via uPhase, so the
-// rhythmic timing lives in C# where it's easy to drive off the beat clock.
-//
 //   uPhase      0..1 sweep position (host-driven)
 //   uRotation   streak angle, degrees
 //   uWidth      streak width

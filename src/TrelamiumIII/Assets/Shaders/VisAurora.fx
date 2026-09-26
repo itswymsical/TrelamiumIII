@@ -1,17 +1,3 @@
-// Aurora Borealis — shimmering sky curtains, drawn as a full-screen additive pass.
-//
-// Ported from the Godot sky shader the user supplied, which itself descends from
-// Shadertoy XtGGRt. The heart of it is `trinoise2d`: a triangle-wave fractal that
-// domain-warps itself each octave, producing the stringy filaments an FBM can't. It
-// is reproduced faithfully here — only the matrix convention changes (GLSL's
-// `vec * mat` row-vector product becomes HLSL `mul(M, v)` with the same components,
-// which is the same rotation).
-//
-// What DID have to change is the camera. The original is a `shader_type sky` and
-// marches along EYEDIR; a visualizer element gets a flat quad and SpriteBatch UVs, so
-// we rebuild a view ray per pixel from uHorizon/uSpread and march that. Everything
-// below the horizon is skipped, exactly like the reference's top-half-only guard.
-//
 //   uTime        seconds
 //   uSpeed       curtain drift speed
 //   uScale       base march scale (the reference's `scale`)
@@ -24,18 +10,6 @@
 //   uColorMid    gradient midpoint
 //   uColorHigh   gradient at the far end
 //   uResolution  pixel size (aspect correction)
-//
-// Composites ADDITIVELY OVER s0 in-shader rather than relying on a blend state, so one
-// shader serves both call sites unchanged: the visualizer element's
-// VisualizerPipeline.PostProcess and the chart effect's ScreenFxRenderer.PostProcess
-// (both bind the frame to s0 and draw Opaque). uBrightness is the contribution scalar
-// each side folds its own weight into — the element its lane fade, the chart effect its
-// envelope. Same trick BloomShader already uses to serve both paths.
-//
-// STEPS is a compile-time constant — ps_3_0 under MojoShader can't be trusted with a
-// uniform loop bound. 16 is the sweet spot: below ~12 the depth jitter shows as
-// ripples. This is the most expensive element in the set (16 marches x a 4-octave
-// tri-noise each); pair it with a lower internal resolution if it costs too much.
 
 sampler2D SceneSampler : register(s0);
 
@@ -73,7 +47,7 @@ float2 tri2(float2 p)
     return float2(tri(p.x) + tri(p.y), tri(p.y + tri(p.x)));
 }
 
-// Triangle-wave fractal with per-octave domain warp — the filament generator.
+// Triangle-wave fractal with per-octave domain warp
 float trinoise2d(float2 p, float t)
 {
     float z = 1.8;
@@ -133,7 +107,8 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     [unroll]
     for (int i = 0; i < STEPS; i++)
     {
-        // max() keeps pow's base non-negative — ds can only go negative if Depth is
+        // max() keeps pow's base non-negative
+        // ds can only go negative if Depth is
         // driven below zero by an automation, and a NaN there would kill the frame.
         float ds = max(((float)i + jitter) * stepScale, 0.0);
         float depth = (uScale + pow(ds, 1.4) * 0.002) / (dir.y * 2.0 + 0.4);
@@ -144,9 +119,6 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
         // exp2 falloff thins the far curtains; the smoothstep hides the near clip.
         float w = exp2(-ds * 0.065 - 2.5) * smoothstep(0.0, 5.0, ds);
 
-        // The exp2 weight above means only roughly the first half of the march is
-        // visible, so map the gradient across THAT span — against the full extent the
-        // high colour would never appear at all.
         float g = saturate(ds / max(uHeight * 0.45, 1e-4));
         float3 grad = g < 0.5 ? lerp(uColorLow, uColorMid, g * 2.0)
                               : lerp(uColorMid, uColorHigh, (g - 0.5) * 2.0);

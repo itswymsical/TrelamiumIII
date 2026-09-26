@@ -68,8 +68,6 @@ public sealed class SonsMushroom : GlobalItem
 
     public override void LoadData(Item item, TagCompound tag)
     {
-        // Runs after SetDefaults has reset the item, which is exactly when the gift has to be
-        // reapplied -- neither the heal nor the name survives on their own.
         if (tag.GetBool("fromSon"))
             Bless(item);
     }

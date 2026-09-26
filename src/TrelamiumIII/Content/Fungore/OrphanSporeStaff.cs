@@ -1061,8 +1061,6 @@ public class ShroomsonMinion : ModProjectile
         {
             NPC marked = Main.npc[owner.MinionAttackTargetNPC];
 
-            // A mark is an order, so it is taken on trust -- no range cap, no line of sight. He will
-            // walk the distance and find the angle himself.
             if (marked is { active: true } && marked.CanBeChasedBy(Projectile))
                 return marked;
         }

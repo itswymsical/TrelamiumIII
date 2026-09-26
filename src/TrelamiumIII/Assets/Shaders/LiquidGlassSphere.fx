@@ -163,7 +163,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     // Fades over the last sliver of the disc so the silhouette itself is not a jagged circle.
     float mask = (1.0 - smoothstep(0.985, 1.0, rn)) * saturate(uMix);
 
-    // col is the sky tint, not white. Ignored on purpose -- see the note at the top.
+    // col is the sky tint, not white. Ignored on purpose, see the note at the top.
     return float4(lerp(bg.rgb, glass, mask), bg.a);
 }
 

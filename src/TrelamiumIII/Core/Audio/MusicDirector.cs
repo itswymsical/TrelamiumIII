@@ -50,7 +50,6 @@ internal sealed class MusicDirector : ModSystem
 
     public static string? Playing => score?.Name;
 
-    /// <summary>Beats elapsed, wrapped into the loop. Fractional -- the whole point is the fraction.</summary>
     public static float Beats
     {
         get

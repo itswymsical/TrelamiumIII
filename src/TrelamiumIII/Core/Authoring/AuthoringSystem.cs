@@ -67,8 +67,7 @@ public sealed class AuthoringSystem : ModSystem
         // that swallows Escape traps the player in the tool.
         if (!Main.keyState.IsKeyDown(Keys.Escape) || Main.oldKeyState.IsKeyDown(Keys.Escape)) return;
 
-        // Unwinds one layer per press -- picker, prompt, dropdown -- and only closes the desk once
-        // nothing is left open, so Escape never discards work the writer could not see.
+
         if (state?.DismissTopmost() == true) return;
 
         Close();

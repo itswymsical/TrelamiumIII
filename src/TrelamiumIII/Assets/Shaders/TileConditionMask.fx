@@ -1,16 +1,3 @@
-// Composites a tile-condition coverage mask.
-//
-// The field at s0 holds tile silhouettes alpha-blended in, so its ALPHA channel is coverage:
-// 1 where a tile is fully marked, the tile's own shape where it is sloped or halved, and the
-// stamp's intensity where the mark is weak. Colour is ignored; the tile sprites that were stamped
-// are only there for their shape.
-//
-// The whole region is then eroded by world-locked FBM and cut at a hard threshold. That single
-// step is what makes this worth doing instead of a 16x16 overlay texture: the noise runs across
-// tile seams, so a wall of eight burnt blocks reads as one charred patch with holes in it rather
-// than eight copies of the same little square. Cells that land near the cut become the edge --
-// embers for a burn, rime for a freeze -- and the body behind them is tinted and lit.
-//
 //   Threshold      coverage (after erosion) at which the mark exists at all
 //   NoiseStrength  how hard the FBM eats into it; ~2x Threshold gives holes through the interior
 //   NoiseScale     FBM frequency; NoiseDrift scrolls it, WorldOffset locks it to the world

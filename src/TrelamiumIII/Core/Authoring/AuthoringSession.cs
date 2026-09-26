@@ -195,8 +195,6 @@ public sealed class AuthoringSession
             Key = UniqueKey(kind.ToString()),
         });
 
-        // Cleared first so SelectBlock does not treat the move as a no-op, and so the commit it
-        // performs finds no block to write the outgoing buffer into -- it was saved above.
         SelectedIndex = -1;
         SelectBlock(target);
         Status = $"Added {kind}.";

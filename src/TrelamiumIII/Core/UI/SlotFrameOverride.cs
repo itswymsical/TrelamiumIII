@@ -12,13 +12,6 @@ namespace TrelamiumIII.Core.UI;
 /// <summary>
 ///     Draws a vanilla item slot with its backdrop swapped for custom art.
 /// </summary>
-/// <remarks>
-///     Custom frames cannot simply be painted over <see cref="ItemSlot.Draw" />'s output: art with
-///     soft or rounded corners lets the grey vanilla slot bleed through the gaps. So instead of
-///     drawing on top, this points the vanilla backdrop assets at the replacement for the length of
-///     one draw call and puts them straight back, which keeps everything else vanilla owns -- item
-///     scaling and animation, stack counts, shimmer, hover -- and changes only the frame underneath.
-/// </remarks>
 internal static class SlotFrameOverride
 {
     private static FieldInfo[]? backdrops;
@@ -60,12 +53,6 @@ internal static class SlotFrameOverride
         }
     }
 
-    /// <summary>
-    ///     Every vanilla slot-backdrop asset, found once by name. <see cref="ItemSlot.Draw" />
-    ///     chooses among these from the slot context by rules we do not own and which shift between
-    ///     versions, so all of them are redirected rather than trying to predict which one it will
-    ///     reach for.
-    /// </summary>
     private static FieldInfo[] Backdrops() => backdrops ??= typeof(TextureAssets)
         .GetFields(BindingFlags.Public | BindingFlags.Static)
         .Where(field => field.FieldType == typeof(Asset<Texture2D>) && field.Name.StartsWith("InventoryBack"))

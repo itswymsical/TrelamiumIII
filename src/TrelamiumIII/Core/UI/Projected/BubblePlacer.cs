@@ -62,7 +62,7 @@ internal sealed class BubblePlacer
     ///     centres it on screen when there is no target.
     /// </summary>
     /// <param name="anchorGap">Screen pixels between the tail's point and the target.</param>
-    /// <param name="snapFacing">Take the facing at once rather than easing into it -- for the first frame.</param>
+    /// <param name="snapFacing">Take the facing at once rather than easing into it for the first frame.</param>
     public void Place(Point content, int nameWidth, int nameHeight, Vector2? target, float anchorGap, bool snapFacing = false)
     {
         UpdateFacing(target, snapFacing);
@@ -117,10 +117,6 @@ internal sealed class BubblePlacer
             OnScreen(bottom - Size.Y * 0.5f, Size.Y * 0.5f, Main.screenHeight));
     }
 
-    /// <summary>
-    ///     Keeps one axis of the panel inside the window, centring instead of clamping when the panel
-    ///     is wider than the space -- a plain clamp would be handed a minimum above its maximum.
-    /// </summary>
     public static float OnScreen(float centre, float half, float extent)
     {
         const float EDGE = 8f;

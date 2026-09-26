@@ -39,7 +39,7 @@ public static class AdvancedAlchemyStationRenderer
     private static readonly Vector2 ComponentSlotOffset = new(15, 4);
     private const float ComponentSlotSpacingExtra = 2f;
 
-    // Output item on the right end of the base, beneath the chamber spout — the produced/previewed result.
+    // Output item on the right end of the base, beneath the chamber spout
     private static readonly Vector2 BaseEdgeOutputOffset = new(198, 68);
 
     /// <summary>Composite top-left relative to the base origin cell's top-left, in pixels.</summary>

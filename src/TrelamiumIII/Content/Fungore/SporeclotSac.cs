@@ -180,12 +180,8 @@ public class SporeclotSacProj : ModProjectile
     {
         stickInitialised = true;
 
-        // Frozen mid-spin rather than snapped to the impact angle -- it splats however it happened
-        // to be turned when it hit.
         stuckRotation = Projectile.rotation;
 
-        // Nudged along the impact direction so the sac sits buried in the host rather than
-        // hovering at the exact pixel it made contact.
         offset = host.Center - Projectile.Center + impactVelocity * 0.75f;
 
         Projectile.velocity = Vector2.Zero;

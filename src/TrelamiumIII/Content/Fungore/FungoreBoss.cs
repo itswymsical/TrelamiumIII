@@ -518,8 +518,7 @@ public sealed class FungoreBoss : ModNPC
         NPC.Bottom = new Vector2(emergeX, GroundY + NPC.height);
         NPC.velocity = Vector2.Zero;
 
-        // Invulnerability and phasing are derived from the state every tick in UpdateEmerge rather
-        // than latched here, so a client -- which never runs this hook -- agrees without being told.
+        // Invulnerability and phasing are derived from the state every tick in UpdateEmerge
         SetState(FungoreState.Emerge);
     }
 
@@ -1284,8 +1283,7 @@ public sealed class FungoreBoss : ModNPC
 
         squish = Vector2.Lerp(LandSquish, Vector2.One, EaseCubicOut.Ease(recover / (float)SUPER_RECOVER_TICKS));
 
-        // The impact pose holds on its own before the recovery runs, rather than being the first
-        // slice of it -- it is the frame the attack is read from, and it should not be a blur.
+        // The impact pose holds on its own before the recovery runss
         SetFrame(COLUMN_SUPER, recover < SUPER_IMPACT_TICKS
             ? SUPER_IMPACT
             : RowAcross(SUPER_RECOVER_FIRST, SUPER_RECOVER_LAST, (recover - SUPER_IMPACT_TICKS) / (float)Math.Max(SUPER_RECOVER_TICKS - SUPER_IMPACT_TICKS, 1)));
@@ -1392,12 +1390,8 @@ public sealed class FungoreBoss : ModNPC
 
         dropTicks++;
 
-        // Driven rather than dropped -- terminal velocity under gravity alone is far too slow to
-        // sell a slam this size -- but eased in, so the turn at the top is a fall and not a switch.
         NPC.velocity.Y = Math.Max(SUPER_DROP_SPEED * EaseQuadIn.Ease(progress), 1f);
 
-        // Tracks the target on the way down. The wave is the threat rather than the body, so being
-        // followed is fair -- there is nowhere on the ground to stand either way.
         NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, CloseHorizontal(6f), 0.06f);
 
         SetFrame(COLUMN_SUPER, RowAcross(SUPER_DROP_FIRST, SUPER_DROP_LAST, progress));
@@ -2120,12 +2114,9 @@ public sealed class FungoreBoss : ModNPC
 
         SpriteEffects effects = facing == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-        // Behind the body, and before the shake -- the afterimages trace where he has been, which is
-        // a smooth path, not a rattling one.
         if (Dashing)
             DrawDashTrail(spriteBatch, texture, source, origin, screenPos, effects, drawColor);
 
-        // Rattling in place: loading up a super slam, or coming apart at the end.
         if (drawShake > 0f)
             position += Main.rand.NextVector2Circular(drawShake, drawShake * 0.5f);
 

@@ -561,7 +561,7 @@ Items: {
 
 	BottledOilItem: {
 		DisplayName: Bottled Oil
-		Tooltip: "Don't tell anyone you have this..."
+		Tooltip: Don't tell anyone you have this...
 	}
 
 	BrineBottleItem: {
@@ -1031,6 +1031,16 @@ Items: {
 
 	GasCanisterBase: {
 		DisplayName: Gas Canister Base
+		Tooltip: ""
+	}
+
+	CinnabarItem: {
+		DisplayName: Cinnabar Item
+		Tooltip: ""
+	}
+
+	QuicksilverItem: {
+		DisplayName: Quicksilver Item
 		Tooltip: ""
 	}
 }

@@ -550,7 +550,6 @@ public sealed class AuthoringUIState : UIState
         int x = area.X + 8;
         int y = area.Y + 7;
 
-        // Face, then size, then emphasis, then colour -- Word's Font group order.
         x += Button(spriteBatch, $"{TypefaceName()}  v", x, y, 122, alpha,
             () => dropdownOpen = !dropdownOpen, dropdownOpen, "Typeface for this block") + 4;
 
@@ -672,7 +671,7 @@ public sealed class AuthoringUIState : UIState
 
         AuthoringSkin.DrawButton(spriteBatch, area, hover, focused);
 
-        if (hover) tooltip = "Text size -- click to type one, or use A+ / A-";
+        if (hover) tooltip = "Text size: click to type one, or use A+ / A-";
 
         if (focused) DrawInlineBuffer(spriteBatch, area, alpha);
         else Centre(spriteBatch, session.ScaleText, area, Color.White * alpha);
@@ -867,7 +866,7 @@ public sealed class AuthoringUIState : UIState
         AuthoringSkin.DrawPanel(spriteBatch, area, AuthoringSkin.Panel * alpha);
 
         string label = prompt == EditorField.BookKey
-            ? "Book key -- the registry key and localization scope"
+            ? "Book key: the registry key and localization scope"
             : "Book title";
 
         Text(spriteBatch, label, new Vector2(area.X + 14, area.Y + 12), Color.LightGray * alpha, CHROME);
@@ -1101,7 +1100,7 @@ public sealed class AuthoringUIState : UIState
         Centre(spriteBatch, label, area, (enabled ? Color.White : new Color(110, 110, 130)) * alpha);
 
         if (area.Contains(CursorPoint) && tip is not null)
-            tooltip = enabled ? tip : $"{tip} -- this face has no such weight";
+            tooltip = enabled ? tip : $"{tip} | this face has no such weight";
 
         if (enabled) hotspots.Add((area, act));
 
