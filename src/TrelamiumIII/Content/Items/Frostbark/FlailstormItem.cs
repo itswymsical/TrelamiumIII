@@ -33,8 +33,8 @@ public class FlailstormItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
         component.debuffDuration = 150;
-        component.ReactionChance = 0.1f;
-        component.ChemicalDamage = 0.75f;
+        component.ReactionChance = 10;
+        component.ChemicalDamage = 1;
     }
 
     public override bool MeleePrefix() => true;

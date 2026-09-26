@@ -47,11 +47,11 @@ public class TimedVilesporeCanister : VilesporeCanister
 
         Item.damage = 7;
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 2f;
+        component.ChemicalDamage = 2;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.002f;
-        component.ReactionDamage = 5f;
+        component.ReactionChance = 2;
+        component.ReactionDamage = 5;
     }
 }
 
@@ -66,10 +66,10 @@ public class ContactVilesporeCanister : VilesporeCanister
 
         Item.damage = 2;
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 2f;
+        component.ChemicalDamage = 2;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.002f;
-        component.ReactionDamage = 5f;
+        component.ReactionChance = 2;
+        component.ReactionDamage = 5;
     }
 }

@@ -52,11 +52,11 @@ public class ChemicalHandler : GlobalProjectile
         float dmg = Source.ChemicalDamage * DamageBonus;
         int duration = (int)(Source.AfflictionDuration * StatsAfflictionRate);
         float rate = Source.AfflictionRate * StatsAfflictionRate;
-        float chance = Math.Min(1f, Source.ReactionChance + StatsReactionChance);
+        float chance = Source.ReactionChance + StatsReactionChance;
 
         npcData.ApplyAffliction(dmg, duration, rate, Source.ChemicalType);
 
-        if (Main.rand.NextFloat() < chance)
+        if (Main.rand.NextFloat(100f) < chance)
             ChemicalReaction.Trigger(target, Source, StatsReactionDamageBonus, projectile);
     }
 }

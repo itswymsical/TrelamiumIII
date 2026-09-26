@@ -13,24 +13,22 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     public ChemicalDamageType ChemicalType = ChemicalDamageType.None;
 
     /// <summary>
-    /// SEPARATE from DamageClass Damage. handles affliction damage (debuff damage) of this item's chemical type.
-    /// <para>
-    ///  Affliction tick damage before matchup scaling; separate from the item's own damage.
-    /// </para>
+    /// Flat affliction damage per tick, like <see cref="Item.damage" />, before matchup scaling. Separate from
+    /// the item's own damage, which is the direct hit.
     /// </summary>
-    public float ChemicalDamage = 5f;
+    public int ChemicalDamage = 5;
 
     /// <summary>Base affliction duration in ticks. Scaled by player's AfflictionRate.</summary>
     public int debuffDuration = 180;
 
-    /// <summary>Per-source reaction chance, 0.0–1.0. Added to player's ReactionChance.</summary>
-    public float ReactionChance = 0f;
+    /// <summary>Reaction odds in percent, like <see cref="Item.crit" />. Added to player's ReactionChance.</summary>
+    public int ReactionChance = 0;
 
     /// <summary>How often affliction damage is dealt, in ticks.</summary>
     public float debuffRate = 20;
 
     /// <summary>Reaction burst damage, scaled by composition matchup and the player's ReactionDamageBonus.</summary>
-    public float ReactionDamage = 0f;
+    public int ReactionDamage = 0;
 
     /// <summary>
     /// Per-instance reaction behaviour, assigned in SetDefaults and invoked when this source rolls a reaction.
@@ -38,11 +36,11 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     public Action<ChemicalReactionEvent> ReactionHandler;
 
     ChemicalDamageType IChemicalSource.ChemicalType => ChemicalType;
-    float IChemicalSource.ChemicalDamage => ChemicalDamage;
+    int IChemicalSource.ChemicalDamage => ChemicalDamage;
     int IChemicalSource.AfflictionDuration => debuffDuration;
     float IChemicalSource.AfflictionRate => debuffRate;
-    float IChemicalSource.ReactionChance => ReactionChance;
-    float IChemicalSource.ReactionDamage => ReactionDamage;
+    int IChemicalSource.ReactionChance => ReactionChance;
+    int IChemicalSource.ReactionDamage => ReactionDamage;
 
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);

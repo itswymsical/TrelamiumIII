@@ -25,11 +25,11 @@ public class BloodField : ChemicalGasField
     protected override float LifeDecay => 0.85f;
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
-    public override float ChemicalDamage => 0.4f;
+    public override int ChemicalDamage => 1;
     public override int AfflictionDuration => 90;
     public override float AfflictionRate => 30f;
-    public override float ReactionChance => 0.02f;
-    public override float ReactionDamage => 4f;
+    public override int ReactionChance => 2;
+    public override int ReactionDamage => 4;
 
     /// <summary>
     ///     Leaves nothing on the terrain it lands on.

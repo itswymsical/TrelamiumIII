@@ -15,13 +15,13 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     public const int CosmeticOwnerID = -999;
     public abstract ChemicalDamageType ChemicalType { get; }
 
-    public virtual float ChemicalDamage => 0.5f;
+    public virtual int ChemicalDamage => 1;
 
     public virtual int AfflictionDuration => 60;
     public virtual float AfflictionRate => 30f;
-    public virtual float ReactionChance => 0.03f;
+    public virtual int ReactionChance => 3;
 
-    public virtual float ReactionDamage => 0f;
+    public virtual int ReactionDamage => 0;
 
     /// <summary>
     /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
@@ -55,7 +55,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
         var afflicted = npc.GetGlobalNPC<AfflictedNPC>();
         afflicted.AddCling(this, AfflictionDuration);
 
-        if (Main.rand.NextFloat() < ReactionChance)
+        if (Main.rand.NextFloat(100f) < ReactionChance)
             ChemicalReaction.Trigger(npc, this);
     }
 

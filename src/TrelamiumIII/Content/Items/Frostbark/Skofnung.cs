@@ -38,8 +38,8 @@ public class Skofnung : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
-        component.ReactionChance = 0.013f;
-        component.ChemicalDamage = 0.35f;
+        component.ReactionChance = 13;
+        component.ChemicalDamage = 1;
     }
 
     public override bool MeleePrefix() => true;

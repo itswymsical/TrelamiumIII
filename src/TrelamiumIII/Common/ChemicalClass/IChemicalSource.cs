@@ -7,13 +7,18 @@
 public interface IChemicalSource
 {
     ChemicalDamageType ChemicalType { get; }
-    float ChemicalDamage { get; }
+
+    /// <summary>Flat affliction damage per tick, like <see cref="Item.damage" />, before matchup scaling.</summary>
+    int ChemicalDamage { get; }
+
     int AfflictionDuration { get; }
     float AfflictionRate { get; }
-    float ReactionChance { get; }
+
+    /// <summary>Reaction odds in percent, like <see cref="Item.crit" /> (7 = 7%).</summary>
+    int ReactionChance { get; }
 
     /// <summary>Reaction burst damage. 0 disables bursts (e.g. ambient gas where afflictions do the work).</summary>
-    float ReactionDamage { get; }
+    int ReactionDamage { get; }
 
     /// <summary>
     /// Called when this source rolls a reaction on a target. World-wide listeners use
@@ -76,7 +81,7 @@ public static class ChemicalReaction
         npcData.ApplyReaction(source.ChemicalType);
 
         int dealt = 0;
-        if (source.ReactionDamage > 0f)
+        if (source.ReactionDamage > 0)
         {
             float mult = ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition);
             int burst = Math.Max(1, (int)(source.ReactionDamage * mult * playerDamageBonus));

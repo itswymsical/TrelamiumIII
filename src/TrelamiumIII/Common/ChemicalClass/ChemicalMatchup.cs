@@ -56,8 +56,9 @@ public static class ChemicalMatchup
                 composition.HasFlag(EnemyComposition.Armored) ? 1.60f :
                 composition.HasFlag(EnemyComposition.Undead) ? 0.70f : 1f,
 
+            // HasFlag(None) is true for every value, so None is compared directly.
             ChemicalDamageType.Necrotic =>
-                composition.HasFlag(EnemyComposition.None) ? 1.90f :
+                composition == EnemyComposition.None ? 1.90f :
                 composition.HasFlag(EnemyComposition.Flesh) ? 1.55f :
                 composition.HasFlag(EnemyComposition.Undead) ? 0.50f : 1f,
 

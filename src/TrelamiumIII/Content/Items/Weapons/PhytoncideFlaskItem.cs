@@ -36,11 +36,11 @@ public class PhytoncideFlaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Caustic;
-        component.ChemicalDamage = 2f;
+        component.ChemicalDamage = 2;
         component.debuffRate = 50;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.002f;
-        component.ReactionDamage = 2f;
+        component.ReactionChance = 2;
+        component.ReactionDamage = 2;
         component.ReactionHandler = DoPhytoncideBloom;
     }
 

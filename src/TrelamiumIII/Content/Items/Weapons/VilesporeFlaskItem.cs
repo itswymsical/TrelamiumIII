@@ -35,11 +35,11 @@ public class VilesporeFlaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 2.2f;
+        component.ChemicalDamage = 2;
         component.debuffRate = 50;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.007f;
-        component.ReactionDamage = 8f;
+        component.ReactionChance = 7;
+        component.ReactionDamage = 8;
         component.ReactionHandler = DoCorruptSporeSpread;
     }
 

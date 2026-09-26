@@ -26,11 +26,11 @@ public class PhytoncideSporeField : ChemicalGasField
     protected override float LifeDecay => 0.35f;
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Caustic;
-    public override float ChemicalDamage => 0.8f;
+    public override int ChemicalDamage => 1;
     public override int AfflictionDuration => 90;
     public override float AfflictionRate => 30f;
-    public override float ReactionChance => 0.02f;
-    public override float ReactionDamage => 4f;
+    public override int ReactionChance => 2;
+    public override int ReactionDamage => 4;
 
     /// <summary>Spores that settle leave a caustic film on the surface.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CausticResidueCondition>();
@@ -154,7 +154,7 @@ public class PhytoncideBloomGlobalNPC : GlobalNPC
     public override bool InstancePerEntity => true;
 
     private const int ClingTicks = 6 * 60;    // how long the cloud sticks to a host
-    private const float TickDamage = 1.5f;
+    private const int TickDamage = 2;
     private const float TickRate = 20f;       // one affliction tick every 1/3 s
     private const float BurstRadius = 160f;   // 10 tiles; who the reaction burst catches
     private const int ReseedInterval = 5;     // ticks between attached nodes

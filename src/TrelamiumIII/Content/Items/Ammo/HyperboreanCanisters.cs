@@ -47,11 +47,11 @@ public class TimedHyperboreanCanister : HyperboreanCanister
 
         Item.damage = 6;
         component.ChemicalType = ChemicalDamageType.Cryonic;
-        component.ChemicalDamage = 6f;
+        component.ChemicalDamage = 6;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.002f;
-        component.ReactionDamage = 5f;
+        component.ReactionChance = 2;
+        component.ReactionDamage = 5;
     }
 }
 
@@ -66,10 +66,10 @@ public class ContactHyperboreanCanister : HyperboreanCanister
 
         Item.damage = 6;
         component.ChemicalType = ChemicalDamageType.Cryonic;
-        component.ChemicalDamage = 6f;
+        component.ChemicalDamage = 6;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
-        component.ReactionChance = 0.002f;
-        component.ReactionDamage = 5f;
+        component.ReactionChance = 2;
+        component.ReactionDamage = 5;
     }
 }

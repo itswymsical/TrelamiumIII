@@ -10,15 +10,15 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     protected ElementProfile Element => ElementProfile.For(ChemicalType);
 
-    public virtual float ChemicalDamage => Element.ChemicalDamage;
+    public virtual int ChemicalDamage => Element.ChemicalDamage;
 
     public virtual int AfflictionDuration => Element.AfflictionDuration;
 
     public virtual float AfflictionRate => Element.AfflictionRate;
 
-    public virtual float ReactionChance => Element.ReactionChance;
+    public virtual int ReactionChance => Element.ReactionChance;
 
-    public virtual float ReactionDamage => Element.ReactionDamage;
+    public virtual int ReactionDamage => Element.ReactionDamage;
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 
@@ -213,7 +213,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
             npc.AddBuff(ContactBuff, ContactBuffTicks);
 
         // Rolled per tile of contact rather than per tick of standing in it
-        if (Main.rand.NextFloat() < ReactionChance * instance.Strength)
+        if (Main.rand.NextFloat(100f) < ReactionChance * instance.Strength)
             ChemicalReaction.Trigger(npc, this);
     }
 

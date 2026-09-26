@@ -44,11 +44,11 @@ public class ThermiteFlaskField : ChemicalGasField
     }
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Thermal;
-    public override float ChemicalDamage => 1f;
+    public override int ChemicalDamage => 1;
     public override int AfflictionDuration => 90;
     public override float AfflictionRate => 30f;
-    public override float ReactionChance => 0.02f;
-    public override float ReactionDamage => 1.25f;
+    public override int ReactionChance => 2;
+    public override int ReactionDamage => 1;
 
     private Asset<Texture2D> noiseTex;
 

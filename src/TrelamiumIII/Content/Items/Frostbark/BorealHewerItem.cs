@@ -27,8 +27,8 @@ public class BorealHewerItem : ModItem
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
         component.debuffDuration = 40;
-        component.ReactionChance = 0.013f;
-        component.ChemicalDamage = 0.35f;
+        component.ReactionChance = 13;
+        component.ChemicalDamage = 1;
     }
 
     /// <summary><see cref="Player.altFunctionUse"/> while an alt use is running.</summary>

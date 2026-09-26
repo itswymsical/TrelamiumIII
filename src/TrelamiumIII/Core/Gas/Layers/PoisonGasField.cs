@@ -33,15 +33,15 @@ public class PoisonGasField : ChemicalGasField
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Caustic;
 
-    public override float ChemicalDamage => 0.8f;
+    public override int ChemicalDamage => 1;
 
     public override int AfflictionDuration => 90;
 
     public override float AfflictionRate => 30f;
 
-    public override float ReactionChance => 0f;
+    public override int ReactionChance => 0;
 
-    public override float ReactionDamage => 0f;
+    public override int ReactionDamage => 0;
 
     private Asset<Texture2D>? noiseTexture;
 

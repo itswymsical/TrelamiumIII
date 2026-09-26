@@ -11,7 +11,7 @@ public class ChemicalPlayerStats : ModPlayer
     /// <summary>Immunity frames between affliction ticks.</summary>
     public float AfflictionSpeed;
 
-    /// <summary>Additive bonus on top of the source's base ReactionChance.</summary>
+    /// <summary>Reaction odds in percent added to the source's own, like the player's crit chance.</summary>
     public float ReactionChance;
 
     /// <summary>Multiplier on reaction burst damage, separate from sustained affliction damage.</summary>
@@ -28,7 +28,7 @@ public class ChemicalPlayerStats : ModPlayer
         ChemicalDamageBonus = 1f;
         AfflictionRate = 1f;
         AfflictionSpeed = 20f;
-        ReactionChance = 0.05f; // 5% base reaction chance before accessories
+        ReactionChance = 5f; // 5% base reaction chance before accessories
         ReactionDamageBonus = 1f;
         ActiveChemicalSource = null;
     }

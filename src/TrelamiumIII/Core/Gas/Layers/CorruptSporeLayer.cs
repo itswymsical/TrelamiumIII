@@ -25,11 +25,11 @@ public class VilesporeField : ChemicalGasField
     protected override float LifeDecay => 0.75f;
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Necrotic;
-    public override float ChemicalDamage => 0.4f;
+    public override int ChemicalDamage => 1;
     public override int AfflictionDuration => 90;
     public override float AfflictionRate => 30f;
-    public override float ReactionChance => 0.02f;
-    public override float ReactionDamage => 4f;
+    public override int ReactionChance => 2;
+    public override int ReactionDamage => 4;
 
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
 
@@ -90,7 +90,7 @@ public class SporePlagueGlobalNPC : GlobalNPC
     public override bool InstancePerEntity => true;
 
     private const int FuseTicks = 4 * 60;        // the kill window
-    private const float TickDamage = 2f;         // affliction damage per tick while plagued
+    private const int TickDamage = 2;            // affliction damage per tick while plagued
     private const float TickRate = 20f;          // one affliction tick every 1/3 s
     private const float SpreadRadius = 160f;     // 10 tiles; explosion infects chaseable NPCs inside
     private const int BurstDamage = 10;          // necrotic strike on everything the burst infects

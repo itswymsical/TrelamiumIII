@@ -36,11 +36,11 @@ public class PrismaticStarflaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Kinetic;
-        component.ChemicalDamage = 2f;
+        component.ChemicalDamage = 2;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 2);
-        component.ReactionChance = 0.015f;
-        component.ReactionDamage = 6f;
+        component.ReactionChance = 15;
+        component.ReactionDamage = 6;
         component.ReactionHandler = OnPrismaticReaction;
     }
 

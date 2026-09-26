@@ -37,11 +37,11 @@ public class IceMistField : ChemicalGasField
     protected override BlendState CompositeBlendState => BlendState.AlphaBlend;
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Cryonic;
-    public override float ChemicalDamage => 0.3f;
+    public override int ChemicalDamage => 1;
     public override int AfflictionDuration => 60;
     public override float AfflictionRate => 30f;
-    public override float ReactionChance => 0.02f;
-    public override float ReactionDamage => 3f;
+    public override int ReactionChance => 2;
+    public override int ReactionDamage => 3;
 
 
     private Asset<Texture2D> noiseTex;

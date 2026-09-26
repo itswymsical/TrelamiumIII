@@ -12,15 +12,15 @@ public class GelField : ChemicalGasField
 
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Solute;
 
-    public override float ChemicalDamage => 0.25f;
+    public override int ChemicalDamage => 1;
 
     public override int AfflictionDuration => 90;
 
     public override float AfflictionRate => 30f;
 
-    public override float ReactionChance => 0f;
+    public override int ReactionChance => 0;
 
-    public override float ReactionDamage => 0f;
+    public override int ReactionDamage => 0;
 
     /// <summary>Thick liquid, pools on the ground and sits under anything airborne.</summary>
     public override int LoadOrder => 20;

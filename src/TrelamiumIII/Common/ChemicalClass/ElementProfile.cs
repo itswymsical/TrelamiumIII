@@ -10,15 +10,15 @@ public sealed record ElementProfile : IChemicalSource
 {
     public ChemicalDamageType ChemicalType { get; init; }
 
-    public float ChemicalDamage { get; init; } = 0.35f;
+    public int ChemicalDamage { get; init; } = 1;
 
     public int AfflictionDuration { get; init; } = 60;
 
     public float AfflictionRate { get; init; } = 30f;
 
-    public float ReactionChance { get; init; } = 0.01f;
+    public int ReactionChance { get; init; } = 1;
 
-    public float ReactionDamage { get; init; }
+    public int ReactionDamage { get; init; }
 
     /// <summary>Vanilla debuff applied on contact, or -1 (most elements) to rely on the affliction alone.</summary>
     public int ContactBuff { get; init; } = -1;
@@ -53,10 +53,10 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Thermal = new()
     {
         ChemicalType = ChemicalDamageType.Thermal,
-        ChemicalDamage = 0.5f,
+        ChemicalDamage = 1,
         AfflictionDuration = 90,
-        ReactionChance = 0.015f,
-        ReactionDamage = 1f,
+        ReactionChance = 2,
+        ReactionDamage = 1,
         ContactBuff = BuffID.OnFire,
         HarmsPlayers = true,
         BodyColor = new Vector3(0.52f, 0.14f, 0.02f),
@@ -69,7 +69,7 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Cryonic = new()
     {
         ChemicalType = ChemicalDamageType.Cryonic,
-        ChemicalDamage = 0.28f,
+        ChemicalDamage = 1,
         BodyColor = new Vector3(0.58f, 0.74f, 0.92f),
         EdgeColor = new Vector3(0.90f, 0.98f, 1.00f),
         EmittedLight = new Vector3(0.05f, 0.09f, 0.14f),
@@ -82,7 +82,7 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Caustic = new()
     {
         ChemicalType = ChemicalDamageType.Caustic,
-        ChemicalDamage = 0.4f,
+        ChemicalDamage = 1,
         ContactBuff = BuffID.Poisoned,
         BodyColor = new Vector3(0.24f, 0.34f, 0.06f),
         EdgeColor = new Vector3(0.72f, 0.92f, 0.22f),
@@ -93,7 +93,7 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Necrotic = new()
     {
         ChemicalType = ChemicalDamageType.Necrotic,
-        ChemicalDamage = 0.3f,
+        ChemicalDamage = 1,
         BodyColor = new Vector3(0.26f, 0.04f, 0.10f),
         EdgeColor = new Vector3(0.74f, 0.12f, 0.28f),
         Threshold = 0.15f,
@@ -104,7 +104,7 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Kinetic = new()
     {
         ChemicalType = ChemicalDamageType.Kinetic,
-        ChemicalDamage = 0.32f,
+        ChemicalDamage = 1,
         BodyColor = new Vector3(0.40f, 0.38f, 0.58f),
         EdgeColor = new Vector3(0.95f, 0.94f, 1.00f),
         EmittedLight = new Vector3(0.08f, 0.08f, 0.14f),
@@ -114,7 +114,7 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Electric = new()
     {
         ChemicalType = ChemicalDamageType.Electric,
-        ChemicalDamage = 0.45f,
+        ChemicalDamage = 1,
         AfflictionDuration = 45,
         AfflictionRate = 20f,
         BodyColor = new Vector3(0.18f, 0.26f, 0.52f),
@@ -129,8 +129,8 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Solute = new()
     {
         ChemicalType = ChemicalDamageType.Solute,
-        ChemicalDamage = 0.25f,
-        ReactionChance = 0f,
+        ChemicalDamage = 1,
+        ReactionChance = 0,
         ContactBuff = BuffID.Slow,
         BodyColor = new Vector3(0.16f, 0.42f, 0.30f),
         EdgeColor = new Vector3(0.55f, 0.95f, 0.70f),
@@ -140,16 +140,16 @@ public sealed record ElementProfile : IChemicalSource
     public static readonly ElementProfile Reagent = new()
     {
         ChemicalType = ChemicalDamageType.Reagent,
-        ChemicalDamage = 0.2f,
-        ReactionChance = 0f,
+        ChemicalDamage = 1,
+        ReactionChance = 0,
     };
 
     /// <summary>The absence of chemistry, so that <see cref="For" /> always has an answer.</summary>
     public static readonly ElementProfile None = new()
     {
         ChemicalType = ChemicalDamageType.None,
-        ChemicalDamage = 0f,
-        ReactionChance = 0f,
+        ChemicalDamage = 0,
+        ReactionChance = 0,
     };
 
     private static readonly Dictionary<ChemicalDamageType, ElementProfile> registry = new()

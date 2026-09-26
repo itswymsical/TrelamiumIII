@@ -1,4 +1,5 @@
 ﻿using Terraria.DataStructures;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.Ingress;
 
@@ -6,7 +7,7 @@ public class Brambleroot : ModItem
 {
     public override void SetDefaults()
     {
-        Item.DefaultToPlaceableTile(ModContent.TileType<BramblerootTile>(), 0);
+        Item.DefaultToPlaceableTile(ModContent.TileType<BramblerootTile>());
     }
 }
 
@@ -17,12 +18,7 @@ public class BramblerootTile : ModTile
         Main.tileSolid[Type] = true;
         Main.tileMergeDirt[Type] = true;
 
-        Main.tileMerge[TileID.Stone][Type] = true;
-        Main.tileMerge[Type][TileID.Stone] = true;
-
-        Main.tileMerge[TileID.GrayBrick][Type] = true;
-        Main.tileMerge[Type][TileID.GrayBrick] = true;
-
+        this.Merge(TileID.Mud, TileID.Stone, ModContent.TileType<BramblewoodTile>(), ModContent.TileType<PeatTile>(), Type);
         Main.tileBlockLight[Type] = true;
 
         DustType = DustID.t_LivingWood;

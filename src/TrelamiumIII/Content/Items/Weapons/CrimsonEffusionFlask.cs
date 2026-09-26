@@ -36,11 +36,11 @@ public class CrimsonEffusionFlaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 3f;
+        component.ChemicalDamage = 3;
         component.debuffRate = 20;
         component.debuffDuration = TimeConversion.SetTime(secs: 7);
-        component.ReactionChance = 0.012f;
-        component.ReactionDamage = 12f;
+        component.ReactionChance = 12;
+        component.ReactionDamage = 12;
         component.ReactionHandler = DoBloodsplosion;
     }
 

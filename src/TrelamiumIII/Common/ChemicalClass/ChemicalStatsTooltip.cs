@@ -34,7 +34,7 @@ public static class ChemicalStatsTooltip
         string perSecond = Number(source.AfflictionRate > 0f ? source.ChemicalDamage * 60f / source.AfflictionRate : 0f);
         string seconds = Number(source.AfflictionDuration / 60f);
         string burst = Number(source.ReactionDamage);
-        string odds = Number(Math.Clamp(source.ReactionChance, 0f, 1f) * 1000f);
+        string odds = Number(Math.Clamp(source.ReactionChance, 0, 100));
 
         string fallback = reacts
             ? Text("FallbackReactive", element, perSecond, burst, odds, seconds)
@@ -49,7 +49,7 @@ public static class ChemicalStatsTooltip
         {
             TooltipRow row = block.Row().Icon(icon);
 
-            if (source.ReactionDamage > 0f)
+            if (source.ReactionDamage > 0)
                 row.Text(burst, color).Icon(ReactionIcon);
 
             row.Text(Text("ReactionChance", odds), OddsColor);
