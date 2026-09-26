@@ -98,7 +98,7 @@ public class GelField : ChemicalGasField
     protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.04f * node.Alpha, 0.09f * node.Alpha, 0.16f * node.Alpha);
 
-    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
+    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
         float intensity = MathHelper.Clamp(density / Math.Max(TileFieldThreshold, 0.01f) * 0.5f, 0.3f, 1f);
 

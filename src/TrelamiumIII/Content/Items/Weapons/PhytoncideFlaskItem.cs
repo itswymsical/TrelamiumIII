@@ -51,11 +51,10 @@ public class PhytoncideFlaskItem : ModItem
     {
         PhytoncideBloomGlobalNPC.BloomWithBurst(e.Target);
 
-        // Only projectile-delivered reactions have an owner to credit; cloud-rolled ones don't.
-        if (e.DeliveryProjectile is not { } proj) return;
-        if (proj.owner < 0 || proj.owner >= Main.maxPlayers) return;
+        // Ambient reactions have no payload, so nobody to heal.
+        if (e.Payload is not { Owner: >= 0 and < Main.maxPlayers } payload) return;
 
-        Player owner = Main.player[proj.owner];
+        Player owner = Main.player[payload.Owner];
         if (!owner.active) return;
 
         owner.GetModPlayer<PhytoncidePlayer>()

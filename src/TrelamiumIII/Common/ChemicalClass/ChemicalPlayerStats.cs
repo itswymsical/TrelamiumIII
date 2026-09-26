@@ -17,12 +17,6 @@ public class ChemicalPlayerStats : ModPlayer
     /// <summary>Multiplier on reaction burst damage, separate from sustained affliction damage.</summary>
     public float ReactionDamageBonus;
 
-    /// <summary>
-    /// Transient: set by ChemicalWeaponGlobalItem.Shoot and read by ChemicalHandler.OnSpawn to pass the firing
-    /// source to every projectile spawned that frame.
-    /// </summary>
-    public IChemicalSource ActiveChemicalSource;
-
     public override void ResetEffects()
     {
         ChemicalDamageBonus = 1f;
@@ -30,7 +24,6 @@ public class ChemicalPlayerStats : ModPlayer
         AfflictionSpeed = 20f;
         ReactionChance = 5f; // 5% base reaction chance before accessories
         ReactionDamageBonus = 1f;
-        ActiveChemicalSource = null;
     }
 }
 

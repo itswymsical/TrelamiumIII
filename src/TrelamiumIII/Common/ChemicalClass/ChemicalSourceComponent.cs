@@ -42,6 +42,14 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     int IChemicalSource.ReactionChance => ReactionChance;
     int IChemicalSource.ReactionDamage => ReactionDamage;
 
+    /// <summary>The item's component when it is enabled and carries chemistry, otherwise null.</summary>
+    public static ChemicalSourceComponent? Of(Item item)
+        => item.TryGetGlobalItem(out ChemicalSourceComponent component)
+           && component.Enabled
+           && component.ChemicalType != ChemicalDamageType.None
+            ? component
+            : null;
+
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);
 

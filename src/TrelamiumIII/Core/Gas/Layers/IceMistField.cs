@@ -119,7 +119,7 @@ public class IceMistField : ChemicalGasField
     /// Moved off the per-node liquid hook for the same reason thermite's conversions were: run
     /// there, one node clipping the surface froze a full tile of water on the frame it touched it.
     /// </remarks>
-    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
         if (density < CONVERSION_COVERAGE)
             return;

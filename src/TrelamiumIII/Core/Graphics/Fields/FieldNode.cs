@@ -1,3 +1,5 @@
+using TrelamiumIII.Common.ChemicalClass;
+
 namespace TrelamiumIII.Core.Graphics.Fields;
 
 /// <summary>
@@ -63,6 +65,9 @@ public struct FieldNode
     ///     threw them for as long as they sit there.
     /// </remarks>
     public int Owner;
+
+    /// <summary>The chemical release this node belongs to; null for ambient gas and on non-releasing clients.</summary>
+    public ChemicalPayload? Payload;
 
     /// <summary>
     ///     The thing this node rides, or <see langword="null" /> when it drifts under its own physics.

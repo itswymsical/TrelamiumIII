@@ -3,77 +3,24 @@ using Terraria.DataStructures;
 
 namespace TrelamiumIII.Common.ChemicalClass;
 
-/// <summary>
-/// Carries chemical identity onto projectiles and dispatches afflictions and reactions on hit.
-/// The source and a snapshot of the player's stat scalars are captured at spawn.
-/// </summary>
+/// <summary>Carries a chemical projectile's <see cref="ChemicalPayload" />, built at spawn, and delivers it on hit.</summary>
 public class ChemicalHandler : GlobalProjectile
 {
     public override bool InstancePerEntity => true;
 
-    public IChemicalSource Source;
+    public ChemicalPayload? Payload;
 
-    // Firing player's stats, snapshotted at spawn so accessory swaps mid-flight don't change the shot.
-    public float DamageBonus = 1f;
-    public float StatsAfflictionRate = 1f;
-    public float StatsReactionChance;
-    public float StatsReactionDamageBonus = 1f;
+    public static ChemicalPayload? PayloadOf(Projectile projectile)
+        => projectile.GetGlobalProjectile<ChemicalHandler>().Payload;
 
     public override void OnSpawn(Projectile projectile, IEntitySource source)
     {
-        if (projectile.DamageType != ModContent.GetInstance<ChemicalDamageClass>()) return;
-
-        if (source is EntitySource_ItemUse_WithAmmo or EntitySource_ItemUse)
-        {
-            var stats = Main.player[projectile.owner].GetModPlayer<ChemicalPlayerStats>();
-            Source = stats.ActiveChemicalSource;
-            DamageBonus = stats.ChemicalDamageBonus;
-            StatsAfflictionRate = stats.AfflictionRate;
-            StatsReactionChance = stats.ReactionChance;
-            StatsReactionDamageBonus = stats.ReactionDamageBonus;
-        }
-        else if (source is EntitySource_Parent { Entity: Projectile parent })
-        {
-            var parentData = parent.GetGlobalProjectile<ChemicalHandler>();
-            Source = parentData.Source;
-            DamageBonus = parentData.DamageBonus;
-            StatsAfflictionRate = parentData.StatsAfflictionRate;
-            StatsReactionChance = parentData.StatsReactionChance;
-            StatsReactionDamageBonus = parentData.StatsReactionDamageBonus;
-        }
+        if (projectile.DamageType == ModContent.GetInstance<ChemicalDamageClass>())
+            Payload = ChemicalPayload.From(source);
     }
 
     public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
-    {
-        if (Source == null || Source.ChemicalType == ChemicalDamageType.None) return;
-
-        var npcData = target.GetGlobalNPC<ChemicalGlobalNPC>();
-
-        float dmg = Source.ChemicalDamage * DamageBonus;
-        int duration = (int)(Source.AfflictionDuration * StatsAfflictionRate);
-        float rate = Source.AfflictionRate * StatsAfflictionRate;
-        float chance = Source.ReactionChance + StatsReactionChance;
-
-        npcData.ApplyAffliction(dmg, duration, rate, Source.ChemicalType);
-
-        if (Main.rand.NextFloat(100f) < chance)
-            ChemicalReaction.Trigger(target, Source, StatsReactionDamageBonus, projectile);
-    }
-}
-/// <summary>
-/// Reads ChemicalSourceComponent from the fired item and stamps the active source
-/// onto the player's ChemicalPlayerStats so spawned projectiles can inherit it.
-/// </summary>
-public class ChemicalWeaponGlobalItem : GlobalItem
-{
-    public override bool Shoot(Item item, Player player, EntitySource_ItemUse_WithAmmo source,
-        Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-    {
-        if (item.TryGetGlobalItem(out ChemicalSourceComponent component))
-            player.GetModPlayer<ChemicalPlayerStats>().ActiveChemicalSource = component;
-
-        return base.Shoot(item, player, source, position, velocity, type, damage, knockback);
-    }
+        => Payload?.Hit(target, projectile);
 }
 /// <summary>
 /// Per-NPC state for the chemical system. Tags each NPC with its composition on spawn,

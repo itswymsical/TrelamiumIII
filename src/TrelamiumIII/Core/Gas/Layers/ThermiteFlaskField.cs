@@ -143,7 +143,7 @@ public class ThermiteFlaskField : ChemicalGasField
     /// each pass only removes a slice -- the pool visibly recedes instead of vanishing on the frame
     /// of contact.
     /// </remarks>
-    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
         if (density < CONVERSION_COVERAGE)
             return;

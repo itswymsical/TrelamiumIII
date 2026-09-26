@@ -102,6 +102,9 @@ public abstract class ChemicalProjectile : ModProjectile
     /// </remarks>
     protected virtual float BurstDamageShare => Burst.DamageShare;
 
+    /// <summary>The chemical release this carrier belongs to. Null on clients that did not spawn it.</summary>
+    protected ChemicalPayload? Payload => ChemicalHandler.PayloadOf(Projectile);
+
     /// <summary>The surface the carrier hit, or zero if it expired in open air.</summary>
     protected Vector2 ImpactNormal { get; set; }
 
@@ -147,7 +150,7 @@ public abstract class ChemicalProjectile : ModProjectile
         Vector2 drift = heading * trail.Speed.Roll()
                       + Main.rand.NextVector2Circular(trail.Jitter.X, trail.Jitter.Y);
 
-        field.SpawnNode(Projectile.Center, drift, trail.NodeRadius, trail.NodeLife, owner: Projectile.owner);
+        field.SpawnNode(Projectile.Center, drift, trail.NodeRadius, trail.NodeLife, owner: Projectile.owner, payload: Payload);
     }
 
     /// <summary>
@@ -206,7 +209,8 @@ public abstract class ChemicalProjectile : ModProjectile
             Grounded,
             Projectile.owner,
             Projectile.damage,
-            Projectile.knockBack);
+            Projectile.knockBack,
+            Payload);
     }
 
     /// <summary>

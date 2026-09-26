@@ -1,3 +1,5 @@
+using TrelamiumIII.Common.ChemicalClass;
+
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
 /// <summary>
@@ -34,6 +36,9 @@ public struct TileConditionInstance
     public int Age;
 
     public int Owner;
+
+    /// <summary>The chemical release that left this mark, or null. Never synced: received applications carry none.</summary>
+    public ChemicalPayload? Payload;
 
     /// <summary>
     ///     Free content-defined state: a burn that has charred through to a second stage, a slime

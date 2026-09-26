@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
@@ -181,7 +182,8 @@ public abstract class GasField : FieldLayer
         bool grounded,
         int owner = FieldNode.NoOwner,
         int damage = 0,
-        float knockback = 0f)
+        float knockback = 0f,
+        ChemicalPayload? payload = null)
     {
         Vector2 outward = direction.SafeNormalize(-Vector2.UnitY);
 
@@ -204,7 +206,7 @@ public abstract class GasField : FieldLayer
                 _ => ScatterArm(in profile, outward, grounded),
             };
 
-            SpawnEmitter(profile.Select(edge), start, velocity, owner, armDamage, knockback, (byte)i);
+            SpawnEmitter(profile.Select(edge), start, velocity, owner, armDamage, knockback, (byte)i, payload);
         }
     }
 
@@ -253,7 +255,8 @@ public abstract class GasField : FieldLayer
         int owner = FieldNode.NoOwner,
         int damage = 0,
         float knockback = 0f,
-        byte variant = 0)
+        byte variant = 0,
+        ChemicalPayload? payload = null)
     {
         var emitter = new GasEmitter
         {
@@ -273,6 +276,7 @@ public abstract class GasField : FieldLayer
             Restitution = profile.Restitution,
             TileCollide = profile.TileCollide,
             Owner = owner,
+            Payload = payload,
             Damage = damage,
             Knockback = knockback,
             Variant = variant,
@@ -356,7 +360,7 @@ public abstract class GasField : FieldLayer
         Vector2 velocity = emitter.Velocity * emitter.Inheritance
                          + Main.rand.NextVector2Circular(emitter.NodeScatter.X, emitter.NodeScatter.Y);
 
-        SpawnNode(emitter.Position, velocity, radius, emitter.NodeLife, owner: emitter.Owner);
+        SpawnNode(emitter.Position, velocity, radius, emitter.NodeLife, owner: emitter.Owner, payload: emitter.Payload);
     }
 
     /// <summary>
@@ -469,13 +473,18 @@ public abstract class GasField : FieldLayer
     protected virtual bool OnEmitterBounce(ref GasEmitter emitter, Vector2 normal, int tileX, int tileY) => true;
 
     /// <summary>
-    /// A damaging emitter has passed through a target. Defaults to landing its hit.
+    /// A damaging emitter has passed through a target. Defaults to landing its hit and, when it lands,
+    /// delivering the emitter's payload as a direct hit.
     /// </summary>
     /// <remarks>
     /// The place a layer adds what its old burst projectile did in <c>OnHitNPC</c> -- a debuff, a
     /// splash, a reaction roll. Call <c>base</c> to keep the hit itself.
     /// </remarks>
-    protected virtual void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc) => Strike(in emitter, npc);
+    protected virtual void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc)
+    {
+        if (Strike(in emitter, npc))
+            emitter.Payload?.Hit(npc);
+    }
 
     /// <summary>
     /// Lands an emitter's damage on a target, from the one client entitled to.
@@ -493,10 +502,11 @@ public abstract class GasField : FieldLayer
     /// vent -- strikes with no player interaction, exactly as <c>ChemicalReaction.Trigger</c> does.
     /// </para>
     /// </remarks>
-    protected void Strike(in GasEmitter emitter, NPC npc)
+    /// <returns>Whether the hit landed on this client.</returns>
+    protected bool Strike(in GasEmitter emitter, NPC npc)
     {
         if (emitter.Damage <= 0 || !emitter.IsLocallyOwned)
-            return;
+            return false;
 
         bool owned = emitter.Owner >= 0 && emitter.Owner < npc.immune.Length;
 
@@ -506,7 +516,7 @@ public abstract class GasField : FieldLayer
         // Projectile.Damage does. The carriers this replaced were plain friendly projectiles with
         // no local immunity of their own, so this array is exactly what used to gate them.
         if (owned && npc.immune[emitter.Owner] > 0)
-            return;
+            return false;
 
         if (owned)
             npc.immune[emitter.Owner] = EMITTER_IMMUNITY;
@@ -520,6 +530,8 @@ public abstract class GasField : FieldLayer
             emitter.Knockback,
             EmitterDamageClass,
             noPlayerInteraction: emitter.Owner < 0);
+
+        return true;
     }
 
     #endregion
@@ -563,6 +575,9 @@ public abstract class GasField : FieldLayer
 
         public int Owner;
 
+        /// <summary>The payload of the node that made <see cref="OwnerWeight" />'s contribution.</summary>
+        public ChemicalPayload? Payload;
+
         /// <summary>The largest single contribution <see cref="Owner" /> has made, for comparison.</summary>
         public float OwnerWeight;
 
@@ -591,10 +606,11 @@ public abstract class GasField : FieldLayer
     /// The player who put most of this pool here, or <see cref="FieldNode.NoOwner" />. Pass it on to
     /// anything left behind, so the residue knows who is allowed to walk through it.
     /// </param>
-    protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density, int owner) { }
+    /// <param name="payload">The chemical release of that same largest contributor, or null.</param>
+    protected virtual void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload) { }
 
     /// <inheritdoc cref="OnTileField"/>
-    protected virtual void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner) { }
+    protected virtual void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload) { }
 
     private void UpdateTileField()
     {
@@ -624,10 +640,10 @@ public abstract class GasField : FieldLayer
             Tile tile = Framing.GetTileSafely(pair.Key.X, pair.Key.Y);
 
             if (tile.LiquidAmount > 0)
-                OnLiquidField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner);
+                OnLiquidField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner, cell.Payload);
 
             if (tile.HasTile && Main.tileSolid[tile.TileType])
-                OnTileField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner);
+                OnTileField(pair.Key.X, pair.Key.Y, tile, cell.Coverage, cell.Owner, cell.Payload);
         }
     }
 
@@ -690,6 +706,7 @@ public abstract class GasField : FieldLayer
                     if (cell.OwnerWeight <= 0f || contribution > cell.OwnerWeight)
                     {
                         cell.Owner = node.Owner;
+                        cell.Payload = node.Payload;
                         cell.OwnerWeight = contribution;
                         cell.Source = node.Position;
                     }

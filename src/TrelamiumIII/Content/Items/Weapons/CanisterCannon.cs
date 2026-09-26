@@ -75,14 +75,17 @@ public class CanisterCannonProj : HeldGunProjectile
 
     protected override bool CanFire(Player owner) => owner.HasAmmo(owner.HeldItem);
 
-    /// <summary><see cref="Player.PickAmmo" /> applies ammo damage, speed and conservation; <c>ai[0]</c> carries the ammo id.</summary>
+    /// <summary>
+    ///     <see cref="Player.PickAmmo" /> applies ammo damage, speed and conservation; <c>ai[0]</c> carries the ammo id.
+    ///     Spawned from an ammo item-use source so the canister's payload is its ammo's chemistry.
+    /// </summary>
     protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
     {
         if (!owner.PickAmmo(owner.HeldItem, out int type, out float speed, out int damage, out float knockback, out int ammoType))
             return;
 
         Projectile.NewProjectile(
-            Projectile.GetSource_FromThis(),
+            new EntitySource_ItemUse_WithAmmo(owner, owner.HeldItem, ammoType),
             muzzle,
             direction * speed,
             type,

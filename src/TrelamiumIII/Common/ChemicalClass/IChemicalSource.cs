@@ -34,7 +34,7 @@ public readonly struct ChemicalReactionEvent
     public readonly EnemyComposition Composition;
 
     /// <summary>The delivering projectile, or null for gas contacts, AOEs and other non-projectile delivery.</summary>
-    public readonly Projectile DeliveryProjectile;
+    public readonly Projectile? DeliveryProjectile;
 
     /// <summary>
     /// Burst damage actually dealt after matchup, player bonus and defense; 0 when the source has no
@@ -42,20 +42,25 @@ public readonly struct ChemicalReactionEvent
     /// </summary>
     public readonly int DamageDealt;
 
+    /// <summary>The release that caused the reaction, or null for ambient chemistry.</summary>
+    public readonly ChemicalPayload? Payload;
+
     public ChemicalDamageType Type => Source.ChemicalType;
 
     public ChemicalReactionEvent(
         NPC target,
         IChemicalSource source,
         EnemyComposition composition,
-        Projectile deliveryProjectile = null,
-        int damageDealt = 0)
+        Projectile? deliveryProjectile = null,
+        int damageDealt = 0,
+        ChemicalPayload? payload = null)
     {
         Target = target;
         Source = source;
         Composition = composition;
         DeliveryProjectile = deliveryProjectile;
         DamageDealt = damageDealt;
+        Payload = payload;
     }
 }
 /// <summary>
@@ -66,13 +71,14 @@ public static class ChemicalReaction
 {
     /// <summary>
     ///     Refuses non-elemental sources (<see cref="ChemicalDamageType.Solute" />) outright, so a solute weapon
-    ///     can't gain reactions through careless tuning.
+    ///     can't gain reactions through careless tuning. The burst credits the local player only when
+    ///     <paramref name="payload" /> is theirs.
     /// </summary>
     public static void Trigger(
         NPC target,
         IChemicalSource source,
-        float playerDamageBonus = 1f,
-        Projectile deliveryProjectile = null)
+        ChemicalPayload? payload = null,
+        Projectile? deliveryProjectile = null)
     {
         if (!ChemicalMatchup.IsElemental(source.ChemicalType))
             return;
@@ -84,7 +90,7 @@ public static class ChemicalReaction
         if (source.ReactionDamage > 0)
         {
             float mult = ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition);
-            int burst = Math.Max(1, (int)(source.ReactionDamage * mult * playerDamageBonus));
+            int burst = Math.Max(1, (int)(source.ReactionDamage * mult * (payload?.ReactionDamageMultiplier ?? 1f)));
 
             // SimpleStrikeNPC returns post-defense damage, which is what handlers scale off.
             dealt = target.SimpleStrikeNPC(
@@ -93,10 +99,10 @@ public static class ChemicalReaction
                 crit: false,
                 knockBack: 0f,
                 damageType: ModContent.GetInstance<ChemicalDamageClass>(),
-                noPlayerInteraction: deliveryProjectile == null);
+                noPlayerInteraction: payload?.Owner != Main.myPlayer);
         }
 
-        var evt = new ChemicalReactionEvent(target, source, npcData.Composition, deliveryProjectile, dealt);
+        var evt = new ChemicalReactionEvent(target, source, npcData.Composition, deliveryProjectile, dealt, payload);
         source.OnChemicalReaction(in evt);
         ChemicalEvents.RaiseReaction(in evt);
     }

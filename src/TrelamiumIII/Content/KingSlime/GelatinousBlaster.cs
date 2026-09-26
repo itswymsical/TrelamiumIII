@@ -106,7 +106,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
     {
         SoundEngine.PlaySound(SoundID.Item95 with { Volume = 0.35f, Pitch = 0.6f, MaxInstances = 2 }, Owner.Center);
 
-        MuzzleSpray(Muzzle, Aim, owner.whoAmI, count: 6, speed: 5.5f);
+        MuzzleSpray(Muzzle, Aim, owner.whoAmI, ChemicalHandler.PayloadOf(Projectile), count: 6, speed: 5.5f);
     }
 
     protected override void Fire(Player owner, Vector2 direction, Vector2 muzzle)
@@ -131,11 +131,11 @@ public class GelatinousBlasterProj : BurstGunProjectile
         SoundEngine.PlaySound(SoundID.Item17 with { Pitch = -0.35f, PitchVariance = 0.3f, MaxInstances = 3 }, muzzle);
         SoundEngine.PlaySound(SoundID.NPCHit1 with { Volume = 0.4f, Pitch = 0.4f, MaxInstances = 3 }, muzzle);
 
-        MuzzleSpray(muzzle, direction, owner.whoAmI);
+        MuzzleSpray(muzzle, direction, owner.whoAmI, ChemicalHandler.PayloadOf(Projectile));
     }
 
     /// <summary>A short cone of gel wisps off the barrel, in the layer the shot itself uses.</summary>
-    private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, int count = 3, float speed = 4f)
+    private static void MuzzleSpray(Vector2 muzzle, Vector2 direction, int owner, ChemicalPayload? payload, int count = 3, float speed = 4f)
     {
         if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
@@ -144,7 +144,7 @@ public class GelatinousBlasterProj : BurstGunProjectile
         {
             Vector2 drift = direction.RotatedByRandom(0.5f) * Main.rand.NextFloat(speed * 0.4f, speed);
 
-            layer.SpawnNode(muzzle, drift, radius: Main.rand.NextFloat(5f, 8f), life: 18f, owner: owner);
+            layer.SpawnNode(muzzle, drift, radius: Main.rand.NextFloat(5f, 8f), life: 18f, owner: owner, payload: payload);
         }
     }
 }
@@ -202,7 +202,8 @@ public class GelBallProj : ModProjectile
             drift,
             radius: Main.rand.NextFloat(6f, 9f),
             life: Main.rand.NextFloat(16f, 26f),
-            owner: Projectile.owner
+            owner: Projectile.owner,
+            payload: ChemicalHandler.PayloadOf(Projectile)
         );
     }
 
@@ -210,7 +211,7 @@ public class GelBallProj : ModProjectile
     {
         target.AddBuff(BuffID.Slow, 120);
 
-        Burst(Projectile.Center, -Projectile.velocity.SafeNormalize(-Vector2.UnitY), Projectile.owner, coatTerrain: false);
+        Burst(Projectile.Center, -Projectile.velocity.SafeNormalize(-Vector2.UnitY), Projectile.owner, ChemicalHandler.PayloadOf(Projectile), coatTerrain: false);
     }
 
     /// <summary>Bursts against terrain, splashing along the collision normal so floors spread and walls run.</summary>
@@ -221,7 +222,7 @@ public class GelBallProj : ModProjectile
             Projectile.velocity.Y != oldVelocity.Y ? -MathF.Sign(oldVelocity.Y) : 0f
         );
 
-        Burst(Projectile.Center, normal.SafeNormalize(-Vector2.UnitY), Projectile.owner, coatTerrain: true);
+        Burst(Projectile.Center, normal.SafeNormalize(-Vector2.UnitY), Projectile.owner, ChemicalHandler.PayloadOf(Projectile), coatTerrain: true);
 
         Projectile.Kill();
 
@@ -232,7 +233,7 @@ public class GelBallProj : ModProjectile
         => SoundEngine.PlaySound(SoundID.NPCHit1 with { Volume = 0.5f, Pitch = 0.5f, MaxInstances = 4 }, Projectile.Center);
 
     /// <summary>Throws gel outward and, on a terrain hit, coats what is under it.</summary>
-    private static void Burst(Vector2 position, Vector2 outward, int owner, bool coatTerrain)
+    private static void Burst(Vector2 position, Vector2 outward, int owner, ChemicalPayload? payload, bool coatTerrain)
     {
         if (coatTerrain)
             SlimedCondition.Splatter(position, SPLATTER_RADIUS, intensity: 0.9f, owner: owner);
@@ -251,7 +252,8 @@ public class GelBallProj : ModProjectile
                 direction * Main.rand.NextFloat(1.5f, 4.5f),
                 radius: Main.rand.NextFloat(7f, 12f),
                 life: Main.rand.NextFloat(52f, 66f),
-                owner: owner
+                owner: owner,
+                payload: payload
             );
         }
     }

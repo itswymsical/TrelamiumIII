@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using System.Collections.Generic;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Common.Configs;
 
 namespace TrelamiumIII.Core.Graphics.Fields;
@@ -149,6 +150,7 @@ public abstract class FieldLayer
     ///     The player whose weapon put this node here, or <see cref="FieldNode.NoOwner" /> for a node
     ///     the world produced by itself. Ignored by layers that do not act on anything.
     /// </param>
+    /// <param name="payload">The chemical release the node belongs to, or null. Read only by chemical layers.</param>
     public void SpawnNode(
         Vector2 worldPosition,
         Vector2 velocity,
@@ -157,7 +159,8 @@ public abstract class FieldLayer
         float density = -1f,
         float viscosity = -1f,
         float temperature = -1f,
-        int owner = FieldNode.NoOwner)
+        int owner = FieldNode.NoOwner,
+        ChemicalPayload? payload = null)
     {
         if (life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
@@ -175,6 +178,7 @@ public abstract class FieldLayer
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
             Temperature = temperature < 0f ? DefaultTemperature : temperature,
             Owner = owner,
+            Payload = payload,
             AnchorHost = null,
         };
 
@@ -205,7 +209,8 @@ public abstract class FieldLayer
         float density = -1f,
         float viscosity = -1f,
         float temperature = -1f,
-        int owner = FieldNode.NoOwner)
+        int owner = FieldNode.NoOwner,
+        ChemicalPayload? payload = null)
     {
         if (host is not { active: true } || life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
@@ -223,6 +228,7 @@ public abstract class FieldLayer
             Viscosity = viscosity < 0f ? DefaultViscosity : viscosity,
             Temperature = temperature < 0f ? DefaultTemperature : temperature,
             Owner = owner,
+            Payload = payload,
             AnchorHost = host,
 
             // Captured against the same anchor FollowAnchor rides, or the first frame would jump by

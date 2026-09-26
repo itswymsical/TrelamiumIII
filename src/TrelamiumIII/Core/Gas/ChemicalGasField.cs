@@ -41,22 +41,14 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     protected override DamageClass EmitterDamageClass => ModContent.GetInstance<ChemicalDamageClass>();
 
     /// <summary>
-    /// Applies chemistry. Friendlies, dummies and anything that cannot take damage were already
-    /// filtered by <see cref="GasField.CanAffect(NPC)"/> before this was called -- overrides do not
-    /// need to re-check, and more to the point, an override that forgot used to be able to reach
-    /// past a guard that lived here.
+    /// Applies the layer's chemistry, scaled and credited through the node's payload. Targets already
+    /// passed <see cref="GasField.CanAffect(NPC)"/>, so overrides need not re-check them.
     /// </summary>
     protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
-        var chem = npc.GetGlobalNPC<ChemicalGlobalNPC>();
-        chem.ApplyAffliction(ChemicalDamage, AfflictionDuration, AfflictionRate, ChemicalType);
+        ChemicalPayload.Contact(npc, this, node.Payload);
 
-        // Track the original layer directly
-        var afflicted = npc.GetGlobalNPC<AfflictedNPC>();
-        afflicted.AddCling(this, AfflictionDuration);
-
-        if (Main.rand.NextFloat(100f) < ReactionChance)
-            ChemicalReaction.Trigger(npc, this);
+        npc.GetGlobalNPC<AfflictedNPC>().AddCling(this, AfflictionDuration);
     }
 
     public void SpawnClingNode(Vector2 position, Vector2 velocity, float radius, float life)
@@ -115,17 +107,17 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// <summary>
     /// Leaves the layer's residue wherever it has actually pooled.
     /// </summary>
-    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner)
+    protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
         if (owner == CosmeticOwnerID) return;
 
-        Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner);
+        Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner, payload);
     }
 
-    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner)
+    protected override void OnLiquidField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
         if (owner == CosmeticOwnerID) return;
-        base.OnLiquidField(tileX, tileY, tile, density, owner);
+        base.OnLiquidField(tileX, tileY, tile, density, owner, payload);
     }
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }

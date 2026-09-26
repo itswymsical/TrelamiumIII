@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
@@ -54,7 +55,7 @@ public sealed class TileConditionSystem : ModSystem
         Remove,
     }
 
-    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync, byte Variant);
+    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync, byte Variant, ChemicalPayload? Payload);
 
     private static readonly List<ConditionState> states = [];
 
@@ -92,16 +93,17 @@ public sealed class TileConditionSystem : ModSystem
     ///     Meaningless to a condition that does not read
     ///     <see cref="TileConditionInstance.Variant" />, which is most of them.
     /// </param>
+    /// <param name="payload">The chemical release responsible, kept on the instance. Not synced.</param>
     /// <returns>
     ///     Whether the application was accepted. A deferred one returns true on the promise, since
     ///     the condition has not been asked yet.
     /// </returns>
-    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0) where T : class, ITileCondition
-        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant);
+    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null) where T : class, ITileCondition
+        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload);
 
     /// <inheritdoc cref="Apply{T}" />
-    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0)
-        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant);
+    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null)
+        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload);
 
     public static bool Remove<T>(int i, int j) where T : class, ITileCondition
     {
@@ -110,7 +112,7 @@ public sealed class TileConditionSystem : ModSystem
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false, 0));
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false, 0, null));
             return true;
         }
 
@@ -234,14 +236,14 @@ public sealed class TileConditionSystem : ModSystem
         }
     }
 
-    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant)
+    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload)
     {
         if (!WorldGen.InWorld(i, j, 1))
             return false;
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync, variant));
+            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync, variant, payload));
             return true;
         }
 
@@ -264,6 +266,7 @@ public sealed class TileConditionSystem : ModSystem
             MaxLife = life,
             Intensity = MathHelper.Clamp(intensity, 0f, 1f),
             Owner = owner,
+            Payload = payload,
             Variant = variant,
 
             // Re-application refreshes the slot rather than replacing it, so the entry the eviction
@@ -476,7 +479,7 @@ public sealed class TileConditionSystem : ModSystem
             ConditionState state = states[op.Id];
 
             if (op.Kind == PendingKind.Apply)
-                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync, op.Variant);
+                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync, op.Variant, op.Payload);
             else
                 Remove(state, new Point(op.X, op.Y));
         }
@@ -640,7 +643,7 @@ public sealed class TileConditionSystem : ModSystem
 
         ConditionState state = states[id];
 
-        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant);
+        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant, payload: null);
 
         // The server is the only one that has heard this, so it is the only one that can tell the
         // rest, minus the client it came from, which already has it.

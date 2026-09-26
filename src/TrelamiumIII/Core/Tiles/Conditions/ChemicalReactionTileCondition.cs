@@ -92,8 +92,9 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     ///     pooled"; larger values are a deeper puddle and set a stronger, not a longer, mark.
     /// </param>
     /// <param name="owner">The player whose gas pooled here, or -1.</param>
-    public void Linger(int i, int j, float coverage, int owner = TileConditionInstance.NoOwner)
-        => TileConditionSystem.Apply(this, i, j, MathHelper.Clamp(coverage * 0.55f, 0.25f, 1f), owner: owner, sync: false);
+    /// <param name="payload">The chemical release whose gas pooled here, or null.</param>
+    public void Linger(int i, int j, float coverage, int owner = TileConditionInstance.NoOwner, ChemicalPayload? payload = null)
+        => TileConditionSystem.Apply(this, i, j, MathHelper.Clamp(coverage * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
 
     public override void UpdateTile(ref TileConditionInstance instance)
     {
@@ -206,15 +207,11 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         if (instance.Strength < ActiveStrength || !CanAffect(npc))
             return;
 
-        npc.GetGlobalNPC<ChemicalGlobalNPC>()
-           .ApplyAffliction(ChemicalDamage * instance.Strength, AfflictionDuration, AfflictionRate, ChemicalType);
-
         if (ContactBuff >= 0)
             npc.AddBuff(ContactBuff, ContactBuffTicks);
 
-        // Rolled per tile of contact rather than per tick of standing in it
-        if (Main.rand.NextFloat(100f) < ReactionChance * instance.Strength)
-            ChemicalReaction.Trigger(npc, this);
+        // The reaction is rolled per tile of contact rather than per tick of standing in it.
+        ChemicalPayload.Contact(npc, this, instance.Payload, instance.Strength);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)

@@ -1,3 +1,4 @@
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
@@ -111,6 +112,9 @@ public struct GasEmitter
     /// </summary>
     /// <inheritdoc cref="FieldNode.Owner" path="/remarks" />
     public int Owner;
+
+    /// <summary>The chemical release this emitter belongs to: passed to every node it lays, delivered on a landed hit.</summary>
+    public ChemicalPayload? Payload;
 
     /// <summary>Damage dealt to an NPC the emitter passes through, or 0 for a harmless one.</summary>
     public int Damage;
