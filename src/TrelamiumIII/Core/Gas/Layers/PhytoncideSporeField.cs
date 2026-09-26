@@ -92,12 +92,7 @@ public class PhytoncideSporeField : ChemicalGasField
         player.GetModPlayer<PhytoncidePlayer>().TouchGas();
     }
 
-    public override void OnChemicalReaction(in ChemicalReactionEvent e)
-    {
-        base.OnChemicalReaction(e);
-
-        PhytoncideBloomGlobalNPC.Cling(e.Target);
-    }
+    public override ClingBehaviour? ClingBehaviour => PhytoncideBloomCling.Instance;
 }
 
 public class PhytoncidePlayer : ModPlayer
@@ -149,72 +144,69 @@ public class PhytoncidePlayer : ModPlayer
     }
 }
 
-public class PhytoncideBloomGlobalNPC : GlobalNPC
+/// <summary>A phytoncide bloom: a cloud that sticks to its host, ticking caustic damage and reseeding gas around it.</summary>
+public sealed class PhytoncideBloomCling : ClingBehaviour
 {
-    public override bool InstancePerEntity => true;
+    public static readonly PhytoncideBloomCling Instance = new();
 
-    private const int ClingTicks = 6 * 60;    // how long the cloud sticks to a host
+    private const int BloomTicks = 6 * 60;
     private const int TickDamage = 2;
-    private const float TickRate = 20f;       // one affliction tick every 1/3 s
-    private const float BurstRadius = 160f;   // 10 tiles; who the reaction burst catches
-    private const int ReseedInterval = 5;     // ticks between attached nodes
+    private const float TickRate = 20f;
+    private const float BurstRadius = 160f;
+    private const int ReseedInterval = 5;
 
-    public int BloomTicks { get; private set; }
-    public bool IsBlooming => BloomTicks > 0;
+    public override int Duration(float concentration) => BloomTicks;
+
+    public override void OnAttach(NPC host, ref ClingState cling)
+        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Caustic, TickDamage, BloomTicks, TickRate, cling.Owner);
+
+    public override void Update(NPC host, ref ClingState cling)
+    {
+        if (cling.Age % ReseedInterval != 0 || cling.Medium is not { } layer)
+            return;
+
+        Vector2 position = host.Center + Main.rand.NextVector2Circular(host.width * 0.45f, host.height * 0.45f);
+        Vector2 velocity = host.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
+
+        layer.SpawnNode(position, velocity, radius: Main.rand.NextFloat(8f, 20f), life: 45f, owner: cling.Owner, payload: cling.Payload);
+    }
 
     /// <summary>
-    /// Reaction entry point for the flask: pop a visible burst of gas at the target, then stick
-    /// the lingering cloud onto everything the burst reached (the target included).
+    /// Reaction handler: pops a burst of gas at the target, then blooms on everything within
+    /// <see cref="BurstRadius" />, the target included.
     /// </summary>
-    public static void BloomWithBurst(NPC target)
+    public static void BloomWithBurst(ChemicalReactionEvent e)
     {
-        if (target is not { active: true }) return;
+        NPC target = e.Target;
+
+        if (target is not { active: true } || FieldSystem.GetLayer<PhytoncideSporeField>() is not { } layer)
+            return;
 
         SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.9f, Pitch = -0.4f }, target.Center);
 
-        var layer = FieldSystem.GetLayer<PhytoncideSporeField>();
-        if (layer != null)
+        int count = Main.rand.Next(14, 22);
+
+        for (int i = 0; i < count; i++)
         {
-            int count = Main.rand.Next(14, 22);
-            for (int i = 0; i < count; i++)
-            {
-                Vector2 vel = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
-                vel.Y -= 0.5f;
-                layer.SpawnNode(target.Center, vel, radius: Main.rand.NextFloat(12f, 28f), life: 150f);
-            }
+            Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
+            velocity.Y -= 0.5f;
+
+            layer.SpawnNode(target.Center, velocity, radius: Main.rand.NextFloat(12f, 28f), life: 150f, owner: e.Owner, payload: e.Payload);
         }
 
         float radiusSq = BurstRadius * BurstRadius;
+
         for (int i = 0; i < Main.maxNPCs; i++)
         {
             NPC other = Main.npc[i];
-            if (!other.active) continue;
-            if (Vector2.DistanceSquared(target.Center, other.Center) > radiusSq) continue;
-            Cling(other);
+
+            if (other is not { active: true, life: > 0 } || other.friendly || !other.CanBeChasedBy())
+                continue;
+
+            if (Vector2.DistanceSquared(target.Center, other.Center) > radiusSq)
+                continue;
+
+            other.GetGlobalNPC<ChemicalGlobalNPC>().AttachCling(other, ChemicalDamageType.Caustic, Instance, layer, e.Payload, e.Owner);
         }
-    }
-
-    public static bool Cling(NPC npc)
-    {
-        if (npc is not { active: true } || npc.friendly || !npc.CanBeChasedBy()) return false;
-
-        npc.GetGlobalNPC<PhytoncideBloomGlobalNPC>().BloomTicks = ClingTicks;
-        npc.GetGlobalNPC<ChemicalGlobalNPC>()
-           .ApplyAffliction(TickDamage, ClingTicks, TickRate, ChemicalDamageType.Caustic);
-        return true;
-    }
-
-    public override void PostAI(NPC npc)
-    {
-        if (BloomTicks <= 0) return;
-        if (--BloomTicks <= 0) return;
-        if (BloomTicks % ReseedInterval != 0) return;
-
-        var layer = FieldSystem.GetLayer<PhytoncideSporeField>();
-        if (layer == null) return;
-
-        Vector2 pos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.45f, npc.height * 0.45f);
-        Vector2 vel = npc.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
-        layer.SpawnNode(pos, vel, radius: Main.rand.NextFloat(8f, 20f), life: 45f);
     }
 }

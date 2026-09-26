@@ -30,9 +30,19 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     /// <summary>Reaction burst damage, scaled by composition matchup and the player's ReactionDamageBonus.</summary>
     public int ReactionDamage = 0;
 
+    /// <inheritdoc cref="IChemicalSource.Concentration" />
+    public int Concentration = 10;
+
+    /// <inheritdoc cref="IChemicalSource.Catalysis" />
+    public float Catalysis;
+
+    /// <inheritdoc cref="IChemicalSource.ClingBehaviour" />
+    public ClingBehaviour? ClingBehaviour;
+
     /// <summary>
     /// Per-instance reaction behaviour, assigned in SetDefaults and invoked when this source rolls a reaction.
     /// </summary>
+    [CloneByReference]
     public Action<ChemicalReactionEvent> ReactionHandler;
 
     ChemicalDamageType IChemicalSource.ChemicalType => ChemicalType;
@@ -41,6 +51,9 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     float IChemicalSource.AfflictionRate => debuffRate;
     int IChemicalSource.ReactionChance => ReactionChance;
     int IChemicalSource.ReactionDamage => ReactionDamage;
+    int IChemicalSource.Concentration => Concentration;
+    float IChemicalSource.Catalysis => Catalysis;
+    ClingBehaviour? IChemicalSource.ClingBehaviour => ClingBehaviour;
 
     /// <summary>The item's component when it is enabled and carries chemistry, otherwise null.</summary>
     public static ChemicalSourceComponent? Of(Item item)

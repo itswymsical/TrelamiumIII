@@ -40,11 +40,8 @@ public class VilesporeFlaskItem : ModItem
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 7;
         component.ReactionDamage = 8;
-        component.ReactionHandler = DoCorruptSporeSpread;
+        component.ReactionHandler = SporePlagueCling.InfectWithBurst;
     }
-
-    private static void DoCorruptSporeSpread(ChemicalReactionEvent e)
-        => SporePlagueGlobalNPC.InfectWithBurst(e.Target);
 }
 
 /// <summary>A flask of corrupt spores: a slow dribble in flight, a wide fan on breaking.</summary>

@@ -1,8 +1,6 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Graphics.Cinematics.Camera;
-using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
@@ -30,6 +28,10 @@ public class BloodField : ChemicalGasField
     public override float AfflictionRate => 30f;
     public override int ReactionChance => 2;
     public override int ReactionDamage => 4;
+
+    private static readonly ClingBehaviour Splatter = new SplashCling(6, 8, 16.5f, 140f, SoundID.Item74, shake: 4);
+
+    public override ClingBehaviour? ClingBehaviour => Splatter;
 
     /// <summary>
     ///     Leaves nothing on the terrain it lands on.
@@ -80,26 +82,5 @@ public class BloodField : ChemicalGasField
         base.OnNPCContact(ref node, npc);
 
         npc.AddBuff(BuffID.BloodButcherer, 30);
-    }
-
-    public override void OnChemicalReaction(in ChemicalReactionEvent e)
-    {
-        base.OnChemicalReaction(e);
-
-        Vector2 impactDir = e.Target.oldVelocity.SafeNormalize(-Vector2.UnitY);
-        Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
-                                  .SafeNormalize(-Vector2.UnitY);
-
-        CameraSystem.shake = 4;
-        SoundEngine.PlaySound(SoundID.Item74);
-
-        int count = Main.rand.Next(6, 8);
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
-                        * Main.rand.NextFloat(4f, 7f);
-
-            this.SpawnNode(e.Target.Center, vel, radius: 16.5f, life: 140);
-        }
     }
 }

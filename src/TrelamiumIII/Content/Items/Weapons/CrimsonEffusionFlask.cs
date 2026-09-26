@@ -62,7 +62,7 @@ public class CrimsonEffusionFlaskItem : ModItem
             Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
                         * Main.rand.NextFloat(4f, 7f);
 
-            layer.SpawnNode(e.Target.Center, vel, radius: 33f, life: 200);
+            layer.SpawnNode(e.Target.Center, vel, radius: 33f, life: 200, owner: e.Owner, payload: e.Payload);
         }
     }
 }

@@ -994,6 +994,16 @@ Items: {
 			'''
 	}
 
+	CatalyzerGun: {
+		DisplayName: Catalyzer Gun
+		Tooltip:
+			'''
+			Transmutes catalytic solutes into a catalytic solvent
+			Catalyzed enemies take stronger afflictions, faster concentration and likelier reactions from every other chemical
+			Uses solutes with the Catalytic temperament as ammunition
+			'''
+	}
+
 	ContactPoisonCanister: {
 		DisplayName: Contact Poison Canister
 		Tooltip: Explodes on contact
@@ -1121,6 +1131,8 @@ Projectiles: {
 	WallBombProj.DisplayName: Wall Bomb Proj
 	GelatinousBlasterProj.DisplayName: Gelatinous Blaster
 	GelBallProj.DisplayName: Gel Glob
+	CatalyzerGunProj.DisplayName: Catalyzer Gun
+	CatalyticSolventProj.DisplayName: Catalytic Solvent
 	StalagMagMKIProj.DisplayName: StalagMag-MK I
 	StoneBlockProj.DisplayName: Stalactite
 	BoulderShotProj.DisplayName: Boulder
@@ -1360,6 +1372,8 @@ ChemicalStats: {
 	DamagePerSecond: "{0}/sec"
 	ReactionChance: "{0}% reaction chance"
 	Duration: "{0}s"
+	Concentration: "{0} concentration"
+	Catalysis: "{0}% catalysis"
 	# Plain-text stand-ins for readers that cannot draw the rows (search filters, other mods).
 	# {0} element, {1} damage per second, {2} reaction damage, {3} reaction chance, {4} seconds.
 	FallbackReactive: "{1} {0} per second, {2} reaction damage ({3}%), {4}s affliction"

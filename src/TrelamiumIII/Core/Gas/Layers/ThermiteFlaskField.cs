@@ -1,7 +1,5 @@
 using ReLogic.Content;
-using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
@@ -49,6 +47,10 @@ public class ThermiteFlaskField : ChemicalGasField
     public override float AfflictionRate => 30f;
     public override int ReactionChance => 2;
     public override int ReactionDamage => 1;
+
+    private static readonly ClingBehaviour Spatter = new SplashCling(6, 8, 16.5f, 200f, SoundID.Item74);
+
+    public override ClingBehaviour? ClingBehaviour => Spatter;
 
     private Asset<Texture2D> noiseTex;
 
@@ -172,24 +174,5 @@ public class ThermiteFlaskField : ChemicalGasField
         BurnedCondition.Scorch(emitter.Position, SCORCH_RADIUS, profile: BurnProfile.Thermal);
 
         return true;
-    }
-    public override void OnChemicalReaction(in ChemicalReactionEvent e)
-    {
-        base.OnChemicalReaction(e);
-
-        Vector2 impactDir = e.Target.oldVelocity.SafeNormalize(-Vector2.UnitY);
-        Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
-                                  .SafeNormalize(-Vector2.UnitY);
-
-        SoundEngine.PlaySound(SoundID.Item74);
-
-        int count = Main.rand.Next(6, 8);
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
-                        * Main.rand.NextFloat(4f, 7f);
-
-            this.SpawnNode(e.Target.Center, vel, radius: 16.5f, life: 200);
-        }
     }
 }

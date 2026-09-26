@@ -78,126 +78,108 @@ public class VilesporeField : ChemicalGasField
         base.OnNPCContact(ref node, npc);
         npc.AddBuff(BuffID.Poisoned, 30);
     }
-    public override void OnChemicalReaction(in ChemicalReactionEvent e)
-    {
-        base.OnChemicalReaction(e);
-        SporePlagueGlobalNPC.InfectWithBurst(e.Target);
-    }
+
+    public override ClingBehaviour? ClingBehaviour => SporePlagueCling.Instance;
 }
 
-public class SporePlagueGlobalNPC : GlobalNPC
+/// <summary>
+///     The Vilespore plague: a fuse that ticks necrotic damage and sheds spores. A host that dies with it on bursts and
+///     plagues every chaseable NPC within <see cref="SpreadRadius" />; one that outlives the fuse fizzles.
+/// </summary>
+public sealed class SporePlagueCling : ClingBehaviour
 {
-    public override bool InstancePerEntity => true;
+    public static readonly SporePlagueCling Instance = new();
 
-    private const int FuseTicks = 4 * 60;        // the kill window
-    private const int TickDamage = 2;            // affliction damage per tick while plagued
-    private const float TickRate = 20f;          // one affliction tick every 1/3 s
-    private const float SpreadRadius = 160f;     // 10 tiles; explosion infects chaseable NPCs inside
-    private const int BurstDamage = 10;          // necrotic strike on everything the burst infects
+    private const int FuseTicks = 4 * 60;
+    private const int TickDamage = 2;
+    private const float TickRate = 20f;
+    private const float SpreadRadius = 160f;
+    private const int BurstDamage = 10;
 
-    public int PlagueTicks { get; private set; }
-    public bool IsPlagued => PlagueTicks > 0;
+    public override int Duration(float concentration) => FuseTicks;
 
-    /// <summary>
-    /// Reaction entry point shared by the flask's ReactionHandler and the gas layer:
-    /// pin the plague on the target with a visible spore pop.
-    /// </summary>
-    public static void InfectWithBurst(NPC target)
+    public override void OnAttach(NPC host, ref ClingState cling)
+        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Necrotic, TickDamage, FuseTicks, TickRate, cling.Owner);
+
+    public override void Update(NPC host, ref ClingState cling)
     {
-        if (!Infect(target)) return;
+        if (cling.Age % 5 != 0 || cling.Medium is not { } layer)
+            return;
 
-        var layer = FieldSystem.GetLayer<VilesporeField>();
-        if (layer == null) return;
+        Vector2 position = host.Center + Main.rand.NextVector2Circular(host.width * 0.45f, host.height * 0.45f);
+        Vector2 velocity = host.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
+
+        layer.SpawnNode(position, velocity, radius: Main.rand.NextFloat(7f, 33f), life: 40f, owner: cling.Owner, payload: cling.Payload);
+    }
+
+    public override void OnDetach(NPC host, ref ClingState cling, bool hostKilled)
+    {
+        if (hostKilled)
+            Explode(host, in cling);
+        else
+            Fizzle(host, in cling);
+    }
+
+    /// <summary>Reaction handler: plagues the target with a visible spore pop.</summary>
+    public static void InfectWithBurst(ChemicalReactionEvent e)
+    {
+        if (FieldSystem.GetLayer<VilesporeField>() is not { } layer || !Infect(e.Target, layer, e.Payload, e.Owner))
+            return;
 
         CameraSystem.shake = 3;
-        SoundEngine.PlaySound(SoundID.DD2_BetsyWindAttack, target.Center);
+        SoundEngine.PlaySound(SoundID.DD2_BetsyWindAttack, e.Target.Center);
 
+        Vector2 impact = e.Target.velocity.SafeNormalize(Vector2.UnitY);
         int count = Main.rand.Next(9, 17);
+
         for (int i = 0; i < count; i++)
         {
-            //Vector2 vel = Main.rand.NextVector2Unit() * Main.rand.NextFloat(target.oldVelocity.X, 6.5f);
-            //layer.SpawnNode(target.Center, vel, radius: Main.rand.NextFloat(33f, 73f), life: 90f);
+            Vector2 scatter = impact * Main.rand.NextFloat(2f, 9f) + Main.rand.NextVector2Circular(1.5f, 1.5f);
 
-            Vector2 impactDir = target.velocity.SafeNormalize(Vector2.UnitY);
-
-            Vector2 scatter = impactDir * Main.rand.NextFloat(2f, 9f)
-                            + Main.rand.NextVector2Circular(1.5f, 1.5f);
-
-            layer.SpawnNode(target.Center, scatter, radius: Main.rand.NextFloat(13f, 33f), life: 90f);
-
+            layer.SpawnNode(e.Target.Center, scatter, radius: Main.rand.NextFloat(13f, 33f), life: 90f, owner: e.Owner, payload: e.Payload);
         }
     }
 
-    /// <summary>Start (or refresh) the plague fuse. False if the target can't host it.</summary>
-    public static bool Infect(NPC npc)
+    /// <summary>Starts or refreshes the fuse. False for a target that cannot host it, dying ones included.</summary>
+    private static bool Infect(NPC npc, ChemicalGasField layer, ChemicalPayload? payload, int owner)
     {
-        if (npc is not { active: true } || npc.friendly || !npc.CanBeChasedBy()) return false;
+        if (npc is not { active: true, life: > 0 } || npc.friendly || !npc.CanBeChasedBy())
+            return false;
 
-        var plague = npc.GetGlobalNPC<SporePlagueGlobalNPC>();
-        plague.PlagueTicks = FuseTicks;
+        npc.GetGlobalNPC<ChemicalGlobalNPC>().AttachCling(npc, ChemicalDamageType.Necrotic, Instance, layer, payload, owner);
 
-        // Tick damage rides the chemical affliction system for exactly the fuse window,
-        // so composition matchups and resistances apply like any other necrotic source.
-        npc.GetGlobalNPC<ChemicalGlobalNPC>()
-           .ApplyAffliction(TickDamage, FuseTicks, TickRate, ChemicalDamageType.Necrotic);
         return true;
     }
 
-    public override void PostAI(NPC npc)
-    {
-        if (PlagueTicks <= 0) return;
-
-        if (--PlagueTicks <= 0)
-        {
-            Fizzle(npc);
-            return;
-        }
-
-        if (PlagueTicks % 5 == 0)
-        {
-            var layer = FieldSystem.GetLayer<VilesporeField>();
-            if (layer == null) return;
-
-            Vector2 pos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.45f, npc.height * 0.45f);
-            Vector2 vel = npc.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
-            layer.SpawnNode(pos, vel, radius: Main.rand.NextFloat(7f, 33f), life: 40f);
-        }
-    }
-
-    public override void OnKill(NPC npc)
-    {
-        if (PlagueTicks <= 0) return;
-        PlagueTicks = 0;
-        Explode(npc);
-    }
-
-    private static void Explode(NPC npc)
+    private static void Explode(NPC host, in ClingState cling)
     {
         CameraSystem.shake = 5;
-        SoundEngine.PlaySound(SoundID.NPCDeath9 with { Volume = 0.8f, Pitch = -0.2f }, npc.Center);
+        SoundEngine.PlaySound(SoundID.NPCDeath9 with { Volume = 0.8f, Pitch = -0.2f }, host.Center);
 
-        var layer = FieldSystem.GetLayer<VilesporeField>();
-        if (layer != null)
+        if (cling.Medium is not { } layer)
+            return;
+
+        int count = Main.rand.Next(16, 22);
+
+        for (int i = 0; i < count; i++)
         {
-            int count = Main.rand.Next(16, 22);
-            for (int i = 0; i < count; i++)
-            {
-                Vector2 vel = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
-                vel.Y -= 0.6f;   // upward bias: the cloud should loom over the corpse, not rain off it
-                layer.SpawnNode(npc.Center, vel, radius: Main.rand.NextFloat(10f, 16f), life: 180f);
-            }
+            Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
+            velocity.Y -= 0.6f; // upward bias: the cloud should loom over the corpse, not rain off it
+
+            layer.SpawnNode(host.Center, velocity, radius: Main.rand.NextFloat(10f, 16f), life: 180f, owner: cling.Owner, payload: cling.Payload);
         }
 
-        // Direct spread is what makes the chain reliable: every chaseable NPC in the burst
-        // radius takes a necrotic hit and starts its own fresh fuse. The lingering cloud's
-        // contact chemistry stays as a slower secondary infection channel.
         float radiusSq = SpreadRadius * SpreadRadius;
+
         for (int i = 0; i < Main.maxNPCs; i++)
         {
             NPC other = Main.npc[i];
-            if (!other.active || other.whoAmI == npc.whoAmI) continue;
-            if (Vector2.DistanceSquared(npc.Center, other.Center) > radiusSq) continue;
-            if (!Infect(other)) continue;
+
+            if (other.whoAmI == host.whoAmI || Vector2.DistanceSquared(host.Center, other.Center) > radiusSq)
+                continue;
+
+            if (!Infect(other, layer, cling.Payload, cling.Owner))
+                continue;
 
             other.SimpleStrikeNPC(
                 BurstDamage,
@@ -205,20 +187,20 @@ public class SporePlagueGlobalNPC : GlobalNPC
                 crit: false,
                 knockBack: 0f,
                 damageType: ModContent.GetInstance<ChemicalDamageClass>(),
-                noPlayerInteraction: true);
+                noPlayerInteraction: cling.Owner != Main.myPlayer);
         }
     }
 
-    private static void Fizzle(NPC npc)
+    private static void Fizzle(NPC host, in ClingState cling)
     {
-        var layer = FieldSystem.GetLayer<VilesporeField>();
-        if (layer == null) return;
+        if (cling.Medium is not { } layer)
+            return;
 
         for (int i = 0; i < 4; i++)
         {
-            Vector2 vel = new(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-0.8f, -0.3f));
-            layer.SpawnNode(npc.Center + Main.rand.NextVector2Circular(8f, 8f), vel,
-                radius: 5f, life: 40f);
+            Vector2 velocity = new(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-0.8f, -0.3f));
+
+            layer.SpawnNode(host.Center + Main.rand.NextVector2Circular(8f, 8f), velocity, radius: 5f, life: 40f, owner: cling.Owner, payload: cling.Payload);
         }
     }
 }

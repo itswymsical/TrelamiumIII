@@ -49,7 +49,7 @@ public class PhytoncideFlaskItem : ModItem
 
     private static void DoPhytoncideBloom(ChemicalReactionEvent e)
     {
-        PhytoncideBloomGlobalNPC.BloomWithBurst(e.Target);
+        PhytoncideBloomCling.BloomWithBurst(e);
 
         // Ambient reactions have no payload, so nobody to heal.
         if (e.Payload is not { Owner: >= 0 and < Main.maxPlayers } payload) return;

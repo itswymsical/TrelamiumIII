@@ -105,6 +105,9 @@ public abstract class ChemicalProjectile : ModProjectile
     /// <summary>The chemical release this carrier belongs to. Null on clients that did not spawn it.</summary>
     protected ChemicalPayload? Payload => ChemicalHandler.PayloadOf(Projectile);
 
+    /// <summary>The gas this carrier releases, which is what a cling from its direct hit is made of.</summary>
+    public ChemicalGasField? Medium => Field as ChemicalGasField;
+
     /// <summary>The surface the carrier hit, or zero if it expired in open air.</summary>
     protected Vector2 ImpactNormal { get; set; }
 

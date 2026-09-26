@@ -20,6 +20,12 @@ public sealed record ElementProfile : IChemicalSource
 
     public int ReactionDamage { get; init; }
 
+    public int Concentration { get; init; } = 6;
+
+    public float Catalysis { get; init; }
+
+    public ClingBehaviour? ClingBehaviour { get; init; }
+
     /// <summary>Vanilla debuff applied on contact, or -1 (most elements) to rely on the affliction alone.</summary>
     public int ContactBuff { get; init; } = -1;
 

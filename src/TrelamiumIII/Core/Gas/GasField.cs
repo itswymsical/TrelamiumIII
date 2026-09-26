@@ -483,7 +483,7 @@ public abstract class GasField : FieldLayer
     protected virtual void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc)
     {
         if (Strike(in emitter, npc))
-            emitter.Payload?.Hit(npc);
+            emitter.Payload?.Hit(npc, this as ChemicalGasField);
     }
 
     /// <summary>

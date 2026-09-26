@@ -21,6 +21,18 @@ public interface IChemicalSource
     int ReactionDamage { get; }
 
     /// <summary>
+    /// Concentration one hit adds to the target, out of <see cref="ChemicalTuning.MaxConcentration" />. Gas and residue
+    /// add <see cref="ChemicalTuning.ContactShare" /> of it per exposure. 0 never builds up or clings.
+    /// </summary>
+    int Concentration { get; }
+
+    /// <summary>Catalysis one hit adds to the target, 0 to 1. Catalysis amplifies every other source on it.</summary>
+    float Catalysis { get; }
+
+    /// <summary>What this chemistry does when it clings, or null to use the gas it was delivered through.</summary>
+    ClingBehaviour? ClingBehaviour { get; }
+
+    /// <summary>
     /// Called when this source rolls a reaction on a target. World-wide listeners use
     /// <see cref="ChemicalEvents.OnReaction"/> instead.
     /// </summary>
@@ -46,6 +58,9 @@ public readonly struct ChemicalReactionEvent
     public readonly ChemicalPayload? Payload;
 
     public ChemicalDamageType Type => Source.ChemicalType;
+
+    /// <summary>The releasing player, or -1. Pass it to anything the reaction spawns.</summary>
+    public int Owner => Payload?.Owner ?? -1;
 
     public ChemicalReactionEvent(
         NPC target,

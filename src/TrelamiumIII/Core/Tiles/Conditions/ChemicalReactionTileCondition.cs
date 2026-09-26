@@ -20,6 +20,12 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public virtual int ReactionDamage => Element.ReactionDamage;
 
+    public virtual int Concentration => Element.Concentration;
+
+    public virtual float Catalysis => Element.Catalysis;
+
+    public virtual ClingBehaviour? ClingBehaviour => Element.ClingBehaviour;
+
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
 
     protected virtual int ContactBuff => Element.ContactBuff;
@@ -210,8 +216,8 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         if (ContactBuff >= 0)
             npc.AddBuff(ContactBuff, ContactBuffTicks);
 
-        // The reaction is rolled per tile of contact rather than per tick of standing in it.
-        ChemicalPayload.Contact(npc, this, instance.Payload, instance.Strength);
+        // The gas a residue exhales is what clings from it are made of.
+        ChemicalPayload.Contact(npc, this, instance.Payload, instance.Owner, LingerLayer as ChemicalGasField, instance.Strength);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)

@@ -5,10 +5,8 @@ using TrelamiumIII.Core.Graphics.Fields;
 namespace TrelamiumIII.Core.Gas;
 
 /// <summary>
-/// Gas layer that emits chemistry on contact. Bridges the gas system and the
-/// chemical system: gas nodes apply afflictions and roll reactions through the
-/// same path as projectile-delivered chemistry, with the layer itself acting
-/// as the IChemicalSource.
+/// Gas layer that emits chemistry on contact. A node carrying a payload exposes what touches it to that
+/// payload's chemistry; the layer's own numbers are for ambient gas nobody released.
 /// </summary>
 public abstract class ChemicalGasField : GasField, IChemicalSource
 {
@@ -22,6 +20,13 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     public virtual int ReactionChance => 3;
 
     public virtual int ReactionDamage => 0;
+
+    public virtual int Concentration => 6;
+
+    public virtual float Catalysis => 0f;
+
+    /// <summary>What this gas does when it clings, for sources that name none. Null is the default cling.</summary>
+    public virtual ClingBehaviour? ClingBehaviour => null;
 
     /// <summary>
     /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
@@ -41,19 +46,36 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     protected override DamageClass EmitterDamageClass => ModContent.GetInstance<ChemicalDamageClass>();
 
     /// <summary>
-    /// Applies the layer's chemistry, scaled and credited through the node's payload. Targets already
-    /// passed <see cref="GasField.CanAffect(NPC)"/>, so overrides need not re-check them.
+    /// Exposes the target to the node's chemistry. Targets already passed <see cref="GasField.CanAffect(NPC)"/>,
+    /// so overrides need not re-check them.
     /// </summary>
     protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        ChemicalPayload.Contact(npc, this, node.Payload);
-
-        npc.GetGlobalNPC<AfflictedNPC>().AddCling(this, AfflictionDuration);
-    }
+        => ChemicalPayload.Contact(npc, this, node.Payload, node.Owner, this);
 
     public void SpawnClingNode(Vector2 position, Vector2 velocity, float radius, float life)
     {
         SpawnNode(position, velocity, radius, life, owner: CosmeticOwnerID);
+    }
+
+    /// <summary>One cosmetic wisp over <paramref name="host" />, spreading wider and living longer with <paramref name="intensity" />.</summary>
+    public void ShedOnto(NPC host, float intensity)
+    {
+        if (Main.dedServ)
+            return;
+
+        intensity = MathHelper.Clamp(intensity, 0f, 1f);
+
+        float spreadX = host.width * MathHelper.Lerp(0.25f, 0.55f, intensity);
+        float spreadY = host.height * MathHelper.Lerp(0.25f, 0.55f, intensity);
+
+        Vector2 position = host.Center + Main.rand.NextVector2Circular(spreadX, spreadY);
+        Vector2 velocity = host.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
+
+        SpawnClingNode(
+            position,
+            velocity,
+            radius: MathHelper.Lerp(2f, 4f, intensity) * Main.rand.NextFloat(0.75f, 1.25f),
+            life: MathHelper.Lerp(10f, 20f, intensity));
     }
 
     protected override void UpdateNode(ref FieldNode node, int index)
