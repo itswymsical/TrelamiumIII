@@ -241,6 +241,8 @@ public class GelBallProj : ModProjectile
         if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;
 
+        float speed = payload?.Stats.BurstSpeedMultiplier ?? 1f;
+
         for (int i = 0; i < BURST_NODES; i++)
         {
             // Biased along the surface rather than straight out of it: a splash spreads across what
@@ -249,7 +251,7 @@ public class GelBallProj : ModProjectile
 
             layer.SpawnNode(
                 position + direction * 4f,
-                direction * Main.rand.NextFloat(1.5f, 4.5f),
+                direction * Main.rand.NextFloat(1.5f, 4.5f) * speed,
                 radius: Main.rand.NextFloat(7f, 12f),
                 life: Main.rand.NextFloat(52f, 66f),
                 owner: owner,

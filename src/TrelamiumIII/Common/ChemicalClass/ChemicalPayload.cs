@@ -55,7 +55,7 @@ public sealed class ChemicalPayload
     /// <summary>
     ///     The payload of a projectile spawned from <paramref name="spawnSource" />: the ammo's chemistry when the ammo
     ///     has any, else the used item's, else the parent projectile's payload. The ammo's modifiers apply first, then
-    ///     the weapon's.
+    ///     the weapon's, then the weapon's prefix.
     /// </summary>
     public static ChemicalPayload? From(IEntitySource spawnSource)
     {
@@ -76,6 +76,9 @@ public sealed class ChemicalPayload
 
                 if (weapon is not null && weapon != ammo)
                     modifiers.AddRange(weapon.Modifiers);
+
+                if (ChemicalPrefix.Of(use.Item) is { } prefix)
+                    modifiers.Add(prefix.Modifier);
 
                 return Create(ammo ?? weapon, use.Player, modifiers);
 

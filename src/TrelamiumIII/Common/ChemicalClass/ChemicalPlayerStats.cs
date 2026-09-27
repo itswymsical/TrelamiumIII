@@ -67,8 +67,6 @@ public class ChemicalDamageClass : DamageClass
         };
     }
 
-    public override bool GetPrefixInheritance(DamageClass damageClass)
-    {
-        return damageClass.GetPrefixInheritance(Throwing) && damageClass.GetPrefixInheritance(Ranged);
-    }
+    /// <summary>No vanilla prefix categories: chemical weapons roll chemical prefixes only, through <see cref="ChemicalPrefixRolls" />.</summary>
+    public override bool GetPrefixInheritance(DamageClass damageClass) => false;
 }

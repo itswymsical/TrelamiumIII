@@ -1390,6 +1390,9 @@ ChemicalModifiers: {
 	Kinetic.DisplayName: Kinetic
 	Catalytic.DisplayName: Catalytic
 	Inert.DisplayName: Inert
+	Diluted.DisplayName: Diluted
+	Concentrated.DisplayName: Concentrated
+	Saturated.DisplayName: Saturated
 
 	Stats: {
 		AfflictionDamageFlat: "{0} affliction damage"

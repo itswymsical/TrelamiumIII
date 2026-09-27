@@ -106,13 +106,13 @@ public static class ChemicalStatsTooltip
 
     /// <summary>
     ///     A modifier's name, marked with its temperament's glyph and colour, then its description and one line per stat
-    ///     it changes, green where it helps and red where it hurts, like a vanilla prefix.
+    ///     it changes for <paramref name="source" />, green where it helps and red where it hurts, like a vanilla prefix.
     /// </summary>
-    public static TooltipRowsBlock BuildModifier(ChemicalModifier modifier)
+    public static TooltipRowsBlock BuildModifier(ChemicalModifier modifier, IChemicalSource? source = null)
     {
         ChemicalTypeInfo.TryGet(modifier.Temperament, out _, out Color color);
 
-        List<(string Text, bool Good)> lines = StatLines(modifier);
+        List<ChemicalStatChange> changes = ChemicalStatChange.Measure(modifier, source);
         string? description = modifier.Description;
 
         var fallback = new List<string>();
@@ -120,8 +120,8 @@ public static class ChemicalStatsTooltip
         if (description is not null)
             fallback.Add(description);
 
-        foreach (var line in lines)
-            fallback.Add(line.Text);
+        foreach (ChemicalStatChange change in changes)
+            fallback.Add(change.Text);
 
         var block = new TooltipRowsBlock(TooltipAnchor.End, $"{modifier.DisplayName}: {string.Join(", ", fallback)}");
 
@@ -130,53 +130,10 @@ public static class ChemicalStatsTooltip
         if (description is not null)
             block.Row().Text(description, DescriptionColor);
 
-        foreach (var (text, good) in lines)
-            block.Row().Text(text, good ? GoodColor : BadColor);
+        foreach (ChemicalStatChange change in changes)
+            block.Row().Text(change.Text, change.Helps ? GoodColor : BadColor);
 
         return block;
-    }
-
-    /// <summary>What <paramref name="modifier" /> changes, measured against <see cref="ChemicalStats.Neutral" />.</summary>
-    private static List<(string Text, bool Good)> StatLines(ChemicalModifier modifier)
-    {
-        ChemicalStats before = ChemicalStats.Neutral;
-        ChemicalStats after = before;
-
-        modifier.ModifyStats(ref after);
-
-        var lines = new List<(string Text, bool Good)>();
-
-        Add(lines, "AfflictionDamageFlat", after.ChemicalDamage - before.ChemicalDamage);
-        Add(lines, "AfflictionDamage", (after.DamageMultiplier - before.DamageMultiplier) * 100f);
-        Add(lines, "AfflictionSpeed", after.AfflictionRate > 0f ? (before.AfflictionRate / after.AfflictionRate - 1f) * 100f : 0f);
-        Add(lines, "AfflictionDurationFlat", (after.AfflictionDuration - before.AfflictionDuration) / 60f);
-        Add(lines, "AfflictionDuration", (after.DurationMultiplier - before.DurationMultiplier) * 100f);
-        Add(lines, "ReactionChance", after.ReactionChance - before.ReactionChance);
-        Add(lines, "ReactionDamageFlat", after.ReactionDamage - before.ReactionDamage);
-        Add(lines, "ReactionDamage", (after.ReactionDamageMultiplier - before.ReactionDamageMultiplier) * 100f);
-        Add(lines, "Concentration", after.Concentration - before.Concentration);
-        Add(lines, "Catalysis", (after.Catalysis - before.Catalysis) * 100f);
-        Add(lines, "ClingChance", (after.ClingChanceMultiplier - before.ClingChanceMultiplier) * 100f);
-        Add(lines, "ClingDuration", (after.ClingDurationMultiplier - before.ClingDurationMultiplier) * 100f);
-        Add(lines, "GasLifetime", (after.GasLifeMultiplier - before.GasLifeMultiplier) * 100f);
-        Add(lines, "GasSpread", (after.GasSpreadMultiplier - before.GasSpreadMultiplier) * 100f);
-        Add(lines, "BurstSpeed", (after.BurstSpeedMultiplier - before.BurstSpeedMultiplier) * 100f);
-
-        return lines;
-    }
-
-    /// <summary>Adds a signed line for <paramref name="delta" />, skipping changes that round away to nothing.</summary>
-    private static void Add(List<(string Text, bool Good)> lines, string key, float delta)
-    {
-        float rounded = MathF.Round(delta, 1);
-
-        if (rounded == 0f)
-            return;
-
-        string value = rounded > 0f ? "+" + Number(rounded) : Number(rounded);
-        string text = Language.GetTextValue(TrelamiumIII.Instance.GetLocalizationKey("ChemicalModifiers.Stats." + key), value);
-
-        lines.Add((text, rounded > 0f));
     }
 
     private static Asset<Texture2D> ReactionIcon

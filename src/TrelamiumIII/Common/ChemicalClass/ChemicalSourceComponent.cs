@@ -70,15 +70,20 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);
 
-    /// <summary>Adds the chemical stat rows in place of a second damage-type line, then a block per modifier.</summary>
+    /// <summary>
+    ///     Adds the chemical stat rows in place of a second damage-type line, prefix included, then a block per innate
+    ///     modifier. The prefix explains itself in vanilla's prefix lines.
+    /// </summary>
     public void AddTooltipBlocks(Item item, List<TooltipBlock> blocks)
     {
-        if (ChemicalStatsTooltip.Build(this, Modifiers) is not { } block)
+        ChemicalModifier[] modifiers = ChemicalPrefix.Of(item) is { } prefix ? [.. Modifiers, prefix.Modifier] : Modifiers;
+
+        if (ChemicalStatsTooltip.Build(this, modifiers) is not { } block)
             return;
 
         blocks.Add(block);
 
         foreach (ChemicalModifier modifier in Modifiers)
-            blocks.Add(ChemicalStatsTooltip.BuildModifier(modifier));
+            blocks.Add(ChemicalStatsTooltip.BuildModifier(modifier, this));
     }
 }

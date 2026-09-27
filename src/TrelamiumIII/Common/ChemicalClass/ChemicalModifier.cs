@@ -6,7 +6,8 @@ namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
 ///     A change to a chemical release: its numbers, its burst, and what its reactions and clings do. Weapons carry them
-///     innately through <see cref="ChemicalSourceComponent.Modifiers" />. Shared and stateless.
+///     innately through <see cref="ChemicalSourceComponent.Modifiers" /> or through a <see cref="ChemicalPrefix" />.
+///     Shared and stateless.
 /// </summary>
 [CloneByReference]
 public abstract class ChemicalModifier
@@ -18,6 +19,10 @@ public abstract class ChemicalModifier
     public virtual string Key => GetType().Name;
 
     public string DisplayName => Localize("DisplayName") ?? Key;
+
+    /// <summary>The name as registered text, for names fixed at load such as a prefix's.</summary>
+    public LocalizedText DisplayNameText
+        => Language.GetOrRegister(TrelamiumIII.Instance.GetLocalizationKey($"ChemicalModifiers.{Key}.DisplayName"));
 
     /// <summary>Behaviour the stat lines cannot show, or null when the modifier has no description key.</summary>
     public string? Description => Localize("Description");
@@ -58,7 +63,7 @@ public sealed class TemperamentModifier : ChemicalModifier
     /// <summary>Reacts to release raw energy: harder reaction bursts and faster container bursts.</summary>
     public static readonly TemperamentModifier Kinetic = new(Temperament.Kinetic);
 
-    /// <summary>Enables and hastens reactions: faster afflictions and quicker build-up.</summary>
+    /// <summary>Enables and hastens reactions: faster afflictions, quicker build-up, and a catalyst's catalysis strengthened.</summary>
     public static readonly TemperamentModifier Catalytic = new(Temperament.Catalytic);
 
     /// <summary>Refuses to react and stabilises: fewer reactions, longer afflictions and longer-lived gas.</summary>
@@ -99,6 +104,11 @@ public sealed class TemperamentModifier : ChemicalModifier
             case Temperament.Catalytic:
                 stats.AfflictionRate *= 0.8f;
                 stats.Concentration += 3;
+
+                // Catalysis from nothing would turn the source into a catalyst, which stops it being amplified.
+                if (stats.Catalysis > 0f)
+                    stats.Catalysis += 0.05f;
+
                 break;
 
             case Temperament.Inert:
@@ -108,4 +118,28 @@ public sealed class TemperamentModifier : ChemicalModifier
                 break;
         }
     }
+}
+
+/// <summary>A flat change to concentration and nothing else: the grades of how much a weapon's release builds up.</summary>
+public sealed class ConcentrationModifier : ChemicalModifier
+{
+    public static readonly ConcentrationModifier Diluted = new(nameof(Diluted), -2);
+
+    public static readonly ConcentrationModifier Concentrated = new(nameof(Concentrated), 2);
+
+    public static readonly ConcentrationModifier Saturated = new(nameof(Saturated), 4);
+
+    private readonly string key;
+
+    private readonly int amount;
+
+    private ConcentrationModifier(string key, int amount)
+    {
+        this.key = key;
+        this.amount = amount;
+    }
+
+    public override string Key => key;
+
+    public override void ModifyStats(ref ChemicalStats stats) => stats.Concentration += amount;
 }
