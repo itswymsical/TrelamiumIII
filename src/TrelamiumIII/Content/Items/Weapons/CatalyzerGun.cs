@@ -57,7 +57,7 @@ public class CatalyzerGun : ModItem
     public static bool IsCatalyticSolute(Item item)
         => !item.IsAir
            && ChemicalRoles.Of(item) == ChemicalRole.Solute
-           && ChemicalRoles.QualityOf(item).HasFlag(ChemicalQuality.Catalytic);
+           && ChemicalRoles.TemperamentsOf(item).HasFlag(Temperament.Catalytic);
 
     public override bool? CanChooseAmmo(Item ammo, Player player) => IsCatalyticSolute(ammo);
 

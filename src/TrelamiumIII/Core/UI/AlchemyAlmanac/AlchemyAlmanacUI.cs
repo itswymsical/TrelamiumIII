@@ -159,10 +159,10 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// Infusion the query slot pins onto a material lookup, so a queried "Bottled Water (Inert)"
     /// lists only the recipes keyed to that infusion. None whenever the slot holds anything else.
     /// </summary>
-    private ChemicalQuality QueryInfusion(int itemType) =>
+    private Temperament QueryInfusion(int itemType) =>
         !SearchItem.IsAir && SearchItem.type == itemType
             ? SolutionGlobalItem.GetInfusion(SearchItem)
-            : ChemicalQuality.None;
+            : Temperament.None;
 
     /// <summary>Discovered recipes that use the given ingredient (honouring a queried infusion).</summary>
     private IEnumerable<AlchemyRecipe> UnlockedUses(int itemType) =>
@@ -818,9 +818,9 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// output) by reconstructing <see cref="DrawVariantRow"/>'s layout. Returns the hovered
     /// item type (0 = none) and the infusion it requires or carries, for suffixed names.
     /// </summary>
-    private int HitTestVariantIcon(Point mouse, out ChemicalQuality infusion)
+    private int HitTestVariantIcon(Point mouse, out Temperament infusion)
     {
-        infusion = ChemicalQuality.None;
+        infusion = Temperament.None;
 
         if (current.View != ViewMode.Detail) return 0;
         if (current.Category == AlmanacCategory.Glossary) return 0;
@@ -1223,7 +1223,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         // Potency stars + chemical-type badges.
         DrawPotencyStars(sb, entry.AlmanacPotency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
-        DrawChemicalBadges(sb, entry.Chemical, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
+        DrawChemicalBadges(sb, entry.Temperaments, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
 
         // Decorative rules
         var px = TextureAssets.MagicPixel.Value;
@@ -1349,7 +1349,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         // Authored ratings: potency stars + principle badge.
         DrawPotencyStars(sb, entry.AlmanacPotency, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.43f);
-        DrawChemicalBadges(sb, entry.Chemical, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
+        DrawChemicalBadges(sb, entry.Temperaments, entry.Principle, PAGE_WIDTH * 0.5f, PAGE_HEIGHT * 0.485f);
 
         // Decorative rule.
         var px = TextureAssets.MagicPixel.Value;
@@ -1371,7 +1371,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         {
             string header = "Used In";
             var pinned = QueryInfusion(itemType);
-            if (pinned != ChemicalQuality.None && ChemicalTypeInfo.TryGet(pinned, out string label, out _))
+            if (pinned != Temperament.None && ChemicalTypeInfo.TryGet(pinned, out string label, out _))
                 header = $"Used In ({label})";
 
             Vector2 hSize = font.MeasureString(header) * HEADER_SCALE;
@@ -1630,32 +1630,32 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     // ---- Chemistry chapter: the three type axes + how solutes act on solvents ----
 
-    private static readonly (ChemicalQuality A, string ADesc, ChemicalQuality B, string BDesc)[] _chemAxes =
+    private static readonly (Temperament A, string ADesc, Temperament B, string BDesc)[] _chemAxes =
     {
-        (ChemicalQuality.Inert,    "refuses to react; stabilises and dilutes",
-         ChemicalQuality.Catalytic, "enables and hastens reactions"),
-        (ChemicalQuality.Alkaline, "binds compounds, neutralises acids",
-         ChemicalQuality.Acidic,    "breaks other compounds down"),
-        (ChemicalQuality.Volatile, "unstable; evaporates easily",
-         ChemicalQuality.Kinetic,   "reacts to release raw energy"),
+        (Temperament.Inert,    "refuses to react; stabilises and dilutes",
+         Temperament.Catalytic, "enables and hastens reactions"),
+        (Temperament.Alkaline, "binds compounds, neutralises acids",
+         Temperament.Acidic,    "breaks other compounds down"),
+        (Temperament.Volatile, "unstable; evaporates easily",
+         Temperament.Kinetic,   "reacts to release raw energy"),
     };
 
-    private static readonly (ChemicalQuality A, ChemicalQuality B, string Makes)[] _chemPairings =
+    private static readonly (Temperament A, Temperament B, string Makes)[] _chemPairings =
     {
-        (ChemicalQuality.Catalytic, ChemicalQuality.Kinetic,  "highly potent brews"),
-        (ChemicalQuality.Volatile,  ChemicalQuality.Kinetic,  "dangerous, unstable products"),
-        (ChemicalQuality.Acidic,    ChemicalQuality.Volatile, "corrosive agents"),
-        (ChemicalQuality.Alkaline,  ChemicalQuality.Volatile, "cleansing utilities"),
+        (Temperament.Catalytic, Temperament.Kinetic,  "highly potent brews"),
+        (Temperament.Volatile,  Temperament.Kinetic,  "dangerous, unstable products"),
+        (Temperament.Acidic,    Temperament.Volatile, "corrosive agents"),
+        (Temperament.Alkaline,  Temperament.Volatile, "cleansing utilities"),
     };
 
     /// <summary>Draws one temperament's glyph and name in its badge colour; returns the advance width.</summary>
-    private static float DrawChemName(SpriteBatch sb, ChemicalQuality flag, Vector2 pos, float scale)
+    private static float DrawChemName(SpriteBatch sb, Temperament flag, Vector2 pos, float scale)
     {
         ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
 
-        float glyph = GlyphAdvance(ChemicalQualityGlyphs.Icon(flag), scale);
+        float glyph = GlyphAdvance(ChemicalGlyphs.Icon(flag), scale);
 
-        DrawGlyph(sb, ChemicalQualityGlyphs.Icon(flag), pos + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
+        DrawGlyph(sb, ChemicalGlyphs.Icon(flag), pos + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
         Utils.DrawBorderString(sb, label, pos + new Vector2(glyph, 0f), color, scale);
 
         return glyph + FontAssets.MouseText.Value.MeasureString(label).X * scale;
@@ -1718,14 +1718,14 @@ public class AlchemyAlmanacUI : IInGameNotification
     // ---- Temperaments chapter: the six-point wheel, its quarrels and its pairings ----
 
     /// <summary>Wheel order, clockwise from the top. Each temperament's opposite sits three places on.</summary>
-    private static readonly ChemicalQuality[] _hexOrder =
+    private static readonly Temperament[] _hexOrder =
     [
-        ChemicalQuality.Volatile,
-        ChemicalQuality.Acidic,
-        ChemicalQuality.Catalytic,
-        ChemicalQuality.Kinetic,
-        ChemicalQuality.Alkaline,
-        ChemicalQuality.Inert,
+        Temperament.Volatile,
+        Temperament.Acidic,
+        Temperament.Catalytic,
+        Temperament.Kinetic,
+        Temperament.Alkaline,
+        Temperament.Inert,
     ];
 
     private static Vector2 HexVertex(int slot, Vector2 centre, float radius)
@@ -1735,9 +1735,9 @@ public class AlchemyAlmanacUI : IInGameNotification
         return centre + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
     }
 
-    private static int HexSlot(ChemicalQuality flag) => Array.IndexOf(_hexOrder, flag);
+    private static int HexSlot(Temperament flag) => Array.IndexOf(_hexOrder, flag);
 
-    private static Color ChemColor(ChemicalQuality flag)
+    private static Color ChemColor(Temperament flag)
     {
         ChemicalTypeInfo.TryGet(flag, out _, out Color color);
         return color;
@@ -1851,7 +1851,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     }
 
     /// <summary>One labelled vertex: a bordered plate carrying the temperament's glyph and name.</summary>
-    private static void DrawTemperamentNode(SpriteBatch sb, ChemicalQuality flag, Vector2 centre)
+    private static void DrawTemperamentNode(SpriteBatch sb, Temperament flag, Vector2 centre)
     {
         var font = FontAssets.MouseText.Value;
         var px = TextureAssets.MagicPixel.Value;
@@ -1860,7 +1860,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
 
         float text = font.MeasureString(label).X * scale;
-        float glyph = GlyphAdvance(ChemicalQualityGlyphs.Icon(flag), scale);
+        float glyph = GlyphAdvance(ChemicalGlyphs.Icon(flag), scale);
         var size = new Vector2(text + glyph + 12f, 20f);
         var plate = new Rectangle((int)(centre.X - size.X * 0.5f), (int)(centre.Y - size.Y * 0.5f),
             (int)size.X, (int)size.Y);
@@ -1870,7 +1870,7 @@ public class AlchemyAlmanacUI : IInGameNotification
 
         var pen = new Vector2(plate.X + 6f, plate.Y + 2f);
 
-        DrawGlyph(sb, ChemicalQualityGlyphs.Icon(flag), pen + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
+        DrawGlyph(sb, ChemicalGlyphs.Icon(flag), pen + new Vector2(0f, 1f), GLYPH_BOX * scale, color);
         Utils.DrawBorderString(sb, label, pen + new Vector2(glyph, 0f), color, scale);
     }
 
@@ -2244,14 +2244,14 @@ public class AlchemyAlmanacUI : IInGameNotification
         }
     }
 
-    private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _chemMeta =
+    private static readonly (Temperament Flag, string Label, Color Color)[] _chemMeta =
     {
-        (ChemicalQuality.Acidic,    "Acidic",    new Color(180, 230,  90)),
-        (ChemicalQuality.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
-        (ChemicalQuality.Volatile,  "Volatile",  new Color(255, 160,  70)),
-        (ChemicalQuality.Kinetic,  "Kinetic",     new Color(180, 255, 128)),
-        (ChemicalQuality.Catalytic, "Catalytic", new Color(255, 215, 110)),
-        (ChemicalQuality.Inert,     "Inert",     new Color(170, 170, 170)),
+        (Temperament.Acidic,    "Acidic",    new Color(180, 230,  90)),
+        (Temperament.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
+        (Temperament.Volatile,  "Volatile",  new Color(255, 160,  70)),
+        (Temperament.Kinetic,  "Kinetic",     new Color(180, 255, 128)),
+        (Temperament.Catalytic, "Catalytic", new Color(255, 215, 110)),
+        (Temperament.Inert,     "Inert",     new Color(170, 170, 170)),
     };
 
     // Flag column drives badge matching bitwise (PrincipleType is [Flags] now, so
@@ -2272,7 +2272,7 @@ public class AlchemyAlmanacUI : IInGameNotification
     /// One centred row of class tags: a badge per chemical flag, then the principle badge(s).
     /// Measured as a whole before drawing so the combined row centres on <paramref name="centerX"/>.
     /// </summary>
-    private static void DrawChemicalBadges(SpriteBatch sb, ChemicalQuality chem, PrincipleType principle, float centerX, float y)
+    private static void DrawChemicalBadges(SpriteBatch sb, Temperament chem, PrincipleType principle, float centerX, float y)
     {
         var font = FontAssets.MouseText.Value;
         var px = TextureAssets.MagicPixel.Value;
@@ -2284,7 +2284,7 @@ public class AlchemyAlmanacUI : IInGameNotification
         var badges = new List<(string Label, Color Color, Asset<Texture2D>? Icon, int Ore)>();
         foreach (var m in _chemMeta)
             if ((chem & m.Flag) != 0)
-                badges.Add((m.Label, m.Color, ChemicalQualityGlyphs.Icon(m.Flag), 0));
+                badges.Add((m.Label, m.Color, ChemicalGlyphs.Icon(m.Flag), 0));
         foreach (var m in _principles)
             if (m.Flag != PrincipleType.None && (principle & m.Flag) != 0)
                 badges.Add((m.Name, m.Color, null, m.Ore));
@@ -2484,7 +2484,7 @@ public class AlchemyAlmanacUI : IInGameNotification
             if (hit > 0)
             {
                 string name = Lang.GetItemNameValue(hit);
-                if (infusion != ChemicalQuality.None && ChemicalTypeInfo.TryGet(infusion, out string label, out _))
+                if (infusion != Temperament.None && ChemicalTypeInfo.TryGet(infusion, out string label, out _))
                     name = $"{name} ({label})";
                 Main.instance.MouseText(name, AlmanacEntryRegistry.For(hit).ResolvedRarity);
             }

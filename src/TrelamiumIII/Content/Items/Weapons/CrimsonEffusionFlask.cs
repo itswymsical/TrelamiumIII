@@ -42,6 +42,7 @@ public class CrimsonEffusionFlaskItem : ModItem
         component.ReactionChance = 12;
         component.ReactionDamage = 12;
         component.ReactionHandler = DoBloodsplosion;
+        component.Modifiers = [TemperamentModifier.Volatile];
     }
 
     private static void DoBloodsplosion(ChemicalReactionEvent e)

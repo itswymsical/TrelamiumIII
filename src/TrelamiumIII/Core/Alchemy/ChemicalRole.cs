@@ -23,7 +23,7 @@ public enum ChemicalRole
     Solution,
 }
 
-/// <summary>Which items are solutes, solvents and solutions, and the <see cref="ChemicalQuality" /> each carries.</summary>
+/// <summary>Which items are solutes, solvents and solutions, and the temperaments and traits each carries.</summary>
 public static class ChemicalRoles
 {
     private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/";
@@ -80,19 +80,25 @@ public static class ChemicalRoles
     public static bool IsReagent(int itemType) =>
         Of(itemType) == ChemicalRole.Solute && BrewCompositions.PrincipleOf(itemType) == PrincipleType.None;
 
-    /// <summary>The instance's infusion, else the almanac's tags for the type. May hold several flags.</summary>
-    public static ChemicalQuality QualityOf(Item item)
+    /// <summary>The instance's infusion, else the almanac's temperaments for the type. May hold several flags.</summary>
+    public static Temperament TemperamentsOf(Item item)
     {
-        ChemicalQuality infusion = SolutionGlobalItem.GetInfusion(item);
+        Temperament infusion = SolutionGlobalItem.GetInfusion(item);
 
-        if (infusion != ChemicalQuality.None)
+        if (infusion != Temperament.None)
             return infusion;
 
         // For() builds a default entry for an unauthored type; asking first keeps that off the draw path.
         return AlmanacEntryRegistry.Has(item.type)
-            ? AlmanacEntryRegistry.For(item.type).Chemical
-            : ChemicalQuality.None;
+            ? AlmanacEntryRegistry.For(item.type).Temperaments
+            : Temperament.None;
     }
+
+    /// <summary>The almanac's traits for the item's type. May hold several flags.</summary>
+    public static ChemicalTrait TraitsOf(Item item)
+        => AlmanacEntryRegistry.Has(item.type)
+            ? AlmanacEntryRegistry.For(item.type).Traits
+            : ChemicalTrait.None;
 
     /// <summary>Localised under <c>ChemicalRoles.{member}</c>; the member name when no translation exists.</summary>
     public static string DisplayName(ChemicalRole role) => Localize(role.ToString());
@@ -124,45 +130,57 @@ public static class ChemicalRoles
         ContentSamples.ItemsByType.TryGetValue(itemType, out Item? sample) && sample.IsManagedPotion();
 }
 
-/// <summary>Glyph sprites under <c>Assets/Textures/UI/ChemicalGlyphs</c>, one per <see cref="ChemicalQuality" /> flag.</summary>
-public static class ChemicalQualityGlyphs
+/// <summary>
+///     Glyph sprites under <c>Assets/Textures/UI/ChemicalGlyphs</c>, one per <see cref="Temperament" /> and
+///     <see cref="ChemicalTrait" /> flag, named after the flag.
+/// </summary>
+public static class ChemicalGlyphs
 {
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/ChemicalGlyphs/";
 
-    /// <summary>The glyph for a single flag, or null for a quality with no sprite yet.</summary>
-    public static Asset<Texture2D>? Icon(ChemicalQuality flag)
+    /// <summary>The glyph for a single flag, or null for None, several flags, or a flag with no sprite yet.</summary>
+    public static Asset<Texture2D>? Icon(Temperament flag) => Icon((int)flag, flag.ToString());
+
+    /// <inheritdoc cref="Icon(Temperament)" />
+    public static Asset<Texture2D>? Icon(ChemicalTrait flag) => Icon((int)flag, flag.ToString());
+
+    /// <summary>Each set flag, lowest bit first.</summary>
+    public static IEnumerable<Temperament> Flags(Temperament set)
     {
-        if (!IsSingleFlag(flag))
+        foreach (int bit in Bits((int)set))
+            yield return (Temperament)bit;
+    }
+
+    /// <inheritdoc cref="Flags(Temperament)" />
+    public static IEnumerable<ChemicalTrait> Flags(ChemicalTrait set)
+    {
+        foreach (int bit in Bits((int)set))
+            yield return (ChemicalTrait)bit;
+    }
+
+    /// <summary>The lowest set flag, or None.</summary>
+    public static Temperament First(Temperament set) => (Temperament)((int)set & -(int)set);
+
+    /// <inheritdoc cref="First(Temperament)" />
+    public static ChemicalTrait First(ChemicalTrait set) => (ChemicalTrait)((int)set & -(int)set);
+
+    private static Asset<Texture2D>? Icon(int bits, string name)
+    {
+        if (bits == 0 || (bits & (bits - 1)) != 0)
             return null;
 
-        string path = DIRECTORY + flag;
+        string path = DIRECTORY + name;
 
         return ModContent.HasAsset(path) ? ModContent.Request<Texture2D>(path) : null;
     }
 
-    /// <summary>Each set flag, lowest bit first.</summary>
-    public static IEnumerable<ChemicalQuality> Flags(ChemicalQuality set)
+    private static IEnumerable<int> Bits(int bits)
     {
-        int bits = (int)set;
-
         for (int bit = 1; bit > 0 && bit <= bits; bit <<= 1)
         {
             if ((bits & bit) != 0)
-                yield return (ChemicalQuality)bit;
+                yield return bit;
         }
-    }
-
-    /// <summary>The lowest set flag, or <see cref="ChemicalQuality.None" />.</summary>
-    public static ChemicalQuality First(ChemicalQuality set)
-    {
-        int bits = (int)set;
-        return (ChemicalQuality)(bits & -bits);
-    }
-
-    private static bool IsSingleFlag(ChemicalQuality flag)
-    {
-        int bits = (int)flag;
-        return bits != 0 && (bits & (bits - 1)) == 0;
     }
 }
 
@@ -189,17 +207,18 @@ public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
             return;
 
         string roleName = ChemicalRoles.DisplayName(item.type);
-        var qualities = new List<(ChemicalQuality Flag, string Label, Color Color)>();
+        var qualities = new List<(Asset<Texture2D>? Glyph, string Label, Color Color)>();
 
-        foreach (ChemicalQuality flag in ChemicalQualityGlyphs.Flags(ChemicalRoles.QualityOf(item)))
+        foreach (Temperament flag in ChemicalGlyphs.Flags(ChemicalRoles.TemperamentsOf(item)))
         {
-            if (!ChemicalTypeInfo.TryGet(flag, out string label, out Color color))
-            {
-                label = flag.ToString();
-                color = Color.White;
-            }
+            ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
+            qualities.Add((ChemicalGlyphs.Icon(flag), label, color));
+        }
 
-            qualities.Add((flag, label, color));
+        foreach (ChemicalTrait flag in ChemicalGlyphs.Flags(ChemicalRoles.TraitsOf(item)))
+        {
+            ChemicalTypeInfo.TryGet(flag, out string label, out Color color);
+            qualities.Add((ChemicalGlyphs.Icon(flag), label, color));
         }
 
         var fallback = new StringBuilder(roleName);
@@ -210,8 +229,8 @@ public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
         var block = new TooltipRowsBlock(TooltipAnchor.AfterName, fallback.ToString());
         TooltipRow row = block.Row().Icon(ChemicalRoles.Icon(role)).Text(roleName, RoleColor);
 
-        foreach (var (flag, label, color) in qualities)
-            row.Gap(GROUP_GAP).Icon(ChemicalQualityGlyphs.Icon(flag)).Text(label, color);
+        foreach (var (glyph, label, color) in qualities)
+            row.Gap(GROUP_GAP).Icon(glyph).Text(label, color);
 
         blocks.Add(block);
     }
@@ -222,9 +241,13 @@ public sealed class ChemicalRoleTag : GlobalItem, ITooltipBlockProvider
         if (ChemicalRoles.Of(item) == ChemicalRole.None)
             return;
 
-        ChemicalQuality first = ChemicalQualityGlyphs.First(ChemicalRoles.QualityOf(item));
+        Temperament first = ChemicalGlyphs.First(ChemicalRoles.TemperamentsOf(item));
 
-        if (ChemicalQualityGlyphs.Icon(first) is not { Value: { } glyph })
+        Asset<Texture2D>? icon = first != Temperament.None
+            ? ChemicalGlyphs.Icon(first)
+            : ChemicalGlyphs.Icon(ChemicalGlyphs.First(ChemicalRoles.TraitsOf(item)));
+
+        if (icon is not { Value: { } glyph })
             return;
 
         // position is the slot's centre; the slot itself is drawn at Main.inventoryScale.

@@ -39,6 +39,10 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     /// <inheritdoc cref="IChemicalSource.ClingBehaviour" />
     public ClingBehaviour? ClingBehaviour;
 
+    /// <summary>Modifiers every release of this item carries. Assigned in SetDefaults; never mutated afterwards.</summary>
+    [CloneByReference]
+    public ChemicalModifier[] Modifiers = [];
+
     /// <summary>
     /// Per-instance reaction behaviour, assigned in SetDefaults and invoked when this source rolls a reaction.
     /// </summary>
@@ -66,10 +70,15 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);
 
-    /// <summary>Adds the chemical stat rows in place of a second damage-type line.</summary>
+    /// <summary>Adds the chemical stat rows in place of a second damage-type line, then a block per modifier.</summary>
     public void AddTooltipBlocks(Item item, List<TooltipBlock> blocks)
     {
-        if (ChemicalStatsTooltip.Build(this) is { } block)
-            blocks.Add(block);
+        if (ChemicalStatsTooltip.Build(this, Modifiers) is not { } block)
+            return;
+
+        blocks.Add(block);
+
+        foreach (ChemicalModifier modifier in Modifiers)
+            blocks.Add(ChemicalStatsTooltip.BuildModifier(modifier));
     }
 }

@@ -16,7 +16,7 @@ public class MagnoliaItem : ModItem, IAlmanacDefined
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
         AlmanacPotency = 4,
-        Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Catalytic,
+        Temperaments = Temperament.Alkaline | Temperament.Catalytic,
         Principle = PrincipleType.Harmony | PrincipleType.Vital,
         Rarity = ItemRarityID.Green,
         Hidden = false,

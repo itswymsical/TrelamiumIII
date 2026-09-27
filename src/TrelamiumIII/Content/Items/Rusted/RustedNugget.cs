@@ -13,7 +13,7 @@ namespace TrelamiumIII.Content.Items.Rusted
         AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
         {
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Bane | PrincipleType.Martial,
         };
 

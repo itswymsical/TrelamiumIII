@@ -5,10 +5,11 @@ using Terraria.Localization;
 namespace TrelamiumIII.Core.Alchemy;
 
 /// <summary>
-/// Broad chemical tags for an almanac entry, as flags (e.g. <c>Toxic | Volatile</c>). Labels and colours live in <c>AlchemyAlmanacUI</c>.
+/// The six fundamental chemical temperaments, as flags: three opposed pairs, Acidic/Alkaline, Volatile/Kinetic and
+/// Catalytic/Inert. Saved with infusions, so the bit values must not change.
 /// </summary>
 [Flags]
-public enum ChemicalQuality
+public enum Temperament
 {
     None = 0,
     /// <summary>Breaks down other compounds.</summary>
@@ -22,16 +23,23 @@ public enum ChemicalQuality
     /// <summary>Enables or accelerates reactions.</summary>
     Catalytic = 1 << 4,
     /// <summary>Refuses to react; can stabilize mixtures or dilute reactions.</summary>
-    Inert = 1 << 5, // these ones and above are the general types, below are distinct qualities
+    Inert = 1 << 5,
+}
 
-    Oxidizer = 1 << 6,
+/// <summary>Distinct chemical traits beside the temperaments, as flags. Flavour rather than fundamentals.</summary>
+[Flags]
+public enum ChemicalTrait
+{
+    None = 0,
 
-    Flammable = 1 << 7,
+    Oxidizer = 1 << 0,
+
+    Flammable = 1 << 1,
+
     /// <summary>Used for bane tonic and necrotic items.</summary>
-    Inhibitor = 1 << 8,
+    Inhibitor = 1 << 2,
 
-    Cryogen = 1 << 9,
-
+    Cryogen = 1 << 3,
 }
 
 /// <summary>
@@ -76,8 +84,10 @@ public sealed class AlmanacEntry
     /// <summary>Ticks a station takes to brew this item as its output, divided by the station's brew speed. Batch size doesn't scale it.</summary>
     public int BrewTicks { get; init; } = DefaultBrewTicks;
 
-    /// <summary>Chemical tag(s). Drawn as one coloured badge per set flag.</summary>
-    public ChemicalQuality Chemical { get; init; }
+    /// <summary>Drawn as one coloured badge per set flag.</summary>
+    public Temperament Temperaments { get; init; }
+
+    public ChemicalTrait Traits { get; init; }
 
     public PrincipleType Principle { get; init; } = PrincipleType.None;
     /// <summary>Display rarity as an <c>ItemRarityID</c>, judged by this system; unset falls back to the item's vanilla rarity.</summary>
@@ -236,9 +246,9 @@ public static class AlmanacIndex
     }
 
     /// <summary>Recipes whose solvent or any solute slot requires <paramref name="itemType"/> with the given infusion.</summary>
-    public static IEnumerable<AlchemyRecipe> RecipesUsing(int itemType, ChemicalQuality infusion)
+    public static IEnumerable<AlchemyRecipe> RecipesUsing(int itemType, Temperament infusion)
     {
-        if (infusion == ChemicalQuality.None)
+        if (infusion == Temperament.None)
         {
             foreach (var r in RecipesUsing(itemType))
                 yield return r;
@@ -389,7 +399,7 @@ internal static class AlmanacDefinitions
             ItemType = ItemID.Bottle,
             AlmanacPotency = 0,
             Hidden = false,
-            Chemical = ChemicalQuality.None,
+            Temperaments = Temperament.None,
             Rarity = ItemRarityID.White,
         });
 
@@ -397,7 +407,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.BottledHoney,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Rarity = ItemRarityID.Yellow,
         });
     }
@@ -409,7 +419,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Daybloom,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Harmony,
         });
@@ -418,7 +428,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Blinkroot,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Specular | PrincipleType.Vital,
         });
@@ -427,7 +437,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Moonglow,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Hidden = false,
             Principle = PrincipleType.Specular,
         });
@@ -436,7 +446,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Deathweed,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Rarity = ItemRarityID.LightPurple,
             Hidden = false,
             Principle = PrincipleType.Bane,
@@ -446,7 +456,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Waterleaf,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Rarity = ItemRarityID.Blue,
             Hidden = false,
             Principle = PrincipleType.Brisk,
@@ -456,7 +466,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Fireblossom,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             Rarity = ItemRarityID.Orange,
             Hidden = false,
             Principle = PrincipleType.Martial,
@@ -466,7 +476,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Shiverthorn,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Alkaline | Temperament.Catalytic,
             Rarity = ItemRarityID.Blue,
             Hidden = false,
             Principle = PrincipleType.Brisk,
@@ -476,7 +486,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Sunflower,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Brisk,
         });
         AlmanacEntryRegistry.Register(new AlmanacEntry
@@ -493,7 +503,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Mushroom,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Hidden = false,
             Principle = PrincipleType.Harmony,
         });
@@ -502,7 +512,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.VileMushroom,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Bane,
         });
 
@@ -510,7 +520,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.ViciousMushroom,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Bane,
         });
         #endregion
@@ -520,7 +530,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.CopperOre,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
         });
 
@@ -528,7 +538,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.TinOre,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Principle = PrincipleType.Brisk,
         });
 
@@ -536,7 +546,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.IronOre,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Martial,
         });
 
@@ -544,7 +554,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.LeadOre,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Bane | PrincipleType.Harmony, // context dependent behavior
         });
 
@@ -552,7 +562,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.SilverOre,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Specular,
         });
 
@@ -560,7 +570,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.TungstenOre,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.Martial,
         });
 
@@ -568,7 +578,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.GoldOre,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Rarity = ItemRarityID.Orange,
             Principle = PrincipleType.Vital | PrincipleType.Specular,
         });
@@ -577,7 +587,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.PlatinumOre,
             AlmanacPotency = 5,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Rarity = ItemRarityID.Orange,
             Principle = PrincipleType.Fortune,
         });
@@ -586,7 +596,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.DemoniteOre,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
         });
@@ -595,7 +605,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.CrimtaneOre,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
         });
@@ -611,7 +621,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.RottenChunk,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic | ChemicalQuality.Inhibitor,
+            Temperaments = Temperament.Acidic,
+            Traits = ChemicalTrait.Inhibitor,
             Rarity = ItemRarityID.Blue,
             Principle = PrincipleType.Bane,
         });
@@ -620,7 +631,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Vertebrae,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Martial,
         });
 
@@ -630,7 +641,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.SpecularFish,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Principle = PrincipleType.Specular,
         });
 
@@ -638,7 +649,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Damselfish,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
         });
 
@@ -646,7 +657,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Bass,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.None,
         });
 
@@ -654,7 +665,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Stinkfish,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.None,
         });
 
@@ -662,7 +673,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.FlarefinKoi,
             AlmanacPotency = 5,
-            Chemical = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Brisk,
         });
 
@@ -670,7 +681,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Obsidifish,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.Martial,
         });
 
@@ -678,7 +689,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.ArmoredCavefish,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.Martial,
         });
 
@@ -686,7 +697,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.AtlanticCod,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.None,
         });
 
@@ -694,7 +705,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.DoubleCod,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.None,
         });
 
@@ -702,7 +713,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.NeonTetra,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.None,
         });
 
@@ -710,7 +721,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Ebonkoi,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic | ChemicalQuality.Inhibitor,
+            Temperaments = Temperament.Acidic,
+            Traits = ChemicalTrait.Inhibitor,
             Principle = PrincipleType.Bane,
         });
 
@@ -718,7 +730,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Hemopiranha,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Volatile | ChemicalQuality.Inhibitor,
+            Temperaments = Temperament.Volatile,
+            Traits = ChemicalTrait.Inhibitor,
             Principle = PrincipleType.Bane,
         });
 
@@ -726,7 +739,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.CrimsonTigerfish,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Inhibitor,
+            Temperaments = Temperament.Alkaline,
+            Traits = ChemicalTrait.Inhibitor,
             Principle = PrincipleType.Brisk,
         });
 
@@ -734,7 +748,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.FrostMinnow,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Cryogen,
+            Temperaments = Temperament.Alkaline,
+            Traits = ChemicalTrait.Cryogen,
             Principle = PrincipleType.Brisk | PrincipleType.Vital,
         });
 
@@ -742,7 +757,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.PrincessFish,
             AlmanacPotency = 4,
-            Chemical = ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Harmony,
         });
 
@@ -750,7 +765,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Prismite,
             AlmanacPotency = 5,
-            Chemical = ChemicalQuality.Kinetic | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Kinetic | Temperament.Catalytic,
             Principle = PrincipleType.Harmony,
         });
 
@@ -760,7 +775,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Gel,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.Alkaline | ChemicalQuality.Flammable,
+            Temperaments = Temperament.Alkaline,
+            Traits = ChemicalTrait.Flammable,
             Principle = PrincipleType.Harmony | PrincipleType.Vital,
         });
 
@@ -768,7 +784,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Stinger,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Vital,
         });
 
@@ -776,7 +792,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Amber,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Martial | PrincipleType.Specular,
         });
 
@@ -784,7 +800,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.SharkFin,
             AlmanacPotency = 2,
-            Chemical = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Brisk | PrincipleType.Martial,
         });
 
@@ -792,7 +808,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Lens,
             AlmanacPotency = 1,
-            Chemical = ChemicalQuality.None,
+            Temperaments = Temperament.None,
             Principle = PrincipleType.Specular,
         });
 
@@ -800,7 +816,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.LifeCrystal,
             AlmanacPotency = 3,
-            Chemical = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.Harmony,
         });
 

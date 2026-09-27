@@ -8,7 +8,7 @@ public class CharcoalItem : ModItem, IAlmanacDefined
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
         AlmanacPotency = 1,
-        Chemical = ChemicalQuality.Kinetic,
+        Temperaments = Temperament.Kinetic,
     };
 
     public override void SetDefaults()

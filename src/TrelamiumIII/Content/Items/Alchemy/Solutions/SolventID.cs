@@ -84,7 +84,7 @@ public sealed class SolventID : ICustomAutoload
         {
             Rare = ItemRarityID.Blue,
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Inert | Temperament.Alkaline,
             Hidden = false,
             LegacyNames = ["BrineBottle"],
             Recipes = self => self.CreateRecipe()
@@ -97,7 +97,7 @@ public sealed class SolventID : ICustomAutoload
         {
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             LegacyNames = ["BottledOil"],
             Recipes = self => self.CreateRecipe()
                 .AddIngredient(ItemID.Bottle)
@@ -114,7 +114,7 @@ public sealed class SolventID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 4,
-            Quality = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
         });
 
         AquaFortis = Add(mod, new SolventItem("AquaFortisItem")
@@ -123,7 +123,7 @@ public sealed class SolventID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 5),
             AlmanacPotency = 4,
-            Quality = ChemicalQuality.Acidic | ChemicalQuality.Volatile,
+            Temperaments = Temperament.Acidic | Temperament.Volatile,
         });
 
         AquaFortis = Add(mod, new SolventItem("AquaTerraeItem")
@@ -132,7 +132,7 @@ public sealed class SolventID : ICustomAutoload
             Rare = ItemRarityID.Gray,
             Value = Item.sellPrice(silver: 0),
             AlmanacPotency = 1,
-            Quality = ChemicalQuality.Alkaline | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Alkaline | Temperament.Catalytic,
         });
 
         AquaRegia = Add(mod, new SolventItem("AquaRegiaItem")
@@ -141,7 +141,7 @@ public sealed class SolventID : ICustomAutoload
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 20),
             AlmanacPotency = 5,
-            Quality = ChemicalQuality.Acidic | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Acidic | Temperament.Catalytic,
         });
     }
 
@@ -151,7 +151,7 @@ public sealed class SolventID : ICustomAutoload
         {
             Rare = ItemRarityID.Gray,
             AlmanacPotency = 1,
-            Quality = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             AlmanacRarity = ItemRarityID.White,
             Hidden = false,
         });
@@ -160,7 +160,7 @@ public sealed class SolventID : ICustomAutoload
         {
             Rare = ItemRarityID.Gray,
             AlmanacPotency = 4,
-            Quality = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Principle = PrincipleType.Bane,
             AlmanacRarity = ItemRarityID.Blue,
         });
@@ -170,7 +170,7 @@ public sealed class SolventID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(copper: 40),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Bane,
             AlmanacRarity = ItemRarityID.Green,
             LegacyNames = ["BloodtoothExtract"],
@@ -194,7 +194,7 @@ public sealed class SolventID : ICustomAutoload
         FibrousSlurry = Add(mod, new SoluteItem("FibrousSlurryItem")
         {
             AlmanacPotency = 1,
-            Quality = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
             Hidden = false,
             LegacyNames = ["FibrousSlurry"],
         });

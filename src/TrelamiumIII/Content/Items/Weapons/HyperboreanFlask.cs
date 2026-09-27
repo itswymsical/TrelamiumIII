@@ -42,6 +42,7 @@ public class HyperboreanFlaskItem : ModItem
         component.ReactionChance = 15;
         component.ReactionDamage = 6;
         component.ReactionHandler = OnCryonicReaction;
+        component.Modifiers = [TemperamentModifier.Inert];
     }
 
     /// <summary>

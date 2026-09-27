@@ -30,7 +30,7 @@ public static class BrewFormula
         output.stack = variant.OutputStack;
 
         // Infused outputs are suffixed solvents; a brew would brand e.g. Bottled Water through its healLife.
-        if (variant.OutputInfusion != ChemicalQuality.None)
+        if (variant.OutputInfusion != Temperament.None)
         {
             if (output.TryGetGlobalItem(out SolutionGlobalItem solution))
                 solution.Infusion = variant.OutputInfusion;

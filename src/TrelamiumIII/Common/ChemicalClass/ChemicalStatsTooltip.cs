@@ -9,8 +9,8 @@ namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
 ///     Controller weapon stat rows, pinned to the tooltip's top-right: affliction damage per second, reaction
-///     burst and odds (reactive elements only), duration, concentration and catalysis. Values are the source's,
-///     without player bonuses. Rows for a stat the source does not have are left out.
+///     burst and odds (reactive elements only), duration, concentration and catalysis. Values are the item's own,
+///     modifiers included, without player bonuses. Rows for a stat the item does not have are left out.
 /// </summary>
 public static class ChemicalStatsTooltip
 {
@@ -24,26 +24,42 @@ public static class ChemicalStatsTooltip
     /// <summary>The almanac's Catalytic badge colour.</summary>
     private static readonly Color CatalysisColor = new(255, 215, 110);
 
-    /// <summary>The rows for <paramref name="source" />, or null for a source that emits no chemistry.</summary>
-    public static TooltipRowsBlock? Build(IChemicalSource source)
+    /// <summary>Vanilla's colours for a prefix line that helps and one that hurts.</summary>
+    private static readonly Color GoodColor = new(120, 190, 120);
+
+    private static readonly Color BadColor = new(190, 120, 120);
+
+    private static readonly Color DescriptionColor = new(185, 185, 185);
+
+    /// <summary>The rows for <paramref name="source" /> with <paramref name="modifiers" /> applied, or null for no chemistry.</summary>
+    public static TooltipRowsBlock? Build(IChemicalSource source, IReadOnlyList<ChemicalModifier>? modifiers = null)
     {
         ChemicalDamageType type = source.ChemicalType;
 
         if (type == ChemicalDamageType.None)
             return null;
 
+        ChemicalStats stats = ChemicalStats.Of(source);
+
+        if (modifiers is not null)
+        {
+            foreach (ChemicalModifier modifier in modifiers)
+                modifier.ModifyStats(ref stats);
+        }
+
         Color color = ElementDisplay.LabelColor(type);
         Asset<Texture2D>? icon = ElementDisplay.Icon(type);
         string element = ElementDisplay.DisplayName(type);
         bool reacts = ChemicalMatchup.IsElemental(type);
-        bool afflicts = source.ChemicalDamage > 0;
+        bool afflicts = stats.ChemicalDamage > 0;
+        float reactionDamage = stats.ReactionDamage * stats.ReactionDamageMultiplier;
 
-        string perSecond = Number(source.AfflictionRate > 0f ? source.ChemicalDamage * 60f / source.AfflictionRate : 0f);
-        string seconds = Number(source.AfflictionDuration / 60f);
-        string burst = Number(source.ReactionDamage);
-        string odds = Number(Math.Clamp(source.ReactionChance, 0, 100));
-        string concentration = Text("Concentration", Number(source.Concentration));
-        string catalysis = Text("Catalysis", Number(source.Catalysis * 100f));
+        string perSecond = Number(stats.AfflictionRate > 0f ? stats.ChemicalDamage * stats.DamageMultiplier * 60f / stats.AfflictionRate : 0f);
+        string seconds = Number(stats.AfflictionDuration * stats.DurationMultiplier / 60f);
+        string burst = Number(reactionDamage);
+        string odds = Number(Math.Clamp(stats.ReactionChance, 0f, 100f));
+        string concentration = Text("Concentration", Number(stats.Concentration));
+        string catalysis = Text("Catalysis", Number(stats.Catalysis * 100f));
 
         var fallback = new List<string>();
 
@@ -54,10 +70,10 @@ public static class ChemicalStatsTooltip
                 : Text("FallbackPlain", element, perSecond, seconds));
         }
 
-        if (source.Concentration > 0)
+        if (stats.Concentration > 0)
             fallback.Add(concentration);
 
-        if (source.Catalysis > 0f)
+        if (stats.Catalysis > 0f)
             fallback.Add(catalysis);
 
         var block = new TooltipRowsBlock(
@@ -70,7 +86,7 @@ public static class ChemicalStatsTooltip
         {
             TooltipRow row = block.Row().Icon(icon);
 
-            if (source.ReactionDamage > 0)
+            if (reactionDamage > 0f)
                 row.Text(burst, color).Icon(ReactionIcon);
 
             row.Text(Text("ReactionChance", odds), OddsColor);
@@ -79,13 +95,88 @@ public static class ChemicalStatsTooltip
         if (afflicts)
             block.Row().Icon(icon).Icon(DurationIcon).Text(Text("Duration", seconds), color);
 
-        if (source.Concentration > 0)
+        if (stats.Concentration > 0)
             block.Row().Icon(icon).Text(concentration, color);
 
-        if (source.Catalysis > 0f)
-            block.Row().Icon(ChemicalQualityGlyphs.Icon(ChemicalQuality.Catalytic)).Text(catalysis, CatalysisColor);
+        if (stats.Catalysis > 0f)
+            block.Row().Icon(ChemicalGlyphs.Icon(Temperament.Catalytic)).Text(catalysis, CatalysisColor);
 
         return block;
+    }
+
+    /// <summary>
+    ///     A modifier's name, marked with its temperament's glyph and colour, then its description and one line per stat
+    ///     it changes, green where it helps and red where it hurts, like a vanilla prefix.
+    /// </summary>
+    public static TooltipRowsBlock BuildModifier(ChemicalModifier modifier)
+    {
+        ChemicalTypeInfo.TryGet(modifier.Temperament, out _, out Color color);
+
+        List<(string Text, bool Good)> lines = StatLines(modifier);
+        string? description = modifier.Description;
+
+        var fallback = new List<string>();
+
+        if (description is not null)
+            fallback.Add(description);
+
+        foreach (var line in lines)
+            fallback.Add(line.Text);
+
+        var block = new TooltipRowsBlock(TooltipAnchor.End, $"{modifier.DisplayName}: {string.Join(", ", fallback)}");
+
+        block.Row().Icon(ChemicalGlyphs.Icon(modifier.Temperament)).Text(modifier.DisplayName, color);
+
+        if (description is not null)
+            block.Row().Text(description, DescriptionColor);
+
+        foreach (var (text, good) in lines)
+            block.Row().Text(text, good ? GoodColor : BadColor);
+
+        return block;
+    }
+
+    /// <summary>What <paramref name="modifier" /> changes, measured against <see cref="ChemicalStats.Neutral" />.</summary>
+    private static List<(string Text, bool Good)> StatLines(ChemicalModifier modifier)
+    {
+        ChemicalStats before = ChemicalStats.Neutral;
+        ChemicalStats after = before;
+
+        modifier.ModifyStats(ref after);
+
+        var lines = new List<(string Text, bool Good)>();
+
+        Add(lines, "AfflictionDamageFlat", after.ChemicalDamage - before.ChemicalDamage);
+        Add(lines, "AfflictionDamage", (after.DamageMultiplier - before.DamageMultiplier) * 100f);
+        Add(lines, "AfflictionSpeed", after.AfflictionRate > 0f ? (before.AfflictionRate / after.AfflictionRate - 1f) * 100f : 0f);
+        Add(lines, "AfflictionDurationFlat", (after.AfflictionDuration - before.AfflictionDuration) / 60f);
+        Add(lines, "AfflictionDuration", (after.DurationMultiplier - before.DurationMultiplier) * 100f);
+        Add(lines, "ReactionChance", after.ReactionChance - before.ReactionChance);
+        Add(lines, "ReactionDamageFlat", after.ReactionDamage - before.ReactionDamage);
+        Add(lines, "ReactionDamage", (after.ReactionDamageMultiplier - before.ReactionDamageMultiplier) * 100f);
+        Add(lines, "Concentration", after.Concentration - before.Concentration);
+        Add(lines, "Catalysis", (after.Catalysis - before.Catalysis) * 100f);
+        Add(lines, "ClingChance", (after.ClingChanceMultiplier - before.ClingChanceMultiplier) * 100f);
+        Add(lines, "ClingDuration", (after.ClingDurationMultiplier - before.ClingDurationMultiplier) * 100f);
+        Add(lines, "GasLifetime", (after.GasLifeMultiplier - before.GasLifeMultiplier) * 100f);
+        Add(lines, "GasSpread", (after.GasSpreadMultiplier - before.GasSpreadMultiplier) * 100f);
+        Add(lines, "BurstSpeed", (after.BurstSpeedMultiplier - before.BurstSpeedMultiplier) * 100f);
+
+        return lines;
+    }
+
+    /// <summary>Adds a signed line for <paramref name="delta" />, skipping changes that round away to nothing.</summary>
+    private static void Add(List<(string Text, bool Good)> lines, string key, float delta)
+    {
+        float rounded = MathF.Round(delta, 1);
+
+        if (rounded == 0f)
+            return;
+
+        string value = rounded > 0f ? "+" + Number(rounded) : Number(rounded);
+        string text = Language.GetTextValue(TrelamiumIII.Instance.GetLocalizationKey("ChemicalModifiers.Stats." + key), value);
+
+        lines.Add((text, rounded > 0f));
     }
 
     private static Asset<Texture2D> ReactionIcon

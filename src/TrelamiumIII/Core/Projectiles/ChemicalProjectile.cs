@@ -205,6 +205,8 @@ public abstract class ChemicalProjectile : ModProjectile
 
         BurstProfile profile = Burst with { DamageShare = BurstDamageShare };
 
+        Payload?.ModifyBurst(ref profile);
+
         field.SpawnBurst(
             in profile,
             Projectile.Center,

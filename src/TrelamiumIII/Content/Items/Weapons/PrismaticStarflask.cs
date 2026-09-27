@@ -42,6 +42,7 @@ public class PrismaticStarflaskItem : ModItem
         component.ReactionChance = 15;
         component.ReactionDamage = 6;
         component.ReactionHandler = OnPrismaticReaction;
+        component.Modifiers = [TemperamentModifier.Catalytic];
     }
 
     private static void OnPrismaticReaction(ChemicalReactionEvent e)

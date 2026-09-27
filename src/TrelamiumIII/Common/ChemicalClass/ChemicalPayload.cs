@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Gas;
 
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
-///     One release of chemistry: its source, the releasing player and that player's chemical stats at release.
+///     One release of chemistry: its source, its modifiers, the releasing player, and the stats all three produce.
 ///     Shared by every projectile, emitter, gas node and residue the release produces.
 /// </summary>
 /// <remarks>Built where the projectile spawns, so other clients see null; only the owner's machine applies it anyway.</remarks>
@@ -15,54 +16,68 @@ public sealed class ChemicalPayload
     /// <summary>The releasing player's index, or -1.</summary>
     public int Owner { get; }
 
-    public float DamageMultiplier { get; }
+    public IReadOnlyList<ChemicalModifier> Modifiers { get; }
 
-    public float DurationMultiplier { get; }
+    /// <summary>The source's numbers after its modifiers and the releasing player's stats, fixed at release.</summary>
+    public ChemicalStats Stats { get; }
 
-    /// <summary>Reaction odds in percent that a hit adds to the source's own.</summary>
-    public float ReactionChanceBonus { get; }
+    /// <summary>The first modifier's cling override, else the source's; null leaves it to the gas.</summary>
+    public ClingBehaviour? ClingBehaviour { get; }
 
-    public float ReactionDamageMultiplier { get; }
-
-    private ChemicalPayload(IChemicalSource source, Player? player)
+    private ChemicalPayload(IChemicalSource source, IReadOnlyList<ChemicalModifier> modifiers, Player? player)
     {
         Source = source;
         Owner = player?.whoAmI ?? -1;
+        Modifiers = modifiers;
 
-        if (player is null)
+        ChemicalStats stats = ChemicalStats.Of(source);
+        ClingBehaviour? cling = null;
+
+        foreach (ChemicalModifier modifier in modifiers)
         {
-            DamageMultiplier = DurationMultiplier = ReactionDamageMultiplier = 1f;
-            return;
+            modifier.ModifyStats(ref stats);
+            cling ??= modifier.ClingBehaviour;
         }
 
-        ChemicalPlayerStats stats = player.GetModPlayer<ChemicalPlayerStats>();
+        if (player is not null)
+            stats.Apply(player.GetModPlayer<ChemicalPlayerStats>());
 
-        DamageMultiplier = stats.ChemicalDamageBonus;
-        DurationMultiplier = stats.AfflictionRate;
-        ReactionChanceBonus = stats.ReactionChance;
-        ReactionDamageMultiplier = stats.ReactionDamageBonus;
+        Stats = stats;
+        ClingBehaviour = cling ?? source.ClingBehaviour;
     }
 
     /// <summary>Null for a source that carries no chemistry.</summary>
-    public static ChemicalPayload? Create(IChemicalSource? source, Player? player = null)
-        => source is null || source.ChemicalType == ChemicalDamageType.None ? null : new ChemicalPayload(source, player);
+    public static ChemicalPayload? Create(IChemicalSource? source, Player? player = null, IReadOnlyList<ChemicalModifier>? modifiers = null)
+        => source is null || source.ChemicalType == ChemicalDamageType.None
+            ? null
+            : new ChemicalPayload(source, modifiers ?? [], player);
 
     /// <summary>
     ///     The payload of a projectile spawned from <paramref name="spawnSource" />: the ammo's chemistry when the ammo
-    ///     has any, else the used item's, else the parent projectile's payload.
+    ///     has any, else the used item's, else the parent projectile's payload. The ammo's modifiers apply first, then
+    ///     the weapon's.
     /// </summary>
     public static ChemicalPayload? From(IEntitySource spawnSource)
     {
         switch (spawnSource)
         {
             case EntitySource_ItemUse use:
-                IChemicalSource? source = null;
+                ChemicalSourceComponent? weapon = ChemicalSourceComponent.Of(use.Item);
+                ChemicalSourceComponent? ammo = null;
 
                 if (use is EntitySource_ItemUse_WithAmmo { AmmoItemIdUsed: > 0 } withAmmo
-                    && ContentSamples.ItemsByType.TryGetValue(withAmmo.AmmoItemIdUsed, out Item? ammo))
-                    source = ChemicalSourceComponent.Of(ammo);
+                    && ContentSamples.ItemsByType.TryGetValue(withAmmo.AmmoItemIdUsed, out Item? sample))
+                    ammo = ChemicalSourceComponent.Of(sample);
 
-                return Create(source ?? ChemicalSourceComponent.Of(use.Item), use.Player);
+                var modifiers = new List<ChemicalModifier>();
+
+                if (ammo is not null)
+                    modifiers.AddRange(ammo.Modifiers);
+
+                if (weapon is not null && weapon != ammo)
+                    modifiers.AddRange(weapon.Modifiers);
+
+                return Create(ammo ?? weapon, use.Player, modifiers);
 
             case EntitySource_Parent { Entity: Projectile parent }:
                 return ChemicalHandler.PayloadOf(parent);
@@ -84,8 +99,8 @@ public sealed class ChemicalPayload
     };
 
     /// <summary>
-    ///     A direct hit: the source's own chemistry at full concentration, then a reaction roll of its chance plus the
-    ///     player's, amplified by the target's catalysis. <paramref name="medium" /> is the gas a cling would be made of.
+    ///     A direct hit: the release's chemistry at full concentration, then a reaction roll amplified by the target's
+    ///     catalysis. <paramref name="medium" /> is the gas a cling would be made of.
     /// </summary>
     public void Hit(NPC target, ChemicalGasField? medium = null, Projectile? delivery = null)
     {
@@ -94,11 +109,11 @@ public sealed class ChemicalPayload
 
         ChemicalGlobalNPC chemistry = target.GetGlobalNPC<ChemicalGlobalNPC>();
 
-        chemistry.Expose(target, Source, this, Owner, 1f, ExposureKind.Hit, medium);
+        chemistry.Expose(target, Delivery(ExposureKind.Hit, Owner, medium, 1f));
 
-        float amplify = Source.Catalysis > 0f ? 1f : chemistry.CatalysisMultiplier;
+        float amplify = Stats.Catalysis > 0f ? 1f : chemistry.CatalysisMultiplier;
 
-        if (Main.rand.NextFloat(100f) < (Source.ReactionChance + ReactionChanceBonus) * amplify)
+        if (Main.rand.NextFloat(100f) < Stats.ReactionChance * amplify)
             ChemicalReaction.Trigger(target, Source, this, delivery);
     }
 
@@ -108,7 +123,39 @@ public sealed class ChemicalPayload
     /// </summary>
     public static void Contact(NPC target, IChemicalSource formula, ChemicalPayload? payload, int owner, ChemicalGasField? medium, float strength = 1f)
     {
-        if (IsAuthority(owner))
-            target.GetGlobalNPC<ChemicalGlobalNPC>().Expose(target, payload?.Source ?? formula, payload, owner, strength, ExposureKind.Contact, medium);
+        if (!IsAuthority(owner))
+            return;
+
+        ChemicalDelivery delivery = payload?.Delivery(ExposureKind.Contact, owner, medium, strength)
+            ?? new ChemicalDelivery(formula.ChemicalType, ChemicalStats.Of(formula), formula.ClingBehaviour, null, owner, strength, ExposureKind.Contact, medium);
+
+        target.GetGlobalNPC<ChemicalGlobalNPC>().Expose(target, delivery);
     }
+
+    /// <summary>Scales the burst's arm speeds, then lets each modifier adjust it.</summary>
+    public void ModifyBurst(ref BurstProfile burst)
+    {
+        float speed = Stats.BurstSpeedMultiplier;
+
+        if (speed != 1f)
+        {
+            burst = burst with
+            {
+                AirSpeed = new FloatRange(burst.AirSpeed.Min * speed, burst.AirSpeed.Max * speed),
+                GroundSpeed = new FloatRange(burst.GroundSpeed.Min * speed, burst.GroundSpeed.Max * speed),
+            };
+        }
+
+        foreach (ChemicalModifier modifier in Modifiers)
+            modifier.ModifyBurst(ref burst);
+    }
+
+    public void OnReaction(in ChemicalReactionEvent e)
+    {
+        foreach (ChemicalModifier modifier in Modifiers)
+            modifier.OnReaction(in e);
+    }
+
+    private ChemicalDelivery Delivery(ExposureKind kind, int owner, ChemicalGasField? medium, float strength)
+        => new(Source.ChemicalType, Stats, ClingBehaviour, this, owner, strength, kind, medium);
 }

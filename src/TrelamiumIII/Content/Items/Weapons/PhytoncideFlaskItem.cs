@@ -42,6 +42,7 @@ public class PhytoncideFlaskItem : ModItem
         component.ReactionChance = 2;
         component.ReactionDamage = 2;
         component.ReactionHandler = DoPhytoncideBloom;
+        component.Modifiers = [TemperamentModifier.Alkaline];
     }
 
     /// <summary>Fraction of the reaction's landed damage returned to the thrower as life.</summary>

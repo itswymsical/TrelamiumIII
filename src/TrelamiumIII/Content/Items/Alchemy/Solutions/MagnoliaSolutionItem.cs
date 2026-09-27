@@ -11,7 +11,7 @@ public class MagnoliaSolutionItem : SolventItem
         Rare = ItemRarityID.Blue;
 
         AlmanacPotency = 2;
-        Quality = ChemicalQuality.Alkaline;
+        Temperaments = Temperament.Alkaline;
         Principle = PrincipleType.Harmony;
         AlmanacRarity = ItemRarityID.Green;
     }

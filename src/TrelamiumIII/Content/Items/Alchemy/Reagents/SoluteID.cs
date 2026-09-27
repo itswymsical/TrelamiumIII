@@ -57,7 +57,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Sulfur.KEY,
             Value = Item.sellPrice(copper: 2),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Acidic,
+            Temperaments = Temperament.Volatile | Temperament.Acidic,
             Principle = PrincipleType.Martial | PrincipleType.Bane,
 
             Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<SulfurTile>()),
@@ -73,7 +73,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = Placeholder,
             Value = Item.sellPrice(copper: 11),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Volatile | Temperament.Catalytic,
             Principle = PrincipleType.Martial,
 
             //Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<CinnabarTile>()),
@@ -85,7 +85,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = Placeholder,
             Value = Item.sellPrice(copper: 4),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Volatile | Temperament.Alkaline,
             Principle = PrincipleType.Specular,
         });
 
@@ -94,7 +94,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Niter.KEY,
             Value = Item.sellPrice(copper: 60),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Volatile | Temperament.Catalytic,
             Principle = PrincipleType.Bane,
             Recipes = self =>
             {
@@ -117,7 +117,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.RockSalt.KEY,
             Value = Item.sellPrice(copper: 20),
             AlmanacPotency = 1,
-            Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Inert | Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
             Hidden = false,
             Recipes = self => self.CreateRecipe(3)
@@ -130,7 +130,7 @@ public sealed class SoluteID : ICustomAutoload
         {
             Value = Item.sellPrice(copper: 50),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Bane,
             Recipes = self => self.CreateRecipe(2)
                 .AddIngredient(ItemID.MarbleBlock, 5)
@@ -142,7 +142,7 @@ public sealed class SoluteID : ICustomAutoload
         {
             Value = Item.sellPrice(copper: 50),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Inert | ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Inert | Temperament.Alkaline,
             Principle = PrincipleType.Bane | PrincipleType.Vital,
             Recipes = self => self.CreateRecipe(2)
                 .AddIngredient(ItemID.Bone, 5)
@@ -156,7 +156,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Gray,
             Value = Item.sellPrice(copper: 10),
             AlmanacPotency = 1,
-            Quality = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
             Hidden = false,
             Recipes = self => self.CreateRecipe(2)
@@ -173,7 +173,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Acidic,
+            Temperaments = Temperament.Acidic,
             Principle = PrincipleType.Bane,
         });
 
@@ -182,7 +182,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 4),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Catalytic,
             Principle = PrincipleType.Specular,
         });
     }
@@ -193,7 +193,7 @@ public sealed class SoluteID : ICustomAutoload
         {
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Alkaline | ChemicalQuality.Inert,
+            Temperaments = Temperament.Alkaline | Temperament.Inert,
             Principle = PrincipleType.Harmony,
         });
 
@@ -202,7 +202,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Bane | PrincipleType.Harmony,
         });
 
@@ -211,7 +211,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 3),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Inert | ChemicalQuality.Volatile,
+            Temperaments = Temperament.Inert | Temperament.Volatile,
             Principle = PrincipleType.Brisk,
         });
     }
@@ -224,7 +224,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 3,
-            Quality = ChemicalQuality.Volatile,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Martial,
         });
 
@@ -233,7 +233,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Pitch.KEY,
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
-            Quality = ChemicalQuality.Inert,
+            Temperaments = Temperament.Inert,
         });
 
         BlackPowder = Add(mod, new SoluteItem("BlackPowderItem")
@@ -241,7 +241,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 6),
             AlmanacPotency = 4,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Kinetic,
+            Temperaments = Temperament.Volatile | Temperament.Kinetic,
             Principle = PrincipleType.Martial,
         });
 
@@ -250,7 +250,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 15),
             AlmanacPotency = 5,
-            Quality = ChemicalQuality.Volatile | ChemicalQuality.Catalytic,
+            Temperaments = Temperament.Volatile | Temperament.Catalytic,
             Principle = PrincipleType.Martial | PrincipleType.Specular,
         });
     }

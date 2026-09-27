@@ -86,8 +86,8 @@ public static class ChemicalReaction
 {
     /// <summary>
     ///     Refuses non-elemental sources (<see cref="ChemicalDamageType.Solute" />) outright, so a solute weapon
-    ///     can't gain reactions through careless tuning. The burst credits the local player only when
-    ///     <paramref name="payload" /> is theirs.
+    ///     can't gain reactions through careless tuning. The burst takes its damage from <paramref name="payload" />'s
+    ///     stats when there is one, and credits the local player only when the payload is theirs.
     /// </summary>
     public static void Trigger(
         NPC target,
@@ -101,11 +101,13 @@ public static class ChemicalReaction
         var npcData = target.GetGlobalNPC<ChemicalGlobalNPC>();
         npcData.ApplyReaction(source.ChemicalType);
 
+        int reactionDamage = payload?.Stats.ReactionDamage ?? source.ReactionDamage;
+
         int dealt = 0;
-        if (source.ReactionDamage > 0)
+        if (reactionDamage > 0)
         {
             float mult = ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition);
-            int burst = Math.Max(1, (int)(source.ReactionDamage * mult * (payload?.ReactionDamageMultiplier ?? 1f)));
+            int burst = Math.Max(1, (int)(reactionDamage * mult * (payload?.Stats.ReactionDamageMultiplier ?? 1f)));
 
             // SimpleStrikeNPC returns post-defense damage, which is what handlers scale off.
             dealt = target.SimpleStrikeNPC(
@@ -119,6 +121,7 @@ public static class ChemicalReaction
 
         var evt = new ChemicalReactionEvent(target, source, npcData.Composition, deliveryProjectile, dealt, payload);
         source.OnChemicalReaction(in evt);
+        payload?.OnReaction(in evt);
         ChemicalEvents.RaiseReaction(in evt);
     }
 }

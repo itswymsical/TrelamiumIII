@@ -13,6 +13,20 @@ public enum ExposureKind : byte
     Contact,
 }
 
+/// <summary>
+///     One application of chemistry to an NPC: the element and the numbers it applies with, what it does if it clings,
+///     whose it is, how strong, and the gas a cling would be made of. <see cref="Payload" /> is null for ambient chemistry.
+/// </summary>
+public readonly record struct ChemicalDelivery(
+    ChemicalDamageType Type,
+    ChemicalStats Stats,
+    ClingBehaviour? ClingBehaviour,
+    ChemicalPayload? Payload,
+    int Owner,
+    float Strength,
+    ExposureKind Kind,
+    ChemicalGasField? Medium);
+
 /// <summary>One element's affliction and concentration on an NPC.</summary>
 public struct AfflictionState
 {
@@ -106,19 +120,19 @@ public class ChemicalGlobalNPC : GlobalNPC
     }
 
     /// <summary>
-    ///     One delivery of <paramref name="source" />: its catalysis, then its affliction and concentration amplified by
-    ///     the target's catalysis, then a cling roll. A contact inside the contact interval of the element is ignored.
+    ///     Applies <paramref name="delivery" />: its catalysis, then its affliction and concentration amplified by the
+    ///     target's catalysis, then a cling roll. A contact inside the contact interval of the element is ignored.
     /// </summary>
-    public void Expose(NPC npc, IChemicalSource source, ChemicalPayload? payload, int owner, float strength, ExposureKind kind, ChemicalGasField? medium)
+    public void Expose(NPC npc, in ChemicalDelivery delivery)
     {
-        ChemicalDamageType type = source.ChemicalType;
+        ChemicalDamageType type = delivery.Type;
 
-        if (type == ChemicalDamageType.None)
+        if (type == ChemicalDamageType.None || !npc.active)
             return;
 
         ref AfflictionState state = ref afflictions[(int)type];
 
-        if (kind == ExposureKind.Contact)
+        if (delivery.Kind == ExposureKind.Contact)
         {
             if (state.ContactCooldown > 0)
                 return;
@@ -128,31 +142,38 @@ public class ChemicalGlobalNPC : GlobalNPC
 
         anyActive = true;
 
-        float share = kind == ExposureKind.Contact ? strength * ChemicalTuning.ContactShare : strength;
+        ChemicalStats stats = delivery.Stats;
+        float strength = delivery.Strength;
+        float share = delivery.Kind == ExposureKind.Contact ? strength * ChemicalTuning.ContactShare : strength;
         float amplify = 1f;
 
         // A catalyst is never amplified by catalysis, its own included.
-        if (source.Catalysis > 0f)
-            Catalyze(source.Catalysis * share, medium);
+        if (stats.Catalysis > 0f)
+            Catalyze(stats.Catalysis * share, delivery.Medium);
         else
             amplify = CatalysisMultiplier;
 
-        if (source.ChemicalDamage > 0)
+        if (stats.ChemicalDamage > 0)
         {
-            float damage = source.ChemicalDamage * strength * (payload?.DamageMultiplier ?? 1f) * amplify;
-            int duration = (int)(source.AfflictionDuration * (payload?.DurationMultiplier ?? 1f));
+            float damage = stats.ChemicalDamage * strength * stats.DamageMultiplier * amplify;
+            int duration = (int)(stats.AfflictionDuration * stats.DurationMultiplier);
 
-            Afflict(ref state, type, damage, source.AfflictionRate, duration, owner);
+            Afflict(ref state, type, damage, stats.AfflictionRate, duration, delivery.Owner);
         }
 
-        if (source.Concentration <= 0)
+        if (stats.Concentration <= 0)
             return;
 
-        state.Concentration = Math.Min(ChemicalTuning.MaxConcentration, state.Concentration + source.Concentration * share * amplify);
+        state.Concentration = Math.Min(ChemicalTuning.MaxConcentration, state.Concentration + stats.Concentration * share * amplify);
         state.ConcentrationHold = ChemicalTuning.ConcentrationHold;
 
-        if (!clings[(int)type].IsActive && Main.rand.NextFloat() < ChemicalTuning.ClingChance(state.Concentration))
-            AttachCling(npc, type, source.ClingBehaviour ?? medium?.ClingBehaviour ?? ClingBehaviour.Default, medium, payload, owner);
+        if (clings[(int)type].IsActive || Main.rand.NextFloat() >= ChemicalTuning.ClingChance(state.Concentration) * stats.ClingChanceMultiplier)
+            return;
+
+        ClingBehaviour behaviour = delivery.ClingBehaviour ?? delivery.Medium?.ClingBehaviour ?? ClingBehaviour.Default;
+        int ticks = (int)(behaviour.Duration(state.Concentration) * stats.ClingDurationMultiplier);
+
+        AttachCling(npc, type, behaviour, delivery.Medium, delivery.Payload, delivery.Owner, ticks);
     }
 
     /// <summary>An affliction outside any delivery, such as a cling's own damage. Matchup and catalysis apply.</summary>
@@ -185,7 +206,8 @@ public class ChemicalGlobalNPC : GlobalNPC
     /// <summary>
     ///     Attaches <paramref name="behaviour" /> as the cling for <paramref name="type" />, or extends it if it is already
     ///     attached. Any other behaviour is replaced, except that the default never displaces one. Keeps the affliction
-    ///     running for the cling's duration. A non-positive <paramref name="ticks" /> takes the behaviour's own duration.
+    ///     running for the cling's duration. A non-positive <paramref name="ticks" /> takes the behaviour's own duration,
+    ///     scaled by the payload's cling duration multiplier.
     /// </summary>
     public void AttachCling(NPC npc, ChemicalDamageType type, ClingBehaviour behaviour, ChemicalGasField? medium, ChemicalPayload? payload, int owner, int ticks = 0)
     {
@@ -198,7 +220,9 @@ public class ChemicalGlobalNPC : GlobalNPC
         if (cling.IsActive && cling.Behaviour != behaviour && behaviour == ClingBehaviour.Default)
             return;
 
-        int duration = ticks > 0 ? ticks : behaviour.Duration(state.Concentration);
+        int duration = ticks > 0
+            ? ticks
+            : (int)(behaviour.Duration(state.Concentration) * (payload?.Stats.ClingDurationMultiplier ?? 1f));
 
         if (state.IsActive)
             state.TicksRemaining = Math.Max(state.TicksRemaining, duration);

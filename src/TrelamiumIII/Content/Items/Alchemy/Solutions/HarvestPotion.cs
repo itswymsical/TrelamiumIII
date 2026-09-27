@@ -20,7 +20,7 @@ public class HarvestPotionItem : SolutionItem
         TexturePath = AssetReferences.Content.Items.Alchemy.Solutions.HarvestPotion.KEY;
 
         AlmanacPotency = 3;
-        Quality = ChemicalQuality.Catalytic;
+        Temperaments = Temperament.Catalytic;
         Principle = PrincipleType.Fortune;
 
         Defaults = item =>

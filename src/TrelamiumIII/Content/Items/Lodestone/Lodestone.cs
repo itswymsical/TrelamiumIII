@@ -9,7 +9,7 @@ public class LodestoneItem : ModItem, IAlmanacDefined
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
         AlmanacPotency = 3,
-        Chemical = ChemicalQuality.Kinetic,
+        Temperaments = Temperament.Kinetic,
         Principle = PrincipleType.Martial,
         Rarity = ItemRarityID.Green,
     };

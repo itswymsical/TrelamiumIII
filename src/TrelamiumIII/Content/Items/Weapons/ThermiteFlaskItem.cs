@@ -42,6 +42,7 @@ public class ThermiteFlaskItem : ModItem
         component.ReactionChance = 7;
         component.ReactionDamage = 5;
         component.ReactionHandler = DoThermiteSpread;
+        component.Modifiers = [TemperamentModifier.Kinetic];
     }
 
     private static void DoThermiteSpread(ChemicalReactionEvent e)

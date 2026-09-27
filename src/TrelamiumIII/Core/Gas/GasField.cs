@@ -54,10 +54,18 @@ public abstract class GasField : FieldLayer
     /// </summary>
     protected override int BaseMaxNodes => 900;
 
+    /// <summary>Also applies the lifetime and spread of the release the node belongs to.</summary>
     protected override void OnNodeSpawn(ref FieldNode node)
     {
         node.TypeId = GasType;
         node.ContactCooldown = Main.rand.Next(0, 20); // stagger initial contact sweeps
+
+        if (node.Payload is not { } payload)
+            return;
+
+        node.Life *= payload.Stats.GasLifeMultiplier;
+        node.MaxLife = node.Life;
+        node.Radius *= payload.Stats.GasSpreadMultiplier;
     }
 
     /// <summary>

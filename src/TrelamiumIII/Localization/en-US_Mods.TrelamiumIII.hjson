@@ -1381,6 +1381,35 @@ ChemicalStats: {
 	FallbackPlain: "{1} {0} per second, {2}s affliction"
 }
 
+# Modifiers on chemical releases (ChemicalModifier). Each takes an optional Description for behaviour its stat lines
+# cannot show. Stats are the lines a modifier's changes print as, each given a signed number.
+ChemicalModifiers: {
+	Acidic.DisplayName: Acidic
+	Alkaline.DisplayName: Alkaline
+	Volatile.DisplayName: Volatile
+	Kinetic.DisplayName: Kinetic
+	Catalytic.DisplayName: Catalytic
+	Inert.DisplayName: Inert
+
+	Stats: {
+		AfflictionDamageFlat: "{0} affliction damage"
+		AfflictionDamage: "{0}% affliction damage"
+		AfflictionSpeed: "{0}% affliction speed"
+		AfflictionDurationFlat: "{0}s affliction duration"
+		AfflictionDuration: "{0}% affliction duration"
+		ReactionChance: "{0}% reaction chance"
+		ReactionDamageFlat: "{0} reaction damage"
+		ReactionDamage: "{0}% reaction damage"
+		Concentration: "{0} concentration"
+		Catalysis: "{0}% catalysis"
+		ClingChance: "{0}% cling chance"
+		ClingDuration: "{0}% cling duration"
+		GasLifetime: "{0}% gas lifetime"
+		GasSpread: "{0}% gas spread"
+		BurstSpeed: "{0}% burst speed"
+	}
+}
+
 DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
 
 Liquids: {

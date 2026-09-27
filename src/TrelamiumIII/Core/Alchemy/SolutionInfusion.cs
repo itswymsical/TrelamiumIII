@@ -7,27 +7,38 @@ using Terraria.ModLoader.IO;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-/// <summary>Display metadata per <see cref="ChemicalQuality"/> flag, for the infused-solution tooltip.</summary>
+/// <summary>Label and colour per <see cref="Temperament"/> and <see cref="ChemicalTrait"/> flag, for tooltips.</summary>
 public static class ChemicalTypeInfo
 {
-    private static readonly (ChemicalQuality Flag, string Label, Color Color)[] _meta =
+    private static readonly (Temperament Flag, string Label, Color Color)[] _temperaments =
     {
-        (ChemicalQuality.Acidic,    "Acidic",    new Color(180, 230,  90)),
-        (ChemicalQuality.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
-        (ChemicalQuality.Volatile,  "Volatile",  new Color(255, 160,  70)),
-        (ChemicalQuality.Kinetic,   "Kinetic",   new Color(190, 120, 230)),
-        (ChemicalQuality.Catalytic, "Catalytic", new Color(255, 215, 110)),
-        (ChemicalQuality.Inert,     "Inert",     new Color(170, 170, 170)),
-        (ChemicalQuality.Flammable, "Flammable", new Color(255, 135, 31)),
-        (ChemicalQuality.Cryogen, "Cryogen", new Color(157, 202, 238)),
-        (ChemicalQuality.Inhibitor, "Inhibitor", new Color(103, 77, 98)),
+        (Temperament.Acidic,    "Acidic",    new Color(180, 230,  90)),
+        (Temperament.Alkaline,  "Alkaline",  new Color(120, 180, 255)),
+        (Temperament.Volatile,  "Volatile",  new Color(255, 160,  70)),
+        (Temperament.Kinetic,   "Kinetic",   new Color(190, 120, 230)),
+        (Temperament.Catalytic, "Catalytic", new Color(255, 215, 110)),
+        (Temperament.Inert,     "Inert",     new Color(170, 170, 170)),
     };
 
-    public static bool TryGet(ChemicalQuality flag, out string label, out Color color)
+    private static readonly (ChemicalTrait Flag, string Label, Color Color)[] _traits =
     {
-        foreach (var m in _meta)
+        (ChemicalTrait.Flammable, "Flammable", new Color(255, 135, 31)),
+        (ChemicalTrait.Cryogen,   "Cryogen",   new Color(157, 202, 238)),
+        (ChemicalTrait.Inhibitor, "Inhibitor", new Color(103, 77, 98)),
+    };
+
+    /// <summary>False, with the flag's name in white, for a flag with no entry.</summary>
+    public static bool TryGet(Temperament flag, out string label, out Color color) => TryGet(_temperaments, flag, out label, out color);
+
+    /// <inheritdoc cref="TryGet(Temperament, out string, out Color)"/>
+    public static bool TryGet(ChemicalTrait flag, out string label, out Color color) => TryGet(_traits, flag, out label, out color);
+
+    private static bool TryGet<T>((T Flag, string Label, Color Color)[] table, T flag, out string label, out Color color)
+        where T : struct, Enum
+    {
+        foreach (var m in table)
         {
-            if (m.Flag != flag) continue;
+            if (!EqualityComparer<T>.Default.Equals(m.Flag, flag)) continue;
             label = m.Label;
             color = m.Color;
             return true;
@@ -59,16 +70,16 @@ public sealed class InfusionVisual
 /// <summary>Registry of authored <see cref="InfusionVisual"/>s, keyed by (item type, infusion).</summary>
 public static class InfusionVisuals
 {
-    private static readonly Dictionary<(int, ChemicalQuality), InfusionVisual> _visuals = new();
+    private static readonly Dictionary<(int, Temperament), InfusionVisual> _visuals = new();
 
-    public static void Register(int itemType, ChemicalQuality infusion, InfusionVisual visual)
+    public static void Register(int itemType, Temperament infusion, InfusionVisual visual)
     {
-        if (itemType > 0 && infusion != ChemicalQuality.None && visual != null)
+        if (itemType > 0 && infusion != Temperament.None && visual != null)
             _visuals[(itemType, infusion)] = visual;
     }
 
-    public static InfusionVisual Get(int itemType, ChemicalQuality infusion) =>
-        infusion != ChemicalQuality.None && _visuals.TryGetValue((itemType, infusion), out var v) ? v : null;
+    public static InfusionVisual Get(int itemType, Temperament infusion) =>
+        infusion != Temperament.None && _visuals.TryGetValue((itemType, infusion), out var v) ? v : null;
 
     public static void Clear() => _visuals.Clear();
 }
@@ -79,7 +90,7 @@ public class InfusionVisualsSystem : ModSystem
     public override void Unload() => InfusionVisuals.Clear();
 }
 
-/// <summary>A per-instance <see cref="ChemicalQuality"/> infusion that turns a bottled solvent into a suffixed one.</summary>
+/// <summary>A per-instance <see cref="Temperament"/> infusion that turns a bottled solvent into a suffixed one.</summary>
 public class SolutionGlobalItem : GlobalItem
 {
     public override bool InstancePerEntity => true;
@@ -89,13 +100,13 @@ public class SolutionGlobalItem : GlobalItem
         => entity.type is ItemID.BottledWater or ItemID.BottledHoney;
 
     /// <summary>The infusion on this instance; None = plain water.</summary>
-    public ChemicalQuality Infusion;
+    public Temperament Infusion;
 
     /// <summary>The infusion carried by any item (None for non-water and plain instances).</summary>
-    public static ChemicalQuality GetInfusion(Item item) =>
+    public static Temperament GetInfusion(Item item) =>
         item is { IsAir: false } && item.TryGetGlobalItem(out SolutionGlobalItem g)
             ? g.Infusion
-            : ChemicalQuality.None;
+            : Temperament.None;
 
     // Only identically-infused waters merge (plain and infused never mix in a stack).
     public override bool CanStack(Item destination, Item source) =>
@@ -105,7 +116,7 @@ public class SolutionGlobalItem : GlobalItem
 
     public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
     {
-        if (Infusion == ChemicalQuality.None) return;
+        if (Infusion == Temperament.None) return;
         ChemicalTypeInfo.TryGet(Infusion, out string label, out _);
 
         foreach (var line in tooltips)
@@ -118,7 +129,7 @@ public class SolutionGlobalItem : GlobalItem
 
     public override bool PreDrawTooltipLine(Item item, DrawableTooltipLine line, ref int yOffset)
     {
-        if (Infusion == ChemicalQuality.None || line.Name != "ItemName") return true;
+        if (Infusion == Temperament.None || line.Name != "ItemName") return true;
         ChemicalTypeInfo.TryGet(Infusion, out _, out Color color);
 
         var font = FontAssets.MouseText.Value;
@@ -211,16 +222,16 @@ public class SolutionGlobalItem : GlobalItem
 
     public override void SaveData(Item item, TagCompound tag)
     {
-        if (Infusion != ChemicalQuality.None)
+        if (Infusion != Temperament.None)
             tag["infusion"] = (int)Infusion;
     }
 
     public override void LoadData(Item item, TagCompound tag)
-        => Infusion = (ChemicalQuality)tag.GetInt("infusion");
+        => Infusion = (Temperament)tag.GetInt("infusion");
 
     public override void NetSend(Item item, BinaryWriter writer)
         => writer.Write((int)Infusion);
 
     public override void NetReceive(Item item, BinaryReader reader)
-        => Infusion = (ChemicalQuality)reader.ReadInt32();
+        => Infusion = (Temperament)reader.ReadInt32();
 }

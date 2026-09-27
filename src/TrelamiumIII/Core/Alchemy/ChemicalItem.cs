@@ -69,8 +69,11 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
     /// <summary><see cref="AlmanacEntry.BrewTicks" />.</summary>
     public int BrewTicks = AlmanacEntry.DefaultBrewTicks;
 
-    /// <summary>The chemical tag(s) this item carries. <see cref="AlmanacEntry.Chemical" />.</summary>
-    public ChemicalQuality Quality;
+    /// <summary><see cref="AlmanacEntry.Temperaments" />.</summary>
+    public Temperament Temperaments;
+
+    /// <summary><see cref="AlmanacEntry.Traits" />.</summary>
+    public ChemicalTrait Traits;
 
     /// <summary><see cref="AlmanacEntry.Principle" />. None on a solute marks it as a reagent.</summary>
     public PrincipleType Principle;
@@ -100,7 +103,8 @@ public abstract class ChemicalItem : ModItem, IAlmanacDefined, IChemicalRoleDefi
         AlmanacPotency = AlmanacPotency,
         StackPerPotency = StackPerPotency,
         BrewTicks = BrewTicks,
-        Chemical = Quality,
+        Temperaments = Temperaments,
+        Traits = Traits,
         Principle = Principle,
         Rarity = AlmanacRarity,
         Hidden = Hidden,

@@ -11,7 +11,7 @@ public class BloodtoothFungusItem : ModItem, IAlmanacDefined
     AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
     {
         AlmanacPotency = 4,
-        Chemical = ChemicalQuality.Volatile,
+        Temperaments = Temperament.Volatile,
         Principle = PrincipleType.Martial,
         Rarity = ItemRarityID.Blue,
     };

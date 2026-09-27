@@ -41,6 +41,7 @@ public class VilesporeFlaskItem : ModItem
         component.ReactionChance = 7;
         component.ReactionDamage = 8;
         component.ReactionHandler = SporePlagueCling.InfectWithBurst;
+        component.Modifiers = [TemperamentModifier.Acidic];
     }
 }
 

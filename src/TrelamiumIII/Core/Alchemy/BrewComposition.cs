@@ -24,8 +24,8 @@ public enum BrewCategory
 }
 
 /// <summary>
-///     Principle, potency and qualities resolved from an input and its solutes. <see cref="Principle" /> comes from
-///     <see cref="PrimarySolute" />, or from a non-solute input when no solute has one.
+///     Principle, potency, temperaments and traits resolved from an input and its solutes. <see cref="Principle" />
+///     comes from <see cref="PrimarySolute" />, or from a non-solute input when no solute has one.
 /// </summary>
 public readonly record struct BrewComposition(
     int Input,
@@ -33,21 +33,16 @@ public readonly record struct BrewComposition(
     int Potency,
     PrincipleType Principle,
     PrincipleType SecondaryPrinciples,
-    ChemicalQuality Qualities,
-    ChemicalQuality Modifiers,
+    Temperament Temperaments,
+    ChemicalTrait Traits,
     BrewCategory Category);
 
 /// <summary>Builds <see cref="BrewComposition" /> values from almanac entries, roles and slot potencies. Does not read recipes.</summary>
 public static class BrewCompositions
 {
-    /// <summary>Acidic/Alkaline, Volatile/Kinetic and Catalytic/Inert: three opposed pairs.</summary>
-    public const ChemicalQuality BaseQualities = ChemicalQuality.Acidic | ChemicalQuality.Alkaline | ChemicalQuality.Volatile
-        | ChemicalQuality.Kinetic | ChemicalQuality.Catalytic | ChemicalQuality.Inert;
+    private const int TEMPERAMENT_BITS = 6;
 
-    public const ChemicalQuality ModifierQualities = ChemicalQuality.Oxidizer | ChemicalQuality.Flammable
-        | ChemicalQuality.Inhibitor | ChemicalQuality.Cryogen;
-
-    private const int QUALITY_BITS = 10;
+    private const int TRAIT_BITS = 4;
 
     public static PrincipleType PrincipleOf(int itemType) =>
         AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry) ? entry.Principle : PrincipleType.None;
@@ -125,10 +120,11 @@ public static class BrewCompositions
             levels[^1] = inputLevel;
         }
 
-        Span<int> counts = stackalloc int[QUALITY_BITS];
+        Span<int> temperaments = stackalloc int[TEMPERAMENT_BITS];
+        Span<int> traits = stackalloc int[TRAIT_BITS];
 
         if (!mixing)
-            Tally(counts, QualityOf(inputType));
+            Tally(inputType, temperaments, traits);
 
         int primary = 0;
         int primaryLevel = -1;
@@ -140,7 +136,7 @@ public static class BrewCompositions
         for (int i = 0; i < types.Length; i++)
         {
             int type = types[i];
-            Tally(counts, QualityOf(type));
+            Tally(type, temperaments, traits);
             highestLevel = Math.Max(highestLevel, levels[i]);
             dissolving |= ChemicalRoles.Of(type) == ChemicalRole.Solution;
 
@@ -165,9 +161,9 @@ public static class BrewCompositions
         }
 
         PrincipleType resolved = augmenting || primaryPrinciple == PrincipleType.None ? inputPrinciple : primaryPrinciple;
-        ChemicalQuality modifiers = NetModifiers(counts);
+        ChemicalTrait netTraits = NetTraits(traits);
 
-        PrincipleType secondary = (modifiers & ChemicalQuality.Inhibitor) != 0
+        PrincipleType secondary = (netTraits & ChemicalTrait.Inhibitor) != 0
             ? PrincipleType.None
             : (allPrinciples | inputPrinciple) & ~resolved;
 
@@ -180,55 +176,62 @@ public static class BrewCompositions
             : resolved == PrincipleType.None ? BrewCategory.Refinement
             : BrewCategory.Synthesis;
 
-        return new BrewComposition(inputType, primary, potency, resolved, secondary, NetQualities(counts), modifiers, category);
+        return new BrewComposition(inputType, primary, potency, resolved, secondary, NetTemperaments(temperaments), netTraits, category);
     }
 
     /// <summary>Opposite pairs cancel by count; any Inert removes Catalytic.</summary>
-    private static ChemicalQuality NetQualities(ReadOnlySpan<int> counts)
+    private static Temperament NetTemperaments(ReadOnlySpan<int> counts)
     {
-        ChemicalQuality catalysis = counts[Bit(ChemicalQuality.Inert)] > 0 ? ChemicalQuality.Inert
-            : counts[Bit(ChemicalQuality.Catalytic)] > 0 ? ChemicalQuality.Catalytic
-            : ChemicalQuality.None;
+        Temperament catalysis = counts[Bit((int)Temperament.Inert)] > 0 ? Temperament.Inert
+            : counts[Bit((int)Temperament.Catalytic)] > 0 ? Temperament.Catalytic
+            : Temperament.None;
 
-        return Net(counts, ChemicalQuality.Acidic, ChemicalQuality.Alkaline)
-            | Net(counts, ChemicalQuality.Volatile, ChemicalQuality.Kinetic)
+        return (Temperament)(Net(counts, (int)Temperament.Acidic, (int)Temperament.Alkaline)
+                | Net(counts, (int)Temperament.Volatile, (int)Temperament.Kinetic))
             | catalysis;
     }
 
     /// <summary>Flammable and Cryogen cancel by count; Oxidizer and Inhibitor are additive.</summary>
-    private static ChemicalQuality NetModifiers(ReadOnlySpan<int> counts)
+    private static ChemicalTrait NetTraits(ReadOnlySpan<int> counts)
     {
-        ChemicalQuality modifiers = Net(counts, ChemicalQuality.Flammable, ChemicalQuality.Cryogen);
+        var traits = (ChemicalTrait)Net(counts, (int)ChemicalTrait.Flammable, (int)ChemicalTrait.Cryogen);
 
-        if (counts[Bit(ChemicalQuality.Oxidizer)] > 0)
-            modifiers |= ChemicalQuality.Oxidizer;
+        if (counts[Bit((int)ChemicalTrait.Oxidizer)] > 0)
+            traits |= ChemicalTrait.Oxidizer;
 
-        if (counts[Bit(ChemicalQuality.Inhibitor)] > 0)
-            modifiers |= ChemicalQuality.Inhibitor;
+        if (counts[Bit((int)ChemicalTrait.Inhibitor)] > 0)
+            traits |= ChemicalTrait.Inhibitor;
 
-        return modifiers;
+        return traits;
     }
 
-    private static ChemicalQuality Net(ReadOnlySpan<int> counts, ChemicalQuality a, ChemicalQuality b)
+    /// <summary>Whichever of the single-bit flags <paramref name="a" /> and <paramref name="b" /> was counted more; 0 on a tie.</summary>
+    private static int Net(ReadOnlySpan<int> counts, int a, int b)
     {
         int difference = counts[Bit(a)] - counts[Bit(b)];
 
-        return difference > 0 ? a : difference < 0 ? b : ChemicalQuality.None;
+        return difference > 0 ? a : difference < 0 ? b : 0;
     }
 
-    private static void Tally(Span<int> counts, ChemicalQuality quality)
+    private static void Tally(int itemType, Span<int> temperaments, Span<int> traits)
+    {
+        if (!AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry))
+            return;
+
+        Tally(temperaments, (int)entry.Temperaments);
+        Tally(traits, (int)entry.Traits);
+    }
+
+    private static void Tally(Span<int> counts, int flags)
     {
         for (int bit = 0; bit < counts.Length; bit++)
         {
-            if (((int)quality & (1 << bit)) != 0)
+            if ((flags & (1 << bit)) != 0)
                 counts[bit]++;
         }
     }
 
-    private static int Bit(ChemicalQuality flag) => System.Numerics.BitOperations.TrailingZeroCount((int)flag);
-
-    private static ChemicalQuality QualityOf(int itemType) =>
-        AlmanacEntryRegistry.TryGet(itemType, out AlmanacEntry? entry) ? entry.Chemical : ChemicalQuality.None;
+    private static int Bit(int flag) => System.Numerics.BitOperations.TrailingZeroCount(flag);
 
     internal static int FirstMember(in ComponentMatcher matcher)
     {

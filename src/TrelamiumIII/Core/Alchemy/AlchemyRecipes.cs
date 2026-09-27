@@ -37,10 +37,10 @@ public sealed class RecipeVariant
     public Action<BrewBuilder>? Augment { get; init; }
 
     /// <summary>Required input infusion; None means plain input only, so one input type can key different recipes.</summary>
-    public ChemicalQuality InputInfusion { get; init; }
+    public Temperament InputInfusion { get; init; }
 
     /// <summary>Infusion stamped onto the output. Infused outputs are plain solvents, so they skip brew branding.</summary>
-    public ChemicalQuality OutputInfusion { get; init; }
+    public Temperament OutputInfusion { get; init; }
 
     /// <summary>Whether brewing returns the solvent's bottle. Null derives it; see <see cref="AlchemyRecipe.ReturnsBottle" />.</summary>
     public bool? ReturnsBottle { get; init; }
@@ -344,7 +344,7 @@ public readonly struct ComponentMatcher
     public readonly AlchemyComponentGroup Group;
 
     /// <summary>Required instance infusion; None accepts only plain items, so infused and plain variants never cross-match.</summary>
-    public readonly ChemicalQuality Infusion;
+    public readonly Temperament Infusion;
 
     /// <summary>Minimum slot potency, 1 to <see cref="SolutePotency.MAX"/>.</summary>
     public readonly int MinPotency;
@@ -355,7 +355,7 @@ public readonly struct ComponentMatcher
     /// </summary>
     public readonly int MaxPotency;
 
-    public ComponentMatcher(int exactType, ChemicalQuality infusion = ChemicalQuality.None, int minPotency = 1, int maxPotency = 0)
+    public ComponentMatcher(int exactType, Temperament infusion = Temperament.None, int minPotency = 1, int maxPotency = 0)
     {
         ExactType = exactType;
         Group = null;
@@ -368,16 +368,16 @@ public readonly struct ComponentMatcher
     {
         ExactType = 0;
         Group = group;
-        Infusion = ChemicalQuality.None;
+        Infusion = Temperament.None;
         MinPotency = Math.Clamp(minPotency, 1, SolutePotency.MAX);
         MaxPotency = Math.Clamp(maxPotency, MinPotency, SolutePotency.MAX);
     }
 
     /// <summary>An exact-type slot that additionally requires the given infusion.</summary>
-    public static ComponentMatcher Infused(int itemType, ChemicalQuality infusion) => new(itemType, infusion);
+    public static ComponentMatcher Infused(int itemType, Temperament infusion) => new(itemType, infusion);
 
     /// <summary>An exact-type slot requiring <paramref name="minPotency"/>; the more demanding variant wins when both fit.</summary>
-    public static ComponentMatcher Of(int itemType, int minPotency, ChemicalQuality infusion = ChemicalQuality.None, int maxPotency = 0)
+    public static ComponentMatcher Of(int itemType, int minPotency, Temperament infusion = Temperament.None, int maxPotency = 0)
         => new(itemType, infusion, minPotency, maxPotency);
 
     /// <summary>A group slot requiring <paramref name="minPotency"/>, whichever member fills it.</summary>
@@ -413,7 +413,7 @@ public sealed class AlchemyRecipe
     public int InputType { get; init; }
 
     /// <summary>Required input infusion; None means plain input only.</summary>
-    public ChemicalQuality InputInfusion { get; init; }
+    public Temperament InputInfusion { get; init; }
 
     /// <summary>Output type for indexing without invoking <see cref="CreateOutput"/>; 0 only for fully dynamic recipes.</summary>
     public int OutputItemType { get; init; }
