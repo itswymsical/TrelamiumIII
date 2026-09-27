@@ -105,11 +105,13 @@ public class GelField : ChemicalGasField
         TileConditionSystem.Apply<SlimedCondition>(tileX, tileY, intensity, owner: owner, sync: false);
     }
 
+    protected override int ContactBuff => BuffID.Slow;
+
+    protected override int ContactBuffTicks => SLOW_TICKS;
+
     protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
         base.OnNPCContact(ref node, npc);
-
-        npc.AddBuff(BuffID.Slow, SLOW_TICKS);
 
         npc.velocity.X *= 0.97f;
     }

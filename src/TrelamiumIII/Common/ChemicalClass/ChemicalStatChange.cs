@@ -22,6 +22,8 @@ public enum ChemicalStat
     GasLifetime,
     GasSpread,
     BurstSpeed,
+    BurstCount,
+    ContactRate,
 }
 
 /// <summary>
@@ -88,6 +90,8 @@ public readonly record struct ChemicalStatChange(ChemicalStat Stat, float Delta)
         Add(ChemicalStat.GasLifetime, (after.GasLifeMultiplier - before.GasLifeMultiplier) * 100f, true);
         Add(ChemicalStat.GasSpread, (after.GasSpreadMultiplier - before.GasSpreadMultiplier) * 100f, true);
         Add(ChemicalStat.BurstSpeed, (after.BurstSpeedMultiplier - before.BurstSpeedMultiplier) * 100f, true);
+        Add(ChemicalStat.BurstCount, (after.BurstCountMultiplier - before.BurstCountMultiplier) * 100f, true);
+        Add(ChemicalStat.ContactRate, (after.ContactRateMultiplier - before.ContactRateMultiplier) * 100f, true);
 
         return changes;
     }

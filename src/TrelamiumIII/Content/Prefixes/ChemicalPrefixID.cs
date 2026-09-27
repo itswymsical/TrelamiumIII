@@ -1,66 +1,103 @@
 using TrelamiumIII.Common.ChemicalClass;
+using static TrelamiumIII.Common.ChemicalClass.ChemicalPrefixTier;
 
 namespace TrelamiumIII.Content.Prefixes;
 
 /// <summary>
-///     The chemical prefixes, each a <see cref="ChemicalPrefix" /> instance: one per temperament, carrying the same
-///     <see cref="TemperamentModifier" /> a flask has innately, and three grades of concentration.
+///     Every chemical prefix and its tier, registered as <see cref="ChemicalPrefix" /> instances. Universal ones roll on
+///     any chemical weapon they change something for; an element's set rolls only on weapons of that element.
 /// </summary>
 public sealed class ChemicalPrefixID : ICustomAutoload
 {
-    // Vanilla squares these for the price. Rarity moves one step at 1.05 and two at 1.2, compared as doubles, so
-    // 1.05f itself falls just short of the first step.
-    private const float GOOD_VALUE = 1.1f;
+    private static readonly (ChemicalModifier Modifier, ChemicalPrefixTier Tier)[] Table =
+    [
+        // The six temperaments, the same modifiers flasks carry innately.
+        (TemperamentModifier.Acidic, Good),
+        (TemperamentModifier.Alkaline, Good),
+        (TemperamentModifier.Volatile, Good),
+        (TemperamentModifier.Kinetic, Good),
+        (TemperamentModifier.Catalytic, Good),
+        (TemperamentModifier.Inert, Good),
 
-    private const float BEST_VALUE = 1.2f;
+        (ConcentrationModifier.Diluted, Poor),
+        (ConcentrationModifier.Concentrated, Good),
+        (ConcentrationModifier.Saturated, Best),
 
-    private const float POOR_VALUE = 0.9f;
+        (PrincipleModifiers.Vital, Good),
+        (PrincipleModifiers.Specular, Good),
+        (PrincipleModifiers.Martial, Good),
+        (PrincipleModifiers.Brisk, Good),
+        (PrincipleModifiers.Fortunate, Good),
+        (PrincipleModifiers.Harmonious, Good),
+        (PrincipleModifiers.Baneful, Good),
 
-    #region Temperaments
+        (UniversalModifiers.Valiant, Best),
+        (UniversalModifiers.Gallant, Best),
+        (UniversalModifiers.Hazy, Good),
+        (UniversalModifiers.Lofty, Good),
+        (UniversalModifiers.Valorous, Good),
+        (UniversalModifiers.Waning, Poor),
+        (UniversalModifiers.Suppressed, Poor),
+        (UniversalModifiers.Recreant, Poor),
+        (UniversalModifiers.Craven, Poor),
 
-    public static int Acidic { get; private set; }
+        (ThermalModifiers.Dauntless, Best),
+        (ThermalModifiers.Comburant, Best),
+        (ThermalModifiers.Inflammatory, Good),
+        (ThermalModifiers.Provocative, Good),
+        (ThermalModifiers.Igniting, Good),
+        (ThermalModifiers.Combustible, Good),
+        (ThermalModifiers.Dwindling, Poor),
+        (ThermalModifiers.Warm, Poor),
+        (ThermalModifiers.Meek, Poor),
+        (ThermalModifiers.Amicable, Poor),
 
-    public static int Alkaline { get; private set; }
+        (CryonicModifiers.Wintry, Best),
+        (CryonicModifiers.Hyperborean, Best),
+        (CryonicModifiers.Glacial, Good),
+        (CryonicModifiers.Brumal, Good),
+        (CryonicModifiers.Vaporous, Good),
+        (CryonicModifiers.Temperate, Poor),
+        (CryonicModifiers.Heated, Poor),
+        (CryonicModifiers.Lukewarm, Poor),
+        (CryonicModifiers.Nippy, Poor),
 
-    public static int Volatile { get; private set; }
+        (NecroticModifiers.Vitiating, Best),
+        (NecroticModifiers.Nullifying, Best),
+        (NecroticModifiers.Abolishing, Good),
+        (NecroticModifiers.Umbral, Good),
+        (NecroticModifiers.Deterring, Poor),
+        (NecroticModifiers.Halting, Poor),
+        (NecroticModifiers.Exhorting, Poor),
+        (NecroticModifiers.Permissive, Poor),
 
-    public static int Kinetic { get; private set; }
+        (CausticModifiers.Virulent, Best),
+        (CausticModifiers.Acerbic, Best),
+        (CausticModifiers.Pungent, Good),
+        (CausticModifiers.Erosive, Good),
+        (CausticModifiers.Corrosive, Good),
+        (CausticModifiers.Tart, Poor),
+        (CausticModifiers.Tickling, Poor),
+        (CausticModifiers.Balanced, Poor),
+        (CausticModifiers.Flat, Poor),
 
-    public static int Catalytic { get; private set; }
-
-    public static int Inert { get; private set; }
-
-    #endregion
-
-    #region Concentration
-
-    public static int Diluted { get; private set; }
-
-    public static int Concentrated { get; private set; }
-
-    public static int Saturated { get; private set; }
-
-    #endregion
+        (KineticModifiers.Stalwart, Best),
+        (KineticModifiers.Tenacious, Best),
+        (KineticModifiers.Electrifying, Good),
+        (KineticModifiers.Terminal, Good),
+        (KineticModifiers.Vitalized, Good),
+        (KineticModifiers.Apathetic, Poor),
+        (KineticModifiers.Inactive, Poor),
+        (KineticModifiers.Unmotivated, Poor),
+        (KineticModifiers.Wimpy, Poor),
+    ];
 
     public static void Autoload(Mod mod)
     {
-        // Temperaments are sidegrades, so each is an ordinary good prefix.
-        Acidic = Add(mod, new ChemicalPrefix(TemperamentModifier.Acidic, value: GOOD_VALUE));
-        Alkaline = Add(mod, new ChemicalPrefix(TemperamentModifier.Alkaline, value: GOOD_VALUE));
-        Volatile = Add(mod, new ChemicalPrefix(TemperamentModifier.Volatile, value: GOOD_VALUE));
-        Kinetic = Add(mod, new ChemicalPrefix(TemperamentModifier.Kinetic, value: GOOD_VALUE));
-        Catalytic = Add(mod, new ChemicalPrefix(TemperamentModifier.Catalytic, value: GOOD_VALUE));
-        Inert = Add(mod, new ChemicalPrefix(TemperamentModifier.Inert, value: GOOD_VALUE));
-
-        Diluted = Add(mod, new ChemicalPrefix(ConcentrationModifier.Diluted, value: POOR_VALUE));
-        Concentrated = Add(mod, new ChemicalPrefix(ConcentrationModifier.Concentrated, value: GOOD_VALUE));
-        Saturated = Add(mod, new ChemicalPrefix(ConcentrationModifier.Saturated, rollChance: 0.5f, value: BEST_VALUE));
+        foreach ((ChemicalModifier modifier, ChemicalPrefixTier tier) in Table)
+            mod.AddContent(new ChemicalPrefix(modifier, tier));
     }
 
-    private static int Add(Mod mod, ChemicalPrefix prefix)
-    {
-        mod.AddContent(prefix);
-
-        return prefix.Type;
-    }
+    /// <summary>The prefix type carrying <paramref name="modifier" />, or 0 when none does.</summary>
+    public static int Of(ChemicalModifier modifier) => ChemicalPrefix.For(modifier)?.Type ?? 0;
 }

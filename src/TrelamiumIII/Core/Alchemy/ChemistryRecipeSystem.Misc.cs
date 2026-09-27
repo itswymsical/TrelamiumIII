@@ -52,7 +52,7 @@ public partial class ChemistryRecipeSystem
         int canister = ModContent.ItemType<GasCanisterBase>();
 
         int[] tonics = [SolventID.HarmoniousTonic, SolventID.MartialTonic, SolventID.AquaFortis];
-        int hyperboreanFlask = ModContent.ItemType<HyperboreanFlaskItem>();
+        int hyperboreanFlask = ModContent.ItemType<ArcticFlaskItem>();
         int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
         int[] basics = [ItemID.BottledWater, SolventID.Inert];
 
@@ -121,7 +121,7 @@ public partial class ChemistryRecipeSystem
             ComponentMatcher.Of(SoluteID.Pitch, 1)));
 
         AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactHyperboreanCanister>(),
-            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<HyperboreanFlaskItem>(), 1)));
+            new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<ArcticFlaskItem>(), 1)));
     }
 
     /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>

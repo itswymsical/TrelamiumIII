@@ -242,8 +242,9 @@ public class GelBallProj : ModProjectile
             return;
 
         float speed = payload?.Stats.BurstSpeedMultiplier ?? 1f;
+        int count = (int)MathF.Round(BURST_NODES * (payload?.Stats.BurstCountMultiplier ?? 1f));
 
-        for (int i = 0; i < BURST_NODES; i++)
+        for (int i = 0; i < count; i++)
         {
             // Biased along the surface rather than straight out of it: a splash spreads across what
             // it landed on, and a cone centred on the normal would have it standing up off the wall.

@@ -87,13 +87,15 @@ public static class ChemicalReaction
     /// <summary>
     ///     Refuses non-elemental sources (<see cref="ChemicalDamageType.Solute" />) outright, so a solute weapon
     ///     can't gain reactions through careless tuning. The burst takes its damage from <paramref name="payload" />'s
-    ///     stats when there is one, and credits the local player only when the payload is theirs.
+    ///     stats when there is one, scaled by <paramref name="damageScale" /> and the payload's modifiers, and credits
+    ///     the local player only when the payload is theirs.
     /// </summary>
     public static void Trigger(
         NPC target,
         IChemicalSource source,
         ChemicalPayload? payload = null,
-        Projectile? deliveryProjectile = null)
+        Projectile? deliveryProjectile = null,
+        float damageScale = 1f)
     {
         if (!ChemicalMatchup.IsElemental(source.ChemicalType))
             return;
@@ -106,8 +108,17 @@ public static class ChemicalReaction
         int dealt = 0;
         if (reactionDamage > 0)
         {
-            float mult = ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition);
-            int burst = Math.Max(1, (int)(reactionDamage * mult * (payload?.Stats.ReactionDamageMultiplier ?? 1f)));
+            float damage = reactionDamage * damageScale
+                * ChemicalMatchup.GetReactionDamageMultiplier(source.ChemicalType, npcData.Composition)
+                * (payload?.Stats.ReactionDamageMultiplier ?? 1f);
+
+            if (payload is not null)
+            {
+                foreach (ChemicalModifier modifier in payload.Modifiers)
+                    modifier.ModifyReactionDamage(target, payload, ref damage);
+            }
+
+            int burst = Math.Max(1, (int)damage);
 
             // SimpleStrikeNPC returns post-defense damage, which is what handlers scale off.
             dealt = target.SimpleStrikeNPC(
@@ -117,6 +128,8 @@ public static class ChemicalReaction
                 knockBack: 0f,
                 damageType: ModContent.GetInstance<ChemicalDamageClass>(),
                 noPlayerInteraction: payload?.Owner != Main.myPlayer);
+
+            npcData.PierceDefense = false;
         }
 
         var evt = new ChemicalReactionEvent(target, source, npcData.Composition, deliveryProjectile, dealt, payload);

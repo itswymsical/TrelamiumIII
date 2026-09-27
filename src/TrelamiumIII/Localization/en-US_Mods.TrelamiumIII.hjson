@@ -633,7 +633,17 @@ Items: {
 	}
 
 	HyperboreanFlaskItem: {
-		DisplayName: Hyperborean Flask
+		DisplayName: Artic Flask
+		Tooltip:
+			'''
+			Releases a cloud of ice mist that afflicts enemies with frostburn
+			Transforms water into thin ice on contact & freezes over tiles
+			Best used with Ice Skates [i:950]
+			'''
+	}
+
+	ArcticFlaskItem: {
+		DisplayName: Artic Flask
 		Tooltip:
 			'''
 			Releases a cloud of ice mist that afflicts enemies with frostburn
@@ -1000,6 +1010,7 @@ Items: {
 			'''
 			Transmutes catalytic solutes into a catalytic solvent
 			Catalyzed enemies take stronger afflictions, faster concentration and likelier reactions from every other chemical
+			Gas touching a catalyzed enemy regrows around it until the catalysis fades
 			Uses solutes with the Catalytic temperament as ammunition
 			'''
 	}
@@ -1056,6 +1067,11 @@ Items: {
 
 	EmancipationProclamation: {
 		DisplayName: Emancipation Proclamation
+		Tooltip: ""
+	}
+
+	ArticFlaskItem: {
+		DisplayName: Artic Flask Item
 		Tooltip: ""
 	}
 }
@@ -1159,6 +1175,7 @@ Projectiles: {
 	WardenTileCluster.DisplayName: Torn Earth
 	EarthenPike.DisplayName: Earthen Pike
 	ThrownTool.DisplayName: Thrown Tool
+	ArcticFlaskProjectile.DisplayName: Arctic Flask Projectile
 }
 
 NPCs: {
@@ -1235,6 +1252,26 @@ Buffs: {
 	PossessedWorkshopBuff: {
 		DisplayName: Possessed Workshop
 		Description: The apparition possesses your crafting stations, allowing you to craft from them anywhere!
+	}
+
+	Chilled: {
+		DisplayName: Chilled
+		Description: Moving slower
+	}
+
+	Frozen: {
+		DisplayName: Frozen
+		Description: Frozen solid
+	}
+
+	Enfeebled: {
+		DisplayName: Enfeebled
+		Description: Dealing less damage
+	}
+
+	Gallantry: {
+		DisplayName: Gallantry
+		Description: +{0} defense
 	}
 }
 
@@ -1394,6 +1431,181 @@ ChemicalModifiers: {
 	Concentrated.DisplayName: Concentrated
 	Saturated.DisplayName: Saturated
 
+	# Principles. Description arguments come from the modifier's tuning, so the text follows the numbers.
+	Vital: {
+		DisplayName: Vital
+		Description: Reactions heal you for {0}% of the damage they deal
+	}
+
+	Specular: {
+		DisplayName: Specular
+		Description: Reactions are likelier on targets with more concentration, up to +{0}% at full
+	}
+
+	Martial: {
+		DisplayName: Martial
+		Description: Reactions deal {0}% more damage for each other element afflicting the target
+	}
+
+	Brisk.DisplayName: Brisk
+	Fortunate.DisplayName: Fortunate
+
+	Harmonious: {
+		DisplayName: Harmonious
+		Description: Hits also afflict the {0} nearest other enemies at {1}% strength
+	}
+
+	Baneful: {
+		DisplayName: Baneful
+		Description: Reactions lower the target's defense by {0} for {1} seconds
+	}
+
+	# The thermal set, rolled only by thermal weapons.
+	Combustible: {
+		DisplayName: Combustible
+		Description: Reactions explode, dealing {1}% of their damage to enemies within {0} tiles and afflicting them at {2}% strength
+	}
+
+	Provocative: {
+		DisplayName: Provocative
+		Description: Reactions leap to up to {0} more enemies, each leap {1}% weaker
+	}
+
+	Inflammatory: {
+		DisplayName: Inflammatory
+		Description: Reactions consume the target's concentration for up to {0}% more damage
+	}
+
+	Dauntless: {
+		DisplayName: Dauntless
+		Description: Hits that don't react make the next one on that target {0}% likelier to, up to {1}%
+	}
+
+	Comburant: {
+		DisplayName: Comburant
+		Description: Reactions ignite your gas within {0} tiles in a blast of up to {1}% of their damage that grows with the gas burned
+	}
+
+	Igniting.DisplayName: Igniting
+	Dwindling.DisplayName: Dwindling
+	Warm.DisplayName: Warm
+	Meek.DisplayName: Meek
+	Amicable.DisplayName: Amicable
+
+	# The cryonic set.
+	Wintry: {
+		DisplayName: Wintry
+		Description: Everything it touches is chilled for {0}s
+	}
+
+	Hyperborean: {
+		DisplayName: Hyperborean
+		Description: Reactions freeze the target for {0}s; a reaction on a frozen target shatters it for {1}% more damage
+	}
+
+	Glacial: {
+		DisplayName: Glacial
+		Description: Reactions chill the target for {0}s
+	}
+
+	Brumal.DisplayName: Brumal
+	Vaporous.DisplayName: Vaporous
+	Temperate.DisplayName: Temperate
+	Heated.DisplayName: Heated
+	Lukewarm.DisplayName: Lukewarm
+	Nippy.DisplayName: Nippy
+
+	# The necrotic set.
+	Vitiating: {
+		DisplayName: Vitiating
+		Description: Enemies that die afflicted by it burst, afflicting everything within {0} tiles at {1}% strength
+	}
+
+	Nullifying: {
+		DisplayName: Nullifying
+		Description: Enemies it afflicts are enfeebled and deal less damage for as long as the affliction lasts
+	}
+
+	Abolishing: {
+		DisplayName: Abolishing
+		Description: Reactions end every affliction on the target and deal what they had left at once
+	}
+
+	Umbral.DisplayName: Umbral
+	Deterring.DisplayName: Deterring
+	Halting.DisplayName: Halting
+	Exhorting.DisplayName: Exhorting
+	Permissive.DisplayName: Permissive
+
+	# The caustic set.
+	Virulent: {
+		DisplayName: Virulent
+		Description: Each affliction tick has a {0}% chance to spread it to an unafflicted enemy within {1} tiles
+	}
+
+	Acerbic: {
+		DisplayName: Acerbic
+		Description: Each affliction tick strips {0} more defense, up to {1}
+	}
+
+	Corrosive: {
+		DisplayName: Corrosive
+		Description: Hits strip {0} defense, stacking to {1}, for {2}s
+	}
+
+	Pungent.DisplayName: Pungent
+	Erosive.DisplayName: Erosive
+	Tart.DisplayName: Tart
+	Tickling.DisplayName: Tickling
+	Balanced.DisplayName: Balanced
+	Flat.DisplayName: Flat
+
+	# The kinetic set.
+	Stalwart: {
+		DisplayName: Stalwart
+		Description: Reactions ignore the target's defense
+	}
+
+	Tenacious: {
+		DisplayName: Tenacious
+		Description: The target's concentration doesn't fade while it's afflicted
+	}
+
+	Electrifying: {
+		DisplayName: Electrifying
+		Description: Reactions arc to the {0} nearest enemies within {1} tiles at {2}% strength
+	}
+
+	Terminal: {
+		DisplayName: Terminal
+		Description: Reactions deal up to {0}% more damage the less life the target has left
+	}
+
+	Vitalized.DisplayName: Vitalized
+	Apathetic.DisplayName: Apathetic
+	Inactive.DisplayName: Inactive
+	Unmotivated.DisplayName: Unmotivated
+	Wimpy.DisplayName: Wimpy
+
+	# Universal, beside the temperaments and principles.
+	Valiant: {
+		DisplayName: Valiant
+		Description: Reactions deal {0}% more damage for each other enemy within {1} tiles of the target, up to {2}%
+	}
+
+	Gallant: {
+		DisplayName: Gallant
+		Description: Hits grant you {0} defense, stacking to {1}, for {2}s
+	}
+
+	Hazy.DisplayName: Hazy
+	Lofty.DisplayName: Lofty
+	Valorous.DisplayName: Valorous
+	Waning.DisplayName: Waning
+	Suppressed.DisplayName: Suppressed
+	Recreant.DisplayName: Recreant
+	Craven.DisplayName: Craven
+
 	Stats: {
 		AfflictionDamageFlat: "{0} affliction damage"
 		AfflictionDamage: "{0}% affliction damage"
@@ -1410,6 +1622,8 @@ ChemicalModifiers: {
 		GasLifetime: "{0}% gas lifetime"
 		GasSpread: "{0}% gas spread"
 		BurstSpeed: "{0}% burst speed"
+		BurstCount: "{0}% burst size"
+		ContactRate: "{0}% exposure rate"
 	}
 }
 

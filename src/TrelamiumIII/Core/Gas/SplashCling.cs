@@ -38,13 +38,15 @@ public sealed class SplashCling : ClingBehaviour
 
         SoundEngine.PlaySound(sound, host.Center);
 
+        // A one-off throw: it outlives the cling's scope, but still never lands back on the host.
+        ChemicalPayload? thrown = cling.Payload?.Derive(null, host.whoAmI);
         int count = Main.rand.Next(minCount, maxCount);
 
         for (int i = 0; i < count; i++)
         {
             Vector2 velocity = splash.RotatedByRandom(MathHelper.PiOver4) * Main.rand.NextFloat(4f, 7f);
 
-            medium.SpawnNode(host.Center, velocity, radius, life, owner: cling.Owner, payload: cling.Payload);
+            medium.SpawnNode(host.Center, velocity, radius, life, owner: cling.Owner, payload: thrown);
         }
     }
 }

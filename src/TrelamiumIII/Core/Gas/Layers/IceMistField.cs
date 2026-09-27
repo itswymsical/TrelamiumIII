@@ -80,12 +80,9 @@ public class IceMistField : ChemicalGasField
         effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
     }
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
+    protected override int ContactBuff => BuffID.Frostburn;
 
-        npc.AddBuff(BuffID.Frostburn, 30);
-    }
+    protected override int ContactBuffTicks => 30;
 
     protected override void OnPlayerContact(ref FieldNode node, Player player) { }
     protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile) { }
@@ -98,8 +95,10 @@ public class IceMistField : ChemicalGasField
     /// </remarks>
     protected override void OnEmitterHitNPC(ref GasEmitter emitter, NPC npc)
     {
-        base.OnEmitterHitNPC(ref emitter, npc);
+        if (!Strike(in emitter, npc))
+            return;
 
+        emitter.Payload?.Hit(npc, this);
         npc.AddBuff(BuffID.Frostburn, 60);
     }
 

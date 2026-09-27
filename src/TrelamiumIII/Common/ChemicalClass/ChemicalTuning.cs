@@ -1,3 +1,5 @@
+using TrelamiumIII.Core.Gas;
+
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>Numbers for concentration, clings and catalysis, kept together for tuning. All provisional.</summary>
@@ -7,6 +9,15 @@ public static class ChemicalTuning
 
     /// <summary>Ticks a contact exposure blocks further contact exposures of the same element on one NPC.</summary>
     public const int ContactInterval = 10;
+
+    /// <summary>Radius of a node catalysis regrows, from no catalysis to full.</summary>
+    public static readonly FloatRange RegeneratedRadius = new(8f, 18f);
+
+    /// <summary>Life of a node catalysis regrows, from no catalysis to full.</summary>
+    public static readonly FloatRange RegeneratedLife = new(30f, 75f);
+
+    /// <summary>The contact interval at <paramref name="rate" /> times the usual exposure rate. At least one tick.</summary>
+    public static int ContactTicks(float rate) => Math.Max(1, (int)MathF.Round(ContactInterval / Math.Max(rate, 0.1f)));
 
     /// <summary>Fraction of a source's concentration and catalysis that one contact exposure adds.</summary>
     public const float ContactShare = 0.25f;

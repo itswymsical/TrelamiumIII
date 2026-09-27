@@ -73,11 +73,9 @@ public class VilesporeField : ChemicalGasField
         Lighting.AddLight(node.Position, 0.14f * node.Alpha, 0.05f * node.Alpha, 0.20f * node.Alpha);
     }
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
-        npc.AddBuff(BuffID.Poisoned, 30);
-    }
+    protected override int ContactBuff => BuffID.Poisoned;
+
+    protected override int ContactBuffTicks => 30;
 
     public override ClingBehaviour? ClingBehaviour => SporePlagueCling.Instance;
 }
@@ -99,7 +97,7 @@ public sealed class SporePlagueCling : ClingBehaviour
     public override int Duration(float concentration) => FuseTicks;
 
     public override void OnAttach(NPC host, ref ClingState cling)
-        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Necrotic, TickDamage, FuseTicks, TickRate, cling.Owner);
+        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Necrotic, TickDamage, FuseTicks, TickRate, cling.Owner, cling.Payload);
 
     public override void Update(NPC host, ref ClingState cling)
     {
@@ -136,7 +134,7 @@ public sealed class SporePlagueCling : ClingBehaviour
         {
             Vector2 scatter = impact * Main.rand.NextFloat(2f, 9f) + Main.rand.NextVector2Circular(1.5f, 1.5f);
 
-            layer.SpawnNode(e.Target.Center, scatter, radius: Main.rand.NextFloat(13f, 33f), life: 90f, owner: e.Owner, payload: e.Payload);
+            layer.SpawnNode(e.Target.Center, scatter, radius: Main.rand.NextFloat(13f, 33f), life: 90f, owner: e.Owner, payload: e.Payload?.Derived);
         }
     }
 
@@ -159,6 +157,8 @@ public sealed class SporePlagueCling : ClingBehaviour
         if (cling.Medium is not { } layer)
             return;
 
+        // Outlives the cling's scope, which ends as the host dies.
+        ChemicalPayload? cloud = cling.Payload?.Derive(null);
         int count = Main.rand.Next(16, 22);
 
         for (int i = 0; i < count; i++)
@@ -166,7 +166,7 @@ public sealed class SporePlagueCling : ClingBehaviour
             Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
             velocity.Y -= 0.6f; // upward bias: the cloud should loom over the corpse, not rain off it
 
-            layer.SpawnNode(host.Center, velocity, radius: Main.rand.NextFloat(10f, 16f), life: 180f, owner: cling.Owner, payload: cling.Payload);
+            layer.SpawnNode(host.Center, velocity, radius: Main.rand.NextFloat(10f, 16f), life: 180f, owner: cling.Owner, payload: cloud);
         }
 
         float radiusSq = SpreadRadius * SpreadRadius;

@@ -41,6 +41,12 @@ public struct ChemicalStats
     /// <summary>Speed of the arms the release's container bursts into.</summary>
     public float BurstSpeedMultiplier;
 
+    /// <summary>Number of arms the release's container bursts into.</summary>
+    public float BurstCountMultiplier;
+
+    /// <summary>How often the release's gas and residue expose an NPC; divides the contact interval.</summary>
+    public float ContactRateMultiplier;
+
     public static ChemicalStats Of(IChemicalSource source) => Neutral with
     {
         ChemicalDamage = source.ChemicalDamage,
@@ -64,6 +70,8 @@ public struct ChemicalStats
         GasLifeMultiplier = 1f,
         GasSpreadMultiplier = 1f,
         BurstSpeedMultiplier = 1f,
+        BurstCountMultiplier = 1f,
+        ContactRateMultiplier = 1f,
     };
 
     /// <summary>Folds in the releasing player's chemical stats.</summary>

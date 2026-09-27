@@ -62,7 +62,7 @@ public class ThermiteFlaskItem : ModItem
             Vector2 vel = splashDir.RotatedByRandom(MathHelper.PiOver4)
                         * Main.rand.NextFloat(4f, 7f);
 
-            layer.SpawnNode(e.Target.Center, vel, radius: 11f, life: 120, owner: e.Owner, payload: e.Payload);
+            layer.SpawnNode(e.Target.Center, vel, radius: 11f, life: 120, owner: e.Owner, payload: e.Payload?.Derived);
         }
     }
 }

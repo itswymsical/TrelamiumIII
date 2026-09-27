@@ -109,13 +109,22 @@ public abstract class FieldLayer
 
     protected readonly List<FieldNode> nodes = [];
 
+    /// <summary>Nodes spawned while <see cref="UpdateNodes" /> iterates, such as by a contact it triggered. Added after it.</summary>
+    private readonly List<FieldNode> spawnedDuringUpdate = [];
+
+    private bool updatingNodes;
+
     public int NodeCount => nodes.Count;
 
     /// <summary>Drops every live node at once, for an emitter that has ended abruptly.</summary>
     /// <remarks>
-    ///     Nodes normally expire on their own. 
+    ///     Nodes normally expire on their own.
     /// </remarks>
-    public void ClearNodes() => nodes.Clear();
+    public void ClearNodes()
+    {
+        nodes.Clear();
+        spawnedDuringUpdate.Clear();
+    }
 
     private FieldTargetContent? target;
     private Asset<Effect>? shader;
@@ -139,7 +148,7 @@ public abstract class FieldLayer
         target = null;
         shader = null;
         radialTexture = null;
-        nodes.Clear();
+        ClearNodes();
     }
 
     /// <summary>
@@ -165,8 +174,6 @@ public abstract class FieldLayer
         if (life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
 
-        TrimToBudget();
-
         var node = new FieldNode
         {
             Position = worldPosition,
@@ -183,7 +190,7 @@ public abstract class FieldLayer
         };
 
         OnNodeSpawn(ref node);
-        nodes.Add(node);
+        Add(in node);
     }
 
     /// <summary>
@@ -215,8 +222,6 @@ public abstract class FieldLayer
         if (host is not { active: true } || life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
 
-        TrimToBudget();
-
         var node = new FieldNode
         {
             Position = worldPosition,
@@ -238,11 +243,24 @@ public abstract class FieldLayer
         };
 
         OnNodeSpawn(ref node);
-        nodes.Add(node);
+        Add(in node);
     }
 
     /// <summary>Called on a fully built node before it enters the list, so it can be adjusted.</summary>
     protected virtual void OnNodeSpawn(ref FieldNode node) { }
+
+    /// <summary>Adds a node, or holds it until <see cref="UpdateNodes" /> finishes, since trimming mid-iteration shifts indices.</summary>
+    private void Add(in FieldNode node)
+    {
+        if (updatingNodes)
+        {
+            spawnedDuringUpdate.Add(node);
+            return;
+        }
+
+        TrimToBudget();
+        nodes.Add(node);
+    }
 
     /// <summary>Drops the oldest nodes until there is room for one more.</summary>
     private void TrimToBudget()
@@ -288,21 +306,35 @@ public abstract class FieldLayer
 
     protected void UpdateNodes()
     {
-        for (int i = nodes.Count - 1; i >= 0; i--)
+        updatingNodes = true;
+
+        try
         {
-            var node = nodes[i];
-
-            UpdateNode(ref node, i);
-            ApplyLighting(ref node);
-
-            if (node.Life <= 0f)
+            for (int i = nodes.Count - 1; i >= 0; i--)
             {
-                nodes.RemoveAt(i);
-                continue;
-            }
+                var node = nodes[i];
 
-            nodes[i] = node;
+                UpdateNode(ref node, i);
+                ApplyLighting(ref node);
+
+                if (node.Life <= 0f)
+                {
+                    nodes.RemoveAt(i);
+                    continue;
+                }
+
+                nodes[i] = node;
+            }
         }
+        finally
+        {
+            updatingNodes = false;
+        }
+
+        foreach (FieldNode node in spawnedDuringUpdate)
+            Add(in node);
+
+        spawnedDuringUpdate.Clear();
     }
 
     protected virtual void UpdateNode(ref FieldNode node, int index)

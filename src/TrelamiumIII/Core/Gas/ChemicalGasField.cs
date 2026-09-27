@@ -1,4 +1,5 @@
-﻿using TrelamiumIII.Common.ChemicalClass;
+﻿using System.Collections.Generic;
+using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Graphics.Fields;
 
@@ -45,16 +46,45 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// </remarks>
     protected override DamageClass EmitterDamageClass => ModContent.GetInstance<ChemicalDamageClass>();
 
+    /// <summary>Vanilla debuff added whenever a contact applies, or -1 for none.</summary>
+    protected virtual int ContactBuff => -1;
+
+    protected virtual int ContactBuffTicks => 60;
+
     /// <summary>
-    /// Exposes the target to the node's chemistry. Targets already passed <see cref="GasField.CanAffect(NPC)"/>,
-    /// so overrides need not re-check them.
+    /// Exposes the target to the node's chemistry, adding <see cref="ContactBuff"/> only when that applied. Targets
+    /// already passed <see cref="GasField.CanAffect(NPC)"/>, so overrides need not re-check them.
     /// </summary>
     protected override void OnNPCContact(ref FieldNode node, NPC npc)
-        => ChemicalPayload.Contact(npc, this, node.Payload, node.Owner, this);
+    {
+        if (ChemicalPayload.Contact(npc, this, node.Payload, node.Owner, this) && ContactBuff >= 0)
+            npc.AddBuff(ContactBuff, ContactBuffTicks);
+    }
 
     public void SpawnClingNode(Vector2 position, Vector2 velocity, float radius, float life)
     {
         SpawnNode(position, velocity, radius, life, owner: CosmeticOwnerID);
+    }
+
+    /// <summary>
+    /// Ends <paramref name="owner"/>'s nodes within <paramref name="radius"/> of <paramref name="center"/>, adding
+    /// where each was to <paramref name="positions"/>. The nodes leave the list on the next update.
+    /// </summary>
+    public void Consume(Vector2 center, float radius, int owner, List<Vector2> positions)
+    {
+        float radiusSquared = radius * radius;
+
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            FieldNode node = nodes[i];
+
+            if (node.Life <= 0f || node.Owner != owner || Vector2.DistanceSquared(node.Position, center) > radiusSquared)
+                continue;
+
+            positions.Add(node.Position);
+            node.Life = 0f;
+            nodes[i] = node;
+        }
     }
 
     /// <summary>One cosmetic wisp over <paramref name="host" />, spreading wider and living longer with <paramref name="intensity" />.</summary>
@@ -131,7 +161,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// </summary>
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
-        if (owner == CosmeticOwnerID) return;
+        if (owner == CosmeticOwnerID || payload is { IsActive: false }) return;
 
         Residue?.Linger(tileX, tileY, density / Math.Max(TileFieldThreshold, 0.01f), owner, payload);
     }

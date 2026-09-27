@@ -12,7 +12,11 @@ public struct ClingState
     /// <summary>The gas the cling is made of, for visuals and anything it sheds. Null draws nothing.</summary>
     public ChemicalGasField? Medium;
 
+    /// <summary>What the cling emits: the chemistry it came from, derived under <see cref="Scope" /> and never exposing the host.</summary>
     public ChemicalPayload? Payload;
+
+    /// <summary>Ends when the cling detaches, which stops <see cref="Payload" /> applying anywhere.</summary>
+    public ChemicalScope? Scope;
 
     public int Owner;
 
@@ -48,6 +52,7 @@ public abstract class ClingBehaviour
     public virtual void Update(NPC host, ref ClingState cling) => cling.Medium?.ShedOnto(host, cling.Fade);
 
     /// <param name="hostKilled">True when the host died with the cling on; false when it wore off or was replaced.</param>
+    /// <remarks>The cling's scope ends right after this, so anything meant to outlive it needs its own derivation.</remarks>
     public virtual void OnDetach(NPC host, ref ClingState cling, bool hostKilled) { }
 
     private sealed class DefaultCling : ClingBehaviour { }

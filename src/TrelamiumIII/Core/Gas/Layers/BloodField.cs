@@ -77,10 +77,7 @@ public class BloodField : ChemicalGasField
         effect.Parameters["HighlightAlpha"]?.SetValue(0.9f);
     }
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
+    protected override int ContactBuff => BuffID.BloodButcherer;
 
-        npc.AddBuff(BuffID.BloodButcherer, 30);
-    }
+    protected override int ContactBuffTicks => 30;
 }

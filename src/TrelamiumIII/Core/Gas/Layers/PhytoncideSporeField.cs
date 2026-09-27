@@ -76,16 +76,10 @@ public class PhytoncideSporeField : ChemicalGasField
         Lighting.AddLight(node.Position, 0.14f * node.Alpha, 0.05f * node.Alpha, 0.20f * node.Alpha);
     }
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
+    protected override int ContactBuff => BuffID.Poisoned;
 
-        // The friendly, dummy and invulnerable checks that used to live here are now in
-        // GasLayer.CanAffect, which runs before the sweep ever reaches this hook. This layer was
-        // the only one making them, which is exactly why the others were setting town NPCs alight.
-        npc.AddBuff(BuffID.Poisoned, 30);
-    }
-    
+    protected override int ContactBuffTicks => 30;
+
     protected override void OnPlayerContact(ref FieldNode node, Player player)
     {
         base.OnPlayerContact(ref node, player);
@@ -158,7 +152,7 @@ public sealed class PhytoncideBloomCling : ClingBehaviour
     public override int Duration(float concentration) => BloomTicks;
 
     public override void OnAttach(NPC host, ref ClingState cling)
-        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Caustic, TickDamage, BloomTicks, TickRate, cling.Owner);
+        => host.GetGlobalNPC<ChemicalGlobalNPC>().ApplyAffliction(ChemicalDamageType.Caustic, TickDamage, BloomTicks, TickRate, cling.Owner, cling.Payload);
 
     public override void Update(NPC host, ref ClingState cling)
     {
@@ -191,7 +185,7 @@ public sealed class PhytoncideBloomCling : ClingBehaviour
             Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(1.5f, 5f);
             velocity.Y -= 0.5f;
 
-            layer.SpawnNode(target.Center, velocity, radius: Main.rand.NextFloat(12f, 28f), life: 150f, owner: e.Owner, payload: e.Payload);
+            layer.SpawnNode(target.Center, velocity, radius: Main.rand.NextFloat(12f, 28f), life: 150f, owner: e.Owner, payload: e.Payload?.Derived);
         }
 
         float radiusSq = BurstRadius * BurstRadius;

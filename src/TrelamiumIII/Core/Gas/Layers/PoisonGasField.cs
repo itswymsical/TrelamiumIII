@@ -90,10 +90,7 @@ public class PoisonGasField : ChemicalGasField
     protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.10f * node.Alpha, 0.20f * node.Alpha, 0.04f * node.Alpha);
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
+    protected override int ContactBuff => BuffID.Poisoned;
 
-        npc.AddBuff(BuffID.Poisoned, POISON_TICKS);
-    }
+    protected override int ContactBuffTicks => POISON_TICKS;
 }

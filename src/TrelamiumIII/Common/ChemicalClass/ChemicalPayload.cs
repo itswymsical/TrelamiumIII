@@ -5,6 +5,17 @@ using TrelamiumIII.Core.Gas;
 namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
+///     The lifetime of something that keeps emitting chemistry for a release, such as a cling or a catalysis. Payloads
+///     derived under it apply nothing once it ends.
+/// </summary>
+public sealed class ChemicalScope
+{
+    public bool Ended { get; private set; }
+
+    public void End() => Ended = true;
+}
+
+/// <summary>
 ///     One release of chemistry: its source, its modifiers, the releasing player, and the stats all three produce.
 ///     Shared by every projectile, emitter, gas node and residue the release produces.
 /// </summary>
@@ -23,6 +34,22 @@ public sealed class ChemicalPayload
 
     /// <summary>The first modifier's cling override, else the source's; null leaves it to the gas.</summary>
     public ClingBehaviour? ClingBehaviour { get; }
+
+    /// <summary>0 for a release. Each cling, reaction, residue or catalysis that re-emits it adds one.</summary>
+    public int Generation { get; }
+
+    /// <summary>The emitter this payload lives by, or null. Once that ends, the payload applies nothing.</summary>
+    public ChemicalScope? Scope { get; }
+
+    /// <summary>The NPC whose cling emits it, which it never exposes. -1 for none.</summary>
+    public int Host { get; } = -1;
+
+    /// <summary>Re-emitted chemistry. It never clings by build-up and never reacts, so it can't sustain itself.</summary>
+    public bool IsDerived => Generation > 0;
+
+    public bool IsActive => Scope is not { Ended: true };
+
+    private ChemicalPayload? derived;
 
     private ChemicalPayload(IChemicalSource source, IReadOnlyList<ChemicalModifier> modifiers, Player? player)
     {
@@ -45,6 +72,24 @@ public sealed class ChemicalPayload
         Stats = stats;
         ClingBehaviour = cling ?? source.ClingBehaviour;
     }
+
+    private ChemicalPayload(ChemicalPayload parent, ChemicalScope? scope, int host)
+    {
+        Source = parent.Source;
+        Owner = parent.Owner;
+        Modifiers = parent.Modifiers;
+        Stats = parent.Stats;
+        ClingBehaviour = parent.ClingBehaviour;
+        Generation = parent.Generation + 1;
+        Scope = scope;
+        Host = host;
+    }
+
+    /// <summary>A one-off re-emission, such as a reaction's burst: derived, keeping this payload's scope and host.</summary>
+    public ChemicalPayload Derived => derived ??= new ChemicalPayload(this, Scope, Host);
+
+    /// <summary>What an emitter re-emits: derived, applying only while <paramref name="scope" /> lasts, and never to <paramref name="host" />.</summary>
+    public ChemicalPayload Derive(ChemicalScope? scope, int host = -1) => new(this, scope, host);
 
     /// <summary>Null for a source that carries no chemistry.</summary>
     public static ChemicalPayload? Create(IChemicalSource? source, Player? player = null, IReadOnlyList<ChemicalModifier>? modifiers = null)
@@ -102,56 +147,70 @@ public sealed class ChemicalPayload
     };
 
     /// <summary>
-    ///     A direct hit: the release's chemistry at full concentration, then a reaction roll amplified by the target's
-    ///     catalysis. <paramref name="medium" /> is the gas a cling would be made of.
+    ///     A direct hit: the release's chemistry at full concentration, then its modifiers' hit behaviour and a reaction
+    ///     roll amplified by the target's catalysis. A derived payload only exposes. <paramref name="medium" /> is the
+    ///     gas a cling would be made of.
     /// </summary>
     public void Hit(NPC target, ChemicalGasField? medium = null, Projectile? delivery = null)
     {
-        if (!IsAuthority(Owner))
+        if (!Apply(target, ExposureKind.Hit, 1f, medium) || IsDerived)
             return;
 
+        foreach (ChemicalModifier modifier in Modifiers)
+            modifier.OnHit(target, this, medium);
+
         ChemicalGlobalNPC chemistry = target.GetGlobalNPC<ChemicalGlobalNPC>();
+        float chance = Stats.ReactionChance * (Stats.Catalysis > 0f ? 1f : chemistry.CatalysisMultiplier);
 
-        chemistry.Expose(target, Delivery(ExposureKind.Hit, Owner, medium, 1f));
+        foreach (ChemicalModifier modifier in Modifiers)
+            modifier.ModifyReactionChance(target, this, ref chance);
 
-        float amplify = Stats.Catalysis > 0f ? 1f : chemistry.CatalysisMultiplier;
-
-        if (Main.rand.NextFloat(100f) < Stats.ReactionChance * amplify)
+        if (Main.rand.NextFloat(100f) < chance)
             ChemicalReaction.Trigger(target, Source, this, delivery);
     }
+
+    /// <summary>Exposes <paramref name="target" /> to this payload at <paramref name="strength" />, from the owner's machine. False when nothing applied.</summary>
+    public bool Apply(NPC target, ExposureKind kind, float strength = 1f, ChemicalGasField? medium = null)
+        => IsAuthority(Owner) && target.GetGlobalNPC<ChemicalGlobalNPC>().Expose(target, Delivery(kind, Owner, medium, strength));
 
     /// <summary>
     ///     Exposure to gas or residue at <paramref name="strength" />. The <paramref name="payload" /> that put it there
     ///     supplies the chemistry; without one (ambient chemistry) <paramref name="formula" /> does. Never reacts.
     /// </summary>
-    public static void Contact(NPC target, IChemicalSource formula, ChemicalPayload? payload, int owner, ChemicalGasField? medium, float strength = 1f)
+    /// <returns>Whether it applied, so effects that ride on a contact can follow it.</returns>
+    public static bool Contact(NPC target, IChemicalSource formula, ChemicalPayload? payload, int owner, ChemicalGasField? medium, float strength = 1f)
     {
         if (!IsAuthority(owner))
-            return;
+            return false;
 
         ChemicalDelivery delivery = payload?.Delivery(ExposureKind.Contact, owner, medium, strength)
             ?? new ChemicalDelivery(formula.ChemicalType, ChemicalStats.Of(formula), formula.ClingBehaviour, null, owner, strength, ExposureKind.Contact, medium);
 
-        target.GetGlobalNPC<ChemicalGlobalNPC>().Expose(target, delivery);
+        return target.GetGlobalNPC<ChemicalGlobalNPC>().Expose(target, delivery);
     }
 
-    /// <summary>Scales the burst's arm speeds, then lets each modifier adjust it.</summary>
+    /// <summary>Scales the burst's arm speeds and counts, then lets each modifier adjust it.</summary>
     public void ModifyBurst(ref BurstProfile burst)
     {
         float speed = Stats.BurstSpeedMultiplier;
+        float count = Stats.BurstCountMultiplier;
 
-        if (speed != 1f)
+        if (speed != 1f || count != 1f)
         {
             burst = burst with
             {
-                AirSpeed = new FloatRange(burst.AirSpeed.Min * speed, burst.AirSpeed.Max * speed),
-                GroundSpeed = new FloatRange(burst.GroundSpeed.Min * speed, burst.GroundSpeed.Max * speed),
+                AirSpeed = Scale(burst.AirSpeed, speed),
+                GroundSpeed = Scale(burst.GroundSpeed, speed),
+                AirCount = Scale(burst.AirCount, count),
+                GroundCount = Scale(burst.GroundCount, count),
             };
         }
 
         foreach (ChemicalModifier modifier in Modifiers)
             modifier.ModifyBurst(ref burst);
     }
+
+    private static FloatRange Scale(FloatRange range, float by) => new(range.Min * by, range.Max * by);
 
     public void OnReaction(in ChemicalReactionEvent e)
     {

@@ -117,12 +117,9 @@ public class ThermiteFlaskField : ChemicalGasField
     /// </summary>
     protected override float TileFieldThreshold => 1.15f;
 
-    protected override void OnNPCContact(ref FieldNode node, NPC npc)
-    {
-        base.OnNPCContact(ref node, npc);
+    protected override int ContactBuff => BuffID.OnFire;
 
-        npc.AddBuff(BuffID.OnFire, 120);
-    }
+    protected override int ContactBuffTicks => 120;
 
     /// <summary>Per-node response only: the node thickens and slows in liquid, nothing else.</summary>
     /// <remarks>

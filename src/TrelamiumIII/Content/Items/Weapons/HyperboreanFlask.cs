@@ -10,8 +10,11 @@ using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.Items.Weapons;
 
-public class HyperboreanFlaskItem : ModItem
+[LegacyName("HyperboreanFlaskItem")]
+public class ArcticFlaskItem : ModItem
 {
+    public override string Texture => AssetReferences.Content.Items.Weapons.HyperboreanFlaskItem.KEY;
+
     public override void SetDefaults()
     {
         base.SetDefaults();
@@ -24,7 +27,7 @@ public class HyperboreanFlaskItem : ModItem
         Item.useAnimation = Item.useTime = 27;
 
         Item.UseSound = SoundID.Item106;
-        Item.shoot = ModContent.ProjectileType<HyperboreanFlaskProjectile>();
+        Item.shoot = ModContent.ProjectileType<ArcticFlaskProjectile>();
         Item.shootSpeed = 7f;
         Item.autoReuse = true;
         Item.consumable = true;
@@ -68,8 +71,8 @@ public class HyperboreanFlaskItem : ModItem
     }
 }
 
-/// <summary>A flask of pressurised cryogen: vents ahead of itself, then flash-freezes outward.</summary>
-public class HyperboreanFlaskProjectile : ChemicalProjectile
+[LegacyName("HyperboreanFlaskProjectile")]
+public class ArcticFlaskProjectile : ChemicalProjectile
 {
     public override string Texture => AssetReferences.Content.Items.Weapons.HyperboreanFlaskItem.KEY;
 

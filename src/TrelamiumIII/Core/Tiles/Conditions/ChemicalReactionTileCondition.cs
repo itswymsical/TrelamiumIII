@@ -137,7 +137,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
     /// </remarks>
     private void Exhale(in TileConditionInstance instance)
     {
-        if (LingerLayer is not { } layer || instance.Strength < ActiveStrength)
+        if (LingerLayer is not { } layer || instance.Strength < ActiveStrength || instance.Payload is { IsActive: false })
             return;
 
         int interval = Math.Max(LingerInterval, 1);
@@ -150,12 +150,14 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         Vector2 origin = instance.WorldCenter - new Vector2(0f, 10f) + Main.rand.NextVector2Circular(5f, 3f);
         Vector2 drift = new(Main.rand.NextFloat(-0.35f, 0.35f), -LingerRise * Main.rand.NextFloat(0.6f, 1.2f));
 
+        // Re-emitted, so the exhaled gas can't cling and keep the residue's chemistry going on its own.
         layer.SpawnNode(
             origin,
             drift,
             radius: LingerRadius * MathHelper.Lerp(0.6f, 1f, strength),
             life: LingerLife * MathHelper.Lerp(0.5f, 1f, strength),
-            owner: instance.Owner
+            owner: instance.Owner,
+            payload: instance.Payload?.Derived
         );
     }
 
@@ -213,11 +215,9 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         if (instance.Strength < ActiveStrength || !CanAffect(npc))
             return;
 
-        if (ContactBuff >= 0)
-            npc.AddBuff(ContactBuff, ContactBuffTicks);
-
         // The gas a residue exhales is what clings from it are made of.
-        ChemicalPayload.Contact(npc, this, instance.Payload, instance.Owner, LingerLayer as ChemicalGasField, instance.Strength);
+        if (ChemicalPayload.Contact(npc, this, instance.Payload, instance.Owner, LingerLayer as ChemicalGasField, instance.Strength) && ContactBuff >= 0)
+            npc.AddBuff(ContactBuff, ContactBuffTicks);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
