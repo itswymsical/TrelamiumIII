@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Common.DamageMeter;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
@@ -531,13 +532,15 @@ public abstract class GasField : FieldLayer
 
         int direction = MathF.Sign(emitter.Velocity.X);
 
-        npc.SimpleStrikeNPC(
+        int dealt = npc.SimpleStrikeNPC(
             emitter.Damage,
             direction == 0 ? 1 : direction,
             crit: false,
             emitter.Knockback,
             EmitterDamageClass,
             noPlayerInteraction: emitter.Owner < 0);
+
+        DamageMeterSystem.Credit(emitter.Owner, npc, dealt, DamageMeterSource.Hit);
 
         return true;
     }

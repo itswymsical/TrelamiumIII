@@ -7,6 +7,10 @@
 //
 //   uIntensity  0..1 charter intensity; scales the spread
 //   uSpread     offset knob (ChartEffect.Param * 2): 0..2x base spread, 1 = neutral
+//
+// COLOR0 is ignored on purpose, see the note in ScreenFlash.fx. FilterManager.EndCapture draws
+// the captured frame with Main.ColorOfTheSkies as the vertex colour while any filter is active,
+// so `* col` would darken the whole screen underground and at night.
 
 sampler2D ImageSampler : register(s0);
 
@@ -40,7 +44,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
         sum += w * tex2D(ImageSampler, uv - dir * spread * (t - 0.5) * 2.0).rgb;
     }
 
-    return float4(sum / max(wsum, 0.0001), 1.0) * col;
+    return float4(sum / max(wsum, 0.0001), 1.0);
 }
 
 technique Technique1

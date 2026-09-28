@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Terraria.Audio;
+using TrelamiumIII.Common.DamageMeter;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Graphics.Fields;
 
@@ -573,13 +574,15 @@ internal static class ChemicalEffects
         if (damage <= 0f || !npc.active)
             return;
 
-        npc.SimpleStrikeNPC(
+        int dealt = npc.SimpleStrikeNPC(
             Math.Max(1, (int)damage),
             hitDirection: 0,
             crit: false,
             knockBack: 0f,
             damageType: ModContent.GetInstance<ChemicalDamageClass>(),
             noPlayerInteraction: owner != Main.myPlayer);
+
+        DamageMeterSystem.Credit(owner, npc, dealt, DamageMeterSource.Hit);
     }
 
     /// <summary>Adds the buff, or tops it up once under half of <paramref name="ticks" />, to spare a sync every exposure.</summary>

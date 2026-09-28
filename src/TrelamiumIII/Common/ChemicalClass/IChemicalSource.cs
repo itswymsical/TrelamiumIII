@@ -1,4 +1,6 @@
-﻿namespace TrelamiumIII.Common.ChemicalClass;
+﻿using TrelamiumIII.Common.DamageMeter;
+
+namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
 /// Anything that can apply chemical afflictions or trigger reactions on an NPC: weapons, gas layers, utilities,
@@ -129,6 +131,7 @@ public static class ChemicalReaction
                 damageType: ModContent.GetInstance<ChemicalDamageClass>(),
                 noPlayerInteraction: payload?.Owner != Main.myPlayer);
 
+            DamageMeterSystem.Credit(payload?.Owner ?? -1, target, dealt, DamageMeterSource.Hit);
             npcData.PierceDefense = false;
         }
 

@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Common.DamageMeter;
 using TrelamiumIII.Core.Tiles.Conditions;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
@@ -181,13 +182,15 @@ public sealed class SporePlagueCling : ClingBehaviour
             if (!Infect(other, layer, cling.Payload, cling.Owner))
                 continue;
 
-            other.SimpleStrikeNPC(
+            int dealt = other.SimpleStrikeNPC(
                 BurstDamage,
                 hitDirection: 0,
                 crit: false,
                 knockBack: 0f,
                 damageType: ModContent.GetInstance<ChemicalDamageClass>(),
                 noPlayerInteraction: cling.Owner != Main.myPlayer);
+
+            DamageMeterSystem.Credit(cling.Owner, other, dealt, DamageMeterSource.Hit);
         }
     }
 

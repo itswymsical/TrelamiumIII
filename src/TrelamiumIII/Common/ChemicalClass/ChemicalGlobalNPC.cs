@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Terraria.DataStructures;
+using TrelamiumIII.Common.DamageMeter;
 using TrelamiumIII.Core.Gas;
 
 namespace TrelamiumIII.Common.ChemicalClass;
@@ -235,6 +236,7 @@ public class ChemicalGlobalNPC : GlobalNPC
         }
 
         anyActive = true;
+        DamageMeterSystem.AttributeDebuffs(delivery.Owner, npc);
 
         float strength = delivery.Strength;
         float share = delivery.Kind == ExposureKind.Contact ? strength * ChemicalTuning.ContactShare : strength;
@@ -551,13 +553,15 @@ public class ChemicalGlobalNPC : GlobalNPC
         if (!npc.active || npc.immortal || npc.dontTakeDamage || !ChemicalPayload.IsAuthority(state.Owner))
             return false;
 
-        npc.SimpleStrikeNPC(
+        int dealt = npc.SimpleStrikeNPC(
             Math.Max(1, (int)state.DamagePerTick),
             hitDirection: 0,
             crit: false,
             knockBack: 0f,
             damageType: ModContent.GetInstance<ChemicalDamageClass>(),
             noPlayerInteraction: state.Owner != Main.myPlayer);
+
+        DamageMeterSystem.Credit(state.Owner, npc, dealt, DamageMeterSource.Affliction);
 
         return true;
     }

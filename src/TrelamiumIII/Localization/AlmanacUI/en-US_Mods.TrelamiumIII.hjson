@@ -18,6 +18,7 @@ AlmanacUI: {
 	DiscoveredText: discovered
 	RecipesDiscovered: recipes discovered
 	IngredientsDiscovered: ingredients found
+	NotDiscovered: No discovered recipes use this yet. Start experimenting!
 }
 
 Biomes: {

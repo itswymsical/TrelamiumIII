@@ -14,6 +14,10 @@
 //
 // TAPS is a compile-time constant: ps_3_0 + MojoShader can't be trusted with a
 // uniform loop bound, so quality is fixed and the artist tunes reach instead.
+//
+// COLOR0 is ignored on purpose, see the note in ScreenFlash.fx. FilterManager.EndCapture draws
+// the captured frame with Main.ColorOfTheSkies as the vertex colour while any filter is active,
+// so `* col` would darken the whole screen underground and at night.
 
 sampler2D ImageSampler : register(s0);
 
@@ -66,7 +70,7 @@ float4 PixelShaderFunction(float4 col : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     }
 
     float4 blurred = sum / max(wsum, 1e-4);
-    return lerp(src, blurred, saturate(uMix)) * col;
+    return lerp(src, blurred, saturate(uMix));
 }
 
 technique Technique1

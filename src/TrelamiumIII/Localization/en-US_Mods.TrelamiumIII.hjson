@@ -516,27 +516,27 @@ Items: {
 
 	BaneTonicItem: {
 		DisplayName: Tonic of Bane
-		Tooltip: ""
+		Tooltip: The perfect vessel for vitiating agents and weaponry
 	}
 
 	BriskTonicItem: {
 		DisplayName: Tonic of Brisk
-		Tooltip: ""
+		Tooltip: The perfect vessel for movement-based potions
 	}
 
 	FortunateTonicItem: {
 		DisplayName: Tonic of Fortune
-		Tooltip: ""
+		Tooltip: The perfect vessel for luck-based/baleful potions
 	}
 
 	HarmoniousTonicItem: {
 		DisplayName: Tonic of Harmony
-		Tooltip: ""
+		Tooltip: The perfect vessel for affective serums
 	}
 
 	MartialTonicItem: {
 		DisplayName: Tonic of Martial
-		Tooltip: ""
+		Tooltip: The perfect vessel for combat-oriented potions
 	}
 
 	SpecularTonicItem: {
@@ -546,7 +546,7 @@ Items: {
 
 	VitalTonicItem: {
 		DisplayName: Tonic of Vitality
-		Tooltip: ""
+		Tooltip: The perfect vessel for life/rejuvinating potions
 	}
 
 	BloodtoothExtractItem: {
@@ -1279,6 +1279,13 @@ Misc: {
 	SonsMushroom: Shroomson's Mushroom
 	SonsMushroomFlavour: Grown for you, by your son
 	WorkshopSlot: Station Slot
+}
+
+# Lines under the DPS Meter's hover name, splitting its reading by source. {0} is damage per second.
+DamageMeter: {
+	Hits: "{0} from hits"
+	Debuffs: "{0} from debuffs"
+	Afflictions: "{0} from afflictions"
 }
 
 Scar.Return: Return to Ingress

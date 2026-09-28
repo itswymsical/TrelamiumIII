@@ -1381,7 +1381,8 @@ public class AlchemyAlmanacUI : IInGameNotification
 
             if (uses.Count == 0)
             {
-                DrawWrappedDescription(sb, "No discovered recipes use this yet.", PAGE_HEIGHT * 0.45f);
+                DrawWrappedDescription(sb, 
+                    ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.NotDiscovered"), PAGE_HEIGHT * 0.45f);
                 return;
             }
         }
