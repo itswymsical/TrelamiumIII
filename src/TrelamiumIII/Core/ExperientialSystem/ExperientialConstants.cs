@@ -30,10 +30,10 @@ public static class ExperientialConstants
     public const int MinThreshold = 0;
 
     /// <summary>Highest reachable Threshold. The meter still fills at max, it just stops ascending.</summary>
-    public const int MaxThreshold = 200;
+    public const int MaxThreshold = 50;
 
     /// <summary>Meter capacity at <see cref="MinThreshold"/>.</summary>
-    public const int BaseCapacity = 75;
+    public const int BaseCapacity = 100;
 
     /// <summary>Meter capacity at <see cref="MaxThreshold"/>. Doubles as the endgame skill budget.</summary>
     public const int PeakCapacity = 500_000;
@@ -46,7 +46,7 @@ public static class ExperientialConstants
 
     /// <summary>
     /// Per-Threshold growth ratio, solved so the curve hits both anchors exactly:
-    /// <c>BaseCapacity * ratio^MaxThreshold == PeakCapacity</c>. Works out to ~1.2766.
+    /// <c>BaseCapacity * ratio^MaxThreshold == PeakCapacity</c>. Works out to ~1.1857.
     /// Retune the anchors, not this.
     /// </summary>
     public static double CapacityRatio => Math.Pow((double)PeakCapacity / BaseCapacity, 1d / MaxThreshold);
@@ -78,7 +78,7 @@ public static class ExperientialConstants
 
     /// <summary>
     /// Rounds a raw curve value onto a grid coarse enough to read as hand-authored:
-    /// 50, 64, 81, 105, 135 ... 46500, 59500, 76000 rather than 50, 63.8, 81.5, 104.0.
+    /// 100, 120, 140, 165, 200 ... 355500, 421500, 500000 rather than 100, 118.6, 140.6, 166.7.
     /// </summary>
     private static int Quantise(double value)
     {
