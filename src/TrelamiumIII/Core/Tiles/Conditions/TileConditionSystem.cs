@@ -3,8 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using MonoMod.Cil;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -27,7 +27,8 @@ public sealed class TileConditionSystem : ModSystem
     /// <summary>One tick in eight, per tile.</summary>
     private const int LIQUID_PROBE_MASK = 7;
 
-    private const int CULL_PADDING = 4;
+    /// <summary>Tiles the fallback terrain mask extends past the canvases: the kernel plus a lip.</summary>
+    private const int MASK_PADDING = 3;
 
     private sealed class ConditionState(ITileCondition condition, int id)
     {
@@ -44,7 +45,8 @@ public sealed class TileConditionSystem : ModSystem
         /// <summary>Scratch list of tiles that ended this tick. Reused and never read outside the tick.</summary>
         public readonly List<Point> Finished = [];
 
-        public WorldFieldTarget? Field;
+        /// <summary>Null on a server and for conditions that draw nothing.</summary>
+        public TileCanvas? Canvas;
 
         public int NextSerial;
     }
@@ -69,6 +71,9 @@ public sealed class TileConditionSystem : ModSystem
     private static bool dispatching;
 
     private static bool loaded;
+
+    /// <summary>Whether the composite was spliced into the solid tile pass. See <see cref="SpliceComposite" />.</summary>
+    private static bool compositeSpliced;
 
     /// <summary>The registered condition of type <typeparamref name="T" />, or null before load.</summary>
     public static T? Get<T>() where T : class, ITileCondition
@@ -140,6 +145,7 @@ public sealed class TileConditionSystem : ModSystem
             state.Tiles.Clear();
             state.Order.Clear();
             state.Finished.Clear();
+            state.Canvas?.ClearGhosts();
         }
 
         pending.Clear();
@@ -159,6 +165,10 @@ public sealed class TileConditionSystem : ModSystem
             var state = new ConditionState(condition, states.Count);
 
             condition.Load();
+
+            if (!Main.dedServ && condition.RenderMode == TileConditionRenderMode.Canvas)
+                state.Canvas = new TileCanvas(condition, state.Tiles);
+
             states.Add(state);
             byType[type] = state;
         }
@@ -171,8 +181,42 @@ public sealed class TileConditionSystem : ModSystem
         On_Main.CheckMonoliths += static orig =>
         {
             orig();
-            BuildFields();
+            BuildCanvases();
         };
+
+        IL_Main.DoDraw_Tiles_Solid += SpliceComposite;
+
+        // Without the splice, draw once the pass is over: above the solid layer's tile entities, still under NPCs.
+        if (!compositeSpliced)
+        {
+            On_Main.DoDraw_Tiles_Solid += static (orig, self) =>
+            {
+                orig(self);
+                CompositeCanvases();
+            };
+        }
+    }
+
+    /// <summary>
+    ///     Calls <see cref="CompositeCanvases" /> between the solid tile blit and the tile entities drawn over it.
+    /// </summary>
+    /// <remarks>
+    ///     Spliced into the IL rather than hooked on <c>DrawTileEntities</c>: that is a one-line forwarder, and the copy
+    ///     of this method compiled for its other hooks inlines it, so a hook on it never runs from here.
+    /// </remarks>
+    private void SpliceComposite(ILContext il)
+    {
+        ILCursor c = new(il);
+
+        if (!c.TryGotoNext(MoveType.Before, i => i.MatchCall<Main>("DrawTileEntities")))
+        {
+            Mod.Logger.Warn("Could not find DrawTileEntities in Main.DoDraw_Tiles_Solid; tile conditions composite after the solid tile pass.");
+            return;
+        }
+
+        // The call's arguments are already on the stack. This takes none of them and leaves them where they are.
+        c.EmitDelegate(CompositeCanvases);
+        compositeSpliced = true;
     }
 
     public override void OnModUnload()
@@ -182,13 +226,18 @@ public sealed class TileConditionSystem : ModSystem
         foreach (ConditionState state in states)
         {
             state.Condition.Unload();
-            state.Field?.Reset();
-            state.Field = null;
+            state.Canvas?.Free();
+            state.Canvas = null;
         }
 
         states.Clear();
         byType.Clear();
         pending.Clear();
+
+        compositeSpliced = false;
+        reportedFailure = false;
+
+        TerrainMask.Unload();
     }
 
     public override void ClearWorld() => ClearAll();
@@ -211,29 +260,10 @@ public sealed class TileConditionSystem : ModSystem
         dispatching = false;
 
         DrainPending();
-    }
 
-    public override void PostDrawTiles()
-    {
-        if (!loaded || Main.dedServ)
-            return;
-
-        Rectangle area = VisibleTileArea();
-
+        // After the drain, so a tile marked again this tick takes over from its own fading sample.
         foreach (ConditionState state in states)
-        {
-            if (state.Tiles.Count == 0)
-                continue;
-
-            TileConditionRenderMode mode = state.Condition.RenderMode;
-
-            // Field first, then overlay, and a condition may ask for both.
-            if (mode.HasFlag(TileConditionRenderMode.Field))
-                CompositeField(state);
-
-            if (mode.HasFlag(TileConditionRenderMode.Overlay))
-                DrawOverlay(state, area);
-        }
+            state.Canvas?.Update();
     }
 
     private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload)
@@ -277,6 +307,7 @@ public sealed class TileConditionSystem : ModSystem
             // adding to what is already there rather than as starting over.
             Level = exists ? existing.Level : 0f,
             Stage = exists ? existing.Stage : (byte)0,
+            TotalAge = exists ? existing.TotalAge : 0,
         };
 
         state.Condition.OnApplied(ref instance);
@@ -299,6 +330,7 @@ public sealed class TileConditionSystem : ModSystem
         if (!state.Tiles.Remove(position, out TileConditionInstance instance))
             return false;
 
+        state.Canvas?.OnRemoved(in instance);
         state.Condition.OnExpired(in instance);
 
         return true;
@@ -335,6 +367,7 @@ public sealed class TileConditionSystem : ModSystem
             ref TileConditionInstance instance = ref CollectionsMarshal.GetValueRefOrNullRef(state.Tiles, position);
 
             instance.Age++;
+            instance.TotalAge++;
             instance.Life--;
 
             if (((instance.Age + position.X * 7 + position.Y * 13) & LIQUID_PROBE_MASK) == 0)
@@ -487,121 +520,77 @@ public sealed class TileConditionSystem : ModSystem
         pending.Clear();
     }
 
-    private static Rectangle VisibleTileArea()
+    /// <summary>Set once a canvas pass has thrown, so the log carries one report rather than one per frame.</summary>
+    private static bool reportedFailure;
+
+    /// <summary>
+    ///     Logs a canvas failure once. Vanilla routes exceptions from this part of the frame to
+    ///     <c>TimeLogger.DrawException</c>, which drops them, and skips the NPCs drawn after it.
+    /// </summary>
+    private static void ReportFailure(Exception exception)
     {
-        // Built from the unzoomed viewport, which is a superset of the zoomed one for every zoom
-        // level Terraria allows. Cheaper than the exact rectangle and it can only ever over-include.
-        int left = Math.Max((int)(Main.screenPosition.X / 16f) - CULL_PADDING, 0);
-        int top = Math.Max((int)(Main.screenPosition.Y / 16f) - CULL_PADDING, 0);
-        int right = Math.Min((int)((Main.screenPosition.X + Main.screenWidth) / 16f) + CULL_PADDING, Main.maxTilesX - 1);
-        int bottom = Math.Min((int)((Main.screenPosition.Y + Main.screenHeight) / 16f) + CULL_PADDING, Main.maxTilesY - 1);
-
-        return new Rectangle(left, top, right - left + 1, bottom - top + 1);
-    }
-
-    private static void DrawOverlay(ConditionState state, Rectangle area)
-    {
-        ITileCondition condition = state.Condition;
-        Effect? effect = condition.OverlayShader?.Value;
-
-        if (effect is not null)
-            condition.ApplyShaderParameters(effect);
-
-        condition.BindAdditionalTextures(Main.graphics.GraphicsDevice);
-
-        SpriteBatch spriteBatch = Main.spriteBatch;
-
-        spriteBatch.Begin(
-            SpriteSortMode.Deferred,
-            condition.BlendState,
-            Main.DefaultSamplerState,
-            DepthStencilState.None,
-            Main.Rasterizer,
-            effect,
-            Main.GameViewMatrix.TransformationMatrix
-        );
-
-        DrawBatch(state, area, spriteBatch, overlay: true);
-
-        spriteBatch.End();
-    }
-
-    private static void BuildFields()
-    {
-        if (!loaded || Main.dedServ || Main.gameMenu)
+        if (reportedFailure)
             return;
+
+        reportedFailure = true;
+        ModContent.GetInstance<TrelamiumIII>().Logger.Error("Tile condition canvas failed", exception);
+    }
+
+    private static void BuildCanvases()
+    {
+        if (!loaded || Main.gameMenu)
+            return;
+
+        try
+        {
+            BuildCanvasesUnchecked();
+        }
+        catch (Exception exception)
+        {
+            Main.graphics.GraphicsDevice.SetRenderTarget(null);
+            ReportFailure(exception);
+        }
+    }
+
+    private static void BuildCanvasesUnchecked()
+    {
+        TerrainMask.BeginFrame();
+
+        Rectangle covered = Rectangle.Empty;
 
         foreach (ConditionState state in states)
         {
-            if (!state.Condition.RenderMode.HasFlag(TileConditionRenderMode.Field) || state.Tiles.Count == 0)
+            if (state.Canvas is not { } canvas)
                 continue;
 
-            state.Field ??= new WorldFieldTarget(spriteBatch => DrawBatch(state, VisibleTileArea(), spriteBatch, overlay: false))
-            {
-                PixelScale = Math.Max(state.Condition.FieldPixelScale, 1),
-                Blend = state.Condition.FieldBlend,
-                Sampler = SamplerState.PointClamp,
-            };
+            canvas.Build();
 
-            // Refreshed per frame rather than set once at construction: the asset is lazily loaded,
-            // so the first few frames of a session can legitimately hand back a shader that was not
-            // ready when the target was built.
-            state.Field.StampEffect = state.Condition.StampShader?.Value;
+            Rectangle bounds = canvas.TileBounds;
 
-            state.Field.Build();
+            if (!bounds.IsEmpty)
+                covered = covered.IsEmpty ? bounds : Rectangle.Union(covered, bounds);
+        }
+
+        if (Main.drawToScreen && !covered.IsEmpty)
+        {
+            covered.Inflate(MASK_PADDING, MASK_PADDING);
+            TerrainMask.BuildFallback(covered);
         }
     }
 
-    private static void CompositeField(ConditionState state)
+    private static void CompositeCanvases()
     {
-        if (state.Field is not { Field: { } field })
+        if (!loaded || !TerrainMask.TryGet(out Texture2D? mask, out Vector2 origin))
             return;
 
-        ITileCondition condition = state.Condition;
-        Effect? effect = condition.Shader?.Value;
-        SpriteBatch spriteBatch = Main.spriteBatch;
-
-        // No view matrix: the field was built with the zoom already baked into its own transform, so
-        // it composites as a plain full-screen quad.
-        spriteBatch.Begin(
-            SpriteSortMode.Immediate,
-            condition.BlendState,
-            SamplerState.PointClamp,
-            DepthStencilState.None,
-            RasterizerState.CullNone
-        );
-
-        condition.BindAdditionalTextures(Main.graphics.GraphicsDevice);
-
-        if (effect is not null)
+        try
         {
-            condition.ApplyShaderParameters(effect);
-            effect.CurrentTechnique.Passes[0].Apply();
+            foreach (ConditionState state in states)
+                state.Canvas?.Composite(mask, origin);
         }
-
-        spriteBatch.Draw(field, Vector2.Zero, null, Color.White, 0f, Vector2.Zero, state.Field.PixelScale, SpriteEffects.None, 0f);
-
-        spriteBatch.End();
-    }
-
-    /// <param name="overlay">
-    ///     Which pass this is. A condition running both draws different geometry into each, so the
-    ///     two cannot share an entry point: see <see cref="ITileCondition.DrawTileOverlay" />.
-    /// </param>
-    private static void DrawBatch(ConditionState state, Rectangle area, SpriteBatch spriteBatch, bool overlay)
-    {
-        foreach (KeyValuePair<Point, TileConditionInstance> pair in state.Tiles)
+        catch (Exception exception)
         {
-            if (!area.Contains(pair.Key))
-                continue;
-
-            TileConditionInstance instance = pair.Value;
-            Vector2 position = instance.WorldPosition - Main.screenPosition;
-
-            if (overlay)
-                state.Condition.DrawTileOverlay(spriteBatch, in instance, position);
-            else
-                state.Condition.DrawTile(spriteBatch, in instance, position);
+            ReportFailure(exception);
         }
     }
 

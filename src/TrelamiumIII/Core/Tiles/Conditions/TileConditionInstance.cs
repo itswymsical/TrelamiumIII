@@ -35,6 +35,9 @@ public struct TileConditionInstance
     /// <summary>Ticks since the condition was applied. Reset by a re-application.</summary>
     public int Age;
 
+    /// <summary>Ticks since the tile first took the condition. Unlike <see cref="Age" />, survives re-application.</summary>
+    public int TotalAge;
+
     public int Owner;
 
     /// <summary>The chemical release that left this mark, or null. Never synced: received applications carry none.</summary>

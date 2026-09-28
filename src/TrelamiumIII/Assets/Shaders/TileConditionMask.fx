@@ -1,10 +1,30 @@
-//   Threshold      coverage (after erosion) at which the mark exists at all
-//   NoiseStrength  how hard the FBM eats into it; ~2x Threshold gives holes through the interior
-//   NoiseScale     FBM frequency; NoiseDrift scrolls it, WorldOffset locks it to the world
-//   EdgeWidth      depth past the threshold over which edge fades into body
-//   Body/EdgeColor the two ends of that ramp; only the body takes WorldLight, so the edge glows
+// A coat on the terrain read off a tile condition's canvas: slime, chemical residues.
+// Frame inputs come from TileCanvas, the look from TileFilmLook. Shading decisions are made per
+// CellSize world pixels, on the same grid as the tile art, so the coat moves with the terrain.
 
-sampler2D FieldSampler : register(s0);
+sampler2D CanvasSampler : register(s0);     // r coverage, gba condition data; weighted sums
+
+texture2D uCanvasLight;                     // r kernel weight, gba world light; weighted sums
+sampler2D LightSampler = sampler_state
+{
+    Texture = <uCanvasLight>;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinFilter = Point;
+    MagFilter = Point;
+    MipFilter = None;
+};
+
+texture2D uMaskTex;                         // solid tile layer; alpha is terrain
+sampler2D MaskSampler = sampler_state
+{
+    Texture = <uMaskTex>;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinFilter = Point;
+    MagFilter = Point;
+    MipFilter = None;
+};
 
 texture2D uNoiseTex;
 sampler2D NoiseSampler = sampler_state
@@ -14,29 +34,62 @@ sampler2D NoiseSampler = sampler_state
     AddressV = Wrap;
     MinFilter = Linear;
     MagFilter = Linear;
+    MipFilter = None;
 };
 
 float Time;
-float2 FieldTexel;      // 1 / field-target size; one texel = PixelScale screen px
-float2 WorldOffset;     // screenPosition / screenHeight
-float Aspect;           // screen w/h
-float2 Zoom;            // Main.GameViewMatrix.Zoom
+float2 CanvasScreenSize;    // screen px the canvas covers
+matrix ScreenToWorld;       // screen px -> world px, snapped to the drawn tile grid
+matrix WorldToScreen;
+float2 MaskOrigin;          // world px of the mask's top-left texel
+float2 MaskTexel;           // 1 / mask size
+float CellSize;             // world px per shading decision; 2 is one tile art pixel
+float SurfaceLip;           // world px the coat may stand proud of the terrain into open air
 
-float Threshold;
-float NoiseScale;
-float NoiseStrength;
-float2 NoiseDrift;
-float EdgeWidth;
+float Threshold;            // eroded coverage at which the coat exists
+float NoiseScale;           // FBM cycles per tile
+float NoiseStrength;        // how far the FBM moves the edge
+float2 NoiseDrift;          // FBM scroll, uv/sec; positive y moves the pattern up
+float DepthRange;           // coverage past Threshold to a fully shaded core
+float Bands;                // shading steps across that depth
 
+float3 ShadowColor;
 float3 BodyColor;
-float3 EdgeColor;
+float3 CoreColor;
 float BodyAlpha;
-float EdgeAlpha;
-float3 WorldLight;
+float BodyAlphaFloor;       // alpha of the thinnest band, as a fraction of BodyAlpha
 
-float SampleN(float2 p)
+float3 OutlineColor;        // the coat's rim, and its lip beside walls and ceilings
+float OutlineAlpha;
+float3 HighlightColor;      // the top of the coat; zero alpha turns it off
+float HighlightAlpha;
+
+float EmissiveEdge;         // how far rim and highlight ignore world light, 0..1
+float3 AmbientLight;        // floor under the light recovered from the canvas
+
+float2 WorldAt(float2 uv)
 {
-    return tex2D(NoiseSampler, p).r;
+    return mul(float4(uv * CanvasScreenSize, 0.0, 1.0), ScreenToWorld).xy;
+}
+
+float2 CanvasUv(float2 world)
+{
+    return mul(float4(world, 0.0, 1.0), WorldToScreen).xy / CanvasScreenSize;
+}
+
+float Terrain(float2 world)
+{
+    return step(0.5, tex2Dlod(MaskSampler, float4((world - MaskOrigin) * MaskTexel, 0.0, 0.0)).a);
+}
+
+float2 CellCentre(float2 world)
+{
+    return (floor(world / CellSize) + 0.5) * CellSize;
+}
+
+float Coverage(float2 world)
+{
+    return tex2Dlod(CanvasSampler, float4(CanvasUv(world), 0.0, 0.0)).r;
 }
 
 float Fbm(float2 p)
@@ -46,7 +99,7 @@ float Fbm(float2 p)
 
     for (int i = 0; i < 4; i++)
     {
-        sum += SampleN(p) * amp;
+        sum += tex2Dlod(NoiseSampler, float4(p, 0.0, 0.0)).r * amp;
         p = p * 2.02 + 0.13;
         amp *= 0.5;
     }
@@ -54,56 +107,64 @@ float Fbm(float2 p)
     return sum;
 }
 
-// Screen uv -> world position, in units of screen heights. See GasFbm.fx for why the zoom has to
-// be undone here: without it the noise carries a (1 - Zoom) * cameraCentre error that moves with
-// the camera, so the char pattern slides across the terrain whenever the player pans while zoomed.
-float2 WorldUv(float2 uv)
+float4 FilmPass(float2 uv : TEXCOORD0) : COLOR0
 {
-    float2 aspect = float2(Aspect, 1.0);
-    float2 halfExtent = aspect * 0.5;
+    float2 world = WorldAt(uv);
 
-    return (uv * aspect - halfExtent) / Zoom + halfExtent + WorldOffset;
-}
+    float solid = Terrain(world);
+    float beside = max(max(Terrain(world + float2(0.0, SurfaceLip)), Terrain(world - float2(0.0, SurfaceLip))),
+                       max(Terrain(world + float2(SurfaceLip, 0.0)), Terrain(world - float2(SurfaceLip, 0.0))));
+    float lip = (1.0 - solid) * beside * step(0.5, SurfaceLip);
 
-float4 MaskPass(float2 uv : TEXCOORD0) : COLOR0
-{
-    // Snap to the field-texel grid, so every decision below happens once per field texel and the
-    // result lands on the same chunky pixel grid the rest of the mod's effects use.
-    float2 cell = (floor(uv / FieldTexel) + 0.5) * FieldTexel;
-
-    float coverage = tex2D(FieldSampler, cell).a;
-
-    if (coverage <= 0.004)
+    if (solid + lip < 0.5)
         discard;
 
-    // World-locked and drifting: the char boils in place while the camera pans across it, instead
-    // of swimming with the screen.
-    float2 p = WorldUv(cell) * NoiseScale + NoiseDrift * Time;
-    float fbm = Fbm(p);
+    float2 cellWorld = CellCentre(world);
+    float2 cell = CanvasUv(cellWorld);
 
-    // Centred on zero so the erosion digs and bulges either way, which keeps Threshold meaning
-    // "coverage level" rather than drifting with NoiseStrength.
-    float d = coverage - NoiseStrength * (fbm - 0.5);
+    float coverage = tex2Dlod(CanvasSampler, float4(cell, 0.0, 0.0)).r;
+    float4 lightSum = tex2Dlod(LightSampler, float4(cell, 0.0, 0.0));
+    float3 light = max(lightSum.gba / max(lightSum.r, 0.0001), AmbientLight);
+
+    float fbm = Fbm(cellWorld / 16.0 * NoiseScale + NoiseDrift * Time);
+    float erosion = NoiseStrength * (fbm - 0.5);
+    float d = coverage - erosion;
 
     if (d < Threshold)
         discard;
 
-    float depth = saturate((d - Threshold) / max(EdgeWidth, 0.001));
+    float3 edgeLight = lerp(light, float3(1.0, 1.0, 1.0), EmissiveEdge);
 
-    float3 color = lerp(EdgeColor, BodyColor, depth);
-    float alpha = lerp(EdgeAlpha, BodyAlpha, depth);
+    // The top of the coat: its lip over a floor, or with no lip, the terrain's own top row.
+    float overFloor = lip * Terrain(world + float2(0.0, SurfaceLip));
+    float topRow = solid * (1.0 - Terrain(world - float2(0.0, CellSize))) * (1.0 - step(0.5, SurfaceLip));
 
-    // The body is terrain and takes the room's light; the edge is the condition's own emission and
-    // does not, so embers stay lit in an unlit cave.
-    color *= lerp(float3(1.0, 1.0, 1.0), WorldLight, depth);
+    if (HighlightAlpha > 0.0 && max(overFloor, topRow) > 0.5)
+        return float4(HighlightColor * edgeLight * HighlightAlpha, HighlightAlpha);
 
-    return float4(color * alpha, alpha);
+    float2 dx = float2(CellSize, 0.0);
+    float2 dy = float2(0.0, CellSize);
+    float rim = min(min(Coverage(cellWorld + dx), Coverage(cellWorld - dx)), min(Coverage(cellWorld + dy), Coverage(cellWorld - dy))) - erosion;
+
+    if (rim < Threshold || lip > 0.5)
+        return float4(OutlineColor * edgeLight * OutlineAlpha, OutlineAlpha);
+
+    float t = 1.0 - exp(-(d - Threshold) / max(DepthRange, 0.001));
+    float shade = saturate(t * (0.55 + 0.9 * fbm));
+    shade = saturate(floor(shade * Bands) / max(Bands - 1.0, 1.0));
+
+    float3 color = lerp(ShadowColor, BodyColor, saturate(shade * 2.0));
+    color = lerp(color, CoreColor, saturate(shade * 2.0 - 1.0));
+
+    float alpha = BodyAlpha * lerp(BodyAlphaFloor, 1.0, shade);
+
+    return float4(color * light * alpha, alpha);
 }
 
 technique TileConditionMask
 {
     pass P0
     {
-        PixelShader = compile ps_3_0 MaskPass();
+        PixelShader = compile ps_3_0 FilmPass();
     }
 }
