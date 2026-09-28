@@ -2,6 +2,10 @@
 
 public class ChemicalPlayerStats : ModPlayer
 {
+    private static readonly int ElementCount = Enum.GetValues<ChemicalDamageType>().Length;
+
+    private readonly float[] elementDamage = new float[ElementCount];
+
     /// <summary>Multiplier on all chemical damage (affliction ticks).</summary>
     public float ChemicalDamageBonus;
 
@@ -17,6 +21,12 @@ public class ChemicalPlayerStats : ModPlayer
     /// <summary>Multiplier on reaction burst damage, separate from sustained affliction damage.</summary>
     public float ReactionDamageBonus;
 
+    /// <summary>Affliction damage bonus for one element only, as a fraction (0.04 = +4%).</summary>
+    public ref float ElementDamage(ChemicalDamageType type) => ref elementDamage[(int)type];
+
+    /// <summary>Multiplier on <paramref name="type" />'s affliction damage: <see cref="ChemicalDamageBonus" /> plus that element's bonus.</summary>
+    public float AfflictionDamage(ChemicalDamageType type) => ChemicalDamageBonus + elementDamage[(int)type];
+
     public override void ResetEffects()
     {
         ChemicalDamageBonus = 1f;
@@ -24,6 +34,7 @@ public class ChemicalPlayerStats : ModPlayer
         AfflictionSpeed = 20f;
         ReactionChance = 5f; // 5% base reaction chance before accessories
         ReactionDamageBonus = 1f;
+        Array.Clear(elementDamage);
     }
 }
 

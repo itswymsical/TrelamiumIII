@@ -67,7 +67,7 @@ public sealed class ChemicalPayload
         }
 
         if (player is not null)
-            stats.Apply(player.GetModPlayer<ChemicalPlayerStats>());
+            stats.Apply(player.GetModPlayer<ChemicalPlayerStats>(), source.ChemicalType);
 
         Stats = stats;
         ClingBehaviour = cling ?? source.ClingBehaviour;

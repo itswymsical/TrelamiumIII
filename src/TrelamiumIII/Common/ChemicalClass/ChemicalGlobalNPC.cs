@@ -554,7 +554,7 @@ public class ChemicalGlobalNPC : GlobalNPC
             return false;
 
         int dealt = npc.SimpleStrikeNPC(
-            Math.Max(1, (int)state.DamagePerTick),
+            ChemicalEffects.RoundDamage(state.DamagePerTick),
             hitDirection: 0,
             crit: false,
             knockBack: 0f,

@@ -226,6 +226,9 @@ public sealed class InlineTextureTagHandler : ITagHandler
 /// </remarks>
 public sealed class ChemicalTagHandler : ITagHandler
 {
+    /// <summary>The tag that draws <paramref name="type" />'s name and medallion.</summary>
+    public static string Tag(ChemicalDamageType type) => $"[{InlineTagSystem.CHEMICAL_TAG}:{type}]";
+
     TextSnippet ITagHandler.Parse(string text, Color baseColor, string options)
     {
         string raw = $"[{InlineTagSystem.CHEMICAL_TAG}:{text}]";

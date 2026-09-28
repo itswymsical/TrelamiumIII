@@ -18,6 +18,23 @@ public enum ChemicalPrefixTier
     Best,
 }
 
+public static class ChemicalPrefixTierExtensions
+{
+    /// <summary>
+    ///     For <see cref="ModPrefix.ModifyValue" />. Vanilla squares it for the price. Rarity moves one step at 1.05 and two
+    ///     at 1.2, compared as doubles, so 1.05f itself falls just short of the first step.
+    /// </summary>
+    public static float ValueMultiplier(this ChemicalPrefixTier tier) => tier switch
+    {
+        ChemicalPrefixTier.Best => 1.2f,
+        ChemicalPrefixTier.Good => 1.1f,
+        _ => 0.9f,
+    };
+
+    /// <summary>Relative roll weight: Best rolls half as often as the other tiers.</summary>
+    public static float RollWeight(this ChemicalPrefixTier tier) => tier == ChemicalPrefixTier.Best ? 0.5f : 1f;
+}
+
 /// <summary>
 ///     A prefix that gives every release from its weapon a <see cref="ChemicalModifier" />. Chemical weapons roll these
 ///     and nothing else (<see cref="ChemicalPrefixRolls" />). One shared class; the instances are registered from a table,
@@ -28,14 +45,6 @@ public sealed class ChemicalPrefix : ModPrefix
     private static readonly List<ChemicalPrefix> all = [];
 
     private static readonly Dictionary<ChemicalModifier, ChemicalPrefix> byModifier = [];
-
-    // Vanilla squares these for the price. Rarity moves one step at 1.05 and two at 1.2, compared as doubles, so
-    // 1.05f itself falls just short of the first step.
-    private const float POOR_VALUE = 0.9f;
-
-    private const float GOOD_VALUE = 1.1f;
-
-    private const float BEST_VALUE = 1.2f;
 
     public ChemicalPrefix(ChemicalModifier modifier, ChemicalPrefixTier tier)
     {
@@ -74,17 +83,12 @@ public sealed class ChemicalPrefix : ModPrefix
         byModifier.Clear();
     }
 
-    public override float RollChance(Item item) => Tier == ChemicalPrefixTier.Best ? 0.5f : 1f;
+    public override float RollChance(Item item) => Tier.RollWeight();
 
     /// <summary>Only onto a chemical weapon it would change something for, like vanilla's rule for prefixes that round away.</summary>
     public override bool CanRoll(Item item) => IsChemicalWeapon(item) && Modifier.AppliesTo(ChemicalSourceComponent.Of(item));
 
-    public override void ModifyValue(ref float valueMult) => valueMult *= Tier switch
-    {
-        ChemicalPrefixTier.Best => BEST_VALUE,
-        ChemicalPrefixTier.Good => GOOD_VALUE,
-        _ => POOR_VALUE,
-    };
+    public override void ModifyValue(ref float valueMult) => valueMult *= Tier.ValueMultiplier();
 
     /// <summary>Vanilla prefix lines, measured against the weapon's own chemistry, or against none when its ammo supplies it.</summary>
     public override IEnumerable<TooltipLine> GetTooltipLines(Item item)

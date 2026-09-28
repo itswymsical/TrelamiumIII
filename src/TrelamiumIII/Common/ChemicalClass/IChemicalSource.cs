@@ -120,7 +120,7 @@ public static class ChemicalReaction
                     modifier.ModifyReactionDamage(target, payload, ref damage);
             }
 
-            int burst = Math.Max(1, (int)damage);
+            int burst = ChemicalEffects.RoundDamage(damage);
 
             // SimpleStrikeNPC returns post-defense damage, which is what handlers scale off.
             dealt = target.SimpleStrikeNPC(

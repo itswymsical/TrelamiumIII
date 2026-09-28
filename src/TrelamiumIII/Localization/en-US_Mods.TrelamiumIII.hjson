@@ -1661,6 +1661,14 @@ ChemicalModifiers: {
 	}
 }
 
+# Prefix lines of chemical accessory prefixes (ChemicalAccessoryPrefix), keyed by ChemicalAccessoryStat. {0} is the
+# signed percent. {1} is the element's [chem:...] tag: its name with its medallion, which weapons show without the name.
+ChemicalAccessoryStats: {
+	ElementDamage: "{0}% {1} damage"
+	ReactionDamage: "{0}% reaction damage"
+	ControlledDamage: "{0}% controlled damage"
+}
+
 DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
 
 Liquids: {

@@ -575,7 +575,7 @@ internal static class ChemicalEffects
             return;
 
         int dealt = npc.SimpleStrikeNPC(
-            Math.Max(1, (int)damage),
+            RoundDamage(damage),
             hitDirection: 0,
             crit: false,
             knockBack: 0f,
@@ -583,6 +583,17 @@ internal static class ChemicalEffects
             noPlayerInteraction: owner != Main.myPlayer);
 
         DamageMeterSystem.Credit(owner, npc, dealt, DamageMeterSource.Hit);
+    }
+
+    /// <summary>
+    ///     Rounds up with odds equal to the fraction, so a small bonus on a small number keeps its average instead of
+    ///     truncating away. At least 1.
+    /// </summary>
+    public static int RoundDamage(float damage)
+    {
+        int whole = (int)damage;
+
+        return Math.Max(1, Main.rand.NextFloat() < damage - whole ? whole + 1 : whole);
     }
 
     /// <summary>Adds the buff, or tops it up once under half of <paramref name="ticks" />, to spare a sync every exposure.</summary>

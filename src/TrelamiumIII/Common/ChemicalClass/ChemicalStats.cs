@@ -74,10 +74,10 @@ public struct ChemicalStats
         ContactRateMultiplier = 1f,
     };
 
-    /// <summary>Folds in the releasing player's chemical stats.</summary>
-    public void Apply(ChemicalPlayerStats player)
+    /// <summary>Folds in the releasing player's chemical stats for a release of <paramref name="type" />.</summary>
+    public void Apply(ChemicalPlayerStats player, ChemicalDamageType type)
     {
-        DamageMultiplier *= player.ChemicalDamageBonus;
+        DamageMultiplier *= player.AfflictionDamage(type);
         DurationMultiplier *= player.AfflictionRate;
         ReactionChance += player.ReactionChance;
         ReactionDamageMultiplier *= player.ReactionDamageBonus;
