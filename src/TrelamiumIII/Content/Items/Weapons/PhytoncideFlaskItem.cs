@@ -15,7 +15,7 @@ public class PhytoncideFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 6;
+        Item.damage = 8;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;

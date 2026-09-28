@@ -14,6 +14,34 @@ public sealed class Chilled : ModBuff
     }
 }
 
+/// <summary>Wading through mud: moves slower by <see cref="Slow" />; bosses by half as much.</summary>
+public sealed class Mired : ModBuff
+{
+    public const float Slow = 0.35f;
+
+    public override string Texture => $"Terraria/Images/Buff_{BuffID.Slow}";
+
+    public override void SetStaticDefaults()
+    {
+        Main.debuff[Type] = true;
+        Main.buffNoSave[Type] = true;
+    }
+}
+
+/// <summary>Held by vines: moves slower by <see cref="Slow" />; bosses by half as much.</summary>
+public sealed class Entangled : ModBuff
+{
+    public const float Slow = 0.6f;
+
+    public override string Texture => $"Terraria/Images/Buff_{BuffID.Webbed}";
+
+    public override void SetStaticDefaults()
+    {
+        Main.debuff[Type] = true;
+        Main.buffNoSave[Type] = true;
+    }
+}
+
 /// <summary>Frozen solid: no AI and no horizontal movement. See <see cref="CanFreeze" /> for who is immune.</summary>
 public sealed class Frozen : ModBuff
 {
@@ -58,6 +86,10 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
 
     private static readonly Color EnfeebledTint = new(95, 70, 120);
 
+    private static readonly Color MiredTint = new(150, 115, 80);
+
+    private static readonly Color EntangledTint = new(130, 185, 95);
+
     /// <summary>The scale applied after the last AI tick, undone before the next. 1 when nothing was applied.</summary>
     private float appliedScale = 1f;
 
@@ -69,13 +101,36 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
 
     public static bool IsFrozen(NPC npc) => npc.HasBuff<Frozen>() && Frozen.CanFreeze(npc);
 
-    /// <summary>The fraction of its speed <paramref name="npc" /> keeps while chilled; 1 when it isn't.</summary>
+    /// <summary>The fraction of its speed <paramref name="npc" /> keeps under its strongest slow; 1 when it has none.</summary>
     public static float SpeedScale(NPC npc)
     {
-        if (!npc.HasBuff<Chilled>() || npc.realLife >= 0)
+        if (npc.realLife >= 0)
             return 1f;
 
-        return 1f - (IsBossLike(npc) ? Chilled.Slow * 0.5f : Chilled.Slow);
+        float slow = 0f;
+
+        if (npc.HasBuff<Chilled>())
+            slow = Chilled.Slow;
+
+        if (npc.HasBuff<Mired>())
+            slow = MathF.Max(slow, Mired.Slow);
+
+        if (npc.HasBuff<Entangled>())
+            slow = MathF.Max(slow, Entangled.Slow);
+
+        return 1f - (IsBossLike(npc) ? slow * 0.5f : slow);
+    }
+
+    /// <summary>
+    ///     Adds <typeparamref name="T" /> unless it already has more than <paramref name="refreshBelow" /> ticks left, so
+    ///     effects applied every tick don't send a buff packet every tick.
+    /// </summary>
+    public static void Refresh<T>(NPC npc, int ticks, int refreshBelow = 10) where T : ModBuff
+    {
+        int index = npc.FindBuffIndex(ModContent.BuffType<T>());
+
+        if (index < 0 || npc.buffTime[index] < refreshBelow)
+            npc.AddBuff(ModContent.BuffType<T>(), ticks);
     }
 
     public override bool PreAI(NPC npc)
@@ -143,6 +198,17 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
         {
             drawColor = Color.Lerp(drawColor, ChilledTint, 0.25f);
             Speck(npc, DustID.Frost, 16);
+        }
+
+        if (npc.HasBuff<Entangled>())
+        {
+            drawColor = Color.Lerp(drawColor, EntangledTint, 0.25f);
+            Speck(npc, DustID.GrassBlades, 14);
+        }
+        else if (npc.HasBuff<Mired>())
+        {
+            drawColor = Color.Lerp(drawColor, MiredTint, 0.3f);
+            Speck(npc, DustID.Mud, 12);
         }
 
         if (npc.HasBuff<Enfeebled>())

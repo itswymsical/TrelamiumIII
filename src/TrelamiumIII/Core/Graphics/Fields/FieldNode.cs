@@ -92,6 +92,9 @@ public struct FieldNode
     /// <summary>Held where it was spawned: skips physics and terrain collision, and only ages.</summary>
     public bool Pinned;
 
+    /// <summary>Layer-defined sub-material, such as a strain. Never read by <see cref="FieldLayer" />.</summary>
+    public byte Variant;
+
     public readonly bool IsAnchored => AnchorHost is not null && AnchorTicks > 0;
 
     public readonly float Alpha => MaxLife <= 0f ? 0f : Life / MaxLife;

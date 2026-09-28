@@ -675,6 +675,21 @@ Items: {
 			'''
 	}
 
+	MudBottleItem: {
+		DisplayName: Mud Bottle
+		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
+	}
+
+	OvergrowthFlask: {
+		DisplayName: Overgrowth Flask
+		StrainDisplayName: "{0} Overgrowth Flask"
+		Tooltip:
+			'''
+			Bursts into mud and vines that creep along the ground and climb walls
+			Vines lash the nearest enemy and chain between nearby targets entangling them
+			'''
+	}
+
 	BrineBucketItem: {
 		DisplayName: Brine Bucket
 		Tooltip: ""
@@ -1141,6 +1156,8 @@ Projectiles: {
 	PrismaticStarflaskProjectile.DisplayName: Prismatic Starflask
 	ThermiteBurstProjectile.DisplayName: Thermite
 	ThermiteFlaskProjectile.DisplayName: Thermite Flask
+	MudBottleProjectile.DisplayName: Mud Bottle
+	OvergrowthFlaskProjectile.DisplayName: Overgrowth Flask
 	SporadicSlamProjectile.DisplayName: Sporadic Slam
 	VilesporeFlaskBurstProjectile.DisplayName: Vilespore Flask Burst
 	VilesporeFlaskProjectile.DisplayName: Vilespore Flask
@@ -1267,6 +1284,16 @@ Buffs: {
 	Enfeebled: {
 		DisplayName: Enfeebled
 		Description: Dealing less damage
+	}
+
+	Mired: {
+		DisplayName: Mired
+		Description: Wading through mud
+	}
+
+	Entangled: {
+		DisplayName: Entangled
+		Description: Held back by vines
 	}
 
 	Gallantry: {

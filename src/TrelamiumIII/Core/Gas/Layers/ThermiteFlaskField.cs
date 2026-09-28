@@ -21,18 +21,6 @@ public class ThermiteFlaskField : ChemicalGasField
 
     private const float CRAWL_MAX_SPEED = 6f;
 
-    /// <summary>Half a tile, so a crawl step never passes over a tile it should have tested.</summary>
-    private const float CRAWL_MAX_STEP = 8f;
-
-    /// <summary>Under a tile per tick, so the emitter's destination-point test cannot skip a one-tile floor.</summary>
-    private const float FALL_MAX_SPEED = 12f;
-
-    /// <summary>Tiles a floor run may drop before it counts as going over a ledge.</summary>
-    private const int STEP_DOWN = 2;
-
-    /// <summary>Pixels a crawler keeps between itself and the surface it follows.</summary>
-    private const float SURFACE_GAP = 1f;
-
     /// <summary>Pixels a line node sits out from the crawler, away from the surface.</summary>
     private const float NODE_LIFT = 5f;
 
@@ -65,13 +53,6 @@ public class ThermiteFlaskField : ChemicalGasField
     private const float GLOW_STRENGTH = 0.12f;
 
     private static readonly Vector3 GlowColor = new(1f, 0.55f, 0.16f);
-
-    private enum PourMode : byte
-    {
-        Falling,
-        Floor,
-        Wall,
-    }
 
     private static EmitterProfile PourProfile => EmitterProfile.Default with
     {
@@ -159,142 +140,21 @@ public class ThermiteFlaskField : ChemicalGasField
         if (volume < MIN_VOLUME)
             return;
 
-        SpawnEmitter(PourProfile with { Volume = volume }, origin, momentum, owner, damage, knockback, (byte)PourMode.Falling, payload);
+        SpawnEmitter(PourProfile with { Volume = volume }, origin, momentum, owner, damage, knockback, payload: payload);
     }
 
-    private void SpawnRun(in GasEmitter from, Vector2 position, PourMode mode, Vector2 velocity, float volume)
+    private void SpawnRun(in GasEmitter from, Vector2 position, CrawlMode mode, Vector2 velocity, float volume)
     {
         if (volume < MIN_VOLUME)
             return;
 
-        SpawnEmitter(PourProfile with { Volume = volume }, position, velocity, from.Owner, from.Damage, from.Knockback, (byte)mode, from.Payload);
+        SpawnEmitter(PourProfile with { Volume = volume, Crawl = mode }, position, velocity, from.Owner, from.Damage, from.Knockback, from.Variant, from.Payload);
     }
 
-    private static PourMode ModeOf(in GasEmitter emitter) => (PourMode)emitter.Variant;
-
-    protected override void MoveEmitter(ref GasEmitter emitter)
-    {
-        if (emitter.Volume <= 0f)
-        {
-            base.MoveEmitter(ref emitter);
-            return;
-        }
-
-        if (ModeOf(in emitter) == PourMode.Falling)
-        {
-            if (emitter.Velocity.LengthSquared() > FALL_MAX_SPEED * FALL_MAX_SPEED)
-                emitter.Velocity = Vector2.Normalize(emitter.Velocity) * FALL_MAX_SPEED;
-
-            base.MoveEmitter(ref emitter);
-            return;
-        }
-
-        float speed = MathHelper.Clamp(emitter.Volume * CRAWL_EASE, CRAWL_MIN_SPEED, CRAWL_MAX_SPEED)
-                    * (emitter.Payload?.Stats.BurstSpeedMultiplier ?? 1f);
-
-        speed = MathF.Min(speed, CRAWL_MAX_STEP);
-
-        if (ModeOf(in emitter) == PourMode.Wall)
-            CrawlWall(ref emitter, speed);
-        else
-            CrawlFloor(ref emitter, speed);
-
-        if (ModeOf(in emitter) == PourMode.Falling)
-            return;
-
-        emitter.Volume -= speed;
-
-        if (emitter.Volume <= 0f)
-            emitter.Life = 0f;
-    }
-
-    /// <summary>
-    ///     Advances a floor run along the open row above its floor. Climbs one-tile steps, drops up to
-    ///     <see cref="STEP_DOWN" /> tiles, and turns down the face of anything deeper. A taller rise ends the run.
-    /// </summary>
-    private static void CrawlFloor(ref GasEmitter emitter, float speed)
-    {
-        float direction = MathF.Sign(emitter.Velocity.X);
-        int row = (int)(emitter.Position.Y / 16f);
-        float nextX = emitter.Position.X + direction * speed;
-        int column = (int)(nextX / 16f);
-
-        if (IsSolidTile(column, row))
-        {
-            if (IsSolidTile(column, row - 1) || IsSolidTile((int)(emitter.Position.X / 16f), row - 1))
-            {
-                emitter.Life = 0f;
-                return;
-            }
-
-            row--;
-        }
-        else
-        {
-            int landing = row;
-
-            while (!IsSolidTile(column, landing + 1))
-            {
-                if (++landing - row > STEP_DOWN)
-                {
-                    TurnOverLedge(ref emitter, direction, row);
-                    return;
-                }
-            }
-
-            row = landing;
-        }
-
-        emitter.Position = new Vector2(nextX, (row + 1) * 16f - SURFACE_GAP);
-        emitter.Velocity = new Vector2(direction * speed, 0f);
-    }
-
-    /// <summary>Starts a wall run down the face below the lip of the floor tile the run is leaving.</summary>
-    private static void TurnOverLedge(ref GasEmitter emitter, float direction, int row)
-    {
-        int column = (int)(emitter.Position.X / 16f);
-        float lip = direction > 0f ? (column + 1) * 16f : column * 16f;
-
-        emitter.Position = new Vector2(lip + direction * SURFACE_GAP, (row + 1) * 16f + 1f);
-        emitter.Velocity = Vector2.UnitY;
-        emitter.Variant = (byte)PourMode.Wall;
-    }
-
-    /// <summary>
-    ///     Advances a wall run downward. On reaching a floor it turns away from the wall; where the wall ends it
-    ///     falls, and lands as a new pour with what volume is left.
-    /// </summary>
-    private static void CrawlWall(ref GasEmitter emitter, float speed)
-    {
-        int column = (int)(emitter.Position.X / 16f);
-        float nextY = emitter.Position.Y + speed;
-        int row = (int)(nextY / 16f);
-
-        if (IsSolidTile(column, row))
-        {
-            bool left = IsSolidTile(column - 1, row - 1);
-            bool right = IsSolidTile(column + 1, row - 1);
-
-            emitter.Position.Y = row * 16f - SURFACE_GAP;
-
-            // Walled on both sides (a shaft) or neither: nowhere to run.
-            if (left == right)
-            {
-                emitter.Life = 0f;
-                return;
-            }
-
-            emitter.Velocity = new Vector2(left ? speed : -speed, 0f);
-            emitter.Variant = (byte)PourMode.Floor;
-            return;
-        }
-
-        emitter.Position.Y = nextY;
-        emitter.Velocity = new Vector2(0f, speed);
-
-        if (!IsSolidTile(column - 1, row) && !IsSolidTile(column + 1, row))
-            emitter.Variant = (byte)PourMode.Falling;
-    }
+    /// <summary>Eases off as the volume runs out, so a run decelerates into its tip.</summary>
+    protected override float CrawlSpeed(in GasEmitter emitter)
+        => MathHelper.Clamp(emitter.Volume * CRAWL_EASE, CRAWL_MIN_SPEED, CRAWL_MAX_SPEED)
+         * (emitter.Payload?.Stats.BurstSpeedMultiplier ?? 1f);
 
     /// <summary>A falling pour that reaches a floor or wall ends and starts runs along it; a ceiling deflects it.</summary>
     protected override bool OnEmitterBounce(ref GasEmitter emitter, Vector2 normal, int tileX, int tileY)
@@ -311,18 +171,14 @@ public class ThermiteFlaskField : ChemicalGasField
     {
         if (normal.Y == 0f)
         {
-            float face = normal.X > 0f ? (tileX + 1) * 16f : tileX * 16f;
-
-            SpawnRun(in drop, new Vector2(face + normal.X * SURFACE_GAP, drop.Position.Y), PourMode.Wall, Vector2.UnitY, drop.Volume);
+            SpawnRun(in drop, SurfaceCrawl.WallStart(drop.Position, normal, tileX), CrawlMode.Wall, Vector2.UnitY, drop.Volume);
             return;
         }
 
-        var start = new Vector2(drop.Position.X, tileY * 16f - SURFACE_GAP);
-        int column = (int)(start.X / 16f);
-        int row = tileY - 1;
+        Vector2 start = SurfaceCrawl.FloorStart(drop.Position, tileY);
 
-        bool openLeft = CanStart(column, row, -1);
-        bool openRight = CanStart(column, row, 1);
+        bool openLeft = SurfaceCrawl.CanStart(start, -1, CrawlRules);
+        bool openRight = SurfaceCrawl.CanStart(start, 1, CrawlRules);
 
         // Into a corner, or with one side walled off: everything runs the open way.
         float lean = normal.X != 0f
@@ -337,13 +193,9 @@ public class ThermiteFlaskField : ChemicalGasField
         float direction = lean >= 0f ? 1f : -1f;
         float share = normal.X != 0f || openLeft != openRight ? 1f : 0.5f + MAX_LEAN * MathF.Abs(lean);
 
-        SpawnRun(in drop, start, PourMode.Floor, new Vector2(direction, 0f), drop.Volume * share);
-        SpawnRun(in drop, start, PourMode.Floor, new Vector2(-direction, 0f), drop.Volume * (1f - share));
+        SpawnRun(in drop, start, CrawlMode.Floor, new Vector2(direction, 0f), drop.Volume * share);
+        SpawnRun(in drop, start, CrawlMode.Floor, new Vector2(-direction, 0f), drop.Volume * (1f - share));
     }
-
-    /// <summary>Whether a floor run starting in this cell could take its first step in <paramref name="direction" />.</summary>
-    private static bool CanStart(int column, int row, int direction)
-        => !IsSolidTile(column + direction, row) || !IsSolidTile(column + direction, row - 1) && !IsSolidTile(column, row - 1);
 
     /// <summary>
     ///     A run lays a pinned node every tick, thinner and shorter-lived toward its tip, and burns the tile it runs on.
@@ -357,14 +209,14 @@ public class ThermiteFlaskField : ChemicalGasField
             return;
         }
 
-        if (ModeOf(in emitter) == PourMode.Falling)
+        if (emitter.Crawl == CrawlMode.None)
         {
             SpawnNode(emitter.Position, emitter.Velocity * 0.5f, emitter.NodeRadius * 0.7f, STREAM_LIFE, owner: emitter.Owner, payload: emitter.Payload);
             return;
         }
 
         float taper = MathHelper.Clamp(emitter.Volume / TIP_TAPER, 0f, 1f);
-        Vector2 outward = SurfaceNormal(in emitter);
+        Vector2 outward = SurfaceCrawl.Outward(in emitter);
         var along = new Vector2(-outward.Y, outward.X);
 
         SpawnNode(
@@ -376,36 +228,24 @@ public class ThermiteFlaskField : ChemicalGasField
             payload: emitter.Payload,
             pinned: true);
 
-        Burn(in emitter, outward, taper);
-    }
-
-    /// <summary>Away from the surface a run follows: up off a floor, out from a wall.</summary>
-    private static Vector2 SurfaceNormal(in GasEmitter emitter)
-    {
-        if (ModeOf(in emitter) != PourMode.Wall)
-            return -Vector2.UnitY;
-
-        int column = (int)(emitter.Position.X / 16f);
-        int row = (int)(emitter.Position.Y / 16f);
-
-        return IsSolidTile(column - 1, row) ? Vector2.UnitX : -Vector2.UnitX;
+        Burn(in emitter, taper);
     }
 
     /// <summary>Leaves the thermal residue on the tile a run is crossing, which also sets it alight.</summary>
-    private void Burn(in GasEmitter emitter, Vector2 outward, float taper)
+    private void Burn(in GasEmitter emitter, float taper)
     {
         if (Residue is not { } residue || emitter.Owner == CosmeticOwnerID || emitter.Payload is { IsActive: false })
             return;
 
-        Vector2 inside = emitter.Position - outward * 8f;
+        Point tile = SurfaceCrawl.SurfaceTile(in emitter);
 
-        residue.Linger((int)(inside.X / 16f), (int)(inside.Y / 16f), MathHelper.Lerp(1f, 1.8f, taper), emitter.Owner, emitter.Payload);
+        residue.Linger(tile.X, tile.Y, MathHelper.Lerp(1f, 1.8f, taper), emitter.Owner, emitter.Payload);
     }
 
     /// <summary>A pinned node whose supporting tile is gone falls.</summary>
     protected override void UpdateNode(ref FieldNode node, int index)
     {
-        if (node.Pinned && !Supported(node.Position))
+        if (node.Pinned && !SurfaceCrawl.IsSupported(node.Position))
             node.Pinned = false;
 
         base.UpdateNode(ref node, index);
@@ -418,14 +258,6 @@ public class ThermiteFlaskField : ChemicalGasField
 
     protected override float NodeWeight(in FieldNode node)
         => FieldStamp.Weight(node.Pinned ? node.Alpha / SET_ALPHA : node.Alpha);
-
-    private static bool Supported(Vector2 position)
-    {
-        int x = (int)(position.X / 16f);
-        int y = (int)(position.Y / 16f);
-
-        return IsSolidTile(x, y + 1) || IsSolidTile(x - 1, y) || IsSolidTile(x + 1, y);
-    }
 
     protected override void ApplyLighting(ref FieldNode node)
     {

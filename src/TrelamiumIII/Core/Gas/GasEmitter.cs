@@ -139,8 +139,11 @@ public struct GasEmitter
     /// </remarks>
     public byte Variant;
 
-    /// <summary>Layer-defined amount of payload the emitter still carries. Never read by <see cref="GasField" />.</summary>
+    /// <summary>Pixels of surface the emitter may still crawl. A falling emitter carries it to where it lands.</summary>
     public float Volume;
+
+    /// <summary>The surface the emitter is crawling along, or <see cref="CrawlMode.None" /> for ballistic flight.</summary>
+    public CrawlMode Crawl;
 
     /// <summary>How far through its life the emitter is, 0 at spawn and 1 at the end.</summary>
     public readonly float Progress => MaxLife <= 0f ? 1f : MathHelper.Clamp(1f - Life / MaxLife, 0f, 1f);

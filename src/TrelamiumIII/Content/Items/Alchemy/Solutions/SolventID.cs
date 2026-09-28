@@ -126,7 +126,7 @@ public sealed class SolventID : ICustomAutoload
             Temperaments = Temperament.Acidic | Temperament.Volatile,
         });
 
-        AquaFortis = Add(mod, new SolventItem("AquaTerraeItem")
+        AquaTerrae = Add(mod, new SolventItem("AquaTerraeItem")
         {
             TexturePath = AssetReferences.Content.Items.Alchemy.Solutions.AquaTerraeItem.KEY,
             Rare = ItemRarityID.Gray,

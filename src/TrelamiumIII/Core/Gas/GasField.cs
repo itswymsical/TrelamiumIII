@@ -285,6 +285,7 @@ public abstract class GasField : FieldLayer
             Restitution = profile.Restitution,
             TileCollide = profile.TileCollide,
             Volume = profile.Volume,
+            Crawl = profile.Crawl,
             Owner = owner,
             Payload = payload,
             Damage = damage,
@@ -343,16 +344,53 @@ public abstract class GasField : FieldLayer
         emitter.Life--;
     }
 
-    /// <summary>One tick of ballistic flight: gravity, drag, then terrain if the emitter collides with it.</summary>
+    /// <summary>Under a tile per tick, so the destination-point test in <see cref="MoveEmitterAgainstTiles" /> cannot skip a one-tile floor.</summary>
+    private const float MAX_COLLIDING_SPEED = 15f;
+
+    /// <summary>One tick of movement: along a surface for a crawler, else gravity, drag, then terrain if the emitter collides with it.</summary>
     protected virtual void MoveEmitter(ref GasEmitter emitter)
     {
+        if (emitter.Crawl != CrawlMode.None)
+        {
+            Crawl(ref emitter);
+            return;
+        }
+
         emitter.Velocity.Y += emitter.Gravity;
         emitter.Velocity *= emitter.Drag;
 
-        if (emitter.TileCollide)
-            MoveEmitterAgainstTiles(ref emitter);
-        else
+        if (!emitter.TileCollide)
+        {
             emitter.Position += emitter.Velocity;
+            return;
+        }
+
+        if (emitter.Velocity.LengthSquared() > MAX_COLLIDING_SPEED * MAX_COLLIDING_SPEED)
+            emitter.Velocity = Vector2.Normalize(emitter.Velocity) * MAX_COLLIDING_SPEED;
+
+        MoveEmitterAgainstTiles(ref emitter);
+    }
+
+    /// <summary>How crawlers on this layer move over uneven terrain.</summary>
+    protected virtual CrawlRules CrawlRules => CrawlRules.Liquid;
+
+    /// <summary>Pixels a crawler moves this tick. Capped at <see cref="SurfaceCrawl.MaxStep" />.</summary>
+    protected virtual float CrawlSpeed(in GasEmitter emitter) => 3f;
+
+    /// <summary>One tick along a surface, spending <see cref="GasEmitter.Volume" />. A crawler that falls keeps the rest for its landing.</summary>
+    private void Crawl(ref GasEmitter emitter)
+    {
+        float speed = MathF.Min(MathF.Min(CrawlSpeed(in emitter), SurfaceCrawl.MaxStep), MathF.Max(emitter.Volume, 0.5f));
+
+        SurfaceCrawl.Step(ref emitter, speed, CrawlRules);
+
+        if (emitter.Crawl == CrawlMode.None)
+            return;
+
+        emitter.Volume -= speed;
+
+        if (emitter.Volume <= 0f)
+            emitter.Life = 0f;
     }
 
     /// <summary>
@@ -520,34 +558,37 @@ public abstract class GasField : FieldLayer
     /// </remarks>
     /// <returns>Whether the hit landed on this client.</returns>
     protected bool Strike(in GasEmitter emitter, NPC npc)
+        => Strike(npc, emitter.Damage, emitter.Knockback, MathF.Sign(emitter.Velocity.X), emitter.Owner);
+
+    /// <inheritdoc cref="Strike(in GasEmitter, NPC)" />
+    /// <param name="direction">Knockback direction, -1 or 1; 0 counts as 1.</param>
+    protected bool Strike(NPC npc, int damage, float knockback, int direction, int owner)
     {
-        if (emitter.Damage <= 0 || !emitter.IsLocallyOwned)
+        if (damage <= 0 || !(Main.netMode == NetmodeID.SinglePlayer || owner == Main.myPlayer))
             return false;
 
-        bool owned = emitter.Owner >= 0 && emitter.Owner < npc.immune.Length;
+        bool owned = owner >= 0 && owner < npc.immune.Length;
 
         // The arms of one burst have to share immunity, and this is the array vanilla shares it
         // through. Left out, a burst is not a hit -- it is as many hits as it has arms, all on the
         // same frame, because SimpleStrikeNPC neither reads nor writes this the way
         // Projectile.Damage does. The carriers this replaced were plain friendly projectiles with
         // no local immunity of their own, so this array is exactly what used to gate them.
-        if (owned && npc.immune[emitter.Owner] > 0)
+        if (owned && npc.immune[owner] > 0)
             return false;
 
         if (owned)
-            npc.immune[emitter.Owner] = EMITTER_IMMUNITY;
-
-        int direction = MathF.Sign(emitter.Velocity.X);
+            npc.immune[owner] = EMITTER_IMMUNITY;
 
         int dealt = npc.SimpleStrikeNPC(
-            emitter.Damage,
+            damage,
             direction == 0 ? 1 : direction,
             crit: false,
-            emitter.Knockback,
+            knockback,
             EmitterDamageClass,
-            noPlayerInteraction: emitter.Owner < 0);
+            noPlayerInteraction: owner < 0);
 
-        DamageMeterSystem.Credit(emitter.Owner, npc, dealt, DamageMeterSource.Hit);
+        DamageMeterSystem.Credit(owner, npc, dealt, DamageMeterSource.Hit);
 
         return true;
     }

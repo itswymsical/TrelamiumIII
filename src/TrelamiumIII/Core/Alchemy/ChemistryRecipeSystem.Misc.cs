@@ -1,4 +1,5 @@
 using TrelamiumIII.Common.Globals;
+using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
 using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
@@ -6,6 +7,7 @@ using TrelamiumIII.Content.Items.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Ammo;
 using TrelamiumIII.Content.Items.Rusted;
 using TrelamiumIII.Content.Items.Weapons;
+using TrelamiumIII.Core.Gas.Layers;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
 namespace TrelamiumIII.Core.Alchemy;
@@ -112,6 +114,30 @@ public partial class ChemistryRecipeSystem
             new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), 
             ComponentMatcher.Of(ItemID.Stinger, 1), 
             ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 });
+
+        // Mud Bottle. Dirt at potency 2 so it outranks Aqua Terrae, which Inert Solution brews from a single dirt or mud.
+        int mudBottle = ModContent.ItemType<MudBottleItem>();
+
+        AlchemyRecipes.CreateRecipe(SolventID.Inert, mudBottle,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.DirtBlock, 2)) { OutputStack = 16 });
+
+        AlchemyRecipes.CreateRecipe(ItemID.BottledWater, mudBottle,
+            new RecipeVariant(ItemID.DirtBlock, Mushroom) { OutputStack = 16 });
+
+        // Overgrowth: the seed picks the strain. A herb seed also re-seeds a grass flask, one for one.
+        int magnolia = ModContent.ItemType<MagnoliaItem>();
+        int grassFlask = OvergrowthFlaskID.Of(VineStrain.All[0]);
+
+        foreach (VineStrain strain in VineStrain.All)
+        {
+            int flask = OvergrowthFlaskID.Of(strain);
+
+            AlchemyRecipes.CreateRecipe(basics, flask,
+                new RecipeVariant(strain.Seed, ItemID.MudBlock, magnolia) { OutputStack = 16 });
+
+            if (!strain.IsDefault)
+                AlchemyRecipes.CreateRecipe(grassFlask, flask, new RecipeVariant(strain.Seed));
+        }
 
         // --- Gas Canisters ---
         // Vilespore

@@ -161,6 +161,7 @@ public abstract class FieldLayer
     /// </param>
     /// <param name="payload">The chemical release the node belongs to, or null. Read only by chemical layers.</param>
     /// <param name="pinned">Holds the node in place for its whole life. See <see cref="FieldNode.Pinned" />.</param>
+    /// <param name="variant">See <see cref="FieldNode.Variant" />.</param>
     public void SpawnNode(
         Vector2 worldPosition,
         Vector2 velocity,
@@ -171,7 +172,8 @@ public abstract class FieldLayer
         float temperature = -1f,
         int owner = FieldNode.NoOwner,
         ChemicalPayload? payload = null,
-        bool pinned = false)
+        bool pinned = false,
+        byte variant = 0)
     {
         if (life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
@@ -190,6 +192,7 @@ public abstract class FieldLayer
             Payload = payload,
             AnchorHost = null,
             Pinned = pinned,
+            Variant = variant,
         };
 
         OnNodeSpawn(ref node);
@@ -220,7 +223,8 @@ public abstract class FieldLayer
         float viscosity = -1f,
         float temperature = -1f,
         int owner = FieldNode.NoOwner,
-        ChemicalPayload? payload = null)
+        ChemicalPayload? payload = null,
+        byte variant = 0)
     {
         if (host is not { active: true } || life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
@@ -243,6 +247,7 @@ public abstract class FieldLayer
             // whatever the host's graphical offset happened to be.
             AnchorOffset = worldPosition - VisualCenter(host),
             AnchorTicks = anchorTicks,
+            Variant = variant,
         };
 
         OnNodeSpawn(ref node);
@@ -1008,7 +1013,7 @@ public abstract class FieldLayer
         return taken == 0 ? Vector3.One : light / taken;
     }
 
-    protected static bool IsSolidTile(int tileX, int tileY)
+    protected internal static bool IsSolidTile(int tileX, int tileY)
     {
         // Out of bounds counts as solid so nodes cannot escape the world and simulate forever.
         if (tileX < 0 || tileY < 0 || tileX >= Main.maxTilesX || tileY >= Main.maxTilesY)
