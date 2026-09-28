@@ -2,12 +2,8 @@ using ReLogic.Content;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
-/// <summary>
-///     Where a condition puts its marks.
-/// </summary>
 public enum TileConditionRenderMode
 {
-    /// <summary>Draws nothing, for effect-only conditions.</summary>
     None,
 
     /// <summary>

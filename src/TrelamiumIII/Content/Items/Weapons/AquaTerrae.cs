@@ -1,5 +1,6 @@
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
@@ -9,24 +10,28 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Items.Weapons;
 
-public class MudBottleItem : ModItem
+public class AquaTerrae : ModItem, IAlmanacDefined
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.Solutions.AquaTerraeItem.KEY;
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Temperaments = Temperament.Alkaline | Temperament.Catalytic,
+        AlmanacPotency = 1,
+    };
 
     public override void SetDefaults()
     {
         Item.damage = 2;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 26;
-        Item.rare = ItemRarityID.White;
-        Item.value = Item.sellPrice(copper: 20);
+        Item.rare = ItemRarityID.Gray;
+        Item.value = Item.sellPrice(copper: 0);
 
         Item.useStyle = ItemUseStyleID.Swing;
         Item.useAnimation = Item.useTime = 25;
 
         Item.UseSound = SoundID.Item106;
         Item.shoot = ModContent.ProjectileType<MudBottleProjectile>();
-        Item.shootSpeed = 7.5f;
+        Item.shootSpeed = 6.65f;
         Item.autoReuse = true;
         Item.consumable = true;
         Item.maxStack = Item.CommonMaxStack;
@@ -42,12 +47,19 @@ public class MudBottleItem : ModItem
         component.debuffDuration = TimeConversion.SetTime(secs: 3);
         component.Modifiers = [TemperamentModifier.Inert];
     }
+    public override void AddRecipes()
+    {
+        CreateRecipe(5)
+            .AddIngredient(ItemID.BottledWater)
+            .AddIngredient(ItemID.DirtBlock, 5)
+            .Register();
+    }
 }
 
 /// <summary>A bottle of mud that breaks into a heavy blob, which slumps, pools and coats the ground.</summary>
 public class MudBottleProjectile : ChemicalProjectile
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.Solutions.AquaTerraeItem.KEY;
+    public override string Texture => AssetReferences.Content.Items.Weapons.AquaTerrae.KEY;
 
     protected override GasField? Field => FieldSystem.GetLayer<MudField>();
 
@@ -63,7 +75,7 @@ public class MudBottleProjectile : ChemicalProjectile
         GroundCount = new FloatRange(9f, 13f),
         AirSpeed = new FloatRange(2f, 3.5f),
         GroundSpeed = new FloatRange(3.5f, 5f),
-        Arc = MathHelper.Pi * 0.8f,
+        Arc = MathHelper.Pi * 0.4f,
         UpwardBias = 0.5f,
         Core = Glob with { NodeRadius = 16f },
         Body = Glob with { NodeRadius = 12f },

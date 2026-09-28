@@ -675,11 +675,6 @@ Items: {
 			'''
 	}
 
-	MudBottleItem: {
-		DisplayName: Mud Bottle
-		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
-	}
-
 	OvergrowthFlask: {
 		DisplayName: Overgrowth Flask
 		StrainDisplayName: "{0} Overgrowth Flask"
@@ -1040,9 +1035,9 @@ Items: {
 		Tooltip: Explodes shortly after tile contact
 	}
 
-	AquaTerraeItem: {
+	AquaTerrae: {
 		DisplayName: Aqua Terrae
-		Tooltip: ""
+		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
 	}
 
 	ContactHyperboreanCanister: {

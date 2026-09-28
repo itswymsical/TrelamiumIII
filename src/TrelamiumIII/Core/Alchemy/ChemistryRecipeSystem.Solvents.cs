@@ -46,9 +46,6 @@ public partial class ChemistryRecipeSystem
         AlchemyRecipes.CreateRecipe(bases, SolventID.Dead,
             new RecipeVariant(RottenChunkVertabrae));
 
-        AlchemyRecipes.CreateRecipe(bases, SolventID.AquaTerrae,
-            new RecipeVariant(DirtOrMud));
-
         AlchemyRecipes.CreateRecipe(bases, ModContent.ItemType<MagnoliaSolutionItem>(),
             new RecipeVariant(ModContent.ItemType<MagnoliaItem>()) { OutputStack = 2 },
             new RecipeVariant(ModContent.ItemType<MagnoliaSeedsItem>()),

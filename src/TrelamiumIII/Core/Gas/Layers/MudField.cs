@@ -32,13 +32,13 @@ public sealed class MudField : ChemicalGasField
 
     protected override float DefaultDensity => 1f;
 
-    protected override float DefaultViscosity => 0.85f;
+    protected override float DefaultViscosity => 0.88f;
 
     protected override float GravityScale => 0.28f;
 
     protected override float BuoyancyForce => 0.02f;
 
-    protected override float Drag => 0.975f;
+    protected override float Drag => 0.982f;
 
     protected override float EnclosedLifePenalty => 0.5f;
 
@@ -83,7 +83,7 @@ public sealed class MudField : ChemicalGasField
         effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.7f));
         effect.Parameters["FlowStrength"]?.SetValue(0.1f);
 
-        effect.Parameters["Bands"]?.SetValue(4f);
+        effect.Parameters["Bands"]?.SetValue(8f);
         effect.Parameters["BodyAlpha"]?.SetValue(0.96f);
         effect.Parameters["BodyAlphaFloor"]?.SetValue(0.85f);
 
@@ -105,6 +105,10 @@ public sealed class MudField : ChemicalGasField
 
         TileConditionSystem.Apply<MuddiedCondition>(tileX, tileY, intensity, owner: owner, sync: false);
     }
-
+    //protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
+    //{
+    //    base.OnTileContact(ref node, tileX, tileY, tile);
+    //    node.Viscosity *= 1.12f;
+    //}
     protected override void OnPlayerContact(ref FieldNode node, Player player) { }
 }

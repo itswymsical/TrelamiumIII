@@ -28,7 +28,6 @@ public sealed class SolventID : ICustomAutoload
     #region Acids
 
     public static int OilOfVitriol { get; private set; }
-    public static int AquaTerrae { get; private set; }
     public static int AquaFortis { get; private set; }
 
     public static int AquaRegia { get; private set; }
@@ -124,15 +123,6 @@ public sealed class SolventID : ICustomAutoload
             Value = Item.sellPrice(silver: 5),
             AlmanacPotency = 4,
             Temperaments = Temperament.Acidic | Temperament.Volatile,
-        });
-
-        AquaTerrae = Add(mod, new SolventItem("AquaTerraeItem")
-        {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Solutions.AquaTerraeItem.KEY,
-            Rare = ItemRarityID.Gray,
-            Value = Item.sellPrice(silver: 0),
-            AlmanacPotency = 1,
-            Temperaments = Temperament.Alkaline | Temperament.Catalytic,
         });
 
         AquaRegia = Add(mod, new SolventItem("AquaRegiaItem")
