@@ -50,11 +50,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public override int MaxTiles => 700;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
-
-    public override BlendState FieldBlend => BlendState.Additive;
-
-    protected virtual float PoolSpread => 2.4f;
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
 
@@ -66,13 +62,32 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     protected virtual float Threshold => Element.Threshold;
 
-    protected virtual float NoiseScale => Element.NoiseScale;
+    /// <summary>FBM cycles per tile. <see cref="ElementProfile.NoiseScale" /> is per screen height at 1080p.</summary>
+    protected virtual float NoiseScale => Element.NoiseScale * 16f / 1080f;
 
     protected virtual Vector2 NoiseDrift => Element.NoiseDrift;
 
     private Asset<Texture2D>? noiseTexture;
 
-    private Asset<Texture2D>? poolTexture;
+    private TileFilmLook? look;
+
+    /// <summary>The coat's look, built from the element palette on first use.</summary>
+    protected virtual TileFilmLook Look => look ??= new TileFilmLook
+    {
+        Threshold = Threshold,
+        NoiseScale = NoiseScale,
+        NoiseStrength = 0.16f,
+        NoiseDrift = NoiseDrift,
+        Bands = 8f,
+        ShadowColor = BodyColor * 0.7f,
+        BodyColor = BodyColor,
+        CoreColor = Vector3.Lerp(BodyColor, EdgeColor, 0.3f),
+        BodyAlpha = 0.78f,
+        OutlineColor = EdgeColor,
+        OutlineAlpha = 0.92f,
+        EmissiveEdge = 1f,
+        SurfaceLip = 1f,
+    };
 
     public override void Load()
     {
@@ -80,14 +95,12 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
             return;
 
         noiseTexture = Assets.Textures.Noise.Turbulence_06.Asset;
-
-        poolTexture = Assets.Textures.VFX.RadialGradient.Asset;
     }
 
     public override void Unload()
     {
         noiseTexture = null;
-        poolTexture = null;
+        look = null;
     }
 
     /// <summary>
@@ -161,53 +174,12 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         );
     }
 
-    public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
-    {
-        if (poolTexture is not { Value: { } blob })
-            return;
-
-        // The same integer snap DrawAsTile applies, and for the same reason: vanilla draws terrain
-        // against a truncated screen position, so anything painted on terrain has to as well or it
-        // crawls by up to a pixel as the camera moves.
-        var pixelSnap = new Vector2(
-            Main.screenPosition.X - (int)Main.screenPosition.X,
-            Main.screenPosition.Y - (int)Main.screenPosition.Y);
-
-        float size = PoolSpread * 16f;
-
-        spriteBatch.Draw(
-            blob,
-            instance.WorldCenter - Main.screenPosition + pixelSnap,
-            null,
-            Color.White * instance.Strength,
-            0f,
-            blob.Size() / 2f,
-            size / blob.Width,
-            SpriteEffects.None,
-            0f);
-    }
-
     public override void ApplyShaderParameters(Effect effect)
     {
-        ApplyFieldFrameParameters(effect);
-
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        effect.Parameters["WorldLight"]?.SetValue(Vector3.Max(AverageScreenLight(), new Vector3(0.2f)));
-
-        effect.Parameters["Threshold"]?.SetValue(Threshold);
-        // a metaball boundary is already smooth, so the noise only keeps the rim from looking
-        // machined. Turned up, it shreds the pool into disconnected specks.
-        effect.Parameters["NoiseStrength"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(NoiseScale);
-        effect.Parameters["NoiseDrift"]?.SetValue(NoiseDrift);
-        effect.Parameters["EdgeWidth"]?.SetValue(0.25f);
-
-        effect.Parameters["BodyColor"]?.SetValue(BodyColor);
-        effect.Parameters["EdgeColor"]?.SetValue(EdgeColor);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.78f);
-        effect.Parameters["EdgeAlpha"]?.SetValue(0.92f);
+        Look.Apply(effect);
     }
 
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)

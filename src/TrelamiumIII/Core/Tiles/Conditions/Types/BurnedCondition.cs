@@ -18,15 +18,11 @@ public sealed class BurnedCondition : TileCondition
 
     public override int MaxTiles => 1200;
 
-    public override TileConditionRenderMode RenderMode
-        => TileConditionRenderMode.Field | TileConditionRenderMode.Overlay;
-    public override BlendState FieldBlend => BlendState.AlphaBlend;
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
 
     public override Asset<Effect>? Shader => Assets.Shaders.TileBurnMask.Asset;
 
-    public override Asset<Effect>? OverlayShader => null;
-
-    public override Asset<Effect>? StampShader => Assets.Shaders.TileSilhouette.Asset;
+    public override int FadeOutTicks => 20;
 
     private Asset<Texture2D>? noiseTexture;
 
@@ -39,17 +35,6 @@ public sealed class BurnedCondition : TileCondition
     }
 
     public override void Unload() => noiseTexture = null;
-
-    public override bool CanApplyTo(int i, int j)
-    {
-        if (!base.CanApplyTo(i, j))
-            return false;
-
-        if (!Main.dedServ)
-            Steam(new Vector2(i * 16f + 8f, j * 16f + 8f), 2);
-
-        return false;
-    }
 
     public override void OnApplied(ref TileConditionInstance instance)
     {
@@ -160,50 +145,34 @@ public sealed class BurnedCondition : TileCondition
         ember.noGravity = true;
     }
 
-    public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+    /// <summary>Heat as an average, char and flame as amounts scaled by the mark's coverage.</summary>
+    public override TileCanvasSample EncodeCanvas(in TileConditionInstance instance)
     {
+        float coverage = Coverage(in instance);
         float fire = MathHelper.Clamp(instance.Level / FIRE_FADE_HEAT, 0f, 1f);
 
-        if (fire <= 0f)
-            return;
-
-        var payload = new Color(instance.Level, 0f, 0f, 1f);
-
-        DrawSilhouette(in instance, payload * (Coverage(in instance) * fire));
-    }
-
-    public override void DrawTileOverlay(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
-    {
-        float soot = CharProgress(in instance) * Coverage(in instance) * MAX_CHAR;
-
-        if (soot <= 0.004f)
-            return;
-
-        DrawSilhouette(in instance, Color.Black * soot);
+        return new TileCanvasSample(coverage, new Vector3(instance.Level, coverage * CharProgress(in instance) * MAX_CHAR, coverage * fire));
     }
 
     private static float Coverage(in TileConditionInstance instance)
         => instance.Intensity * MathHelper.Clamp(instance.Fade / DISSOLVE_FRACTION, 0f, 1f);
 
+    /// <summary>Counted from the first ignition, so re-lighting a tile does not clean its char off.</summary>
     private static float CharProgress(in TileConditionInstance instance)
-        => MathHelper.Clamp(instance.Age / 60f * BurnProfile.Get(instance.Variant).CharRate, 0f, 1f);
+        => MathHelper.Clamp(instance.TotalAge / 60f * BurnProfile.Get(instance.Variant).CharRate, 0f, 1f);
 
     public override void ApplyShaderParameters(Effect effect)
     {
-        ApplyFieldFrameParameters(effect);
-
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        effect.Parameters["WorldLight"]?.SetValue(Vector3.Max(AverageScreenLight(), new Vector3(0.12f)));
-
-        effect.Parameters["Threshold"]?.SetValue(0.55f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.95f);
-        effect.Parameters["NoiseScale"]?.SetValue(6f);
-
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.012f, -0.06f));
-
-        effect.Parameters["EdgeWidth"]?.SetValue(0.22f);
+        effect.Parameters["FireThreshold"]?.SetValue(0.4f);
+        effect.Parameters["FireNoiseScale"]?.SetValue(0.09f);
+        effect.Parameters["FireNoiseStrength"]?.SetValue(0.8f);
+        effect.Parameters["FireDrift"]?.SetValue(new Vector2(0.012f, 0.06f));
+        effect.Parameters["FireEdgeWidth"]?.SetValue(0.22f);
+        effect.Parameters["FireBodyAlpha"]?.SetValue(0.86f);
+        effect.Parameters["FireEdgeAlpha"]?.SetValue(0.95f);
 
         effect.Parameters["EmberColor"]?.SetValue(new Vector3(0.45f, 0.06f, 0.01f));
         effect.Parameters["CoolColor"]?.SetValue(new Vector3(0.88f, 0.26f, 0.03f));
@@ -211,11 +180,12 @@ public sealed class BurnedCondition : TileCondition
         effect.Parameters["FlashColor"]?.SetValue(new Vector3(1.00f, 0.94f, 0.74f));
 
         effect.Parameters["CharColor"]?.SetValue(new Vector3(0.05f, 0.045f, 0.05f));
-
-        effect.Parameters["CharSuppression"]?.SetValue(0.85f);
-
-        effect.Parameters["BodyAlpha"]?.SetValue(0.86f);
-        effect.Parameters["EdgeAlpha"]?.SetValue(0.95f);
+        effect.Parameters["CharAlpha"]?.SetValue(0.85f);
+        effect.Parameters["CharThreshold"]?.SetValue(0.05f);
+        effect.Parameters["CharSoftness"]?.SetValue(0.6f);
+        effect.Parameters["CharNoiseScale"]?.SetValue(0.2f);
+        effect.Parameters["CharNoiseStrength"]?.SetValue(0.6f);
+        effect.Parameters["CharBands"]?.SetValue(5f);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)

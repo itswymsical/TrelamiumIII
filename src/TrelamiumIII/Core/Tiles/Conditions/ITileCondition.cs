@@ -5,19 +5,16 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 /// <summary>
 ///     Where a condition puts its marks.
 /// </summary>
-[Flags]
 public enum TileConditionRenderMode
 {
-    /// <summary>no draw mode for effect-only conditions.</summary>
-    None = 0,
-
-    Overlay = 1,
+    /// <summary>Draws nothing, for effect-only conditions.</summary>
+    None,
 
     /// <summary>
-    ///     Every tile is stamped into an off-screen field, and the whole field is composited to the
-    ///     screen once through the condition's shader.
+    ///     Each tile is a sample on the condition's <see cref="TileCanvas" />, reconstructed as a smooth surface and
+    ///     composited over the terrain through <see cref="ITileCondition.Shader" />.
     /// </summary>
-    Field = 2,
+    Canvas,
 }
 
 /// <summary>
@@ -84,61 +81,30 @@ public interface ITileCondition
 
     TileConditionRenderMode RenderMode { get; }
 
+    /// <summary>Blend for the composite. Canvas shaders output premultiplied colour.</summary>
     BlendState BlendState { get; }
 
-    BlendState FieldBlend { get; }
+    /// <summary>Divisor on screen resolution for the canvas targets. Shading stays on the tile art grid regardless.</summary>
+    int CanvasPixelScale { get; }
 
-    int FieldPixelScale { get; }
+    /// <summary>Ticks a newly marked tile takes to reach full weight on the canvas, so marks grow in rather than pop.</summary>
+    int FadeInTicks { get; }
 
+    /// <summary>Ticks a removed tile's last sample stays on the canvas, fading, so marks wash away rather than vanish.</summary>
+    int FadeOutTicks { get; }
+
+    /// <summary>
+    ///     The composite shader. It reads coverage and data from s0, kernel weight and light from <c>uCanvasLight</c>, and
+    ///     the solid tile layer from <c>uMaskTex</c>; see <c>TileConditionMask.fx</c> for the frame parameters.
+    /// </summary>
     Asset<Effect>? Shader { get; }
 
     /// <summary>
-    ///     The effect the <see cref="TileConditionRenderMode.Overlay" /> pass is drawn through.
+    ///     This tile's sample on the canvas. Scale amount channels by coverage: a sample with no coverage is not kept
+    ///     fading after its tile is removed.
     /// </summary>
-    /// <remarks>
-    ///     Defaults to <see cref="Shader" />, which is correct for a single-pass condition. A condition
-    ///     running both passes needs them separate: <see cref="Shader" /> samples field coverage from
-    ///     register s0, and pointed at individual tile sprites it would read a block's own alpha as
-    ///     coverage. Return null to draw the overlay plainly.
-    /// </remarks>
-    Asset<Effect>? OverlayShader { get; }
+    TileCanvasSample EncodeCanvas(in TileConditionInstance instance);
 
-    /// <summary>
-    ///     The effect the stamps are drawn <em>into the field</em> through. Field mode only.
-    /// </summary>
-    /// <remarks>
-    ///     Null for a condition whose field only has to answer "is there coverage here", which the
-    ///     alpha channel already does. Set it when the field has to carry something per tile: a
-    ///     stamp shader can replace the tile sprite's own colour with the draw's tint, which turns
-    ///     the field's three unused colour channels into per-tile storage. See
-    ///     <see cref="Graphics.WorldFieldTarget.StampEffect" />.
-    /// </remarks>
-    Asset<Effect>? StampShader { get; }
-
+    /// <summary>Sets the look parameters, after the canvas has set the frame ones.</summary>
     void ApplyShaderParameters(Effect effect);
-
-    /// <summary>Bind anything the shader samples beyond register s0.</summary>
-    void BindAdditionalTextures(GraphicsDevice device);
-
-    /// <summary>
-    ///     Draws one tile's mark. Called per visible tile, to the screen under
-    ///     <see cref="TileConditionRenderMode.Overlay" /> and into the field target under
-    ///     <see cref="TileConditionRenderMode.Field" />.
-    /// </summary>
-    /// <param name="drawPosition">
-    ///     The tile's top-left corner, already in the coordinate space of whichever batch is running.
-    /// </param>
-    void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition);
-
-    /// <summary>
-    ///     Draws one tile's mark in the <see cref="TileConditionRenderMode.Overlay" /> pass, for a
-    ///     condition that runs both passes.
-    /// </summary>
-    /// <remarks>
-    ///     The render mode is a flag set, so a condition may ask for a field <em>and</em> a per-tile
-    ///     draw, and the two want different geometry. Burn is the case: the fire is a field so it can
-    ///     be continuous across tile seams, while the char is per tile because it is the block itself
-    ///     darkening, not soot laid over it. Defaults to <see cref="DrawTile" />.
-    /// </remarks>
-    void DrawTileOverlay(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition);
 }

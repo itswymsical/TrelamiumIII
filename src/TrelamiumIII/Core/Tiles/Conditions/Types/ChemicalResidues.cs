@@ -1,5 +1,4 @@
 using ReLogic.Content;
-using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
@@ -31,24 +30,81 @@ public sealed class CryonicResidueCondition : ChemicalReactionTileCondition
 
     private const float SLIDE_THRESHOLD = 0.35f;
 
+    /// <summary>Ticks for the crystal veins to grow in after a tile first freezes.</summary>
+    private const float CRYSTAL_GROWTH_TICKS = 90f;
+
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Cryonic;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Overlay;
+    public override Asset<Effect>? Shader => Assets.Shaders.TileFrostMask.Asset;
 
-    public override Asset<Effect>? Shader => null;
+    public override int FadeInTicks => 16;
+
+    public override int FadeOutTicks => 24;
 
     protected override GasField? LingerLayer => FieldSystem.GetLayer<IceMistField>();
 
-    private const float RIME_ALPHA = 0.5f;
+    private Asset<Texture2D>? cellTexture;
 
-    public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+    private Asset<Texture2D>? veinTexture;
+
+    public override void Load()
     {
-        Main.instance.LoadTiles(TileID.BreakableIce);
+        base.Load();
 
-        if (TextureAssets.Tile[TileID.BreakableIce] is not { Value: { } ice })
+        if (Main.dedServ)
             return;
 
-        DrawAsTile(in instance, ice, Color.White * (RIME_ALPHA * instance.Strength));
+        cellTexture = Assets.Textures.Noise.VoronoiNoise.Asset;
+        veinTexture = Assets.Textures.Noise.VeinVoronoi.Asset;
+    }
+
+    public override void Unload()
+    {
+        base.Unload();
+
+        cellTexture = null;
+        veinTexture = null;
+    }
+
+    public override TileCanvasSample EncodeCanvas(in TileConditionInstance instance)
+        => new(instance.Strength, new Vector3(MathHelper.Clamp(instance.TotalAge / CRYSTAL_GROWTH_TICKS, 0f, 1f), 0f, 0f));
+
+    public override void ApplyShaderParameters(Effect effect)
+    {
+        if (cellTexture is { Value: { } cells })
+            effect.Parameters["uCellTex"]?.SetValue(cells);
+
+        if (veinTexture is { Value: { } veins })
+            effect.Parameters["uVeinTex"]?.SetValue(veins);
+
+        effect.Parameters["SurfaceLip"]?.SetValue(2f);
+
+        effect.Parameters["Threshold"]?.SetValue(Threshold);
+        effect.Parameters["CellScale"]?.SetValue(0.25f);
+        effect.Parameters["NoiseStrength"]?.SetValue(0.3f);
+        effect.Parameters["DepthRange"]?.SetValue(0.5f);
+        effect.Parameters["EdgeWidth"]?.SetValue(0.08f);
+
+        effect.Parameters["VeinScale"]?.SetValue(0.2f);
+        effect.Parameters["VeinCut"]?.SetValue(0.35f);
+        effect.Parameters["VeinAlpha"]?.SetValue(0.85f);
+
+        // Bluer than the element palette: that is tuned for mist, and reads grey laid thin over dirt.
+        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.42f, 0.66f, 0.92f));
+        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.66f, 0.84f, 1.00f));
+        effect.Parameters["VeinColor"]?.SetValue(EdgeColor);
+        effect.Parameters["EdgeColor"]?.SetValue(EdgeColor);
+        effect.Parameters["RimeColor"]?.SetValue(Vector3.Lerp(EdgeColor, Vector3.One, 0.5f));
+        effect.Parameters["BodyAlpha"]?.SetValue(0.72f);
+        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.45f);
+        effect.Parameters["EdgeAlpha"]?.SetValue(0.9f);
+        effect.Parameters["RimeAlpha"]?.SetValue(0.85f);
+
+        effect.Parameters["SparkleDensity"]?.SetValue(0.035f);
+        effect.Parameters["SparkleSpeed"]?.SetValue(2.2f);
+        effect.Parameters["SparkleColor"]?.SetValue(new Vector3(0.9f, 0.97f, 1f));
+
+        effect.Parameters["AmbientLight"]?.SetValue(new Vector3(0.22f));
     }
 
     protected override float LingerRadius => 6f;

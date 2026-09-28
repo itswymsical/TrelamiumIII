@@ -1,34 +1,50 @@
 using System.Collections.Generic;
 using ReLogic.Content;
-using Terraria.DataStructures;
-using TrelamiumIII.Core.Graphics;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
-///     A coat of slime rendered as a metaball field.
+///     A coat of slime over the terrain.
 /// </summary>
 public sealed class SlimedCondition : TileCondition
 {
-    private const float BLOB_DIAM = 36f;
-
     private const float PLAYER_DRAG = 0.93f;
 
     private const float NPC_DRAG = 0.90f;
 
     private const float PROJECTILE_SCOUR = 2.5f;
 
+    private static readonly TileFilmLook Look = new()
+    {
+        Threshold = 0.22f,
+        NoiseScale = 0.06f,
+        NoiseStrength = 0.14f,
+        NoiseDrift = new Vector2(0.006f, 0.022f),
+        Bands = 4f,
+        ShadowColor = new Vector3(0.05f, 0.15f, 0.34f),
+        BodyColor = new Vector3(0.17f, 0.42f, 0.80f),
+        CoreColor = new Vector3(0.47f, 0.74f, 1.00f),
+        BodyAlpha = 0.80f,
+        OutlineColor = new Vector3(0.76f, 0.92f, 1.00f),
+        OutlineAlpha = 0.90f,
+        HighlightColor = new Vector3(0.88f, 0.97f, 1.00f),
+        HighlightAlpha = 0.85f,
+        EmissiveEdge = 0.25f,
+        AmbientLight = new Vector3(0.25f),
+        SurfaceLip = 2f,
+    };
+
     public override float Duration => 9f * 60f;
 
     public override int MaxTiles => 900;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Field;
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
 
-    public override BlendState FieldBlend => BlendState.Additive;
+    public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
 
-    public override Asset<Effect>? Shader => Assets.Shaders.GasFbm.Asset;
+    public override int FadeInTicks => 6;
 
-    private Asset<Texture2D>? blobTexture;
+    public override int FadeOutTicks => 14;
 
     private Asset<Texture2D>? noiseTexture;
 
@@ -39,13 +55,11 @@ public sealed class SlimedCondition : TileCondition
         if (Main.dedServ)
             return;
 
-        blobTexture = Assets.Textures.VFX.RadialGradient.Asset;
         noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
     }
 
     public override void Unload()
     {
-        blobTexture = null;
         noiseTexture = null;
         draggedThisTick.Clear();
     }
@@ -62,57 +76,21 @@ public sealed class SlimedCondition : TileCondition
         Lighting.AddLight(instance.WorldCenter, 0.03f * strength, 0.07f * strength, 0.12f * strength);
     }
 
-    public override void DrawTile(SpriteBatch spriteBatch, in TileConditionInstance instance, Vector2 drawPosition)
+    public override TileCanvasSample EncodeCanvas(in TileConditionInstance instance)
     {
-        if (blobTexture is not { Value: { } texture })
-            return;
-
-        // Per-tile phase, so the sheet undulates instead of pulsing in lockstep.
+        // Per-tile phase, so the coat swells unevenly instead of pulsing in lockstep.
         float phase = instance.X * 0.7f + instance.Y * 1.3f;
         float time = (float)Main.timeForVisualEffects / 60f;
-        var wobble = new Vector2(MathF.Sin(time * 1.4f + phase) * 1.6f, MathF.Cos(time * 1.1f + phase) * 1.2f);
 
-        // No overdrive baked in: it is FieldStamp.Gain now, applied by the shader. Multiplied in
-        // here it was partly clamped away by the byte colour and skewed the recovered brightness.
-        Color color = FieldStamp.Lit(instance.WorldCenter, 0.55f + 0.45f * instance.Strength);
-
-        spriteBatch.Draw(
-            texture,
-            drawPosition + new Vector2(8f) + wobble,
-            null,
-            color,
-            0f,
-            texture.Size() / 2f,
-            BLOB_DIAM / texture.Width,
-            SpriteEffects.None,
-            0f
-        );
+        return new TileCanvasSample(instance.Strength * (0.92f + 0.08f * MathF.Sin(time * 1.4f + phase)));
     }
 
     public override void ApplyShaderParameters(Effect effect)
     {
-        ApplyFieldFrameParameters(effect);
-
         if (noiseTexture is { Value: { } noise })
             effect.Parameters["uNoiseTex"]?.SetValue(noise);
 
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.25f));
-
-        effect.Parameters["Threshold"]?.SetValue(0.13f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.1f);
-
-        effect.Parameters["NoiseStrength"]?.SetValue(0.14f);
-
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.006f, 0.022f));
-
-        effect.Parameters["Bands"]?.SetValue(4f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.80f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.05f, 0.15f, 0.34f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.17f, 0.42f, 0.80f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.47f, 0.74f, 1.00f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.76f, 0.92f, 1.00f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.90f);
+        Look.Apply(effect);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
