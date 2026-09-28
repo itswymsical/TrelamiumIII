@@ -1,5 +1,6 @@
 using TrelamiumIII.Common.Globals;
 using TrelamiumIII.Content.Items.Alchemy.Reagents;
+using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Ammo;
@@ -50,6 +51,7 @@ public partial class ChemistryRecipeSystem
         int starflask = ModContent.ItemType<PrismaticStarflaskItem>();
         int phytoncide = ModContent.ItemType<PhytoncideFlaskItem>();
         int canister = ModContent.ItemType<GasCanisterBase>();
+        int therm = ModContent.ItemType<ThermiteFlaskItem>();
 
         int[] tonics = [SolventID.HarmoniousTonic, SolventID.MartialTonic, SolventID.AquaFortis];
         int hyperboreanFlask = ModContent.ItemType<ArcticFlaskItem>();
@@ -86,6 +88,21 @@ public partial class ChemistryRecipeSystem
         // Starflask
         AlchemyRecipes.CreateRecipe(tonics, starflask,
             new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 });
+
+        // Thermite Flask
+        AlchemyRecipes.CreateRecipe(SolventID.FibrousSlurry, therm,
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.BlackPowder, 2), 
+                ComponentMatcher.Of(SoluteID.Sulfur, 1), 
+                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 },
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.Pitch, 2),
+                ComponentMatcher.Of(SoluteID.Sulfur, 1),
+                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 },
+            new RecipeVariant(
+                ComponentMatcher.Of(SoluteID.Pitch, 2),
+                ComponentMatcher.Of(ModContent.ItemType<CharcoalItem>(), 2),
+                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 });
 
         // Phytoncide
         AlchemyRecipes.CreateRecipe([SolventID.VitalTonic, SolventID.MartialTonic], phytoncide,

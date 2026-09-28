@@ -284,6 +284,7 @@ public abstract class GasField : FieldLayer
             BouncesLeft = profile.Bounces,
             Restitution = profile.Restitution,
             TileCollide = profile.TileCollide,
+            Volume = profile.Volume,
             Owner = owner,
             Payload = payload,
             Damage = damage,
@@ -326,13 +327,7 @@ public abstract class GasField : FieldLayer
     /// </remarks>
     protected virtual void UpdateEmitter(ref GasEmitter emitter, int index)
     {
-        emitter.Velocity.Y += emitter.Gravity;
-        emitter.Velocity *= emitter.Drag;
-
-        if (emitter.TileCollide)
-            MoveEmitterAgainstTiles(ref emitter);
-        else
-            emitter.Position += emitter.Velocity;
+        MoveEmitter(ref emitter);
 
         if (emitter.Damage > 0)
             SweepEmitterContacts(ref emitter);
@@ -346,6 +341,18 @@ public abstract class GasField : FieldLayer
         }
 
         emitter.Life--;
+    }
+
+    /// <summary>One tick of ballistic flight: gravity, drag, then terrain if the emitter collides with it.</summary>
+    protected virtual void MoveEmitter(ref GasEmitter emitter)
+    {
+        emitter.Velocity.Y += emitter.Gravity;
+        emitter.Velocity *= emitter.Drag;
+
+        if (emitter.TileCollide)
+            MoveEmitterAgainstTiles(ref emitter);
+        else
+            emitter.Position += emitter.Velocity;
     }
 
     /// <summary>

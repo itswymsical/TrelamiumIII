@@ -670,8 +670,8 @@ Items: {
 		DisplayName: Thermite Flask
 		Tooltip:
 			'''
-			Creates a sprinklage of molten thermite on impact
-			On Chemical reaction, thermite puddles seap through enemies and spread to nearby targets.
+			Shatters into a line of molten thermite that runs along floors and down walls
+			On Chemical reaction, thermite pours off the target into a line beneath it
 			'''
 	}
 

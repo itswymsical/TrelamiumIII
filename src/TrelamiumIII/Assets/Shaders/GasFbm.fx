@@ -76,9 +76,12 @@ float3 WorldLight;
 // world-locked and never touches the attribute target, which is the default for every layer.
 float FlowStrength;
 
-// How much the recovered temperature pulls the palette toward HotColor. 0 ignores it.
+// How much the recovered temperature pulls the palette toward the Hot* ramp. 0 ignores it. The rim
+// heats toward HotShadowColor and the surface line toward HotCoreColor.
 float TemperatureBlend;
-float3 HotColor;
+float3 HotShadowColor;
+float3 HotBodyColor;
+float3 HotCoreColor;
 
 float SampleN(float2 p)
 {
@@ -144,6 +147,12 @@ float3 FieldLight(float2 uv)
     return max(brightness.xxx, WorldLight);
 }
 
+float3 Ramp(float3 shadow, float3 body, float3 core, float shade)
+{
+    float3 color = lerp(shadow, body, saturate(shade * 2.0));
+    return lerp(color, core, saturate(shade * 2.0 - 1.0));
+}
+
 float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
 {
     float2 cell = (floor(uv / FieldTexel) + 0.5) * FieldTexel;
@@ -161,7 +170,7 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
         discard;
 
     float3 light = FieldLight(cell);
-
+    float heat = saturate(FieldTemperature(cell, Coverage(cell)) * TemperatureBlend);
 
     float2 tx = float2(FieldTexel.x, 0.0);
     float2 ty = float2(0.0, FieldTexel.y);
@@ -169,21 +178,21 @@ float4 FieldPass(float2 uv : TEXCOORD0) : COLOR0
     float upD = Density(cell - ty) - erosion;
 
     if (HighlightAlpha > 0.0 && upD < Threshold)
-        return float4(HighlightColor * light * HighlightAlpha, HighlightAlpha);
+        return float4(lerp(HighlightColor, HotCoreColor, heat) * light * HighlightAlpha, HighlightAlpha);
 
     float sideMin = min(Density(cell + ty), min(Density(cell - tx), Density(cell + tx))) - erosion;
 
     if (min(sideMin, upD) < Threshold)
-        return float4(OutlineColor * light * OutlineAlpha, OutlineAlpha);
+        return float4(lerp(OutlineColor, HotShadowColor, heat) * light * OutlineAlpha, OutlineAlpha);
 
     float t = 1.0 - exp(-(d - Threshold) / max(DepthRange, 0.001));
     float shade = saturate(t * (0.55 + 0.9 * fbm));
     shade = floor(shade * Bands) / max(Bands - 1.0, 1.0);
 
-    float3 color = lerp(ShadowColor, BodyColor, saturate(shade * 2.0));
-    color = lerp(color, CoreColor, saturate(shade * 2.0 - 1.0));
-
-    color = lerp(color, HotColor, saturate(FieldTemperature(cell, Coverage(cell)) * TemperatureBlend));
+    float3 color = lerp(
+        Ramp(ShadowColor, BodyColor, CoreColor, shade),
+        Ramp(HotShadowColor, HotBodyColor, HotCoreColor, shade),
+        heat);
 
     float alpha = BodyAlpha * lerp(BodyAlphaFloor, 1.0, shade);
     return float4(color * light * alpha, alpha);

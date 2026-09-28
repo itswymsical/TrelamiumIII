@@ -95,6 +95,9 @@ public readonly record struct EmitterProfile
     /// <inheritdoc cref="GasEmitter.TileCollide" />
     public bool TileCollide { get; init; }
 
+    /// <inheritdoc cref="GasEmitter.Volume" />
+    public float Volume { get; init; }
+
     /// <summary>
     ///     A weightless arm that coasts through terrain for fifteen ticks laying a node a tick.
     /// </summary>

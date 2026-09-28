@@ -160,6 +160,7 @@ public abstract class FieldLayer
     ///     the world produced by itself. Ignored by layers that do not act on anything.
     /// </param>
     /// <param name="payload">The chemical release the node belongs to, or null. Read only by chemical layers.</param>
+    /// <param name="pinned">Holds the node in place for its whole life. See <see cref="FieldNode.Pinned" />.</param>
     public void SpawnNode(
         Vector2 worldPosition,
         Vector2 velocity,
@@ -169,7 +170,8 @@ public abstract class FieldLayer
         float viscosity = -1f,
         float temperature = -1f,
         int owner = FieldNode.NoOwner,
-        ChemicalPayload? payload = null)
+        ChemicalPayload? payload = null,
+        bool pinned = false)
     {
         if (life <= 0f || (Main.dedServ && !SimulatesHeadless))
             return;
@@ -187,6 +189,7 @@ public abstract class FieldLayer
             Owner = owner,
             Payload = payload,
             AnchorHost = null,
+            Pinned = pinned,
         };
 
         OnNodeSpawn(ref node);
@@ -341,7 +344,7 @@ public abstract class FieldLayer
     {
         if (node.IsAnchored)
             FollowAnchor(ref node);
-        else
+        else if (!node.Pinned)
         {
             ApplyPhysics(ref node);
             ResolveTileCollision(ref node);
@@ -633,10 +636,13 @@ public abstract class FieldLayer
     protected virtual float StampStretch => 0f;
 
     /// <summary>How tightly a node is held to something, 0..1. Free-drifting nodes are 0.</summary>
-    protected virtual float NodeBind(in FieldNode node) => node.IsAnchored ? 1f : 0f;
+    protected virtual float NodeBind(in FieldNode node) => node.IsAnchored || node.Pinned ? 1f : 0f;
 
     /// <summary>A layer-defined sub-material, 0..1. Lets one field carry more than one look.</summary>
     protected virtual float NodeVariant(in FieldNode node) => 0f;
+
+    /// <summary>What a node is worth to the field, 0..1. Every channel it stamps is scaled by this.</summary>
+    protected virtual float NodeWeight(in FieldNode node) => FieldStamp.Weight(node.Alpha);
 
     /// <summary>
     ///     Packs one node into the eight channels the two targets carry.
@@ -649,7 +655,7 @@ public abstract class FieldLayer
     /// </remarks>
     protected virtual void EncodeNode(in FieldNode node, out Color field, out Color attributes)
     {
-        float weight = FieldStamp.Weight(node.Alpha);
+        float weight = NodeWeight(in node);
 
         Vector2 span = TemperatureRange;
         float temperature = span.Y - span.X <= 0f ? 0f : MathHelper.Clamp((node.Temperature - span.X) / (span.Y - span.X), 0f, 1f);

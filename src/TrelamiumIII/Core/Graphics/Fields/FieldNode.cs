@@ -89,6 +89,9 @@ public struct FieldNode
 
     public int AnchorTicks;
 
+    /// <summary>Held where it was spawned: skips physics and terrain collision, and only ages.</summary>
+    public bool Pinned;
+
     public readonly bool IsAnchored => AnchorHost is not null && AnchorTicks > 0;
 
     public readonly float Alpha => MaxLife <= 0f ? 0f : Life / MaxLife;

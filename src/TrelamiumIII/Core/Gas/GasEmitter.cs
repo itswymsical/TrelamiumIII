@@ -139,6 +139,9 @@ public struct GasEmitter
     /// </remarks>
     public byte Variant;
 
+    /// <summary>Layer-defined amount of payload the emitter still carries. Never read by <see cref="GasField" />.</summary>
+    public float Volume;
+
     /// <summary>How far through its life the emitter is, 0 at spawn and 1 at the end.</summary>
     public readonly float Progress => MaxLife <= 0f ? 1f : MathHelper.Clamp(1f - Life / MaxLife, 0f, 1f);
 
