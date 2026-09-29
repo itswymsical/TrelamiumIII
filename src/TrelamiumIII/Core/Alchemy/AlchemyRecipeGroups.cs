@@ -3,6 +3,7 @@ using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent;
+using TrelamiumIII.Content.Items.Rusted;
 
 namespace TrelamiumIII.Core.Alchemy;
 
@@ -65,6 +66,7 @@ public static class AlchemyRecipeGroups
 
     public static readonly AlchemyComponentGroup ShiverthornOrWaterleaf = new("ShiverthornOrWaterleaf");
     public static readonly AlchemyComponentGroup ShiverthornOrSeeds = new("ShiverthornOrSeeds");
+    public static readonly AlchemyComponentGroup BlackPowderOrRust = new("BlackPowderOrRust");
 
     // Conventional chemistry, so recipes can ask for "any acid" rather than naming each one.
     public static readonly AlchemyComponentGroup AnyAcid = new("AnyAcid");
@@ -102,6 +104,8 @@ public static class AlchemyRecipeGroups
         Iron.Add(ItemID.IronOre, ItemID.LeadOre);
 
         Silver.Add(ItemID.SilverOre, ItemID.TungstenOre);
+
+        BlackPowderOrRust.Add(ModContent.ItemType<RustedNugget>(), SoluteID.BlackPowder);
 
         Gold.Add(ItemID.GoldOre, ItemID.PlatinumOre);
 

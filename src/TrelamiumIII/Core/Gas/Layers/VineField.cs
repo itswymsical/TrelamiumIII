@@ -14,12 +14,10 @@ namespace TrelamiumIII.Core.Gas.Layers;
 /// <param name="Herb">The herb whose name the strain takes, or 0 for the default strain.</param>
 public sealed record VineStrain(string Key, int Seed, int Herb, ChemicalDamageType Element, Color Blossom, int Dust)
 {
-    /// <summary>Index into <see cref="All" />. Stored in <see cref="FieldNode.Variant" /> and projectile <c>ai[0]</c>.</summary>
     public byte Id { get; private init; }
 
     public bool IsDefault => Id == 0;
 
-    /// <summary>Every strain; the first is the default. Order is the id, so appending is safe and reordering is not.</summary>
     public static readonly VineStrain[] All = Number(
         new("", ItemID.GrassSeeds, 0, ChemicalDamageType.Solute, new Color(240, 240, 205), DustID.GrassBlades),
         new("Daybloom", ItemID.DaybloomSeeds, ItemID.Daybloom, ChemicalDamageType.Kinetic, new Color(255, 214, 70), DustID.YellowTorch),

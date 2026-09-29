@@ -16,6 +16,7 @@ public class AquaTerrae : ModItem, IAlmanacDefined
     {
         Temperaments = Temperament.Alkaline | Temperament.Catalytic,
         AlmanacPotency = 1,
+        Hidden = false,
     };
 
     public override void SetDefaults()

@@ -101,7 +101,7 @@ public partial class ChemistryRecipeSystem
             new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<CharcoalItem>(), 2)));
 
         AlchemyRecipes.CreateRecipe(SolventID.BottledOil, SoluteID.Pitch,
-            new RecipeVariant(ComponentMatcher.Of(SolventID.FibrousSlurry, 2)) { OutputStack = 2 });
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Cobweb, 4)) { OutputStack = 2 });
 
         AlchemyRecipes.CreateRecipe(ItemID.BottledWater, SolventID.FibrousSlurry,
             new RecipeVariant(ComponentMatcher.Of(ItemID.Cobweb, 3)) { OutputStack = 1 });

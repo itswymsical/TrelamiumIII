@@ -181,7 +181,7 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadSolutes(Mod mod)
     {
-        FibrousSlurry = Add(mod, new SoluteItem("FibrousSlurryItem")
+        FibrousSlurry = Add(mod, new SolventItem("FibrousSlurryItem")
         {
             AlmanacPotency = 1,
             Temperaments = Temperament.Inert,

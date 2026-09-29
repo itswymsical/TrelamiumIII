@@ -58,8 +58,9 @@ public partial class ChemistryRecipeSystem
         int[] tonics = [SolventID.HarmoniousTonic, SolventID.MartialTonic, SolventID.AquaFortis];
         int hyperboreanFlask = ModContent.ItemType<ArcticFlaskItem>();
         int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
-        int[] basics = [ItemID.BottledWater, SolventID.Inert];
-        int[] flowerStuffs = [ItemID.BottledWater, SolventID.Inert, ModContent.ItemType<AquaTerrae>()];
+        int[] simpleSolvents = [ItemID.BottledWater, SolventID.Inert, SolventID.VitalTonic, SolventID.MartialTonic];
+        int[] flowerStuffs = [simpleSolvents[0], simpleSolvents[1], ModContent.ItemType<AquaTerrae>()];
+
         // Effusion Flask
         AlchemyRecipes.CreateRecipe(SolventID.BloodtoothExtract, crimsonFlask,
         [
@@ -80,7 +81,7 @@ public partial class ChemistryRecipeSystem
             AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 1, stack: 16));
 
         // Hyperborean
-        AlchemyRecipes.CreateRecipe(basics, hyperboreanFlask,
+        AlchemyRecipes.CreateRecipe(simpleSolvents, hyperboreanFlask,
             new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ItemID.CopperOre, ComponentMatcher.Of(SoluteID.Niter, 2))
             { OutputStack = 16, });
 
@@ -92,37 +93,27 @@ public partial class ChemistryRecipeSystem
             new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 });
 
         // Thermite Flask
-        AlchemyRecipes.CreateRecipe(SolventID.FibrousSlurry, therm,
+        AlchemyRecipes.CreateRecipe([SolventID.FibrousSlurry, SolventID.MartialTonic, SolventID.AquaFortis], therm,
             new RecipeVariant(
-                ComponentMatcher.Of(SoluteID.BlackPowder, 2), 
-                ComponentMatcher.Of(SoluteID.Sulfur, 1), 
-                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 },
-            new RecipeVariant(
-                ComponentMatcher.Of(ModContent.ItemType<RustedNugget>(), 2),
-                ComponentMatcher.Of(SoluteID.Sulfur, 1),
-                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 },
-            new RecipeVariant(
-                ComponentMatcher.Of(SoluteID.BlackPowder, 2),
-                ComponentMatcher.Of(ModContent.ItemType<RustedNugget>(), 2),
-                ComponentMatcher.Of(ItemID.Hellstone, 1)) { OutputStack = 16 });
+                ComponentMatcher.Of(BlackPowderOrRust, 1), 
+                ComponentMatcher.Of(SoluteID.Sulfur, 2), 
+                ComponentMatcher.Of(ItemID.Hellstone, 2)) { OutputStack = 16 });
 
         // Phytoncide
-        AlchemyRecipes.CreateRecipe([SolventID.VitalTonic, SolventID.MartialTonic], phytoncide,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 });
+        AlchemyRecipes.CreateRecipe(simpleSolvents, phytoncide,
+            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 },
 
-        AlchemyRecipes.CreateRecipe(basics, phytoncide,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), 
-            ComponentMatcher.Of(ItemID.Stinger, 1), 
-            ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 });
+            new RecipeVariant(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(ItemID.Stinger, 1), 
+            ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 24 });
 
         // Mud Bottle
         int mudBottle = ModContent.ItemType<AquaTerrae>();
 
         AlchemyRecipes.CreateRecipe(SolventID.Inert, mudBottle,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.DirtBlock, 2)) { OutputStack = 16 });
+            new RecipeVariant(ComponentMatcher.Of(DirtOrMud, 2)) { OutputStack = 16 });
 
         AlchemyRecipes.CreateRecipe(ItemID.BottledWater, mudBottle,
-            new RecipeVariant(ItemID.DirtBlock, Mushroom) { OutputStack = 16 });
+            new RecipeVariant(DirtOrMud, Mushroom) { OutputStack = 16 });
 
         // Overgrowth
         int magnolia = ModContent.ItemType<MagnoliaItem>();
@@ -133,7 +124,7 @@ public partial class ChemistryRecipeSystem
             int flask = OvergrowthFlaskID.Of(strain);
 
             AlchemyRecipes.CreateRecipe(flowerStuffs, flask,
-                new RecipeVariant(strain.Seed, ItemID.MudBlock, magnolia) { OutputStack = 16 });
+                new RecipeVariant(strain.Seed, DirtOrMud, magnolia) { OutputStack = 16 });
 
             if (!strain.IsDefault)
                 AlchemyRecipes.CreateRecipe(grassFlask, flask, new RecipeVariant(strain.Seed));
