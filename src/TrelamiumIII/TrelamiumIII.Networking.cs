@@ -7,6 +7,7 @@ using TrelamiumIII.Core.ExperientialSystem.Combat;
 using TrelamiumIII.Core.ExperientialSystem.Skills;
 using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Content.NPCs.Jobbers;
+using TrelamiumIII.Content.NPCs.Silvian;
 
 namespace TrelamiumIII;
 
@@ -23,6 +24,7 @@ partial class TrelamiumIII
         DryadArrivalRequest,
         DryadArrivalStart,
         IngressRiftRequest,
+        SilvianEncounter,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -55,6 +57,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.IngressRiftRequest:
                 IngressRift.Receive(whoAmI);
+                break;
+            case MessageType.SilvianEncounter:
+                SilvianEncounter.Receive(reader, whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

@@ -39,5 +39,8 @@ public sealed class SilvianBotany1 : Job
     {
         base.OnJobComplete(giveRewards);
         Context.Play("Silvian.BotanyJob1_Complete", style: DialogueStyle.Projected);
+
+        // Queued behind the line above. Only fires while this is the last job of his line (SilvianAlmanac.HandoffJob).
+        SilvianAlmanac.OfferIfDue(Context);
     }
 }

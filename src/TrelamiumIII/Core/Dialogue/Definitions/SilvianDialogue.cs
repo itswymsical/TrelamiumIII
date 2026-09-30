@@ -1,3 +1,4 @@
+using TrelamiumIII.Content.NPCs.Silvian;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Core.Dialogue.Definitions;
@@ -15,12 +16,13 @@ class SilvianDialogue : ModDialogue
 
     protected override void Register()
     {
+        // Opened by the encounter scene (SilvianEncounter). Every answer ends on one of the Lost_ branches, which is where
+        // the job unlocks: the silent answer is dead, and would discard an unlock attached up here.
         Dialogue.Define("Silvian.Greeting")
             .Line(Speaker, emote: 0, speed: 1.4f, new Pause(16))
                 .Choice("Silvian.Greeting_True")
                 .Choice("Silvian.Greeting_Lie")
                 .Choice("Silvian.Greeting_Silent", dead: true)
-                .UnlockJob(JobID.SilvianBotany1)
             .Register();
 
         Dialogue.Define("Silvian.Greeting_True")
@@ -52,6 +54,7 @@ class SilvianDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(16)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(18), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .UnlockJob(JobID.SilvianBotany1)
             .Register();
 
         Dialogue.Define("Silvian.Lost_Trouble")
@@ -59,18 +62,37 @@ class SilvianDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.3f, [new Shake(0.7f)])
             .Line(Speaker, emote: 0, speed: 1.12f)
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(16), new Pause(18), new Pause(14)])
+            .UnlockJob(JobID.SilvianBotany1)
             .Register();
 
         Dialogue.Define("Silvian.Lost_Speedrunning")
             .Line(Speaker, emote: 0, speed: 1.3f)
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(14), new Pause(16), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .UnlockJob(JobID.SilvianBotany1)
             .Register();
 
         Dialogue.Define("Silvian.Lost_Silent")
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(14), new Pause(14)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(18), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20)])
+            .UnlockJob(JobID.SilvianBotany1)
+            .Register();
+
+        // For a player who cut the greeting short before it offered the job. See Silvian.GetEncounter.
+        Dialogue.Define("Silvian.JobOffer")
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(14), new Pause(18)])
+            .UnlockJob(JobID.SilvianBotany1)
+            .Register();
+
+        // His uncle's almanac changes hands once the conversation plays through. See SilvianAlmanac.
+        Dialogue.Define(SilvianAlmanac.HandoffKey)
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(16), new Pause(14)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(18)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(20), new Pause(14)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.3f, [new Pause(18), new Pause(20), new Pause(24), new Pause(14)])
+            .OnComplete(() => SilvianAlmanac.Give(Main.LocalPlayer))
             .Register();
 
         Dialogue.Define("Silvian.BotanyJob1_Greeting")

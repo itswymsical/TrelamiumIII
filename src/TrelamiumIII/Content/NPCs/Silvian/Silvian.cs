@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
-using Terraria.ModLoader.IO;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs.Actors;
@@ -8,6 +7,12 @@ using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.NPCs.Silvian;
 
+/// <summary>
+///     John Substrate's nephew, and the way into alchemy. The player meets him in a short scene
+///     (<see cref="SilvianEncounter" />), works his jobs, and in the end inherits his uncle's almanac
+///     (<see cref="SilvianAlmanac" />). His chat window's Help button answers questions about anything alchemical the
+///     player holds up (<see cref="SilvianCounsel" />).
+/// </summary>
 [LegacyName("Silva")]
 public class Silvian : TerrarianNPC, INarrativeSpeaker
 {
@@ -65,56 +70,44 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
     public ChatEncounter GetEncounter(Player player)
     {
-        if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == this.Type && j.State == JobState.Active))
+        if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == Type && j.State == JobState.Active))
             return ChatEncounter.None; // let the jobs handle dialogue
 
-        if (!SilvianSystem.firstChatHappened)
-        {
-            SilvianSystem.firstChatHappened = true;
-            return ChatEncounter.Play("Silvian.Greeting").Projected().WithMusic(Assets.Music.HomeForagerMusic.Slot);
-        }
+        var silvian = player.GetModPlayer<SilvianPlayer>();
 
-        return ChatEncounter.None; // todo: batch of "banter" dialogue
+        // Talked to before the encounter could trigger, so the greeting plays as a small scene of its own.
+        if (!silvian.Met)
+            return ChatEncounter.Play(SilvianEncounter.GreetingKey).Projected().AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
+
+        if (SilvianAlmanac.IsDue(player))
+            return ChatEncounter.Play(SilvianAlmanac.HandoffKey).Projected();
+
+        // The greeting was cut short before it could offer his first job.
+        if (silvian.JobStateOf(JobID.SilvianBotany1) == JobState.Locked)
+            return ChatEncounter.Play(SilvianEncounter.JobOfferKey).Projected();
+
+        return ChatEncounter.None;
     }
 
-    private static ChatEncounter Banters()
+    public override string GetChat() => SilvianCounsel.Chat(Main.LocalPlayer);
+
+    public override void SetChatButtons(ref string button, ref string button2) => button = SilvianCounsel.HelpButton;
+
+    /// <remarks>
+    ///     Like the Guide's crafting button, a press with nothing to talk about opens the inventory, so there is something to
+    ///     pick up and ask about next.
+    /// </remarks>
+    public override void OnChatButtonClicked(bool firstButton, ref string shop)
     {
-        int randomChoice = Main.rand.Next(3);
+        if (!firstButton)
+            return;
 
-        return randomChoice switch
-        {
-            0 => ChatEncounter.Play("Silvian.Banter1"),
-            1 => ChatEncounter.Play("Silvian.Banter2"),
-            2 => ChatEncounter.Play("Silvian.Banter3"),
-            _ => ChatEncounter.None,
-        };
-    }
+        Player player = Main.LocalPlayer;
 
-    //protected override IBehavior BuildScript()
-    //{
-    //    return base.BuildScript();
-    //}
-}
+        Main.npcChatText = SilvianCounsel.Answer(player, Main.mouseItem, player.HeldItem, out int subject);
+        Main.npcChatCornerItem = subject;
 
-public class SilvianSystem : ModSystem, Common.Subworlds.ISharedWorldData
-{
-    public static bool firstChatHappened;
-
-    public override void ClearWorld()
-    {
-        firstChatHappened = false;
-    }
-
-    public override void SaveWorldData(TagCompound tag)
-    {
-        if (firstChatHappened)
-        {
-            tag[nameof(firstChatHappened)] = true;
-        }
-    }
-
-    public override void LoadWorldData(TagCompound tag)
-    {
-        firstChatHappened = tag.ContainsKey(nameof(firstChatHappened));
+        if (subject == 0)
+            Main.playerInventory = true;
     }
 }

@@ -1,0 +1,92 @@
+# Silvian's chat window and Help button (Content/NPCs/Silvian/SilvianCounsel). Item names arrive with their icon
+# already attached, and principle and temperament names arrive coloured. Numbered groups can grow: every entry from
+# 0 up to the first gap is used.
+SilvianCounsel: {
+	HelpButton: Help
+
+	# His chat window. {0} is the player's name.
+	Chat: {
+		0: How goes it, {0}? Garden's comin' along nicely, if I do say so myself.
+		1: Dayblooms want the sun, and blinkroots want the dark and the damp. Plants are a lot like people that way. Hehe.
+		2: Got a question? Hold it up and hit Help. I'm no Guide, but I know my herbs.
+		3: Bring me anything strange you dig up out there. I'll tell ya whether it's worth boilin'.
+		4: My uncle could name a potion just by the smell of it. Me, I still gotta read the label.
+	}
+
+	# Help with nothing alchemical in hand, one per press, in order. Each session starts again from the top.
+	Lessons: {
+		0: Curious about somethin'? Pick it up on your cursor, or just hold it, and hit Help again. I'll tell ya what I know.
+		1: First thing you'll need is an alchemy station. Uncle J knocked his together from a cookin' pot, a bottle and a bit of wood.
+		2: Every brew starts with a solvent. That's your base, plain bottled water most of the time. It goes in the station's big slot, and everything else gets dissolved into it.
+		3: Solutes are what you dissolve: herbs, ores, fish, all sorts. They go in the little slots. Most of 'em lean toward a principle, and the principle's what decides what your brew does.
+		4: Reagents are solutes that don't lean any which way. Salts, acids, powders. They won't make a brew on their own, but they sure change one.
+		5: What comes out the other end's a solution. Drink it, or set it back in the big slot and build on it.
+		6: There's seven principles: Vital, Specular, Martial, Brisk, Fortune, Harmony and Bane. Each one's got its metal. Gold's Vital, iron's Martial, and so on.
+		7: Temperaments are how a thing behaves: acidic or alkaline, volatile or kinetic, catalytic or inert. Mix opposites and they cancel each other out.
+		8: Stack more of a solute in its slot and the brew comes out stronger, up to five stars. Costs you more leaves and stones though, mind.
+		9: Brew somethin' new and it's written down for good. Found a potion you don't know how to make? Show it to me and I'll point ya the right way.
+	}
+
+	# Help with something on the cursor he can't speak to. {0} is the item.
+	NotAlchemical: "{0}? Can't say that's much use to an alchemist. Show me a herb, an ore, a bottle, somethin' like that."
+	# Help with the almanac itself.
+	AboutAlmanac: Uncle J's almanac! Treat it kindly, now. And label your bottles, like he says.
+
+	# What the item is, by the part it plays at the station. {0} is the item.
+	Role: {
+		Solvent: "{0}? That's a solvent: a base you pour in first, and everything else gets dissolved into it."
+		Solute: "{0}? That's a solute. Goes in the station's little slots, to be dissolved into a solvent."
+		Reagent: "{0}? That's a reagent. Doesn't lean any which way on its own, but it changes what the rest of a brew does."
+		Solution: "{0}? That's a finished solution. Drink it, or set it back in the station's big slot to build on it."
+		Other: "{0}? Uncle J's got a page on that one."
+	}
+
+	# What it leans toward and how it behaves. {0} its principles, {1} its temperaments and traits.
+	Nature: {
+		Both: It leans {0}, and the almanac marks it {1}.
+		Principle: It leans {0}.
+		Temperament: The almanac marks it {1}.
+	}
+
+	# Silvian quoting his uncle's almanac. {0} is the item's entry under Almanac.FlavorText.
+	Quote: Uncle J's book says: "{0}"
+	# How to make it, once it has been brewed in this world. {0} the solvent, {1} what goes in.
+	Known: This one's been brewed around here before. Simplest way I know: {0} with {1}.
+	# How to make it, before it has been brewed. Each ask gives the next hint; the last never names everything.
+	Unbrewed: Nobody's brewed one of these around here yet, so here's a nudge.
+	# {0} the solvent, {1} how many things go in.
+	Hint1: Start from {0} and stir in {1} {^1:thing;things}.
+	# {0} what goes in, each told only by what it leans toward.
+	Hint2: What you stir in is {0}.
+	# {0} one of the things that go in.
+	Hint3: One of 'em's {0}. The rest you can work out yourself.
+	HintMore: Ask me again if you're still stuck.
+	HintsDone: That's all you're gettin' outta me. Secrets are earned, not handed over. Uncle J's words, not mine.
+	NoRecipe: Can't say I know how that one's made. Some things you find, not brew.
+	# What it goes into. {0} the brews already found, {1} how many are still to find.
+	UsesKnown: It's already gone into {0}.
+	UsesMore: There's {1} more {^1:brew;brews} it goes into that nobody's found yet.
+	UsesUnknown: It goes into {1} {^1:brew;brews}, and nobody's found a one of 'em yet.
+	# One ingredient told without naming it. {0} what it leans toward, else how it behaves.
+	Something: somethin' {0}
+	SomethingLiquid: another liquid
+	SomethingPlain: somethin' plain
+	# One ingredient accepted from a group, told by one member. {0} that member.
+	OrTheLike: "{0} or the like"
+	# One ingredient needed above one star. {0} the ingredient, {1} its stars.
+	AtPotency: "{0} at {1} stars"
+	# Lists. {0} and {1} are the items either side; AndMore ends a list cut short, {0} being how many were left off.
+	And: "{0} and {1}"
+	Comma: "{0}, {1}"
+	AndMore: "{0} more"
+
+	Principles: {
+		Vital: Vital
+		Specular: Specular
+		Martial: Martial
+		Brisk: Brisk
+		Fortune: Fortune
+		Harmony: Harmony
+		Bane: Bane
+	}
+}

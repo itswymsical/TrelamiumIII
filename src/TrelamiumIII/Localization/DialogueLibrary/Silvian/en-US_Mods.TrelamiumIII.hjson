@@ -81,6 +81,17 @@ DialogueLibrary: {
 			Line3.Text: I'll be needing some extra hands again soon,[] so keep in touch.
 		}
 
+		JobOffer.Line1.Text: Hey there,[] [speakerName:player]![] That job's still up for grabs, if you're of a mind.
+
+		# Handing over John Substrate's almanac, after the last job of his line. The book is given once this plays through.
+		Almanac_Handoff: {
+			Line1.Text: Oh![] Before ya run off,[] hold on a sec.
+			Line2.Text: This here's my Uncle John's almanac.[] John Substrate.[] Every page of it's in his own hand.
+			Line3.Text: He left it to me when he passed.[] Truth is,[] I've read it so many times I know it by heart.
+			Line4.Text: A book like this oughta be out there gettin' used,[] not sittin' on my shelf collectin' dust.
+			Line5.Text: So it's yours now,[] [speakerName:player].[] He left room in the back for whatever he didn't know.[] Fill it in for him,[] will ya?
+		}
+
 		Banter1: {
 			Line1: {
 				Text: How goes it, [speakerName:player]?

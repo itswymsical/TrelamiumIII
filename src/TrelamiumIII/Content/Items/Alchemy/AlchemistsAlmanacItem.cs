@@ -3,6 +3,10 @@ using TrelamiumIII.Core.UI.AlchemyAlmanac;
 
 namespace TrelamiumIII.Content.Items.Alchemy;
 
+/// <summary>
+///     John Substrate's almanac. It has no recipe: Silvian, his nephew, hands it over at the end of his jobs
+///     (<see cref="NPCs.Silvian.SilvianAlmanac" />).
+/// </summary>
 public class AlchemistsAlmanacItem : ModItem
 {
     public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyBookItem.KEY;
@@ -21,20 +25,5 @@ public class AlchemistsAlmanacItem : ModItem
         if (Main.myPlayer != player.whoAmI) return true;
         AlchemyAlmanacUI.ShowAlmanac();
         return true;
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe()
-        .AddIngredient(ItemID.Book)
-        .AddIngredient(ItemID.Leather)
-        .AddTile(TileID.WorkBenches)
-        .Register();
-
-        CreateRecipe()
-        .AddIngredient(ItemID.Book)
-        .AddIngredient(ItemID.Silk)
-        .AddTile(TileID.WorkBenches)
-        .Register();
     }
 }

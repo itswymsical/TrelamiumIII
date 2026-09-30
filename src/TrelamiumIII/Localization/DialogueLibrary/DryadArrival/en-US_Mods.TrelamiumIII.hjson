@@ -12,8 +12,8 @@ DialogueLibrary: {
 		Greeting: {
 			Line1.Text: Forgive the entrance.[] Crossing over is never gentle.
 			Line2.Text: So you're the one [speakerName:Guide] told me about.[] [speakerName:player], yes?
-			Line3.Text: I felt the seal break the moment it was loosened.[] Even from Ingress, I you can feel it's darkness echoing.
-			Line4.Text: "this isn't something can't be fought, at least not the way you're used to.[] But it can be mitigated,[] and that is what I can teach you to do."
+			Line3.Text: I felt the seal break the moment it was loosened.[] Even from Ingress, you can feel it's darkness echoing.
+			Line4.Text: this isn't something can't be fought, at least not the way you're used to.[] But it can be mitigated,[] and that is what I can teach you to do.
 			Line5.Text: Give me a little time to settle in.[] Then come and find me,[] and we'll see what can be done.
 		}
 
