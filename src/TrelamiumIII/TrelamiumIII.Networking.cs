@@ -5,6 +5,7 @@ using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.ExperientialSystem;
 using TrelamiumIII.Core.ExperientialSystem.Combat;
 using TrelamiumIII.Core.ExperientialSystem.Skills;
+using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Content.NPCs.Jobbers;
 
 namespace TrelamiumIII;
@@ -18,6 +19,9 @@ partial class TrelamiumIII
         GrantExperience,
         SkillSet,
         JobberClaim,
+        DryadBriefed,
+        DryadArrivalRequest,
+        DryadArrivalStart,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -42,6 +46,11 @@ partial class TrelamiumIII
                 break;
             case MessageType.JobberClaim:
                 Jobber.ReceiveClaim(reader);
+                break;
+            case MessageType.DryadBriefed:
+            case MessageType.DryadArrivalRequest:
+            case MessageType.DryadArrivalStart:
+                DryadArrivalSystem.Receive(msgType, reader, whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

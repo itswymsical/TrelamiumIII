@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
@@ -26,6 +27,8 @@ public sealed class EyeOfCthulhuWake : GlobalNPC
 
         // Also syncs: mod flags ride the same world-data packet.
         NPC.SetEventFlagCleared(ref DownedBossSystem.SeenEyeOfCthulhuWake, -1);
+
+        DryadArrivalSystem.OnEyeOfCthulhuKilled();
     }
 }
 
@@ -57,6 +60,9 @@ public sealed class EyeOfCthulhuWakeSystem : ModSystem
 
     /// <summary>Where the Eye died. The cutscene frames and vortexes on this.</summary>
     public static Vector2 Center => center;
+
+    /// <summary>True from the death until the cutscene has been handed off, so other scenes can wait for it.</summary>
+    public static bool Active => countdown >= 0;
 
     /// <summary>Arms the sequence. Safe to call more than once per death; the first call wins.</summary>
     public static void Arm(Vector2 deathCenter, bool firstKill)

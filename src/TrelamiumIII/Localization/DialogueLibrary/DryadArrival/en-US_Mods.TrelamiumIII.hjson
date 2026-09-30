@@ -1,0 +1,21 @@
+DialogueLibrary: {
+	DryadArrival: {
+		# Placeholder text. Each [] is a pause anchor and must match the Pause count in DryadArrivalDialogue.
+		Briefing: {
+			Line1.Text: ...Did you see that?[] The way it pulled the Eye apart, piece by piece.
+			Line2.Text: That wasn't the Eye's doing.[] Something took what was left of it.[] Something old.
+			Line3.Text: I've read about it, once.[] Apathia.[] A magic that doesn't hate, or hunt, or want anything at all.
+			Line4.Text: It just stops things from mattering.[] And with the Eye gone, it's back in the world.
+			Line5.Text: Don't look at me like that, [speakerName:player].[] I'm not going to leave you to face it alone.
+			Line6.Text: I know someone who can help.[] A friend of mine,[] from another world entirely.[] She's on her way,[] so be kind to her.
+		}
+
+		Greeting: {
+			Line1.Text: Forgive the entrance.[] Crossing over is never gentle.
+			Line2.Text: So you're the one he told me about.[] [speakerName:player], wasn't it?
+			Line3.Text: I felt it the moment it was loosed.[] Apathia. Even from the other side, it hums like a held breath.
+			Line4.Text: It can't be fought, not the way you're used to.[] But it can be calmed,[] and that is the work I do.
+			Line5.Text: Give me a little time to settle in.[] Then come and find me,[] and we'll see what can be done.
+		}
+	}
+}

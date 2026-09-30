@@ -109,6 +109,15 @@ public static class SpeakerRegistry
             Color = new(214, 178, 120),
         });
 
+        // No portrait or voice recorded yet; the voice is Sophie's as a stand-in.
+        Register(new SpeakerProfile
+        {
+            Id = "Dryad",
+            FrameCount = 1,
+            Color = new(122, 190, 112),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
+        });
+
         Register(new SpeakerProfile
         {
             Id = "NerdySlime",
