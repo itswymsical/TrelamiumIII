@@ -1,110 +1,41 @@
-﻿using Terraria.Audio;
-using Terraria.GameContent;
-using TrelamiumIII.Core.Gas;
-using TrelamiumIII.Core.Gas.Layers;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Content.KingSlime;
 
-public class GelBallProjectile : ModProjectile
+/// <summary>
+///     The King Slime's gel blob: the blaster's shot, hostile. Its gel belongs to no player, so the coat it leaves
+///     slows everyone and its nodes never afflict NPCs.
+/// </summary>
+public class GelBallProjectile : GelShotProjectile
 {
-    public override void SetStaticDefaults()
-    {
-        ProjectileID.Sets.TrailCacheLength[Type] = 2;
-        ProjectileID.Sets.TrailingMode[Type] = 0;
-        Main.projFrames[Type] = 4;
-    }
+    public override string Texture => AssetReferences.Content.KingSlime.GelBallProj.KEY;
+
+    protected override int NodeOwner => FieldNode.NoOwner;
+
+    protected override ChemicalPayload? Payload => null;
+
+    protected override int NodeCeiling => GelVolley.NODE_CEILING;
 
     public override void SetDefaults()
     {
-        Projectile.width = 16;
-        Projectile.height = 16;
+        base.SetDefaults();
+
         Projectile.hostile = true;
-        Projectile.aiStyle = ProjAIStyleID.Arrow;
-        Projectile.penetrate = 1;
-        Projectile.alpha = 100;
-        Projectile.timeLeft = 300;
-        Projectile.scale = 1.25f;
     }
 
-    public override bool OnTileCollide(Vector2 oldVelocity)
-    {
-        int tileX = (int)(Projectile.Center.X / 16f);
-        int tileY = (int)(Projectile.Center.Y / 16f);
-
-        for (int x = tileX - 1; x <= tileX + 1; x++)
-        {
-            for (int y = tileY - 1; y <= tileY + 1; y++)
-            {
-                if (WorldGen.InWorld(x, y))
-                {
-                    Tile tile = Framing.GetTileSafely(x, y);
-
-                    if (tile.HasTile && Main.tileSolid[tile.TileType])
-                    {
-                        SlimedCondition.Splatter(new Vector2(x, y), 28f);
-                    }
-                }
-            }
-        }
-
-        SoundEngine.PlaySound(Assets.SFX.SlimeConsume.Asset with { Pitch = -0.3f ,Volume = 0.33f}, Projectile.position);
-        for (int i = 0; i < 30; i++)
-        {
-            Dust dust = Dust.NewDustPerfect(Projectile.position, DustID.t_Slime, -Vector2.UnitY.RotatedByRandom(MathHelper.PiOver2) * 4f, 100, 
-                new Color(86, 162, 255, 100), 1.4f);
-            dust.noGravity = true;
-        }
-
-        return true;
-    }
-
-    const int count = 3;
-    const float speed = 5f;
-    public override void AI()
-    {
-        base.AI();
-        Projectile.frameCounter++;
-        if (Projectile.frameCounter >= 5)
-        {
-            Projectile.frameCounter = 0;
-            Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
-        }
-
-        if (FieldSystem.GetLayer<GelField>() is not { } layer)
-            return;
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector2 drift = Projectile.Center.RotatedByRandom(0.5f) * Main.rand.NextFloat(speed * 0.4f, speed);
-
-            layer.SpawnNode(Projectile.Center, drift, radius: Main.rand.NextFloat(5f, 8f), life: 18f, owner: Projectile.owner);
-        }
-    }
+    /// <summary>Shots spawned with no damage are scenery.</summary>
+    public override bool CanHitPlayer(Player target) => Projectile.damage > 0;
 
     public override void OnHitPlayer(Player target, Player.HurtInfo info)
     {
         target.AddBuff(BuffID.Slow, 5 * 60);
         target.AddBuff(BuffID.Slimed, 5 * 60);
-    }
 
-    public override bool PreDraw(ref Color lightColor)
-    {
-        Main.instance.LoadProjectile(Projectile.type);
-        var texture = TextureAssets.Projectile[Projectile.type].Value;
+        BurstOnHit();
 
-        var frameHeight = texture.Height / Main.projFrames[Projectile.type];
-        var sourceRectangle = new Rectangle(0, frameHeight * Projectile.frame, texture.Width, frameHeight);
-
-        Vector2 drawOrigin = new(texture.Width * 0.5f, Projectile.height * 0.5f);
-        for (var k = 0; k < Projectile.oldPos.Length; k++)
-        {
-            var drawPos = Projectile.oldPos[k] - Main.screenPosition + drawOrigin + new Vector2(0f, Projectile.gfxOffY);
-            var color = Projectile.GetAlpha(lightColor) * ((Projectile.oldPos.Length - k) / (float)Projectile.oldPos.Length);
-            Main.EntitySpriteDraw(texture, drawPos, sourceRectangle, color, Projectile.rotation, drawOrigin, Projectile.scale, SpriteEffects.None, 0);
-        }
-
-        return true;
+        // Vanilla does not spend a hostile projectile's penetration on a player hit.
+        Projectile.Kill();
     }
 }

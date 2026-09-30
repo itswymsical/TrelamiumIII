@@ -1,13 +1,11 @@
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Projectiles;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Content.Items.Weapons.Misc;
@@ -149,144 +147,21 @@ public class GelatinousBlasterProj : BurstGunProjectile
     }
 }
 
-/// <summary>
-///     A blob of gel in flight. Mostly a hitbox: what the player sees is the <see cref="GelField" /> trail it lays every tick.
-/// </summary>
-public class GelBallProj : ModProjectile
+/// <summary>The blaster's gel blob: a player shot that carries the weapon's chemistry and slows what it hits.</summary>
+public class GelBallProj : GelShotProjectile
 {
-    /// <summary>Pixels of terrain coated when the blob bursts.</summary>
-    private const float SPLATTER_RADIUS = 28f;
-
-    /// <summary>Nodes thrown out by the burst.</summary>
-    private const int BURST_NODES = 9;
-
-    public override void SetStaticDefaults()
-    {
-        ProjectileID.Sets.TrailCacheLength[Type] = 5;
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-    }
-
     public override void SetDefaults()
     {
-        Projectile.width = Projectile.height = 12;
+        base.SetDefaults();
+
         Projectile.friendly = true;
         Projectile.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Projectile.penetrate = 1;
-        Projectile.timeLeft = 240;
-        Projectile.tileCollide = true;
-        Projectile.aiStyle = -1;
-        Projectile.scale = 1f;
-    }
-
-    public override void AI()
-    {
-        Projectile.velocity.Y += 0.16f;
-        Projectile.velocity.X *= 0.997f;
-
-        Projectile.rotation += Projectile.velocity.X * 0.04f;
-
-        Trail();
-    }
-
-    /// <summary>Lays gel from a point behind the blob, thinning as it travels.</summary>
-    private void Trail()
-    {
-        if (FieldSystem.GetLayer<GelField>() is not { } layer)
-            return;
-
-        Vector2 behind = Projectile.Center - Projectile.velocity * 0.4f;
-        Vector2 drift = Projectile.velocity * 0.12f + Main.rand.NextVector2Circular(0.6f, 0.6f);
-
-        layer.SpawnNode(
-            behind,
-            drift,
-            radius: Main.rand.NextFloat(6f, 9f),
-            life: Main.rand.NextFloat(16f, 26f),
-            owner: Projectile.owner,
-            payload: ChemicalHandler.PayloadOf(Projectile)
-        );
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
         target.AddBuff(BuffID.Slow, 120);
 
-        Burst(Projectile.Center, -Projectile.velocity.SafeNormalize(-Vector2.UnitY), Projectile.owner, ChemicalHandler.PayloadOf(Projectile), coatTerrain: false);
-    }
-
-    /// <summary>Bursts against terrain, splashing along the collision normal so floors spread and walls run.</summary>
-    public override bool OnTileCollide(Vector2 oldVelocity)
-    {
-        var normal = new Vector2(
-            Projectile.velocity.X != oldVelocity.X ? -MathF.Sign(oldVelocity.X) : 0f,
-            Projectile.velocity.Y != oldVelocity.Y ? -MathF.Sign(oldVelocity.Y) : 0f
-        );
-
-        Burst(Projectile.Center, normal.SafeNormalize(-Vector2.UnitY), Projectile.owner, ChemicalHandler.PayloadOf(Projectile), coatTerrain: true);
-
-        Projectile.Kill();
-
-        return false;
-    }
-
-    public override void OnKill(int timeLeft)
-        => SoundEngine.PlaySound(SoundID.NPCHit1 with { Volume = 0.5f, Pitch = 0.5f, MaxInstances = 4 }, Projectile.Center);
-
-    /// <summary>Throws gel outward and, on a terrain hit, coats what is under it.</summary>
-    private static void Burst(Vector2 position, Vector2 outward, int owner, ChemicalPayload? payload, bool coatTerrain)
-    {
-        if (coatTerrain)
-            SlimedCondition.Splatter(position, SPLATTER_RADIUS, intensity: 0.9f, owner: owner);
-
-        if (FieldSystem.GetLayer<GelField>() is not { } layer)
-            return;
-
-        float speed = payload?.Stats.BurstSpeedMultiplier ?? 1f;
-        int count = (int)MathF.Round(BURST_NODES * (payload?.Stats.BurstCountMultiplier ?? 1f));
-
-        for (int i = 0; i < count; i++)
-        {
-            // Biased along the surface rather than straight out of it: a splash spreads across what
-            // it landed on, and a cone centred on the normal would have it standing up off the wall.
-            Vector2 direction = outward.RotatedByRandom(MathHelper.PiOver2 * 0.9f);
-
-            layer.SpawnNode(
-                position + direction * 4f,
-                direction * Main.rand.NextFloat(1.5f, 4.5f) * speed,
-                radius: Main.rand.NextFloat(7f, 12f),
-                life: Main.rand.NextFloat(52f, 66f),
-                owner: owner,
-                payload: payload
-            );
-        }
-    }
-
-    public override bool PreDraw(ref Color lightColor)
-    {
-        Main.instance.LoadProjectile(Projectile.type);
-
-        Texture2D texture = TextureAssets.Projectile[Projectile.type].Value;
-        Vector2 origin = texture.Size() / 2f;
-
-        for (int i = 0; i < Projectile.oldPos.Length; i++)
-        {
-            if (Projectile.oldPos[i] == Vector2.Zero)
-                continue;
-
-            float fade = (Projectile.oldPos.Length - i) / (float)Projectile.oldPos.Length;
-            Vector2 position = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-
-            Main.EntitySpriteDraw(
-                texture, position, null, Projectile.GetAlpha(lightColor) * fade * 0.6f,
-                Projectile.oldRot[i], origin, Projectile.scale * fade, SpriteEffects.None, 0
-            );
-        }
-
-        Main.EntitySpriteDraw(
-            texture, Projectile.Center - Main.screenPosition, null, Projectile.GetAlpha(lightColor),
-            Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0
-        );
-
-        return false;
+        BurstOnHit();
     }
 }

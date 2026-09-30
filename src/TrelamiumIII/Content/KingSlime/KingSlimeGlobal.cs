@@ -3,7 +3,11 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
+using Terraria.Localization;
+using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
+using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Tiles.Conditions.Types;
 using TrelamiumIII.Utilities;
 
@@ -132,6 +136,10 @@ public class KingSlimeRework : GlobalNPC
         public bool deathAnimationStarted;
         public float deathScale;
         public int deathAnimationPhase;
+        public bool introStarted;
+        public float introScaleMultiplier;
+        public int feedings;
+        public int slimesEaten;
     }
 
     private NPCExtraData GetExtraData(NPC npc)
@@ -163,7 +171,11 @@ public class KingSlimeRework : GlobalNPC
                 targetBounceSlams = 3,
                 deathAnimationStarted = false,
                 deathScale = 1f,
-                deathAnimationPhase = 0
+                deathAnimationPhase = 0,
+                introStarted = false,
+                introScaleMultiplier = 1f,
+                feedings = 0,
+                slimesEaten = 0
             };
         }
         return npcExtraData[npc.whoAmI];
@@ -174,17 +186,19 @@ public class KingSlimeRework : GlobalNPC
         npcExtraData[npc.whoAmI] = data;
     }
 
+    /// <summary>Scale from health alone, before any teleport or intro multiplier.</summary>
+    private static float GetHealthScale(NPC npc)
+        => Math.Max(MathHelper.Lerp(0.65f, 1.55f, (float)npc.life / npc.lifeMax), 0.45f);
+
     private void UpdateScale(NPC npc)
     {
-        var healthPercentage = (float)npc.life / npc.lifeMax;
-        var newScale = MathHelper.Lerp(0.65f, 1.55f, healthPercentage);
-
-        if (newScale < 0.45f)
-            newScale = 0.45f;
+        var newScale = GetHealthScale(npc);
 
         var extraData = GetExtraData(npc);
         if (GetState(npc) == AIState.Teleporting)
             newScale *= extraData.teleportScaleMultiplier;
+        else if (GetState(npc) == AIState.Intro)
+            newScale *= extraData.introScaleMultiplier;
 
         npc.scale = newScale;
         UpdateDefenseBasedOnScale(npc);
@@ -209,11 +223,16 @@ public class KingSlimeRework : GlobalNPC
     private void UpdateHitbox(NPC npc)
     {
         var center = npc.Center;
+        var bottom = npc.Bottom;
 
         npc.width = (int)(BASE_WIDTH * npc.scale);
         npc.height = (int)(BASE_HEIGHT * npc.scale);
 
-        npc.position = center - new Vector2(npc.width / 2, npc.height / 2);
+        // The intro and teleport scale it in and out, so it resizes on its feet rather than sinking into the floor.
+        if (GetState(npc) is AIState.Intro or AIState.Teleporting)
+            npc.Bottom = bottom;
+        else
+            npc.position = center - new Vector2(npc.width / 2, npc.height / 2);
     }
 
     private float GetScaledJumpHeight(NPC npc)
@@ -222,6 +241,10 @@ public class KingSlimeRework : GlobalNPC
         var scaleMultiplier = MathHelper.Lerp(1.4f, 0.8f, npc.scale / 1.35f);
         return baseHeight * scaleMultiplier;
     }
+
+    /// <summary>Horizontal speed factor: <see cref="MIN_SPEED_MULTIPLIER" /> at full health, rising to 1 as health runs out.</summary>
+    private static float GetSpeedMultiplier(NPC npc)
+        => MathHelper.Lerp(1f, MIN_SPEED_MULTIPLIER, (float)npc.life / npc.lifeMax);
 
     private ref float GetTimer(NPC npc) => ref npc.ai[1];
 
@@ -234,7 +257,8 @@ public class KingSlimeRework : GlobalNPC
         Despawning,
         ConsumingSlimes,
         BounceHouse,
-        DeathAnimation
+        DeathAnimation,
+        Intro
     }
 
     internal enum TeleportPhase
@@ -249,15 +273,34 @@ public class KingSlimeRework : GlobalNPC
     private const int BASE_WIDTH = 158;
     private const int BASE_HEIGHT = 106;
 
+    /// <summary>Horizontal speed factor at full health.</summary>
+    private const float MIN_SPEED_MULTIPLIER = 0.55f;
+
     private const float CONSUME_DETECTION_RANGE = 200f;
-    private const float SCALE_PER_SLIME = 0.05f;
-    private const float MAX_CONSUME_SCALE = 2.0f;
-    private const float HP_PER_SLIME = 0.08f;
+
+    /// <summary>Health restored per slime eaten, as a fraction of max health.</summary>
+    private const float CONSUME_HEAL_FRACTION = 0.012f;
+    private const int CONSUME_MAX_SLIMES = 3;
+    private const int CONSUME_MAX_FEEDINGS = 2;
+    private const float CONSUME_MAX_TICKS = 180f;
 
     private const float CONSUME_COOLDOWN = 600f;
 
     private const float TELEPORT_COOLDOWN = 240f;
     private const float LINE_OF_SIGHT_TIMEOUT = 240f;
+
+    /// <summary>A teleport lands at least the minimum from every player, and up to the maximum to either side of its target.</summary>
+    private const int TELEPORT_MIN_TILES = 24;
+    private const int TELEPORT_MAX_TILES = 40;
+
+    /// <summary>Tiles above and below the player the landing search starts from.</summary>
+    private const int TELEPORT_SEARCH_HEIGHT = 12;
+    private const int TELEPORT_ATTEMPTS = 60;
+
+    private const int INTRO_REVEAL_TICKS = 75;
+    private const int INTRO_HOLD_TICKS = 110;
+    private const int INTRO_MIN_TILES = 26;
+    private const int INTRO_MAX_TILES = 34;
 
     private const float STUCK_TIMEOUT = 180f;
     private const float MIN_MOVEMENT_THRESHOLD = 16f;
@@ -316,6 +359,8 @@ public class KingSlimeRework : GlobalNPC
 
         var extraData = GetExtraData(npc);
 
+        StartIntro(npc);
+
         if (GetState(npc) != AIState.DeathAnimation)
         {
             UpdateScale(npc);
@@ -331,7 +376,7 @@ public class KingSlimeRework : GlobalNPC
         HandleDustTrail(npc);
         HandleSlimeTrail(npc);
 
-        if (GetState(npc) != AIState.DeathAnimation)
+        if (GetState(npc) is not (AIState.DeathAnimation or AIState.Intro))
         {
             UpdateLOS(npc, target);
             HandlePatternTeleport(npc, target);
@@ -341,6 +386,9 @@ public class KingSlimeRework : GlobalNPC
 
         switch (GetState(npc))
         {
+            case AIState.Intro:
+                DoIntro(npc, target);
+                break;
             case AIState.Strolling:
                 DoStrolling(npc, target);
                 break;
@@ -520,11 +568,13 @@ public class KingSlimeRework : GlobalNPC
                 break;
 
             case AIState.ConsumingSlimes:
-                if (!HasNearbySlimes(npc))
+                if (extraData.feedings >= CONSUME_MAX_FEEDINGS || !HasNearbySlimes(npc))
                 {
                     AdvancePatternStep(npc);
                     return;
                 }
+
+                BeginFeeding(npc);
                 break;
 
             case AIState.Strolling:
@@ -554,7 +604,7 @@ public class KingSlimeRework : GlobalNPC
                 return extraData.bounceHouseSlams >= extraData.targetBounceSlams && npc.velocity.Y == 0f && timer > 60;
 
             case AIState.ConsumingSlimes:
-                return timer >= 450f || !HasNearbySlimes(npc);
+                return IsFeedingDone(npc, timer);
 
             case AIState.Strolling:
                 return GetStrollCount(npc) >= extraData.targetStrolls;
@@ -590,11 +640,10 @@ public class KingSlimeRework : GlobalNPC
         if (extraData.lineOfSightTimer >= LINE_OF_SIGHT_TIMEOUT * 1.5f)
             shouldTeleport = true;
 
-        if (shouldTeleport && Main.netMode != NetmodeID.MultiplayerClient)
+        if (shouldTeleport && Main.netMode != NetmodeID.MultiplayerClient && BeginTeleport(npc, target))
         {
             patternData.patternOverride = true;
             SetPatternData(npc, patternData);
-            BeginTeleport(npc, target);
         }
     }
 
@@ -613,7 +662,7 @@ public class KingSlimeRework : GlobalNPC
         if (currentPhase == PatternType.Phase1)
             return;
 
-        if (Main.GameUpdateCount - extraData.lastConsumeTime < CONSUME_COOLDOWN)
+        if (extraData.feedings >= CONSUME_MAX_FEEDINGS || Main.GameUpdateCount - extraData.lastConsumeTime < CONSUME_COOLDOWN)
             return;
 
         var nearbySlimes = CountNearbySlimes(npc);
@@ -638,6 +687,7 @@ public class KingSlimeRework : GlobalNPC
             SetPatternData(npc, patternData);
             SetState(npc, AIState.ConsumingSlimes);
             GetTimer(npc) = 0;
+            BeginFeeding(npc);
             npc.netUpdate = true;
         }
     }
@@ -760,20 +810,9 @@ public class KingSlimeRework : GlobalNPC
                     dust.velocity = dustVel;
                 }
 
-                for (var i = 0; i < 30; i++)
-                {
-                    var angle = i / 30f * MathHelper.TwoPi;
-                    var velocity = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) *
-                                      Main.rand.NextFloat(8f, 15f);
+                GelVolley.Radial(npc, count: 12, minSpeed: 7f, maxSpeed: 11f);
 
-                    var spawnPos = npc.Center + Main.rand.NextVector2Circular(20f, 20f);
-                    var projType = ModContent.ProjectileType<GelBallProjectile>();
-                    var proj = Main.projectile[Projectile.NewProjectile(npc.GetSource_FromAI(), spawnPos, velocity, projType, 0, 0f)];
-                    proj.friendly = true;
-                }
-
-                NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, NPCID.TownSlimeBlue);
-
+                // The Nerdy Slime comes from vanilla's kill handler, once per world.
                 CameraSystem.shake = 20;
 
                 SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with
@@ -808,16 +847,18 @@ public class KingSlimeRework : GlobalNPC
         var strollDuration = 54f;
         var progress = timer / strollDuration;
 
+        var speedMultiplier = GetSpeedMultiplier(npc);
+
         var easedProgress = EaseFunction.EaseCubicInOut.Ease(progress);
         var velocityCurve = (float)Math.Sin(easedProgress * Math.PI);
-        var targetSpeed = velocityCurve * MathHelper.PiOver2 * 1.25f;
+        var targetSpeed = velocityCurve * MathHelper.PiOver2 * 1.25f * speedMultiplier;
 
         var glideStrength = 0.92f;
         var accelStrength = 0.112f;
 
         npc.velocity.X = npc.velocity.X * glideStrength + targetSpeed * dirToPlayer * accelStrength;
 
-        var maxVel = 5f;
+        var maxVel = 5f * speedMultiplier;
         if (Math.Abs(npc.velocity.X) > maxVel)
             npc.velocity.X = maxVel * Math.Sign(npc.velocity.X);
 
@@ -850,7 +891,7 @@ public class KingSlimeRework : GlobalNPC
                 npc.netUpdate = true;
 
                 var baseJumpHeight = GetScaledJumpHeight(npc);
-                var baseXVelocity = 2.08f;
+                var baseXVelocity = 2.08f * GetSpeedMultiplier(npc);
                 var overshoot = Main.rand.NextFloat() < 0.33f ? 1.3f : 1f;
                 npc.velocity.Y = baseJumpHeight;
                 npc.velocity.X = baseXVelocity * dirToPlayer * overshoot;
@@ -862,11 +903,12 @@ public class KingSlimeRework : GlobalNPC
         }
         else
         {
-            var maxSpeed = 4f;
+            var speedMultiplier = GetSpeedMultiplier(npc);
+            var maxSpeed = 4f * speedMultiplier;
             if (dirToPlayer == 1 && npc.velocity.X < maxSpeed ||
                 dirToPlayer == -1 && npc.velocity.X > -maxSpeed)
             {
-                npc.velocity.X += 0.15f * dirToPlayer;
+                npc.velocity.X += 0.15f * dirToPlayer * speedMultiplier;
             }
 
             if (timer > 30 && npc.velocity.Y > 0)
@@ -907,7 +949,7 @@ public class KingSlimeRework : GlobalNPC
                     SoundEngine.PlaySound(Assets.SFX.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
 
                     npc.velocity.Y = -14f;
-                    npc.velocity.X = 2f * dirToPlayer;
+                    npc.velocity.X = 2f * dirToPlayer * GetSpeedMultiplier(npc);
 
                     for (var i = 0; i < 10; i++)
                     {
@@ -925,11 +967,12 @@ public class KingSlimeRework : GlobalNPC
 
             case 1:
                 npc.damage = 30;
-                var maxSpeed = 3f;
+                var speedMultiplier = GetSpeedMultiplier(npc);
+                var maxSpeed = 3f * speedMultiplier;
                 if (dirToPlayer == 1 && npc.velocity.X < maxSpeed ||
                     dirToPlayer == -1 && npc.velocity.X > -maxSpeed)
                 {
-                    npc.velocity.X += 0.1f * dirToPlayer;
+                    npc.velocity.X += 0.1f * dirToPlayer * speedMultiplier;
                 }
 
                 if (Math.Abs(npc.velocity.X) > 0.1f)
@@ -938,7 +981,7 @@ public class KingSlimeRework : GlobalNPC
                 if (npc.velocity.Y > 0f)
                 {
                     npc.velocity = new Vector2(
-                        target.Center.X > npc.Center.X ? 2f : -2f,
+                        (target.Center.X > npc.Center.X ? 2f : -2f) * speedMultiplier,
                         12f
                     );
                     npc.spriteDirection = target.Center.X > npc.Center.X ? -1 : 1;
@@ -983,39 +1026,15 @@ public class KingSlimeRework : GlobalNPC
 
                     var distToPlayer = Vector2.Distance(npc.Center, target.Center) / 16f;
 
-                    int gelBallCount;
-                    float baseVelocity;
-                    float velocityVariance;
+                    // The spray reaches further the further away the player is.
+                    var (perSide, reachTiles) = distToPlayer switch
+                    {
+                        <= 20f => (4, 20f),
+                        <= 42f => (5, 30f),
+                        _ => (6, 40f)
+                    };
 
-                    if (distToPlayer <= 20f)
-                    {
-                        gelBallCount = 10;
-                        baseVelocity = 7.5f;
-                        velocityVariance = 1.6f;
-                    }
-                    else if (distToPlayer <= 42f)
-                    {
-                        gelBallCount = 14;
-                        baseVelocity = 9f;
-                        velocityVariance = 2.1f;
-                    }
-                    else
-                    {
-                        gelBallCount = 18;
-                        baseVelocity = 11f;
-                        velocityVariance = 3f;
-                    }
-
-                    for (var i = 0; i < gelBallCount; i++)
-                    {
-                        var angle = MathHelper.Lerp(-MathHelper.PiOver2 - 0.8f, -MathHelper.PiOver2 + 0.8f, (float)i / (gelBallCount - 1));
-                        var velocity = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) *
-                                          (baseVelocity + Main.rand.NextFloat(-velocityVariance, velocityVariance));
-
-                        var spawnPos = npc.Center + new Vector2(Main.rand.NextFloat(-20f, 20f), 0f);
-                        var projType = ModContent.ProjectileType<GelBallProjectile>();
-                        Projectile.NewProjectile(npc.GetSource_FromAI(), spawnPos, velocity, projType, 3, 0.5f);
-                    }
+                    GelVolley.Fan(npc, perSide, near: 3 * 16f, far: reachTiles * 16f, phase: 0f, damage: 3, knockback: 0.5f);
 
                     if (extraData.targetGroundPounds > 1 && Main.rand.NextBool(2))
                     {
@@ -1245,31 +1264,10 @@ public class KingSlimeRework : GlobalNPC
 
     private void BounceHouseProjectiles(NPC npc)
     {
-        var gelBallCount = 24;
-        var baseVelocity = 8f;
-        var velocityVariance = 3f;
+        // Every other slam lands between the previous one's shots, so a run of slams never repeats its gaps.
+        var phase = GetExtraData(npc).bounceHouseSlams % 2 * 0.5f;
 
-        for (var i = 0; i < gelBallCount; i++)
-        {
-            var angle = (float)i / gelBallCount * MathHelper.TwoPi;
-            var velocity = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) *
-                              (baseVelocity + Main.rand.NextFloat(-velocityVariance, velocityVariance));
-
-            var spawnPos = npc.Center + new Vector2(Main.rand.NextFloat(-25f, 25f), -5f);
-            var projType = ModContent.ProjectileType<GelBallProjectile>();
-            Projectile.NewProjectile(npc.GetSource_FromAI(), spawnPos, velocity, projType, 4, 0.7f);
-        }
-
-        for (var i = 0; i < 12; i++)
-        {
-            var angle = MathHelper.Lerp(-MathHelper.PiOver2 - 1f, -MathHelper.PiOver2 + 1f, i / 11f);
-            var velocity = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) *
-                              (10f + Main.rand.NextFloat(-2f, 3f));
-
-            var spawnPos = npc.Center + new Vector2(Main.rand.NextFloat(-30f, 30f), -10f);
-            var projType = ModContent.ProjectileType<GelBallProjectile>();
-            Projectile.NewProjectile(npc.GetSource_FromAI(), spawnPos, velocity, projType, 5, 0.8f);
-        }
+        GelVolley.Fan(npc, perSide: 4, near: 4 * 16f, far: 26 * 16f, phase: phase, damage: 4, knockback: 0.7f);
     }
 
     private void DoTeleporting(NPC npc, Player target)
@@ -1310,7 +1308,7 @@ public class KingSlimeRework : GlobalNPC
                 }
                 else if (timer >= 35f && Main.netMode != NetmodeID.MultiplayerClient)
                 {
-                    npc.Bottom = new Vector2(npc.localAI[1], npc.localAI[2]);
+                    PlaceAtDestination(npc, target);
                     extraData.teleportPhase = TeleportPhase.Execute;
                     timer = 0;
                     npc.netUpdate = true;
@@ -1374,6 +1372,25 @@ public class KingSlimeRework : GlobalNPC
     }
 
 
+    /// <summary>
+    ///     Moves the slime to the landing picked when the teleport began, or to a fresh one if a player has moved within
+    ///     the safe distance of it since.
+    /// </summary>
+    private static void PlaceAtDestination(NPC npc, Player target)
+    {
+        var bottom = new Vector2(npc.localAI[1], npc.localAI[2]);
+        var scale = GetHealthScale(npc);
+
+        if (!IsSafeLanding(bottom, (int)(BASE_WIDTH * scale), (int)(BASE_HEIGHT * scale), TELEPORT_MIN_TILES)
+            && !TryFindSafeSpot(npc, target, TELEPORT_MIN_TILES, TELEPORT_MAX_TILES, out bottom))
+            bottom = npc.Bottom;
+
+        npc.localAI[1] = bottom.X;
+        npc.localAI[2] = bottom.Y;
+        npc.Bottom = bottom;
+        npc.velocity = Vector2.Zero;
+    }
+
     private void CompleteTeleport(NPC npc)
     {
         var extraData = GetExtraData(npc);
@@ -1415,35 +1432,18 @@ public class KingSlimeRework : GlobalNPC
 
         npc.velocity *= 0.85f;
 
-        if (timer % 15 == 0)
+        // Never on the entry tick, which is before the feeding is counted.
+        if (timer > 0 && timer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
         {
-            for (var i = 0; i < Main.maxNPCs; i++)
+            for (var i = 0; i < Main.maxNPCs && extraData.slimesEaten < CONSUME_MAX_SLIMES; i++)
             {
                 var slime = Main.npc[i];
 
-                if (slime.active && slime.aiStyle == NPCAIStyleID.Slime
-                    && slime.type != NPCID.KingSlime && !slime.boss)
+                if (IsEdible(npc, slime) && npc.Hitbox.Intersects(slime.Hitbox))
                 {
-                    var distance = Vector2.Distance(npc.Center, slime.Center);
-
-                    if (distance <= CONSUME_DETECTION_RANGE)
-                    {
-                        if (npc.Hitbox.Intersects(slime.Hitbox))
-                        {
-                            ConsumeSlime(npc, slime);
-                        }
-                    }
+                    ConsumeSlime(npc, slime);
+                    extraData.slimesEaten++;
                 }
-            }
-
-            if (timer % 30 == 0)
-            {
-                var healAmount = (int)(npc.lifeMax * 0.02f);
-                npc.life += healAmount;
-                npc.HealEffect(healAmount);
-
-                if (npc.life > npc.lifeMax)
-                    npc.life = npc.lifeMax;
             }
         }
 
@@ -1464,7 +1464,7 @@ public class KingSlimeRework : GlobalNPC
             dust.fadeIn = 1.2f;
         }
 
-        if (timer >= 450f || !HasNearbySlimes(npc))
+        if (IsFeedingDone(npc, timer))
         {
             extraData.lastConsumeTime = Main.GameUpdateCount;
             SetExtraData(npc, extraData);
@@ -1482,6 +1482,156 @@ public class KingSlimeRework : GlobalNPC
             }
         }
     }
+    #endregion
+
+    #region Intro
+
+    /// <summary>Starts the title card on this client. Cosmetic, so it is never synced and a client that joins mid-fight gets none.</summary>
+    private void StartIntro(NPC npc)
+    {
+        var extraData = GetExtraData(npc);
+
+        if (Main.dedServ || extraData.introStarted || GetState(npc) != AIState.Intro)
+            return;
+
+        extraData.introStarted = true;
+        SetExtraData(npc, extraData);
+
+        if (GetTimer(npc) <= INTRO_REVEAL_TICKS)
+            BossIntroSystem.Play(CreateIntro());
+    }
+
+    private static BossIntro CreateIntro() => new()
+    {
+        Name = Lang.GetNPCNameValue(NPCID.KingSlime),
+        Epithet = Language.GetTextValue($"Mods.{nameof(TrelamiumIII)}.NPCs.KingSlime.Epithet"),
+
+        TrackTitle = "Boss 1",
+        TrackArtist = "Scott Lloyd Shelly",
+
+        Accent = new Color(86, 162, 255),
+
+        RevealTick = INTRO_REVEAL_TICKS,
+        HoldTicks = INTRO_HOLD_TICKS,
+
+        LineRamp = 0,
+        LineDensity = 0,
+        LineIntensity = 0,
+    };
+
+    /// <summary>Hidden and invulnerable until <see cref="INTRO_REVEAL_TICKS" />, visible through <see cref="INTRO_HOLD_TICKS" />, then the pattern starts.</summary>
+    private void DoIntro(NPC npc, Player target)
+    {
+        var extraData = GetExtraData(npc);
+        ref float timer = ref GetTimer(npc);
+
+        // Derived every tick rather than latched, so a client that missed the start still agrees.
+        npc.dontTakeDamage = true;
+        npc.damage = 0;
+        npc.velocity.X = 0f;
+        npc.hide = timer < INTRO_REVEAL_TICKS;
+
+        if (timer == 1 && Main.netMode != NetmodeID.MultiplayerClient)
+            MoveToEntrance(npc, target);
+
+        if (timer < INTRO_REVEAL_TICKS)
+        {
+            extraData.introScaleMultiplier = 0.5f;
+            IntroGeyser(npc, timer / INTRO_REVEAL_TICKS);
+        }
+        else
+        {
+            var sinceReveal = timer - INTRO_REVEAL_TICKS;
+
+            if (sinceReveal == 0)
+                RevealBurst(npc, ref extraData);
+
+            extraData.introScaleMultiplier = MathHelper.Lerp(0.5f, 1f, EaseFunction.EaseCubicOut.Ease(Math.Min(sinceReveal / 24f, 1f)));
+        }
+
+        SetExtraData(npc, extraData);
+
+        if (timer >= INTRO_REVEAL_TICKS + INTRO_HOLD_TICKS)
+            EndIntro(npc, target);
+    }
+
+    /// <summary>Puts the slime somewhere in view of the player, at the same safe distance a teleport keeps. Stays put if there is no room.</summary>
+    private static void MoveToEntrance(NPC npc, Player target)
+    {
+        if (!TryFindSafeSpot(npc, target, INTRO_MIN_TILES, INTRO_MAX_TILES, out var bottom))
+            return;
+
+        npc.Bottom = bottom;
+        npc.velocity = Vector2.Zero;
+        npc.netUpdate = true;
+    }
+
+    private static void IntroGeyser(NPC npc, float progress)
+    {
+        if (Main.dedServ)
+            return;
+
+        var gel = FieldSystem.GetLayer<GelField>();
+
+        // Packed into a narrow column so the nodes merge into one rising mass rather than separate droplets.
+        for (var i = 0; i < 2 + (int)(progress * 4f); i++)
+        {
+            var position = new Vector2(npc.Bottom.X + Main.rand.NextFloat(-0.2f, 0.2f) * BASE_WIDTH, npc.Bottom.Y - 4f);
+            var velocity = new Vector2(Main.rand.NextFloat(-0.6f, 0.6f), -Main.rand.NextFloat(3f, 4f + progress * 4f));
+
+            gel?.SpawnClingNode(position, velocity, Main.rand.NextFloat(9f, 14f), Main.rand.NextFloat(22f, 34f));
+        }
+
+        if (Main.rand.NextBool(2))
+        {
+            var dust = Dust.NewDustDirect(npc.Bottom + new Vector2(-BASE_WIDTH * 0.4f, -8f), (int)(BASE_WIDTH * 0.8f), 8, DustID.t_Slime,
+                0f, -Main.rand.NextFloat(1f, 3f), 150, new Color(86, 162, 255, 100), 1.4f);
+            dust.noGravity = true;
+        }
+    }
+
+    private static void RevealBurst(NPC npc, ref NPCExtraData extraData)
+    {
+        extraData.squishScale = new Vector2(0.7f, 1.3f);
+        extraData.isWobbling = true;
+        extraData.wobbleTimer = 0f;
+
+        if (Main.dedServ)
+            return;
+
+        SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with { Volume = 0.9f, Pitch = -0.1f }, npc.Center);
+        SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with { Volume = 0.7f, Pitch = -0.2f }, npc.Bottom);
+
+        var gel = FieldSystem.GetLayer<GelField>();
+
+        for (var i = 0; i < 40; i++)
+        {
+            var velocity = Main.rand.NextVector2CircularEdge(8f, 5f) * Main.rand.NextFloat(0.5f, 1f) - Vector2.UnitY * 3f;
+            var dust = Dust.NewDustPerfect(npc.Bottom - Vector2.UnitY * 12f, DustID.t_Slime, velocity, 150, new Color(86, 162, 255, 150), 1.8f);
+            dust.noGravity = true;
+        }
+
+        for (var i = 0; i < 14; i++)
+        {
+            var velocity = new Vector2(Main.rand.NextFloat(-5f, 5f), -Main.rand.NextFloat(2f, 7f));
+
+            gel?.SpawnClingNode(npc.Bottom - Vector2.UnitY * 12f, velocity, Main.rand.NextFloat(8f, 14f), Main.rand.NextFloat(24f, 36f));
+        }
+    }
+
+    private void EndIntro(NPC npc, Player target)
+    {
+        var extraData = GetExtraData(npc);
+        extraData.introScaleMultiplier = 1f;
+        SetExtraData(npc, extraData);
+
+        npc.hide = false;
+        npc.dontTakeDamage = false;
+        npc.damage = 12;
+
+        StartPatternAttack(npc, AttackPatterns[PatternType.Phase1].States[0], target);
+    }
+
     #endregion
 
     #region Helper Methods
@@ -1513,7 +1663,12 @@ public class KingSlimeRework : GlobalNPC
         var extraData = GetExtraData(npc);
         ref float timer = ref GetTimer(npc);
 
-        if (GetState(npc) == AIState.Jumping)
+        if (GetState(npc) == AIState.Intro)
+        {
+            // Stretched as it surfaces, then at rest for the title card.
+            npc.frame.Y = timer < INTRO_REVEAL_TICKS + 12 ? frameHeight * 5 : frameHeight * 4;
+        }
+        else if (GetState(npc) == AIState.Jumping)
         {
             if (npc.velocity.Y == 0f)
             {
@@ -1769,92 +1924,119 @@ public class KingSlimeRework : GlobalNPC
         SetExtraData(npc, extraData);
     }
 
-    private void BeginTeleport(NPC npc, Player target)
+    /// <returns>False when there is no safe landing, in which case the slime stays put.</returns>
+    private bool BeginTeleport(NPC npc, Player target)
     {
         var extraData = GetExtraData(npc);
 
-        SetState(npc, AIState.Teleporting);
-        extraData.teleportPhase = TeleportPhase.Prepare;
+        // Reset either way, so a search that finds nothing is not repeated every tick.
         extraData.teleportTimer = 0f;
         extraData.stuckTimer = 0f;
-        GetTimer(npc) = 0;
+        extraData.lineOfSightTimer = 0f;
 
-        if (Main.netMode != NetmodeID.MultiplayerClient)
+        if (!TryFindSafeSpot(npc, target, TELEPORT_MIN_TILES, TELEPORT_MAX_TILES, out var bottom))
         {
-            FindTeleportSpot(npc, target);
+            SetExtraData(npc, extraData);
+            return false;
         }
+
+        npc.localAI[1] = bottom.X;
+        npc.localAI[2] = bottom.Y;
+
+        SetState(npc, AIState.Teleporting);
+        extraData.teleportPhase = TeleportPhase.Prepare;
+        GetTimer(npc) = 0;
 
         SetExtraData(npc, extraData);
         npc.netUpdate = true;
+
+        return true;
     }
 
-    private void FindTeleportSpot(NPC npc, Player target)
+    /// <summary>
+    ///     Finds ground for the slime's full-size hitbox between <paramref name="minTiles" /> and <paramref name="maxTiles" />
+    ///     tiles to either side of <paramref name="target" />, and at least <paramref name="minTiles" /> from every player.
+    /// </summary>
+    private static bool TryFindSafeSpot(NPC npc, Player target, int minTiles, int maxTiles, out Vector2 bottom)
     {
-        var npcTile = npc.Center.ToTileCoordinates();
+        var scale = GetHealthScale(npc);
+        var width = (int)(BASE_WIDTH * scale);
+        var height = (int)(BASE_HEIGHT * scale);
         var targetTile = target.Center.ToTileCoordinates();
 
-        var searchRange = 10; // num240 in vanilla
-        var attempts = 0;
-        var foundSpot = false;
-
-        while (!foundSpot && attempts < 100)
+        for (var attempt = 0; attempt < TELEPORT_ATTEMPTS; attempt++)
         {
-            attempts++;
+            var side = Main.rand.NextBool() ? -1 : 1;
+            var tileX = targetTile.X + side * Main.rand.Next(minTiles, maxTiles + 1);
+            var tileY = targetTile.Y + Main.rand.Next(-TELEPORT_SEARCH_HEIGHT, TELEPORT_SEARCH_HEIGHT + 1);
 
-            var testX = Main.rand.Next(targetTile.X - searchRange, targetTile.X + searchRange + 1);
-            var testY = Main.rand.Next(targetTile.Y - searchRange, targetTile.Y + 1);
-
-            if (testY >= targetTile.Y - 7 && testY <= targetTile.Y + 7 && testX >= targetTile.X - 7 && testX <= targetTile.X + 7 ||
-                !WorldGen.InWorld(testX, testY) ||
-                Main.tile[testX, testY].HasTile)
+            if (!WorldGen.InWorld(tileX, tileY, 60) || !TryFindGround(tileX, ref tileY)
+                || Math.Abs(tileY - targetTile.Y) > TELEPORT_SEARCH_HEIGHT)
                 continue;
 
-            var groundY = testY;
-            var dropDistance = 0;
+            bottom = new Vector2(tileX * 16f + 8f, (tileY + 1) * 16f);
 
-            if (Main.tile[testX, groundY].HasTile && Main.tileSolid[Main.tile[testX, groundY].TileType] && !Main.tileSolidTop[Main.tile[testX, groundY].TileType])
-            {
-                dropDistance = 1;
-            }
-            else
-            {
-                for (; dropDistance < 150 && groundY + dropDistance < Main.maxTilesY; dropDistance++)
-                {
-                    var checkY = groundY + dropDistance;
-                    if (Main.tile[testX, checkY].HasTile && Main.tileSolid[Main.tile[testX, checkY].TileType] && !Main.tileSolidTop[Main.tile[testX, checkY].TileType])
-                    {
-                        dropDistance--;
-                        break;
-                    }
-                }
-            }
-
-            groundY += dropDistance;
-
-            var validSpot = true;
-
-            if (validSpot && Main.tile[testX, groundY].LiquidType == LiquidID.Lava)
-                validSpot = false;
-
-            // Check line of sight (optional - vanilla does this but might be causing issues)
-            // if (validSpot && !Collision.CanHitLine(npc.Center, 0, 0, target.Center, 0, 0))
-            //     validSpot = false;
-
-            if (validSpot)
-            {
-                npc.localAI[1] = testX * 16 + 8;    // X position (tile center)
-                npc.localAI[2] = groundY * 16 + 16; // Y position (bottom of tile)
-                foundSpot = true;
-                break;
-            }
+            if (IsSafeLanding(bottom, width, height, minTiles))
+                return true;
         }
 
-        if (!foundSpot)
+        bottom = Vector2.Zero;
+        return false;
+    }
+
+    /// <summary>Moves <paramref name="tileY" /> to the open tile resting on the ground at <paramref name="tileX" />.</summary>
+    private static bool TryFindGround(int tileX, ref int tileY)
+    {
+        for (var climbed = 0; WorldGen.SolidTile(tileX, tileY); climbed++)
         {
-            var closestPlayer = Main.player[Player.FindClosest(npc.position, npc.width, npc.height)];
-            npc.localAI[1] = closestPlayer.Bottom.X;
-            npc.localAI[2] = closestPlayer.Bottom.Y;
+            if (climbed >= TELEPORT_SEARCH_HEIGHT)
+                return false;
+
+            tileY--;
         }
+
+        for (var dropped = 0; dropped <= TELEPORT_SEARCH_HEIGHT * 2; dropped++, tileY++)
+        {
+            if (WorldGen.SolidTile(tileX, tileY + 1))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether a hitbox standing at <paramref name="bottom" /> is clear, dry, mostly supported and far enough from every player.</summary>
+    private static bool IsSafeLanding(Vector2 bottom, int width, int height, int minTiles)
+    {
+        var position = new Vector2(bottom.X - width / 2f, bottom.Y - height);
+
+        if (Collision.SolidCollision(position, width, height) || Collision.WetCollision(position, width, height)
+            || Collision.LavaCollision(position, width, height))
+            return false;
+
+        var first = (int)(position.X / 16f);
+        var last = (int)((position.X + width) / 16f);
+        var supported = 0;
+
+        for (var x = first; x <= last; x++)
+        {
+            if (WorldGen.SolidTile(x, (int)(bottom.Y / 16f)))
+                supported++;
+        }
+
+        if (supported * 2 < last - first + 1)
+            return false;
+
+        var center = position + new Vector2(width, height) / 2f;
+
+        for (var i = 0; i < Main.maxPlayers; i++)
+        {
+            var player = Main.player[i];
+
+            if (player.active && !player.dead && Vector2.Distance(center, player.Center) < minTiles * 16f)
+                return false;
+        }
+
+        return true;
     }
 
     private void TeleportDust(NPC npc, float velocityMultiplier)
@@ -2046,15 +2228,14 @@ public class KingSlimeRework : GlobalNPC
             dust.noGravity = true;
         }
 
-        var healthGain = slime.life * HP_PER_SLIME;
-        var newScale = npc.scale + SCALE_PER_SLIME;
-        npc.scale = MathHelper.Min(newScale, MAX_CONSUME_SCALE);
+        var healed = Math.Min((int)(npc.lifeMax * CONSUME_HEAL_FRACTION), npc.lifeMax - npc.life);
 
-        npc.life += (int)healthGain;
-        npc.HealEffect((int)healthGain);
-
-        if (npc.life > npc.lifeMax)
-            npc.life = npc.lifeMax;
+        if (healed > 0)
+        {
+            npc.life += healed;
+            npc.HealEffect(healed);
+            npc.netUpdate = true;
+        }
 
         SoundEngine.PlaySound(Assets.SFX.SlimeConsume.Asset with
         {
@@ -2066,36 +2247,42 @@ public class KingSlimeRework : GlobalNPC
         slime.HitEffect();
         slime.active = false;
 
-        UpdateHitbox(npc);
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendData(MessageID.SyncNPC, number: slime.whoAmI);
     }
 
-    private bool HasNearbySlimes(NPC npc)
+    /// <summary>Whether <paramref name="slime" /> is a hostile slime within reach of <paramref name="npc" />.</summary>
+    private static bool IsEdible(NPC npc, NPC slime)
     {
-        for (var i = 0; i < Main.maxNPCs; i++)
-        {
-            var slime = Main.npc[i];
-            if (slime.active && slime.aiStyle == NPCAIStyleID.Slime
-                && slime.type != NPCID.KingSlime && !slime.boss)
-            {
-                if (Vector2.Distance(npc.Center, slime.Center) <= CONSUME_DETECTION_RANGE)
-                    return true;
-            }
-        }
-        return false;
+        return slime.active && slime.aiStyle == NPCAIStyleID.Slime
+            && slime.type != NPCID.KingSlime && !slime.boss && !slime.friendly && !slime.townNPC
+            && Vector2.Distance(npc.Center, slime.Center) <= CONSUME_DETECTION_RANGE;
     }
+
+    /// <summary>Counts a new feeding. Runs where the state is entered, so the last feeding's tally cannot end this one early.</summary>
+    private void BeginFeeding(NPC npc)
+    {
+        var extraData = GetExtraData(npc);
+
+        extraData.feedings++;
+        extraData.slimesEaten = 0;
+
+        SetExtraData(npc, extraData);
+    }
+
+    /// <summary>A feeding ends once it has eaten its share, timed out, or run out of slimes to reach.</summary>
+    private bool IsFeedingDone(NPC npc, float timer)
+        => timer >= CONSUME_MAX_TICKS || GetExtraData(npc).slimesEaten >= CONSUME_MAX_SLIMES || !HasNearbySlimes(npc);
+
+    private bool HasNearbySlimes(NPC npc) => CountNearbySlimes(npc) > 0;
 
     private int CountNearbySlimes(NPC npc)
     {
         var count = 0;
         for (var i = 0; i < Main.maxNPCs; i++)
         {
-            var slime = Main.npc[i];
-            if (slime.active && slime.aiStyle == NPCAIStyleID.Slime
-                && slime.type != NPCID.KingSlime && !slime.boss)
-            {
-                if (Vector2.Distance(npc.Center, slime.Center) <= CONSUME_DETECTION_RANGE)
-                    count++;
-            }
+            if (IsEdible(npc, Main.npc[i]))
+                count++;
         }
         return count;
     }
@@ -2112,14 +2299,40 @@ public class KingSlimeRework : GlobalNPC
 
         var effects = npc.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-        spriteBatch.Draw(texture, drawPos, npc.frame, npc.GetAlpha(drawColor * 0.75f), npc.rotation, origin, npc.scale * extraData.squishScale, effects, 0f);
-  
+        var bodyScale = npc.scale * extraData.squishScale;
+
+        spriteBatch.Draw(texture, drawPos, npc.frame, npc.GetAlpha(drawColor * 0.75f), npc.rotation, origin, bodyScale, effects, 0f);
+
+        DrawCrown(npc, spriteBatch, drawPos, bodyScale, drawColor, effects);
+
         return false;
+    }
+
+    /// <summary>Crown height from the top edge of each animation frame, in frame pixels. Vanilla's values.</summary>
+    private static readonly float[] CrownOffsets = [2f, -6f, 2f, 10f, 2f, 0f];
+
+    /// <summary>Vanilla draws the crown as part of its own NPC draw, which <see cref="PreDraw" /> replaces.</summary>
+    private static void DrawCrown(NPC npc, SpriteBatch spriteBatch, Vector2 drawPos, Vector2 bodyScale, Color drawColor, SpriteEffects effects)
+    {
+        var crown = TextureAssets.Extra[ExtrasID.KingSlimeCrown].Value;
+
+        var frame = Math.Clamp(npc.frame.Y / Math.Max(npc.frame.Height, 1), 0, CrownOffsets.Length - 1);
+        var anchor = new Vector2(0f, CrownOffsets[frame] - npc.frame.Height / 2f) * bodyScale;
+
+        spriteBatch.Draw(crown, drawPos + anchor.RotatedBy(npc.rotation), null, npc.GetNPCColorTintedByBuffs(drawColor),
+            npc.rotation, crown.Size() / 2f, npc.scale, effects, 0f);
     }
 
     public override void OnSpawn(NPC npc, IEntitySource source)
     {
         base.OnSpawn(npc, source);
+
+        // NPC slots are reused, so an entry left by a despawned fight would carry its counters into this one.
+        npcPatternData.Remove(npc.whoAmI);
+        npcExtraData.Remove(npc.whoAmI);
+
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+            SetState(npc, AIState.Intro);
 
         Main.StartSlimeRain();
 

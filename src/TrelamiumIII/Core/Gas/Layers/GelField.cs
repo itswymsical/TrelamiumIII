@@ -111,6 +111,10 @@ public class GelField : ChemicalGasField
 
     protected override void OnNPCContact(ref FieldNode node, NPC npc)
     {
+        // Ownerless gel is a hostile's; only a player's gel acts on NPCs.
+        if (node.Owner == FieldNode.NoOwner)
+            return;
+
         base.OnNPCContact(ref node, npc);
 
         npc.velocity.X *= 0.97f;
