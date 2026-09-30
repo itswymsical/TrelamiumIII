@@ -34,5 +34,45 @@ SkillLang: {
 			Name: Prospector's Arc
 			Description: Right-click to throw your pickaxe, be careful when retrieving it!
 		}
+
+		speed: {
+			Name: Steady Swing
+			Description: Mine 14% faster.
+		}
+	}
+
+	stride: {
+		Name: Surefoot
+		Description: Running boots are 15% faster on one terrain. Choose it from the nodes around this one.
+
+		stone: {
+			Name: Stonefoot
+			Description: Surefoot works on stone, moss, ore, granite and marble.
+		}
+
+		sand: {
+			Name: Dunefoot
+			Description: Surefoot works on sand, hardened sand and sandstone.
+		}
+
+		earth: {
+			Name: Loamfoot
+			Description: Surefoot works on dirt, mud, grass, clay and ash.
+		}
+
+		frost: {
+			Name: Rimefoot
+			Description: Surefoot works on snow, ice and slush.
+		}
+	}
+
+	grapple: {
+		Name: Reel In
+		Description: Your grappling hook latches onto enemies and flings them at you. Grapple again to drop them.
+	}
+
+	critchain: {
+		Name: Follow Through
+		Description: A critical strike makes your next hit within 1 second crit too, chaining up to 5 times.
 	}
 }

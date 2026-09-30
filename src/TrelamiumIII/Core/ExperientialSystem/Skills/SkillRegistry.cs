@@ -23,6 +23,7 @@ public sealed class SkillRegistry : ModSystem
     private static readonly Dictionary<Type, Skill> ByType = [];
     private static readonly Dictionary<SkillGroup, List<Skill>> ByGroup = [];
     private static readonly Dictionary<int, List<Skill>> ByThreshold = [];
+    private static readonly Dictionary<string, List<Skill>> ByParent = [];
 
     private static readonly List<Skill> All = [];
 
@@ -51,6 +52,7 @@ public sealed class SkillRegistry : ModSystem
         ByType.Clear();
         ByGroup.Clear();
         ByThreshold.Clear();
+        ByParent.Clear();
         All.Clear();
 
         _bands = [];
@@ -184,6 +186,8 @@ public sealed class SkillRegistry : ModSystem
     /// </summary>
     private static void Index()
     {
+        DropOrphans();
+
         All.Sort(static (a, b) =>
         {
             int band = a.UnlockThreshold.CompareTo(b.UnlockThreshold);
@@ -212,9 +216,47 @@ public sealed class SkillRegistry : ModSystem
                 ByThreshold[skill.UnlockThreshold] = band = [];
 
             band.Add(skill);
+
+            if (skill.ParentID is not { } parent)
+                continue;
+
+            if (!ByParent.TryGetValue(parent, out List<Skill>? children))
+                ByParent[parent] = children = [];
+
+            children.Add(skill);
         }
 
         _bands = [.. ByThreshold.Keys.Order()];
+    }
+
+    /// <summary>Drops children whose parent is missing or is itself a child; the tree nests one level deep.</summary>
+    private static void DropOrphans()
+    {
+        for (int i = All.Count - 1; i >= 0; i--)
+        {
+            Skill skill = All[i];
+
+            if (skill.ParentID is not { } parentId)
+                continue;
+
+            if (Get(parentId) is { ParentID: null } parent)
+            {
+                if (parent.UnlockThreshold != skill.UnlockThreshold)
+                {
+                    TrelamiumIII.Instance.Logger.Warn(
+                        $"Skill '{skill.ID}' opens at Threshold {skill.UnlockThreshold} but its parent " +
+                        $"'{parentId}' opens at {parent.UnlockThreshold}.");
+                }
+
+                continue;
+            }
+
+            TrelamiumIII.Instance.Logger.Error(
+                $"Skill '{skill.ID}' branches off '{parentId}', which is not a registered top-level skill; dropped.");
+
+            All.RemoveAt(i);
+            ById.Remove(skill.ID);
+        }
     }
 
     #endregion
@@ -230,6 +272,9 @@ public sealed class SkillRegistry : ModSystem
 
     /// <summary>The shared instance of a one-off skill. Null for a skill class a provider yields several of.</summary>
     public static T? Get<T>() where T : Skill => ByType.TryGetValue(typeof(T), out Skill? skill) ? skill as T : null;
+
+    public static IReadOnlyList<Skill> ChildrenOf(string id)
+        => ByParent.TryGetValue(id, out List<Skill>? children) ? children : [];
 
     public static IReadOnlyList<Skill> InGroup(SkillGroup group)
         => ByGroup.TryGetValue(group, out List<Skill>? skills) ? skills : [];

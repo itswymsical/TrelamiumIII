@@ -107,7 +107,7 @@ public static class ExperientialConstants
     /// Threshold skills first become purchasable at. A skill gated below this stays locked until here, so
     /// its <see cref="Skills.Skill.RequiredThreshold"/> only orders it within the opening band.
     /// </summary>
-    public const int FirstSkillThreshold = 7;
+    public const int FirstSkillThreshold = 5;
 
     /// <summary>Threshold a skill gated at <paramref name="requiredThreshold"/> actually opens at.</summary>
     public static int SkillGate(int requiredThreshold)

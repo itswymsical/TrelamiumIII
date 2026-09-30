@@ -77,6 +77,15 @@ public abstract class Skill
     public virtual SkillGroup Group => SkillGroup.Unaligned;
 
     /// <summary>
+    /// Id of the skill this one branches off. A child needs its parent held, is refunded with it, and is
+    /// drawn around it in the tree. Author a child at its parent's Threshold.
+    /// </summary>
+    public virtual string? ParentID => null;
+
+    /// <summary>Whether buying this child drops any sibling already held, so the parent's children are a single choice.</summary>
+    public virtual bool ExclusiveWithSiblings => false;
+
+    /// <summary>
     /// Position in tree space, origin at the centre of the field and one unit to a node's spacing.
     /// Null places the skill automatically on the ring its <see cref="UnlockThreshold"/> owns.
     /// </summary>

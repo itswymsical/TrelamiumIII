@@ -18,3 +18,20 @@ public sealed class PickaxeBoomerangSkill : Skill
 
     public override float CostFraction => 0.65f;
 }
+
+/// <summary>Mines 14% faster.</summary>
+public sealed class MiningSpeedSkill : Skill
+{
+    public const string Id = "skill.pickaxe.speed";
+
+    /// <summary>Subtracted from <see cref="Player.pickSpeed"/>, the tool use-time multiplier. The Mining Potion subtracts 0.25.</summary>
+    private const float MINING_BONUS = 0.14f;
+
+    public override string ID => Id;
+
+    public override int RequiredThreshold => 7;
+
+    public override SkillGroup Group => SkillGroup.Excavation;
+
+    public override void Apply(Player player) => player.pickSpeed -= MINING_BONUS;
+}

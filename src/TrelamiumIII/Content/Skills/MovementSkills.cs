@@ -22,7 +22,7 @@ public sealed class DoubleJumpSkill : Skill
 
     public override string ID => Id;
 
-    public override int RequiredThreshold => 9;
+    public override int RequiredThreshold => 6;
 
     public override SkillGroup Group => SkillGroup.Movement;
 

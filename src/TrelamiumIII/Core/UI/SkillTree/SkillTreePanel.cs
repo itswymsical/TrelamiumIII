@@ -618,8 +618,11 @@ internal sealed class SkillTreeField : UIElement
 
     private static string FooterFor(Skill skill, SkillPlayer skills) => skills.CanUnlock(skill) switch
     {
+        SkillPurchaseResult.AlreadyOwned when skill.Cost == 0 => "Selected - right click to clear",
         SkillPurchaseResult.AlreadyOwned => $"Held - right click to refund {skill.RefundValue} Exp",
+        SkillPurchaseResult.Success when skill.Cost == 0 => "Free - left click to select",
         SkillPurchaseResult.Success => $"{skill.Cost} Exp - left click to unlock",
+        SkillPurchaseResult.MissingParent => $"Requires {SkillRegistry.Get(skill.ParentID)?.Name}",
         SkillPurchaseResult.CannotAfford => $"{skill.Cost} Exp - not enough banked",
         SkillPurchaseResult.ThresholdTooLow => $"Opens at Threshold {skill.UnlockThreshold} - {skill.Cost} Exp",
         _ => $"Unavailable - {skill.Cost} Exp",

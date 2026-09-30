@@ -27,6 +27,12 @@ internal sealed class SkillTreeLayout
     /// <summary>Golden angle. Successive nodes land as far from their predecessors as the circle allows.</summary>
     private const float SPREAD = 2.39996323f;
 
+    /// <summary>Tree-space distance from a parent to its children.</summary>
+    private const float CHILD_RADIUS = 1.3f;
+
+    /// <summary>Radians a parent's children are spread across, first to last.</summary>
+    private const float CHILD_ARC = 2.4f;
+
     private readonly List<PlacedSkill> _nodes = [];
     private readonly List<SkillLink> _links = [];
 
@@ -51,6 +57,7 @@ internal sealed class SkillTreeLayout
     /// <summary>
     /// Honours an authored <see cref="Skill.Space"/>, otherwise puts the skill on its Threshold's ring at
     /// the next golden angle. The counter runs across the whole registry, so no two rings share a spoke.
+    /// Children are placed after every top-level skill, see <see cref="PlaceChildren"/>.
     /// </summary>
     private void Place()
     {
@@ -59,6 +66,9 @@ internal sealed class SkillTreeLayout
 
         foreach (Skill skill in SkillRegistry.Skills)
         {
+            if (skill.ParentID is not null)
+                continue;
+
             if (skill.Space is { } authored)
             {
                 _nodes.Add(new PlacedSkill(skill, authored));
@@ -74,22 +84,63 @@ internal sealed class SkillTreeLayout
 
             placed++;
         }
+
+        PlaceChildren();
+    }
+
+    /// <summary>Fans each parent's children across an arc on the side of the parent facing away from the origin.</summary>
+    private void PlaceChildren()
+    {
+        int parents = _nodes.Count;
+
+        for (int p = 0; p < parents; p++)
+        {
+            PlacedSkill parent = _nodes[p];
+            IReadOnlyList<Skill> children = SkillRegistry.ChildrenOf(parent.Skill.ID);
+
+            if (children.Count == 0)
+                continue;
+
+            float outward = parent.Space == Vector2.Zero ? -MathHelper.PiOver2 : parent.Space.ToRotation();
+            float step = children.Count > 1 ? CHILD_ARC / (children.Count - 1) : 0f;
+            float first = outward - step * (children.Count - 1) * 0.5f;
+
+            for (int c = 0; c < children.Count; c++)
+            {
+                Skill child = children[c];
+                Vector2 space = child.Space ?? parent.Space + (first + step * c).ToRotationVector2() * CHILD_RADIUS;
+
+                _nodes.Add(new PlacedSkill(child, space));
+            }
+        }
     }
 
     /// <summary>
     /// Links every skill to the nearest skill below it in Threshold, so the lines run inward along the
     /// order the tree is actually climbed. The lowest band has nothing to point at and stays unlinked.
+    /// A child links to its parent instead, and is never linked to by anything else.
     /// </summary>
     private void Connect()
     {
         for (int i = 0; i < _nodes.Count; i++)
         {
+            if (_nodes[i].Skill.ParentID is { } parentId)
+            {
+                int parent = IndexOf(parentId);
+
+                if (parent >= 0)
+                    _links.Add(new SkillLink(i, parent));
+
+                continue;
+            }
+
             int best = -1;
             float bestDistance = float.MaxValue;
 
             for (int j = 0; j < _nodes.Count; j++)
             {
-                if (_nodes[j].Skill.UnlockThreshold >= _nodes[i].Skill.UnlockThreshold)
+                if (_nodes[j].Skill.ParentID is not null
+                    || _nodes[j].Skill.UnlockThreshold >= _nodes[i].Skill.UnlockThreshold)
                     continue;
 
                 float distance = Vector2.DistanceSquared(_nodes[i].Space, _nodes[j].Space);
@@ -106,6 +157,17 @@ internal sealed class SkillTreeLayout
             if (best >= 0)
                 _links.Add(new SkillLink(i, best));
         }
+    }
+
+    private int IndexOf(string id)
+    {
+        for (int i = 0; i < _nodes.Count; i++)
+        {
+            if (_nodes[i].Skill.ID == id)
+                return i;
+        }
+
+        return -1;
     }
 
     private void Measure()

@@ -12,6 +12,7 @@ public enum SkillPurchaseResult
     UnknownSkill,
     AlreadyOwned,
     ThresholdTooLow,
+    MissingParent,
     Unavailable,
     CannotAfford
 }
@@ -61,6 +62,9 @@ public sealed class SkillPlayer : ModPlayer
         if (experiential.Threshold < skill.UnlockThreshold)
             return SkillPurchaseResult.ThresholdTooLow;
 
+        if (skill.ParentID is { } parent && !Has(parent))
+            return SkillPurchaseResult.MissingParent;
+
         if (!skill.IsAvailableTo(Player))
             return SkillPurchaseResult.Unavailable;
 
@@ -79,21 +83,35 @@ public sealed class SkillPlayer : ModPlayer
         if (!Player.GetModPlayer<ExperientialPlayer>().TrySpend(skill.Cost))
             return SkillPurchaseResult.CannotAfford;
 
+        if (skill is { ExclusiveWithSiblings: true, ParentID: { } parent })
+        {
+            foreach (Skill sibling in SkillRegistry.ChildrenOf(parent))
+                Refund(sibling);
+        }
+
         _unlocked.Add(skill.ID);
         skill.OnUnlock(Player);
 
         return SkillPurchaseResult.Success;
     }
 
-    /// <summary>Gives a skill back for part of its price. Returns the Exp that actually landed in the meter.</summary>
+    /// <summary>
+    /// Gives a skill back for part of its price, along with any children held under it. Returns the Exp
+    /// that actually landed in the meter.
+    /// </summary>
     public int Refund(Skill? skill)
     {
         if (skill is null || !_unlocked.Remove(skill.ID))
             return 0;
 
+        int returned = 0;
+
+        foreach (Skill child in SkillRegistry.ChildrenOf(skill.ID))
+            returned += Refund(child);
+
         skill.OnRefund(Player);
 
-        return Player.GetModPlayer<ExperientialPlayer>().Refund(skill.RefundValue);
+        return returned + Player.GetModPlayer<ExperientialPlayer>().Refund(skill.RefundValue);
     }
 
     /// <summary>

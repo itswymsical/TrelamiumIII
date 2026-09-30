@@ -60,7 +60,7 @@ public partial class ChemistryRecipeSystem
         int vilesporeFlask = ModContent.ItemType<VilesporeFlaskItem>();
         int[] simpleSolvents = [ItemID.BottledWater, SolventID.Inert, SolventID.VitalTonic, SolventID.MartialTonic];
         int[] flowerStuffs = [simpleSolvents[0], simpleSolvents[1], ModContent.ItemType<AquaTerrae>()];
-
+        int[] deadSolvents = [SolventID.Dead, SolventID.BaneTonic, SolventID.MartialTonic, SolventID.BloodtoothExtract];
         // Effusion Flask
         AlchemyRecipes.CreateRecipe(SolventID.BloodtoothExtract, crimsonFlask,
         [
@@ -69,16 +69,16 @@ public partial class ChemistryRecipeSystem
             .. AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 18),
         ]);
 
-        AlchemyRecipes.CreateRecipe(SolventID.Dead, crimsonFlask,
+        AlchemyRecipes.CreateRecipe(deadSolvents, crimsonFlask,
             AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 16));
-        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, crimsonFlask,
+        AlchemyRecipes.CreateRecipe(deadSolvents, crimsonFlask,
             AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 1, stack: 16));
 
         // Vilespore
-        AlchemyRecipes.CreateRecipe(SolventID.Dead, vilesporeFlask,
-            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 2, stack: 16));
-        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, vilesporeFlask,
-            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.RottenChunk, potency: 1, stack: 16));
+        AlchemyRecipes.CreateRecipe(deadSolvents, vilesporeFlask,
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.VileMushroom, potency: 2, stack: 16));
+        AlchemyRecipes.CreateRecipe(deadSolvents, vilesporeFlask,
+            AnyTwoOf(ItemID.VilePowder, ItemID.Deathweed, ItemID.VileMushroom, potency: 1, stack: 16));
 
         // Hyperborean
         AlchemyRecipes.CreateRecipe(simpleSolvents, hyperboreanFlask,
