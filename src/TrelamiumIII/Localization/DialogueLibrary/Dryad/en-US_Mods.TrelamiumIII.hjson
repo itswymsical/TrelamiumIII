@@ -1,0 +1,11 @@
+DialogueLibrary: {
+	Dryad: {
+		# Placeholder text. Each [] is a pause anchor and must match the Pause count in DryadDialogue.
+		# On taking her job. The rift opens by the world spawn once this ends.
+		CrossingOver_Greeting: {
+			Line1.Text: Then let's not keep Ingress waiting.[] The way through will stay open for as long as you need it,[] and there's one just like it on the other side to bring you home.
+			Line2.Text: Find your way through Ingress,[] past whatever guards it,[] and into the Library of Reverie.
+			Line3.Text: Now,[] look to where you first came into this world.
+		}
+	}
+}

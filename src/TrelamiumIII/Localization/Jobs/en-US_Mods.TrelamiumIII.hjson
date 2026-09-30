@@ -93,4 +93,20 @@ Jobs: {
 			Set2.obj0: Check in with the Merchant
 		}
 	}
+
+	# The Dryad's Ingress arc (Content/Jobs/Jobs.Dryad). Placeholder text.
+	CrossingOver: {
+		Name: Crossing Over
+		Description:
+			'''
+			"The rift will stay open for as long as you need it. Find your way through Ingress,
+			past whatever guards it, and into the Library of Reverie."
+			'''
+
+		Tasks: {
+			Set0.obj0: Step through the Dryad's rift into Ingress
+			Set1.obj0: Defeat the Wooden Warden
+			Set2.obj0: Find the Library of Reverie
+		}
+	}
 }

@@ -646,7 +646,7 @@ public sealed class WoodenWardenBoss : ModNPC
         Accent = Color.YellowGreen,
 
         RevealTick = ARRIVE_TICKS,
-        HoldTicks = ARRIVE_HOLD_TICKS,
+        Duration = ARRIVE_HOLD_TICKS,
     };
 
     /// <summary>Descends onto its station, lights up on arrival, and holds there while the card is up.</summary>

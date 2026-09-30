@@ -3,8 +3,9 @@ using TrelamiumIII.Core.Graphics.Cinematics;
 namespace TrelamiumIII.Content.Dryad;
 
 /// <summary>
-///     The part of the Dryad's arrival scored by <c>DryadArrival.mp3</c>: music, skip and the input lock.
-///     Everything that moves is driven by <see cref="DryadArrivalSequence" />. The letterbox belongs to the
+///     The Dryad's arrival from the rift opening until she reaches her spot, scored by <c>DryadArrival.mp3</c>:
+///     music, skip and the input lock. It ends when she arrives, so the track cross-fades out rather than playing to
+///     its end. Everything that moves is driven by <see cref="DryadArrivalSequence" />. The letterbox belongs to the
 ///     sequence rather than to this class, so it stays up across the hand-off into the conversation.
 /// </summary>
 /// <remarks>

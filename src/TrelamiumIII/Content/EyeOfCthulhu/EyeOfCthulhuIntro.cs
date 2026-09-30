@@ -35,6 +35,6 @@ public class EyeOfCthulhuIntro : GlobalNPC
         LineDensity = 0,
         LineIntensity = 0,
         // Settles 3.5 s in, counting the default 60-tick reveal.
-        HoldTicks = TimeConversion.SetTime(secs: 2, ticks: 30),
+        Duration = TimeConversion.SetTime(secs: 2, ticks: 30),
     };
 }

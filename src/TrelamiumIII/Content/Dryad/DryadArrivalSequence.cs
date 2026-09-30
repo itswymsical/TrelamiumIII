@@ -18,8 +18,10 @@ namespace TrelamiumIII.Content.Dryad;
 ///     rift, cues, camera and conversation.
 /// </summary>
 /// <remarks>
-///     The timeline is laid out in bars of <c>Assets/Music/DryadArrival.mp3</c> (104 BPM, 12 bars, 27.7 s),
-///     which starts with the cutscene. Change <see cref="BPM" /> and the bar numbers if the track changes.
+///     The timeline up to the rift shutting is laid out in bars of <c>Assets/Music/DryadArrival.mp3</c> (104 BPM,
+///     12 bars, 27.7 s), which starts with the cutscene. Change <see cref="BPM" /> and the bar numbers if the track
+///     changes. After that the scene follows her: it ends a beat after she reaches her spot, and never outlasts the
+///     track.
 /// </remarks>
 internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 {
@@ -49,15 +51,28 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
     private const int FOLLOW_START = WALK_START - 10;
 
-    /// <summary>Downbeat of bar 8, where the track hits again: the rift shuts.</summary>
+    /// <summary>
+    ///     Downbeat of bar 8, where the track hits again: the rift shuts here, or as soon as she reaches her spot if
+    ///     that comes first.
+    /// </summary>
     private const int CLOSE = (int)(7f * BAR_TICKS + 0.5f);
 
     private const int CLOSE_TICKS = 26;
 
-    /// <summary>The walk is paced to end here (bar 12), and the scene ends with the track.</summary>
-    private const int ARRIVE_BY = (int)(11f * BAR_TICKS + 0.5f);
+    /// <summary>Once she is on her spot and the rift has shut, one beat for the camera to settle on her before the scene ends.</summary>
+    private const int ARRIVAL_HOLD = (int)(3600f / BPM + 0.5f);
 
-    private const int SCENE_END = (int)(12f * BAR_TICKS + 0.5f);
+    /// <summary>The end of the track (bar 12). The scene never runs past it, arrived or not.</summary>
+    private const int TRACK_END = (int)(12f * BAR_TICKS + 0.5f);
+
+    /// <summary>Her walking pace, about a town NPC's own, in world pixels per tick.</summary>
+    private const float WALK_SPEED = 1f;
+
+    /// <summary>How long past the expected walk she may take before she is put on her spot.</summary>
+    private const int WALK_SLACK = 2 * 60;
+
+    /// <summary>How near her spot, in world pixels, a multiplayer client takes her to have stopped on it.</summary>
+    private const float ARRIVED_DISTANCE = 32f;
 
     /// <summary>Alpha removed per tick while she fades in.</summary>
     private const int FADE_STEP = 6;
@@ -70,14 +85,13 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
     private const int HOLD_MAX = 45 * 60;
 
-    /// <summary>Past the scene's end, how long the world side waits for her to arrive, and the client for the stage.</summary>
+    /// <summary>
+    ///     Past the track's end, how long the world side waits for her to arrive; past the scene's end, how long the
+    ///     client waits for the stage.
+    /// </summary>
     private const int ARRIVAL_TIMEOUT = 15 * 60;
 
     private const int CONVERSATION_TIMEOUT = 30 * 60;
-
-    private const float MIN_SPEED = 0.5f;
-
-    private const float MAX_SPEED = 1.8f;
 
     /// <summary>Camera push-in, as a multiple of the player's zoom, eased in from the swell to the emergence.</summary>
     private const float PUSH_ZOOM = 1.3f;
@@ -93,6 +107,15 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
     private bool dryadArrived;
     private bool worldFinished;
     private bool announced;
+
+    /// <summary>She has reached her spot on this peer, and the scene's end is set.</summary>
+    private bool arrivalNoted;
+
+    /// <summary>When the rift starts to shut: <see cref="CLOSE" />, brought forward if she arrives sooner.</summary>
+    private int closeStart = CLOSE;
+
+    /// <summary>When the scene ends: <see cref="TRACK_END" /> until she arrives, then shortly after.</summary>
+    private int sceneEnd = TRACK_END;
 
     private bool presenting;
     private bool released;
@@ -115,8 +138,11 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
     public bool Finished { get; private set; }
 
-    /// <summary>True while the cutscene proper (the part scored by the track) is playing.</summary>
-    public bool InScene => presenting && !released && Ticks < SCENE_END;
+    /// <summary>True while the cutscene proper is playing: from the start until she is on her spot and the rift has shut.</summary>
+    public bool InScene => presenting && !released && Ticks < sceneEnd;
+
+    /// <summary>True from <see cref="BeginPresentation" /> until this client's camera is handed back.</summary>
+    public bool Presenting => presenting;
 
     private Vector2 Focus => Rift - new Vector2(0f, FOCUS_HEIGHT);
 
@@ -126,6 +152,9 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
             return;
 
         Ticks++;
+
+        if (!arrivalNoted && HasArrived())
+            NoteArrival();
 
         if (Main.netMode != NetmodeID.MultiplayerClient)
             TickWorld();
@@ -146,6 +175,29 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
         Abandon();
     }
 
+    /// <summary>
+    ///     Whether she has reached her spot. The world side knows from her script; a multiplayer client, which runs no
+    ///     script, watches her stop on it.
+    /// </summary>
+    private bool HasArrived()
+    {
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+            return dryadArrived;
+
+        return Ticks > WALK_START
+            && TrackedDryad() is { } dryad
+            && MathF.Abs(dryad.Center.X - Destination.X) <= ARRIVED_DISTANCE
+            && MathF.Abs(dryad.velocity.X) < 0.05f;
+    }
+
+    /// <summary>She is on her spot: the rift shuts now if it has not begun to, and the scene ends a beat after it has.</summary>
+    private void NoteArrival()
+    {
+        arrivalNoted = true;
+        closeStart = Math.Min(closeStart, Ticks);
+        sceneEnd = Math.Min(Math.Max(Ticks, closeStart + CLOSE_TICKS) + ARRIVAL_HOLD, TRACK_END);
+    }
+
     #region world
 
     private void TickWorld()
@@ -163,7 +215,7 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
             return;
         }
 
-        if (Ticks >= SCENE_END && (dryadArrived || Ticks >= SCENE_END + ARRIVAL_TIMEOUT))
+        if (dryadArrived ? Ticks >= sceneEnd : Ticks >= TRACK_END + ARRIVAL_TIMEOUT)
             FinishWorld();
     }
 
@@ -208,13 +260,13 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
     private IBehavior BuildScript(int npcHeight)
     {
-        float speed = MathHelper.Clamp(MathF.Abs(Destination.X - Rift.X) / (ARRIVE_BY - WALK_START), MIN_SPEED, MAX_SPEED);
+        int walkTicks = (int)(MathF.Abs(Destination.X - Rift.X) / WALK_SPEED);
         Vector2 target = Destination - new Vector2(0f, npcHeight * 0.5f);
 
         return Behavior.Sequence(
             Behavior.Until(FadeIn),
             Behavior.Wait(Math.Max(WALK_START - EMERGE - 255 / FADE_STEP, 0)),
-            new Stroll(target, speed),
+            new Stroll(target, WALK_SPEED, walkTicks + WALK_SLACK),
             Behavior.Do(_ => dryadArrived = true),
             Behavior.Until(HoldForConversation).For(HOLD_MAX).FacingNearestPlayer(2000f));
     }
@@ -283,7 +335,10 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
             dryadArrived = true;
         }
 
-        Ticks = Math.Max(Ticks, SCENE_END);
+        // The scene ends here and now; the caller clears the rift rather than letting it shut.
+        arrivalNoted = true;
+        closeStart = Math.Min(closeStart, Ticks);
+        sceneEnd = Ticks;
     }
 
     private NPC? DryadNpc()
@@ -326,15 +381,17 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
     /// <summary>
     ///     Walks to a point at a fixed speed. Unlike <see cref="WalkTo" /> it never leaps gaps, so the pace holds on
-    ///     uneven ground; it teleports to the target if it makes no progress for <see cref="STUCK_TICKS" />.
+    ///     uneven ground. It puts her on the target if she makes no progress for <see cref="STUCK_TICKS" />, or is
+    ///     still walking after <paramref name="deadline" /> ticks.
     /// </summary>
-    private sealed class Stroll(Vector2 target, float speed) : Behavior
+    private sealed class Stroll(Vector2 target, float speed, int deadline) : Behavior
     {
         private const float ARRIVAL = 28f;
 
         private const int STUCK_TICKS = 240;
 
         private int stuck;
+        private int walked;
 
         protected override void Run(BehaviorContext ctx)
         {
@@ -353,7 +410,7 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
 
             stuck = MathF.Abs(npc.velocity.X) < 0.1f ? stuck + 1 : 0;
 
-            if (stuck < STUCK_TICKS)
+            if (stuck < STUCK_TICKS && ++walked < deadline)
                 return;
 
             npc.position = target - new Vector2(npc.width * 0.5f, npc.height * 0.5f);
@@ -420,7 +477,7 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
             return;
         }
 
-        if (Ticks < SCENE_END)
+        if (Ticks < sceneEnd)
         {
             DryadRift.Set(Rift, RiftOpen(), RiftSurge());
             FireCues();
@@ -461,11 +518,13 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
                 SoundEngine.PlaySound(SoundID.MaxMana with { Volume = 0.6f, Pitch = -0.25f }, center);
                 DryadRift.Burst(24);
                 break;
+        }
 
-            case CLOSE:
-                SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.45f, Pitch = -0.5f }, center);
-                DryadRift.Burst(18);
-                break;
+        // Not a case: it moves up when she arrives before the bar-8 hit.
+        if (Ticks == closeStart)
+        {
+            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.45f, Pitch = -0.5f }, center);
+            DryadRift.Burst(18);
         }
     }
 
@@ -481,14 +540,14 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
         if (Ticks < OPEN_FULL)
             return MathHelper.Lerp(0.3f, 1f, Smooth(Progress(SWELL, OPEN_FULL)));
 
-        if (Ticks < CLOSE)
+        if (Ticks < closeStart)
             return 1f;
 
-        return 1f - Smooth(Progress(CLOSE, CLOSE + CLOSE_TICKS));
+        return 1f - Smooth(Progress(closeStart, closeStart + CLOSE_TICKS));
     }
 
     /// <summary>A flare around the emergence and a smaller one as the rift shuts.</summary>
-    private float RiftSurge() => Bump(EMERGE, 22) + 0.6f * Bump(CLOSE, 14);
+    private float RiftSurge() => Bump(EMERGE, 22) + 0.6f * Bump(closeStart, 14);
 
     private static void StopEffects()
     {
@@ -538,12 +597,12 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
     /// <summary>Opens the conversation once she has arrived and the scene is over, or gives up waiting for her.</summary>
     private void UpdateConversation()
     {
-        if (conversationStarted || Ticks < SCENE_END)
+        if (conversationStarted || Ticks < sceneEnd)
             return;
 
         bool arrived = DryadArrivalSystem.Stage == DryadArrivalStage.Arrived;
 
-        if (!arrived && Ticks < SCENE_END + CONVERSATION_TIMEOUT)
+        if (!arrived && Ticks < sceneEnd + CONVERSATION_TIMEOUT)
             return;
 
         conversationStarted = true;

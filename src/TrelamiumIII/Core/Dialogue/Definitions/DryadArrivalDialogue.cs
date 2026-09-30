@@ -1,8 +1,8 @@
 namespace TrelamiumIII.Core.Dialogue.Definitions;
 
 /// <summary>
-///   The Guide explaining the Eye of Cthulhu's wake, then the Dryad's first words after she arrives. Text is
-///   placeholder, in <c>Localization/DialogueLibrary/DryadArrival</c>.
+///   The Guide explaining the Eye of Cthulhu's wake and calling the player back to town, then the Dryad's first
+///   words after she arrives. Text is placeholder, in <c>Localization/DialogueLibrary/DryadArrival</c>.
 /// </summary>
 class DryadArrivalDialogue : ModDialogue
 {
@@ -20,6 +20,11 @@ class DryadArrivalDialogue : ModDialogue
             .Line(Guide, emote: 4, speed: 1.3f, new Pause(24))
             .Line(Guide, emote: 2, speed: 1.3f, new Pause(20))
             .Line(Guide, emote: 0, speed: 1.3f, [new Pause(22), new Pause(16), new Pause(26), new Pause(18)])
+            .Register();
+
+        // By day while she is due, when the player is on the surface away from spawn and town. Repeats every few minutes.
+        Dialogue.Define("DryadArrival.ReturnToTown")
+            .Line(Guide, emote: 2, speed: 1.3f, [new Pause(20), new Pause(18)])
             .Register();
 
         Dialogue.Define("DryadArrival.Greeting")

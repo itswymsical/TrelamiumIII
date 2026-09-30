@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using Terraria.DataStructures;
+using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.Particles;
 
 namespace TrelamiumIII.Content.Dryad;
@@ -10,7 +11,7 @@ namespace TrelamiumIII.Content.Dryad;
 /// </summary>
 internal sealed class DryadRift : ModSystem
 {
-    private const string SlitPath = $"{nameof(TrelamiumIII)}/Content/Ingress/WardenAltarTile_Slit";
+    private const string SlitPath = AssetReferences.Content.Ingress.WardenAltarTile_Slit.KEY;
 
     /// <summary>Sprite scale. The sprite is 96x200, so 0.9 stands the slit about eleven tiles tall.</summary>
     private const float SCALE = 0.9f;

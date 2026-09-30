@@ -22,6 +22,7 @@ partial class TrelamiumIII
         DryadBriefed,
         DryadArrivalRequest,
         DryadArrivalStart,
+        IngressRiftRequest,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -51,6 +52,9 @@ partial class TrelamiumIII
             case MessageType.DryadArrivalRequest:
             case MessageType.DryadArrivalStart:
                 DryadArrivalSystem.Receive(msgType, reader, whoAmI);
+                break;
+            case MessageType.IngressRiftRequest:
+                IngressRift.Receive(whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

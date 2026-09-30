@@ -9,6 +9,7 @@ using TrelamiumIII.Common.Generation.Fortress;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Content.Ingress.Transition;
 using TrelamiumIII.Core.Graphics.Cinematics;
@@ -42,6 +43,9 @@ public class IngressRealm : SubworldRealm
     private Layout layout;
     private CaveNetwork? caves;
     private Rectangle treeArea;
+
+    /// <summary> Floor tile of the Dryad's rift home, set by <see cref="IngressSpawn"/> and placed in <see cref="OnLoad"/>. </summary>
+    private Point? returnRift;
 
     /// <summary> The Ligneous Fortress of the last generation; null before one and in multiplayer clients. </summary>
     internal FortressLayout? Fortress { get; private set; }
@@ -109,10 +113,19 @@ public class IngressRealm : SubworldRealm
 
     public override void OnEnter() => SubworldSystem.hideUnderworld = true;
 
-    /// <summary> After <see cref="ModSystem.OnWorldLoad"/>, which clears protected areas; a realm loaded from file keeps its saved ones. </summary>
+    /// <summary>
+    /// After <see cref="ModSystem.OnWorldLoad"/>, which clears protected areas; a realm loaded from file keeps its saved ones.
+    /// Also stands the way home by the spawn when this load generated the realm; a realm loaded from file has it saved.
+    /// </summary>
     public override void OnLoad()
     {
         ArriveAtAltar = false;
+
+        // Multiplayer clients run this too, with nothing generated: they get the rift from the server.
+        if (Main.netMode != NetmodeID.MultiplayerClient && returnRift is { } rift)
+            IngressRift.PlaceReturn(rift);
+
+        returnRift = null;
 
         if (Fortress is { } fortress && StructureProtectionSystem.ProtectedAreas.Count == 0)
             StructureProtectionSystem.ProtectedAreas.AddRange(fortress.ProtectedAreas);
@@ -1152,11 +1165,17 @@ public class IngressRealm : SubworldRealm
         }
     }
 
-    /// <summary> Beside the canopy tree, on whichever side the layout picked, on the first solid tile of that column. </summary>
+    /// <summary>
+    /// Beside the canopy tree, on whichever side the layout picked, on the first solid tile of that column. The Dryad's
+    /// rift home stands a few columns further out, so a player arriving through it steps out between it and the tree.
+    /// </summary>
     private class IngressSpawn(IngressRealm realm) : GenPass("[T3] Ingress Spawn", 1f)
     {
         private const int SpawnDistance = 160;
         private const int TreeClearance = 12;
+
+        /// <summary> Columns from the surface spawn to the rift home, away from the tree. </summary>
+        private const int RiftGap = 5;
 
         /// <summary> Columns left of the altar, clear of its dais, where a player arriving through the scar stands. </summary>
         private const int AltarSpawnGap = 9;
@@ -1164,6 +1183,18 @@ public class IngressRealm : SubworldRealm
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             progress.Message = "Choosing the spawn point";
+
+            Layout layout = realm.layout;
+            Rectangle tree = realm.treeArea;
+            int x = layout.SiteX + layout.SpawnSide * SpawnDistance;
+
+            if (!tree.IsEmpty)
+                x = layout.SpawnSide > 0 ? Math.Max(x, tree.Right + TreeClearance) : Math.Min(x, tree.Left - TreeClearance);
+
+            int spawnX = Math.Clamp(x, WorldEdge, Main.maxTilesX - WorldEdge - 1);
+            int riftX = Math.Clamp(spawnX + layout.SpawnSide * RiftGap, WorldEdge, Main.maxTilesX - WorldEdge - 1);
+
+            realm.returnRift = new Point(riftX, SurfaceRow(riftX));
 
             if (ArriveAtAltar && realm.Fortress is { } fortress)
             {
@@ -1173,15 +1204,8 @@ public class IngressRealm : SubworldRealm
                 return;
             }
 
-            Layout layout = realm.layout;
-            Rectangle tree = realm.treeArea;
-            int x = layout.SiteX + layout.SpawnSide * SpawnDistance;
-
-            if (!tree.IsEmpty)
-                x = layout.SpawnSide > 0 ? Math.Max(x, tree.Right + TreeClearance) : Math.Min(x, tree.Left - TreeClearance);
-
-            Main.spawnTileX = Math.Clamp(x, WorldEdge, Main.maxTilesX - WorldEdge - 1);
-            Main.spawnTileY = SurfaceRow(Main.spawnTileX);
+            Main.spawnTileX = spawnX;
+            Main.spawnTileY = SurfaceRow(spawnX);
         }
     }
 }

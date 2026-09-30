@@ -1,12 +1,16 @@
 namespace TrelamiumIII.Content.Dryad;
 
-/// <summary>Picks the ground the Dryad walks to and the ground the rift opens on.</summary>
+/// <summary>
+///     Picks where the Dryad arrives, always by the world spawn: the ground she walks to, a few steps from it, and
+///     the ground a short walk beyond that her rift opens on. Her standing rift to Ingress opens by the same rules.
+/// </summary>
 internal static class DryadArrivalSite
 {
-    /// <summary>Tiles from the town centre to the rift, widened to clear the outermost house up to <see cref="RIFT_DISTANCE_MAX" />.</summary>
-    private const int RIFT_DISTANCE = 36;
+    /// <summary>Columns from the spawn to the rift, tried in this order on each side.</summary>
+    private static readonly int[] RiftDistances = [16, 14, 18, 12, 20, 10, 24, 28];
 
-    private const int RIFT_DISTANCE_MAX = 60;
+    /// <summary>Columns short of the spawn, on the rift's side, where she stops: beside a player waiting there, not on them.</summary>
+    private const int STOP_GAP = 3;
 
     /// <summary>Open tiles a standing spot needs above it, and the rift's floor point needs above it.</summary>
     private const int HEADROOM = 3;
@@ -18,98 +22,62 @@ internal static class DryadArrivalSite
 
     private const int MAX_SKIP = 2;
 
-    private static readonly int[] RiftDistanceOffsets = [0, -4, 4, -8, 8, -12, 12];
-
-    /// <summary>Mean home tile of the housed town NPCs; the Guide, then the world spawn, when none are housed.</summary>
-    public static Point TownCenter()
-    {
-        long x = 0;
-        long y = 0;
-        int count = 0;
-
-        foreach (NPC npc in Main.ActiveNPCs)
-        {
-            if (!IsResident(npc))
-                continue;
-
-            x += npc.homeTileX;
-            y += npc.homeTileY;
-            count++;
-        }
-
-        if (count > 0)
-            return new Point((int)(x / count), (int)(y / count));
-
-        int guide = NPC.FindFirstNPC(NPCID.Guide);
-
-        return guide >= 0 ? Main.npc[guide].Center.ToTileCoordinates() : new Point(Main.spawnTileX, Main.spawnTileY);
-    }
-
     /// <summary>
-    ///     Finds the ground the Dryad ends up on (<paramref name="destination" />) and the ground the rift opens on
-    ///     (<paramref name="rift" />), both as bottom-centre points in world pixels.
+    ///     Finds the ground she stops on (<paramref name="destination" />), a few steps from the world spawn, and the
+    ///     ground her rift opens on (<paramref name="rift" />) a short walk beyond it, both as bottom-centre points in
+    ///     world pixels. The rift prefers the far side of the spawn from <paramref name="hint" />, so she walks toward
+    ///     whoever is waiting there.
     /// </summary>
-    /// <param name="hint">Where to look when the town has no open ground, and which side the rift prefers.</param>
+    /// <param name="hint">A player's position; also where to look when there is no open ground by the spawn.</param>
     public static bool TryFind(Vector2 hint, out Vector2 rift, out Vector2 destination)
     {
         rift = destination = Vector2.Zero;
 
-        Point town = TownCenter();
         Point hintTile = hint.ToTileCoordinates();
 
-        if (!TryStandingSpot(town.X, town.Y, out Point standing) && !TryStandingSpot(hintTile.X, hintTile.Y, out standing))
+        if (!TryStandingSpot(Main.spawnTileX, Main.spawnTileY, out Point spawn) && !TryStandingSpot(hintTile.X, hintTile.Y, out spawn))
             return false;
 
-        destination = Feet(standing);
-        rift = destination;
+        int away = hintTile.X >= spawn.X ? -1 : 1;
 
-        int distance = Math.Min(Math.Max(RIFT_DISTANCE, TownRadius(town) + 12), RIFT_DISTANCE_MAX);
-        int preferred = hint.X >= destination.X ? 1 : -1;
-
-        // The first pass wants a walkable path back; the second takes any open ground, and her walk
-        // script teleports her if she gets stuck.
+        // The first pass wants a walkable path to where she stops; the second takes any open ground, and her walk
+        // script puts her there if she gets stuck.
         for (int pass = 0; pass < 2; pass++)
         {
-            foreach (int extra in RiftDistanceOffsets)
+            foreach (int side in new[] { away, -away })
             {
-                for (int attempt = 0; attempt < 2; attempt++)
-                {
-                    int x = standing.X + (attempt == 0 ? preferred : -preferred) * (distance + extra);
+                Point stop = StopSpot(spawn, side);
 
-                    if (!TryFloor(x, standing.Y, 12, 14, out int floorY) || !IsOpenAbove(x, floorY))
+                foreach (int distance in RiftDistances)
+                {
+                    int x = spawn.X + side * distance;
+
+                    if (!TryFloor(x, spawn.Y, 12, 14, out int floorY) || !IsOpenAbove(x, floorY))
                         continue;
 
-                    if (pass == 0 && !IsWalkable(new Point(x, floorY), standing.X))
+                    if (pass == 0 && !IsWalkable(new Point(x, floorY), stop.X))
                         continue;
 
                     rift = Feet(new Point(x, floorY));
+                    destination = Feet(stop);
 
                     return true;
                 }
             }
         }
 
+        // Nothing by the spawn is open enough for the rift: it opens where she stands.
+        rift = destination = Feet(spawn);
+
         return true;
     }
 
-    private static bool IsResident(NPC npc) =>
-        npc.townNPC
-        && !npc.homeless
-        && npc.homeTileX > 0
-        && npc.type != NPCID.TravellingMerchant
-        && !NPCID.Sets.IsTownPet[npc.type];
-
-    private static int TownRadius(Point center)
+    /// <summary>A standing spot <see cref="STOP_GAP" /> columns from the spawn toward <paramref name="side" />, or the spawn's own.</summary>
+    private static Point StopSpot(Point spawn, int side)
     {
-        int radius = 0;
+        int x = spawn.X + side * STOP_GAP;
 
-        foreach (NPC npc in Main.ActiveNPCs)
-        {
-            if (IsResident(npc))
-                radius = Math.Max(radius, Math.Abs(npc.homeTileX - center.X));
-        }
-
-        return radius;
+        return TryFloor(x, spawn.Y, 3, 5, out int floorY) ? new Point(x, floorY) : spawn;
     }
 
     private static Vector2 Feet(Point floorTile) => new(floorTile.X * 16f + 8f, floorTile.Y * 16f);

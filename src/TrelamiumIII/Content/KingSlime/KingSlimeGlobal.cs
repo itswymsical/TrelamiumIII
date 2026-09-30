@@ -1512,7 +1512,7 @@ public class KingSlimeRework : GlobalNPC
         Accent = new Color(86, 162, 255),
 
         RevealTick = INTRO_REVEAL_TICKS,
-        HoldTicks = INTRO_HOLD_TICKS,
+        Duration = INTRO_HOLD_TICKS,
 
         LineRamp = 0,
         LineDensity = 0,

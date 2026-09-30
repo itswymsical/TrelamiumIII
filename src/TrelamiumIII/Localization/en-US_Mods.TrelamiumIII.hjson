@@ -1313,6 +1313,12 @@ DamageMeter: {
 
 Scar.Return: Return to Ingress
 
+# Hover text on the Dryad's rift (Content/Dryad/IngressRift): by the world spawn, and by the spawn in Ingress.
+IngressRift: {
+	Enter: Step into Ingress
+	Return: Return home
+}
+
 Library: {
 	Loans: Loans {0}/{1}
 	CheckOut: Check Out

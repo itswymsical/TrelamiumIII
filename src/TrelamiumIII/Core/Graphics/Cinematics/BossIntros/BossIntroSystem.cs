@@ -148,7 +148,7 @@ internal sealed class BossIntroSystem : ModSystem
 
     /// <summary>Tick the system settles on by itself: the end of the hold, or <see cref="BossIntro.MaxLength" /> as a manual intro's backstop.</summary>
     private static int SettleTick(BossIntro intro)
-        => intro.AutoSettle ? Math.Min(intro.RevealTick + intro.HoldTicks, intro.MaxLength) : intro.MaxLength;
+        => intro.AutoSettle ? Math.Min(intro.RevealTick + intro.Duration, intro.MaxLength) : intro.MaxLength;
 
     /// <summary>Ground rumble, building as whatever is under the floor gets closer to the surface.</summary>
     private static void Rumble(BossIntro intro)

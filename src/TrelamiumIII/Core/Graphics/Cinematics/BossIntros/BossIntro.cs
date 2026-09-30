@@ -61,17 +61,17 @@ internal sealed class BossIntro
     public int OutroTicks { get; init; } = 45;
 
     /// <summary>
-    ///     Whether the system settles the entrance itself, <see cref="HoldTicks" /> after <see cref="RevealTick" />.
+    ///     Whether the system settles the entrance itself, <see cref="Duration" /> after <see cref="RevealTick" />.
     ///     Turn off for an arrival that ends on an event (a landing) and call <see cref="BossIntroSystem.Settle" /> there.
     /// </summary>
     public bool AutoSettle { get; init; } = true;
 
     /// <summary>Frames after <see cref="RevealTick" /> an auto-settled entrance holds before its outro.</summary>
-    public int HoldTicks { get; init; } = 100;
+    public int Duration { get; init; } = 100;
 
     /// <summary>
     ///     Hard stop for a manual settle that never comes, e.g. a boss killed or despawned mid-entrance. Also caps
-    ///     <see cref="HoldTicks" />.
+    ///     <see cref="Duration" />.
     /// </summary>
     public int MaxLength { get; init; } = 60 * 14;
 

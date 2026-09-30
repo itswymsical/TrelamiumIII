@@ -16,7 +16,11 @@ public enum DryadArrivalStage : byte
     /// <summary>The Eye died and the Guide has not explained it yet.</summary>
     Awakened,
 
-    /// <summary>The Guide has spoken. She arrives once a player is near the town.</summary>
+    /// <summary>
+    ///     The Guide has spoken, and her arrival is queued for the daytime: the morning after the night the Eye died.
+    ///     By day she arrives, by the world spawn, as soon as a player is near it; the Guide calls back a player who is
+    ///     on the surface somewhere else, and a player underground is left alone until they come up.
+    /// </summary>
     Briefed,
 
     /// <summary>The arrival is running.</summary>
@@ -28,7 +32,8 @@ public enum DryadArrivalStage : byte
 
 /// <summary>
 ///     Progression state for the Dryad's arrival after the Eye of Cthulhu: the stage, the veto on vanilla's own
-///     Dryad spawn, and the client watcher that plays the Guide's briefing and asks the server to start the arrival.
+///     Dryad spawn, the client watcher that plays the Guide's briefing and asks the server to start the arrival,
+///     and the day she spends settling in before her job (<see cref="Jobs.CrossingOver" />) goes on offer.
 /// </summary>
 /// <remarks>
 ///     The stage is replicated through the world-data packet. The server owns every transition and the Dryad
@@ -41,31 +46,65 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
 
     public const string GreetingKey = "DryadArrival.Greeting";
 
+    public const string ReturnToTownKey = "DryadArrival.ReturnToTown";
+
     private const string StageKey = "stage";
 
-    /// <summary>Ticks the local player must be free before the briefing starts; the arrival adds <see cref="ARRIVAL_DELAY" />.</summary>
-    private const int QUIET_TICKS = 90;
+    private const string SettledKey = "settled";
 
-    private const int ARRIVAL_DELAY = 6 * 60;
+    private const string HousedForKey = "housedFor";
+
+    /// <summary>Ticks the local player must be free before the briefing, the arrival or the Guide's call.</summary>
+    private const int QUIET_TICKS = 90;
 
     private const int REQUEST_COOLDOWN = 3 * 60;
 
-    /// <summary>How near the town centre, in tiles, a player must be for the arrival to start.</summary>
-    private const int TRIGGER_RANGE_X = 70;
+    /// <summary>How long the Guide waits before calling a player back home again.</summary>
+    private const int NUDGE_INTERVAL = 5 * 60 * 60;
 
-    private const int TRIGGER_RANGE_Y = 45;
+    /// <summary>How near the world spawn, in tiles, a player must be for her to arrive: sideways, and above it.</summary>
+    private const int SPAWN_RANGE_X = 50;
+
+    private const int SPAWN_RANGE_Y = 45;
+
+    /// <summary>
+    ///     How far below the world spawn, in tiles, still counts as near it: a basement or a hillside house counts,
+    ///     the caves underneath do not.
+    /// </summary>
+    private const int SPAWN_DEPTH = 15;
+
+    /// <summary>A full in-game day, dawn to dawn, in ticks at the normal time rate.</summary>
+    private const double DAY_TICKS = 86400.0;
+
+    private const double DAY_LENGTH = 54000.0;
 
     private static bool stageLoaded;
     private static DryadArrivalSequence? sequence;
 
     private static int quiet;
     private static int requestCooldown;
+    private static int nudgeCooldown;
     private static bool briefingPlaying;
+
+    /// <summary>Game time since she first had a home, in ticks at the normal time rate; -1 before then. Server side.</summary>
+    private static double housedFor = -1;
+
+    /// <summary>Time of day at the last world tick, dawn being 0; -1 until the first tick of a session.</summary>
+    private static double lastTimeOfDay = -1;
 
     public static DryadArrivalStage Stage { get; private set; }
 
+    /// <summary>She has lived in a house for a full day, so her job is on offer.</summary>
+    public static bool Settled { get; private set; }
+
     /// <summary>True while the scored part of the cutscene is playing on this client.</summary>
     internal static bool SceneRunning => sequence is { InScene: true };
+
+    /// <summary>True from the start of this client's presentation until the camera is handed back.</summary>
+    internal static bool Presenting => sequence is { Presenting: true };
+
+    /// <summary>True while a run is underway on this peer, the world side included.</summary>
+    internal static bool Running => sequence is { Finished: false };
 
     public override void Load()
     {
@@ -94,18 +133,29 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
         sequence = null;
 
         Stage = DryadArrivalStage.Dormant;
+        Settled = false;
+        housedFor = -1;
+        lastTimeOfDay = -1;
         stageLoaded = false;
         quiet = 0;
         requestCooldown = 0;
+        nudgeCooldown = 0;
         briefingPlaying = false;
     }
 
-    public override void SaveWorldData(TagCompound tag) => tag[StageKey] = (byte)Stage;
+    public override void SaveWorldData(TagCompound tag)
+    {
+        tag[StageKey] = (byte)Stage;
+        tag[SettledKey] = Settled;
+        tag[HousedForKey] = housedFor;
+    }
 
     public override void LoadWorldData(TagCompound tag)
     {
         stageLoaded = tag.ContainsKey(StageKey);
         Stage = stageLoaded ? (DryadArrivalStage)tag.GetByte(StageKey) : DryadArrivalStage.Dormant;
+        Settled = tag.GetBool(SettledKey);
+        housedFor = tag.TryGet(HousedForKey, out double housed) ? housed : -1;
     }
 
     public override void PostWorldLoad()
@@ -129,12 +179,71 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
         sequence = null;
     }
 
-    public override void NetSend(BinaryWriter writer) => writer.Write((byte)Stage);
+    public override void NetSend(BinaryWriter writer)
+    {
+        writer.Write((byte)Stage);
+        writer.Write(Settled);
+    }
 
-    public override void NetReceive(BinaryReader reader) => Stage = (DryadArrivalStage)reader.ReadByte();
+    public override void NetReceive(BinaryReader reader)
+    {
+        Stage = (DryadArrivalStage)reader.ReadByte();
+        Settled = reader.ReadBoolean();
+    }
 
     private static bool HasProgressedWithoutStage() =>
         NPC.downedBoss1 || NPC.downedBoss2 || NPC.downedBoss3 || NPC.AnyNPCs(NPCID.Dryad);
+
+    #endregion
+
+    #region settling in
+
+    /// <summary>Server or singleplayer: counts her first day in a house, then puts her job on offer.</summary>
+    /// <remarks>
+    ///     The day counts from when she first had a home, so losing it later does not restart the wait. It adds up
+    ///     how far the time of day moves each tick, so a sundial or a night's sleep counts in full.
+    /// </remarks>
+    public override void PostUpdateWorld()
+    {
+        if (Settled || Stage != DryadArrivalStage.Arrived || SubworldSystem.AnyActive())
+            return;
+
+        double timeOfDay = Main.dayTime ? Main.time : DAY_LENGTH + Main.time;
+        double elapsed = lastTimeOfDay < 0 ? 0 : (timeOfDay - lastTimeOfDay + DAY_TICKS) % DAY_TICKS;
+
+        lastTimeOfDay = timeOfDay;
+
+        if (housedFor < 0)
+        {
+            if (IsHoused())
+                housedFor = 0;
+
+            return;
+        }
+
+        housedFor += elapsed;
+
+        if (housedFor >= DAY_TICKS)
+            SetSettled(true);
+    }
+
+    private static bool IsHoused()
+    {
+        int index = NPC.FindFirstNPC(NPCID.Dryad);
+
+        return index >= 0 && !Main.npc[index].homeless;
+    }
+
+    private static void SetSettled(bool settled)
+    {
+        if (Settled == settled)
+            return;
+
+        Settled = settled;
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendData(MessageID.WorldData);
+    }
 
     #endregion
 
@@ -164,7 +273,7 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
             SetStage(DryadArrivalStage.Briefed);
     }
 
-    /// <param name="requester">The player whose position picks the side of the town the rift opens on.</param>
+    /// <param name="requester">The player whose position picks the side of the spawn the rift opens on.</param>
     /// <param name="forced">Skips the stage check. Used by commands and the standalone cutscene.</param>
     private static void ServerBeginArrival(int requester, bool forced)
     {
@@ -175,7 +284,7 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
 
         if (!DryadArrivalSite.TryFind(hint, out Vector2 rift, out Vector2 destination))
         {
-            TrelamiumIII.Instance.Logger.Warn("Dryad arrival: no open ground near the town or the requesting player.");
+            TrelamiumIII.Instance.Logger.Warn("Dryad arrival: no open ground near the spawn or the requesting player.");
 
             return;
         }
@@ -237,12 +346,15 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
     }
 
     /// <summary>
-    ///     Waits for a quiet moment on the local client, then plays the briefing, and once briefed asks the
-    ///     server to start the arrival when a player is near the town.
+    ///     Waits for a quiet moment on the local client, then plays the briefing. Once briefed, holds the arrival
+    ///     until daytime and then checks every tick: the moment the local player is near the world spawn it asks the
+    ///     server to start it, and while they are on the surface somewhere else the Guide calls them back.
+    ///     Underground, it waits for them to come up.
     /// </summary>
     private static void Watch()
     {
         requestCooldown = Math.Max(requestCooldown - 1, 0);
+        nudgeCooldown = Math.Max(nudgeCooldown - 1, 0);
 
         if (Stage is not (DryadArrivalStage.Awakened or DryadArrivalStage.Briefed) || !CanPresent())
         {
@@ -251,30 +363,49 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
             return;
         }
 
-        int needed = Stage == DryadArrivalStage.Awakened ? QUIET_TICKS : QUIET_TICKS + ARRIVAL_DELAY;
+        if (quiet < QUIET_TICKS)
+        {
+            quiet++;
 
-        if (++quiet < needed)
             return;
+        }
 
         if (Stage == DryadArrivalStage.Awakened)
         {
             if (!briefingPlaying)
                 PlayBriefing();
+
+            return;
         }
-        else if (sequence is null && requestCooldown == 0 && NearTown(Main.LocalPlayer))
+
+        if (!Main.dayTime || sequence is not null || requestCooldown > 0)
+            return;
+
+        Player player = Main.LocalPlayer;
+
+        if (NearSpawn(player))
         {
             requestCooldown = REQUEST_COOLDOWN;
             RequestArrival();
         }
+        else if (player.ZoneOverworldHeight && nudgeCooldown == 0)
+        {
+            nudgeCooldown = NUDGE_INTERVAL;
+            DialogueManager.Instance.StartDialogue(ReturnToTownKey);
+        }
     }
 
-    /// <summary>The local player is free to be shown a scene: in the main world, alive, and nothing else on screen or in danger.</summary>
+    /// <summary>
+    ///     The local player is free to be shown a scene: in the main world, alive, awake, and nothing else on screen or
+    ///     in danger. Awake matters because the arrival waits for morning, which is when a sleeper is still in bed.
+    /// </summary>
     internal static bool CanPresent()
     {
         Player player = Main.LocalPlayer;
 
         return player.active
             && !player.dead
+            && !player.sleeping.isSleeping
             && player.talkNPC < 0
             && !Main.mapFullscreen
             && !SubworldSystem.AnyActive()
@@ -285,12 +416,12 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
             && !NPC.AnyDanger();
     }
 
-    private static bool NearTown(Player player)
+    /// <summary>Near the world spawn, where she arrives, and at its level: above it or a little below, not in the caves under it.</summary>
+    private static bool NearSpawn(Player player)
     {
-        Point town = DryadArrivalSite.TownCenter();
         Point at = player.Center.ToTileCoordinates();
 
-        return Math.Abs(at.X - town.X) <= TRIGGER_RANGE_X && Math.Abs(at.Y - town.Y) <= TRIGGER_RANGE_Y;
+        return Math.Abs(at.X - Main.spawnTileX) <= SPAWN_RANGE_X && at.Y >= Main.spawnTileY - SPAWN_RANGE_Y && at.Y <= Main.spawnTileY + SPAWN_DEPTH;
     }
 
     private static void PlayBriefing()
@@ -414,10 +545,16 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
         SetStage(next);
     }
 
+    /// <summary>Skips her day of settling in: her job goes on offer at the next unlock check.</summary>
+    internal static void DevSettle() => SetSettled(true);
+
     /// <summary>Back to before the Eye died: stage <see cref="DryadArrivalStage.Dormant" /> and no Dryad in the world.</summary>
     internal static void DevReset()
     {
         DevSetStage(DryadArrivalStage.Dormant);
+        SetSettled(false);
+        housedFor = -1;
+        nudgeCooldown = 0;
 
         for (int i = 0; i < Main.maxNPCs; i++)
         {
@@ -439,12 +576,15 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
 
     internal static string Describe()
     {
-        Point town = DryadArrivalSite.TownCenter();
         Point at = Main.LocalPlayer.Center.ToTileCoordinates();
         string run = sequence is null ? "idle" : $"tick {sequence.Ticks}";
-        string dryad = NPC.AnyNPCs(NPCID.Dryad) ? "in the world" : "absent";
+        string dryad = NPC.AnyNPCs(NPCID.Dryad) ? IsHoused() ? "housed" : "homeless" : "absent";
+        string settled = Settled ? "yes" : housedFor < 0 ? "not housed yet" : $"in {Math.Max(DAY_TICKS - housedFor, 0) / 3600:0.0} min at normal time";
+        string where = NearSpawn(Main.LocalPlayer) ? "near spawn" : Main.LocalPlayer.ZoneOverworldHeight ? "on the surface" : "away";
+        string waiting = Stage == DryadArrivalStage.Briefed ? Main.dayTime ? ", due now" : ", due in the morning" : "";
 
-        return $"stage {Stage}, run {run}, Dryad {dryad}, town centre tile ({town.X}, {town.Y}), player tile ({at.X}, {at.Y})";
+        return $"stage {Stage}{waiting}, run {run}, Dryad {dryad}, settled {settled}, spawn tile ({Main.spawnTileX}, {Main.spawnTileY}), "
+            + $"player tile ({at.X}, {at.Y}) {where}";
     }
 
     #endregion
