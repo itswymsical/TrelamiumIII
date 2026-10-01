@@ -1354,7 +1354,10 @@ Library: {
 		}
 
 		AnniesDiary.Blurb: A diary, kept in a hurried hand.
-
+		EProclamation: {
+			Title: Emancipation Proclamation
+			Blurb: Something about this one is otherworldy...
+		}
 		PrimordialSands: {
 			Title: Primordial Sands, Volume I
 			Blurb: The first account of the Primordial Sands.
@@ -1679,6 +1682,25 @@ Liquids: {
 }
 
 Configs: {
+	AuthoringConfig: {
+		DisplayName: Authoring Config
+		Headers.Authoring: Authoring Header
+
+		SourceDirectory: {
+			Label: Mod source directory
+			Tooltip:
+				'''
+				Absolute path to src/TrelamiumIII. Leave empty to export to the Terraria save folder instead.
+				Example: C:/Users/you/Documents/My Games/Terraria/tModLoader/ModSources/TrelamiumIII/src/TrelamiumIII
+				'''
+		}
+
+		HasSourceDirectory: {
+			Label: Has Source Directory
+			Tooltip: ""
+		}
+	}
+
 	VFXConfig: {
 		DisplayName: VFX Settings
 
@@ -1744,6 +1766,26 @@ Configs: {
 
 		DebugMode: {
 			Label: Debug Mode
+			Tooltip: ""
+		}
+	}
+	
+	ExperientialConfig: {
+		DisplayName: Experiential Config
+		Headers.Feedback: Feedback Header
+
+		ShowMilestoneTracker: {
+			Label: Show Milestone Tracker
+			Tooltip: ""
+		}
+
+		ShowExpPopups: {
+			Label: Show Exp Popups
+			Tooltip: ""
+		}
+
+		ShowThresholdEffect: {
+			Label: Show Threshold Effect
 			Tooltip: ""
 		}
 	}

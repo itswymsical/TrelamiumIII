@@ -111,7 +111,7 @@ Jobs: {
 				obj3: Gather Magnetized Coils
 			}
 
-			Set1.obj0: "Gather Walls for the W.A.L.L"
+			Set1.obj0: Gather Walls for the W.A.L.L
 		}
 	}
 
