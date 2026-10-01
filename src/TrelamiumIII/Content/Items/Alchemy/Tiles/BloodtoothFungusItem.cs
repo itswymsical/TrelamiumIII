@@ -19,7 +19,7 @@ public class BloodtoothFungusItem : ModItem, IAlmanacDefined
     public override void SetDefaults()
     {
         base.SetDefaults();
-        Item.width = Item.height = 30;
+        Item.width = Item.height = 18;
         Item.value = Item.sellPrice(copper: 15);
         Item.rare = ItemRarityID.Blue;
         Item.maxStack = Item.CommonMaxStack;

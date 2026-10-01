@@ -19,6 +19,7 @@ public class MyconidSpore : ModItem
         Item.useStyle = ItemUseStyleID.HoldUp;
         Item.useTime = Item.useAnimation = 30;
         Item.rare = ModContent.RarityType<MyconidRarity>();
+        Item.createTile = ModContent.TileType<MyconidSporeTile>();
     }
     public override bool CanUseItem(Player player) => !NPC.AnyNPCs(ModContent.NPCType<FungoreBoss>());
 

@@ -7,12 +7,11 @@ public class BorealHewerItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 9;
-        Item.DamageType = DamageClass.Melee;
+        Item.damage = 8;
+        Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 50;
         Item.useTime = Item.useAnimation = 24;
         Item.knockBack = 1.2f;
-        Item.crit = 9;
         Item.value = Item.sellPrice(silver: 12);
         Item.rare = ItemRarityID.Blue;
         Item.useTurn = false;
@@ -26,9 +25,10 @@ public class BorealHewerItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Cryonic;
+        component.ChemicalDamage = 3;
         component.debuffDuration = 40;
         component.ReactionChance = 13;
-        component.ChemicalDamage = 1;
+        component.ReactionDamage = 4;
     }
 
     /// <summary><see cref="Player.altFunctionUse"/> while an alt use is running.</summary>

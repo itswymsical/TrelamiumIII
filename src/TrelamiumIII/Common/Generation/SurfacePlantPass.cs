@@ -3,6 +3,7 @@ using Terraria.WorldBuilding;
 using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
 using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
+using TrelamiumIII.Content.Tiles.Desert;
 
 namespace TrelamiumIII.Common.Generation;
 
@@ -32,6 +33,17 @@ public class SurfacePlantPass : GenPass
                 {
                     GrowBloodtoothFungus(x, y);
                 }
+                if (WorldGen.genRand.NextBool(125))
+                {
+                    GrowDeadBush(x, y);
+                }
+            }
+            for (int y = 0; y < (int)Main.worldSurface - 150; y++)
+            {
+                if (WorldGen.genRand.NextBool(50))
+                {
+                    GrowDewdropBonnet(x, y);
+                }
             }
         }
     }
@@ -53,6 +65,56 @@ public class SurfacePlantPass : GenPass
             if (HasSpace_Plant(x, y))
             {
                 WorldGen.PlaceTile(x, y - 1, ModContent.TileType<FlyAgaricTile>(), mute: true);
+                if (Main.netMode == NetmodeID.Server)
+                {
+                    NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
+                }
+            }
+        }
+    }
+
+    private void GrowDewdropBonnet(int x, int y)
+    {
+        Tile tile = Framing.GetTileSafely(x, y);
+        Tile tileAbove = Framing.GetTileSafely(x, y - 1);
+
+        if (!tile.HasTile) return;
+
+        bool validTile =
+            tile.TileType == TileID.Cloud || tile.TileType == TileID.RainCloud || tile.TileType == TileID.SnowCloud;
+
+        if (!validTile) return;
+
+        if (validTile && !tileAbove.HasTile && !tile.LeftSlope && !tile.RightSlope && !tile.IsHalfBlock)
+        {
+            if (HasSpace_Plant(x, y))
+            {
+                WorldGen.PlaceTile(x, y - 1, ModContent.TileType<DewdropBonnetTile>(), mute: true);
+                if (Main.netMode == NetmodeID.Server)
+                {
+                    NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
+                }
+            }
+        }
+    }
+    private void GrowDeadBush(int x, int y)
+    {
+        Tile tile = Framing.GetTileSafely(x, y);
+        Tile tileAbove = Framing.GetTileSafely(x, y - 1);
+
+        if (!tile.HasTile) return;
+
+        bool validTile =
+            tile.TileType == TileID.Sand || tile.TileType == TileID.HardenedSand 
+            || tile.TileType == TileID.Ebonsand || tile.TileType == TileID.Crimsand;
+
+        if (!validTile) return;
+
+        if (validTile && !tileAbove.HasTile && !tile.LeftSlope && !tile.RightSlope && !tile.IsHalfBlock)
+        {
+            if (HasSpace_Plant(x, y))
+            {
+                WorldGen.PlaceTile(x, y - 1, ModContent.TileType<DeadBushTile>(), mute: true, style: Main.rand.Next(3));
                 if (Main.netMode == NetmodeID.Server)
                 {
                     NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
@@ -92,7 +154,7 @@ public class SurfacePlantPass : GenPass
         Tile tileAbove = Framing.GetTileSafely(x, y - 1);
         if (!tile.HasTile) return;
         bool validTile =
-            tile.TileType == TileID.CrimsonGrass;
+            tile.TileType == TileID.CrimsonGrass || tile.type == TileID.CorruptGrass;
         if (!validTile) return;
         if (validTile && !tileAbove.HasTile && !tile.LeftSlope && !tile.RightSlope && !tile.IsHalfBlock)
         {

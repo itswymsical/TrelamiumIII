@@ -1084,6 +1084,11 @@ Items: {
 		DisplayName: Dud Bomb
 		Tooltip: ""
 	}
+
+	DewdropBonnetItem: {
+		DisplayName: Dewdrop Bonnet
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1187,7 +1192,7 @@ Projectiles: {
 	WardenTileCluster.DisplayName: Torn Earth
 	EarthenPike.DisplayName: Earthen Pike
 	ThrownTool.DisplayName: Thrown Tool
-	ArcticFlaskProjectile.DisplayName: Arctic Flask Projectile
+	ArcticFlaskProjectile.DisplayName: Arctic Flask
 }
 
 NPCs: {
@@ -1354,10 +1359,12 @@ Library: {
 		}
 
 		AnniesDiary.Blurb: A diary, kept in a hurried hand.
+
 		EProclamation: {
 			Title: Emancipation Proclamation
 			Blurb: Something about this one is otherworldy...
 		}
+
 		PrimordialSands: {
 			Title: Primordial Sands, Volume I
 			Blurb: The first account of the Primordial Sands.
@@ -1398,8 +1405,6 @@ Library: {
 }
 
 SeedAmmo: {
-	# {0} is the seed bed's item id, {1} its display name. The name is spelled out because the four
-	# bed sprites read almost identically at tooltip size.
 	FavouriteSoil: Favorite soil: [i:{0}] {1}
 	Daybloom: Critical strikes grant temporary [buff:Ironskin]
 	Blinkroot: Critical strikes grant temporary [buff:Hunter] and [buff:Swiftness]
@@ -1413,7 +1418,7 @@ SeedAmmo: {
 # Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name
 # an element in its own words without every tooltip that mentions it having to change.
 ChemicalDamageTypes: {
-	# The elementless case: gel, powders, inert gas. Afflicts over time, no matchup, no reaction.
+	# The elementless case: gel, powders, inert gas. Afflicts over time.
 	Solute: Solute
 	Thermal: Thermal
 	Cryonic: Cryonic
@@ -1769,7 +1774,7 @@ Configs: {
 			Tooltip: ""
 		}
 	}
-	
+
 	ExperientialConfig: {
 		DisplayName: Experiential Config
 		Headers.Feedback: Feedback Header

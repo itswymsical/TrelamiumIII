@@ -160,7 +160,7 @@ public sealed class SoluteID : ICustomAutoload
             Principle = PrincipleType.Harmony,
             Hidden = false,
             Recipes = self => self.CreateRecipe(2)
-                .AddIngredient(ItemID.Wood, 20)
+                .AddIngredient(ItemID.Wood, 12)
                 .AddTile(TileID.Furnaces)
                 .Register(),
         });

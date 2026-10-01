@@ -1,7 +1,6 @@
 using TrelamiumIII.Common.Globals;
 using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
 using TrelamiumIII.Content.Items.Alchemy.Reagents;
-using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Ammo;
@@ -90,7 +89,8 @@ public partial class ChemistryRecipeSystem
 
         // Starflask
         AlchemyRecipes.CreateRecipe(tonics, starflask,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 });
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 },
+            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(ItemID.Gel, 3)) { OutputStack = 16 });
 
         // Thermite Flask
         AlchemyRecipes.CreateRecipe([SolventID.FibrousSlurry, SolventID.MartialTonic, SolventID.AquaFortis], therm,

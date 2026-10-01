@@ -1,3 +1,5 @@
+using TrelamiumIII.Common.ChemicalClass;
+
 namespace TrelamiumIII.Content.Items.Frostbark;
 
 [AutoloadEquip(EquipType.Legs)]
@@ -18,6 +20,11 @@ public class FrostbarkGreaves : ModItem
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }
+    public override void UpdateEquip(Player player)
+    {
+        base.UpdateEquip(player);
+        player.GetDamage(ModContent.GetInstance<ChemicalDamageClass>()) += 0.03f;
+    }
 }
 
 [AutoloadEquip(EquipType.Body)]
@@ -33,7 +40,8 @@ public class FrostbarkHauberk : ModItem
     public override void UpdateEquip(Player player)
     {
         base.UpdateEquip(player);
-        player.GetDamage(DamageClass.Melee) += 0.05f;
+        var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
+        chemPlayer.ReactionChance += 0.05f;
     }
     public override void AddRecipes()
     {
@@ -60,8 +68,8 @@ public class FrostbarkHelm : ModItem
     public override void UpdateEquip(Player player)
     {
         base.UpdateEquip(player);
-        player.GetCritChance(DamageClass.Melee) += 0.03f;
-
+        var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
+        chemPlayer.ElementDamage(ChemicalDamageType.Cryonic) += 0.04f;
     }
 
     public override bool IsArmorSet(Item head, Item body, Item legs)
