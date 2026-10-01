@@ -1,0 +1,9 @@
+DialogueLibrary: {
+	Permafrost: {
+		Greeting: {
+			Line1.Text: Greetings, traveler.[] It's been a long time since anyone has ventured into these frozen lands.
+			Line2.Text: The cold can be unforgiving,[] but if you have the courage to face it,[] there are wonders to behold.
+			Line3.Text: Tell me,[] what brings you to Hyperborea?[] Are you seeking knowledge[], adventure[], or perhaps something more...[] elusive?
+		}
+	}
+}

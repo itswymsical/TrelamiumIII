@@ -1239,6 +1239,7 @@ NPCs: {
 	WanderingEmployer.DisplayName: Wandering Employer
 	Silvian.DisplayName: Silvian
 	ArgieNPC.DisplayName: Argie
+	PermafrostNPC.DisplayName: Permafrost
 }
 
 Buffs: {

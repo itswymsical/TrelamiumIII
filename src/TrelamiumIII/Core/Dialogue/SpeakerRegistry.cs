@@ -97,6 +97,15 @@ public static class SpeakerRegistry
 
         Register(new SpeakerProfile
         {
+            Id = "Permafrost",
+            FrameCount = 1,
+            Font = TrelamiumFonts.AndikaBoldItalic,
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Permafrost.Speech.Asset]),
+            Color = Color.LightSkyBlue,
+        });
+
+        Register(new SpeakerProfile
+        {
             Id = "Edith",
             FrameCount = 1,
             Font = TrelamiumFonts.PaprikaFont,

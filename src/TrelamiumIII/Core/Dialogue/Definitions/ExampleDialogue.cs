@@ -1,12 +1,5 @@
 namespace TrelamiumIII.Core.Dialogue.Definitions;
 
-/// <summary>
-///   Template showing the shape of a dialogue definition: flow lives here, text and
-///   anchors live in <c>Localization/DialogueLibrary</c>.
-///   <para>
-///   Test in game with <c>/dialogue play Example.Greeting</c>.
-///   </para>
-/// </summary>
 class ExampleDialogue : ModDialogue
 {
     private const string Speaker = "WanderingEmployer";
