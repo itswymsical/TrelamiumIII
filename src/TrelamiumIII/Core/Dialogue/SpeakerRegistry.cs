@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using Terraria.Audio;
-using Terraria.GameContent;
 using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Dialogue;
@@ -47,17 +44,15 @@ public static class SpeakerRegistry
 
         // Register one profile per speaking character. Portraits are vertical emote sheets
         // (92x92 per frame) under Assets/Textures/UI/Dialogue/Characters.
-        //
-        // Font is optional and defaults to the box's own. Set it only on characters whose lines you
-        // author end to end -- TrelamiumFonts.Speech covers 122 glyphs, so a line that interpolates
-        // a player's name or gets translated will come out mostly as substitution marks.
+
         Register(new SpeakerProfile
         {
             Id = "Guide",
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.Guide.KEY,
             FrameCount = 7,
+            Font = TrelamiumFonts.AndikaBold,
             Color = new(100, 150, 200),
-            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Guide.Speech.Asset]),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Guide.Speech.Asset]),
         });
 
         Register(new SpeakerProfile
@@ -66,7 +61,7 @@ public static class SpeakerRegistry
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.Merchant.KEY,
             FrameCount = 3,
             Color = new(100, 150, 200),
-            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Merchant.Speech.Asset]),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Merchant.Speech.Asset]),
         });
         Register(new SpeakerProfile
         {
@@ -95,8 +90,8 @@ public static class SpeakerRegistry
         {
             Id = "Silvian",
             FrameCount = 1,
-            Font = TrelamiumFonts.AndikaRegular,
-            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Signia.Speech.Asset]),
+            Font = TrelamiumFonts.AndikaBold,
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Silvian.Speech.Asset]),
             Color = Color.CornflowerBlue,
         });
 
@@ -104,23 +99,32 @@ public static class SpeakerRegistry
         {
             Id = "Edith",
             FrameCount = 1,
-            Font = TrelamiumFonts.AndikaRegular,
+            Font = TrelamiumFonts.PaprikaFont,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
             Color = new(214, 178, 120),
         });
 
-        // No portrait or voice recorded yet; the voice is Sophie's as a stand-in.
         Register(new SpeakerProfile
         {
-            Id = "Dryad",
+            Id = "Goblin Tinkerer",
             FrameCount = 1,
-            Color = new(122, 190, 112),
-            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
+            Font = TrelamiumFonts.RajdhaniBold,
+            Color = Color.Teal,
+            Voice = new VoiceProfile(VoiceMode.Single, [Assets.SFX.Dialogue.Goblin.Asset]),
         });
 
         Register(new SpeakerProfile
         {
-            Id = "NerdySlime",
+            Id = "Dryad",
+            FrameCount = 1,
+            Font = TrelamiumFonts.PaprikaFont,
+            Color = new(122, 190, 112),
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Dryad.Speech.Asset]),
+        });
+
+        Register(new SpeakerProfile
+        {
+            Id = "Nerdy Slime",
             TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
             FrameCount = 1,
             Color = new(100, 150, 200),

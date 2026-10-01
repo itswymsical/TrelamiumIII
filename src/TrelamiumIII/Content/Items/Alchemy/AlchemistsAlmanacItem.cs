@@ -5,7 +5,7 @@ namespace TrelamiumIII.Content.Items.Alchemy;
 
 /// <summary>
 ///     John Substrate's almanac. It has no recipe: Silvian, his nephew, hands it over at the end of his jobs
-///     (<see cref="NPCs.Silvian.SilvianAlmanac" />).
+///     (<see cref="TrelamiumIII.Content.NPCs.WorldNPCs.Silvian.SilvianAlmanac" />).
 /// </summary>
 public class AlchemistsAlmanacItem : ModItem
 {

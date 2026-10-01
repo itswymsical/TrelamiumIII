@@ -6,8 +6,8 @@ using TrelamiumIII.Core.ExperientialSystem;
 using TrelamiumIII.Core.ExperientialSystem.Combat;
 using TrelamiumIII.Core.ExperientialSystem.Skills;
 using TrelamiumIII.Content.Dryad;
-using TrelamiumIII.Content.NPCs.Jobbers;
-using TrelamiumIII.Content.NPCs.Silvian;
+using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
+using TrelamiumIII.Content.NPCs.WorldNPCs.Jobbers;
 
 namespace TrelamiumIII;
 

@@ -17,7 +17,7 @@ public class BramblewoodTorch : FurnitureItem
 {
     protected override FurnitureType FurnitureType => FurnitureType.Torch;
     protected override int TileType => ModContent.TileType<BramblewoodTorchTile>();
-    protected override int MaterialType => ItemID.Wood;
+    protected override int MaterialType => ModContent.ItemType<Bramblewood>();
     protected override bool IsTorch => true;
     protected override int TorchDustType => 0;
     protected override Vector3 TorchColor => new(0.24f, 0.26f, 0.8f);

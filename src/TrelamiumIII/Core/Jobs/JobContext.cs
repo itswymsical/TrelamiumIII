@@ -67,7 +67,7 @@ public sealed class JobContext(Player player, JobPlayer jobs)
     #region Presentation
     /// <summary>Opens a dialogue line, if this client is the one that should see it.</summary>
     public bool Play(string dialogueKey, bool zoomIn = false, bool letterbox = false,
-        DialogueStyle style = DialogueStyle.Panel)
+        DialogueStyle style = DialogueStyle.Adaptive)
     {
         if (!IsLocal || string.IsNullOrEmpty(dialogueKey))
             return false;

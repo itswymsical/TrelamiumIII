@@ -145,14 +145,9 @@ Items: {
 		Tooltip: Charges and fires acorns at high velocity
 	}
 
-	SaplingMakerItem: {
-		DisplayName: Sapling Maker
-		Tooltip: Deals hefty knockback and can be charged up to blast several acorns
-	}
-
 	SaplingMaker: {
 		DisplayName: Sapling Maker
-		Tooltip: ""
+		Tooltip: Deals hefty knockback and can be charged up to blast several acorns
 	}
 
 	SharpnutDaggerItem: {
@@ -1084,6 +1079,11 @@ Items: {
 		DisplayName: Artic Flask Item
 		Tooltip: ""
 	}
+
+	DudBomb: {
+		DisplayName: Dud Bomb
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1232,8 +1232,8 @@ NPCs: {
 	TestTerrarian.DisplayName: Test Terrarian
 	SophieNPC.DisplayName: Sophie
 	WanderingEmployer.DisplayName: Wandering Employer
-	Silva.DisplayName: Silva
 	Silvian.DisplayName: Silvian
+	ArgieNPC.DisplayName: Argie
 }
 
 Buffs: {

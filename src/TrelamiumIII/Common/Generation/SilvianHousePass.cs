@@ -3,7 +3,7 @@ using Terraria.DataStructures;
 using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
-using TrelamiumIII.Content.NPCs.Silvian;
+using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 
 namespace TrelamiumIII.Common.Generation;
 

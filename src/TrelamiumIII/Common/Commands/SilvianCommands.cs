@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.NPCs.Silvian;
+using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 
@@ -66,7 +66,7 @@ public class SilvianCommand : ModCommand
     {
         var jobs = player.GetModPlayer<JobPlayer>();
 
-        jobs.GetOrCreateJob(JobID.SilvianBotany1)?.Reset();
-        jobs.LockJob(JobID.SilvianBotany1);
+        jobs.GetOrCreateJob(JobID.HerbalForager)?.Reset();
+        jobs.LockJob(JobID.HerbalForager);
     }
 }

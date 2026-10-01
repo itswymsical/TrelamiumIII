@@ -45,9 +45,9 @@ Jobs: {
 		}
 	}
 
-	SilvianBotany1: {
-		Name: Botanist job i dont have a name for yet
-		Description: "'It'll be worth the rewarddd! Trust me!'"
+	HerbalForager: {
+		Name: Herbal Forager
+		Description: "'It'll be worth the reward! Trust me!'"
 
 		Tasks: {
 			Set0.obj0: Brief with Silvian (let the dialogue play out)
@@ -91,6 +91,27 @@ Jobs: {
 			Set0.obj0: Speak with Merchant
 			Set1.obj0: Obtain copper objects
 			Set2.obj0: Check in with the Merchant
+		}
+	}
+
+	# Goblin Tinkerer
+	ExplosiveArchitecture: {
+		Name: Explosive Architecture
+		Description:
+			'''
+			"I just had a great idea for an invention!
+			Help me gather the resources, and you'll get the first prototype!"
+			'''
+
+		Tasks: {
+			Set0: {
+				obj0: Gather Iron or Lead Bars
+				obj1: Gather Dud Bombs
+				obj2: Gather Lodestone
+				obj3: Gather Magnetized Coils
+			}
+
+			Set1.obj0: "Gather Walls for the W.A.L.L"
 		}
 	}
 

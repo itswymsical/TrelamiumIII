@@ -1,0 +1,19 @@
+DialogueLibrary: {
+	Tinkerer: {
+		ExplosiveArchitecture_Greeting: {
+			Line1.Text: Salutations, [speakerName:player]! I would like to thank you once again for freeing me from my tribe.
+			Line2.Text: The goblins aren't fond of technology.[] Their archaic mindset is the reason they even got into the Assailants' cult!
+			Line3.Text: Gah![] Anyways.[] I had a brilliant idea for a new invention;[] the W.A.L.L Bomb!
+			Line4.Text: Or it's full scientific name, the Wave-Actuated Lattice Layering device![] here's the gist:
+			Line5.Text: A radial detonation propagates an architectural wave through the surrounding space...
+			Line6.Text: ...which rapidly constructs walls along its path!
+			Line7.Text: In layman's terms:[] you press the button,[] and suddenly there are walls everywhere.
+			Line8.Text: I've given you a list of equipment and resources you need to gather.[] Gather those and bring them to me promptly![] I'll see to it you get the first prototype!
+		}
+
+		ExplosiveArchitecture_TaskSet1Complete: {
+			Line1.Text: Ah, yes! The base materials have been gathered.[] All we need now is walls.
+			Line2.Text: Would you mind crafting about 50 Wood Walls?
+		}
+	}
+}
