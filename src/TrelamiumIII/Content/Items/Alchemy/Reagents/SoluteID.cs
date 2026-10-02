@@ -120,6 +120,9 @@ public sealed class SoluteID : ICustomAutoload
             Temperaments = Temperament.Inert | Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
             Hidden = false,
+
+            Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<RockSaltTile>()),
+
             Recipes = self => self.CreateRecipe(3)
                 .AddIngredient(SolventID.Brine)
                 .AddTile(TileID.Furnaces)

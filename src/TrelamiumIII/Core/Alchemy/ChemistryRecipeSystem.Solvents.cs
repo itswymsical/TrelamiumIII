@@ -3,6 +3,7 @@ using TrelamiumIII.Content.Items.Alchemy.Reagents;
 using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
 using TrelamiumIII.Content.Items.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.Alchemy.Tiles;
+using TrelamiumIII.Content.Items.ContortionistSet;
 using TrelamiumIII.Content.Items.Lodestone;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
 
@@ -59,8 +60,14 @@ public partial class ChemistryRecipeSystem
     /// Mineral refinement: acid solvents and alkali/distillate solutes. None of these outputs is a potion, so no
     /// <see cref="RecipeVariant.Potency" /> applies; star ratings live on <see cref="AlmanacEntry.AlmanacPotency" />.
     /// </summary>
-    private static void RegisterMinerals()
+    private static void RegisterSolutes()
     {
+        #region Reagents
+
+        AlchemyRecipes.CreateRecipe(SolventID.BaneTonic, ModContent.ItemType<TwistedFungus>(),
+            new RecipeVariant(ComponentMatcher.Of(SoluteID.RockSalt, 2), ItemID.VileMushroom) { ReturnsBottle = true});
+
+        #endregion
         #region Acids
 
         AlchemyRecipes.CreateRecipe(ItemID.BottledWater, SolventID.OilOfVitriol,

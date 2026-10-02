@@ -5,6 +5,11 @@ Keybinds: {
 	StructureEditor.DisplayName: Structure Editor
 }
 
+SetBonuses: {
+	Contortionist: Increases Necrotic affliction rate by 30%
+	Frostbark: You become immune to the 'Chilled' debuff and gain resistance towards cold sources.
+}
+
 Rarities: {
 	Ember: It has not finished burning.
 	Relic: Shinyyyy.
@@ -1088,6 +1093,21 @@ Items: {
 	DewdropBonnetItem: {
 		DisplayName: Dewdrop Bonnet
 		Tooltip: ""
+	}
+
+	ContortionistsHat: {
+		DisplayName: Contortionists Hat
+		Tooltip: "Increases [chem:Necrotic] damage by 9%"
+	}
+
+	ContortionistsRobe: {
+		DisplayName: Contortionists Robe
+		Tooltip: "Increases [chem:Necrotic] reaction chance by 5%"
+	}
+
+	TwistedFungus: {
+		DisplayName: Twisted Fungus
+		Tooltip: "'A twisted fungal growth with unique properties'"
 	}
 }
 

@@ -70,6 +70,9 @@ public static class OreTable
         ushort sulfur = (ushort)ModContent.TileType<SulfurTile>();
         veins.Add(new(sulfur, Between(Rock, Underworld, 0.2f), Between(Rock, Underworld, 0.85f), 80f, (4, 7), (6, 9), StoneTiles, Clustering: 0.5f));
 
+        ushort rockSalt = (ushort)ModContent.TileType<RockSaltTile>();
+        veins.Add(new(rockSalt, Between(SurfaceLow, RockLow, 0.17f), Between(SurfaceLow, RockLow, 0.85f), 80f, (3, 5), (4, 7), StoneTiles, Clustering: 0.45f));
+
         return veins;
     }
 }

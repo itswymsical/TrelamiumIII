@@ -1,0 +1,22 @@
+﻿namespace TrelamiumIII.Content.Items.Alchemy.Reagents;
+
+public class RockSaltTile : ModTile
+{
+    public override string Texture => Assets.Textures.FallbackTile.KEY;
+    public override void SetStaticDefaults()
+    {
+        Main.tileSolid[Type] = true;
+        Main.tileMergeDirt[Type] = true;
+
+        Main.tileMerge[TileID.Stone][Type] = true;
+        Main.tileMerge[Type][TileID.Stone] = true;
+
+        Main.tileBlockLight[Type] = true;
+
+        DustType = DustID.Marble;
+        MineResist = 0.25f;
+        HitSound = SoundID.Tink;
+
+        AddMapEntry(new Color(144, 148, 155));
+    }
+}

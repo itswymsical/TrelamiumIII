@@ -79,7 +79,7 @@ public class FrostbarkHelm : ModItem
 
     public override void UpdateArmorSet(Player player)
     {
-        player.setBonus = "You become immune to the 'Chilled' debuff and gain resistance towards cold sources.";
+        player.setBonus = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "SetBonuses.Frostbark");
         player.resistCold = true;
         player.buffImmune[BuffID.Chilled] = true;
     }

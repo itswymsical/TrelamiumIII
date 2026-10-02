@@ -109,7 +109,7 @@ public partial class ChemistryRecipeSystem : ModSystem
         RegisterTransmutations();
 
         RegisterWeapons();
-        RegisterMinerals();
+        RegisterSolutes();
 
         if (ModLoader.HasMod("SpiritReforged"))
             RegisterSpiritReforged();
