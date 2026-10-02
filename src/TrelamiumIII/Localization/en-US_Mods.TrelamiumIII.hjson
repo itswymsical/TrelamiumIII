@@ -1091,12 +1091,12 @@ Items: {
 	}
 
 	ContortionistsHat: {
-		DisplayName: "Contortionist's Hat"
+		DisplayName: Contortionist's Hat
 		Tooltip: Increases [chem:Necrotic] damage by 7%
 	}
 
 	ContortionistsRobe: {
-		DisplayName: "Contortionist's Robe"
+		DisplayName: Contortionist's Robe
 		Tooltip: Increases [chem:Necrotic] reaction chance by 4%
 	}
 

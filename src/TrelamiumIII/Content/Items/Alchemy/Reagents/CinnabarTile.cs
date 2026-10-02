@@ -2,7 +2,6 @@
 
 public class CinnabarTile : ModTile
 {
-    public override string Texture => Assets.Textures.FallbackTile.KEY;
     public override void SetStaticDefaults()
     {
         Main.tileSolid[Type] = true;

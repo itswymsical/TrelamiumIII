@@ -70,14 +70,13 @@ public sealed class SoluteID : ICustomAutoload
 
         Cinnabar = Add(mod, new SoluteItem("CinnabarItem")
         {
-            TexturePath = Placeholder,
+            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Cinnabar.KEY,
             Value = Item.sellPrice(copper: 11),
             AlmanacPotency = 3,
-            Temperaments = Temperament.Volatile | Temperament.Catalytic,
-            Principle = PrincipleType.Martial,
+            Temperaments = Temperament.Kinetic,
+            Principle = PrincipleType.Vital | PrincipleType.Bane,
 
             Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<CinnabarTile>()),
-
         });
 
         Quicksilver = Add(mod, new SoluteItem("QuicksilverItem")
@@ -85,8 +84,8 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = Placeholder,
             Value = Item.sellPrice(copper: 4),
             AlmanacPotency = 2,
-            Temperaments = Temperament.Volatile | Temperament.Alkaline,
-            Principle = PrincipleType.Specular,
+            Temperaments = Temperament.Volatile | Temperament.Inert,
+            Principle = PrincipleType.Bane | PrincipleType.Brisk,
         });
 
         Niter = Add(mod, new SoluteItem("NiterItem")
