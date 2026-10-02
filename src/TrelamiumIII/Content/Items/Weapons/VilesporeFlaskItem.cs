@@ -14,7 +14,7 @@ public class VilesporeFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 10;
+        Item.damage = 7;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;
@@ -40,6 +40,7 @@ public class VilesporeFlaskItem : ModItem
         component.debuffDuration = TimeConversion.SetTime(secs: 6);
         component.ReactionChance = 7;
         component.ReactionDamage = 8;
+        component.Concentration = 6;
         component.ReactionHandler = SporePlagueCling.InfectWithBurst;
         component.Modifiers = [TemperamentModifier.Acidic];
     }

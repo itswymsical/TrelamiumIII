@@ -6,7 +6,7 @@ Keybinds: {
 }
 
 SetBonuses: {
-	Contortionist: Increases Necrotic affliction rate by 30%
+	Contortionist: Increases Necrotic affliction rate by 22%
 	Frostbark: You become immune to the 'Chilled' debuff and gain resistance towards cold sources.
 }
 
@@ -346,17 +346,17 @@ Items: {
 
 	FrostbarkHelm: {
 		DisplayName: Frostbark Helm
-		Tooltip: Increases melee critical strike chance by 3%
+		Tooltip: Increases [chem:Cryonic] damage by 4%
 	}
 
 	FrostbarkHauberk: {
 		DisplayName: Frostbark Hauberk
-		Tooltip: Increases melee damage by 5%
+		Tooltip: Increases controlled reaction chance by 5%
 	}
 
 	FrostbarkGreaves: {
 		DisplayName: Frostbark Greaves
-		Tooltip: ""
+		Tooltip: Increases controlled damage by 3%
 	}
 
 	AmberPendantItem: {
@@ -1066,22 +1066,17 @@ Items: {
 	}
 
 	CinnabarItem: {
-		DisplayName: Cinnabar Item
+		DisplayName: Cinnabar
 		Tooltip: ""
 	}
 
 	QuicksilverItem: {
-		DisplayName: Quicksilver Item
+		DisplayName: Quicksilver
 		Tooltip: ""
 	}
 
 	EmancipationProclamation: {
 		DisplayName: Emancipation Proclamation
-		Tooltip: ""
-	}
-
-	ArticFlaskItem: {
-		DisplayName: Artic Flask Item
 		Tooltip: ""
 	}
 
@@ -1096,13 +1091,13 @@ Items: {
 	}
 
 	ContortionistsHat: {
-		DisplayName: Contortionists Hat
-		Tooltip: Increases [chem:Necrotic] damage by 9%
+		DisplayName: "Contortionist's Hat"
+		Tooltip: Increases [chem:Necrotic] damage by 7%
 	}
 
 	ContortionistsRobe: {
-		DisplayName: Contortionists Robe
-		Tooltip: Increases [chem:Necrotic] reaction chance by 5%
+		DisplayName: "Contortionist's Robe"
+		Tooltip: Increases [chem:Necrotic] reaction chance by 4%
 	}
 
 	TwistedFungus: {

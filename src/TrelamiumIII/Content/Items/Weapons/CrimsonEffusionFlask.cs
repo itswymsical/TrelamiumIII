@@ -15,7 +15,7 @@ public class CrimsonEffusionFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 13;
+        Item.damage = 9;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;
@@ -36,11 +36,10 @@ public class CrimsonEffusionFlaskItem : ModItem
             return;
 
         component.ChemicalType = ChemicalDamageType.Necrotic;
-        component.ChemicalDamage = 1;
-        component.debuffRate = 20;
-        component.debuffDuration = TimeConversion.SetTime(secs: 5);
-        component.ReactionChance = 4;
-        component.ReactionDamage = 7;
+        component.ChemicalDamage = 4;
+        component.ReactionChance = 1;
+        component.ReactionDamage = 5;
+        component.Concentration = 6;
         component.ReactionHandler = DoBloodsplosion;
         component.Modifiers = [TemperamentModifier.Volatile];
     }
@@ -54,7 +53,7 @@ public class CrimsonEffusionFlaskItem : ModItem
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
                                   .SafeNormalize(-Vector2.UnitY);
 
-        CameraSystem.shake = 12;
+        CameraSystem.shake = 2;
         SoundEngine.PlaySound(SoundID.Item74);
 
         int count = Main.rand.Next(12, 16);

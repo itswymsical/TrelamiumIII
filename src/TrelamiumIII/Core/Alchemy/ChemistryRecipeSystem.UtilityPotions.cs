@@ -58,13 +58,15 @@ public partial class ChemistryRecipeSystem
         AlchemyRecipes.CreateRecipe(ItemID.BottledWater, ItemID.MiningPotion,
             new RecipeVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 1, StrengthPercent = 100 },
             new RecipeVariant(Silver, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105 },
-            new RecipeVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = Time(12) });
+            new RecipeVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = Time(12) },
+            new RecipeVariant(ItemID.Blinkroot, ItemID.AntlionMandible) { OutputStack = 2, Potency = 2, StrengthPercent = 105, DurationTicks = Time(12) });
 
         AlchemyRecipes.CreateRecipe(SolventID.BriskTonic, ItemID.MiningPotion,
             new RecipeVariant(Silver, ItemID.Blinkroot) { OutputStack = 2, Potency = 3, StrengthPercent = 111, DurationTicks = Time(10) },
             new RecipeVariant(ItemID.Blinkroot) { OutputStack = 2, Potency = 2, StrengthPercent = 100, DurationTicks = Time(10) },
             new RecipeVariant(ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 4, StrengthPercent = 124, DurationTicks = Time(8, 30) },
-            new RecipeVariant(Silver, ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = Time(4) });
+            new RecipeVariant(Silver, ItemID.Blinkroot, ItemID.Worm) { OutputStack = 2, Potency = 5, StrengthPercent = 150, DurationTicks = Time(4) },
+            new RecipeVariant(Silver, ItemID.Blinkroot, ItemID.AntlionMandible) { OutputStack = 2, Potency = 5, StrengthPercent = 175, DurationTicks = Time(4, 35) });
 
         AlchemyRecipes.CreateRecipe(magnolia, ItemID.MiningPotion,
             new RecipeVariant(ItemID.BlinkrootSeeds, Silver) { OutputStack = 4, Potency = 2, StrengthPercent = 95, DurationTicks = Time(10) });

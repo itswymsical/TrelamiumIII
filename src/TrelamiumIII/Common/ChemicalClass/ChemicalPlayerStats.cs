@@ -2,79 +2,46 @@
 
 public class ChemicalPlayerStats : ModPlayer
 {
-    private static readonly int ElementCount = Enum.GetValues<ChemicalDamageType>().Length;
+    /// <summary>Reaction chance, in percentage points, every release starts from before bonuses.</summary>
+    private const float BaseReactionChance = 4f;
 
-    private readonly float[] elementDamage = new float[ElementCount];
-    private readonly float[] elementReactionDamage = new float[ElementCount];
-    private readonly float[] elementReactionChance = new float[ElementCount];
-    private readonly float[] elementDamageBonus = new float[ElementCount];
-    private readonly float[] elementAfflictionSpeed = new float[ElementCount];
-    private readonly float[] elementAfflictionRate = new float[ElementCount];
+    private readonly ChemicalStatSet[] perElement = CreateSets();
 
-    /// <summary>Multiplier on all chemical damage (affliction ticks).</summary>
-    public float ChemicalDamageBonus;
+    private static ChemicalStatSet[] CreateSets()
+    {
+        var sets = new ChemicalStatSet[Enum.GetValues<ChemicalDamageType>().Length];
 
-    /// <summary>Multiplier on affliction duration from all sources (1.5 = 50% longer).</summary>
-    public float AfflictionRate;
+        for (int i = 0; i < sets.Length; i++)
+            sets[i] = new ChemicalStatSet();
 
-    /// <summary>Immunity frames between affliction ticks.</summary>
-    public float AfflictionSpeed;
+        return sets;
+    }
 
-    /// <summary>Reaction odds in percent added to the source's own, like the player's crit chance.</summary>
-    public float ReactionChance;
+    /// <summary>Bonuses that apply to every element: <c>player.Global.Damage += 0.1f</c>.</summary>
+    public ChemicalStatSet Global { get; } = new();
 
-    /// <summary>Multiplier on reaction burst damage, separate from sustained affliction damage.</summary>
-    public float ReactionDamageBonus;
+    /// <summary>Bonuses for one element only: <c>player[ChemicalDamageType.Cryonic].Damage += 0.04f</c>.</summary>
+    public ChemicalStatSet this[ChemicalDamageType type] => perElement[(int)type];
 
-    /// <summary>Affliction damage bonus for one element only, as a fraction (0.04 = +4%).</summary>
-    public ref float ElementDamage(ChemicalDamageType type) => ref elementDamage[(int)type];
+    /// <summary>Folds the global and <paramref name="type" /> bonuses into <paramref name="stats" /> for one release.</summary>
+    public void Apply(ref ChemicalStats stats, ChemicalDamageType type)
+    {
+        ChemicalStatSet element = this[type];
 
-    /// <summary>Multiplier on <paramref name="type" />'s affliction damage: <see cref="ChemicalDamageBonus" /> plus that element's bonus.</summary>
-    public float AfflictionDamage(ChemicalDamageType type) => ChemicalDamageBonus + elementDamage[(int)type];
-
-    /// <summary>Reaction damage bonus for one element only, as a fraction (0.04 = +4%).</summary>
-    public ref float ElementReactionDamage(ChemicalDamageType type) => ref elementReactionDamage[(int)type];
-
-    /// <summary>Multiplier on <paramref name="type" />'s reaction damage: <see cref="ReactionDamageBonus" /> plus that element's bonus.</summary>
-    public float ReactionDamage(ChemicalDamageType type) => ReactionDamageBonus + elementReactionDamage[(int)type];
-
-    /// <summary>Reaction chance bonus for one element only, in percent (5 = +5%).</summary>
-    public ref float ElementReactionChance(ChemicalDamageType type) => ref elementReactionChance[(int)type];
-
-    /// <summary>Reaction odds for <paramref name="type" />: <see cref="ReactionChance" /> plus that element's bonus.</summary>
-    public float ReactionOdds(ChemicalDamageType type) => ReactionChance + elementReactionChance[(int)type];
-
-    /// <summary>Damage bonus for one element only, as a fraction (0.04 = +4%).</summary>
-    public ref float ElementDamageBonus(ChemicalDamageType type) => ref elementDamageBonus[(int)type];
-
-    /// <summary>Multiplier on <paramref name="type" />'s chemical damage: <see cref="ChemicalDamageBonus" /> plus that element's bonus.</summary>
-    public float ChemicalDamage(ChemicalDamageType type) => ChemicalDamageBonus + elementDamageBonus[(int)type];
-
-    /// <summary>Affliction speed bonus for one element only, in frames (higher is faster).</summary>
-    public ref float ElementAfflictionSpeed(ChemicalDamageType type) => ref elementAfflictionSpeed[(int)type];
-
-    /// <summary>Immunity frames between affliction ticks for <paramref name="type" />: <see cref="AfflictionSpeed" /> plus that element's bonus.</summary>
-    public float AfflictionTickSpeed(ChemicalDamageType type) => AfflictionSpeed + elementAfflictionSpeed[(int)type];
-
-    /// <summary>Affliction rate multiplier for one element only, as a fraction (0.5 = +50% duration).</summary>
-    public ref float ElementAfflictionRate(ChemicalDamageType type) => ref elementAfflictionRate[(int)type];
-
-    /// <summary>Multiplier on <paramref name="type" />'s affliction duration: <see cref="AfflictionRate" /> multiplied by that element's rate.</summary>
-    public float AfflictionDuration(ChemicalDamageType type) => AfflictionRate * (1f + elementAfflictionRate[(int)type]);
+        stats.DamageMultiplier *= 1f + Global.Damage + element.Damage;
+        stats.DurationMultiplier *= 1f + Global.AfflictionDuration + element.AfflictionDuration;
+        stats.AfflictionRateMultiplier *= 1f + Global.AfflictionRate + element.AfflictionRate;
+        stats.ReactionDamageMultiplier *= 1f + Global.ReactionDamage + element.ReactionDamage;
+        stats.ConcentrationMultiplier *= 1f + Global.Concentration + element.Concentration;
+        stats.ReactionChance += BaseReactionChance + Global.ReactionChance + element.ReactionChance;
+    }
 
     public override void ResetEffects()
     {
-        ChemicalDamageBonus = 1f;
-        AfflictionRate = 1f;
-        AfflictionSpeed = 20f;
-        ReactionChance = 5f; // 5% base reaction chance before accessories
-        ReactionDamageBonus = 1f;
-        Array.Clear(elementDamage);
-        Array.Clear(elementReactionDamage);
-        Array.Clear(elementReactionChance);
-        Array.Clear(elementDamageBonus);
-        Array.Clear(elementAfflictionSpeed);
-        Array.Clear(elementAfflictionRate);
+        Global.Clear();
+
+        foreach (ChemicalStatSet set in perElement)
+            set.Clear();
     }
 }
 

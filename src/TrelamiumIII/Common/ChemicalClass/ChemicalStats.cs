@@ -1,9 +1,5 @@
 namespace TrelamiumIII.Common.ChemicalClass;
 
-/// <summary>
-///     The numbers one release applies with: its source's, adjusted by its modifiers and the releasing player's stats.
-///     Multipliers stack additively, the way vanilla prefixes do.
-/// </summary>
 public struct ChemicalStats
 {
     public int ChemicalDamage;
@@ -21,7 +17,6 @@ public struct ChemicalStats
     public int Concentration;
 
     public float Catalysis;
-
     public float DamageMultiplier;
 
     public float DurationMultiplier;
@@ -46,6 +41,9 @@ public struct ChemicalStats
 
     /// <summary>How often the release's gas and residue expose an NPC; divides the contact interval.</summary>
     public float ContactRateMultiplier;
+    public float ConcentrationMultiplier;
+    public float AfflictionRateMultiplier;
+    public float AfflictionDurationMultiplier;
 
     public static ChemicalStats Of(IChemicalSource source) => Neutral with
     {
@@ -61,7 +59,8 @@ public struct ChemicalStats
     /// <summary>No stats and unit multipliers, with a unit affliction rate, for measuring what a modifier changes.</summary>
     public static ChemicalStats Neutral => new()
     {
-        AfflictionRate = 1f,
+        AfflictionDurationMultiplier = 1f,
+        AfflictionRateMultiplier = 1f,
         DamageMultiplier = 1f,
         DurationMultiplier = 1f,
         ReactionDamageMultiplier = 1f,
@@ -72,14 +71,9 @@ public struct ChemicalStats
         BurstSpeedMultiplier = 1f,
         BurstCountMultiplier = 1f,
         ContactRateMultiplier = 1f,
+        ConcentrationMultiplier = 1f,
     };
 
     /// <summary>Folds in the releasing player's chemical stats for a release of <paramref name="type" />.</summary>
-    public void Apply(ChemicalPlayerStats player, ChemicalDamageType type)
-    {
-        DamageMultiplier *= player.AfflictionDamage(type);
-        DurationMultiplier *= player.AfflictionRate;
-        ReactionChance += player.ReactionChance;
-        ReactionDamageMultiplier *= player.ReactionDamageBonus;
-    }
+    public void Apply(ChemicalPlayerStats player, ChemicalDamageType type) => player.Apply(ref this, type);
 }

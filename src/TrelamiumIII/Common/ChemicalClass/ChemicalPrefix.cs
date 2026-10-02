@@ -27,12 +27,11 @@ public static class ChemicalPrefixTierExtensions
     public static float ValueMultiplier(this ChemicalPrefixTier tier) => tier switch
     {
         ChemicalPrefixTier.Best => 1.2f,
-        ChemicalPrefixTier.Good => 1.1f,
-        _ => 0.9f,
+        ChemicalPrefixTier.Good => 0.9f,
+        _ => 0.7f,
     };
 
-    /// <summary>Relative roll weight: Best rolls half as often as the other tiers.</summary>
-    public static float RollWeight(this ChemicalPrefixTier tier) => tier == ChemicalPrefixTier.Best ? 0.5f : 1f;
+    public static float RollWeight(this ChemicalPrefixTier tier) => tier == ChemicalPrefixTier.Best ? 0.65f : 1f;
 }
 
 /// <summary>

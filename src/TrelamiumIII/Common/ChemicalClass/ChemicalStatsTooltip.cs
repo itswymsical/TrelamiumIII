@@ -9,8 +9,8 @@ namespace TrelamiumIII.Common.ChemicalClass;
 
 /// <summary>
 ///     Controller weapon stat rows, pinned to the tooltip's top-right: affliction damage per second, reaction
-///     burst and odds (reactive elements only), duration, concentration and catalysis. Values are the item's own,
-///     modifiers included, without player bonuses. Rows for a stat the item does not have are left out.
+///     burst and odds (reactive elements only), duration, concentration and catalysis. Values match a release:
+///     modifiers and the viewing player's bonuses included. Rows for a stat the item does not have are left out.
 /// </summary>
 public static class ChemicalStatsTooltip
 {
@@ -31,8 +31,8 @@ public static class ChemicalStatsTooltip
 
     private static readonly Color DescriptionColor = new(185, 185, 185);
 
-    /// <summary>The rows for <paramref name="source" /> with <paramref name="modifiers" /> applied, or null for no chemistry.</summary>
-    public static TooltipRowsBlock? Build(IChemicalSource source, IReadOnlyList<ChemicalModifier>? modifiers = null)
+    /// <summary>The rows for <paramref name="source" /> with <paramref name="modifiers" /> and <paramref name="player" />'s bonuses applied, or null for no chemistry.</summary>
+    public static TooltipRowsBlock? Build(IChemicalSource source, IReadOnlyList<ChemicalModifier>? modifiers = null, Player? player = null)
     {
         ChemicalDamageType type = source.ChemicalType;
 
@@ -46,6 +46,9 @@ public static class ChemicalStatsTooltip
             foreach (ChemicalModifier modifier in modifiers)
                 modifier.ModifyStats(ref stats);
         }
+
+        if (player is not null)
+            stats.Apply(player.GetModPlayer<ChemicalPlayerStats>(), type);
 
         Color color = ElementDisplay.LabelColor(type);
         Asset<Texture2D>? icon = ElementDisplay.Icon(type);

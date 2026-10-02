@@ -29,7 +29,7 @@ public class BloodField : ChemicalGasField
     public override int ReactionChance => 2;
     public override int ReactionDamage => 4;
 
-    private static readonly ClingBehaviour Splatter = new SplashCling(6, 8, 16.5f, 140f, SoundID.Item74, shake: 4);
+    private static readonly ClingBehaviour Splatter = new SplashCling(6, 8, 16.5f, 140f, SoundID.Item74, shake: 1);
 
     public override ClingBehaviour? ClingBehaviour => Splatter;
 

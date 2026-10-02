@@ -70,6 +70,15 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     public void OnChemicalReaction(in ChemicalReactionEvent e)
         => ReactionHandler?.Invoke(e);
 
+    /// <summary>The item's own damage takes its element's damage bonus; the global bonus is already GetDamage&lt;ChemicalDamageClass&gt;.</summary>
+    public override void ModifyWeaponDamage(Item item, Player player, ref Terraria.ModLoader.StatModifier damage)
+    {
+        if (!Enabled || ChemicalType == ChemicalDamageType.None)
+            return;
+
+        damage += player.GetModPlayer<ChemicalPlayerStats>()[ChemicalType].Damage;
+    }
+
     /// <summary>
     ///     Adds the chemical stat rows in place of a second damage-type line, prefix included, then a block per innate
     ///     modifier. The prefix explains itself in vanilla's prefix lines.
@@ -78,7 +87,7 @@ public class ChemicalSourceComponent : ItemComponent, IChemicalSource, ITooltipB
     {
         ChemicalModifier[] modifiers = ChemicalPrefix.Of(item) is { } prefix ? [.. Modifiers, prefix.Modifier] : Modifiers;
 
-        if (ChemicalStatsTooltip.Build(this, modifiers) is not { } block)
+        if (ChemicalStatsTooltip.Build(this, modifiers, Main.gameMenu ? null : Main.LocalPlayer) is not { } block)
             return;
 
         blocks.Add(block);

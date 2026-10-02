@@ -63,11 +63,11 @@ public sealed class ChemicalAccessoryPrefix : ModPrefix
         switch (Stat)
         {
             case ChemicalAccessoryStat.ElementDamage:
-                player.GetModPlayer<ChemicalPlayerStats>().ElementDamage(Element) += Amount;
+                player.GetModPlayer<ChemicalPlayerStats>()[Element].Damage += Amount;
                 break;
 
             case ChemicalAccessoryStat.ReactionDamage:
-                player.GetModPlayer<ChemicalPlayerStats>().ReactionDamageBonus += Amount;
+                player.GetModPlayer<ChemicalPlayerStats>().Global.ReactionDamage += Amount;
                 break;
 
             case ChemicalAccessoryStat.ControlledDamage:

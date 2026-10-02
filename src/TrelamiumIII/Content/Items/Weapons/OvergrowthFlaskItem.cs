@@ -81,7 +81,8 @@ public sealed class OvergrowthFlaskItem : ModItem
             return;
 
         component.ChemicalType = strain.Element;
-        component.ChemicalDamage = 2;
+        component.ChemicalDamage = 4;
+        component.Concentration = 7;
         component.debuffRate = 30;
         component.debuffDuration = TimeConversion.SetTime(secs: 3);
         component.Modifiers = [TemperamentModifier.Alkaline];

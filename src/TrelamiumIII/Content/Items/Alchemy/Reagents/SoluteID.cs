@@ -76,7 +76,7 @@ public sealed class SoluteID : ICustomAutoload
             Temperaments = Temperament.Volatile | Temperament.Catalytic,
             Principle = PrincipleType.Martial,
 
-            //Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<CinnabarTile>()),
+            Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<CinnabarTile>()),
 
         });
 

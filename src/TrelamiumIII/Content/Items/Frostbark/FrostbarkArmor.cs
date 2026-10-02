@@ -41,7 +41,7 @@ public class FrostbarkHauberk : ModItem
     {
         base.UpdateEquip(player);
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
-        chemPlayer.ReactionChance += 0.05f;
+        chemPlayer.Global.ReactionChance += 5f;
     }
     public override void AddRecipes()
     {
@@ -69,7 +69,7 @@ public class FrostbarkHelm : ModItem
     {
         base.UpdateEquip(player);
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
-        chemPlayer.ElementDamage(ChemicalDamageType.Cryonic) += 0.04f;
+        chemPlayer[ChemicalDamageType.Cryonic].Damage += 0.04f;
     }
 
     public override bool IsArmorSet(Item head, Item body, Item legs)

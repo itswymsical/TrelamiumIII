@@ -18,7 +18,7 @@ public class ContortionistsHat : ModItem
         base.UpdateEquip(player);
 
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
-        chemPlayer.ElementDamage(ChemicalDamageType.Necrotic) += 0.09f;
+        chemPlayer[ChemicalDamageType.Necrotic].Damage += 0.07f;
     }
 
     public override bool IsArmorSet(Item head, Item body, Item legs) => body.type == ModContent.ItemType<ContortionistsRobe>();
@@ -27,7 +27,7 @@ public class ContortionistsHat : ModItem
     {
         player.setBonus = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "SetBonuses.Contortionist");
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
-        chemPlayer.ElementAfflictionRate(ChemicalDamageType.Necrotic) += 0.3f;
+        chemPlayer[ChemicalDamageType.Necrotic].AfflictionRate += 0.22f;
     }
 
     public override void AddRecipes()
@@ -63,7 +63,7 @@ public class ContortionistsRobe : ModItem
         base.UpdateEquip(player);
 
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
-        chemPlayer.ElementReactionChance(ChemicalDamageType.Necrotic) += 5f;
+        chemPlayer[ChemicalDamageType.Necrotic].ReactionChance += 4f;
     }
 
     public override void AddRecipes()

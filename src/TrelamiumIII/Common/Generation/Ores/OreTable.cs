@@ -7,14 +7,9 @@ using static TrelamiumIII.Common.Generation.Ores.WorldLayer;
 
 namespace TrelamiumIII.Common.Generation.Ores;
 
-/// <summary>
-/// Every ore vein generated in place of vanilla Shinies. Both variants of every vanilla tier, and both evil ores,
-/// generate in every world. Unhosted vanilla rows match Shinies' per-variant rates and ranges; hosted rows add
-/// biome veins on top.
-/// </summary>
 public static class OreTable
 {
-    private static readonly ushort[] StoneTiles = [TileID.Stone];
+    private static readonly ushort[] StoneTiles = [TileID.Stone, TileID.Marble, TileID.Granite];
     private static readonly ushort[] DesertTiles = [TileID.Sand, TileID.HardenedSand, TileID.Sandstone];
 
     public static List<OreVein> Build()
@@ -69,9 +64,12 @@ public static class OreTable
 
         ushort sulfur = (ushort)ModContent.TileType<SulfurTile>();
         veins.Add(new(sulfur, Between(Rock, Underworld, 0.2f), Between(Rock, Underworld, 0.85f), 80f, (4, 7), (6, 9), StoneTiles, Clustering: 0.5f));
+        
+        ushort cinnabar = (ushort)ModContent.TileType<CinnabarTile>();
+        veins.Add(new(cinnabar, Between(Rock, Underworld, 0.2f), Between(Rock, Underworld, 0.85f), 80f, (2, 6), (5, 7), [TileID.Stone, TileID.Ash], Clustering: 0.35f));
 
         ushort rockSalt = (ushort)ModContent.TileType<RockSaltTile>();
-        veins.Add(new(rockSalt, Between(SurfaceLow, RockLow, 0.17f), Between(SurfaceLow, RockLow, 0.85f), 80f, (3, 5), (4, 7), StoneTiles, Clustering: 0.45f));
+        veins.Add(new(rockSalt, Between(RockHigh, Rock, 0.17f), Between(Rock, RockLow, 0.55f), 80f, (3, 5), (4, 7), StoneTiles, Clustering: 0.45f));
 
         return veins;
     }
