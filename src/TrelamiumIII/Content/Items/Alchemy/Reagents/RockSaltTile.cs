@@ -14,7 +14,7 @@ public class RockSaltTile : ModTile
         Main.tileBlockLight[Type] = true;
 
         DustType = DustID.Marble;
-        MineResist = 0.25f;
+        MineResist = 0.35f;
         HitSound = SoundID.Tink;
 
         AddMapEntry(new Color(144, 148, 155));

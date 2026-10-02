@@ -14,7 +14,7 @@ public class VilesporeFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 8;
+        Item.damage = 10;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;

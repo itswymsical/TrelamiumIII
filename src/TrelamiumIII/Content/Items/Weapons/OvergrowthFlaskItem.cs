@@ -59,7 +59,7 @@ public sealed class OvergrowthFlaskItem : ModItem
 
     public override void SetDefaults()
     {
-        Item.damage = 4;
+        Item.damage = 8;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;
@@ -81,9 +81,9 @@ public sealed class OvergrowthFlaskItem : ModItem
             return;
 
         component.ChemicalType = strain.Element;
-        component.ChemicalDamage = 3;
+        component.ChemicalDamage = 2;
         component.debuffRate = 30;
-        component.debuffDuration = TimeConversion.SetTime(secs: 4);
+        component.debuffDuration = TimeConversion.SetTime(secs: 3);
         component.Modifiers = [TemperamentModifier.Alkaline];
 
         if (strain.IsDefault)

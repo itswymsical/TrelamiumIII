@@ -43,6 +43,13 @@ public class ContortionistsHat : ModItem
 [AutoloadEquip(EquipType.Body)]
 public class ContortionistsRobe : ModItem
 {
+    public override void Load()
+    {
+        if (Main.netMode == NetmodeID.Server)
+            return;
+        
+        EquipLoader.AddEquipTexture(Mod, $"{Texture}_{EquipType.Legs}", EquipType.Legs, this);
+    }
     public override void SetDefaults()
     {
         Item.defense = 6;

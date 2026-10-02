@@ -15,7 +15,7 @@ public class CrimsonEffusionFlaskItem : ModItem
 {
     public override void SetDefaults()
     {
-        Item.damage = 9;
+        Item.damage = 13;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.Blue;
@@ -38,9 +38,9 @@ public class CrimsonEffusionFlaskItem : ModItem
         component.ChemicalType = ChemicalDamageType.Necrotic;
         component.ChemicalDamage = 1;
         component.debuffRate = 20;
-        component.debuffDuration = TimeConversion.SetTime(secs: 7);
+        component.debuffDuration = TimeConversion.SetTime(secs: 5);
         component.ReactionChance = 4;
-        component.ReactionDamage = 8;
+        component.ReactionDamage = 7;
         component.ReactionHandler = DoBloodsplosion;
         component.Modifiers = [TemperamentModifier.Volatile];
     }

@@ -21,7 +21,7 @@ public class AquaTerrae : ModItem, IAlmanacDefined
 
     public override void SetDefaults()
     {
-        Item.damage = 2;
+        Item.damage = 6;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 26;
         Item.rare = ItemRarityID.Gray;

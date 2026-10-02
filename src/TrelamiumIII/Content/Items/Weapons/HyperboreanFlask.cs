@@ -18,7 +18,7 @@ public class ArcticFlaskItem : ModItem
     public override void SetDefaults()
     {
         base.SetDefaults();
-        Item.damage = 10;
+        Item.damage = 11;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 30;
         Item.rare = ItemRarityID.White;
