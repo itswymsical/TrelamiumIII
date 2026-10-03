@@ -175,8 +175,12 @@ public abstract class Job
     /// This is the "the job is talking, not the NPC" case: a briefing on the current stage, a nudge
     /// toward what is still open, the hand-in line. Resolved ahead of the NPC's own greeting, so
     /// whichever stage is underway is what gets said.
+    /// Defaults to the current set's <see cref="HandInTask.PromptKey"/> while <see cref="CanHandIn"/>.
     /// </remarks>
-    public virtual ChatEncounter GetChatEncounter(NPC npc, Player player) => ChatEncounter.None;
+    public virtual ChatEncounter GetChatEncounter(NPC npc, Player player)
+        => CanHandIn(out var set, out var handInIndex) && set.Task[handInIndex] is HandInTask { PromptKey: { } prompt }
+            ? ChatEncounter.Play(prompt).Projected()
+            : ChatEncounter.None;
 
     /// <summary>Job-level state to persist. Task progress saves itself; this is for the rest.</summary>
     public virtual void SaveCustomData(TagCompound tag) { }
@@ -276,6 +280,78 @@ public abstract class Job
         return true;
     }
 
+    /// <summary>Applies <see cref="JobTask.Poll"/> for each task of the current set.</summary>
+    private void PollTasks()
+    {
+        if (State != JobState.Active || CurrentSet is not { } set)
+            return;
+
+        // Same snapshot as Handle: a poll can finish the set and move the job on.
+        var setIndex = CurrentTaskSet;
+
+        for (var i = 0; i < set.Task.Count && CurrentTaskSet == setIndex; i++)
+        {
+            var amount = set.Task[i].Poll(Context);
+
+            if (amount != 0)
+                UpdateProgress(i, amount);
+        }
+    }
+
+    /// <summary>
+    /// True when the current set waits only on its <see cref="HandInTask"/> and the inventory still covers every
+    /// <see cref="GatherItemTask"/> in it.
+    /// </summary>
+    public bool CanHandIn() => CanHandIn(out _, out _);
+
+    private bool CanHandIn(out TaskList set, out int handInIndex)
+    {
+        set = CurrentSet;
+        handInIndex = -1;
+
+        if (State != JobState.Active || set is null)
+            return false;
+
+        handInIndex = set.Task.FindIndex(task => task is HandInTask);
+
+        if (handInIndex < 0)
+            return false;
+
+        for (var i = 0; i < set.Task.Count; i++)
+        {
+            if (i == handInIndex)
+                continue;
+
+            var task = set.Task[i];
+
+            if (!task.IsCompleted || task is GatherItemTask gather && gather.Held(Context.Player) < gather.RequiredCount)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Takes the items of the current set's consuming <see cref="GatherItemTask"/>s and credits its
+    /// <see cref="HandInTask"/>. False, taking nothing, when <see cref="CanHandIn"/> is false.
+    /// </summary>
+    public bool TryHandIn()
+    {
+        // Gather counts can trail the inventory by a tick.
+        PollTasks();
+
+        if (!CanHandIn(out var set, out var handInIndex))
+            return false;
+
+        foreach (var task in set.Task)
+        {
+            if (task is GatherItemTask { Consumes: true } gather)
+                Context.Revoke(gather.ItemType, gather.RequiredCount);
+        }
+
+        return UpdateProgress(handInIndex, 1);
+    }
+
     /// <summary>
     /// Moves to the next stage, or finishes the job when there isn't one. The single place the stage
     /// index moves forward -- the sidebar used to do it too, from inside its draw pass, which meant
@@ -368,6 +444,8 @@ public abstract class Job
     /// <summary>Per-tick upkeep. Override for polling, and call <c>base.Update()</c>.</summary>
     public virtual void Update()
     {
+        PollTasks();
+
         if (pendingSpeech is null)
             return;
 

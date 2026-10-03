@@ -81,12 +81,17 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
     private readonly ProjectedSurface surface = new(SURFACE_W, SURFACE_H, ProjectedInk.Pixelated);
     private readonly BubblePlacer placer;
+    private readonly CursorTilt tilt = new();
 
     private LibraryBook? selected;
     private List<string> titleLines = [];
     private List<string> blurbLines = [];
 
     private float presence;
+
+    /// <summary>Placement before <see cref="tilt" />; the tilt samples the cursor against this.</summary>
+    private QuadPlacement rest;
+
     private QuadPlacement placement;
     private bool dropped;
     private bool zoomed;
@@ -227,6 +232,7 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
         if (npc is not { active: true } || DialogueManager.Instance.IsAnyActive())
             RequestClose();
 
+        tilt.Update();
         Place();
         ConsumeIntent();
 
@@ -242,7 +248,8 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
         Layout();
 
-        placement = placer.Placement(presence, IsClosing);
+        rest = placer.Placement(presence, IsClosing);
+        placement = tilt.Apply(rest);
     }
 
     private Vector2 Target() =>
@@ -322,6 +329,8 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
         hovered = Widget.None;
         hoveredIndex = -1;
+
+        tilt.Sample(rest, Main.MouseScreen, !IsClosing && !PlayerInput.IgnoreMouseInterface);
 
         if (IsClosing || PlayerInput.IgnoreMouseInterface || ProjectedHitTest.Texel(placement, surface.Region, Main.MouseScreen) is not { } p)
             return;

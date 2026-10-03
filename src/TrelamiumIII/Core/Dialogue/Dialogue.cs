@@ -94,6 +94,14 @@ public sealed class Dialogue
     public Dialogue UnlockJob(int jobId) =>
         OnComplete(() => Main.LocalPlayer.GetModPlayer<JobPlayer>().UnlockJob(jobId));
 
+    /// <summary>
+    ///   Adds the hand-in answers to the most recent line: <c>Choice1</c> runs <see cref="Job.TryHandIn"/> on the job,
+    ///   <c>Choice2</c> is a dead "not yet". See <see cref="HandInTask.PromptKey"/>.
+    /// </summary>
+    public Dialogue HandIn(int jobId) =>
+        Choice(onSelected: () => Main.LocalPlayer.GetModPlayer<JobPlayer>().GetOrCreateJob(jobId)?.TryHandIn())
+            .Choice(dead: true);
+
     private void Flush()
     {
         if (!hasPending)

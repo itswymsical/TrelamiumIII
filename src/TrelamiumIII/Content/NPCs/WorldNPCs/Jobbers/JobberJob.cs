@@ -1,7 +1,6 @@
 using SubworldLibrary;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
-using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Jobbers;
@@ -22,10 +21,10 @@ public abstract class JobberJob : Job
 
     protected JobberJob(int id) : base(
         id, "Jobber.Name", "Jobber.Description",
-        taskList: [[new GatherTask(), new HandInTask()]],
+        taskList: [[new JobberGatherTask(), new JobberHandInTask()]],
         rewards: [],
         providerNPC: ModContent.NPCType<Jobber>())
-        => ShowTaskAfterCompletion(0, HandInTaskIndex, GatherTaskIndex);
+    { }
 
     /// <summary>The bound jobber's <see cref="Jobber.JobberId"/>; 0 while the slot is free.</summary>
     public int JobberId { get; private set; }
@@ -40,14 +39,13 @@ public abstract class JobberJob : Job
     public bool InBoundWorld => IsBound && !SubworldSystem.AnyActive()
         && worldId == Main.ActiveWorldFileData.UniqueId.ToString();
 
-    /// <summary>Requested items in the owner's inventory, capped at the request. Equipped items don't count.</summary>
-    public int Held => Math.Min(Context.Player.CountItem(Request.ItemType, Request.Count), Request.Count);
+    public int Held => Gather.Held(Context.Player);
 
     public int Remaining => Request.Count - Held;
 
-    private GatherTask Gather => (GatherTask)TaskList[0].Task[GatherTaskIndex];
+    private JobberGatherTask Gather => (JobberGatherTask)TaskList[0].Task[GatherTaskIndex];
 
-    private HandInTask HandIn => (HandInTask)TaskList[0].Task[HandInTaskIndex];
+    private JobberHandInTask HandIn => (JobberHandInTask)TaskList[0].Task[HandInTaskIndex];
 
     public override string Description => IsBound
         ? Text($"Requests.{Request.Kind}").Format(Request.Count, Request.ItemName)
@@ -100,41 +98,12 @@ public abstract class JobberJob : Job
         Release();
     }
 
-    /// <summary>Takes the requested items and completes the job. False if the player is short.</summary>
-    public bool TryHandIn()
-    {
-        if (State != JobState.Active || Remaining > 0)
-            return false;
-
-        int count = Request.Count;
-
-        Context.Revoke(Request.ItemType, count);
-        UpdateProgress(GatherTaskIndex, count - Gather.Count);
-        UpdateProgress(HandInTaskIndex, 1);
-
-        return State == JobState.Completed;
-    }
-
     public override void OnJobStart() => Jobber.Find(JobberId)?.Claim();
 
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
         Jobber.Find(JobberId)?.CompleteRequest();
-    }
-
-    /// <summary>Mirrors the gather task's count to the inventory, so dropping items re-opens it.</summary>
-    public override void Update()
-    {
-        base.Update();
-
-        if (State != JobState.Active || !Context.IsLocal || !IsBound)
-            return;
-
-        int held = Held;
-
-        if (held != Gather.Count)
-            UpdateProgress(GatherTaskIndex, held - Gather.Count);
     }
 
     public override void SaveCustomData(TagCompound tag)
@@ -179,24 +148,14 @@ public sealed class JobberSlot1Job() : JobberJob(JobID.JobberSlot1) { }
 
 public sealed class JobberSlot2Job() : JobberJob(JobID.JobberSlot2) { }
 
-/// <summary>Hold the requested item. Count is set by <see cref="JobberJob.Update"/> from the inventory, not by events.</summary>
-public sealed class GatherTask() : JobTask("Jobber.Tasks.Gather")
-{
-    public int ItemType { get; set; }
+/// <summary>Item and count are set per request by <see cref="JobberJob.Bind"/>.</summary>
+public sealed class JobberGatherTask() : GatherItemTask("Jobber.Tasks.Gather", ItemID.None) { }
 
-    public override string Description =>
-        TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Format(Lang.GetItemNameValue(ItemType));
-
-    public override bool Matches(GameEvent evt) => false;
-}
-
-/// <summary>Hand the items over. Credited only by <see cref="JobberJob.TryHandIn"/>.</summary>
-public sealed class HandInTask() : JobTask("Jobber.Tasks.HandIn")
+/// <summary>Taken through the jobber's chat button (<see cref="Jobber.OnChatButtonClicked"/>), so no prompt dialogue.</summary>
+public sealed class JobberHandInTask() : HandInTask("Jobber.Tasks.HandIn")
 {
     public string JobberName { get; set; } = string.Empty;
 
     public override string Description =>
         TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Format(JobberName);
-
-    public override bool Matches(GameEvent evt) => false;
 }

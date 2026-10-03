@@ -95,14 +95,20 @@ class SilvianDialogue : ModDialogue
             .OnComplete(() => SilvianAlmanac.Give(Main.LocalPlayer))
             .Register();
 
-        Dialogue.Define("Silvian.BotanyJob1_Greeting")
+        Dialogue.Define("Silvian.HerbalForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(16)])
             .Register();
 
-        Dialogue.Define("Silvian.BotanyJob1_Complete")
+        // Opened by HerbalForager's HandInTask once the herbs are held. The complete line plays after it.
+        Dialogue.Define("Silvian.HerbalForager_HandIn")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(16)])
+                .HandIn(JobID.HerbalForager)
+            .Register();
+
+        Dialogue.Define("Silvian.HerbalForager_Complete")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16), new Pause(16)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18)])

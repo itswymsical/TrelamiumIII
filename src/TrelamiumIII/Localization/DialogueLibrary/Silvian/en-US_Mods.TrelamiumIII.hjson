@@ -75,6 +75,14 @@ DialogueLibrary: {
 			Line4.Text: Forage around until you find them![] I'll be here if you need me.
 		}
 
+		HerbalForager_HandIn: {
+			Line1: {
+				Text: Well now,[] are those my herbs?
+				Choice1.Text: Here you go.
+				Choice2.Text: Not yet.
+			}
+		}
+
 		HerbalForager_Complete: {
 			Line1.Text: Back already?[] Hehe,[] you're a fast one![] Can't be upset about that.
 			Line2.Text: As promised,[] here's your reward, pal.

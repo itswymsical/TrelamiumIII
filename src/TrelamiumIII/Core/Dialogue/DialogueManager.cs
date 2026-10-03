@@ -41,6 +41,7 @@ public sealed class DialogueManager
     ///     What a projected box hangs off. Ignored by the panel box, which owns the bottom of the
     ///     screen wherever the speaker is standing.
     /// </param>
+    /// <param name="cursorTilt">Projected boxes tilt after the cursor while it is over them. Ignored by the panel box.</param>
     public bool StartDialogue(
         string dialogueKey,
         bool zoomIn = false,
@@ -48,7 +49,8 @@ public sealed class DialogueManager
         int? music = null,
         DialogueStyle style = DialogueStyle.Panel,
         DialogueAnchor? anchor = null,
-        bool root = true)
+        bool root = true,
+        bool cursorTilt = true)
     {
         var queuedDialogue = new QueuedDialogue
         {
@@ -58,7 +60,8 @@ public sealed class DialogueManager
             Music = music,
             Style = style,
             Anchor = anchor ?? DialogueAnchor.OnPlayer,
-            Root = root
+            Root = root,
+            CursorTilt = cursorTilt
         };
 
         // If no dialogue is active, start immediately
@@ -113,9 +116,9 @@ public sealed class DialogueManager
     private static IDialoguePresenter? Present(string dialogueKey, QueuedDialogue presentation) => presentation.Style switch
     {
         DialogueStyle.Projected =>
-            ProjectedDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root),
+            ProjectedDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root, presentation.CursorTilt),
         DialogueStyle.Adaptive =>
-            AdaptiveDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root),
+            AdaptiveDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root, presentation.CursorTilt),
         _ =>
             DialogueBox.CreateDialogue(dialogueKey, presentation.ZoomIn, presentation.Root),
     };
@@ -367,4 +370,6 @@ public class QueuedDialogue
 
     /// <summary>Hold the line's speaker facing the player while they talk.</summary>
     public bool Root { get; set; } = true;
+
+    public bool CursorTilt { get; set; } = true;
 }

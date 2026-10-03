@@ -50,6 +50,12 @@ public abstract class JobTask(string descriptionKey, int requiredCount = 1)
     public virtual int CreditFor(GameEvent evt) => Math.Max(1, evt.Amount);
 
     /// <summary>
+    /// Progress read from the world instead of from events: the amount to apply this tick, or 0. Called every tick
+    /// while this task's set is current; may be negative.
+    /// </summary>
+    public virtual int Poll(JobContext context) => 0;
+
+    /// <summary>
     /// Applies <paramref name="amount"/> (which may be negative) and reports whether that crossed the
     /// requirement. Clamped at both ends: progress never goes below zero, and an oversized stack does
     /// not bank credit against a later revoke.
@@ -151,6 +157,51 @@ public sealed class TalkToNPCTask(string key, int npcType) : JobTask(key, 1)
         => evt.Type == GameEventType.NPCChat && evt.NPCType == npcType;
 
     public override int CreditFor(GameEvent evt) => 1;
+}
+
+/// <summary>
+/// Hold <paramref name="count"/> of <paramref name="itemType"/>. Count mirrors the owner's inventory, so dropping items
+/// re-opens it. A <see cref="HandInTask"/> in the same set takes the items; without one, holding them completes the set.
+/// </summary>
+/// <param name="consume">Whether <see cref="Job.TryHandIn"/> takes the items or only checks for them.</param>
+public class GatherItemTask(string key, int itemType, int count = 1, bool consume = true) : JobTask(key, count)
+{
+    public int ItemType { get; set; } = itemType;
+
+    public bool Consumes { get; } = consume;
+
+    /// <summary>{0} = item name, {1} = required count.</summary>
+    public override string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}")
+        .Format(Lang.GetItemNameValue(ItemType), RequiredCount);
+
+    /// <summary>Matching items in <paramref name="player"/>'s inventory, capped at the requirement. Equipped items don't count.</summary>
+    public int Held(Player player)
+        => ItemType > ItemID.None ? Math.Min(player.CountItem(ItemType, RequiredCount), RequiredCount) : 0;
+
+    public override bool Matches(GameEvent evt) => false;
+
+    public override int Poll(JobContext context) => context.IsLocal ? Held(context.Player) - Count : 0;
+}
+
+/// <summary>
+/// Give the set's gathered items to the provider. Credited only by <see cref="Job.TryHandIn"/>, and shown once every
+/// other task in its set is done.
+/// </summary>
+public class HandInTask : JobTask
+{
+    /// <param name="promptKey">
+    /// Dialogue the provider opens while the hand-in is ready, built with <c>Dialogue.HandIn</c>. Null when the NPC
+    /// takes the hand-in some other way, e.g. a chat button.
+    /// </param>
+    public HandInTask(string key, string? promptKey = null) : base(key)
+    {
+        PromptKey = promptKey;
+        VisibilityCheck = job => job.TaskList.Any(set => set.Task.Contains(this) && set.Task.All(task => task == this || task.IsCompleted));
+    }
+
+    public string? PromptKey { get; }
+
+    public override bool Matches(GameEvent evt) => false;
 }
 
 /// <summary>

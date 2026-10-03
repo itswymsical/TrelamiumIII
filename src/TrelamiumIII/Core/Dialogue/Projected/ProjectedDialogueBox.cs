@@ -5,6 +5,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameInput;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.Dialogue.Projected;
 
@@ -150,12 +151,16 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     private readonly bool roots;
 
-    private ProjectedDialogueBox(string dialogueKey, DialogueAnchor anchor, bool roots)
+    /// <summary>Null when the box was opened with cursor tilt off; applies to the bubble only.</summary>
+    private readonly CursorTilt? tilt;
+
+    private ProjectedDialogueBox(string dialogueKey, DialogueAnchor anchor, bool roots, bool cursorTilt)
     {
         DialogueKey = dialogueKey;
         requestedAnchor = anchor;
         this.anchor = anchor;
         this.roots = roots;
+        tilt = cursorTilt ? new CursorTilt() : null;
 
         seed = Main.rand?.Next(1, 9999) ?? 1;
         warp = QuadWarp.Handmade(seed, 5f);
@@ -164,14 +169,15 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     }
 
     /// <summary>Builds a box for a registered sequence, or null when the key has no lines.</summary>
-    public static ProjectedDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor, bool roots = true)
+    /// <param name="cursorTilt">Tilt the bubble after the cursor while it is over it.</param>
+    public static ProjectedDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor, bool roots = true, bool cursorTilt = true)
     {
         List<DialogueData> lines = DialogueBuilder.BuildSequence(dialogueKey);
 
         if (lines.Count == 0)
             return null;
 
-        var box = new ProjectedDialogueBox(dialogueKey, anchor, roots) { ShouldZoom = zoomIn };
+        var box = new ProjectedDialogueBox(dialogueKey, anchor, roots, cursorTilt) { ShouldZoom = zoomIn };
 
         foreach (DialogueData line in lines)
             box.pending.Enqueue(line);
@@ -191,12 +197,12 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     ///     there at full strength the moment this box appears. Only the box itself fades in; the words
     ///     inside it do not re-type or re-materialise, which would announce the swap.
     /// </remarks>
-    internal static ProjectedDialogueBox? Resume(DialogueHandoff handoff, DialogueAnchor anchor)
+    internal static ProjectedDialogueBox? Resume(DialogueHandoff handoff, DialogueAnchor anchor, bool cursorTilt = true)
     {
         if (handoff.Current is null)
             return null;
 
-        var box = new ProjectedDialogueBox(handoff.Key, anchor, handoff.Roots) { ShouldZoom = handoff.ZoomIn };
+        var box = new ProjectedDialogueBox(handoff.Key, anchor, handoff.Roots, cursorTilt) { ShouldZoom = handoff.ZoomIn };
 
         foreach (DialogueData line in handoff.Remaining)
             box.pending.Enqueue(line);
@@ -292,6 +298,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             UpdateInput();
 
         UpdateChoiceMotion();
+        tilt?.Update();
 
         previousKeys = Main.keyState;
     }
@@ -658,7 +665,11 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     {
         mouseChoice = -1;
 
-        if (closing || Main.drawingPlayerChat || PlayerInput.IgnoreMouseInterface)
+        bool interactive = !closing && !Main.drawingPlayerChat && !PlayerInput.IgnoreMouseInterface;
+
+        tilt?.Sample(RestBubblePlacement(), Main.MouseScreen, interactive);
+
+        if (!interactive)
             return;
 
         if (awaitingChoice)
@@ -932,6 +943,13 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     }
 
     private QuadPlacement BubblePlacement()
+    {
+        QuadPlacement rest = RestBubblePlacement();
+
+        return tilt is null ? rest : tilt.Apply(rest);
+    }
+
+    private QuadPlacement RestBubblePlacement()
     {
         float entrance = Entrance;
         float settle = 1f - entrance;

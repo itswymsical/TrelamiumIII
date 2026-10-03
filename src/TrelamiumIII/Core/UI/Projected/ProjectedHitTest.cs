@@ -12,7 +12,14 @@ internal static class ProjectedHitTest
     ///     Where <paramref name="screen" /> lands on the face, 0..1 across and down.
     /// </summary>
     /// <returns>False when the point is off the quad, or the quad has no screen footprint.</returns>
-    public static bool TryLocate(in QuadPlacement placement, Vector2 screen, out Vector2 uv)
+    public static bool TryLocate(in QuadPlacement placement, Vector2 screen, out Vector2 uv) =>
+        TryProject(placement, screen, out uv) && uv.X >= 0f && uv.X <= 1f && uv.Y >= 0f && uv.Y <= 1f;
+
+    /// <summary>
+    ///     Where <paramref name="screen" /> lands on the face's plane, 0..1 across and down, unclamped.
+    /// </summary>
+    /// <returns>False when the quad has no screen footprint.</returns>
+    public static bool TryProject(in QuadPlacement placement, Vector2 screen, out Vector2 uv)
     {
         uv = default;
 
@@ -69,7 +76,7 @@ internal static class ProjectedHitTest
             (A * screen.X + B * screen.Y + C) / w,
             (D * screen.X + E * screen.Y + F) / w);
 
-        return uv.X >= 0f && uv.X <= 1f && uv.Y >= 0f && uv.Y <= 1f;
+        return true;
     }
 
     /// <summary>The cursor as a texel on the sampled <paramref name="region" />, or null if off the quad.</summary>

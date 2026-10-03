@@ -11,22 +11,25 @@ public sealed class AdaptiveDialogueBox : IDialoguePresenter
     private const float FAR_TILES = 30f;
 
     private readonly DialogueAnchor requested;
+    private readonly bool cursorTilt;
 
     private IDialoguePresenter active;
     private IDialoguePresenter? fading;
     private bool projected;
 
-    private AdaptiveDialogueBox(IDialoguePresenter active, bool projected, DialogueAnchor requested)
+    private AdaptiveDialogueBox(IDialoguePresenter active, bool projected, DialogueAnchor requested, bool cursorTilt)
     {
         this.active = active;
         this.projected = projected;
         this.requested = requested;
+        this.cursorTilt = cursorTilt;
     }
 
     /// <summary>
     ///     Opens the conversation in whichever box the speaker's current distance calls for.
     /// </summary>
-    public static AdaptiveDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor, bool roots = true)
+    /// <param name="cursorTilt">Passed to every projected box this conversation opens.</param>
+    public static AdaptiveDialogueBox? Create(string dialogueKey, bool zoomIn, DialogueAnchor anchor, bool roots = true, bool cursorTilt = true)
     {
         // Measured against the first line's speaker rather than the anchor handed in, so a dialogue
         // started from a job step opens in the right box even when nobody passed an NPC.
@@ -37,11 +40,11 @@ public sealed class AdaptiveDialogueBox : IDialoguePresenter
         bool near = Near(DialogueAnchor.ForSpeaker(first, anchor), wasProjected: false);
 
         IDialoguePresenter? box = near
-            ? ProjectedDialogueBox.Create(dialogueKey, zoomIn, anchor, roots)
+            ? ProjectedDialogueBox.Create(dialogueKey, zoomIn, anchor, roots, cursorTilt)
             : DialogueBox.CreateDialogue(dialogueKey, zoomIn, roots);
 
         // A key with no lines fails in either box, so there is no second chance worth taking.
-        return box is null ? null : new AdaptiveDialogueBox(box, near, anchor);
+        return box is null ? null : new AdaptiveDialogueBox(box, near, anchor, cursorTilt);
     }
 
     public string DialogueKey => active.DialogueKey;
@@ -115,7 +118,7 @@ public sealed class AdaptiveDialogueBox : IDialoguePresenter
             return;
 
         IDialoguePresenter? next = near
-            ? ProjectedDialogueBox.Resume(handoff, requested)
+            ? ProjectedDialogueBox.Resume(handoff, requested, cursorTilt)
             : DialogueBox.Resume(handoff);
 
         if (next is null)

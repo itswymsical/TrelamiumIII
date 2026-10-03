@@ -52,13 +52,13 @@ Jobs: {
 		Tasks: {
 			Set0.obj0: Brief with Silvian (let the dialogue play out)
 
+			// GatherItemTask: {0} = item name, {1} = amount.
 			Set1: {
-				obj0: Collect Dayblooms
-				obj1: Collect Blinkroot
-				obj2: Collect Sunflower
+				obj0: Collect {0}
+				obj1: Collect {0}
+				obj2: Collect {0}
+				obj3: Bring the herbs to Silvian
 			}
-
-			Set2.obj0: Return to Silvian
 		}
 	}
 
