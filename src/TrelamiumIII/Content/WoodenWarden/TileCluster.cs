@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using Terraria.DataStructures;
 using Terraria.GameContent;
 using TrelamiumIII.Core.Graphics.Shockwaves;
 
@@ -31,6 +33,9 @@ internal sealed class TileCluster
     /// </summary>
     public static readonly Vector2 WaveOrigin = new(2056f);
 
+    /// <summary>Vanilla's <c>Framing.selfFrame8WayLookup</c> (neighbour mask → three frame variants), read on first use.</summary>
+    private static Point16[][]? frame8WayLookup;
+
     private readonly ushort[] types;
     private readonly Point[] frames;
 
@@ -40,14 +45,18 @@ internal sealed class TileCluster
 
     public int Seed { get; }
 
+    /// <summary>World tile the sample's cell (0, 0) was taken from.</summary>
+    public Point Corner { get; }
+
     /// <summary>Filled cells.</summary>
     public int Count { get; }
 
-    private TileCluster(int width, int height, ushort[] types, int seed)
+    private TileCluster(int width, int height, ushort[] types, int seed, Point corner)
     {
         Width = width;
         Height = height;
         Seed = seed;
+        Corner = corner;
 
         this.types = types;
         frames = new Point[types.Length];
@@ -61,11 +70,18 @@ internal sealed class TileCluster
 
                 Count++;
 
-                frames[y * width + x] = Frame(
-                    Filled(x, y - 1), Filled(x, y + 1), Filled(x - 1, y), Filled(x + 1, y),
-                    Filled(x - 1, y - 1), Filled(x + 1, y - 1), Filled(x - 1, y + 1), Filled(x + 1, y + 1),
-                    (int)(Hash01(seed + 7, x, y) * 3f)
-                );
+                ushort type = TypeAt(x, y);
+                int variant = (int)(Hash01(seed + 7, x, y) * 3f);
+
+                Point frame = TileID.Sets.GemsparkFramingTypes[type] != 0
+                    ? Frame8Way(x, y, variant)
+                    : Frame(
+                        Filled(x, y - 1), Filled(x, y + 1), Filled(x - 1, y), Filled(x + 1, y),
+                        Filled(x - 1, y - 1), Filled(x + 1, y - 1), Filled(x - 1, y + 1), Filled(x + 1, y + 1),
+                        variant
+                    );
+
+                frames[y * width + x] = WithSheetOffset(frame, type, corner.X + x, corner.Y + y);
             }
         }
     }
@@ -121,7 +137,7 @@ internal sealed class TileCluster
         if (filled < inside * MIN_FILL)
             FillDisc(types, size, radius, seed, Commonest(tally));
 
-        return new TileCluster(size, size, types, seed);
+        return new TileCluster(size, size, types, seed, new Point(centre.X - half, centre.Y - half));
     }
 
     /// <summary>Frame of an isolated block, for debris that is never part of a cluster.</summary>
@@ -196,6 +212,8 @@ internal sealed class TileCluster
         writer.Write((byte)Width);
         writer.Write((byte)Height);
         writer.Write(Seed);
+        writer.Write(Corner.X);
+        writer.Write(Corner.Y);
 
         foreach (ushort type in types)
             writer.Write(type);
@@ -206,13 +224,14 @@ internal sealed class TileCluster
         int width = reader.ReadByte();
         int height = reader.ReadByte();
         int seed = reader.ReadInt32();
+        var corner = new Point(reader.ReadInt32(), reader.ReadInt32());
 
         var types = new ushort[width * height];
 
         for (int i = 0; i < types.Length; i++)
             types[i] = reader.ReadUInt16();
 
-        return new TileCluster(width, height, types, seed);
+        return new TileCluster(width, height, types, seed, corner);
     }
 
     private static bool InDisc(int dx, int dy, float radius, int seed)
@@ -312,6 +331,64 @@ internal sealed class TileCluster
 
             _ => LooseFrame(variant),
         };
+    }
+
+    /// <summary>
+    ///     <c>Framing.SelfFrame8Way</c> for gemspark-style sheets. Only cells that <see cref="Blends" /> count as
+    ///     neighbours, and a corner only when both of its adjacent sides do.
+    /// </summary>
+    private Point Frame8Way(int x, int y, int variant)
+    {
+        ushort type = TypeAt(x, y);
+
+        bool up = Blends(type, x, y - 1);
+        bool down = Blends(type, x, y + 1);
+        bool left = Blends(type, x - 1, y);
+        bool right = Blends(type, x + 1, y);
+
+        int mask = (up ? 1 : 0) | (left ? 2 : 0) | (right ? 4 : 0) | (down ? 8 : 0);
+
+        if (up && left && Blends(type, x - 1, y - 1))
+            mask |= 0x10;
+
+        if (up && right && Blends(type, x + 1, y - 1))
+            mask |= 0x20;
+
+        if (down && left && Blends(type, x - 1, y + 1))
+            mask |= 0x40;
+
+        if (down && right && Blends(type, x + 1, y + 1))
+            mask |= 0x80;
+
+        frame8WayLookup ??= (Point16[][])typeof(Framing).GetField("selfFrame8WayLookup", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+
+        Point16 frame = frame8WayLookup[mask][Math.Clamp(variant, 0, 2)];
+
+        return new Point(frame.X, frame.Y);
+    }
+
+    /// <summary><c>Framing.WillItBlend</c> against cell (x, y).</summary>
+    private bool Blends(ushort type, int x, int y)
+    {
+        if (!Filled(x, y))
+            return false;
+
+        ushort other = TypeAt(x, y);
+
+        return TileID.Sets.ForcedDirtMerging[type] && other == TileID.Dirt
+               || Main.tileBrick[type] && Main.tileBrick[other]
+               || TileID.Sets.GemsparkFramingTypes[other] == TileID.Sets.GemsparkFramingTypes[type];
+    }
+
+    /// <summary>Adds the sheet offset a modded tile draws with at world tile (i, j), e.g. from <c>AnimateIndividualTile</c>.</summary>
+    private static Point WithSheetOffset(Point frame, ushort type, int i, int j)
+    {
+        int offsetX = 0;
+        int offsetY = 0;
+
+        TileLoader.SetAnimationFrame(type, i, j, ref offsetX, ref offsetY);
+
+        return new Point(frame.X + offsetX, frame.Y + offsetY);
     }
 
     /// <summary>Deterministic 0..1 hash of a cell, so every client cuts and frames the same cluster.</summary>
