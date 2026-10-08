@@ -111,7 +111,7 @@ public class LodestoneTile : ModTile
         MinPick = 42;
         HitSound = SoundID.Tink;
         Main.tileSpelunker[Type] = true;
-        AddMapEntry(new Color(55, 55, 55));
+        AddMapEntry(new Color(55, 55, 55), CreateMapEntryName());
     }
     public override bool IsTileSpelunkable(int i, int j) => true;
 }

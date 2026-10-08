@@ -13,9 +13,11 @@ public class RockSaltTile : ModTile
         Main.tileBlockLight[Type] = true;
 
         DustType = DustID.Marble;
-        MineResist = 0.35f;
+        MineResist = 0.65f;
         HitSound = SoundID.Tink;
 
-        AddMapEntry(new Color(144, 148, 155));
+        AddMapEntry(new Color(214, 218, 231), CreateMapEntryName());
     }
+    public override bool IsTileSpelunkable(int i, int j) => true;
+
 }

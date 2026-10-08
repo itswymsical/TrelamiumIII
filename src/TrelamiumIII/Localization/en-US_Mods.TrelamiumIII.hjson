@@ -1128,6 +1128,11 @@ Tiles: {
 		MapEntry: Ligneous Chest
 		Sealed: Sealed
 	}
+
+	CinnabarTile.MapEntry: Cinnabar
+	RockSaltTile.MapEntry: Rock Salt
+	SulfurTile.MapEntry: Sulfur
+	LodestoneTile.MapEntry: Lodestone
 }
 
 Projectiles: {

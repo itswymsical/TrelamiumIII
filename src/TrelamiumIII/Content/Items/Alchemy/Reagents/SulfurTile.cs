@@ -13,10 +13,13 @@ public class SulfurTile : ModTile
 
         Main.tileBlockLight[Type] = true;
 
-        DustType = DustID.GreenMoss;
-        MineResist = 0.25f;
-        HitSound = SoundID.Dig;
+        DustType = DustID.BeachShell;
+        MineResist = 0.75f;
+        MinPick = 40;
+        HitSound = SoundID.Tink;
 
-        AddMapEntry(new Color(150, 123, 13));
+        AddMapEntry(new Color(150, 123, 13), CreateMapEntryName());
     }
+    public override bool IsTileSpelunkable(int i, int j) => true;
+
 }

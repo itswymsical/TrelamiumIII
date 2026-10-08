@@ -13,9 +13,11 @@ public class CinnabarTile : ModTile
         Main.tileBlockLight[Type] = true;
 
         DustType = DustID.GemRuby;
-        MineResist = 0.75f;
+        MineResist = 0.55f;
+        MinPick = 45;
         HitSound = SoundID.Tink;
 
-        AddMapEntry(new Color(107, 70, 87));
+        AddMapEntry(new Color(167, 70, 55), CreateMapEntryName());
     }
+    public override bool IsTileSpelunkable(int i, int j) => true;
 }
