@@ -4,7 +4,6 @@ using Terraria.GameContent;
 using Terraria.GameContent.Metadata;
 using Terraria.ObjectData;
 using TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
-using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
@@ -109,8 +108,16 @@ public class MagnoliaItem : ModItem, IAlmanacDefined
     }
 }
 
-public class MagnoliaSeedsItem : ModItem
+public class MagnoliaSeedsItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        AlmanacPotency = 3,
+        Temperaments = Temperament.Alkaline | Temperament.Catalytic,
+        Principle = PrincipleType.Harmony,
+        Rarity = ItemRarityID.Green,
+        Hidden = false,
+    };
     public override void SetStaticDefaults()
     {
         base.SetStaticDefaults();
@@ -193,8 +200,16 @@ public class MagnoliaSeedsItem : ModItem
     }
 }
 
-public class MagnoliaPowderItem : ModItem
+public class MagnoliaPowderItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        AlmanacPotency = 3,
+        Temperaments = Temperament.Alkaline | Temperament.Catalytic,
+        Principle = PrincipleType.Harmony,
+        Rarity = ItemRarityID.Green,
+        Hidden = false,
+    };
     public override void SetStaticDefaults()
     {
         base.SetStaticDefaults();
