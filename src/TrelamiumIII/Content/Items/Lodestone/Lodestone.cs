@@ -1,6 +1,5 @@
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
-using Terraria.DataStructures;
 
 namespace TrelamiumIII.Content.Items.Lodestone;
 

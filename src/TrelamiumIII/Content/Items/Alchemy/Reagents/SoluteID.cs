@@ -210,6 +210,7 @@ public sealed class SoluteID : ICustomAutoload
 
         FrigorificSalt = Add(mod, new SoluteItem("FrigorificSaltItem")
         {
+            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.FrigorificSalt.KEY,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 3),
             AlmanacPotency = 3,
@@ -240,6 +241,7 @@ public sealed class SoluteID : ICustomAutoload
 
         BlackPowder = Add(mod, new SoluteItem("BlackPowderItem")
         {
+            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.BlackPowder.KEY,
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 6),
             AlmanacPotency = 4,
