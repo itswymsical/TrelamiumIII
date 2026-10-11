@@ -1,21 +1,20 @@
-﻿using ModLiquidLib.ID;
-using ModLiquidLib.ModLoader;
+using ModLiquidLib.ID;
+using TrelamiumIII.Core.Liquids;
 using TrelamiumIII.Utilities;
-using Terraria.Audio;
 using Terraria.GameContent.Creative;
 
 namespace TrelamiumIII.Content.Liquids;
 
 public class BrineBucketItem : ModItem
 {
+    public override void Load() => On_Player.ItemCheck_UseBuckets += UseBuckets;
+
     public override void SetStaticDefaults()
     {
         ItemID.Sets.IsLavaImmuneRegardlessOfRarity[Type] = true;
         ItemID.Sets.AlsoABuildingItem[Type] = true;
         //ItemID.Sets.ShimmerTransformToItem[Type] = ModContent.ItemType<BrineBottomlessBucket>();
         ItemID.Sets.DuplicationMenuToolsFilter[Type] = true;
-
-        LiquidID_TLmod.Sets.CreateLiquidBucketItem[LiquidLoader.LiquidType<BrineLiquid>()] = Type;
 
         CreativeItemSacrificesCatalog.Instance.SacrificeCountNeededByItemId[Type] = 5;
     }
@@ -35,6 +34,45 @@ public class BrineBucketItem : ModItem
 
     public override void HoldItem(Player player)
     {
-        LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<BrineLiquid>());
+        LiquidUtils.PlaceLiquid(player, Item, LiquidID.Water, WaterConditions.Instance.Brine.Name);
+    }
+
+    /// <summary>
+    ///     An empty bucket on brine gives this bucket: ModLiquidLib hands out <c>CreateLiquidBucketItem[type]</c>, so the
+    ///     water entry is swapped for the call. A poured bucket resets the tile's condition, which pouring leaves stale.
+    /// </summary>
+    private static void UseBuckets(On_Player.orig_ItemCheck_UseBuckets orig, Player self, Item sItem)
+    {
+        int x = Player.tileTargetX;
+        int y = Player.tileTargetY;
+
+        if (!WorldGen.InWorld(x, y))
+        {
+            orig(self, sItem);
+            return;
+        }
+
+        Tile tile = Main.tile[x, y];
+        byte before = tile.LiquidAmount;
+        bool brine = sItem.type == ItemID.EmptyBucket && before > 0 && tile.LiquidType == LiquidID.Water
+            && tile.LiquidCondition() == WaterConditions.Instance.Brine.Index;
+
+        int[] buckets = LiquidID_TLmod.Sets.CreateLiquidBucketItem;
+        int waterBucket = buckets[LiquidID.Water];
+
+        if (brine)
+            buckets[LiquidID.Water] = ModContent.ItemType<BrineBucketItem>();
+
+        try
+        {
+            orig(self, sItem);
+        }
+        finally
+        {
+            buckets[LiquidID.Water] = waterBucket;
+        }
+
+        if (tile.LiquidAmount > before && LiquidConditionSet.ByType(tile.LiquidType) is not null)
+            LiquidConditionSystem.Set(x, y, 0);
     }
 }

@@ -65,18 +65,17 @@ public class LiquidWand : ModItem
 
     private static List<Mode> Modes(Player player)
     {
-        List<Mode> modes =
-        [
-            new(LiquidID.Water, null, "Water"),
-            new(LiquidID.Lava, null, "Lava"),
-            new(LiquidID.Honey, null, "Honey"),
-        ];
+        List<Mode> modes = [];
 
-        foreach (ConditionalLiquid liquid in ConditionalLiquid.All)
+        // Water has a condition set, so its conditions stand in for plain water.
+        foreach (LiquidConditionSet liquid in LiquidConditionSet.All)
         {
             foreach (LiquidCondition condition in liquid.Conditions.Where(condition => condition is not BrewCondition))
-                modes.Add(new Mode(liquid.Type, condition.Name, $"{liquid.Name} / {condition.DisplayName}"));
+                modes.Add(new Mode(liquid.LiquidType, condition.Name, $"{liquid.Name} / {condition.DisplayName}"));
         }
+
+        modes.Add(new Mode(LiquidID.Lava, null, "Lava"));
+        modes.Add(new Mode(LiquidID.Honey, null, "Honey"));
 
         if (player.inventory.FirstOrDefault(item => !item.IsAir && BrewLiquid.IsBrew(item.type)) is { } potion)
             modes.Add(new Mode(ModContent.GetInstance<BrewLiquid>().Type, BrewLiquid.ItemKey(potion.type), $"Brew of {potion.Name}"));

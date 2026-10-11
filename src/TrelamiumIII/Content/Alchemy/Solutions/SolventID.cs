@@ -88,7 +88,7 @@ public sealed class SolventID : ICustomAutoload
             LegacyNames = ["BrineBottle"],
             Recipes = self => self.CreateRecipe()
                 .AddIngredient(ItemID.Bottle)
-                .AddLiquid<BrineLiquid>()
+                .AddCondition(WaterConditions.NearBrine)
                 .Register(),
         });
 

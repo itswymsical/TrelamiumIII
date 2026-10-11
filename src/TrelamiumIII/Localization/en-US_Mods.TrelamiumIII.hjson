@@ -1014,6 +1014,11 @@ Items: {
 		Tooltip: ""
 	}
 
+	TuffBlock: {
+		DisplayName: Tuff Block
+		Tooltip: ""
+	}
+
 	CanisterCannon: {
 		DisplayName: Canister Cannon
 		Tooltip:
@@ -1143,6 +1148,7 @@ Tiles: {
 	PureSaltTile.MapEntry: Pure Salt
 	SulfurTile.MapEntry: Sulfur
 	LodestoneTile.MapEntry: Lodestone
+	TuffTile.MapEntry: Tuff
 }
 
 Projectiles: {
@@ -1722,7 +1728,12 @@ Liquids: {
 		}
 	}
 
-	BrineLiquid.MapEntry: Brine
+	Water: {
+		Conditions: {
+			Fresh: Fresh Water
+			Brine: Brine
+		}
+	}
 
 	AcidLiquid: {
 		MapEntry: Acid
@@ -1743,6 +1754,8 @@ Liquids: {
 		Conditions.Muddled: Muddled Brew
 	}
 }
+
+Conditions.NearBrine: Near Brine
 
 Configs: {
 	AuthoringConfig: {

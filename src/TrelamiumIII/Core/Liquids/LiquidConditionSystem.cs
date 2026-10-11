@@ -58,7 +58,7 @@ public sealed class LiquidConditionSystem : ModSystem
     {
         dirty.Clear();
 
-        foreach (ConditionalLiquid liquid in ConditionalLiquid.All)
+        foreach (LiquidConditionSet liquid in LiquidConditionSet.All)
             liquid.ClearDynamic();
     }
 
@@ -100,7 +100,7 @@ public sealed class LiquidConditionSystem : ModSystem
         tile.LiquidType = liquidType;
         tile.LiquidAmount = amount;
 
-        if (ConditionalLiquid.ByType(liquidType) is { } liquid)
+        if (LiquidConditionSet.ByType(liquidType) is { } liquid)
             Set(i, j, string.IsNullOrEmpty(condition) ? (byte)0 : liquid.Resolve(condition)?.Index ?? 0);
 
         WorldGen.SquareTileFrame(i, j);
@@ -134,7 +134,7 @@ public sealed class LiquidConditionSystem : ModSystem
 
             foreach (LiquidCondition condition in chunk)
             {
-                packet.Write((byte)condition.Liquid.Type);
+                packet.Write((byte)condition.Liquid.LiquidType);
                 packet.Write(condition.Index);
                 packet.Write(condition.Name);
             }
@@ -157,7 +157,7 @@ public sealed class LiquidConditionSystem : ModSystem
         }
 
         Tile source = Main.tile[x, y];
-        ConditionalLiquid? liquid = source.LiquidAmount > 0 ? ConditionalLiquid.ByType(source.LiquidType) : null;
+        LiquidConditionSet? liquid = source.LiquidAmount > 0 ? LiquidConditionSet.ByType(source.LiquidType) : null;
 
         if (liquid is null)
         {
@@ -169,7 +169,7 @@ public sealed class LiquidConditionSystem : ModSystem
         for (int k = 0; k < FlowCells.Length; k++)
         {
             Tile tile = Main.tile[x + FlowCells[k].X, y + FlowCells[k].Y];
-            before[k] = new FlowCell(tile.LiquidType == liquid.Type ? tile.LiquidAmount : (byte)0, tile.LiquidCondition());
+            before[k] = new FlowCell(tile.LiquidType == liquid.LiquidType ? tile.LiquidAmount : (byte)0, tile.LiquidCondition());
         }
 
         orig(self);
@@ -181,7 +181,7 @@ public sealed class LiquidConditionSystem : ModSystem
     ///     The cell that lost the most liquid is the donor. A cell that was empty takes the donor's condition; one that
     ///     gained at least half its own volume mixes with it. Resting pools exchange nothing, so they never mix.
     /// </summary>
-    private static void Resolve(ConditionalLiquid liquid, int x, int y, ReadOnlySpan<FlowCell> before)
+    private static void Resolve(LiquidConditionSet liquid, int x, int y, ReadOnlySpan<FlowCell> before)
     {
         Span<byte> after = stackalloc byte[FlowCells.Length];
         int donor = SourceCell;
@@ -190,7 +190,7 @@ public sealed class LiquidConditionSystem : ModSystem
         for (int k = 0; k < FlowCells.Length; k++)
         {
             Tile tile = Main.tile[x + FlowCells[k].X, y + FlowCells[k].Y];
-            after[k] = tile.LiquidType == liquid.Type ? tile.LiquidAmount : (byte)0;
+            after[k] = tile.LiquidType == liquid.LiquidType ? tile.LiquidAmount : (byte)0;
 
             int loss = before[k].Amount - after[k];
             if (loss > largestLoss)
@@ -253,7 +253,7 @@ public sealed class LiquidConditionSystem : ModSystem
 
     private static void TintVertices(ref VertexColors vertices, int i, int j, byte type)
     {
-        if (ConditionalLiquid.ByType(type) is { } liquid)
+        if (LiquidConditionSet.ByType(type) is { } liquid)
             ConditionalLiquid.Tint(ref vertices, liquid.ConditionAt(i, j).Tint);
     }
 
@@ -263,7 +263,7 @@ public sealed class LiquidConditionSystem : ModSystem
 
     public override void SaveWorldData(TagCompound tag)
     {
-        if (ConditionalLiquid.All.Count == 0)
+        if (LiquidConditionSet.All.Count == 0)
             return;
 
         var positions = new List<int>[LiquidLoader.LiquidCount];
@@ -277,7 +277,7 @@ public sealed class LiquidConditionSystem : ModSystem
                 Tile tile = Main.tile[x, y];
                 byte condition = tile.LiquidCondition();
 
-                if (condition == 0 || tile.LiquidAmount == 0 || ConditionalLiquid.ByType(tile.LiquidType) is null)
+                if (condition == 0 || tile.LiquidAmount == 0 || LiquidConditionSet.ByType(tile.LiquidType) is null)
                     continue;
 
                 int type = tile.LiquidType;
@@ -291,9 +291,9 @@ public sealed class LiquidConditionSystem : ModSystem
 
         var bases = new List<TagCompound>();
 
-        foreach (ConditionalLiquid liquid in ConditionalLiquid.All)
+        foreach (LiquidConditionSet liquid in LiquidConditionSet.All)
         {
-            if (positions[liquid.Type] is not { } deltas)
+            if (positions[liquid.LiquidType] is not { } deltas)
                 continue;
 
             bases.Add(new TagCompound
@@ -301,7 +301,7 @@ public sealed class LiquidConditionSystem : ModSystem
                 ["liquid"] = liquid.FullName,
                 ["names"] = liquid.Conditions.Select(condition => condition.Name).ToList(),
                 ["positions"] = deltas.ToArray(),
-                ["values"] = values[liquid.Type].ToArray(),
+                ["values"] = values[liquid.LiquidType].ToArray(),
             });
         }
 
@@ -318,7 +318,7 @@ public sealed class LiquidConditionSystem : ModSystem
 
         foreach (TagCompound saved in bases)
         {
-            if (!ModContent.TryFind(saved.GetString("liquid"), out ModLiquid modLiquid) || modLiquid is not ConditionalLiquid liquid)
+            if (LiquidConditionSet.ByName(saved.GetString("liquid")) is not { } liquid)
                 continue;
 
             byte[] remap = saved.GetList<string>("names").Select(name => liquid.Resolve(name)?.Index ?? 0).ToArray();
@@ -363,7 +363,7 @@ public sealed class LiquidConditionSystem : ModSystem
         switch ((PacketKind)reader.ReadByte())
         {
             case PacketKind.Request when Main.netMode == NetmodeID.Server:
-                SendPalette(ConditionalLiquid.All.SelectMany(liquid => liquid.DynamicConditions()), whoAmI);
+                SendPalette(LiquidConditionSet.All.SelectMany(liquid => liquid.DynamicConditions()), whoAmI);
                 SendEntries(MarkedTiles(), whoAmI);
                 SubmergedLiquidSystem.SendPockets(whoAmI);
                 break;
@@ -445,7 +445,7 @@ public sealed class LiquidConditionSystem : ModSystem
 
         for (int k = 0; k < count; k++)
         {
-            ConditionalLiquid? liquid = ConditionalLiquid.ByType(reader.ReadByte());
+            LiquidConditionSet? liquid = LiquidConditionSet.ByType(reader.ReadByte());
             byte index = reader.ReadByte();
             string name = reader.ReadString();
 
@@ -460,7 +460,7 @@ public sealed class LiquidConditionSystem : ModSystem
             for (int y = 0; y < Main.maxTilesY; y++)
             {
                 Tile tile = Main.tile[x, y];
-                if (tile.LiquidCondition() != 0 && tile.LiquidAmount > 0 && ConditionalLiquid.ByType(tile.LiquidType) is not null)
+                if (tile.LiquidCondition() != 0 && tile.LiquidAmount > 0 && LiquidConditionSet.ByType(tile.LiquidType) is not null)
                     yield return new Point(x, y);
             }
         }
@@ -493,12 +493,12 @@ public sealed class LiquidConditionPlayer : ModPlayer
     public override void OnEnterWorld() => LiquidConditionSystem.RequestAll();
 }
 
-/// <summary>Runs <see cref="ConditionalLiquid.TryReact" /> from each tile's random update against the liquid beside it.</summary>
+/// <summary>Runs <see cref="LiquidConditionSet.TryReact" /> from each tile's random update against the liquid beside it.</summary>
 public sealed class LiquidReactionGlobalTile : GlobalTile
 {
     public override void RandomUpdate(int i, int j, int type)
     {
-        if (ConditionalLiquid.All.Count == 0 || !WorldGen.InWorld(i, j, 2))
+        if (LiquidConditionSet.All.Count == 0 || !WorldGen.InWorld(i, j, 2))
             return;
 
         TryNeighbour(i, j, i, j - 1);
@@ -510,7 +510,7 @@ public sealed class LiquidReactionGlobalTile : GlobalTile
     private static void TryNeighbour(int tileX, int tileY, int i, int j)
     {
         Tile tile = Main.tile[i, j];
-        if (tile.LiquidAmount > 0 && ConditionalLiquid.ByType(tile.LiquidType) is { } liquid)
+        if (tile.LiquidAmount > 0 && LiquidConditionSet.ByType(tile.LiquidType) is { } liquid)
             liquid.TryReact(i, j, tileX, tileY);
     }
 }

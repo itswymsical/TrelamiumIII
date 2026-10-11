@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ModLiquidLib.ModLoader;
 using Terraria.ModLoader.IO;
 
 namespace TrelamiumIII.Core.Liquids;
@@ -14,7 +13,7 @@ public sealed class SubmergedPocket
     /// <summary>Liquid units; a full tile holds 255.</summary>
     public int Volume;
 
-    public ConditionalLiquid Liquid = null!;
+    public LiquidConditionSet Liquid = null!;
 
     /// <summary>Kept by name so runtime conditions survive saving and syncing without agreeing on an index.</summary>
     public string Condition = "";
@@ -105,7 +104,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
         }
 
         ModPacket packet = LiquidConditionSystem.NewPacket(LiquidConditionSystem.PacketKind.Extract);
-        packet.Write((byte)pocket.Liquid.Type);
+        packet.Write((byte)pocket.Liquid.LiquidType);
         packet.Write(pocket.Condition);
         packet.WriteVector2(pocket.Position);
         packet.Send();
@@ -118,7 +117,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
         Vector2 position = reader.ReadVector2();
 
         SubmergedPocket? pocket = pockets
-            .Where(p => p.Liquid.Type == type && p.Condition == condition)
+            .Where(p => p.Liquid.LiquidType == type && p.Condition == condition)
             .MinBy(p => Vector2.DistanceSquared(p.Position, position));
 
         if (pocket is not null && Vector2.Distance(pocket.Position, position) < MergeRange * 2f)
@@ -192,7 +191,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
     private static bool Hosts(SubmergedPocket pocket, int x, int y)
     {
         Tile tile = Main.tile[x, y];
-        return tile.LiquidAmount > 0 && tile.LiquidType != pocket.Liquid.Type && !WorldGen.SolidTile(x, y);
+        return tile.LiquidAmount > 0 && tile.LiquidType != pocket.Liquid.LiquidType && !WorldGen.SolidTile(x, y);
     }
 
     private static void Move(SubmergedPocket pocket, int dx, int dy) => pocket.Position += new Vector2(dx, dy) * 16f;
@@ -211,7 +210,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
                 break;
 
             Tile tile = Main.tile[point.X, point.Y];
-            bool own = tile.LiquidAmount > 0 && tile.LiquidType == pocket.Liquid.Type;
+            bool own = tile.LiquidAmount > 0 && tile.LiquidType == pocket.Liquid.LiquidType;
 
             if (WorldGen.SolidTile(point.X, point.Y) || tile.LiquidAmount > 0 && !own)
                 continue;
@@ -222,7 +221,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
             byte index = own ? pocket.Liquid.Mix(tile.LiquidCondition(), condition.Index) : condition.Index;
 
-            tile.LiquidType = pocket.Liquid.Type;
+            tile.LiquidType = pocket.Liquid.LiquidType;
             tile.LiquidAmount += (byte)placed;
             LiquidConditionSystem.Set(point.X, point.Y, index);
             Liquid.AddWater(point.X, point.Y);
@@ -257,7 +256,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
         foreach (TagCompound entry in saved)
         {
-            if (!ModContent.TryFind(entry.GetString("liquid"), out ModLiquid modLiquid) || modLiquid is not ConditionalLiquid liquid)
+            if (LiquidConditionSet.ByName(entry.GetString("liquid")) is not { } liquid)
                 continue;
 
             pockets.Add(new SubmergedPocket
@@ -277,7 +276,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
         foreach (SubmergedPocket pocket in pockets)
         {
-            packet.Write((byte)pocket.Liquid.Type);
+            packet.Write((byte)pocket.Liquid.LiquidType);
             packet.Write(pocket.Condition);
             packet.WriteVector2(pocket.Position);
             packet.Write(pocket.Volume);
@@ -293,7 +292,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
         for (int k = 0; k < count; k++)
         {
-            ConditionalLiquid? liquid = ConditionalLiquid.ByType(reader.ReadByte());
+            LiquidConditionSet? liquid = LiquidConditionSet.ByType(reader.ReadByte());
             string condition = reader.ReadString();
             Vector2 position = reader.ReadVector2();
             int volume = reader.ReadInt32();

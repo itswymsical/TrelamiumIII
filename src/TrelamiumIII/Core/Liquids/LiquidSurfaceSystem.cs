@@ -20,13 +20,19 @@ public sealed record LiquidSurface(string Technique)
     public float Strength { get; init; } = 1f;
 }
 
-/// <summary>A ModLiquid with an animated surface drawn over it by <see cref="LiquidSurfaceSystem" />.</summary>
+/// <summary>
+///     A ModLiquid, or the <see cref="LiquidConditionSet" /> of a vanilla liquid, with an animated surface drawn over it
+///     by <see cref="LiquidSurfaceSystem" />.
+/// </summary>
 public interface ILiquidSurface
 {
     LiquidSurface Surface { get; }
 
     /// <summary>The <c>Tint</c> the shader sees at (i, j), such as the tile's liquid condition colour.</summary>
     Color SurfaceTint(int i, int j) => Color.White;
+
+    /// <summary>Whether (i, j) draws the surface at all, for liquids where only some conditions have one.</summary>
+    bool HasSurface(int i, int j) => true;
 }
 
 /// <summary>
@@ -68,7 +74,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
         surfaces = new ILiquidSurface?[LiquidLoader.LiquidCount];
 
         for (int type = 0; type < surfaces.Length; type++)
-            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface;
+            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface ?? LiquidConditionSet.ByType(type) as ILiquidSurface;
     }
 
     public override void Unload()
@@ -97,7 +103,8 @@ public sealed class LiquidSurfaceSystem : ModSystem
     /// <summary>Records the visible part of a liquid tile. Liquids draw once per active water style, so repeats are skipped.</summary>
     internal static void Collect(int i, int j, int type, in LiquidRenderer.LiquidDrawCache cache, bool isBackgroundDraw)
     {
-        if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } surface || !collected.Add(new Point(i, j)))
+        if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } surface
+            || !surface.HasSurface(i, j) || !collected.Add(new Point(i, j)))
             return;
 
         Rectangle source = cache.SourceRectangle;

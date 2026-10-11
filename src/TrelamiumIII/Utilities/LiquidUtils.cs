@@ -2,6 +2,7 @@
 using System.Linq;
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Liquids;
 
 namespace TrelamiumIII.Utilities;
 
@@ -17,7 +18,11 @@ public static class LiquidUtils
     /// <param name="item">The item used to place the liquid. Its properties may affect placement range and timing.</param>
     /// <param name="liquidType">The type of liquid to place at the target tile. Must match the game's defined liquid types.</param>
     /// <returns>true if the liquid was successfully placed at the target tile; otherwise, false.</returns>
-    public static bool PlaceLiquid(Player player, Item item, int liquidType)
+    public static bool PlaceLiquid(Player player, Item item, int liquidType) => PlaceLiquid(player, item, liquidType, condition: null);
+
+    /// <inheritdoc cref="PlaceLiquid(Player, Item, int)" />
+    /// <param name="condition">For a liquid with a <see cref="LiquidConditionSet" />, the condition to place; null for its default.</param>
+    public static bool PlaceLiquid(Player player, Item item, int liquidType, string? condition)
     {
         // Make sure the player hasn't just dropped an item recently
         if (player.JustDroppedAnItem || player.whoAmI != Main.myPlayer)
@@ -56,6 +61,15 @@ public static class LiquidUtils
             return false;
 
         SoundEngine.PlaySound(SoundID.SplashWeak, player.position);
+
+        // Sets the condition too, which a plain write would leave at whatever the tile last held.
+        if (LiquidConditionSet.ByType(liquidType) is not null)
+        {
+            LiquidConditionSystem.Place(Player.tileTargetX, Player.tileTargetY, liquidType, condition, byte.MaxValue);
+            player.ApplyItemTime(item);
+            return true;
+        }
+
         tile.LiquidType = liquidType;
         tile.LiquidAmount = byte.MaxValue;
         WorldGen.SquareTileFrame(Player.tileTargetX, Player.tileTargetY);
