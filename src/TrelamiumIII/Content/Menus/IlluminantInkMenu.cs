@@ -6,10 +6,20 @@ namespace TrelamiumIII.Content.Menus;
 /// <summary>
 ///     Illuminant Ink menu. Visuals live in <see cref="IlluminantInkScene" />; this only answers tModLoader and forwards calls.
 /// </summary>
-public sealed class IlluminantInkMenu : ModMenu
+public sealed class IlluminantInkMenu : ModMenu, IMenuButtonPalette
 {
     /// <summary>True while this menu is the one actually on screen.</summary>
     public static bool InMenu => Main.gameMenu && MenuLoader.CurrentMenu == ModContent.GetInstance<IlluminantInkMenu>();
+
+    /// <summary>Violet-leaning slate; idle buttons land at roughly (141, 140, 150).</summary>
+    public Color ButtonBase => new(232, 230, 250);
+
+    /// <summary>Ghost white pushed toward violet, added over the ink.</summary>
+    public Color ButtonHover => new(236, 226, 255);
+
+    public Color ButtonGlow => new Color(150, 105, 255) * 0.6f;
+
+    public bool AdditiveHover => true;
 
     public override int Music => Assets.Music.IlluminantInkiness.Slot;
 
