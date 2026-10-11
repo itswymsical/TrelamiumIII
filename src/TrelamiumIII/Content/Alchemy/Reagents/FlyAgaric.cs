@@ -5,7 +5,7 @@ using Terraria.ObjectData;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
+namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 [LegacyName("FlyAgaric")]
 public class FlyAgaricItem : ModItem, IAlmanacDefined

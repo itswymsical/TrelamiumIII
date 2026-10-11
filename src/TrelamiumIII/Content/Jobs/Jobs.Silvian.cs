@@ -1,4 +1,4 @@
-﻿using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
+﻿using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;

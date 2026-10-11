@@ -1,4 +1,5 @@
-using TrelamiumIII.Content.Items.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Core.Alchemy.Brewing;
 
 namespace TrelamiumIII.Core.Alchemy;

@@ -13,7 +13,7 @@ namespace TrelamiumIII.Content.Items.Weapons;
 [LegacyName("HyperboreanFlaskItem")]
 public class ArcticFlaskItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.Items.Weapons.HyperboreanFlaskItem.KEY;
+    public override string Texture => AssetReferences.Content.Items.Weapons.ArcticFlaskItem.KEY;
 
     public override void SetDefaults()
     {
@@ -74,7 +74,7 @@ public class ArcticFlaskItem : ModItem
 [LegacyName("HyperboreanFlaskProjectile")]
 public class ArcticFlaskProjectile : ChemicalProjectile
 {
-    public override string Texture => AssetReferences.Content.Items.Weapons.HyperboreanFlaskItem.KEY;
+    public override string Texture => AssetReferences.Content.Items.Weapons.ArcticFlaskItem.KEY;
 
     protected override GasField? Field => FieldSystem.GetLayer<IceMistField>();
 

@@ -1,8 +1,7 @@
-using TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
-using TrelamiumIII.Content.Items.Alchemy.Reagents;
-using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
-using TrelamiumIII.Content.Items.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.ContortionistSet;
 using TrelamiumIII.Content.Items.Lodestone;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;

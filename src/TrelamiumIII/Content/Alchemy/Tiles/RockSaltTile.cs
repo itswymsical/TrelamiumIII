@@ -1,6 +1,6 @@
-﻿namespace TrelamiumIII.Content.Items.Alchemy.Reagents;
+﻿namespace TrelamiumIII.Content.Alchemy.Tiles;
 
-public class CinnabarTile : ModTile
+public class RockSaltTile : ModTile
 {
     public override void SetStaticDefaults()
     {
@@ -12,12 +12,12 @@ public class CinnabarTile : ModTile
 
         Main.tileBlockLight[Type] = true;
 
-        DustType = DustID.GemRuby;
-        MineResist = 0.55f;
-        MinPick = 45;
+        DustType = DustID.Marble;
+        MineResist = 0.65f;
         HitSound = SoundID.Tink;
 
-        AddMapEntry(new Color(167, 70, 55), CreateMapEntryName());
+        AddMapEntry(new Color(214, 218, 231), CreateMapEntryName());
     }
     public override bool IsTileSpelunkable(int i, int j) => true;
+
 }

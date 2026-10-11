@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
 
-namespace TrelamiumIII.Content.Items.Alchemy.MagnoliaContent;
+namespace TrelamiumIII.Content.Alchemy;
 
 public class MagnoliaItem : ModItem, IAlmanacDefined
 {

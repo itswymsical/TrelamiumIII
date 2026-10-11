@@ -2,7 +2,7 @@
 using Terraria.Enums;
 using Terraria.ObjectData;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
+namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 public class DewdropBonnetItem : ModItem
 {

@@ -3,7 +3,7 @@ using Terraria.Enums;
 using Terraria.ObjectData;
 using TrelamiumIII.Core.Alchemy;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Tiles;
+namespace TrelamiumIII.Content.Alchemy.Tiles;
 
 [LegacyName("BloodtoothFungus")]
 public class BloodtoothFungusItem : ModItem, IAlmanacDefined

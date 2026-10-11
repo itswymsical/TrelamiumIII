@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Core.NPCs;
 
 namespace TrelamiumIII.Content.NPCs.Snow;

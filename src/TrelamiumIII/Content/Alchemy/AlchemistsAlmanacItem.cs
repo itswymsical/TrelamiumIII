@@ -1,7 +1,7 @@
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.UI.AlchemyAlmanac;
 
-namespace TrelamiumIII.Content.Items.Alchemy;
+namespace TrelamiumIII.Content.Alchemy;
 
 /// <summary>
 ///     John Substrate's almanac. It has no recipe: Silvian, his nephew, hands it over at the end of his jobs
@@ -9,7 +9,7 @@ namespace TrelamiumIII.Content.Items.Alchemy;
 /// </summary>
 public class AlchemistsAlmanacItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyBookItem.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.AlchemyBookItem.KEY;
 
     public override void SetDefaults()
     {

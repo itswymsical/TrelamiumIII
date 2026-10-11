@@ -1,8 +1,9 @@
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Reagents;
+namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 /// <summary>
 ///     Conventional solutes (raw minerals, acid products, alkalis, distillates), each a <see cref="SoluteItem" /> instance.
@@ -54,7 +55,7 @@ public sealed class SoluteID : ICustomAutoload
     {
         Sulfur = Add(mod, new SoluteItem("SulfurItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Sulfur.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Sulfur.KEY,
             Value = Item.sellPrice(copper: 2),
             AlmanacPotency = 2,
             Temperaments = Temperament.Volatile | Temperament.Acidic,
@@ -70,7 +71,7 @@ public sealed class SoluteID : ICustomAutoload
 
         Cinnabar = Add(mod, new SoluteItem("CinnabarItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Cinnabar.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Cinnabar.KEY,
             Value = Item.sellPrice(copper: 11),
             AlmanacPotency = 3,
             Temperaments = Temperament.Kinetic,
@@ -90,7 +91,7 @@ public sealed class SoluteID : ICustomAutoload
 
         Niter = Add(mod, new SoluteItem("NiterItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Niter.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Niter.KEY,
             Value = Item.sellPrice(copper: 60),
             AlmanacPotency = 2,
             Temperaments = Temperament.Volatile | Temperament.Catalytic,
@@ -113,7 +114,7 @@ public sealed class SoluteID : ICustomAutoload
 
         RockSalt = Add(mod, new SoluteItem("RockSaltItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.RockSalt.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.RockSalt.KEY,
             Value = Item.sellPrice(copper: 20),
             AlmanacPotency = 1,
             Temperaments = Temperament.Inert | Temperament.Alkaline,
@@ -154,7 +155,7 @@ public sealed class SoluteID : ICustomAutoload
 
         Potash = Add(mod, new SoluteItem("PotashItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Potash.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Potash.KEY,
             Rare = ItemRarityID.Gray,
             Value = Item.sellPrice(copper: 10),
             AlmanacPotency = 1,
@@ -210,7 +211,7 @@ public sealed class SoluteID : ICustomAutoload
 
         FrigorificSalt = Add(mod, new SoluteItem("FrigorificSaltItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.FrigorificSalt.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.FrigorificSalt.KEY,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 3),
             AlmanacPotency = 3,
@@ -233,7 +234,7 @@ public sealed class SoluteID : ICustomAutoload
 
         Pitch = Add(mod, new SoluteItem("PitchItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.Pitch.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.Pitch.KEY,
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
             Temperaments = Temperament.Inert,
@@ -241,7 +242,7 @@ public sealed class SoluteID : ICustomAutoload
 
         BlackPowder = Add(mod, new SoluteItem("BlackPowderItem")
         {
-            TexturePath = AssetReferences.Content.Items.Alchemy.Reagents.BlackPowder.KEY,
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.BlackPowder.KEY,
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 6),
             AlmanacPotency = 4,

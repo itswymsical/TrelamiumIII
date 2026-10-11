@@ -5,11 +5,11 @@ using Terraria.ObjectData;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.UI.AlchemyStation;
 
-namespace TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
+namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 public class AdvancedAlchemyStationItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyStations.FullImage.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.AlchemyStations.FullImage.KEY;
 
     public override void SetDefaults()
     {
@@ -35,7 +35,7 @@ public class AdvancedAlchemyStationItem : ModItem
 /// <summary>Right-click an Advanced Alchemy Station while holding this to install the chamber segment.</summary>
 public class AdvancedAlchemyStationChamberItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Chamber.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Chamber.KEY;
 
     public override void SetDefaults()
     {
@@ -62,7 +62,7 @@ public class AdvancedAlchemyStationChamberItem : ModItem
 /// <summary>Right-click an Advanced Alchemy Station while holding this to install one component pump in the next empty socket.</summary>
 public class AdvancedAlchemyStationComponentItem : ModItem
 {
-    public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Component.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Component.KEY;
 
     public override void SetDefaults()
     {
@@ -97,7 +97,7 @@ public class AdvancedAlchemyStationBase : ModTile
     /// <summary>Divisor applied to an output's <see cref="Core.Alchemy.AlmanacEntry.BrewTicks" />.</summary>
     public const float BrewSpeed = 2f;
 
-    public override string Texture => AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Base.KEY;
+    public override string Texture => AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Base.KEY;
 
     public override void SetStaticDefaults()
     {

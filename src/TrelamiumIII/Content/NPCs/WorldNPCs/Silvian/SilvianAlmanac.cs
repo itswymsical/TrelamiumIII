@@ -1,5 +1,5 @@
 using Terraria.DataStructures;
-using TrelamiumIII.Content.Items.Alchemy;
+using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Content.Jobs;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;

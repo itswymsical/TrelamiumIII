@@ -1,7 +1,7 @@
 ﻿using TrelamiumIII.Core.NPCs.Trading;
 using System.Collections.Generic;
 using TrelamiumIII.Core.NPCs;
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
 namespace TrelamiumIII.Content.NPCs.Forest;
 

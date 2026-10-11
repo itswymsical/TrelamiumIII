@@ -1,4 +1,5 @@
 using Terraria.GameContent;
+using TrelamiumIII.Content.Menus;
 
 namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 
@@ -148,6 +149,9 @@ internal static class IlluminantInkScene
         );
 
         spriteBatch.End();
+
+        // After the vignette so the credits aren't darkened at the edges.
+        MenuCreditsRoll.Redraw(spriteBatch);
 
         // Back into the menu's own space, exactly as Main.DrawMenu had it, and left open for the rest
         // of the menu to keep drawing into.

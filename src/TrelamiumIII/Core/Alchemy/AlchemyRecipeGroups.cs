@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using TrelamiumIII.Content.Items.Alchemy.Reagents;
-using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent;
 using TrelamiumIII.Content.Items.Rusted;
 

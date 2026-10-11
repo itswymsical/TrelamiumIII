@@ -1,5 +1,5 @@
 using Terraria.Localization;
-using TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
+using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Core.Alchemy.Brewing;
 using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 using TrelamiumIII.Utilities;

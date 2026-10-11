@@ -7,7 +7,7 @@ using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.UI.AlchemyStation;
 
-namespace TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
+namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
 /// Draws the Advanced Alchemy Station as one composite from the base's top-left tile. Offsets are in composite space
@@ -81,7 +81,7 @@ public static class AdvancedAlchemyStationRenderer
         // While this station's UI is open its slots draw the items, so the tile skips its own copies.
         bool uiOpen = AlchemyStationSystem.Visible && AlchemyStationSystem.BoundStation == new Point16(originI, originJ);
 
-        Blit(sb, GetTex(ref _base, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Base.KEY), c + BaseOffset, light);
+        Blit(sb, GetTex(ref _base, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Base.KEY), c + BaseOffset, light);
 
         // While brewing, the chamber back, fluid and glass rock and vibrate as one rigid body about the pivot, harder near
         // completion. Pipes stay anchored to the components.
@@ -89,15 +89,15 @@ public static class AdvancedAlchemyStationRenderer
         {
             ChamberMotion motion = BuildChamberMotion(c, entity.IsBrewing, entity.BrewProgress);
 
-            BlitRocked(sb, GetTex(ref _chamberBack, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_ChamberBack.KEY), c + ChamberBackOffset, motion, light);
+            BlitRocked(sb, GetTex(ref _chamberBack, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_ChamberBack.KEY), c + ChamberBackOffset, motion, light);
 
             if (ChemicalRoles.Of(entity.Input[0]) is ChemicalRole.Solvent or ChemicalRole.Solution)
                 AdvancedAlchemyStationLiquid.Draw(sb,
-                    GetTex(ref _chamberOverlay, AssetReferences.Content.Items.Alchemy.AlchemyStations.ChamberLiquidOverlay.KEY),
+                    GetTex(ref _chamberOverlay, AssetReferences.Content.Alchemy.AlchemyStations.ChamberLiquidOverlay.KEY),
                     c + ChamberLiquidOffset, motion, entity.Input[0].type, light, entity.IsBrewing, entity.BrewProgress);
 
-            BlitRocked(sb, GetTex(ref _chamber, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Chamber.KEY), c + ChamberOffset, motion, light);
-            Blit(sb, GetTex(ref _pipes, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Pipes.KEY), c + PipesOffset, light);
+            BlitRocked(sb, GetTex(ref _chamber, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Chamber.KEY), c + ChamberOffset, motion, light);
+            Blit(sb, GetTex(ref _pipes, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Pipes.KEY), c + PipesOffset, light);
         }
 
         // Held items are drawn behind each cylinder, slightly downscaled, so the glass overlays them.
@@ -111,7 +111,7 @@ public static class AdvancedAlchemyStationRenderer
                 BlitItem(sb, entity.Components[k], compTL + ComponentItemOffset, light,
                     scale: ComponentItemScale, center: true);
 
-            Blit(sb, GetTex(ref _component, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_Component.KEY), compTL, light);
+            Blit(sb, GetTex(ref _component, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_Component.KEY), compTL, light);
         }
 
         if (entity != null && entity.HasChamber)
@@ -120,7 +120,7 @@ public static class AdvancedAlchemyStationRenderer
                 ? (int)((Main.GameUpdateCount / HeatPlateTicksPerFrame) % HeatPlateFrames)
                 : 0;
             Rectangle heatPlateSrc = new(0, frame * HeatPlateFrameStrideY, HeatPlateFrameWidth, HeatPlateFrameHeight);
-            BlitFrame(sb, GetTex(ref _heatPlate, AssetReferences.Content.Items.Alchemy.AlchemyStations.AlchemyStation_HeatPlate.KEY),
+            BlitFrame(sb, GetTex(ref _heatPlate, AssetReferences.Content.Alchemy.AlchemyStations.AlchemyStation_HeatPlate.KEY),
                 c + HeatPlateOffset, heatPlateSrc, light);
 
             if (entity.IsBrewing)

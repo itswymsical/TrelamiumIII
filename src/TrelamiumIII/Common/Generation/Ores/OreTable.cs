@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using TrelamiumIII.Content.Items.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Lodestone;
 using TrelamiumIII.Content.Items.Rusted;
 using static TrelamiumIII.Common.Generation.Ores.Depth;

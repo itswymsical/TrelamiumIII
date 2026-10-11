@@ -4,7 +4,7 @@ using Terraria.Enums;
 using Terraria.ObjectData;
 using TrelamiumIII.Core.UI.AlchemyStation;
 
-namespace TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
+namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 public class AlchemyStationItem : ModItem
 {

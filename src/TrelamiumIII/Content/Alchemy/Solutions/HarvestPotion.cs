@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 using TrelamiumIII.Core.UI;
 using TrelamiumIII.Utilities;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Solutions;
+namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 /// <summary>Brewed from a Fortunate Tonic: mined ore and gems pay out extra. Replaces the Microlith accessory.</summary>
 public class HarvestPotionItem : SolutionItem
@@ -17,7 +17,7 @@ public class HarvestPotionItem : SolutionItem
     {
         Rare = ItemRarityID.Blue;
         Value = Item.sellPrice(silver: 2);
-        TexturePath = AssetReferences.Content.Items.Alchemy.Solutions.HarvestPotion.KEY;
+        TexturePath = AssetReferences.Content.Alchemy.Solutions.HarvestPotion.KEY;
 
         AlmanacPotency = 3;
         Temperaments = Temperament.Catalytic;

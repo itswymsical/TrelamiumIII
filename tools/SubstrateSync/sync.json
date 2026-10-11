@@ -1,0 +1,73 @@
+{
+  "substrateRepo": "../../../SubstrateMod",
+  "trelamiumRepo": "../..",
+  "substrateMod": "src/SubstrateMod",
+  "trelamiumMod": "src/TrelamiumIII",
+  "lastSynced": {
+    "substrate": "7f60e6bdde26e5e9574481ead746113ca1936582",
+    "trelamium": "5898a93bed85022cc029fbb747106c63dd7d0729"
+  },
+  "folders": [
+    { "substrate": "Assets/Sounds", "trelamium": "Assets/SFX" },
+    { "substrate": "Assets/Textures/UI/Dialogue/Characters", "trelamium": "Assets/Textures/UI/Dialogue/Portraits" },
+    { "substrate": "Assets/Textures/VFX/Noise", "trelamium": "Assets/Textures/Noise" },
+    { "substrate": "Common/Globals/Tiles", "trelamium": "Common/Globals" },
+    { "substrate": "Common/Globals/Items", "trelamium": "Common/Globals" },
+    { "substrate": "Content/Accessories/GemPendants", "trelamium": "Content/Items/GemPendants" },
+    { "substrate": "Content/Ammo", "trelamium": "Content/Items/Ammo" },
+    { "substrate": "Content/Farming/Food", "trelamium": "Content/Items/FarmingOverhaul/Food" },
+    { "substrate": "Content/Farming/Tiles", "trelamium": "Content/Items/FarmingOverhaul/Seedbeds" },
+    { "substrate": "Content/Farming/Projectiles", "trelamium": "Content/Items/FarmingOverhaul/Seedbeds" },
+    { "substrate": "Content/Lodestone", "trelamium": "Content/Items/Lodestone" },
+    { "substrate": "Content/Minerals", "trelamium": "Content/Items/Rusted" },
+    { "substrate": "Content/SatchelContent", "trelamium": "Content/Items/FarmingOverhaul/SatchelContent" },
+    { "substrate": "Content/Sharpnut", "trelamium": "Content/Items/Sharpnut" },
+    { "substrate": "Content/Shovels", "trelamium": "Content/Items/FarmingOverhaul/Shovels" },
+    { "substrate": "Content/Tiles", "trelamium": "Content/Construction" },
+    { "substrate": "Content/Weapons", "trelamium": "Content/Items/Weapons" },
+    { "substrate": "Core/Components/Items", "trelamium": "Core/Items/Components" },
+    { "substrate": "Core/Components/NPCs", "trelamium": "Core/Items/Components/NPCs" }
+  ],
+  "namespaces": [
+    { "substrate": "SubstrateMod.Common.Globals.Tiles", "trelamium": "TrelamiumIII.Common.Globals" },
+    { "substrate": "SubstrateMod.Common.Globals.Items", "trelamium": "TrelamiumIII.Common.Globals" },
+    { "substrate": "SubstrateMod.Content.Accessories.GemPendants", "trelamium": "TrelamiumIII.Content.Items.GemPendants" },
+    { "substrate": "SubstrateMod.Content.Ammo", "trelamium": "TrelamiumIII.Content.Items.Ammo" },
+    { "substrate": "SubstrateMod.Content.Farming.Tiles", "trelamium": "TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds" },
+    { "substrate": "SubstrateMod.Content.Farming.Projectiles", "trelamium": "TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds" },
+    { "substrate": "SubstrateMod.Content.Lodestone", "trelamium": "TrelamiumIII.Content.Items.Lodestone" },
+    { "substrate": "SubstrateMod.Content.Minerals", "trelamium": "TrelamiumIII.Content.Items.Rusted" },
+    { "substrate": "SubstrateMod.Content.SatchelContent", "trelamium": "TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent" },
+    { "substrate": "SubstrateMod.Content.Sharpnut", "trelamium": "TrelamiumIII.Content.Items.Sharpnut" },
+    { "substrate": "SubstrateMod.Content.Tiles", "trelamium": "TrelamiumIII.Content.Construction" },
+    { "substrate": "SubstrateMod.Content.Weapons", "trelamium": "TrelamiumIII.Content.Items.Weapons" },
+    { "substrate": "SubstrateMod.Core.Components.Items", "trelamium": "TrelamiumIII.Core.Items.Components" }
+  ],
+  "exclude": {
+    "both": [
+      "Localization/**",
+      "build.txt",
+      "description*.txt",
+      "*.csproj",
+      "Properties/**",
+      "icon*.png",
+      "*.md"
+    ],
+    "substrate": [
+      "SubstrateMod.cs",
+      "SubstrateMod.Networking.cs",
+      "Common/Configs/VFXConfig.cs",
+      "Common/CrossMod/**",
+      "Content/Menus/**",
+      "Core/Graphics/Menu/**",
+      "Assets/Textures/Logo/**",
+      "Assets/Shaders/MenuLiquid.*"
+    ],
+    "trelamium": [
+      "TrelamiumIII.cs",
+      "TrelamiumIII.Networking.cs",
+      "Content/Menus/**",
+      "Core/Graphics/IlluminantInk/**"
+    ]
+  }
+}

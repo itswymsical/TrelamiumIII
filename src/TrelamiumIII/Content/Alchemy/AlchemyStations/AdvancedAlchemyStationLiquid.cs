@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Terraria.GameContent;
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Solutions;
 
-namespace TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
+namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
 /// Procedural chamber fluid, drawn from the <c>ChamberLiquidOverlay</c> capsule mask so it self-clips to the glass.

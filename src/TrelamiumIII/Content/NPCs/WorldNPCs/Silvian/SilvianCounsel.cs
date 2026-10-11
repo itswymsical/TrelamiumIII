@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.GameContent;
 using Terraria.Localization;
-using TrelamiumIII.Content.Items.Alchemy;
+using TrelamiumIII.Content.Alchemy;
 using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;

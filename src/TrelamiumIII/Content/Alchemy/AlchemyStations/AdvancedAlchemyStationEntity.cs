@@ -5,7 +5,7 @@ using Terraria.ModLoader.IO;
 using Terraria.ObjectData;
 using TrelamiumIII.Core.Alchemy;
 
-namespace TrelamiumIII.Content.Items.Alchemy.AlchemyStations;
+namespace TrelamiumIII.Content.Alchemy.AlchemyStations;
 
 /// <summary>
 /// Per-station state at the base's top-left tile: contents and installed segments. The tile renders from it and the

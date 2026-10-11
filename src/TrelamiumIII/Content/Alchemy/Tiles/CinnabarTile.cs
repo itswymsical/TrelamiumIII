@@ -1,7 +1,6 @@
-namespace TrelamiumIII.Content.Items.Alchemy.Reagents;
+﻿namespace TrelamiumIII.Content.Alchemy.Tiles;
 
-/// <summary>Brimstone in the ground. Only placed by <see cref="SoluteID.Sulfur" />; there is no worldgen.</summary>
-public class SulfurTile : ModTile
+public class CinnabarTile : ModTile
 {
     public override void SetStaticDefaults()
     {
@@ -13,13 +12,12 @@ public class SulfurTile : ModTile
 
         Main.tileBlockLight[Type] = true;
 
-        DustType = DustID.BeachShell;
-        MineResist = 0.75f;
-        MinPick = 40;
+        DustType = DustID.GemRuby;
+        MineResist = 0.55f;
+        MinPick = 45;
         HitSound = SoundID.Tink;
 
-        AddMapEntry(new Color(150, 123, 13), CreateMapEntryName());
+        AddMapEntry(new Color(167, 70, 55), CreateMapEntryName());
     }
     public override bool IsTileSpelunkable(int i, int j) => true;
-
 }

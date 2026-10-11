@@ -1,6 +1,6 @@
 using TrelamiumIII.Core.Alchemy;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Reagents.Misc;
+namespace TrelamiumIII.Content.Alchemy.Reagents;
 
 [LegacyName("Charcoal")]
 public class CharcoalItem : ModItem, IAlmanacDefined

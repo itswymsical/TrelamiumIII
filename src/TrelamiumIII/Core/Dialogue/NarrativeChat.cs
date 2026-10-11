@@ -3,7 +3,6 @@ using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs.Behaviors;
-using TrelamiumIII.Core.NPCs.Behaviors;
 
 namespace TrelamiumIII.Core.Dialogue;
 

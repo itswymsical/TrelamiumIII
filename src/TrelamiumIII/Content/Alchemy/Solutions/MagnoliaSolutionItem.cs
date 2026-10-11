@@ -2,7 +2,7 @@ using ReLogic.Graphics;
 using Terraria.GameContent;
 using TrelamiumIII.Core.Alchemy;
 
-namespace TrelamiumIII.Content.Items.Alchemy.Solutions;
+namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 public class MagnoliaSolutionItem : SolventItem
 {

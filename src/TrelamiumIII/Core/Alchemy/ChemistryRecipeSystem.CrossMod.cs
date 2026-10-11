@@ -1,4 +1,4 @@
-using TrelamiumIII.Content.Items.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Core.Alchemy.Brewing;
 using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 using static TrelamiumIII.Core.Alchemy.AlchemyRecipeGroups;
