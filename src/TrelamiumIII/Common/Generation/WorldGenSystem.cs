@@ -63,7 +63,9 @@ public class WorldGenSystem : ModSystem
         if (oilIndex != -1)
         {
             tasks.Insert(oilIndex + 1, new OilPass());
-            tasks.Insert(oilIndex + 2, new SilvianHousePass());
+            tasks.Insert(oilIndex + 2, new BrinePass());
+            tasks.Insert(oilIndex + 3, new ObsidianForestPass());
+            tasks.Insert(oilIndex + 4, new SilvianHousePass());
         }
     }
 }
