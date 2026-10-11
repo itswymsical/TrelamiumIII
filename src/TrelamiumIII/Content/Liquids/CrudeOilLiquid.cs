@@ -6,17 +6,15 @@ using Terraria.GameContent.Liquid;
 
 namespace TrelamiumIII.Content.Liquids;
 
-/// <summary>Oil base: crude by default; Pitch is the heavy residue, slower to flow and harder to wade.</summary>
+/// <summary>Oil base: crude by default. Pitch is the heavy residue, slower to flow and harder to wade.</summary>
 public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
 {
-    /// <summary>One <see cref="Liquid.Update" /> in this many moves Pitch.</summary>
     private const int PitchFlowInterval = 4;
 
-    /// <summary>Slow, heavy swirls with an oily sheen on their crests.</summary>
     public LiquidSurface Surface { get; } = new("Oil")
     {
-        ColorA = new Vector3(0.36f, 0.28f, 0.20f),
-        ColorB = new Vector3(0.02f, 0.02f, 0.02f),
+        ColorA = Rgb(43, 33, 56),
+        ColorB = Rgb(5, 5, 5),
     };
 
     public Color SurfaceTint(int i, int j) => ConditionAt(i, j).Tint;
@@ -30,7 +28,7 @@ public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
     protected override void DefineConditions()
     {
         Crude = AddCondition(new LiquidCondition("Crude"));
-        Pitch = AddCondition(new LiquidCondition("Pitch") { Tint = new Color(255, 214, 178), Strength = 1f });
+        Pitch = AddCondition(new LiquidCondition("Pitch") { Tint = new Color(77, 45, 79), Strength = 0.88f });
     }
 
     public override void SetStaticDefaults()
