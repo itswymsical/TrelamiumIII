@@ -1,15 +1,42 @@
-﻿using ModLiquidLib.ModLoader;
-using TrelamiumIII.Core;
+﻿using TrelamiumIII.Core;
+using TrelamiumIII.Core.Liquids;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent.Liquid;
 
 namespace TrelamiumIII.Content.Liquids;
 
-public class CrudeOilLiquid : ModLiquid
+/// <summary>Oil base: crude by default; Pitch is the heavy residue, slower to flow and harder to wade.</summary>
+public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
 {
+    /// <summary>One <see cref="Liquid.Update" /> in this many moves Pitch.</summary>
+    private const int PitchFlowInterval = 4;
+
+    /// <summary>Slow, heavy swirls with an oily sheen on their crests.</summary>
+    public LiquidSurface Surface { get; } = new("Oil")
+    {
+        ColorA = new Vector3(0.36f, 0.28f, 0.20f),
+        ColorB = new Vector3(0.02f, 0.02f, 0.02f),
+    };
+
+    public Color SurfaceTint(int i, int j) => ConditionAt(i, j).Tint;
+
+    public LiquidCondition Crude { get; private set; } = null!;
+
+    public LiquidCondition Pitch { get; private set; } = null!;
+
+    public override string TextureBase => AssetReferences.Content.Liquids.CrudeOilLiquid.KEY;
+
+    protected override void DefineConditions()
+    {
+        Crude = AddCondition(new LiquidCondition("Crude"));
+        Pitch = AddCondition(new LiquidCondition("Pitch") { Tint = new Color(255, 214, 178), Strength = 1f });
+    }
+
     public override void SetStaticDefaults()
     {
+        base.SetStaticDefaults();
+
         LiquidRenderer.WATERFALL_LENGTH[Type] = 3;
         LiquidRenderer.DEFAULT_OPACITY[Type] = 0.95f;
         SlopeOpacity = 0.9f;
@@ -20,11 +47,28 @@ public class CrudeOilLiquid : ModLiquid
         SplashSound = SoundID.Splash with { Pitch = -.98f };
         ChecksForDrowning = true;
         AllowEmitBreathBubbles = false;
-        AddMapEntry(new Color(1, 1, 1));
     }
-    public override void OnPlayerCollision(Player player)
+
+    protected override Color MapColor(LiquidCondition condition) => Multiply(new Color(24, 22, 20), condition.Tint);
+
+    public override bool UpdateLiquid(int i, int j, Liquid liquid)
     {
-        player.moveSpeed *= 0.25f;
+        if (Liquid.quickSettle || WorldGen.gen || ConditionAt(i, j) != Pitch)
+            return true;
+
+        return (Main.GameUpdateCount + (uint)(i * 7 + j * 13)) % PitchFlowInterval == 0;
+    }
+
+    protected override void OnPlayerContact(Player player, LiquidCondition condition)
+    {
+        if (condition != Pitch)
+        {
+            player.moveSpeed *= 0.25f;
+            return;
+        }
+
+        player.moveSpeed *= 0.1f;
+        player.velocity.Y = Math.Max(player.velocity.Y, -2f);
     }
 
     public override bool PreLiquidMerge(int liquidX, int liquidY, int tileX, int tileY, int otherLiquid)
@@ -171,9 +215,4 @@ public class OilLiquidSplash : ModDust
         }
         return true;
     }
-}
-
-public class CrudeOilLiquidfall : ModWaterfallStyle
-{
-    public override string Texture => AssetReferences.Content.Liquids.CrudeOilLiquidfall.KEY;
 }

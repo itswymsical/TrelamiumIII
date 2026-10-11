@@ -1,4 +1,5 @@
 ﻿using TrelamiumIII.Content.Liquids;
+using TrelamiumIII.Core.Liquids;
 using TrelamiumIII.Core.Tiles.Conditions;
 using System.IO;
 using TrelamiumIII.Core.ExperientialSystem;
@@ -24,6 +25,7 @@ partial class TrelamiumIII
         DryadArrivalStart,
         IngressRiftRequest,
         SilvianEncounter,
+        LiquidConditions,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -56,6 +58,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.IngressRiftRequest:
                 IngressRift.Receive(whoAmI);
+                break;
+            case MessageType.LiquidConditions:
+                LiquidConditionSystem.Receive(reader, whoAmI);
                 break;
             case MessageType.SilvianEncounter:
                 SilvianEncounter.Receive(reader, whoAmI);

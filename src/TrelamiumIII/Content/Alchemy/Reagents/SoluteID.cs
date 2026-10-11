@@ -16,6 +16,7 @@ public sealed class SoluteID : ICustomAutoload
     public static int Sulfur { get; private set; }
     public static int Niter { get; private set; }
     public static int RockSalt { get; private set; }
+    public static int PureSalt { get; private set; }
     public static int Quicklime { get; private set; }
     public static int BoneAsh { get; private set; }
     public static int Potash { get; private set; }
@@ -129,7 +130,19 @@ public sealed class SoluteID : ICustomAutoload
                 .Register(),
         });
 
-        Quicklime = Add(mod, new SoluteItem("QuicklimeItem")
+        PureSalt = Add(mod, new SoluteItem("PureSaltItem")
+        {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.FrigorificSalt.KEY,
+            Value = Item.sellPrice(copper: 20),
+            AlmanacPotency = 1,
+            Temperaments = Temperament.Inert | Temperament.Alkaline,
+            Principle = PrincipleType.Harmony,
+            LegacyNames = ["SaltBlockItem"],
+
+            Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<PureSaltTile>()),
+        });
+
+        Quicklime =Add(mod, new SoluteItem("QuicklimeItem")
         {
             Value = Item.sellPrice(copper: 50),
             AlmanacPotency = 2,

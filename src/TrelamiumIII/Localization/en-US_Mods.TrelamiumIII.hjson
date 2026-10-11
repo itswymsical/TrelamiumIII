@@ -41,6 +41,15 @@ Items: {
 			'''
 	}
 
+	LiquidWand: {
+		DisplayName: Liquid Wand
+		Tooltip:
+			'''
+			Dev tool. Fills the tile under the cursor with a liquid
+			Right click cycles the liquid, including a brew of the first potion in your inventory
+			'''
+	}
+
 	StructureVoidTileItem: {
 		DisplayName: Structure Void Block
 		Tooltip:
@@ -67,6 +76,11 @@ Items: {
 
 	RockSaltItem: {
 		DisplayName: Rock Salt
+		Tooltip: ""
+	}
+
+	PureSaltItem: {
+		DisplayName: Pure Salt
 		Tooltip: ""
 	}
 
@@ -695,11 +709,6 @@ Items: {
 		Tooltip: ""
 	}
 
-	SaltBlockItem: {
-		DisplayName: Salt Block
-		Tooltip: ""
-	}
-
 	MagnoliaSolutionItem: {
 		DisplayName: Magnolia Solution
 		Tooltip: ""
@@ -1131,6 +1140,7 @@ Tiles: {
 
 	CinnabarTile.MapEntry: Cinnabar
 	RockSaltTile.MapEntry: Rock Salt
+	PureSaltTile.MapEntry: Pure Salt
 	SulfurTile.MapEntry: Sulfur
 	LodestoneTile.MapEntry: Lodestone
 }
@@ -1703,8 +1713,35 @@ ChemicalAccessoryStats: {
 DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
 
 Liquids: {
-	CrudeOilLiquid.MapEntry: Crude Oil
+	CrudeOilLiquid: {
+		MapEntry: Oil
+
+		Conditions: {
+			Crude: Crude Oil
+			Pitch: Pitch
+		}
+	}
+
 	BrineLiquid.MapEntry: Brine
+
+	AcidLiquid: {
+		MapEntry: Acid
+
+		Conditions: {
+			Acid: Acid
+			OilOfVitriol: Oil of Vitriol
+			BlueVitriol: Blue Vitriol
+			GreenVitriol: Green Vitriol
+			SpiritOfSalt: Spirit of Salt
+			AquaFortis: Aqua Fortis
+			AquaRegia: Aqua Regia
+		}
+	}
+
+	BrewLiquid: {
+		MapEntry: Brew
+		Conditions.Muddled: Muddled Brew
+	}
 }
 
 Configs: {

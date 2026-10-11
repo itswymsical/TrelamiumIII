@@ -1,12 +1,22 @@
 ﻿using ModLiquidLib.ModLoader;
 using ModLiquidLib.Utils.Structs;
+using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Core;
+using TrelamiumIII.Core.Liquids;
 using Terraria.GameContent.Liquid;
 
 namespace TrelamiumIII.Content.Liquids;
 
-public class BrineLiquid : ModLiquid
+public class BrineLiquid : ModLiquid, ILiquidSurface
 {
+    /// <summary>Thin salt strands drifting through it.</summary>
+    public LiquidSurface Surface { get; } = new("Brine")
+    {
+        ColorA = new Vector3(0.95f, 0.97f, 1f),
+        ColorB = new Vector3(0.72f, 0.80f, 0.90f),
+        Strength = 0.55f,
+    };
+
     //public override string BlockTexture => "Terraria/Images/Liquid_0";
     //public override string SlopeTexture => "Terraria/Images/Liquid_0";
 
@@ -33,7 +43,7 @@ public class BrineLiquid : ModLiquid
     {
         if (otherLiquid == LiquidID.Water)
         {
-            WorldGen.PlaceTile(tileX, tileY, ModContent.TileType<SaltBlockTile>());
+            WorldGen.PlaceTile(tileX, tileY, ModContent.TileType<PureSaltTile>());
             return false;
         }
         else
@@ -65,57 +75,6 @@ public class BrineLiquid : ModLiquid
         {
             drawData.liquidAlphaMultiplier = 1f;
         }
-    }
-
-    /// <summary>
-    /// Scrolling salt overlay over the vanilla water draw, world-anchored so it's continuous across tiles. Slices straddling
-    /// the noise texture's edge are split, avoiding a SpriteBatch restart for a wrapping sampler.
-    /// </summary>
-    public override void PostDraw(int i, int j, LiquidRenderer.LiquidDrawCache liquidDrawCache, Vector2 drawOffset, bool isBackgroundDraw)
-    {
-        if (isBackgroundDraw || !liquidDrawCache.IsVisible)
-            return;
-
-        Rectangle sr = liquidDrawCache.SourceRectangle;
-        if (sr.Width <= 0 || sr.Height <= 0)
-            return;
-
-        Texture2D noise = Assets.Textures.Noise.Melt_02.Asset.Value;
-        if (noise == null)
-            return;
-
-        Vector2 destPos = new Vector2(i * 16f, j * 16f) - Main.screenPosition + drawOffset + liquidDrawCache.LiquidOffset;
-
-        float t = Main.GlobalTimeWrappedHourly;
-        int scrollX = (int)(t * 6f);
-        int scrollY = -(int)(t * 3f);
-        int worldU = i * 16 + (int)liquidDrawCache.LiquidOffset.X + scrollX;
-        int worldV = j * 16 + (int)liquidDrawCache.LiquidOffset.Y + scrollY;
-        int srcU = ((worldU % noise.Width) + noise.Width) % noise.Width;
-        int srcV = ((worldV % noise.Height) + noise.Height) % noise.Height;
-
-        Color light = Lighting.GetColor(i, j);
-        Color salt = new(
-            (byte)(220 * light.R / 255),
-            (byte)(225 * light.G / 255),
-            (byte)(235 * light.B / 255));
-        salt *= 0.18f * liquidDrawCache.Opacity;
-
-        DrawWrapped(Main.spriteBatch, noise, destPos, srcU, srcV, sr.Width, sr.Height, salt);
-    }
-
-    private static void DrawWrapped(SpriteBatch sb, Texture2D tex, Vector2 destPos, int srcU, int srcV, int w, int h, Color color)
-    {
-        int firstW = Math.Min(w, tex.Width - srcU);
-        int firstH = Math.Min(h, tex.Height - srcV);
-
-        sb.Draw(tex, destPos, new Rectangle(srcU, srcV, firstW, firstH), color);
-        if (firstW < w)
-            sb.Draw(tex, destPos + new Vector2(firstW, 0f), new Rectangle(0, srcV, w - firstW, firstH), color);
-        if (firstH < h)
-            sb.Draw(tex, destPos + new Vector2(0f, firstH), new Rectangle(srcU, 0, firstW, h - firstH), color);
-        if (firstW < w && firstH < h)
-            sb.Draw(tex, destPos + new Vector2(firstW, firstH), new Rectangle(0, 0, w - firstW, h - firstH), color);
     }
 }
 
