@@ -8,14 +8,6 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Content.Jobs;
 
-/// <summary>The task sets of <see cref="CrossingOver"/>, in the order they run.</summary>
-public enum CrossingOverTask
-{
-    EnterIngress = 0,
-    DefeatWarden = 1,
-    FindLibrary = 2
-}
-
 /// <summary>
 ///     The Dryad's first job, and the spine of the Ingress arc: into Ingress, past the Wooden Warden, and on to the
 ///     Library of Reverie. Offered a day after she moves in (<see cref="DryadArrivalSystem.Settled"/>). Taking it

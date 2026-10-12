@@ -1,5 +1,4 @@
-﻿using TrelamiumIII.Core.Items.Components;
-using TrelamiumIII.Core.Tiles;
+﻿using TrelamiumIII.Core.Tiles;
 
 namespace TrelamiumIII.Content.Ingress;
 

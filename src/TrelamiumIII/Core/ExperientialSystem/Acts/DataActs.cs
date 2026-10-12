@@ -1,88 +1,66 @@
+using System.Collections.Generic;
 using TrelamiumIII.Core.Events;
 
 namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 
 /// <summary>
-/// Ready-made acts for families that differ only by data, handed out by an <see cref="IActProvider"/>.
-///
-/// <para>
-/// Write a subclass when an act has logic of its own. Use one of these when it does not - fourteen ore
-/// acts that differ by one tile id do not need fourteen files, and a table of them is far easier to read
-/// as a progression than the same thing spread across a folder.
-/// </para>
+/// An act defined by data, handed out by an <see cref="IActProvider"/>. Matches events of one type whose content id
+/// is in <see cref="Ids"/> (which are also its group members), or passes <see cref="Test"/> when that is set.
 /// </summary>
-public abstract class DataAct : SetAct
+/// <remarks><paramref name="thresholds"/> is copied, so the registry sorting a malformed ladder never edits a shared curve.</remarks>
+public sealed class DataAct(string id, ActCategory category, GameEventType listens, int[] thresholds) : Act
 {
-    private readonly int[] _thresholds;
+    private readonly int[] ladder = (int[])thresholds.Clone();
 
-    protected DataAct(string id, ActCategory category, int[] thresholds, bool hardmodeContent)
+    private HashSet<int>? lookup;
+
+    public override string ID { get; } = id;
+
+    public override ActCategory Category { get; } = category;
+
+    public override int[] Thresholds => ladder;
+
+    public int[] Ids { get; init; } = [];
+
+    /// <summary>Matches content ids by logic instead of <see cref="Ids"/>. Such an act has no group members.</summary>
+    public Func<int, bool>? Test { get; init; }
+
+    public bool Hardmode { get; init; }
+
+    /// <summary>Replaces the default <see cref="Act.ExpMultiplier"/> when set.</summary>
+    public float? Multiplier { get; init; }
+
+    /// <summary>Raw events per action, read per event so it may depend on TileObjectData. Null is 1.</summary>
+    public Func<int>? Events { get; init; }
+
+    public override bool IsHardmodeContent => Hardmode;
+
+    public override float ExpMultiplier => Multiplier ?? base.ExpMultiplier;
+
+    public override int EventsPerAction => Events?.Invoke() ?? 1;
+
+    public override GameEventType? ListensFor => listens;
+
+    public override int[] Members => Test is null ? Ids : [];
+
+    public override int MemberFor(in GameEvent evt) => Test is null ? IdOf(evt) : -1;
+
+    public override bool Matches(in GameEvent evt)
     {
-        ID = id;
-        Category = category;
-        IsHardmodeContent = hardmodeContent;
+        if (evt.Type != listens)
+            return false;
 
-        // Curves in ActCurves are shared by many acts, and the registry sorts a malformed ladder in
-        // place. Copy so one bad act can never rewrite the curve every other act is using.
-        _thresholds = (int[])thresholds.Clone();
+        int content = IdOf(evt);
+
+        return Test is { } test
+            ? content >= 0 && test(content)
+            : (lookup ??= [.. Ids]).Contains(content);
     }
 
-    public override string ID { get; }
-
-    public override ActCategory Category { get; }
-
-    public override bool IsHardmodeContent { get; }
-
-    public override int[] Thresholds => _thresholds;
-}
-
-/// <summary>An act advanced by breaking any tile in a set.</summary>
-public sealed class TileBreakDataAct(
-    string id, int[] tiles, int[] thresholds,
-    ActCategory category = ActCategory.Obstruction, bool hardmodeContent = false)
-    : DataAct(id, category, thresholds, hardmodeContent)
-{
-    protected override int[] Ids => tiles;
-
-    protected override GameEventType Listens => GameEventType.TileBreak;
-
-    protected override int IdOf(in GameEvent evt) => evt.TileType ?? -1;
-}
-
-/// <summary>An act advanced by placing any tile in a set.</summary>
-public sealed class TilePlaceDataAct(
-    string id, int[] tiles, int[] thresholds,
-    ActCategory category = ActCategory.Building, bool hardmodeContent = false)
-    : DataAct(id, category, thresholds, hardmodeContent)
-{
-    protected override int[] Ids => tiles;
-
-    protected override GameEventType Listens => GameEventType.TilePlace;
-
-    protected override int IdOf(in GameEvent evt) => evt.TileType ?? -1;
-}
-
-/// <summary>An act advanced by killing any NPC in a set.</summary>
-public sealed class NpcKillDataAct(
-    string id, int[] npcTypes, int[] thresholds,
-    ActCategory category = ActCategory.Combat, bool hardmodeContent = false)
-    : DataAct(id, category, thresholds, hardmodeContent)
-{
-    protected override int[] Ids => npcTypes;
-
-    protected override GameEventType Listens => GameEventType.NPCKill;
-
-    protected override int IdOf(in GameEvent evt) => evt.NPCType ?? -1;
-}
-
-/// <summary>An act advanced by crafting any item in a set. Counts stack size, so one smelt of 20 bars counts 20.</summary>
-public sealed class ItemCraftDataAct(
-    string id, int[] itemTypes, int[] thresholds,
-    ActCategory category = ActCategory.Crafting, bool hardmodeContent = false)
-    : DataAct(id, category, thresholds, hardmodeContent)
-{
-    protected override int[] Ids => itemTypes;
-
-    protected override GameEventType Listens => GameEventType.ItemCraft;
-
-    protected override int IdOf(in GameEvent evt) => evt.ItemType ?? -1;
+    private int IdOf(in GameEvent evt) => listens switch
+    {
+        GameEventType.TileBreak or GameEventType.TilePlace or GameEventType.TileInteract => evt.TileType ?? -1,
+        GameEventType.NPCKill or GameEventType.NPCHit or GameEventType.NPCChat => evt.NPCType ?? -1,
+        _ => evt.ItemType ?? -1
+    };
 }

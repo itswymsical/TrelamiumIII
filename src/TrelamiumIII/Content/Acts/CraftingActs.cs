@@ -1,21 +1,14 @@
+using System.Collections.Generic;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.ExperientialSystem.Acts;
 
 namespace TrelamiumIII.Content.Acts;
 
-public sealed class BlacksmithAct : ItemCraftAct
+internal sealed class CraftingActs : IActProvider
 {
-    public override string ID => "act.bars";
-    public override ActCategory Category => ActCategory.Crafting;
-    public override int[] Thresholds => ActCurves.Craft;
-
-    protected override int[] Ids => ActSets.Bars;
-}
-
-public sealed class BotanistAct : TilePlaceAct
-{
-    public override string ID => "act.planting";
-    public override ActCategory Category => ActCategory.Building;
-    public override int[] Thresholds => ActCurves.Deliberate;
-
-    protected override int[] Ids => ActSets.HerbTiles;
+    public IEnumerable<Act> Provide() =>
+    [
+        new DataAct("act.bars", ActCategory.Crafting, GameEventType.ItemCraft, ActCurves.Craft) { Ids = ActSets.Bars },
+        new DataAct("act.planting", ActCategory.Building, GameEventType.TilePlace, ActCurves.Deliberate) { Ids = ActSets.HerbTiles },
+    ];
 }

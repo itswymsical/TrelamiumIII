@@ -1,33 +1,19 @@
+using System.Collections.Generic;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.ExperientialSystem.Acts;
 
 namespace TrelamiumIII.Content.Acts;
 
-/// <summary>
-/// Killing families of enemies. Payout scales with how many listed species the player has met, on top of the
-/// per-kill Exp the combat model already pays.
-/// </summary>
-public sealed class SlimeAct : NpcKillAct
+/// <summary>Killing families of enemies, scaled by species met on top of per-kill combat Exp.</summary>
+internal sealed class CombatActs : IActProvider
 {
-    public override string ID => "act.slimes";
-    public override ActCategory Category => ActCategory.Combat;
-    public override int[] Thresholds => ActCurves.Combat;
+    public IEnumerable<Act> Provide() =>
+    [
+        Kill("act.slimes", ActSets.Slimes),
+        Kill("act.undead", ActSets.Undead),
+        Kill("act.eyeballs", ActSets.Eyes),
+    ];
 
-    protected override int[] Ids => ActSets.Slimes;
-}
-
-public sealed class UndeadAct : NpcKillAct
-{
-    public override string ID => "act.undead";
-    public override ActCategory Category => ActCategory.Combat;
-    public override int[] Thresholds => ActCurves.Combat;
-
-    protected override int[] Ids => ActSets.Undead;
-}
-
-public sealed class EyeAct : NpcKillAct
-{
-    public override string ID => "act.eyeballs";
-    public override ActCategory Category => ActCategory.Combat;
-    public override int[] Thresholds => ActCurves.Combat;
-    protected override int[] Ids => ActSets.Eyes;
+    private static DataAct Kill(string id, int[] npcs)
+        => new(id, ActCategory.Combat, GameEventType.NPCKill, ActCurves.Combat) { Ids = npcs };
 }

@@ -4,308 +4,203 @@ using TrelamiumIII.Core.Jobs;
 
 namespace TrelamiumIII.Common.Commands;
 
-public static class JobCommandHelper
+/// <summary>Debug control over the local player's jobs and the story flags their unlock conditions read.</summary>
+public class JobCommand : ModCommand
 {
-    public static int TryParseJobIdentifier(string identifier)
+    public override string Command => "job";
+
+    public override CommandType Type => CommandType.Chat | CommandType.World;
+
+    public override string Usage =>
+        "/job <unlock|lock|start|reset|complete> <id or name> | /job list [unlocked|active|completed|locked] | /job flag <set|clear|list> [name]";
+
+    public override string Description => "Unlocks, locks, starts, resets, completes or lists jobs, and raises or lowers job flags";
+
+    public override void Action(CommandCaller caller, string input, string[] args)
     {
-        if (int.TryParse(identifier, out var JobId))
-            return JobId;
+        string verb = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
+        JobPlayer jobs = caller.Player.GetModPlayer<JobPlayer>();
+
+        switch (verb)
+        {
+            case "list":
+                List(caller, jobs, args.Length > 1 ? args[1].ToLowerInvariant() : "all");
+                return;
+
+            case "flag":
+                Flag(caller, jobs, args);
+                return;
+
+            case "unlock" or "lock" or "start" or "reset" or "complete":
+                break;
+
+            default:
+                caller.Reply("Usage: " + Usage, Color.Red);
+                return;
+        }
+
+        if (args.Length < 2)
+        {
+            caller.Reply($"Usage: /job {verb} <id or name>", Color.Red);
+            return;
+        }
+
+        int id = ParseJobId(args[1]);
+
+        if (id == -1)
+        {
+            caller.Reply($"Job '{args[1]}' not found", Color.Red);
+            return;
+        }
+
+        if (!EventSystem.IsJobRegistered(id))
+        {
+            caller.Reply($"Job ID {id} does not exist", Color.Red);
+            return;
+        }
+
+        Job job = jobs.GetOrCreateJob(id);
+
+        switch (verb)
+        {
+            case "unlock":
+                jobs.UnlockJob(id);
+                caller.Reply($"Unlocked: {job.Name}", Color.Green);
+                break;
+
+            case "lock":
+                jobs.LockJob(id);
+                caller.Reply($"Locked: {job.Name}", Color.Green);
+                break;
+
+            case "start":
+                if (job.State != JobState.Available)
+                {
+                    caller.Reply($"Job '{job.Name}' is locked. Use /job unlock first", Color.Yellow);
+                    break;
+                }
+
+                jobs.StartJob(id);
+                caller.Reply($"Started: {job.Name}", Color.Green);
+                break;
+
+            case "reset":
+                job.Reset();
+                caller.Reply($"Reset: {job.Name}", Color.Green);
+                break;
+
+            case "complete":
+                Complete(caller, jobs, job, id);
+                break;
+        }
+    }
+
+    /// <summary>A numeric id, or a <see cref="JobID" /> field name (case-insensitive); -1 when neither matches.</summary>
+    private static int ParseJobId(string identifier)
+    {
+        if (int.TryParse(identifier, out int id))
+            return id;
 
         var field = typeof(JobID).GetFields()
             .FirstOrDefault(f => string.Equals(f.Name, identifier, StringComparison.OrdinalIgnoreCase));
 
-        return field != null ? (int)field.GetValue(null) : -1;
+        return field != null ? (int)field.GetValue(null)! : -1;
     }
 
-    /// <summary>This player's instance of a job, or <see langword="null"/> if no such job is registered.</summary>
-    public static Job GetOrCreateJob(int jobId, Player player)
-        => EventSystem.IsJobRegistered(jobId) ? player.GetModPlayer<JobPlayer>().GetOrCreateJob(jobId) : null;
-}
-
-public class UnlockJobCommand : ModCommand
-{
-    public override string Command => "unlockj";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/unlockj <JobID or name>";
-    public override string Description => "Unlocks the specified Job";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
+    /// <summary>Starts the job if needed, since <see cref="JobPlayer.CompleteJob" /> refuses one that hasn't started.</summary>
+    private static void Complete(CommandCaller caller, JobPlayer jobs, Job job, int id)
     {
-        if (args.Length < 1)
-        {
-            caller.Reply("Usage: " + Usage, Color.Red);
-            return;
-        }
+        if (job.State == JobState.Available)
+            jobs.StartJob(id);
 
-        var JobId = JobCommandHelper.TryParseJobIdentifier(args[0]);
-        if (JobId == -1)
-        {
-            caller.Reply($"Job '{args[0]}' not found", Color.Red);
-            return;
-        }
-
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, caller.Player);
-        if (Job == null)
-        {
-            caller.Reply($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        caller.Player.GetModPlayer<JobPlayer>().UnlockJob(JobId);
-
-        caller.Reply($"Unlocked: {Job.Name}", Color.Green);
-    }
-}
-
-public class LockJobCommand : ModCommand
-{
-    public override string Command => "lockj";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/lockj <JobID or name>";
-    public override string Description => "Locks the specified Job";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
-    {
-        if (args.Length < 1)
-        {
-            caller.Reply("Usage: " + Usage, Color.Red);
-            return;
-        }
-
-        var JobId = JobCommandHelper.TryParseJobIdentifier(args[0]);
-        if (JobId == -1)
-        {
-            caller.Reply($"Job '{args[0]}' not found", Color.Red);
-            return;
-        }
-
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, caller.Player);
-        if (Job == null)
-        {
-            caller.Reply($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        caller.Player.GetModPlayer<JobPlayer>().LockJob(JobId);
-
-        caller.Reply($"Locked: {Job.Name}", Color.Green);
-    }
-}
-
-public class StartJobCommand : ModCommand
-{
-    public override string Command => "startj";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/startj <JobID or name>";
-    public override string Description => "Starts the specified Job";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
-    {
-        if (args.Length < 1)
-        {
-            caller.Reply("Usage: " + Usage, Color.Red);
-            return;
-        }
-
-        var JobId = JobCommandHelper.TryParseJobIdentifier(args[0]);
-        if (JobId == -1)
-        {
-            caller.Reply($"Job '{args[0]}' not found", Color.Red);
-            return;
-        }
-
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, caller.Player);
-        if (Job == null)
-        {
-            caller.Reply($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        if (Job.State != JobState.Available)
-        {
-            caller.Reply($"Job '{Job.Name}' is locked. Use /unlockj first", Color.Yellow);
-            return;
-        }
-
-        caller.Player.GetModPlayer<JobPlayer>().StartJob(JobId);
-
-        caller.Reply($"Started: {Job.Name}", Color.Green);
-    }
-}
-
-public class ResetJobCommand : ModCommand
-{
-    public override string Command => "resetj";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/resetj <JobID or name>";
-    public override string Description => "Resets the specified Job";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
-    {
-        if (args.Length < 1)
-        {
-            caller.Reply("Usage: " + Usage, Color.Red);
-            return;
-        }
-
-        var JobId = JobCommandHelper.TryParseJobIdentifier(args[0]);
-        if (JobId == -1)
-        {
-            caller.Reply($"Job '{args[0]}' not found", Color.Red);
-            return;
-        }
-
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, caller.Player);
-        if (Job == null)
-        {
-            caller.Reply($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        Job.Reset();
-        caller.Reply($"Reset: {Job.Name}", Color.Green);
-    }
-}
-
-public class CompleteJobCommand : ModCommand
-{
-    public override string Command => "completej";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/completej <JobID or name>";
-    public override string Description => "Completes the specified Job";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
-    {
-        if (args.Length < 1)
-        {
-            caller.Reply("Usage: " + Usage, Color.Red);
-            return;
-        }
-
-        var JobId = JobCommandHelper.TryParseJobIdentifier(args[0]);
-        if (JobId == -1)
-        {
-            caller.Reply($"Job '{args[0]}' not found", Color.Red);
-            return;
-        }
-
-        var Job = JobCommandHelper.GetOrCreateJob(JobId, caller.Player);
-        if (Job == null)
-        {
-            caller.Reply($"Job ID {JobId} does not exist", Color.Red);
-            return;
-        }
-
-        // Complete() refuses a job that hasn't started, so start it first.
-        if (Job.State == JobState.Available)
-            caller.Player.GetModPlayer<JobPlayer>().StartJob(JobId);
-
-        foreach (var set in Job.TaskList)
+        foreach (var set in job.TaskList)
         {
             foreach (var task in set.Task)
                 task.ForceComplete();
         }
 
-        Job.CurrentTaskSet = Job.TaskList.Count - 1;
+        job.CurrentTaskSet = job.TaskList.Count - 1;
 
-        if (caller.Player.GetModPlayer<JobPlayer>().CompleteJob(JobId))
-            caller.Reply($"Completed: {Job.Name}", Color.Green);
+        if (jobs.CompleteJob(id))
+            caller.Reply($"Completed: {job.Name}", Color.Green);
         else
-            caller.Reply($"Could not complete '{Job.Name}' (state: {Job.State})", Color.Yellow);
+            caller.Reply($"Could not complete '{job.Name}' (state: {job.State})", Color.Yellow);
     }
-}
 
-public class ListJobsCommand : ModCommand
-{
-    public override string Command => "listj";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/listj";
-    public override string Description => "Lists available Jobs";
-
-    public override void Action(CommandCaller caller, string input, string[] args)
+    private static void List(CommandCaller caller, JobPlayer jobs, string filter)
     {
-        var filter = args.Length > 0 ? args[0].ToLower() : "all";
-
-        var jobPlayer = caller.Player.GetModPlayer<JobPlayer>();
         caller.Reply("# All Jobs: ", Color.CornflowerBlue);
 
-        // Materialise every registered job so filters like "locked" can match jobs this player never touched.
-        foreach (var registered in EventSystem.RegisteredJobIds.ToList())
-            jobPlayer.GetOrCreateJob(registered);
+        // Materialised so a filter like "locked" also matches jobs this player never touched.
+        foreach (int registered in EventSystem.RegisteredJobIds.ToList())
+            jobs.GetOrCreateJob(registered);
 
-        var allJobs = jobPlayer.GetAllJobs();
+        var all = jobs.GetAllJobs();
 
-        var filteredJobs = filter switch
+        var filtered = filter switch
         {
-            "unlocked" => allJobs.Where(j => j.State == JobState.Available),
-            "completed" => allJobs.Where(j => j.State == JobState.Completed),
-            "locked" => allJobs.Where(j => j.State == JobState.Locked),
-            "active" => allJobs.Where(j => j.State == JobState.Active),
-            _ => allJobs
+            "unlocked" => all.Where(j => j.State == JobState.Available),
+            "completed" => all.Where(j => j.State == JobState.Completed),
+            "locked" => all.Where(j => j.State == JobState.Locked),
+            "active" => all.Where(j => j.State == JobState.Active),
+            _ => all
         };
 
-        if (filteredJobs.Any())
-        {
-            foreach (var job in filteredJobs)
-            {
-                var status = job.State switch
-                {
-                    JobState.Locked => " - Locked",
-                    JobState.Completed => " - Completed",
-                    JobState.Active => " - Active",
-                    _ => " - Available"
-                };
-                caller.Reply($"  {status} {job.ID}: {job.Name}", Color.White);
-            }
-        }
-        else
+        if (!filtered.Any())
         {
             caller.Reply($"  No Jobs found (filter: {filter})", Color.Gray);
+            return;
+        }
+
+        foreach (var job in filtered)
+        {
+            string status = job.State switch
+            {
+                JobState.Locked => " - Locked",
+                JobState.Completed => " - Completed",
+                JobState.Active => " - Active",
+                _ => " - Available"
+            };
+
+            caller.Reply($"  {status} {job.ID}: {job.Name}", Color.White);
         }
     }
-}
-public class JobFlagCommand : ModCommand
-{
-    public override string Command => "jobflag";
-    public override CommandType Type => CommandType.Chat | CommandType.World;
-    public override string Usage => "/jobflag <set|clear|list> [name]";
-    public override string Description => "Raises, lowers or lists the story flags job unlock conditions read";
 
-    public override void Action(CommandCaller caller, string input, string[] args)
+    /// <summary><c>/job flag set|clear name</c>, or <c>/job flag [list]</c>.</summary>
+    private static void Flag(CommandCaller caller, JobPlayer jobs, string[] args)
     {
-        var jobPlayer = caller.Player.GetModPlayer<JobPlayer>();
-        var action = args.Length > 0 ? args[0].ToLower() : "list";
+        string action = args.Length > 1 ? args[1].ToLowerInvariant() : "list";
 
         if (action == "list")
         {
-            if (jobPlayer.Flags.Count == 0)
+            if (jobs.Flags.Count == 0)
                 caller.Reply("No flags raised", Color.Gray);
             else
-                caller.Reply($"Flags: {string.Join(", ", jobPlayer.Flags)}", Color.CornflowerBlue);
+                caller.Reply($"Flags: {string.Join(", ", jobs.Flags)}", Color.CornflowerBlue);
 
             return;
         }
 
-        if (args.Length < 2)
+        if (args.Length < 3)
         {
-            caller.Reply("Usage: " + Usage, Color.Red);
+            caller.Reply("Usage: /job flag <set|clear|list> [name]", Color.Red);
             return;
         }
 
-        var flag = args[1];
+        string flag = args[2];
 
         switch (action)
         {
             case "set":
-                caller.Reply(jobPlayer.SetFlag(flag) ? $"Raised '{flag}'" : $"'{flag}' was already up", Color.Green);
+                caller.Reply(jobs.SetFlag(flag) ? $"Raised '{flag}'" : $"'{flag}' was already up", Color.Green);
                 break;
 
             case "clear":
-                caller.Reply(jobPlayer.ClearFlag(flag) ? $"Lowered '{flag}'" : $"'{flag}' was not up", Color.Green);
+                caller.Reply(jobs.ClearFlag(flag) ? $"Lowered '{flag}'" : $"'{flag}' was not up", Color.Green);
                 break;
 
             default:
-                caller.Reply("Usage: " + Usage, Color.Red);
+                caller.Reply("Usage: /job flag <set|clear|list> [name]", Color.Red);
                 break;
         }
     }

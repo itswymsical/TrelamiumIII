@@ -132,29 +132,29 @@ public partial class ChemistryRecipeSystem
 
         // --- Gas Canisters ---
         // Vilespore
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactVilesporeCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.ContactVilespore,
             new RecipeVariant(ComponentMatcher.Of(ItemID.VileMushroom, 2),
             ComponentMatcher.Of(ItemID.Deathweed, 1),
             ComponentMatcher.Of(SoluteID.Niter, 1)));
 
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<TimedVilesporeCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.TimedVilespore,
             new RecipeVariant(ComponentMatcher.Of(ItemID.VileMushroom, 2),
             ComponentMatcher.Of(ItemID.Deathweed, 1),
             ComponentMatcher.Of(SoluteID.Pitch, 1)));
 
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactVilesporeCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.ContactVilespore,
             new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<VilesporeFlaskItem>(), 1)));
 
         // Hyperborean
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactHyperboreanCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.ContactHyperborean,
             new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
             ComponentMatcher.Of(SoluteID.Niter, 1)));
 
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<TimedHyperboreanCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.TimedHyperborean,
             new RecipeVariant(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
             ComponentMatcher.Of(SoluteID.Pitch, 1)));
 
-        AlchemyRecipes.CreateRecipe(canister, ModContent.ItemType<ContactHyperboreanCanister>(),
+        AlchemyRecipes.CreateRecipe(canister, GasCanisterAmmo.ContactHyperborean,
             new RecipeVariant(ComponentMatcher.Of(ModContent.ItemType<ArcticFlaskItem>(), 1)));
     }
 

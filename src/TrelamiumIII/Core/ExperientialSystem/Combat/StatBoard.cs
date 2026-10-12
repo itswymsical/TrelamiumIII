@@ -36,20 +36,18 @@ public readonly record struct NpcStatBoard(int MaxLife, int ContactDamage, int D
 ///
 /// <para>
 /// <c>menace = secondsToKillNpc / secondsToDie</c>. Above 1 the NPC is out-pacing the player; below 1
-/// the player is out-pacing the NPC. That single ratio replaces the old
-/// "derive an absolute level 1-100 from a stat composite, then compress it back toward the player"
-/// pair of steps, which existed only to approximate this and needed a hand-anchored piecewise table to do it.
+/// the player is out-pacing the NPC.
 /// </para>
 ///
 /// <para>
 /// Because it is a ratio, it absorbs the things that used to need special cases. Expert and Master inflate
 /// NPC health and damage, which raises menace on its own. Better gear lowers it on its own. A boss is not
-/// a special category, it is just a very high menace - so the dedicated boss XP curve and the boss level
+/// a special category, it is just a very high menace, so the dedicated boss XP curve and the boss level
 /// compression both stop being necessary.
 /// </para>
 ///
 /// <para>
-/// It is an estimate, and honest about it: contact damage stands in for a boss's real projectile threat,
+/// It's an estimate, but honest about it. Contact damage stands in for a boss's projectile threat,
 /// and the offense estimate reads one weapon. Both are documented at their call sites.
 /// </para>
 /// </summary>
@@ -114,7 +112,7 @@ public static class StatBoard
     /// Deliberately shallow. It does not model piercing, homing, multi-hit or true melee, so a build that
     /// leans on those reads weaker than it plays, and <see cref="ExperientialConstants.PlayerDpsFloor"/>
     /// keeps that from bottoming out. Summon weapons get the one correction that would otherwise be badly
-    /// wrong - minion count - because a summoner holding a whip would otherwise read as nearly harmless.
+    /// wrong, minion count, because a summoner holding a whip would otherwise read as nearly harmless.
     /// </para>
     /// </summary>
     private static void ScoreBestWeapon(Player player, out float perHit, out float attacksPerSecond)

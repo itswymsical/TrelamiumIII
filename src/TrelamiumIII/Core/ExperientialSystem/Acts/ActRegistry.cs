@@ -5,25 +5,15 @@ using TrelamiumIII.Core.Events;
 namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 
 /// <summary>
-/// Yields several acts that differ only by data. Reflection finds every <see cref="Act"/> with a
-/// parameterless constructor on its own; a provider is for families - fourteen ore acts that are the
-/// same class with a different tile id - where one class each would be fourteen copies of the same file.
+/// Supplies acts built from data (usually <see cref="DataAct"/>s). Instantiated by reflection; <see cref="Act"/>
+/// subclasses with a parameterless constructor are found without one.
 /// </summary>
 public interface IActProvider
 {
     IEnumerable<Act> Provide();
 }
 
-/// <summary>
-/// Finds every act at load, validates it, and answers "which acts care about this event".
-///
-/// <para>
-/// Acts are bucketed by the event type they listen for. The previous implementation ran
-/// <c>SelectMany().Where().ToList()</c> across every registered act on every broadcast, allocating a list
-/// per tile break - and tile breaks are the single most frequent event in the game. Matching now touches
-/// only the acts that could possibly match and fills a caller-owned buffer.
-/// </para>
-/// </summary>
+/// <summary>Discovers and validates every act at load, and buckets them by <see cref="Act.ListensFor"/> for event matching.</summary>
 public sealed class ActRegistry : ModSystem
 {
     private static readonly Dictionary<string, Act> ById = [];
@@ -70,8 +60,7 @@ public sealed class ActRegistry : ModSystem
         {
             if (type.IsSubclassOf(typeof(Act)))
             {
-                // A family class instantiated by a provider takes constructor arguments; reflection
-                // cannot build it, and the provider will hand it over anyway.
+                // Acts with constructor arguments come from providers.
                 if (type.GetConstructor(Type.EmptyTypes) is null)
                     continue;
 
@@ -153,11 +142,7 @@ public sealed class ActRegistry : ModSystem
         }
     }
 
-    /// <summary>
-    /// Rejects acts that would misbehave silently rather than crash. Progress is compared against
-    /// thresholds by index, so an unsorted ladder makes a later tier unreachable and its Exp unpayable -
-    /// which is a bug you would only ever notice as "that reward never came".
-    /// </summary>
+    /// <summary>Drops acts with no id, a duplicate id or no thresholds; sorts an unsorted ladder; warns on duplicate members.</summary>
     private static bool Validate(Act act)
     {
         if (string.IsNullOrWhiteSpace(act.ID))
@@ -180,8 +165,7 @@ public sealed class ActRegistry : ModSystem
             return false;
         }
 
-        // Sorts act.Ladder, not act.Thresholds: an act that builds its array inline hands back a fresh
-        // one on every read, so sorting that would fix nothing.
+        // Sorts act.Ladder, the snapshot: Thresholds may return a fresh array per read.
         for (int i = 1; i < act.Ladder.Length; i++)
         {
             if (act.Ladder[i] > act.Ladder[i - 1])
@@ -194,14 +178,10 @@ public sealed class ActRegistry : ModSystem
             break;
         }
 
-        // Deliberately does not touch act.EventsPerAction. Reading it here runs during Mod.Load, before
-        // tile object data is populated, so an act that resolves its divisor from TileObjectData would
-        // cache a wrong answer for the session - which is precisely what made one pot count as four.
-        // The tracker clamps the divisor at its point of use instead.
+        // EventsPerAction is not read here: TileObjectData is not populated during Mod.Load.
 
         if (act.Members.Length > 1 && act.Members.Distinct().Count() != act.Members.Length)
         {
-            // Coverage divides by Members.Length, so a duplicate makes full coverage unreachable.
             TrelamiumIII.Instance.Logger.Warn($"Act '{act.ID}' lists a duplicate member; group coverage can never reach 100%.");
         }
 
@@ -217,10 +197,7 @@ public sealed class ActRegistry : ModSystem
     public static IReadOnlyList<Act> InCategory(ActCategory category)
         => ByCategory.TryGetValue(category, out List<Act>? acts) ? acts : [];
 
-    /// <summary>
-    /// Fills <paramref name="into"/> with every act this event advances. The buffer is cleared first and
-    /// is expected to be reused by the caller, so a broadcast allocates nothing.
-    /// </summary>
+    /// <summary>Clears <paramref name="into"/> and fills it with every act this event advances.</summary>
     public static void CollectMatches(in GameEvent evt, List<Act> into)
     {
         into.Clear();

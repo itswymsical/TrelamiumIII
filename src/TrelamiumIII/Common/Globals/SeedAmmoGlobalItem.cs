@@ -3,71 +3,16 @@ using TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
 
 namespace TrelamiumIII.Common.Globals.Items;
 
-/// <summary>
-///     Makes vanilla herb seeds dart-class ammunition, each firing its own projectile and carrying
-///     its own on-crit effect.
-/// </summary>
+/// <summary>Makes vanilla herb seeds dart-class ammunition, with stats and projectile from <see cref="SeedProjectile" />'s table.</summary>
 public sealed class SeedAmmoGlobalItem : GlobalItem
 {
     public const string TOOLTIP_KEY = $"{TrelamiumIII.NAME_PREFIX}Seed Ammo Tooltips";
 
-    /// <summary>Per-seed ammo stats.</summary>
-    /// <remarks>Content lookups are delegates because this table is built at static init, before mod types have ids.</remarks>
-    private readonly record struct SeedAmmo(
-        int Damage,
-        int Crit,
-        Func<int> Projectile,
-        Func<int> FavouriteSoil,
-        string EffectKey);
-
-    /// <summary>
-    ///     The single list of what counts as seed ammunition. Everything else here reads off it, so
-    ///     a seed cannot end up with stats but no tooltip, or a tooltip but no projectile.
-    /// </summary>
-    private static readonly Dictionary<int, SeedAmmo> Seeds = new()
-    {
-        [ItemID.DaybloomSeeds] = new(4, 10,
-            () => ModContent.ProjectileType<DaybloomSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Dirt>(),
-            "Daybloom"),
-
-        [ItemID.BlinkrootSeeds] = new(4, 13,
-            () => ModContent.ProjectileType<BlinkrootSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Dirt>(),
-            "Blinkroot"),
-
-        [ItemID.FireblossomSeeds] = new(5, 9,
-            () => ModContent.ProjectileType<FireblossomSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Ash>(),
-            "Fireblossom"),
-
-        // TODO: peat or snow, once there is a bed for either.
-        [ItemID.ShiverthornSeeds] = new(4, 10,
-            () => ModContent.ProjectileType<ShiverthornSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Mud>(),
-            "Shiverthorn"),
-
-        [ItemID.MoonglowSeeds] = new(4, 11,
-            () => ModContent.ProjectileType<MoonglowSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Mud>(),
-            "Moonglow"),
-
-        [ItemID.DeathweedSeeds] = new(3, 11,
-            () => ModContent.ProjectileType<DeathweedSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Ash>(),
-            "Deathweed"),
-
-        [ItemID.WaterleafSeeds] = new(4, 11,
-            () => ModContent.ProjectileType<WaterleafSeedProjectile>(),
-            () => ModContent.ItemType<SeedBedItem_Sand>(),
-            "Waterleaf"),
-    };
-
-    public override bool AppliesToEntity(Item item, bool lateInstantiation) => Seeds.ContainsKey(item.type);
+    public override bool AppliesToEntity(Item item, bool lateInstantiation) => SeedProjectile.ForSeed(item.type) is not null;
 
     public override void SetDefaults(Item item)
     {
-        if (!Seeds.TryGetValue(item.type, out SeedAmmo seed))
+        if (SeedProjectile.ForSeed(item.type) is not { } projectile)
             return;
 
         item.DamageType = DamageClass.Ranged;
@@ -75,23 +20,22 @@ public sealed class SeedAmmoGlobalItem : GlobalItem
         item.noMelee = true;
         item.shootSpeed = 0.5f;
         item.notAmmo = true;
- 
-        item.damage = seed.Damage;
-        item.crit = seed.Crit;
-        item.shoot = seed.Projectile();
+
+        item.damage = projectile.Info.Damage;
+        item.crit = projectile.Info.Crit;
+        item.shoot = projectile.Type;
     }
 
     public override bool CanShoot(Item item, Player player) => false;
 
     public override void ModifyTooltips(Item item, List<TooltipLine> tooltips)
     {
-        if (!Seeds.TryGetValue(item.type, out SeedAmmo seed))
+        if (SeedProjectile.ForSeed(item.type) is not { } projectile)
             return;
 
-        int soil = seed.FavouriteSoil();
+        int soil = projectile.Info.FavouriteSoil();
 
-        // Soil name comes from the item, so renaming a bed can't leave tooltips stale.
-        string text = Mod.GetLocalizationValue($"SeedAmmo.{seed.EffectKey}")
+        string text = Mod.GetLocalizationValue($"SeedAmmo.{projectile.Info.Herb}")
                       + '\n'
                       + Mod.GetLocalizationValue("SeedAmmo.FavouriteSoil", soil, Lang.GetItemNameValue(soil));
 

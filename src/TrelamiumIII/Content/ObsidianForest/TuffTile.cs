@@ -1,4 +1,4 @@
-using TrelamiumIII.Common.Globals;
+using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.ObsidianForest;
 
@@ -19,7 +19,7 @@ public class TuffTile : ModTile
         Main.tileSolid[Type] = true;
         Main.tileBlockLight[Type] = true;
 
-        this.MergeWith(TileID.Stone, TileID.Obsidian, TileID.Ash, TileID.Silt);
+        this.Merge(TileID.Stone, TileID.Obsidian, TileID.Ash, TileID.Silt);
 
         MineResist = 1.2f;
         DustType = DustID.Stone;

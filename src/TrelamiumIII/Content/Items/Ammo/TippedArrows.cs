@@ -1,12 +1,48 @@
-﻿using Terraria.Audio;
+using Terraria.Audio;
 using Terraria.GameContent;
-using TrelamiumIII.Core;
 
 namespace TrelamiumIII.Content.Items.Ammo;
 
-#region Abstract
-public abstract class TippedArrow : ModItem
+/// <summary>A metal-tipped wooden arrow. One instance per <see cref="Metals" /> row, each paired with a <see cref="TippedArrowProjectile" />.</summary>
+public sealed class TippedArrow : ModItem, ICustomAutoload
 {
+    public readonly record struct Metal(string Name, int Bar, int Damage, float Knockback, float ShootSpeed, int ValueCopper);
+
+    private static readonly Metal[] Metals =
+    [
+        new("Copper", ItemID.CopperBar, 4, 4.4f, 3.2f, 20),
+        new("Tin", ItemID.TinBar, 4, 4.4f, 3.24f, 22),
+        new("Iron", ItemID.IronBar, 5, 6f, 3.72f, 30),
+        new("Lead", ItemID.LeadBar, 5, 7f, 3.74f, 36),
+        new("Silver", ItemID.SilverBar, 6, 7f, 3.65f, 40),
+        new("Tungsten", ItemID.TungstenBar, 7, 9f, 3.88f, 42),
+        new("Gold", ItemID.GoldBar, 8, 8f, 4f, 60),
+        new("Platinum", ItemID.PlatinumBar, 9, 8.9f, 5.74f, 68),
+    ];
+
+    private readonly Metal metal;
+
+    [CloneByReference]
+    private TippedArrowProjectile? projectile;
+
+    public TippedArrow(Metal metal) => this.metal = metal;
+
+    protected override bool CloneNewInstances => true;
+
+    public override string Name => $"{metal.Name}TippedArrow";
+
+    public static void Autoload(Mod mod)
+    {
+        foreach (Metal metal in Metals)
+        {
+            var arrow = new TippedArrow(metal);
+            arrow.projectile = new TippedArrowProjectile(arrow);
+
+            mod.AddContent(arrow);
+            mod.AddContent(arrow.projectile);
+        }
+    }
+
     public override void SetDefaults()
     {
         Item.width = 14;
@@ -15,11 +51,38 @@ public abstract class TippedArrow : ModItem
         Item.maxStack = Item.CommonMaxStack;
         Item.ammo = AmmoID.Arrow;
         Item.consumable = true;
+
+        Item.damage = metal.Damage;
+        Item.knockBack = metal.Knockback;
+        Item.shootSpeed = metal.ShootSpeed;
+        Item.shoot = projectile!.Type;
+        Item.value = Item.sellPrice(copper: metal.ValueCopper);
     }
 
+    public override void AddRecipes()
+    {
+        CreateRecipe(25)
+            .AddIngredient(ItemID.WoodenArrow, 25)
+            .AddIngredient(metal.Bar, 2)
+            .AddTile(TileID.Anvils)
+            .Register();
+    }
 }
-public abstract class TippedArrowProjectile : ModProjectile
+
+/// <summary>A <see cref="TippedArrow" /> in flight, drawn with its item's sprite.</summary>
+public sealed class TippedArrowProjectile : ModProjectile
 {
+    [CloneByReference]
+    private readonly TippedArrow arrow;
+
+    public TippedArrowProjectile(TippedArrow arrow) => this.arrow = arrow;
+
+    protected override bool CloneNewInstances => true;
+
+    public override string Name => arrow.Name + "Projectile";
+
+    public override string Texture => arrow.Texture;
+
     public override void SetDefaults()
     {
         Projectile.width = Projectile.height = 10;
@@ -42,14 +105,13 @@ public abstract class TippedArrowProjectile : ModProjectile
         Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
         if (Projectile.velocity.Y > 16f)
-        {
             Projectile.velocity.Y = 16f;
-        }
     }
 
     public override void OnKill(int timeLeft)
     {
         SoundEngine.PlaySound(SoundID.Dig, Projectile.position);
+
         for (int i = 0; i < 5; i++)
         {
             Dust dust = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height, DustID.t_LivingWood);
@@ -76,245 +138,4 @@ public abstract class TippedArrowProjectile : ModProjectile
 
         return false;
     }
-}
-#endregion
-
-public class CopperTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 4;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 4.4f;
-        Item.shootSpeed = 3.2f;
-
-        Item.shoot = ModContent.ProjectileType<CopperTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 20);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.CopperBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class CopperTippedArrowProjectile : TippedArrowProjectile 
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.CopperTippedArrow.KEY;
-}
-
-public class TinTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 4;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 4.4f;
-        Item.shootSpeed = 3.24f;
-
-        Item.shoot = ModContent.ProjectileType<TinTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 22);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.TinBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class TinTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.TinTippedArrow.KEY;
-}
-
-public class IronTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 5;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 6f;
-        Item.shootSpeed = 3.72f;
-
-        Item.shoot = ModContent.ProjectileType<IronTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 30);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.IronBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class IronTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.IronTippedArrow.KEY;
-}
-
-public class LeadTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 5;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 7f;
-        Item.shootSpeed = 3.74f;
-
-        Item.shoot = ModContent.ProjectileType<LeadTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 36);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.LeadBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class LeadTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.LeadTippedArrow.KEY;
-}
-
-public class SilverTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 6;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 7f;
-        Item.shootSpeed = 3.65f;
-
-        Item.shoot = ModContent.ProjectileType<SilverTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 40);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.SilverBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class SilverTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.SilverTippedArrow.KEY;
-}
-
-public class TungstenTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 7;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 9f;
-        Item.shootSpeed = 3.88f;
-
-        Item.shoot = ModContent.ProjectileType<TungstenTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 42);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.TungstenBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class TungstenTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.TungstenTippedArrow.KEY;
-}
-
-public class GoldTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 8;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 8f;
-        Item.shootSpeed = 4f;
-
-        Item.shoot = ModContent.ProjectileType<GoldTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 60);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.GoldBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class GoldTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.GoldTippedArrow.KEY;
-}
-
-public class PlatinumTippedArrow : TippedArrow
-{
-    public override void SetDefaults()
-    {
-        base.SetDefaults();
-        Item.damage = 9;
-        Item.maxStack = Item.CommonMaxStack;
-
-        Item.knockBack = 8.9f;
-        Item.shootSpeed = 5.74f;
-
-        Item.shoot = ModContent.ProjectileType<PlatinumTippedArrowProjectile>();
-        Item.value = Item.sellPrice(copper: 68);
-    }
-
-    public override void AddRecipes()
-    {
-        CreateRecipe(25)
-        .AddIngredient(ItemID.WoodenArrow, 25)
-        .AddIngredient(ItemID.PlatinumBar, 2)
-        .AddTile(TileID.Anvils)
-        .Register();
-    }
-}
-
-public class PlatinumTippedArrowProjectile : TippedArrowProjectile
-{
-    public override string Texture => AssetReferences.Content.Items.Ammo.PlatinumTippedArrow.KEY;
 }
