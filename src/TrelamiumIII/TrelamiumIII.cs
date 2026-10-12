@@ -1,6 +1,7 @@
 using Terraria.Localization;
 using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.Dialogue;
+using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII;
@@ -10,6 +11,7 @@ public sealed partial class TrelamiumIII : Mod
     public TrelamiumIII()
     {
         MusicAutoloadingEnabled = false; // tml-build handles this with its generators.
+        PlaceholderTextures.Install(this);
     }
     /// <summary>
     ///     The name of this mod.
