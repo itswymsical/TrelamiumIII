@@ -12,9 +12,6 @@ public class TuffBlock : ModItem
 /// <summary>Obsidian Forest stone. Placeholder sprite.</summary>
 public class TuffTile : ModTile
 {
-    public override string Texture => Assets.Textures.FallbackTile.KEY;
-
-    /// <summary>Gem trees re-check their ground whenever they are framed, so tuff has to pass that test too.</summary>
     public override void Load() => On_WorldGen.GemTreeGroundTest += GrowGemTreesOnTuff;
 
     public override void SetStaticDefaults()
