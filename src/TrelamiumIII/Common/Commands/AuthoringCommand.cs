@@ -1,5 +1,5 @@
 using Terraria.ModLoader;
-using TrelamiumIII.Core.Authoring;
+using TrelamiumIII.Core.Books.Authoring;
 
 namespace TrelamiumIII.Common.Commands;
 

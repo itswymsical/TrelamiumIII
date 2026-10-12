@@ -4,8 +4,8 @@ using Terraria.GameContent;
 using Terraria.Localization;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Configs;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Graphics.FbmScreen;
+using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Common.Subworlds;
 
@@ -70,7 +70,7 @@ internal sealed class RealmLoadingScreen(SubworldRealm realm)
         lastDrawSeconds = now;
         elapsed += MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.1f);
 
-        bool debug = DebugConfig.Instance.DebugMode;
+        bool debug = DeveloperConfig.Instance.DebugMode;
         float fade = Math.Clamp(elapsed / FadeInSeconds, 0f, 1f);
         float eased = 1f - MathF.Pow(1f - fade, 3f);
         float ui = Math.Clamp(Main.screenHeight / ReferenceHeight, 0.6f, 2f);
