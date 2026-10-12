@@ -6,7 +6,7 @@ namespace TrelamiumIII.Content.Acts;
 
 /// <summary>
 /// Tile-breaking acts: one per ore plus group acts per ore tier (each ore feeds both), and block families matched by
-/// tile sets. Names live in <c>Localization/ActLang</c>.
+/// tile sets. Names live in <c>Localization/Experiential/Acts</c>.
 /// </summary>
 internal sealed class ObstructionActs : IActProvider
 {

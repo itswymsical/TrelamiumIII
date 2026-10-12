@@ -2,7 +2,7 @@ using TrelamiumIII.Content.Dusts;
 using TrelamiumIII.Core.Tiles;
 
 // Some code structure adapted from Spirit Reforged: https://github.com/GabeHasWon/SpiritReforged/tree/master/Common/TileCommon/PresetTiles/Furniture
-namespace TrelamiumIII.Content.Construction.Spruce;
+namespace TrelamiumIII.Content.Tiles.Construction.Spruce;
 
 /// <summary>Registers the spruce furniture set.</summary>
 public sealed class SpruceFurniture : ICustomAutoload
