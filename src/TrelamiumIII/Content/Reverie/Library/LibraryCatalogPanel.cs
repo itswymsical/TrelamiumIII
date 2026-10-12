@@ -6,7 +6,6 @@ using Terraria.GameInput;
 using Terraria.Localization;
 using Terraria.UI;
 using TrelamiumIII.Core.Dialogue;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.UI.Projected;
 using TrelamiumIII.Core.UI.World;

@@ -2,9 +2,9 @@
 using Terraria.Enums;
 using Terraria.ObjectData;
 
-namespace TrelamiumIII.Content.Construction;
+namespace TrelamiumIII.Content.Tiles.Construction;
 
-public class LargeCopperCrateTile : ModTile
+public class LargeIronCrateTile : ModTile
 {
     public override void SetStaticDefaults()
     {
@@ -23,11 +23,13 @@ public class LargeCopperCrateTile : ModTile
 
         TileObjectData.newTile.AnchorBottom = new AnchorData(AnchorType.SolidTile | AnchorType.SolidWithTop | AnchorType.SolidSide, TileObjectData.newTile.Width, 0);
         TileObjectData.newTile.UsesCustomCanPlace = true;
+        TileObjectData.newTile.LavaDeath = true;
+        TileObjectData.newTile.StyleHorizontal = true;
         TileObjectData.addTile(Type);
         MineResist = 2.5f;
 
-        AddMapEntry(new Color(194, 110, 45));
-        DustType = DustID.Copper;
+        AddMapEntry(new Color(93, 70, 61));
+        DustType = DustID.Iron;
         HitSound = SoundID.NPCHit42;
     }
 }

@@ -1,6 +1,6 @@
 ﻿using TrelamiumIII.Utilities.Extensions;
 
-namespace TrelamiumIII.Content.Construction;
+namespace TrelamiumIII.Content.Tiles.Construction;
 
 public class CopperPipeItem : ModItem
 {

@@ -1,6 +1,6 @@
-namespace TrelamiumIII.Content.Construction;
+﻿namespace TrelamiumIII.Content.Tiles.Construction;
 
-public class SmoothCopperPlatingItem : ModItem
+public class WoodWickerBlockItem : ModItem
 {
     public override void SetDefaults()
     {
@@ -8,8 +8,7 @@ public class SmoothCopperPlatingItem : ModItem
 
         Item.value = Item.sellPrice(copper: 4);
 
-        Item.DefaultToPlaceableTile(ModContent.TileType<CopperPlatingTile>());
-        Item.width = Item.height = 16;
+        Item.DefaultToPlaceableTile(ModContent.TileType<WoodWickerTile>());
 
         Item.rare = ItemRarityID.White;
     }
@@ -18,8 +17,9 @@ public class SmoothCopperPlatingItem : ModItem
         base.AddRecipes();
 
         CreateRecipe(4)
-        .AddIngredient(ItemID.CopperBar)
-        .AddTile(TileID.HeavyWorkBench)
+        .AddIngredient(ItemID.Wood, 4)
+        .AddIngredient(ItemID.Cobweb, 2)
+        .AddTile(TileID.Sawmill)
         .Register();
     }
 }

@@ -51,7 +51,7 @@ public static class StructureEditor
     /// <summary>The configured source tree, else the one under ModSources that holds <c>build.txt</c>.</summary>
     private static string? SourceRoot()
     {
-        AuthoringConfig config = AuthoringConfig.Instance;
+        DeveloperConfig config = DeveloperConfig.Instance;
 
         if (config.HasSourceDirectory && Directory.Exists(config.SourceDirectory))
             return config.SourceDirectory;

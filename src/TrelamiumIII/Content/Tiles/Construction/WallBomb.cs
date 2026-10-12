@@ -3,7 +3,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Content.Construction;
+namespace TrelamiumIII.Content.Tiles.Construction;
 
 public class WallBomb : ModItem
 {
