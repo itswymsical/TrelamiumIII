@@ -157,21 +157,36 @@ public sealed class VineField : ChemicalGasField
 
     protected override float CrawlSpeed(in GasEmitter emitter) => RUN_SPEED * (emitter.Payload?.Stats.BurstSpeedMultiplier ?? 1f);
 
-    private Asset<Texture2D>? noiseTexture;
-
-    public override void Load()
+    /// <summary>Fresh nodes (hot ramp) are green and darkest at the rim; dry ones fade to brown and straw.</summary>
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.Turbulence_05.Asset;
-    }
+        Noise = static () => Assets.Textures.Noise.Turbulence_05.Asset,
+        WorldLight = new Vector3(0.35f),
+        Threshold = 0.16f,
+        NoiseScale = 1.4f,
+        NoiseStrength = 0.18f,
+        Drift = Vector2.Zero,
+        FlowStrength = 0.25f,
+        Bands = 3f,
+        BodyAlpha = 1f,
+        BodyAlphaFloor = 0.9f,
+        Shadow = new Vector3(0.2f, 0.16f, 0.07f),
+        Body = new Vector3(0.33f, 0.28f, 0.12f),
+        Core = new Vector3(0.45f, 0.4f, 0.18f),
+        Outline = new Vector3(0.1f, 0.08f, 0.04f),
+        OutlineAlpha = 1f,
+        Highlight = new Vector3(0.5f, 0.45f, 0.25f),
+        HighlightAlpha = 0.6f,
+        TemperatureBlend = 1f,
+        HotShadow = new Vector3(0.07f, 0.22f, 0.05f),
+        HotBody = new Vector3(0.2f, 0.5f, 0.11f),
+        HotCore = new Vector3(0.36f, 0.68f, 0.17f),
+    };
 
     public override void Unload()
     {
         base.Unload();
 
-        noiseTexture = null;
         lashes.Clear();
     }
 
@@ -527,39 +542,6 @@ public sealed class VineField : ChemicalGasField
         }
 
         spriteBatch.End();
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.35f));
-
-        effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.4f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.18f);
-        effect.Parameters["NoiseDrift"]?.SetValue(Vector2.Zero);
-        effect.Parameters["FlowStrength"]?.SetValue(0.25f);
-
-        effect.Parameters["Bands"]?.SetValue(3f);
-        effect.Parameters["BodyAlpha"]?.SetValue(1f);
-        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.9f);
-        effect.Parameters["OutlineAlpha"]?.SetValue(1f);
-        effect.Parameters["HighlightAlpha"]?.SetValue(0.6f);
-
-        // Fresh: green, darkest at the rim.
-        effect.Parameters["TemperatureBlend"]?.SetValue(1f);
-        effect.Parameters["HotShadowColor"]?.SetValue(new Vector3(0.07f, 0.22f, 0.05f));
-        effect.Parameters["HotBodyColor"]?.SetValue(new Vector3(0.2f, 0.5f, 0.11f));
-        effect.Parameters["HotCoreColor"]?.SetValue(new Vector3(0.36f, 0.68f, 0.17f));
-
-        // Dry: brown and straw.
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.2f, 0.16f, 0.07f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.33f, 0.28f, 0.12f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.45f, 0.4f, 0.18f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.1f, 0.08f, 0.04f));
-        effect.Parameters["HighlightColor"]?.SetValue(new Vector3(0.5f, 0.45f, 0.25f));
     }
 
     #endregion

@@ -98,26 +98,20 @@ public class ThermiteFlaskField : ChemicalGasField
 
     public override ClingBehaviour? ClingBehaviour => Drip;
 
-    private Asset<Texture2D>? noiseTex;
-
     private Asset<Texture2D>? glowTex;
 
     public override void Load()
     {
         base.Load();
 
-        if (Main.dedServ)
-            return;
-
-        noiseTex = Assets.Textures.Noise.Melt_03.Asset;
-        glowTex = Assets.Textures.VFX.RadialGradient.Asset;
+        if (!Main.dedServ)
+            glowTex = Assets.Textures.VFX.RadialGradient.Asset;
     }
 
     public override void Unload()
     {
         base.Unload();
 
-        noiseTex = null;
         glowTex = null;
     }
 
@@ -321,40 +315,32 @@ public class ThermiteFlaskField : ChemicalGasField
         spriteBatch.End();
     }
 
-    protected override void ApplyShaderParameters(Effect effect)
+    /// <summary>Self-lit. Cold nodes are a dark red crust; hot ones ramp to a white core.</summary>
+    protected override GasLook Look { get; } = new()
     {
-        effect.Parameters["uNoiseTex"]?.SetValue(noiseTex?.Value);
-
-        // Self-lit: the composite never darkens it with the room.
-        effect.Parameters["WorldLight"]?.SetValue(Vector3.One);
-
-        effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.05f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
-        effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
-
-        effect.Parameters["Bands"]?.SetValue(3f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.97f);
-        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.85f);
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.95f);
-        effect.Parameters["HighlightAlpha"]?.SetValue(1f);
-
-        // Hot: white core, amber body, orange rim.
-        effect.Parameters["TemperatureBlend"]?.SetValue(1f);
-        effect.Parameters["HotShadowColor"]?.SetValue(new Vector3(1f, 0.42f, 0.05f));
-        effect.Parameters["HotBodyColor"]?.SetValue(new Vector3(1f, 0.72f, 0.16f));
-        effect.Parameters["HotCoreColor"]?.SetValue(new Vector3(1f, 0.96f, 0.74f));
-
-        // Cold: a dark red crust.
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.42f, 0.06f, 0.03f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.78f, 0.17f, 0.04f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(1f, 0.4f, 0.07f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.3f, 0.04f, 0.03f));
-        effect.Parameters["HighlightColor"]?.SetValue(new Vector3(1f, 0.5f, 0.15f));
-    }
+        Noise = static () => Assets.Textures.Noise.Melt_03.Asset,
+        WorldLight = Vector3.One,
+        Threshold = 0.16f,
+        NoiseScale = 1.05f,
+        NoiseStrength = 0.22f,
+        Drift = new Vector2(0f, -0.08f),
+        NoiseStretch = new Vector2(1f, 0.45f),
+        FlowStrength = 0.20f,
+        Bands = 3f,
+        BodyAlpha = 0.97f,
+        BodyAlphaFloor = 0.85f,
+        Shadow = new Vector3(0.42f, 0.06f, 0.03f),
+        Body = new Vector3(0.78f, 0.17f, 0.04f),
+        Core = new Vector3(1f, 0.4f, 0.07f),
+        Outline = new Vector3(0.3f, 0.04f, 0.03f),
+        OutlineAlpha = 0.95f,
+        Highlight = new Vector3(1f, 0.5f, 0.15f),
+        HighlightAlpha = 1f,
+        TemperatureBlend = 1f,
+        HotShadow = new Vector3(1f, 0.42f, 0.05f),
+        HotBody = new Vector3(1f, 0.72f, 0.16f),
+        HotCore = new Vector3(1f, 0.96f, 0.74f),
+    };
 
     /// <summary>Thermite left on a floor keeps burning as a thermal residue.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<ThermalResidueCondition>();

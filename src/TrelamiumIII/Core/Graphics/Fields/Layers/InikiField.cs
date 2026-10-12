@@ -34,8 +34,6 @@ public sealed class InikiField : FieldLayer
 
     protected override float FlowReferenceSpeed => 4f;
 
-    private Asset<Texture2D>? noiseTexture;
-
     private Asset<Texture2D>? glintTexture;
 
     private static Vector2? magnet;
@@ -46,45 +44,35 @@ public sealed class InikiField : FieldLayer
     {
         base.Load();
 
-        if (Main.dedServ)
-            return;
-
-        noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-        glintTexture = Assets.Textures.VFX.Bloom.Asset;
+        if (!Main.dedServ)
+            glintTexture = Assets.Textures.VFX.Bloom.Asset;
     }
 
     public override void Unload()
     {
         base.Unload();
 
-        noiseTexture = null;
         glintTexture = null;
         magnet = null;
     }
 
-    protected override void ApplyShaderParameters(Effect effect)
+    protected override GasLook Look { get; } = new()
     {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.78f));
-
-        effect.Parameters["Threshold"]?.SetValue(InkStyle.MoteThreshold);
-        effect.Parameters["Bands"]?.SetValue(InkStyle.MoteBands);
-        effect.Parameters["BodyAlpha"]?.SetValue(InkStyle.MoteBodyAlpha);
-
-        effect.Parameters["NoiseScale"]?.SetValue(InkStyle.MoteWobbleScale);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.06f);
-        effect.Parameters["NoiseDrift"]?.SetValue(InkStyle.MoteWobbleDrift);
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.10f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(InkStyle.MoteShadowColor);
-        effect.Parameters["BodyColor"]?.SetValue(InkStyle.MoteBodyColor);
-        effect.Parameters["CoreColor"]?.SetValue(InkStyle.MoteCoreColor);
-        effect.Parameters["OutlineColor"]?.SetValue(InkStyle.MoteRimColor);
-        effect.Parameters["OutlineAlpha"]?.SetValue(InkStyle.MoteRimAlpha);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.78f),
+        Threshold = InkStyle.MoteThreshold,
+        NoiseScale = InkStyle.MoteWobbleScale,
+        NoiseStrength = 0.06f,
+        Drift = InkStyle.MoteWobbleDrift,
+        FlowStrength = 0.10f,
+        Bands = InkStyle.MoteBands,
+        BodyAlpha = InkStyle.MoteBodyAlpha,
+        Shadow = InkStyle.MoteShadowColor,
+        Body = InkStyle.MoteBodyColor,
+        Core = InkStyle.MoteCoreColor,
+        Outline = InkStyle.MoteRimColor,
+        OutlineAlpha = InkStyle.MoteRimAlpha,
+    };
 
     protected override void ApplyLighting(ref FieldNode node) { }
 

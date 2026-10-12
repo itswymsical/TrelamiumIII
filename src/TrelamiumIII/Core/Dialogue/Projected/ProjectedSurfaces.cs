@@ -1,3 +1,5 @@
+using TrelamiumIII.Core.UI.Projected;
+
 namespace TrelamiumIII.Core.Dialogue.Projected;
 
 /// <summary>What <see cref="ProjectedSurfaces" /> needs from a box in order to draw its faces.</summary>
@@ -105,7 +107,7 @@ internal sealed class ProjectedSurfaces : IDisposable
 
         device.SetRenderTarget(bubble);
         device.Clear(Color.Transparent);
-        BeginInk(spriteBatch);
+        ProjectedPainter.BeginInk(spriteBatch);
 
         Point used = content.DrawBubble(new PixelCanvas(spriteBatch));
 
@@ -122,7 +124,7 @@ internal sealed class ProjectedSurfaces : IDisposable
         {
             device.SetRenderTarget(choices);
             device.Clear(Color.Transparent);
-            BeginInk(spriteBatch);
+            ProjectedPainter.BeginInk(spriteBatch);
 
             for (int i = 0; i < ChoicesDrawn; i++)
             {
@@ -170,67 +172,6 @@ internal sealed class ProjectedSurfaces : IDisposable
             Color.White);
 
         spriteBatch.End();
-    }
-
-    /// <summary>Coverage at which a glyph pixel counts as ink. Lower fattens the text.</summary>
-    private const float INK_THRESHOLD = 0.42f;
-
-    /// <summary>
-    ///     Point sampling and a coverage threshold, which are the same decision made twice.
-    /// </summary>
-    /// <remarks>
-    ///     Nothing in this surface may carry a partial pixel, because the quad that reads it back
-    ///     magnifies rather than filters: point sampling keeps the shapes' edges exactly where they
-    ///     were placed, and the threshold does the same job for glyphs, which arrive from the font
-    ///     atlas already antialiased and would otherwise contribute their grey fringe as full-size
-    ///     chunky pixels.
-    /// </remarks>
-    internal static void BeginInk(SpriteBatch spriteBatch)
-    {
-        Effect? threshold = Assets.Shaders.GlyphThreshold.Asset.Value;
-
-        threshold?.Parameters["uThreshold"]?.SetValue(INK_THRESHOLD);
-
-        spriteBatch.Begin(
-            SpriteSortMode.Immediate,
-            BlendState.AlphaBlend,
-            SamplerState.PointClamp,
-            DepthStencilState.None,
-            RasterizerState.CullNone,
-            threshold,
-            Matrix.Identity);
-    }
-
-    /// <summary>
-    ///     Point-sampled, unshaded: for sprite art that carries its own colour. The ink batch above
-    ///     returns the vertex colour only, which would flatten an item sprite to a silhouette.
-    /// </summary>
-    internal static void BeginArt(SpriteBatch spriteBatch)
-    {
-        spriteBatch.Begin(
-            SpriteSortMode.Immediate,
-            BlendState.AlphaBlend,
-            SamplerState.PointClamp,
-            DepthStencilState.None,
-            RasterizerState.CullNone,
-            null,
-            Matrix.Identity);
-    }
-
-    /// <summary>
-    ///     Linear-sampled, unshaded: for text drawn at native resolution into a face that is sampled
-    ///     smoothly rather than magnified as chunky pixels.
-    /// </summary>
-    internal static void BeginSmooth(SpriteBatch spriteBatch)
-    {
-        spriteBatch.Begin(
-            SpriteSortMode.Immediate,
-            BlendState.AlphaBlend,
-            SamplerState.LinearClamp,
-            DepthStencilState.None,
-            RasterizerState.CullNone,
-            null,
-            Matrix.Identity);
     }
 
     public void Dispose()

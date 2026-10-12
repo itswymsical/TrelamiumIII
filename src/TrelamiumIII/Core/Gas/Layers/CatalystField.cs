@@ -32,53 +32,28 @@ public class CatalystField : ChemicalGasField
     public override int ReactionChance => 0;
     public override int ReactionDamage => 0;
 
-    private Asset<Texture2D>? noiseTexture;
-
-    public override void Load()
+    /// <summary>Brass, from the Catalyzer Gun's tubing; self-lit, so it reads in the dark.</summary>
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        base.Unload();
-
-        noiseTexture = null;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        // A high floor: the solvent glows, so it should read even in the dark.
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.45f));
-
-        effect.Parameters["Threshold"]?.SetValue(0.13f);
-        effect.Parameters["NoiseScale"]?.SetValue(0.9f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.08f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.05f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.1f);
-        effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.5f));
-
-        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.8f);
-
-        effect.Parameters["Bands"]?.SetValue(7f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.9f);
-
-        // Sampled from the Catalyzer Gun's brass tubing.
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.52f, 0.36f, 0.17f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.80f, 0.52f, 0.20f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.98f, 0.77f, 0.55f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.71f, 0.45f, 0.14f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
-        effect.Parameters["HighlightColor"]?.SetValue(new Vector3(0.98f, 0.87f, 0.75f));
-        effect.Parameters["HighlightAlpha"]?.SetValue(0.8f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.45f),
+        Threshold = 0.13f,
+        NoiseScale = 0.9f,
+        NoiseStrength = 0.08f,
+        Drift = new Vector2(0f, -0.05f),
+        FlowStrength = 0.1f,
+        NoiseStretch = new Vector2(1f, 0.5f),
+        BodyAlphaFloor = 0.8f,
+        Bands = 7f,
+        BodyAlpha = 0.9f,
+        Shadow = new Vector3(0.52f, 0.36f, 0.17f),
+        Body = new Vector3(0.80f, 0.52f, 0.20f),
+        Core = new Vector3(0.98f, 0.77f, 0.55f),
+        Outline = new Vector3(0.71f, 0.45f, 0.14f),
+        OutlineAlpha = 0.85f,
+        Highlight = new Vector3(0.98f, 0.87f, 0.75f),
+        HighlightAlpha = 0.8f,
+    };
 
     protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.30f * node.Alpha, 0.19f * node.Alpha, 0.06f * node.Alpha);

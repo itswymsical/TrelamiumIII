@@ -18,7 +18,7 @@ namespace TrelamiumIII.Core.Dialogue.Projected;
 ///         This is an object in the scene that anchors to an entity (speaker) and grows the dialogue box with text.
 ///     </para>
 /// </remarks>
-public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent, IDisposable
+public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent, IProjectedPanel
 {
     #region Tuning
 
@@ -219,7 +219,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
         box.NextLine();
 
-        ProjectedDialogueSystem.Register(box);
+        ProjectedPanelSystem.Register(box);
 
         return box;
     }
@@ -251,7 +251,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         for (int i = 0; i < box.charIndex; i++)
             box.revealedOn[i] = -(int)GLYPH_FADE_FRAMES - 1;
 
-        ProjectedDialogueSystem.Register(box);
+        ProjectedPanelSystem.Register(box);
 
         return box;
     }
@@ -535,10 +535,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     #region Input
 
     /// <remarks>
-    ///     Only the chat box shuts the whole thing down -- it eats the same keys, and a player typing
-    ///     "1" into it should not be answering an NPC with their first response. While a box is open
-    ///     the chat cannot be opened at all (see <see cref="ProjectedDialogueSystem" />), so Enter is
-    ///     free to be the advance key it wants to be.
+    ///     Ignored while the chat box is open, since it reads the same keys. <see cref="DialogueSystem" /> keeps chat
+    ///     from opening while a box is live, which frees Enter to advance.
     /// </remarks>
     private void UpdateInput()
     {
@@ -1132,8 +1130,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     #region Drawing
 
-    /// <summary>Rebuilds the off-screen faces. Driven by <see cref="ProjectedDialogueSystem" />.</summary>
-    internal void BuildSurfaces()
+    /// <summary>Rebuilds the off-screen faces. Driven by <see cref="ProjectedPanelSystem" />.</summary>
+    public void BuildSurfaces()
     {
         if (current is not null && presence > 0f)
             surfaces.Build(this);
@@ -1141,7 +1139,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     public void DrawInGame(SpriteBatch spriteBatch, Vector2 bottomAnchorPosition)
     {
-        ProjectedQuad? quad = ProjectedDialogueSystem.Quad;
+        ProjectedQuad? quad = ProjectedPanelSystem.Quad;
 
         if (current is null || presence <= 0f || surfaces.Bubble is null || quad is null || !quad.Ready)
             return;

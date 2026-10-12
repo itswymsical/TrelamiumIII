@@ -34,30 +34,25 @@ public sealed class MagnetizerField : FieldLayer
 
     protected override int BaseMaxNodes => 160;
 
-    private Asset<Texture2D>? noiseTexture;
-
     private Vector3 tint = new(0.6f, 0.6f, 0.65f);
 
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        base.Unload();
-        noiseTexture = null;
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.38f),
+        Threshold = 0.3f,
+        NoiseScale = 1.7f,
+        NoiseStrength = 0.2f,
+        Drift = new Vector2(-0.07f, 0.04f),
+        FlowStrength = 0.20f,
+        Bands = 4f,
+        BodyAlpha = 0.62f,
+        OutlineAlpha = 0.8f,
+    };
 
     private static MagnetizerField? Layer => FieldSystem.GetLayer<MagnetizerField>();
 
-    /// <summary>
-    ///     Sets the colour the stream is drawn in. Eased rather than assigned, so sweeping the beam
-    ///     off copper and onto stone is a slide instead of a cut.
-    /// </summary>
+    /// <summary>Eases the stream colour toward <paramref name="colour" />.</summary>
     public static void SetOre(Color colour)
     {
         if (Layer is not { } layer)
@@ -92,9 +87,7 @@ public sealed class MagnetizerField : FieldLayer
 
             Vector2 pull = toHost / distance;
 
-            // Whichever side of the pull the node is already crossing. Derived from its own motion
-            // rather than rolled per node, because a node struct has nowhere to keep a roll, and
-            // deriving it means the curl never fights the velocity it is bending.
+            // Curl toward the side of the pull the node is already crossing.
             float side = Math.Sign(pull.X * node.Velocity.Y - pull.Y * node.Velocity.X);
 
             node.Velocity += pull * PULL + pull.RotatedBy(MathHelper.PiOver2) * (CURL * side);
@@ -108,38 +101,20 @@ public sealed class MagnetizerField : FieldLayer
             return;
         }
 
-        // Cleared first: the base class would otherwise treat a dead host or an expired grip as
-        // something to release, and hand the node its host's momentum a second time.
+        // Cleared so the base update doesn't release the node and add host momentum again.
         node.AnchorHost = null;
         node.AnchorTicks = 0;
 
         base.UpdateNode(ref node, index);
     }
 
+    /// <summary>Ramp derived from the current ore tint.</summary>
     protected override void ApplyShaderParameters(Effect effect)
     {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        Vector3 light = new Vector3(0.38f);
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-        effect.Parameters["Threshold"]?.SetValue(0.3f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.7f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.2f);
-
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.07f, 0.04f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
-
-        effect.Parameters["Bands"]?.SetValue(4f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.62f);
-
         effect.Parameters["ShadowColor"]?.SetValue(tint * 0.3f);
         effect.Parameters["BodyColor"]?.SetValue(tint * 0.72f);
         effect.Parameters["CoreColor"]?.SetValue(Vector3.Lerp(tint, Vector3.One, 0.4f));
         effect.Parameters["OutlineColor"]?.SetValue(Vector3.Lerp(tint, Vector3.One, 0.72f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
     }
 
     protected override void ApplyLighting(ref FieldNode node)

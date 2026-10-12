@@ -34,40 +34,23 @@ public class VilesporeField : ChemicalGasField
 
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
 
-    private Asset<Texture2D> noiseTex;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-        noiseTex = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
-
-
-        Vector3 light = new Vector3(0.24f);
-
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.25f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
-
-        effect.Parameters["Bands"]?.SetValue(8f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.66f, 0.5f, 0.8f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.52f, 0.22f, 0.72f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.2667f, 0.2392f, 0.3569f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.5647f, 0.5059f, 0.7020f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.24f),
+        Threshold = 0.16f,
+        NoiseScale = 1.25f,
+        NoiseStrength = 0.22f,
+        Drift = new Vector2(-0.075f, 0.09f),
+        FlowStrength = 0.14f,
+        Bands = 8f,
+        BodyAlpha = 0.88f,
+        Shadow = new Vector3(0.66f, 0.5f, 0.8f),
+        Body = new Vector3(0.52f, 0.22f, 0.72f),
+        Core = new Vector3(0.2667f, 0.2392f, 0.3569f),
+        Outline = new Vector3(0.5647f, 0.5059f, 0.7020f),
+        OutlineAlpha = 0.8f,
+    };
 
     protected override void ApplyLighting(ref FieldNode node)
     {
