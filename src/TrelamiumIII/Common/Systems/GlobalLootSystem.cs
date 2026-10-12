@@ -4,7 +4,6 @@ namespace TrelamiumIII.Common.Systems;
 
 public class GlobalLootSystem : GlobalNPC
 {
-    public override bool InstancePerEntity => true;
     public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
     {
         base.ModifyNPCLoot(npc, npcLoot);
