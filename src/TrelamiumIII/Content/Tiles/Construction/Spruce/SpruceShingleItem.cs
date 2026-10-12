@@ -1,4 +1,4 @@
-﻿namespace TrelamiumIII.Content.Construction.Spruce;
+﻿namespace TrelamiumIII.Content.Tiles.Construction.Spruce;
 
 public class SpruceShingles : ModItem
 {
