@@ -1,7 +1,27 @@
 using ReLogic.Content;
-using TrelamiumIII.Common.Players;
 
 namespace TrelamiumIII.Common.Systems;
+
+/// <summary>Blocks building inside protected structures, and fades the shield overlay while the local player holds a pick or hammer.</summary>
+public sealed class StructureProtectionPlayer : ModPlayer
+{
+    private const float ShieldFadeSpeed = 0.04f;
+
+    /// <summary>Shield overlay opacity, driven by the local player's held tool.</summary>
+    public static float ShieldOpacity { get; private set; }
+
+    public override void PreUpdate()
+    {
+        if (StructureProtectionSystem.IsProtected((int)(Player.position.X / 16), (int)(Player.position.Y / 16)))
+            Player.noBuilding = true;
+
+        if (Player.whoAmI != Main.myPlayer)
+            return;
+
+        bool holdingTool = Player.HeldItem.pick > 0 || Player.HeldItem.hammer > 0;
+        ShieldOpacity = MathHelper.Clamp(ShieldOpacity + (holdingTool ? ShieldFadeSpeed : -ShieldFadeSpeed), 0f, 1f);
+    }
+}
 
 public class StructureProtectionGlobalTile : GlobalTile
 {
@@ -23,7 +43,7 @@ public class StructureProtectionGlobalTile : GlobalTile
 
     public override void PostDraw(int i, int j, int type, SpriteBatch spriteBatch)
     {
-        if (TrelamiumPlayer.ShieldOpacity <= 0f) return;
+        if (StructureProtectionPlayer.ShieldOpacity <= 0f) return;
         if (!NearAnyProtectedArea(i, j)) return;
         if (!StructureProtectionSystem.IsProtected(i, j)) return;
 
@@ -41,7 +61,7 @@ public class StructureProtectionGlobalTile : GlobalTile
 
         shader.Parameters["uColor"]?.SetValue(new Vector3(0.3f, 0.8f, 1.0f));
         shader.Parameters["uSecondaryColor"]?.SetValue(new Vector3(0.6f, 0.4f, 1.0f));
-        shader.Parameters["uOpacity"]?.SetValue(0.65f * TrelamiumPlayer.ShieldOpacity);
+        shader.Parameters["uOpacity"]?.SetValue(0.65f * StructureProtectionPlayer.ShieldOpacity);
         shader.Parameters["uTime"]?.SetValue(Main.GameUpdateCount * 0.02f);
         shader.Parameters["uScale"]?.SetValue(0.05f);
 
