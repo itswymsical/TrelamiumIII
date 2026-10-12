@@ -175,12 +175,57 @@ public class GatherItemTask(string key, int itemType, int count = 1, bool consum
         .Format(Lang.GetItemNameValue(ItemType), RequiredCount);
 
     /// <summary>Matching items in <paramref name="player"/>'s inventory, capped at the requirement. Equipped items don't count.</summary>
-    public int Held(Player player)
+    public virtual int Held(Player player)
         => ItemType > ItemID.None ? Math.Min(player.CountItem(ItemType, RequiredCount), RequiredCount) : 0;
+
+    /// <summary>Removes the required items from the owner. Called by <see cref="Job.TryHandIn"/> when <see cref="Consumes"/>.</summary>
+    public virtual void Take(JobContext context) => context.Revoke(ItemType, RequiredCount);
 
     public override bool Matches(GameEvent evt) => false;
 
     public override int Poll(JobContext context) => context.IsLocal ? Held(context.Player) - Count : 0;
+}
+
+/// <summary>
+/// Hold <paramref name="count"/> items of any of <paramref name="itemTypes"/>, in any mix. Taken in list order on hand-in.
+/// </summary>
+/// <param name="itemTypes">Resolved on first use: mod item types aren't assigned yet when jobs are registered.</param>
+public class GatherAnyItemTask(string key, Func<IReadOnlyList<int>> itemTypes, int count = 1, bool consume = true)
+    : GatherItemTask(key, ItemID.None, count, consume)
+{
+    private IReadOnlyList<int>? types;
+
+    private IReadOnlyList<int> Types => types ??= itemTypes();
+
+    public override string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}").Value;
+
+    public override int Held(Player player)
+    {
+        var held = 0;
+
+        foreach (var type in Types)
+        {
+            if (held >= RequiredCount)
+                break;
+
+            held += player.CountItem(type, RequiredCount - held);
+        }
+
+        return Math.Min(held, RequiredCount);
+    }
+
+    public override void Take(JobContext context)
+    {
+        var remaining = RequiredCount;
+
+        foreach (var type in Types)
+        {
+            if (remaining <= 0)
+                break;
+
+            remaining -= context.Revoke(type, remaining);
+        }
+    }
 }
 
 /// <summary>

@@ -346,7 +346,7 @@ public abstract class Job
         foreach (var task in set.Task)
         {
             if (task is GatherItemTask { Consumes: true } gather)
-                Context.Revoke(gather.ItemType, gather.RequiredCount);
+                gather.Take(Context);
         }
 
         return UpdateProgress(handInIndex, 1);

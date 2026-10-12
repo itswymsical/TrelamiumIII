@@ -59,7 +59,8 @@ public class SeedBedTile_Mud : SeedBedTile
     public override Color MapColor => new(100, 80, 60);
     public override int SoilDust => DustID.Mud;
 
-    public override HerbType[] PreferredHerbs => [HerbType.Moonglow, HerbType.Waterleaf];
+    // Shiverthorn matches its seed tooltip (SeedAmmoGlobalItem) until a peat or snow bed exists.
+    public override HerbType[] PreferredHerbs => [HerbType.Moonglow, HerbType.Waterleaf, HerbType.Shiverthorn];
 
     public override void SetStaticDefaults()
     {

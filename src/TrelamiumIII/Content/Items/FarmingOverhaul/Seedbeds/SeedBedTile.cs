@@ -13,7 +13,7 @@ public abstract class SeedBedTile : ModTile
     /// <summary>1-in-N chance per attempt to advance a growth stage.</summary>
     public virtual int GrowthChance => 10;
 
-    /// <summary>Herbs that thrive on this soil. Unused until condition-based farming exists.</summary>
+    /// <summary>Herbs that thrive on this soil. Read by Silvian's botany job (PlantInSeedBedTask); growth ignores it so far.</summary>
     public virtual HerbType[] PreferredHerbs => [];
 
     public abstract Color MapColor { get; }

@@ -86,6 +86,10 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Locked)
             return ChatEncounter.Play(SilvianEncounter.JobOfferKey).Projected();
 
+        // The first job's closing line asks about botany lessons; this asks again if that was declined or cut short.
+        if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Completed && silvian.JobStateOf(JobID.BotanyBasics) == JobState.Locked)
+            return ChatEncounter.Play("Silvian.BotanyOffer").Projected();
+
         return ChatEncounter.None;
     }
 
