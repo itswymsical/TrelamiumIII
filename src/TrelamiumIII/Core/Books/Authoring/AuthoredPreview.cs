@@ -3,7 +3,7 @@ using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Layout.Blocks;
 using TrelamiumIII.Core.Books.Text;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>
 ///     Builds real blocks from the authored model for the viewport, with text inline since it isn't in localization yet.

@@ -6,7 +6,7 @@ using Terraria.UI;
 using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Text;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>
 ///     The authoring desk: the real composed page, formatting above, running order beside. The edited block is drawn by the editor

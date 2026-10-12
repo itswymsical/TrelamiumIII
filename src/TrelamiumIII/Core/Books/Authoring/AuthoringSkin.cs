@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using ReLogic.Content;
 using Terraria.ID;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>
 ///     The desk's chrome: Bestiary slot plates (one nine-slice texture, unlike the generic panel pair) and the vanilla toolbar icons.

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Terraria.UI;
-using TrelamiumIII.Core.Dialogue.Projected;
 
 namespace TrelamiumIII.Core.UI.Projected;
 
@@ -15,17 +14,22 @@ internal interface IProjectedPanel : IDisposable
 }
 
 /// <summary>
-///     Rebuilds the faces of every registered <see cref="IProjectedPanel" /> once per frame, and
-///     wraps the quad pass every one of them draws with.
+///     Owns the quad mesh every projected panel shares, rebuilds the faces of every registered
+///     <see cref="IProjectedPanel" /> at <c>CheckMonoliths</c> (where render targets may be swapped), and wraps the quad pass.
 /// </summary>
 public sealed class ProjectedPanelSystem : ModSystem
 {
     private static readonly List<IProjectedPanel> live = [];
 
+    internal static ProjectedQuad? Quad { get; private set; }
+
     public override void Load()
     {
         if (Main.dedServ)
             return;
+
+        Quad = new ProjectedQuad();
+        Quad.Load();
 
         On_Main.CheckMonoliths += BuildFrame;
     }
@@ -38,6 +42,24 @@ public sealed class ProjectedPanelSystem : ModSystem
             panel.Dispose();
 
         live.Clear();
+
+        // Unload may run off the main thread; the quad's effect is a graphics resource.
+        ProjectedQuad? pending = Quad;
+        Quad = null;
+
+        Main.QueueMainThreadAction(() => pending?.Dispose());
+    }
+
+    /// <summary>Whether any registered panel is a <typeparamref name="T" />.</summary>
+    internal static bool AnyLive<T>() where T : IProjectedPanel
+    {
+        foreach (IProjectedPanel panel in live)
+        {
+            if (panel is T)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -100,14 +122,14 @@ public sealed class ProjectedPanelSystem : ModSystem
     }
 
     /// <summary>True when the shared quad exists and can draw.</summary>
-    internal static bool CanDraw => ProjectedDialogueSystem.Quad is { Ready: true };
+    internal static bool CanDraw => Quad is { Ready: true };
 
     /// <summary>
     ///     Runs <paramref name="draw" /> as a quad pass in the middle of an interface layer.
     /// </summary>
     internal static void DrawQuads(SpriteBatch spriteBatch, Action<ProjectedQuad, GraphicsDevice> draw)
     {
-        ProjectedQuad? quad = ProjectedDialogueSystem.Quad;
+        ProjectedQuad? quad = Quad;
 
         if (quad is null || !quad.Ready)
             return;

@@ -1,12 +1,10 @@
-using TrelamiumIII.Core.Dialogue.Projected;
-
 namespace TrelamiumIII.Core.UI.Projected;
 
 /// <summary>
 ///     One off-screen face for a projected panel, sized once and sampled by sub-rectangle.
 /// </summary>
 /// <remarks>
-///     The single-target sibling of <see cref="ProjectedSurfaces" />, which is shaped around a
+///     The single-target sibling of the dialogue box's <c>ProjectedSurfaces</c>, which is shaped around a
 ///     bubble plus a response atlas. A board or a card has one face and lays it out itself, so all
 ///     it needs from here is a target, a build, and the region the build filled.
 /// </remarks>

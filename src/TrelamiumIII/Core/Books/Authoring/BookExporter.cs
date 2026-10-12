@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Text;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>Turns an <see cref="AuthoredBook" /> into its hjson and C# definition. Pure string generation, so it's testable.</summary>
 public static class BookExporter
