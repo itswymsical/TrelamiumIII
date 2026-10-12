@@ -31,26 +31,41 @@ internal sealed class ProjectedSurfaces : IDisposable
     public const int CHOICE_HEIGHT = PanelStyle.CHOICE_PITCH;
     public const int MAX_CHOICES = 4;
 
+    /// <summary>
+    ///     Whole-texel upscale applied before the quad samples the faces linearly. The softening dial:
+    ///     1 is a plain bilinear blur, higher is crisper, and each step costs a bigger copy.
+    /// </summary>
+    /// <remarks>
+    ///     Point sampling a perspective quad gives texels uneven widths -- one column two screen
+    ///     pixels wide, the next one -- which reads as harsh and shimmers as the panel drifts. Blowing
+    ///     each texel up into a solid block first and then filtering means only the seams between
+    ///     blocks blend, over a fraction of a texel, so the chunky pixels survive with soft edges.
+    /// </remarks>
+    public const int PRESCALE = 2;
+
     private readonly Point[] choiceFootprints = new Point[MAX_CHOICES];
 
     private RenderTarget2D? bubble;
     private RenderTarget2D? choices;
 
+    private RenderTarget2D? bubbleScaled;
+    private RenderTarget2D? choicesScaled;
+
     private bool requested;
     private bool disposed;
 
-    /// <summary>The bubble's face, or null until the targets exist.</summary>
-    public Texture2D? Bubble => bubble;
+    /// <summary>The bubble's face, prescaled, or null until the targets exist.</summary>
+    public Texture2D? Bubble => bubbleScaled;
 
-    public Texture2D? Choices => choices;
+    public Texture2D? Choices => choicesScaled;
 
-    /// <summary>The part of <see cref="Bubble" /> the current line fills.</summary>
+    /// <summary>The part of <see cref="Bubble" /> the current line fills, in prescaled pixels.</summary>
     public Rectangle BubbleRegion { get; private set; }
 
     public int ChoicesDrawn { get; private set; }
 
     public Rectangle ChoiceRegion(int index) =>
-        new(0, index * CHOICE_HEIGHT, choiceFootprints[index].X, choiceFootprints[index].Y);
+        new(0, index * CHOICE_HEIGHT * PRESCALE, choiceFootprints[index].X * PRESCALE, choiceFootprints[index].Y * PRESCALE);
 
     /// <summary>Queues target creation. Safe from anywhere; the work happens on the main thread.</summary>
     public void Initialize()
@@ -69,6 +84,9 @@ internal sealed class ProjectedSurfaces : IDisposable
 
             bubble = new RenderTarget2D(device, BUBBLE_WIDTH, BUBBLE_HEIGHT, false, SurfaceFormat.Color, DepthFormat.None);
             choices = new RenderTarget2D(device, CHOICE_WIDTH, CHOICE_HEIGHT * MAX_CHOICES, false, SurfaceFormat.Color, DepthFormat.None);
+
+            bubbleScaled = new RenderTarget2D(device, BUBBLE_WIDTH * PRESCALE, BUBBLE_HEIGHT * PRESCALE, false, SurfaceFormat.Color, DepthFormat.None);
+            choicesScaled = new RenderTarget2D(device, CHOICE_WIDTH * PRESCALE, CHOICE_HEIGHT * MAX_CHOICES * PRESCALE, false, SurfaceFormat.Color, DepthFormat.None);
         });
     }
 
@@ -78,7 +96,8 @@ internal sealed class ProjectedSurfaces : IDisposable
     /// </summary>
     public void Build(IProjectedContent content)
     {
-        if (disposed || bubble is null || choices is null || Main.gameMenu || Main.dedServ)
+        if (disposed || bubble is null || choices is null || bubbleScaled is null || choicesScaled is null
+            || Main.gameMenu || Main.dedServ)
             return;
 
         GraphicsDevice device = Main.graphics.GraphicsDevice;
@@ -92,7 +111,10 @@ internal sealed class ProjectedSurfaces : IDisposable
 
         spriteBatch.End();
 
-        BubbleRegion = new Rectangle(0, 0, Math.Clamp(used.X, 1, BUBBLE_WIDTH), Math.Clamp(used.Y, 1, BUBBLE_HEIGHT));
+        Rectangle bubbleUsed = new(0, 0, Math.Clamp(used.X, 1, BUBBLE_WIDTH), Math.Clamp(used.Y, 1, BUBBLE_HEIGHT));
+        Prescale(device, spriteBatch, bubble, bubbleScaled, bubbleUsed);
+
+        BubbleRegion = new Rectangle(0, 0, bubbleUsed.Width * PRESCALE, bubbleUsed.Height * PRESCALE);
 
         ChoicesDrawn = Math.Min(content.ChoiceCount, MAX_CHOICES);
 
@@ -112,9 +134,42 @@ internal sealed class ProjectedSurfaces : IDisposable
             }
 
             spriteBatch.End();
+
+            Prescale(device, spriteBatch, choices, choicesScaled, new Rectangle(0, 0, CHOICE_WIDTH, ChoicesDrawn * CHOICE_HEIGHT));
         }
 
         device.SetRenderTarget(null);
+    }
+
+    /// <summary>
+    ///     Copies the drawn part of a face into its prescaled twin, each texel as a solid block.
+    /// </summary>
+    /// <remarks>
+    ///     Only the used region is copied, so a one-line box costs a one-line copy. Opaque blend
+    ///     because the source already holds finished, premultiplied pixels; blending them again over
+    ///     a cleared target would darken every partly transparent edge.
+    /// </remarks>
+    private static void Prescale(GraphicsDevice device, SpriteBatch spriteBatch, Texture2D source, RenderTarget2D target, Rectangle region)
+    {
+        device.SetRenderTarget(target);
+        device.Clear(Color.Transparent);
+
+        spriteBatch.Begin(
+            SpriteSortMode.Deferred,
+            BlendState.Opaque,
+            SamplerState.PointClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
+            Matrix.Identity);
+
+        spriteBatch.Draw(
+            source,
+            new Rectangle(region.X * PRESCALE, region.Y * PRESCALE, region.Width * PRESCALE, region.Height * PRESCALE),
+            region,
+            Color.White);
+
+        spriteBatch.End();
     }
 
     /// <summary>Coverage at which a glyph pixel counts as ink. Lower fattens the text.</summary>
@@ -187,10 +242,12 @@ internal sealed class ProjectedSurfaces : IDisposable
 
         // Snapshot into locals before clearing the fields: the queued action runs later, and would
         // otherwise dispose whatever the fields hold by then rather than what they hold now.
-        RenderTarget2D?[] pending = [bubble, choices];
+        RenderTarget2D?[] pending = [bubble, choices, bubbleScaled, choicesScaled];
 
         bubble = null;
         choices = null;
+        bubbleScaled = null;
+        choicesScaled = null;
 
         Main.QueueMainThreadAction(() =>
         {

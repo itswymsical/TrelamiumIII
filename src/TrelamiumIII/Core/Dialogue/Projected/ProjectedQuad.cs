@@ -226,7 +226,11 @@ public sealed class ProjectedQuad : IDisposable
 
     public bool Ready => !disposed && effect is not null;
 
-    public void Begin(GraphicsDevice device)
+    /// <param name="sampler">
+    ///     Point sampling unless told otherwise. Linear only makes sense on a surface that has been
+    ///     prescaled by whole texels first, which is what keeps it from smearing into a blur.
+    /// </param>
+    public void Begin(GraphicsDevice device, SamplerState? sampler = null)
     {
         if (!Ready)
             return;
@@ -240,7 +244,7 @@ public sealed class ProjectedQuad : IDisposable
         device.BlendState = BlendState.AlphaBlend;
         device.DepthStencilState = DepthStencilState.None;
         device.RasterizerState = RasterizerState.CullNone;
-        device.SamplerStates[0] = SamplerState.PointClamp;
+        device.SamplerStates[0] = sampler ?? SamplerState.PointClamp;
 
         effect!.View = PanelCamera.View;
         effect.Projection = PanelCamera.Projection;
