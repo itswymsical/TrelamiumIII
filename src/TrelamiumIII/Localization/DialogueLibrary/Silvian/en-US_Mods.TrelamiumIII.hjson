@@ -205,11 +205,20 @@ DialogueLibrary: {
 			Line5.Text: So it's yours now,[] [speakerName:player].[] He left room in the back for whatever he didn't know.[] Fill it in for him, will ya?
 		}
 
-		Banter1: {
+		WhosArgie: {
 			Line1: {
-				Text: How goes it, [speakerName:player]?
-				Choice1.Text: It gone.
+				Text: How's it going, [speakerName:player]?[] You got question for me?
+				Choice1.Text: Who's Argie?
+				Choice2.Text: It's nothing.
 			}
+		}
+
+		WhosArgie_Nothing.Line1.Text: Alrighty.[] You know where to find me if you change your mind.
+
+		WhosArgie_Answer: {
+			Line1.Text: Argie?[] Oh, you musta' come across her name in the almanac.[] She was my Uncle J's apprentice,[] and a good one at that.
+			Line2.Text: Although, she's a bit of a mystery.[] Nowadays she stays underground in the glowshroom grottos, couped up with her fungi.
+			Line3.Text: Hey,[] I actually have an old letter from uncle J to her.[] If you don't mind,[] could you deliver it for me?[] I think she'd like to hear from him again.
 		}
 	}
 }

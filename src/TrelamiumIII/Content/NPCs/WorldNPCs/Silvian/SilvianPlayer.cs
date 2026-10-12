@@ -19,7 +19,6 @@ public sealed class SilvianPlayer : ModPlayer
 
     /// <summary>Hint tier reached per brew, keyed by <see cref="ItemKey" /> so modded types survive a reload.</summary>
     private readonly Dictionary<string, int> hintTiers = [];
-
     public bool Met
     {
         get => met || JobStateOf(JobID.HerbalForager) != JobState.Locked;
@@ -27,6 +26,11 @@ public sealed class SilvianPlayer : ModPlayer
     }
 
     public bool AlmanacInherited { get; set; }
+
+    public bool AlmanacOpened { get; set; }
+
+    /// <summary>Asked him who Argie is and took the letter. Saying "nothing" leaves this false so he asks again.</summary>
+    public bool AskedAboutArgie { get; set; }
 
     /// <summary>The general lesson the Help button gives next. Not saved: each session starts from the top.</summary>
     public int NextLesson { get; set; }
@@ -46,6 +50,8 @@ public sealed class SilvianPlayer : ModPlayer
     {
         met = false;
         AlmanacInherited = false;
+        AlmanacOpened = false;
+        AskedAboutArgie = false;
         NextLesson = 0;
         hintTiers.Clear();
     }
@@ -57,6 +63,8 @@ public sealed class SilvianPlayer : ModPlayer
     {
         tag["met"] = met;
         tag["almanac"] = AlmanacInherited;
+        tag["almanacOpened"] = AlmanacOpened;
+        tag["askedAboutArgie"] = AskedAboutArgie;
 
         if (hintTiers.Count == 0)
             return;
@@ -69,6 +77,8 @@ public sealed class SilvianPlayer : ModPlayer
     {
         met = tag.GetBool("met");
         AlmanacInherited = tag.GetBool("almanac");
+        AlmanacOpened = tag.GetBool("almanacOpened");
+        AskedAboutArgie = tag.GetBool("askedAboutArgie");
         hintTiers.Clear();
 
         IList<string> items = tag.GetList<string>("hintItems");

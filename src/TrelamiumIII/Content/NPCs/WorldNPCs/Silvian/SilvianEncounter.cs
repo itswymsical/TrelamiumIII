@@ -32,6 +32,7 @@ public sealed class SilvianEncounter : ModSystem
 
     /// <summary>Offers his first job again, for a player who cut the greeting short.</summary>
     public const string JobOfferKey = "Silvian.JobOffer";
+    public const string ArgieKey = "Silvian.WhosArgie";
 
     /// <summary>How near him, in world pixels, a player must be for him to notice them: sideways, and up or down.</summary>
     private const float REACH_X = 20f * 16f;

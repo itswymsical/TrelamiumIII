@@ -1,4 +1,5 @@
-﻿using TrelamiumIII.Core;
+﻿using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Core;
 using TrelamiumIII.Core.Liquids;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -30,6 +31,17 @@ public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
         Crude = AddCondition(new LiquidCondition("Crude"));
         Pitch = AddCondition(new LiquidCondition("Pitch") { Tint = new Color(77, 45, 79), Strength = 0.88f });
     }
+
+    /// <summary>The station's Bottled Oil + 4 Cobweb = 2 Pitch, with a bottle's worth of oil spent from the pool.</summary>
+    protected override void DefineItemReactions()
+        => AddItemReaction(new ItemReaction(ItemID.Cobweb)
+        {
+            Amount = 4,
+            Ticks = 60,
+            Spent = SubmergedLiquidSystem.BottleVolume,
+            Product = SoluteID.Pitch,
+            ProductStack = 2,
+        });
 
     public override void SetStaticDefaults()
     {
