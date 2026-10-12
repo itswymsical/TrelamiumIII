@@ -1798,6 +1798,11 @@ Liquids: {
 			SpiritOfSalt: Spirit of Salt
 			AquaFortis: Aqua Fortis
 			AquaRegia: Aqua Regia
+			GoldSolution1: Gold Solution (Potency 1)
+			GoldSolution2: Gold Solution (Potency 2)
+			GoldSolution3: Gold Solution (Potency 3)
+			GoldSolution4: Gold Solution (Potency 4)
+			GoldSolution5: Gold Solution (Potency 5)
 		}
 	}
 

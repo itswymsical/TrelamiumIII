@@ -375,7 +375,7 @@ public class ThermiteFlaskField : ChemicalGasField
 
     protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
-        node.Viscosity *= 1.01f;
+        node.Viscosity = Math.Min(node.Viscosity * 1.01f, 1f);
         node.Velocity *= 0.89f;
     }
 

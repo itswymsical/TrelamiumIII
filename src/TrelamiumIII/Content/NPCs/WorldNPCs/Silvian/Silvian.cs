@@ -90,6 +90,9 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Completed && silvian.JobStateOf(JobID.BotanyBasics) == JobState.Locked)
             return ChatEncounter.Play("Silvian.BotanyOffer").Projected();
 
+        if (silvian.AlmanacOpened && !silvian.AskedAboutArgie)
+            return ChatEncounter.Play(SilvianEncounter.ArgieKey).Projected();
+
         return ChatEncounter.None;
     }
 

@@ -51,9 +51,13 @@ public abstract class ConditionalLiquid : ModLiquid
         }
     }
 
+    /// <summary>Adds item reactions with <see cref="AddItemReaction" />. Runs from SetStaticDefaults, once every item type is assigned.</summary>
+    protected virtual void DefineItemReactions() { }
+
     public override void SetStaticDefaults()
     {
         ConditionSet.Register();
+        DefineItemReactions();
 
         LocalizedText mapName = CreateMapEntryName();
 
@@ -76,6 +80,9 @@ public abstract class ConditionalLiquid : ModLiquid
 
     /// <inheritdoc cref="LiquidConditionSet.AddCorrosion" />
     protected void AddCorrosion(LiquidCondition? from, Predicate<int> tiles, ushort? becomes = null) => ConditionSet.AddCorrosion(from, tiles, becomes);
+
+    /// <inheritdoc cref="LiquidConditionSet.AddItemReaction" />
+    protected void AddItemReaction(ItemReaction reaction) => ConditionSet.AddItemReaction(reaction);
 
     public LiquidCondition Get(byte index) => ConditionSet.Get(index);
 

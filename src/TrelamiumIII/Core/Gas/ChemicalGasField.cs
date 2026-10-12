@@ -130,12 +130,12 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
             if (tile.LiquidType == LiquidID.Water)
             {
                 node.Velocity *= 0.9f;
-                node.Viscosity *= 1.05f;
+                node.Viscosity = Math.Min(node.Viscosity * 1.05f, 1f);
             }
             else if (tile.LiquidType == LiquidID.Lava)
             {
                 node.Velocity *= 0.8f;
-                node.Viscosity *= 1.1f;
+                node.Viscosity = Math.Min(node.Viscosity * 1.1f, 1f);
             }
         }
         base.OnLiquidContact(ref node, tileX, tileY, tile);
@@ -145,12 +145,12 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     {
         if (GasType == GasTypeID.Liquid)
         {
-            node.Viscosity *= 1.03f;
+            node.Viscosity = Math.Min(node.Viscosity * 1.03f, 1f);
             node.Velocity *= 0.92f;
         }
         else if (GasType == GasTypeID.Gas)
         {
-            node.Viscosity *= 1.01f;
+            node.Viscosity = Math.Min(node.Viscosity * 1.01f, 1f);
             node.Velocity *= 0.95f;
         }
         base.OnTileContact(ref node, tileX, tileY, tile);

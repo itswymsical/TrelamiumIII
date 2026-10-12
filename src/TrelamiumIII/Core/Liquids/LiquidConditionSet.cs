@@ -17,6 +17,9 @@ public abstract class LiquidConditionSet
     /// <summary><see cref="MessageID.TileManipulation" /> action for <c>WorldGen.KillTile(noItem: true)</c>.</summary>
     private const int KillTileNoItem = 4;
 
+    /// <summary>Tiles of a body searched for liquid an item reaction spends.</summary>
+    private const int SpendSearch = 256;
+
     private static readonly LiquidConditionSet?[] byType = new LiquidConditionSet?[MaxLiquidTypes];
 
     private static readonly List<LiquidConditionSet> all = [];
@@ -34,6 +37,10 @@ public abstract class LiquidConditionSet
     private readonly Dictionary<(byte Receiver, byte Donor), byte> mixes = [];
 
     private readonly List<TileReaction> reactions = [];
+
+    private readonly List<ItemReaction> itemReactions = [];
+
+    private readonly HashSet<int> floating = [];
 
     /// <summary>Conditions added before <see cref="Register" />. Those past it are created at runtime and cleared with the world.</summary>
     private int staticCount;
@@ -108,6 +115,30 @@ public abstract class LiquidConditionSet
     /// </summary>
     protected internal void AddCorrosion(LiquidCondition? from, Predicate<int> tiles, ushort? becomes = null)
         => reactions.Add(new TileReaction(from, null, tiles, becomes is null ? TileOutcome.Dissolve : TileOutcome.Convert, becomes ?? 0));
+
+    /// <summary>Adds what a dropped stack does in this liquid. Products may be modded items, so add these once item types are assigned.</summary>
+    protected internal void AddItemReaction(ItemReaction reaction)
+    {
+        itemReactions.Add(reaction);
+
+        if (reaction.Product > ItemID.None)
+            floating.Add(reaction.Product);
+    }
+
+    /// <summary>The first item reaction for <paramref name="itemType" /> in <paramref name="condition" />, or null.</summary>
+    public ItemReaction? ItemReactionFor(LiquidCondition condition, int itemType)
+    {
+        foreach (ItemReaction reaction in itemReactions)
+        {
+            if ((reaction.From is null || reaction.From == condition) && reaction.Matches(itemType))
+                return reaction;
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether <paramref name="itemType" /> floats at this liquid's surface, as every item reaction product does.</summary>
+    public bool Floats(int itemType) => floating.Contains(itemType);
 
     public LiquidCondition Get(byte index) => index < conditions.Count ? conditions[index] : Default;
 
@@ -268,7 +299,7 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>Converts up to <see cref="ReactionSpread" /> connected tiles of this type still in <paramref name="from" />.</summary>
-    private void Spread(int i, int j, byte from, byte to)
+    internal void Spread(int i, int j, byte from, byte to)
     {
         var pending = new Queue<Point>();
         var visited = new HashSet<Point> { new(i, j) };
@@ -290,6 +321,57 @@ public abstract class LiquidConditionSet
                     pending.Enqueue(next);
             }
         }
+    }
+
+    /// <summary>
+    ///     Removes <paramref name="amount" /> liquid units from the body of this type connected to (i, j), from its
+    ///     surface down. Removes nothing and returns false when the body holds less.
+    /// </summary>
+    internal bool TrySpend(int i, int j, int amount)
+    {
+        var body = new List<Point>();
+        var pending = new Queue<Point>();
+        var visited = new HashSet<Point> { new(i, j) };
+        pending.Enqueue(new Point(i, j));
+        int available = 0;
+
+        while (pending.TryDequeue(out Point point) && body.Count < SpendSearch)
+        {
+            if (!Holds(point.X, point.Y))
+                continue;
+
+            body.Add(point);
+            available += Main.tile[point.X, point.Y].LiquidAmount;
+
+            foreach (Point next in (ReadOnlySpan<Point>)[new(point.X - 1, point.Y), new(point.X + 1, point.Y), new(point.X, point.Y - 1), new(point.X, point.Y + 1)])
+            {
+                if (WorldGen.InWorld(next.X, next.Y, 1) && visited.Add(next))
+                    pending.Enqueue(next);
+            }
+        }
+
+        if (available < amount)
+            return false;
+
+        body.Sort((a, b) => a.Y.CompareTo(b.Y));
+
+        foreach (Point point in body)
+        {
+            if (amount <= 0)
+                break;
+
+            Tile tile = Main.tile[point.X, point.Y];
+            int taken = Math.Min(tile.LiquidAmount, amount);
+            tile.LiquidAmount -= (byte)taken;
+            amount -= taken;
+
+            Liquid.AddWater(point.X, point.Y);
+
+            if (Main.netMode == NetmodeID.Server)
+                NetMessage.sendWater(point.X, point.Y);
+        }
+
+        return true;
     }
 
     /// <summary>The condition holding the most liquid inside <paramref name="area" />, in world pixels.</summary>

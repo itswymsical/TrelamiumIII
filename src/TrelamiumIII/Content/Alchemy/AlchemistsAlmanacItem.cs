@@ -1,3 +1,4 @@
+using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.UI.AlchemyAlmanac;
 
@@ -24,6 +25,7 @@ public class AlchemistsAlmanacItem : ModItem
     {
         if (Main.myPlayer != player.whoAmI) return true;
         AlchemyAlmanacUI.ShowAlmanac();
+        player.GetModPlayer<SilvianPlayer>().AlmanacOpened = true;
         return true;
     }
 }

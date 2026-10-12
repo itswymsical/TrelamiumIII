@@ -1,3 +1,6 @@
+using Terraria.DataStructures;
+using TrelamiumIII.Content.Items.Quest;
+using TrelamiumIII.Content.Jobs;
 using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 using TrelamiumIII.Core.Jobs;
 
@@ -16,6 +19,7 @@ class SilvianDialogue : ModDialogue
         RegisterGreeting();
         RegisterFirstJob();
         RegisterBotany();
+        RegisterArgie();
 
         // His uncle's almanac changes hands once the conversation plays through. See SilvianAlmanac.
         Dialogue.Define(SilvianAlmanac.HandoffKey)
@@ -200,5 +204,36 @@ class SilvianDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1f, [new Pause(24), new Pause(18)])
             .Register();
+    }
+
+    private void RegisterArgie()
+    {
+        Dialogue.Define("Silvian.WhosArgie")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .Choice("Silvian.WhosArgie_Answer")
+            .Choice("Silvian.WhosArgie_Nothing", dead: true)
+            .Register();
+
+        Dialogue.Define("Silvian.WhosArgie_Nothing")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(22))
+            .Register();
+
+        Dialogue.Define("Silvian.WhosArgie_Answer")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(22), new Pause(18), new Pause(18)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(22))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(22), new Pause(18), new Pause(18), new Pause(18)])
+            .OnComplete(GiveLetter)
+            .Register();
+    }
+
+    private static void GiveLetter()
+    {
+        var silvian = Main.LocalPlayer.GetModPlayer<SilvianPlayer>();
+
+        if (silvian.AskedAboutArgie)
+            return;
+
+        silvian.AskedAboutArgie = true;
+        RewardBag.GiveOrDrop(Main.LocalPlayer, new Item(ModContent.ItemType<SilviansLetter>()), new EntitySource_Misc("SilviansLetter"));
     }
 }

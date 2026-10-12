@@ -1,6 +1,7 @@
 using Terraria.GameContent.Liquid;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Liquids;
 
@@ -8,10 +9,14 @@ namespace TrelamiumIII.Content.Liquids;
 
 /// <summary>
 ///     Acid base. Plain acid is the world's; the vitriols and named acids come from it by contact with ore, sulfur and
-///     salt. Every acid dissolves water and honey (see <see cref="LiquidMixingGlobalLiquid" />).
+///     salt. Every acid dissolves water and honey (see <see cref="LiquidMixingGlobalLiquid" />). Dropped gold ore
+///     dissolves into aqua regia as gold solution, one potency at a time.
 /// </summary>
 public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
 {
+    /// <summary>Gold ore one potency step dissolves; every step, 150 ore in all, makes a fully potent solution.</summary>
+    private const int GoldOrePerPotency = 30;
+
     /// <summary>A caustic web with bubbles rising through it, in the condition's colour.</summary>
     public LiquidSurface Surface { get; } = new("Acid") { Strength = 0.8f };
 
@@ -31,6 +36,9 @@ public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
 
     public LiquidCondition AquaRegia { get; private set; } = null!;
 
+    /// <summary>Aqua regia holding dissolved gold, by potency: index 0 is potency 1.</summary>
+    public LiquidCondition[] GoldSolution { get; } = new LiquidCondition[SolutePotency.MAX];
+
     protected override void DefineConditions()
     {
         Acid = AddCondition(new LiquidCondition("Acid") { Tint = new Color(170, 255, 70), Light = ElementProfile.Caustic.EmittedLight, Strength = 0.5f });
@@ -40,6 +48,18 @@ public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
         SpiritOfSalt = AddCondition(new LiquidCondition("SpiritOfSalt") { Tint = new Color(235, 250, 190), Strength = 0.7f });
         AquaFortis = AddCondition(new LiquidCondition("AquaFortis") { Tint = new Color(255, 200, 80), Strength = 0.85f });
         AquaRegia = AddCondition(new LiquidCondition("AquaRegia") { Tint = new Color(255, 130, 50), Strength = 1f });
+
+        for (int level = 0; level < GoldSolution.Length; level++)
+        {
+            float potency = (level + 1f) / GoldSolution.Length;
+
+            GoldSolution[level] = AddCondition(new LiquidCondition($"GoldSolution{level + 1}")
+            {
+                Tint = Color.Lerp(AquaRegia.Tint, new Color(255, 215, 70), potency),
+                Light = new Vector3(0.45f, 0.35f, 0.08f) * potency,
+                Strength = AquaRegia.Strength,
+            });
+        }
 
         AddReaction(Acid, BlueVitriol, TileID.Copper, TileID.Tin);
         AddReaction(Acid, GreenVitriol, TileID.Iron, TileID.Lead);
@@ -52,12 +72,35 @@ public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
         AddMix(AquaFortis, SpiritOfSalt, AquaRegia);
     }
 
+    protected override void DefineItemReactions()
+    {
+        LiquidCondition from = AquaRegia;
+
+        foreach (LiquidCondition level in GoldSolution)
+        {
+            AddItemReaction(new ItemReaction(ItemID.GoldOre)
+            {
+                From = from,
+                Amount = GoldOrePerPotency,
+                Ticks = 120,
+                Spent = SubmergedLiquidSystem.BottleVolume,
+                Becomes = level,
+            });
+
+            from = level;
+        }
+    }
+
     public override void SetStaticDefaults()
     {
         base.SetStaticDefaults();
 
         LiquidRenderer.DEFAULT_OPACITY[Type] = 0.75f;
-        SlopeOpacity = 0.7f;
+        SlopeOpacity = 0.7f; 
+        SplashDustType = DustID.CursedTorch;
+
+        SplashSound = SoundID.Splash with { Pitch = -.07f };
+
         ChecksForDrowning = true;
         AllowEmitBreathBubbles = false;
     }
