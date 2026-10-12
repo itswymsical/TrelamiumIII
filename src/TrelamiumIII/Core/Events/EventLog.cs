@@ -3,7 +3,7 @@ using TrelamiumIII.Common.Configs;
 namespace TrelamiumIII.Core.Events;
 
 /// <summary>
-/// Diagnostic logging for the event pipeline, behind <c>DebugConfig.DebugMode</c>.
+/// Diagnostic logging for the event pipeline, behind <c>DeveloperConfig.DebugMode</c>.
 ///
 /// <para>
 /// Every broadcast used to write an unconditional <c>Logger.Info</c> line, which meant digging a tunnel
@@ -17,7 +17,7 @@ public static class EventLog
     /// Null-checked: the config instance does not exist yet during the earliest part of load, and a
     /// diagnostic has no business throwing there.
     /// </summary>
-    public static bool Enabled => DebugConfig.Instance is { DebugMode: true };
+    public static bool Enabled => DeveloperConfig.Instance is { DebugMode: true };
 
     /// <summary>
     /// Logs at Info rather than Debug on purpose - this is opt-in already, and Debug is easy to have

@@ -7,6 +7,7 @@ using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.UI;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Core.UI.Projected;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Dialogue;
@@ -499,11 +500,11 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
         var textPosition = panelRectangle.TopLeft() + new Vector2(15f, 32f);
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
+        var wrappedText = ProjectedText.Wrap(Font, displayText, PANEL_WIDTH - 90f);
 
         var globalCharIndex = 0;
 
-        for (var i = 0; i < wrappedText.Length; i++)
+        for (var i = 0; i < wrappedText.Count; i++)
         {
             var linePos = textPosition + new Vector2(-2f, i * Font.LineSpacing);
             var charOffset = 0;
@@ -661,8 +662,8 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         if (currentDialogue == null) return new Vector2(PANEL_WIDTH + 18, 120);
 
         var displayText = currentDialogue.PlainText[..Math.Min(charIndex, currentDialogue.PlainText.Length)];
-        var wrappedText = WrapText(displayText, PANEL_WIDTH - 90f, Font);
-        var lineCount = wrappedText.Length;
+        var wrappedText = ProjectedText.Wrap(Font, displayText, PANEL_WIDTH - 90f);
+        var lineCount = wrappedText.Count;
         var textHeight = Font.LineSpacing * lineCount;
 
         var panelHeight = textHeight + 52f;
@@ -674,31 +675,6 @@ public class DialogueBox : IInGameNotification, IDialoguePresenter
         var t = isRemoved ? animationProgress / ANIMATION_DURATION : 1f - animationProgress / ANIMATION_DURATION;
         var currentPosition = Vector2.Lerp(targetPosition, startPosition, t);
         return currentPosition - new Vector2(0f, panelSize.Y * 0.65f);
-    }
-
-    private static string[] WrapText(string text, float maxWidth, DynamicSpriteFont font)
-    {
-        List<string> lines = [];
-        StringBuilder currentLine = new();
-        var spaceWidth = font.MeasureString(" ").X;
-
-        foreach (var word in text.Split(' '))
-        {
-            var wordWidth = font.MeasureString(word).X;
-            if (currentLine.Length > 0 && font.MeasureString(currentLine.ToString()).X + wordWidth + spaceWidth > maxWidth)
-            {
-                lines.Add(currentLine.ToString());
-                currentLine.Clear();
-            }
-            if (currentLine.Length > 0)
-                currentLine.Append(" ");
-            currentLine.Append(word);
-        }
-
-        if (currentLine.Length > 0)
-            lines.Add(currentLine.ToString());
-
-        return [.. lines];
     }
     #endregion
 }

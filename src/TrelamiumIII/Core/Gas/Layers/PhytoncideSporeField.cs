@@ -35,41 +35,23 @@ public class PhytoncideSporeField : ChemicalGasField
     /// <summary>Spores that settle leave a caustic film on the surface.</summary>
     protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CausticResidueCondition>();
 
-    private Asset<Texture2D> noiseTex;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-        noiseTex = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
-
-
-        Vector3 light = new Vector3(0.24f); // ambient floor; the real light rides in the field per node
-
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.25f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.22f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(-0.075f, 0.09f));
-
-        // Drifting cloud: the texture travels with it, so a puff blown sideways carries its own detail instead of swimming through a world-locked one.
-        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
-
-        effect.Parameters["Bands"]?.SetValue(8f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.88f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.12f, 0.35f, 0.09f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.42f, 0.62f, 0.1f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.42f, 0.65f, 0.1f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.22f, 0.74f, 0.22f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.24f),
+        Threshold = 0.16f,
+        NoiseScale = 1.25f,
+        NoiseStrength = 0.22f,
+        Drift = new Vector2(-0.075f, 0.09f),
+        FlowStrength = 0.14f,
+        Bands = 8f,
+        BodyAlpha = 0.88f,
+        Shadow = new Vector3(0.12f, 0.35f, 0.09f),
+        Body = new Vector3(0.42f, 0.62f, 0.1f),
+        Core = new Vector3(0.42f, 0.65f, 0.1f),
+        Outline = new Vector3(0.22f, 0.74f, 0.22f),
+        OutlineAlpha = 0.8f,
+    };
 
     protected override void ApplyLighting(ref FieldNode node)
     {

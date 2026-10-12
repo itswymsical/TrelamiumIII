@@ -52,49 +52,27 @@ public sealed class MudField : ChemicalGasField
 
     protected override int ContactBuffTicks => 60;
 
-    private Asset<Texture2D>? noiseTexture;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        base.Unload();
-
-        noiseTexture = null;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.3f));
-
-        effect.Parameters["Threshold"]?.SetValue(0.15f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.2f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.2f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.004f, 0.012f));
-        effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.7f));
-        effect.Parameters["FlowStrength"]?.SetValue(0.1f);
-
-        effect.Parameters["Bands"]?.SetValue(8f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.96f);
-        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.85f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.22f, 0.14f, 0.08f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.34f, 0.22f, 0.13f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.44f, 0.3f, 0.18f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.12f, 0.08f, 0.05f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.95f);
-        effect.Parameters["HighlightColor"]?.SetValue(new Vector3(0.6f, 0.47f, 0.33f));
-        effect.Parameters["HighlightAlpha"]?.SetValue(0.75f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.3f),
+        Threshold = 0.15f,
+        NoiseScale = 1.2f,
+        NoiseStrength = 0.2f,
+        Drift = new Vector2(0.004f, 0.012f),
+        NoiseStretch = new Vector2(1f, 0.7f),
+        FlowStrength = 0.1f,
+        Bands = 8f,
+        BodyAlpha = 0.96f,
+        BodyAlphaFloor = 0.85f,
+        Shadow = new Vector3(0.22f, 0.14f, 0.08f),
+        Body = new Vector3(0.34f, 0.22f, 0.13f),
+        Core = new Vector3(0.44f, 0.3f, 0.18f),
+        Outline = new Vector3(0.12f, 0.08f, 0.05f),
+        OutlineAlpha = 0.95f,
+        Highlight = new Vector3(0.6f, 0.47f, 0.33f),
+        HighlightAlpha = 0.75f,
+    };
 
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {

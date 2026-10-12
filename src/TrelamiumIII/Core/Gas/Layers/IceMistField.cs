@@ -44,41 +44,23 @@ public class IceMistField : ChemicalGasField
     public override int ReactionDamage => 3;
 
 
-    private Asset<Texture2D> noiseTex;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-        noiseTex = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
-
-
-        Vector3 light = new Vector3(0.22f);
-
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.14f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.4f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.18f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.05f, 0.015f));
-
-        // Moves fast, so the drag is strong; without it the noise visibly streams backwards through the material.
-        effect.Parameters["FlowStrength"]?.SetValue(0.20f);
-
-        effect.Parameters["Bands"]?.SetValue(8f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.8f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.36f, 0.52f, 0.68f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.62f, 0.80f, 0.92f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.88f, 0.97f, 1.0f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.85f, 0.96f, 1.0f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.22f),
+        Threshold = 0.14f,
+        NoiseScale = 1.4f,
+        NoiseStrength = 0.18f,
+        Drift = new Vector2(0.05f, 0.015f),
+        FlowStrength = 0.20f,
+        Bands = 8f,
+        BodyAlpha = 0.8f,
+        Shadow = new Vector3(0.36f, 0.52f, 0.68f),
+        Body = new Vector3(0.62f, 0.80f, 0.92f),
+        Core = new Vector3(0.88f, 0.97f, 1.0f),
+        Outline = new Vector3(0.85f, 0.96f, 1.0f),
+        OutlineAlpha = 0.85f,
+    };
 
     protected override int ContactBuff => BuffID.Frostburn;
 

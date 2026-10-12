@@ -51,49 +51,23 @@ public class GelField : ChemicalGasField
 
     protected override int TileFieldInterval => 3;
 
-    private Asset<Texture2D>? noiseTexture;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        base.Unload();
-
-        noiseTexture = null;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        effect.Parameters["WorldLight"]?.SetValue(new Vector3(0.25f));
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.13f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.1f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.14f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.006f, 0.022f));
-
-        // Barely moves, so the drag is slight -- enough that the mass reads as churning rather than as a pattern it is sliding under.
-        effect.Parameters["FlowStrength"]?.SetValue(0.08f);
-
-        effect.Parameters["Bands"]?.SetValue(6f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.80f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.05f, 0.15f, 0.34f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.17f, 0.42f, 0.80f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.47f, 0.74f, 1.00f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.76f, 0.92f, 1.00f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.90f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.25f),
+        Threshold = 0.13f,
+        NoiseScale = 1.1f,
+        NoiseStrength = 0.14f,
+        Drift = new Vector2(0.006f, 0.022f),
+        FlowStrength = 0.08f,
+        Bands = 6f,
+        BodyAlpha = 0.80f,
+        Shadow = new Vector3(0.05f, 0.15f, 0.34f),
+        Body = new Vector3(0.17f, 0.42f, 0.80f),
+        Core = new Vector3(0.47f, 0.74f, 1.00f),
+        Outline = new Vector3(0.76f, 0.92f, 1.00f),
+        OutlineAlpha = 0.90f,
+    };
 
     protected override void ApplyLighting(ref FieldNode node)
         => Lighting.AddLight(node.Position, 0.04f * node.Alpha, 0.09f * node.Alpha, 0.16f * node.Alpha);

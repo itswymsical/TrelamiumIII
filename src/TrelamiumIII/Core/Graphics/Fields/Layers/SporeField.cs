@@ -4,7 +4,6 @@ namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 
 public sealed class SporeField : FieldLayer
 {
-    /// <summary>Gas.</summary>
     public override int LoadOrder => 65;
 
     protected override Asset<Effect> Shader => Assets.Shaders.GasFbm.Asset;
@@ -25,48 +24,23 @@ public sealed class SporeField : FieldLayer
 
     protected override float EnclosedLifePenalty => 1.5f;
 
-    private Asset<Texture2D>? noiseTexture;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-
-        if (!Main.dedServ)
-            noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        base.Unload();
-        noiseTexture = null;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        Vector3 light = new Vector3(0.3f);
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.16f);
-        effect.Parameters["NoiseScale"]?.SetValue(1.35f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.24f);
-
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0.03f, -0.06f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.14f);
-
-        effect.Parameters["Bands"]?.SetValue(5f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.86f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.28f, 0.10f, 0.05f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.74f, 0.32f, 0.10f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.94f, 0.63f, 0.18f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(1.00f, 0.75f, 0.32f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.85f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.3f),
+        Threshold = 0.16f,
+        NoiseScale = 1.35f,
+        NoiseStrength = 0.24f,
+        Drift = new Vector2(0.03f, -0.06f),
+        FlowStrength = 0.14f,
+        Bands = 5f,
+        BodyAlpha = 0.86f,
+        Shadow = new Vector3(0.28f, 0.10f, 0.05f),
+        Body = new Vector3(0.74f, 0.32f, 0.10f),
+        Core = new Vector3(0.94f, 0.63f, 0.18f),
+        Outline = new Vector3(1.00f, 0.75f, 0.32f),
+        OutlineAlpha = 0.85f,
+    };
 
     protected override void ApplyLighting(ref FieldNode node)
     {
@@ -75,16 +49,14 @@ public sealed class SporeField : FieldLayer
         Lighting.AddLight(node.Position, 0.20f * alpha, 0.11f * alpha, 0.03f * alpha);
     }
 
-    /// <summary>
-    ///     Spores landing on tiles pack down and creep along the surface.
-    /// </summary>
+    /// <summary>Thickens and slows against surfaces.</summary>
     protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Viscosity = Math.Min(node.Viscosity * 1.02f, 1f);
         node.Velocity *= 0.95f;
     }
 
-    /// <summary>Water washes the spores out fast.</summary>
+    /// <summary>Slows and drains life in liquid.</summary>
     protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     {
         node.Velocity *= 0.85f;
@@ -93,10 +65,7 @@ public sealed class SporeField : FieldLayer
 
     private static SporeField? Layer => FieldSystem.GetLayer<SporeField>();
 
-    /// <summary>
-    ///     The wet splat of a sac bursting against a target: a tight spray thrown along
-    ///     <paramref name="direction" />, anchored to the host so it rides along.
-    /// </summary>
+    /// <summary>A tight spray along <paramref name="direction" />, anchored to <paramref name="host" />.</summary>
     public static void Splat(NPC host, Vector2 position, Vector2 direction, int anchorTicks)
     {
         if (Layer is not { } layer)
@@ -121,9 +90,8 @@ public sealed class SporeField : FieldLayer
     }
 
     /// <summary>
-    ///     Clings a cloud that adheres to an infected host, NPC or player alike.
-    ///     <paramref name="intensity" /> runs 0..1 with the stack count, and scales how much of the
-    ///     body the cloud covers.
+    ///     One anchored node on <paramref name="host" />, inheriting most of its velocity.
+    ///     <paramref name="intensity" /> (0..1) scales coverage and node size.
     /// </summary>
     public static void Cling(Entity host, float intensity)
     {
@@ -137,8 +105,6 @@ public sealed class SporeField : FieldLayer
 
         Vector2 position = host.Center + Main.rand.NextVector2Circular(spreadX, spreadY);
 
-        // Inherits most of the host's motion so the puff is already travelling with it on the
-        // frame it appears, rather than being left behind and catching up.
         Vector2 velocity = host.velocity * 0.85f + new Vector2(0f, -0.2f) + Main.rand.NextVector2Circular(0.4f, 0.4f);
 
         layer.SpawnAnchoredNode(
@@ -151,10 +117,7 @@ public sealed class SporeField : FieldLayer
         );
     }
 
-    /// <summary>
-    ///     The bloom: an infected host coming apart into a cloud that hangs long enough to be a
-    ///     hazard marker for everything it just infected.
-    /// </summary>
+    /// <summary>A long-lived, upward-biased burst cloud.</summary>
     public static void Burst(Vector2 position, float radius)
     {
         if (Layer is not { } layer)
@@ -164,7 +127,6 @@ public sealed class SporeField : FieldLayer
 
         for (int i = 0; i < count; i++)
         {
-            // Biased upward: the cloud should loom over the host, not wash off it.
             Vector2 velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(3.5f, 7.5f);
             velocity.Y -= 0.6f;
 
@@ -178,13 +140,9 @@ public sealed class SporeField : FieldLayer
     }
 
     /// <summary>
-    ///     The opposite of a burst: spores drawn inward on a point until they set into something
-    ///     solid. <paramref name="progress" /> runs 0..1 and tightens the ring as it climbs.
+    ///     One node drawn inward from a ring that tightens as <paramref name="progress" /> goes 0..1,
+    ///     timed to reach the centre as it expires. Call frequency sets the density.
     /// </summary>
-    /// <remarks>
-    ///     Called once per node wanted, per tick. The caller decides how thick the cloud gets by
-    ///     how often it asks, the same way <see cref="Cling(Entity, float)" /> works.
-    /// </remarks>
     public static void Coalesce(Vector2 center, float progress, float radius = 32f)
     {
         if (Layer is not { } layer)
@@ -195,8 +153,6 @@ public sealed class SporeField : FieldLayer
         float ring = radius * MathHelper.Lerp(1f, 0.3f, progress);
         Vector2 offset = Main.rand.NextVector2CircularEdge(ring, ring);
 
-        // Aimed at the centre and timed to roughly arrive there as it expires, so the cloud reads as
-        // being pulled in rather than merely drawn smaller each tick.
         Vector2 velocity = -offset / 15f;
 
         layer.SpawnNode(
@@ -204,7 +160,6 @@ public sealed class SporeField : FieldLayer
             velocity,
             radius: MathHelper.Lerp(5f, 12f, progress) * Main.rand.NextFloat(0.8f, 1.2f),
             life: Main.rand.NextFloat(14f, 22f),
-            // Neutral, so nothing rises or sinks out of the knot on its way in.
             density: 0.5f
         );
     }

@@ -890,6 +890,7 @@ public abstract class FieldLayer
         if (target.Attributes is { } attributes)
             effect.Parameters["uAttrTex"]?.SetValue(attributes);
 
+        Look?.Apply(effect);
         ApplyShaderParameters(effect);
 
         // PointClamp: the field is deliberately half-resolution, and the shader snaps its decisions
@@ -939,26 +940,19 @@ public abstract class FieldLayer
 
     protected virtual void BindAdditionalTextures(GraphicsDevice device) { }
 
+    /// <summary>The material for <c>GasFbm.fx</c> layers, applied before <see cref="ApplyShaderParameters" />. Null for other shaders.</summary>
+    protected virtual GasLook? Look => null;
+
+    /// <summary>Per-frame uniforms on top of <see cref="Look" />, e.g. animated colours.</summary>
     protected virtual void ApplyShaderParameters(Effect effect) { }
 
     /// <summary>
-    ///     Everything the shader needs that is a fact about the screen rather than a choice about
-    ///     the material, plus safe defaults for the parameters a layer can leave unset.
+    ///     Screen uniforms for <c>GasFbm.fx</c>, plus defaults for material parameters a layer may leave unset.
+    ///     Runs before <see cref="Look" /> and <see cref="ApplyShaderParameters" />, which may override any of it.
     /// </summary>
     /// <remarks>
-    ///     <para>
-    ///         Run ahead of <see cref="ApplyShaderParameters" /> so a layer can still override any
-    ///         of it. These were copied verbatim into every layer's own block -- thirteen identical
-    ///         copies of four lines that cannot differ between layers, because they describe the
-    ///         frame and not the effect.
-    ///     </para>
-    ///     <para>
-    ///         The defaults matter more than the tidying. An unset shader parameter is zero, and
-    ///         zero is catastrophic for three of these: no <c>FieldGain</c> discards every pixel,
-    ///         no <c>NoiseStretch</c> collapses the FBM lookup to a constant, and no
-    ///         <c>DepthRange</c> flattens the body. Setting them here means forgetting one costs
-    ///         nothing rather than costing the whole layer.
-    ///     </para>
+    ///     The effect is shared, and an unset parameter keeps the last value written. Zero <c>FieldGain</c> discards every
+    ///     pixel, zero <c>NoiseStretch</c> flattens the FBM, and zero <c>DepthRange</c> flattens the body.
     /// </remarks>
     internal static void ApplyScreenParameters(Effect effect, int pixelScale)
     {
