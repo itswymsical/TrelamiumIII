@@ -45,7 +45,7 @@ internal static class PanelStyle
     ///     the panel is authored once in texels and this is the only thing between that and the
     ///     screen, so raising it makes the box bigger and chunkier together.
     /// </summary>
-    public const float PIXEL = 1.75f;
+    public const float PIXEL = 1.5f;
 
     /// <summary>
     ///     The surface a bubble is drawn into, in texels. Sized once for the largest box this style

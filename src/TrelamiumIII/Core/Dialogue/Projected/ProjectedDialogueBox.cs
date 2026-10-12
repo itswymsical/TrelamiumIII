@@ -28,8 +28,32 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     /// <summary>How long a glyph takes to come up to full strength once revealed.</summary>
     private const float GLYPH_FADE_FRAMES = 7f;
 
-    /// <summary>Wrap width of the text area, in texels.</summary>
-    private const int TEXT_WIDTH = 290;
+    /// <summary>Wrap width a line starts at, in texels.</summary>
+    private const int TEXT_WIDTH = 250;
+
+    /// <summary>
+    ///     Widest a long line may stretch before it has to add rows instead. Bounded by the surface:
+    ///     this plus the padding, border and ghost margin has to fit inside
+    ///     <see cref="PanelStyle.SURFACE_WIDTH" />.
+    /// </summary>
+    private const int MAX_TEXT_WIDTH = 360;
+
+    private const int WIDTH_STEP = 22;
+
+    /// <summary>Rows a line may take before the box stretches wider to hold it.</summary>
+    private const int COMPACT_LINES = 3;
+
+    /// <summary>How much smaller the bubble draws for each row past <see cref="COMPACT_LINES" />.</summary>
+    private const float DENSITY_STEP = 0.07f;
+
+    private const float MIN_DENSITY = 0.72f;
+
+    /// <summary>
+    ///     Smallest the bubble will shrink to fit between its speaker and the top of the screen. Past
+    ///     this it stops shrinking and is clamped onto the screen, overlapping the speaker, since text
+    ///     too small to read is worse than a covered head.
+    /// </summary>
+    private const float MIN_FIT = 0.62f;
 
     /// <summary>Vertical step between response slots, as a multiple of a slot's height.</summary>
     private const float CHOICE_STEP = 1.34f;
@@ -113,6 +137,17 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     private DialogueData? current;
     private TextGlyphLayout layout = TextGlyphLayout.Empty;
+
+    /// <summary>Wrap width the current line was laid out at, in texels.</summary>
+    private int wrapWidth = TEXT_WIDTH;
+
+    /// <summary>Per-line shrink for long lines; fixed once the line is laid out.</summary>
+    private float density = 1f;
+
+    /// <summary>Eased shrink that keeps the bubble between the speaker and the top of the screen.</summary>
+    private float fit = 1f;
+
+    private bool fitSettled;
 
     /// <summary>Frame each character was revealed on, indexed alongside the line's own characters.</summary>
     private int[] revealedOn = [];
@@ -339,7 +374,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     private void Adopt(DialogueData line)
     {
         current = line;
-        layout = TextGlyphLayout.Build(line.PlainText, Font, TEXT_SCALE, TEXT_WIDTH);
+        layout = Wrap(line.PlainText);
+        density = MathF.Max(1f - Math.Max(layout.LineCount - COMPACT_LINES, 0) * DENSITY_STEP, MIN_DENSITY);
         revealedOn = new int[line.PlainText.Length];
 
         // Re-resolved per line: a conversation with two people in it has to move between their heads,
@@ -363,6 +399,29 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         voice.Reset();
 
         choiceSlot = MeasureChoiceSlot();
+    }
+
+    /// <summary>
+    ///     Lays the line out at the narrowest width that keeps it to <see cref="COMPACT_LINES" /> rows,
+    ///     stretching no further than <see cref="MAX_TEXT_WIDTH" />.
+    /// </summary>
+    /// <remarks>
+    ///     A wide, short box covers less of the scene than a narrow, tall one and keeps clear of the
+    ///     speaker it hangs over, so a long line spends width before it spends height. Run once per
+    ///     line, never per frame: a handful of layouts at most, and the result is fixed while it types.
+    /// </remarks>
+    private TextGlyphLayout Wrap(string text)
+    {
+        wrapWidth = TEXT_WIDTH;
+        TextGlyphLayout laid = TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
+
+        while (laid.LineCount > COMPACT_LINES && wrapWidth < MAX_TEXT_WIDTH)
+        {
+            wrapWidth = Math.Min(wrapWidth + WIDTH_STEP, MAX_TEXT_WIDTH);
+            laid = TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
+        }
+
+        return laid;
     }
 
     private void UpdatePresence()
@@ -731,19 +790,18 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         // Taken from the font rather than the layout so an empty line still gets a one-line box
         // instead of collapsing to a sliver.
         float lineHeight = Font.LineSpacing * TEXT_SCALE;
+        float maxHeight = MathF.Max(PanelStyle.MaxContentHeight(nameWidth > 0 ? nameHeight : 0), lineHeight);
 
         Vector2 needed = new(
-            Math.Clamp(MathF.Ceiling(layout.ExtentAfter(charIndex)), MIN_TEXT_WIDTH, TEXT_WIDTH),
-            Math.Clamp(
-                MathF.Max(layout.LinesAfter(charIndex), 1) * lineHeight,
-                lineHeight,
-                MathF.Max(PanelStyle.MaxContentHeight(nameWidth > 0 ? nameHeight : 0), lineHeight)));
+            Math.Clamp(MathF.Ceiling(layout.ExtentAfter(charIndex)), MIN_TEXT_WIDTH, wrapWidth),
+            Math.Clamp(MathF.Max(layout.LinesAfter(charIndex), 1) * lineHeight, lineHeight, maxHeight));
 
         smoothedSize = Vector2.Lerp(smoothedSize, needed, 0.22f);
         smoothedSize = Vector2.Max(smoothedSize, needed);
 
         Point content = new((int)MathF.Round(smoothedSize.X), (int)MathF.Ceiling(smoothedSize.Y));
 
+        UpdateFit(nameWidth, nameHeight, Math.Clamp(MathF.Max(layout.LineCount, 1) * lineHeight, lineHeight, maxHeight));
         UpdateFacing();
 
         // Two passes: the first sizes the bubble so the anchor can be compared against its centre,
@@ -826,9 +884,52 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
             Math.Min((int)MathF.Ceiling(Font.LineSpacing * CHOICE_SCALE) + CHOICE_PAD_Y * 2, room.Y));
     }
 
+    /// <summary>Screen pixels per texel for the response slots.</summary>
     private float Scale => PanelStyle.PIXEL * Main.UIScale;
 
-    /// <summary>Puts the surface's used region on screen with its tail just clear of the speaker.</summary>
+    /// <summary>Screen pixels per texel for the bubble: the base scale, shrunk for long lines and tight space.</summary>
+    private float BubbleScale => Scale * density * fit;
+
+    /// <summary>
+    ///     Shrinks the bubble just enough that the whole finished line fits between the speaker's head
+    ///     and the top of the screen.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Without this a tall box hanging off someone near the top of the view is clamped onto the
+    ///         screen, which pushes it down over the very speaker it is pointing at -- and its tail
+    ///         ends up somewhere around their knees.
+    ///     </para>
+    ///     <para>
+    ///         Measured against the finished line, not the revealed part, so the box does not shrink
+    ///         a little more with every row that types in. Eased afterwards, because the room above a
+    ///         speaker changes as the camera moves; snapped the first time so the box does not open at
+    ///         full size and then deflate.
+    ///     </para>
+    /// </remarks>
+    private void UpdateFit(int nameWidth, int nameHeight, float finishedHeight)
+    {
+        const float EDGE = 8f;
+
+        float target = 1f;
+
+        if (anchor.HasSpeaker)
+        {
+            BubbleGeometry finished = PanelStyle.Measure(
+                new Point(wrapWidth, (int)MathF.Ceiling(finishedHeight)), nameWidth, nameHeight, 0f);
+
+            // The region's top edge sits TailApex.Y texels above the tail's point.
+            float room = anchor.ScreenPoint().Y - ANCHOR_GAP - EDGE;
+            float wanted = finished.TailApex.Y * Scale * density;
+
+            if (wanted > room)
+                target = Math.Clamp(room / wanted, MIN_FIT, 1f);
+        }
+
+        fit = fitSettled ? MathHelper.Lerp(fit, target, 0.2f) : target;
+        fitSettled = true;
+    }
+
     /// <summary>
     ///     Decides which way round the perspective stands, from where the speaker is relative to the
     ///     player.
@@ -869,7 +970,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
     private void PlacePanel()
     {
-        panelSize = new Vector2(geometry.Used.X, geometry.Used.Y) * Scale;
+        panelSize = new Vector2(geometry.Used.X, geometry.Used.Y) * BubbleScale;
 
         Vector2 target = anchor.ScreenPoint();
 
@@ -878,12 +979,12 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         // The tail's point is what has to meet the speaker, and it is not the bottom of the region --
         // the border and the ghost hang past it. Anchoring on the region would leave a visible gap
         // that grew and shrank with the panel.
-        float apexFromBottom = (geometry.Used.Y - geometry.TailApex.Y) * Scale;
+        float apexFromBottom = (geometry.Used.Y - geometry.TailApex.Y) * BubbleScale;
         float bottom = target.Y - ANCHOR_GAP + apexFromBottom;
 
         // The bubble is centred on the body rather than on the region, which is wider on the left by
         // the ghost margin. Without this the panel sits a few pixels off its speaker.
-        float bodyOffset = (geometry.Body.X + geometry.Body.Width * 0.5f - geometry.Used.X * 0.5f) * Scale;
+        float bodyOffset = (geometry.Body.X + geometry.Body.Width * 0.5f - geometry.Used.X * 0.5f) * BubbleScale;
 
         panelCentre = new Vector2(
             OnScreen(x - bodyOffset, panelSize.X * 0.5f, Main.screenWidth),
@@ -913,8 +1014,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
     {
         Vector2 target = anchor.ScreenPoint();
 
-        float bodyCentre = panelCentre.X + (geometry.Body.X + geometry.Body.Width * 0.5f - geometry.Used.X * 0.5f) * Scale;
-        float reach = MathF.Max(geometry.Body.Width * 0.5f * Scale, 1f);
+        float bodyCentre = panelCentre.X + (geometry.Body.X + geometry.Body.Width * 0.5f - geometry.Used.X * 0.5f) * BubbleScale;
+        float reach = MathF.Max(geometry.Body.Width * 0.5f * BubbleScale, 1f);
 
         return Math.Clamp((target.X - bodyCentre) / reach, -1f, 1f);
     }
@@ -1054,7 +1155,8 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
         // closed and reopened around the quads exactly as the layer left it.
         spriteBatch.End();
 
-        quad.Begin(device);
+        // Linear over the prescaled faces: soft seams between chunky texels, not a blur. See ProjectedSurfaces.PRESCALE.
+        quad.Begin(device, SamplerState.LinearClamp);
         quad.Draw(device, surfaces.Bubble, surfaces.BubbleRegion, BubblePlacement(), tint);
 
         if (awaitingChoice && surfaces.Choices is not null)
@@ -1137,7 +1239,7 @@ public sealed class ProjectedDialogueBox : IDialoguePresenter, IProjectedContent
 
             Vector2 position = new Vector2(geometry.ContentOrigin.X, geometry.ContentOrigin.Y)
                 + new Vector2(glyph.X, glyph.Line * layout.LineHeight)
-                + renderContext.Offset / PanelStyle.PIXEL
+                + renderContext.Offset / (PanelStyle.PIXEL * density * fit)
                 + new Vector2(0f, rise);
 
             canvas.Glyph(Font, glyph.Character.ToString(), position, renderContext.Color * fade, TEXT_SCALE);
