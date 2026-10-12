@@ -1810,9 +1810,18 @@ Liquids: {
 Conditions.NearBrine: Near Brine
 
 Configs: {
-	AuthoringConfig: {
-		DisplayName: Authoring Config
-		Headers.Authoring: Authoring Header
+	DeveloperConfig: {
+		DisplayName: Developer Config
+
+		Headers: {
+			Debug: Debug
+			Authoring: Authoring
+		}
+
+		DebugMode: {
+			Label: Debug Mode
+			Tooltip: ""
+		}
 
 		SourceDirectory: {
 			Label: Mod source directory
@@ -1821,11 +1830,6 @@ Configs: {
 				Absolute path to src/TrelamiumIII. Leave empty to export to the Terraria save folder instead.
 				Example: C:/Users/you/Documents/My Games/Terraria/tModLoader/ModSources/TrelamiumIII/src/TrelamiumIII
 				'''
-		}
-
-		HasSourceDirectory: {
-			Label: Has Source Directory
-			Tooltip: ""
 		}
 	}
 
@@ -1884,16 +1888,6 @@ Configs: {
 
 		Custom: {
 			Label: Custom
-			Tooltip: ""
-		}
-	}
-
-	DebugConfig: {
-		DisplayName: Debug Config
-		Headers.DebugMode: Debug Mode Header
-
-		DebugMode: {
-			Label: Debug Mode
 			Tooltip: ""
 		}
 	}
