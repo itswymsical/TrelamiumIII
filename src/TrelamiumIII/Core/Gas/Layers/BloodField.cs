@@ -38,44 +38,27 @@ public class BloodField : ChemicalGasField
     /// </summary>
     protected override ChemicalReactionTileCondition? Residue => null;
 
-    private Asset<Texture2D> noiseTex;
-
-    public override void Load()
+    protected override GasLook Look { get; } = new()
     {
-        base.Load();
-        noiseTex = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    protected override void ApplyShaderParameters(Effect effect)
-    {
-        effect.Parameters["uNoiseTex"]?.SetValue(noiseTex.Value);
-
-        Vector3 light = new Vector3(0.18f);
-
-        effect.Parameters["WorldLight"]?.SetValue(light);
-
-
-        effect.Parameters["Threshold"]?.SetValue(0.12f);
-        effect.Parameters["NoiseScale"]?.SetValue(0.75f);
-        effect.Parameters["NoiseStrength"]?.SetValue(0.04f);
-        effect.Parameters["NoiseDrift"]?.SetValue(new Vector2(0f, -0.08f));
-
-        effect.Parameters["FlowStrength"]?.SetValue(0.08f);
-        effect.Parameters["NoiseStretch"]?.SetValue(new Vector2(1f, 0.45f));
-
-        effect.Parameters["BodyAlphaFloor"]?.SetValue(0.8f);
-
-        effect.Parameters["Bands"]?.SetValue(8f);
-        effect.Parameters["BodyAlpha"]?.SetValue(0.94f);
-
-        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.72f, 0.08f, 0.08f));
-        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.55f, 0.07f, 0.03f));
-        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.34f, 0.05f, 0.02f));
-        effect.Parameters["OutlineColor"]?.SetValue(new Vector3(0.76f, 0.01f, 0.02f));
-        effect.Parameters["OutlineAlpha"]?.SetValue(0.8f);
-        effect.Parameters["HighlightColor"]?.SetValue(new Vector3(0.95f, 0.30f, 0.25f));
-        effect.Parameters["HighlightAlpha"]?.SetValue(0.9f);
-    }
+        Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
+        WorldLight = new Vector3(0.18f),
+        Threshold = 0.12f,
+        NoiseScale = 0.75f,
+        NoiseStrength = 0.04f,
+        Drift = new Vector2(0f, -0.08f),
+        FlowStrength = 0.08f,
+        NoiseStretch = new Vector2(1f, 0.45f),
+        BodyAlphaFloor = 0.8f,
+        Bands = 8f,
+        BodyAlpha = 0.94f,
+        Shadow = new Vector3(0.72f, 0.08f, 0.08f),
+        Body = new Vector3(0.55f, 0.07f, 0.03f),
+        Core = new Vector3(0.34f, 0.05f, 0.02f),
+        Outline = new Vector3(0.76f, 0.01f, 0.02f),
+        OutlineAlpha = 0.8f,
+        Highlight = new Vector3(0.95f, 0.30f, 0.25f),
+        HighlightAlpha = 0.9f,
+    };
 
     protected override int ContactBuff => BuffID.BloodButcherer;
 

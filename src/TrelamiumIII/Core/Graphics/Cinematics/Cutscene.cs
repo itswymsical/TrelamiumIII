@@ -24,7 +24,8 @@ public abstract class Cutscene
     public EaseFunction LetterboxEasing { get; set; } = EaseFunction.EaseQuadOut;
     public int LetterboxAnimationDuration { get; set; } = 60;
 
-    private int? _currentMusicID = null;
+    /// <summary>Music slot held while the cutscene plays, or null to leave vanilla's choice.</summary>
+    private int? musicSlot;
 
     protected float ElapsedSeconds { get; set; }
 
@@ -117,8 +118,9 @@ public abstract class Cutscene
                 Letterbox.Update();
             }
 
-            // Update music fade handler
-            MusicFadeHandler.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            // Re-pinned every update: vanilla clears musicBox2 each frame.
+            if (musicSlot is { } slot)
+                Main.musicBox2 = slot;
 
             if (CanSkip && !_skipFadeOutStarted)
             {
@@ -185,19 +187,14 @@ public abstract class Cutscene
 
     protected virtual void OnCutsceneUpdate(GameTime gameTime) { }
 
-    /// <summary>
-    /// Sets the background music for the cutscene
-    /// </summary>
-    /// <param name="musicID">Music ID to play, or null to keep current music</param>
-    /// <param name="fadeMode">How the music should transition</param>
-    /// <param name="fadeTime">Duration of fade in seconds (for FadeIn/FadeOut modes)</param>
-    public void SetMusic(int? musicID, MusicFadeMode fadeMode = MusicFadeMode.CrossFade, float fadeTime = 1f)
+    /// <summary>Holds music slot <paramref name="slot" /> while the cutscene plays (vanilla crossfades to it); null keeps the current music.</summary>
+    public void SetMusic(int? slot)
     {
-        if (musicID.HasValue)
-        {
-            _currentMusicID = musicID.Value;
-            MusicFadeHandler.SetMusic(musicID.Value, fadeMode, fadeTime);
-        }
+        if (slot is not { } value)
+            return;
+
+        musicSlot = value;
+        Main.musicBox2 = value;
     }
 
     /// <summary>
@@ -288,11 +285,7 @@ public abstract class Cutscene
                 Letterbox.Hide();
             }
 
-            if (_currentMusicID.HasValue)
-            {
-                MusicFadeHandler.RestorePreviousMusic();
-                _currentMusicID = null;
-            }
+            musicSlot = null;
 
             OnCutsceneEnd();
         }

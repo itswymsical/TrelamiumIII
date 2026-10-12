@@ -23,10 +23,8 @@
     { "substrate": "Content/SatchelContent", "trelamium": "Content/Items/FarmingOverhaul/SatchelContent" },
     { "substrate": "Content/Sharpnut", "trelamium": "Content/Items/Sharpnut" },
     { "substrate": "Content/Shovels", "trelamium": "Content/Items/FarmingOverhaul/Shovels" },
-    { "substrate": "Content/Tiles", "trelamium": "Content/Construction" },
-    { "substrate": "Content/Weapons", "trelamium": "Content/Items/Weapons" },
-    { "substrate": "Core/Components/Items", "trelamium": "Core/Items/Components" },
-    { "substrate": "Core/Components/NPCs", "trelamium": "Core/Items/Components/NPCs" }
+    { "substrate": "Content/Tiles", "trelamium": "Content/Tiles/Construction" },
+    { "substrate": "Content/Weapons", "trelamium": "Content/Items/Weapons" }
   ],
   "namespaces": [
     { "substrate": "SubstrateMod.Common.Globals.Tiles", "trelamium": "TrelamiumIII.Common.Globals" },
@@ -39,9 +37,8 @@
     { "substrate": "SubstrateMod.Content.Minerals", "trelamium": "TrelamiumIII.Content.Items.Rusted" },
     { "substrate": "SubstrateMod.Content.SatchelContent", "trelamium": "TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent" },
     { "substrate": "SubstrateMod.Content.Sharpnut", "trelamium": "TrelamiumIII.Content.Items.Sharpnut" },
-    { "substrate": "SubstrateMod.Content.Tiles", "trelamium": "TrelamiumIII.Content.Construction" },
-    { "substrate": "SubstrateMod.Content.Weapons", "trelamium": "TrelamiumIII.Content.Items.Weapons" },
-    { "substrate": "SubstrateMod.Core.Components.Items", "trelamium": "TrelamiumIII.Core.Items.Components" }
+    { "substrate": "SubstrateMod.Content.Tiles", "trelamium": "TrelamiumIII.Content.Tiles.Construction" },
+    { "substrate": "SubstrateMod.Content.Weapons", "trelamium": "TrelamiumIII.Content.Items.Weapons" }
   ],
   "exclude": {
     "both": [
