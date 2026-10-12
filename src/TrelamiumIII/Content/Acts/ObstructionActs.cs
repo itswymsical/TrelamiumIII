@@ -1,15 +1,18 @@
 using System.Collections.Generic;
-using System.Linq;
+using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.ExperientialSystem.Acts;
 
 namespace TrelamiumIII.Content.Acts;
 
 /// <summary>
-/// Mining acts: one per ore, plus a group act per tier band that each ore also feeds. Group payout scales with how
-/// many member ores were mined (see <see cref="Act.CoverageMultiplier"/>). Names live in <c>Localization/ActLang</c>.
+/// Tile-breaking acts: one per ore plus group acts per ore tier (each ore feeds both), and block families matched by
+/// tile sets. Names live in <c>Localization/ActLang</c>.
 /// </summary>
-internal sealed class OreActs : IActProvider
+internal sealed class ObstructionActs : IActProvider
 {
+    /// <summary>Lumber counts trees felled, not trunk tiles broken (see <see cref="ActUnits.AverageTreeTiles"/>).</summary>
+    private static readonly int[] Trees = [5, 15, 35, 70, 120, 190, 290, 420, 580, 780];
+
     public IEnumerable<Act> Provide() =>
     [
         Ore("copper", TileID.Copper),
@@ -28,72 +31,46 @@ internal sealed class OreActs : IActProvider
         Ore("adamantite", TileID.Adamantite, hardmode: true),
         Ore("titanium", TileID.Titanium, hardmode: true),
 
-        new TileBreakDataAct("act.ore.metals.prehardmode", ActSets.PreHardmodeMetalOre, ActCurves.OreGroup),
-        new TileBreakDataAct("act.ore.metals.hardmode", ActSets.HardmodeMetalOre, ActCurves.OreGroup, hardmodeContent: true),
-        new TileBreakDataAct("act.ore.exotic", ActSets.ExoticOre, ActCurves.Ore),
-        new TileBreakDataAct("act.gems", ActSets.GemTiles, ActCurves.Ore)
+        Group("act.ore.metals.prehardmode", ActSets.PreHardmodeMetalOre, ActCurves.OreGroup),
+        Group("act.ore.metals.hardmode", ActSets.HardmodeMetalOre, ActCurves.OreGroup, hardmode: true),
+        Group("act.ore.exotic", ActSets.ExoticOre, ActCurves.Ore),
+        Group("act.gems", ActSets.GemTiles, ActCurves.Ore),
+
+        Blocks("act.soil", ActCurves.Bulk, static type => TileID.Sets.CanBeDugByShovel[type]),
+
+        new DataAct("act.pots", ActCategory.Obstruction, GameEventType.TileBreak, ActCurves.Scavenge)
+        {
+            Test = static type => type == TileID.Pots,
+
+            // One break per tile of the 2x2 pot. Pots have no TileObjectData, so the fallback applies.
+            Events = static () => ActUnits.MultiTileFootprint(TileID.Pots, fallback: ActUnits.TwoByTwo),
+        },
+
+        Blocks("act.tundra", ActCurves.Bulk,
+            static type => TileID.Sets.Ices[type] || TileID.Sets.IcesSlush[type] || TileID.Sets.IcesSnow[type]),
+        Blocks("act.evilbiomes", ActCurves.Bulk, static type => TileID.Sets.Corrupt[type] || TileID.Sets.Crimson[type]),
+        Blocks("act.hellblocks", ActCurves.Bulk, static type => TileID.Sets.HellSpecial[type] || TileID.Sets.Ash[type]),
+        Blocks("act.jungleblocks", ActCurves.Bulk,
+            static type => TileID.Sets.Mud[type] || IsJungleBlock(type) || TileID.Sets.JungleSpecial[type]),
+        Blocks("act.stoneblocks", ActCurves.Bulk, static type => TileID.Sets.Stone[type], multiplier: 0.5f),
+
+        new DataAct("act.lumber", ActCategory.Obstruction, GameEventType.TileBreak, Trees)
+        {
+            Test = static type => TileID.Sets.IsATreeTrunk[type],
+            Multiplier = 0.75f,
+            Events = static () => ActUnits.AverageTreeTiles,
+        },
     ];
 
-    private static Act Ore(string key, int tile, bool hardmode = false)
-        => new TileBreakDataAct($"act.ore.{key}", [tile], ActCurves.Ore, hardmodeContent: hardmode);
-}
+    private static DataAct Ore(string key, int tile, bool hardmode = false)
+        => Group($"act.ore.{key}", [tile], ActCurves.Ore, hardmode);
 
-public sealed class SoilAct : TileBreakPredicateAct
-{
-    public override string ID => "act.soil";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
+    private static DataAct Group(string id, int[] tiles, int[] curve, bool hardmode = false)
+        => new(id, ActCategory.Obstruction, GameEventType.TileBreak, curve) { Ids = tiles, Hardmode = hardmode };
 
-    protected override bool TestTile(int tileType) => TileID.Sets.CanBeDugByShovel[tileType];
-}
+    private static DataAct Blocks(string id, int[] curve, Func<int, bool> test, float? multiplier = null)
+        => new(id, ActCategory.Obstruction, GameEventType.TileBreak, curve) { Test = test, Multiplier = multiplier };
 
-public sealed class PotAct : TileBreakPredicateAct
-{
-    public override string ID => "act.pots";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Scavenge;
-
-    /// <summary>
-    /// A pot is a 2x2 multitile, so one smash raises four tile breaks. Pots have no TileObjectData, so the fallback is
-    /// what actually applies.
-    /// </summary>
-    public override int EventsPerAction => ActUnits.MultiTileFootprint(TileID.Pots, fallback: ActUnits.TwoByTwo);
-
-    protected override bool TestTile(int tileType) => tileType == TileID.Pots;
-}
-
-public sealed class TundraAct : TileBreakPredicateAct
-{
-    public override string ID => "act.tundra";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.Ices[tileType] || TileID.Sets.IcesSlush[tileType] || TileID.Sets.IcesSnow[tileType];
-}
-
-public sealed class EvilBiomeAct : TileBreakPredicateAct
-{
-    public override string ID => "act.evilbiomes";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.Corrupt[tileType] || TileID.Sets.Crimson[tileType];
-}
-
-public sealed class HellBlocksAct : TileBreakPredicateAct
-{
-    public override string ID => "act.hellblocks";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.HellSpecial[tileType] || TileID.Sets.Ash[tileType];
-}
-
-public sealed class JungleBlocksAct : TileBreakPredicateAct
-{
     private static bool IsJungleBlock(int tileType) => tileType switch
     {
         TileID.JungleGrass or TileID.Mudstone or TileID.Hive or
@@ -101,39 +78,4 @@ public sealed class JungleBlocksAct : TileBreakPredicateAct
         TileID.RichMahogany or TileID.LivingMahogany => true,
         _ => false
     };
-
-    public override string ID => "act.jungleblocks";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.Mud[tileType] || IsJungleBlock(tileType) || TileID.Sets.JungleSpecial[tileType];
-}
-
-public sealed class StoneBlocksAct : TileBreakPredicateAct
-{
-
-    public override string ID => "act.stoneblocks";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => ActCurves.Bulk;
-    public override float ExpMultiplier => 0.5f;
-
-    protected override bool TestTile(int tileType)
-        => TileID.Sets.Stone[tileType];
-}
-
-public sealed class LumberAct : TileBreakPredicateAct
-{
-    /// <summary>Counted in trees felled, not trunk tiles broken. See <see cref="EventsPerAction"/>.</summary>
-    private static readonly int[] Trees = [5, 15, 35, 70, 120, 190, 290, 420, 580, 780];
-
-    public override string ID => "act.lumber";
-    public override ActCategory Category => ActCategory.Obstruction;
-    public override int[] Thresholds => Trees;
-    public override float ExpMultiplier => 0.75f;
-
-    /// <summary>Felling a tree breaks a dozen or so trunk tiles, so thresholds count trees rather than breaks.</summary>
-    public override int EventsPerAction => ActUnits.AverageTreeTiles;
-
-    protected override bool TestTile(int tileType) => TileID.Sets.IsATreeTrunk[tileType];
 }

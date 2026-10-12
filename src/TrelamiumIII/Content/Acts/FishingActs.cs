@@ -4,101 +4,28 @@ using TrelamiumIII.Core.ExperientialSystem.Acts;
 
 namespace TrelamiumIII.Content.Acts;
 
-public sealed class EvilFishAct : FishingAct
+internal sealed class FishingActs : IActProvider
 {
-    public override string ID => "act.evilfish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.EvilBiomeFish;
+    public IEnumerable<Act> Provide() =>
+    [
+        Catch("act.evilfish", ActSets.EvilBiomeFish),
+        Catch("act.hallowfish", ActSets.HallowFish),
+        Catch("act.jellyfishing", ActSets.JellyFih),
+        Catch("act.hellfishing", [ItemID.Obsidifish, ItemID.FlarefinKoi]),
+        Catch("act.commonfish", ActSets.CommonFish),
+        Catch("act.uncommonfish", ActSets.UncommonFish),
+        Catch("act.rarefish", ActSets.RareFish),
+        Catch("act.legendfish", ActSets.LegendaryFish),
+        Catch("act.icefish", [ItemID.AtlanticCod, ItemID.FrostMinnow], multiplier: 0.8f),
+        Catch("act.junglefish", [ItemID.NeonTetra, ItemID.DoubleCod, ItemID.VariegatedLardfish], multiplier: 0.8f),
 
-}
+        Crates("act.phmcrates", static type => ItemID.Sets.IsFishingCrate[type]),
+        Crates("act.hmcrates", static type => ItemID.Sets.IsFishingCrateHardmode[type]),
+    ];
 
-public sealed class HallowFishAct : FishingAct
-{
-    public override string ID => "act.hallowfish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.HallowFish;
-}
+    private static DataAct Catch(string id, int[] items, float? multiplier = null)
+        => new(id, ActCategory.Fishing, GameEventType.CaughtFish, ActCurves.Fishing) { Ids = items, Multiplier = multiplier };
 
-public sealed class JellyfishingAct : FishingAct
-{
-    public override string ID => "act.jellyfishing";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.JellyFih;
-
-}
-
-public sealed class HellfishAct : FishingAct
-{
-    public override string ID => "act.hellfishing";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => [ItemID.Obsidifish, ItemID.FlarefinKoi];
-}
-
-public sealed class CommonFishAct : FishingAct
-{
-    public override string ID => "act.commonfish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.CommonFish;
-}
-
-public sealed class UncommonFishAct : FishingAct
-{
-    public override string ID => "act.uncommonfish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.UncommonFish;
-}
-
-public sealed class RareFishAct : FishingAct
-{
-    public override string ID => "act.rarefish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.RareFish;
-}
-
-public sealed class LegendaryFishAct : FishingAct
-{
-    public override string ID => "act.legendfish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override int[] Ids => ActSets.LegendaryFish;
-}
-
-public sealed class TundraFishAct : FishingAct
-{
-    public override string ID => "act.icefish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    public override float ExpMultiplier => 0.8f;
-    protected override int[] Ids => [ItemID.AtlanticCod, ItemID.FrostMinnow];
-}
-public sealed class JungleFishAct : FishingAct
-{
-    public override string ID => "act.junglefish";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    public override float ExpMultiplier => 0.8f;
-    protected override int[] Ids => [ItemID.NeonTetra, ItemID.DoubleCod, ItemID.VariegatedLardfish];
-}
-
-public sealed class PHMCratesAct : FishingCrateAct
-{
-    public override string ID => "act.phmcrates";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override bool CrateType(int type) => ItemID.Sets.IsFishingCrate[type];
-}
-
-public sealed class HMCratesAct : FishingCrateAct
-{
-    public override string ID => "act.hmcrates";
-    public override ActCategory Category => ActCategory.Fishing;
-    public override int[] Thresholds => ActCurves.Fishing;
-    protected override bool CrateType(int type) => ItemID.Sets.IsFishingCrateHardmode[type];
+    private static DataAct Crates(string id, Func<int, bool> isCrate)
+        => new(id, ActCategory.Fishing, GameEventType.CaughtFish, ActCurves.Fishing) { Test = isCrate };
 }

@@ -5,7 +5,6 @@ using Terraria.GameContent.Drawing;
 using Terraria.GameContent.Metadata;
 using Terraria.Localization;
 using Terraria.Utilities;
-using TrelamiumIII.Common.Globals;
 
 namespace TrelamiumIII.Core.Tiles;
 
@@ -273,7 +272,7 @@ public abstract class CustomTree : ModTile
         TreeCanopy canopy = sheet.Canopy;
         Texture2D texture = TextureAssets.Tile[Type].Value;
 
-        float wind = Main.instance.TilesRenderer.GetWindCycle(i, j, TileSwaySystem.Instance.TreeWindCounter);
+        float wind = Main.instance.TilesRenderer.GetWindCycle(i, j, TileWindSystem.TreeCounter);
         float rotation = wind * CanopySway;
         var anchor = new Vector2(
             i * 16 + 8 + wind * CanopyShift - (int)Main.screenPosition.X,
@@ -287,7 +286,7 @@ public abstract class CustomTree : ModTile
         {
             TreeLeaf leaf = sheet.Leaves[k];
             Vector2 mount = anchor + (leaf.Mount - canopy.Anchor).RotatedBy(rotation);
-            float leafWind = Main.instance.TilesRenderer.GetWindCycle(i + k * 3 + 1, j, TileSwaySystem.Instance.GrassWindCounter);
+            float leafWind = Main.instance.TilesRenderer.GetWindCycle(i + k * 3 + 1, j, TileWindSystem.GrassCounter);
 
             spriteBatch.Draw(texture, mount, leaf.Source, light, rotation + leafWind * LeafSway, leaf.Pivot, 1f, SpriteEffects.None, 0f);
         }

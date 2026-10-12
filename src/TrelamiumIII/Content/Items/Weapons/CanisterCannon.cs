@@ -1,6 +1,7 @@
 using Terraria.Audio;
 using Terraria.DataStructures;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Items.Ammo;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Projectiles;
@@ -108,34 +109,6 @@ public enum CanisterFuse : byte
     Contact,
 }
 
-/// <summary>Base for Canister Cannon ammo. Subclasses supply the gas layer, fuse and burst read by <see cref="GasCanisterProj" />.</summary>
-public abstract class GasCanisterAmmo : ModItem
-{
-    public abstract GasField? Field { get; }
-
-    public abstract CanisterFuse Fuse { get; }
-
-    /// <summary>Ticks from launch to burst. Read only for <see cref="CanisterFuse.Timed" />.</summary>
-    public virtual int FuseTicks => 90;
-
-    public virtual BurstProfile Burst => BurstProfile.Vent with { DamageShare = 1f };
-
-    /// <summary>Nodes shed in flight, or null for none.</summary>
-    public virtual TrailProfile? Trail => null;
-
-    public override void SetDefaults()
-    {
-        Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Item.damage = 6;
-        Item.width = 24;
-        Item.height = 16;
-        Item.maxStack = Item.CommonMaxStack;
-        Item.consumable = true;
-        Item.ammo = ModContent.ItemType<CanisterCannon>();
-        Item.shoot = ModContent.ProjectileType<GasCanisterProj>();
-    }
-}
-
 /// <summary>A canister in flight. <c>ai[0]</c> is the <see cref="GasCanisterAmmo" /> item id, resolved on every client.</summary>
 public class GasCanisterProj : ChemicalProjectile
 {
@@ -156,7 +129,7 @@ public class GasCanisterProj : ChemicalProjectile
 
     protected override GasField? Field => Ammo?.Field;
 
-    protected override TrailProfile? Trail => Ammo?.Trail;
+    protected override TrailProfile? Trail => null;
 
     protected override BurstProfile Burst => Ammo?.Burst ?? base.Burst;
 
@@ -177,8 +150,8 @@ public class GasCanisterProj : ChemicalProjectile
         {
             Projectile.localAI[0] = 1f;
 
-            if (Ammo is { Fuse: CanisterFuse.Timed } ammo)
-                Projectile.timeLeft = ammo.FuseTicks;
+            if (Ammo is { Fuse: CanisterFuse.Timed })
+                Projectile.timeLeft = GasCanisterAmmo.FuseTicks;
         }
 
         Projectile.velocity.Y = MathF.Min(Projectile.velocity.Y + GRAVITY, MAX_FALL);

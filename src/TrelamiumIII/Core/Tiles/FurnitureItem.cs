@@ -1,6 +1,4 @@
-﻿using TrelamiumIII.Core.Tiles;
-
-namespace TrelamiumIII.Core.Items.Components;
+﻿namespace TrelamiumIII.Core.Tiles;
 
 public abstract class FurnitureItem : ModItem
 {
@@ -37,7 +35,6 @@ public abstract class FurnitureItem : ModItem
     }
     public override void PostUpdate()
     {
-        // Create a white (1.0, 1.0, 1.0) light when the item is in world, and isn't underwater.
         if (!Item.wet && !IsWaterTorch)
         {
             Lighting.AddLight(Item.Center, TorchColor.X, TorchColor.Y, TorchColor.Z);
@@ -64,7 +61,6 @@ public abstract class FurnitureItem : ModItem
                 dust.position = player.RotatedRelativePoint(dust.position);
             }
 
-            // Create a greenish (0.5, 1.5, 0.5) light at the torch's approximate position, when the item is held.
             Vector2 position = player.RotatedRelativePoint(new Vector2(player.itemLocation.X + 12f * player.direction + player.velocity.X, player.itemLocation.Y - 14f + player.velocity.Y), true);
 
             Lighting.AddLight(position, TorchColor.X, TorchColor.Y, TorchColor.Z);

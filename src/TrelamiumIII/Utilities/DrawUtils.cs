@@ -15,66 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 using Terraria.GameContent;
-using Terraria.UI.Chat;
 
 namespace TrelamiumIII.Utilities;
 
 internal static class DrawUtils
 {
-    public static Vector2 GetMiddleBetween(this Vector2 start, Vector2 end) => (start + end) / 2;
-
-    public static Vector2 TurnRight(this Vector2 vector) => new Vector2(-vector.Y, vector.X);
-
-    public static Vector2 TurnLeft(this Vector2 vector) => new Vector2(vector.Y, -vector.X);
-
-    public static Vector2 ToVector2(this Vector3 vector) => new Vector2(vector.X, vector.Y);
-
     public static Vector3 ToVector3(this Vector2 vector) => new Vector3(vector.X, vector.Y, 0f);
 
-    public static Vector2 ToDrawPosition(this Vector2 vector) => vector - Main.screenPosition;
-
-    public static Matrix DefaultEffectMatrix
-    {
-        get
-        {
-            var device = Main.instance.GraphicsDevice;
-
-            var width = device.Viewport.Width > 0 ? 2f / device.Viewport.Width : 0;
-            var height = device.Viewport.Height > 0 ? -2f / device.Viewport.Height : 0;
-
-            return new Matrix
-            {
-                M11 = width,
-                M22 = height,
-                M33 = 1,
-                M44 = 1,
-                M41 = -1 - width / 2f,
-                M42 = 1 - height / 2f
-            };
-        }
-    }
-
-    public static void DrawAdditive(Texture2D tex, Vector2 position, Color colour, float scale)
-    {
-        Main.spriteBatch.End();
-        Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, null, null, null, null, Main.GameViewMatrix.TransformationMatrix);
-
-        Main.spriteBatch.Draw(tex, position, tex.Bounds, colour, 0f, tex.TextureCenter(), scale, SpriteEffects.None, 0f);
-
-        Main.spriteBatch.RestartToDefault();
-    }
-
-    /// <summary>
-    /// Ends & restarts the spriteBatch with default vanilla parameters.
-    /// </summary>
+    /// <summary>Ends and restarts the batch with vanilla's default world parameters.</summary>
     public static void RestartToDefault(this SpriteBatch batch)
     {
         batch.End();
         batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None,
             Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
     }
-
-    public static Vector2 TextureCenter(this Texture2D texture) => new Vector2(texture.Width / 2, texture.Height / 2);
 
     public static void DrawLine(this SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color? color = null, int lineWidth = 1)
     {
@@ -89,147 +43,12 @@ internal static class DrawUtils
         spriteBatch.Draw(TextureAssets.MagicPixel.Value, destRect, null, lineColor, rotation, default, SpriteEffects.None, 0);
     }
 
-    public static void DrawTriangle(Vector2[] vertices, Color? color = null)
-    {
-        var device = Main.graphics.GraphicsDevice;
-
-        var basicEffect = Main.dedServ ? null : new BasicEffect(device)
-        {
-            VertexColorEnabled = true,
-            View = DefaultEffectMatrix
-        };
-
-        if (basicEffect is null)
-        {
-            return;
-        }
-
-        var points = new VertexPositionColor[3];
-
-        for (var i = 0; i < 3; i++)
-        {
-            points[i] = new VertexPositionColor(vertices[i].ToVector3(), color ?? Color.White);
-        }
-
-        device.SetVertexBuffer(null);
-
-        var vertexBuffer = new VertexBuffer(device, typeof(VertexPositionColor), 3, BufferUsage.WriteOnly);
-        vertexBuffer.SetData(points);
-
-        device.SetVertexBuffer(vertexBuffer);
-
-        foreach (var pass in basicEffect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-
-            device.DrawPrimitives(PrimitiveType.TriangleList, 0, 3);
-        }
-    }
-
-    public static void DrawTriangle(Texture2D texture, Vector2[] vertices, Vector2[] texCoords)
-    {
-        var device = Main.graphics.GraphicsDevice;
-
-        var basicEffect = Main.dedServ ? null : new BasicEffect(device)
-        {
-            TextureEnabled = true,
-            Texture = texture,
-            View = DefaultEffectMatrix
-        };
-
-        if (basicEffect is null)
-        {
-            return;
-        }
-
-        var points = new VertexPositionTexture[3];
-
-        for (var i = 0; i < 3; i++)
-        {
-            points[i] = new VertexPositionTexture(vertices[i].ToVector3(), texCoords[i]);
-        }
-
-        device.SetVertexBuffer(null);
-
-        var vertexBuffer = new VertexBuffer(device, typeof(VertexPositionTexture), 3, BufferUsage.WriteOnly);
-        vertexBuffer.SetData(points);
-
-        device.SetVertexBuffer(vertexBuffer);
-
-        foreach (var pass in basicEffect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-
-            device.DrawPrimitives(PrimitiveType.TriangleList, 0, 1);
-        }
-    }
-
-    public static void DrawText(SpriteBatch spriteBatch, Vector2 position, string text, Color? color = null, Color? shadowColor = null, float scale = 1f)
-    {
-        var font = FontAssets.DeathText.Value;
-
-        var textSize = font.MeasureString(text) * scale;
-        var textPosition = position - textSize / 2f;
-
-        var drawTextColor = color ?? Color.White;
-        var shadowTextColor = shadowColor ?? Color.Black;
-
-        shadowTextColor.A = drawTextColor.A;
-
-        ChatManager.DrawColorCodedStringShadow(spriteBatch, font, text, textPosition, shadowTextColor, 0f, default, new Vector2(scale));
-        ChatManager.DrawColorCodedString(spriteBatch, font, text, textPosition, drawTextColor, 0f, default, new Vector2(scale));
-    }
-
-    public static void DrawText(SpriteBatch spriteBatch, Color color, string text, Vector2 position, float scale = 1f)
-    {
-        var font = FontAssets.DeathText.Value;
-
-        var textSize = font.MeasureString(text) * scale;
-        var textPosition = position - textSize / 2f;
-
-        var shadowColor = Color.Black;
-        shadowColor.A = color.A;
-
-        ChatManager.DrawColorCodedStringShadow(spriteBatch, font, text, textPosition, shadowColor, 0f, default, Vector2.One * scale);
-        ChatManager.DrawColorCodedString(spriteBatch, font, text, textPosition, color, 0f, default, Vector2.One * scale);
-    }
-
-    public static void DrawTextCollumn(SpriteBatch spriteBatch, Color color, string text, ref Vector2 position, float scale = 1f, float spacement = 5f)
-    {
-        var font = FontAssets.DeathText.Value;
-
-        var textSize = font.MeasureString(text) * scale;
-        var textPosition = position - textSize / 2f;
-        position.Y += textSize.Y + spacement;
-
-        // Maybe we could use DrawText here?
-
-        var shadowColor = Color.Black;
-        shadowColor.A = color.A;
-
-        ChatManager.DrawColorCodedStringShadow(spriteBatch, font, text, textPosition, shadowColor, 0f, default, Vector2.One * scale);
-        ChatManager.DrawColorCodedString(spriteBatch, font, text, textPosition, color, 0f, default, Vector2.One * scale);
-    }
-
-    public static T[] FastUnion<T>(this T[] front, T[] back)
-    {
-        var combined = new T[front.Length + back.Length];
-
-        Array.Copy(front, combined, front.Length);
-        Array.Copy(back, 0, combined, front.Length, back.Length);
-
-        return combined;
-    }
-
-    // 9-slice panel: corners stay fixed, edges stretch. Drawn twice, an inner fill
-    // tinted with the speaker color and a white outline on top.
+    /// <summary>9-slice panel: a fill tinted <paramref name="c" /> under a white outline, both scaled by <paramref name="opacity" />.</summary>
     public static void DrawPanel(SpriteBatch sb, int x, int y, int w, int h, Color c = default, Texture texture = null, float opacity = 1f)
     {
         if (c == default)
             c = new Color(63, 65, 151, 255) * 0.785f;
 
-        // Faded as one piece, so a panel animating in or out does not leave its outline hanging in
-        // the air at full strength while the fill underneath it disappears.
         c *= opacity;
         var outline = Color.White * opacity;
 
@@ -238,20 +57,18 @@ internal static class DrawUtils
 
         texture = texture ?? value;
 
-        // ADJUST THESE VALUES to match your sprite's actual border sizes!
-        int borderLeft = 20;   // Measure the left border in your 480x106 sprite
-        int borderRight = 20;  // Measure the right border in your 480x106 sprite
-        int borderTop = 30;    // Measure the top border in your 480x106 sprite
-        int borderBottom = 30; // Measure the bottom border in your 480x106 sprite
+        // Border sizes of the 480x106 PortraitBox sprites.
+        int borderLeft = 20;
+        int borderRight = 20;
+        int borderTop = 30;
+        int borderBottom = 30;
 
-        // Ensure minimum size
         int minWidth = borderLeft + borderRight;
         int minHeight = borderTop + borderBottom;
 
         if (w < minWidth) w = minWidth;
         if (h < minHeight) h = minHeight;
 
-        // Calculate source texture regions
         int srcWidth = value.Width;
         int srcHeight = value.Height;
         int srcCenterWidth = srcWidth - borderLeft - borderRight;

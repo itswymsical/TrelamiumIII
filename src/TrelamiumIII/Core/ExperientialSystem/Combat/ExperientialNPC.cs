@@ -6,15 +6,13 @@ namespace TrelamiumIII.Core.ExperientialSystem.Combat;
 /// Attributes damage on an NPC and turns its death into Exp for whoever earned it.
 ///
 /// <para>
-/// The award is sized as a <i>fraction of one meter</i> rather than a number of Exp. That is what lets the
-/// same value be computed where the facts live (the server, which sees NPC stats and damage shares) and
-/// spent where the state lives (the owning client, which holds Threshold, history and allowance). It also
+/// The award is sized as a <i>fraction of one meter</i> rather than a number of Exp. It also
 /// means an award stays correct if the player ascends between the kill and the packet arriving.
 /// </para>
 ///
 /// <para>
 /// Bosses are not a separate code path here. A boss is simply a very high menace and a larger base
-/// fraction, which is why this class has no boss XP curve, no level compression and no level-delta table.
+/// fraction.
 /// </para>
 /// </summary>
 public sealed class ExperientialNPC : GlobalNPC

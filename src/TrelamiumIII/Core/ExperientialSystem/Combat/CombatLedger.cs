@@ -5,20 +5,15 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Core.ExperientialSystem.Combat;
 
 /// <summary>
-/// The character's personal history with each NPC type: how many they have killed, and how many times
+/// The players's history with each NPC type: how many they have killed, and how many times
 /// that type has killed them. Two exponential curves come out of it.
 ///
 /// <para>
-/// <b>Familiarity</b> decays with kills. The first Green Slime teaches you something; the hundredth does
-/// not, and never will again. This is the lifetime anti-grind brake, and it is deliberately permanent -
-/// it does not reset on ascend the way the source allowance does.
+/// <b>Familiarity</b> decays with kills. The first kill of a type is worth the most, and each subsequent kill is worth less.
 /// </para>
 ///
 /// <para>
-/// <b>Grudge</b> grows with deaths, so a thing that has been killing you is worth more when you finally
-/// put it down. It saturates rather than accruing without limit, and each avenging kill spends a death
-/// off the tally. Both of those are exploit guards: an unbounded, non-consuming grudge would make dying
-/// on purpose the fastest way to earn Exp in the game.
+/// <b>Grudge</b> grows with deaths, but saturates. The first death to a type is worth the least, and each subsequent death is worth more, but never more than a fixed maximum.
 /// </para>
 ///
 /// <para>This is save-file data, so it lives on the owning client and is never computed server-side.</para>
