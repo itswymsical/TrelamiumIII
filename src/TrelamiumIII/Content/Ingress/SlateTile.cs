@@ -1,4 +1,4 @@
-﻿using TrelamiumIII.Common.Globals;
+﻿using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.Ingress;
 public class SlateBlock : ModItem
@@ -15,7 +15,7 @@ public class SlateTile : ModTile
 
         Main.tileMergeDirt[Type] = true;
 
-        this.MergeWith(TileID.ClayBlock, TileID.Stone, TileID.Ebonstone, TileID.Crimstone, 
+        this.Merge(TileID.ClayBlock, TileID.Stone, TileID.Ebonstone, TileID.Crimstone, 
             TileID.Slush, TileID.Grass, TileID.SnowBlock, ModContent.TileType<IngressGrass>(), ModContent.TileType<BramblerootTile>(), ModContent.TileType<PeatTile>());
 
         Main.tileBlockLight[Type] = true;

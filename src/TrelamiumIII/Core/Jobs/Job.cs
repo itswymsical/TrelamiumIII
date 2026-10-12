@@ -387,13 +387,9 @@ public abstract class Job
     }
 
     /// <summary>
-    /// Returns the job to its unstarted state, and offers it again. Always call <c>base.Reset()</c>
-    /// when overriding.
+    /// Returns the job to <see cref="JobState.Available" /> at its first task set (used by <c>/job reset</c>).
+    /// Overrides must call <c>base.Reset()</c>.
     /// </summary>
-    /// <remarks>
-    /// Re-offering is deliberate: the only caller is the <c>resetj</c> debug command, and a reset job
-    /// the player cannot then take is of no use to anyone testing one.
-    /// </remarks>
     public virtual void Reset()
     {
         State = JobState.Available;

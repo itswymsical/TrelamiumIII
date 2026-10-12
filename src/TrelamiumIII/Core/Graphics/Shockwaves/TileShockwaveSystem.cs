@@ -4,15 +4,11 @@ using Terraria.Graphics.Shaders;
 namespace TrelamiumIII.Core.Graphics.Shockwaves;
 
 /// <summary>
-///     Bends the solid tile layer around expanding rings, by handing
-///     <c>Main.instance.tileTarget</c> a distorted stand-in for the duration of the one draw call
-///     that puts it on the screen.
+///     Distorts the solid tile layer with <see cref="ITileWave" />s by swapping a distorted copy into
+///     <c>Main.instance.tileTarget</c> for the draw call that blits it.
 /// </summary>
 internal sealed class TileShockwaveSystem : ModSystem
 {
-    /// <summary>
-    ///     How many waves may distort the same frame.
-    /// </summary>
     private const int MaxConcurrentWaves = 4;
 
     private static readonly List<ITileWave> waves = [];
@@ -20,28 +16,15 @@ internal sealed class TileShockwaveSystem : ModSystem
     private static RenderTarget2D? front;
     private static RenderTarget2D? back;
 
-    /// <summary>
-    ///     The surface holding this frame's distorted layer, or null if the scene should be left
-    ///     alone. Produced in <see cref="PrepareDistortion" />, consumed in
-    ///     <see cref="SwapInDistortion" />.
-    /// </summary>
+    /// <summary>This frame's distorted layer, or null to leave the scene alone.</summary>
     private static RenderTarget2D? distorted;
 
-    /// <summary>
-    ///     The value <see cref="Main.sceneTilePos" /> held when <see cref="distorted" /> was built.
-    /// </summary>
+    /// <summary><see cref="Main.sceneTilePos" /> when <see cref="distorted" /> was built.</summary>
     private static Vector2 snapshotScenePos;
 
     private static bool loaded;
 
-    /// <summary>
-    ///     Starts a wave. Safe to call from anywhere; ignored on a server.
-    /// </summary>
-    /// <remarks>
-    ///     Takes any <see cref="ITileWave" />, so a smooth <see cref="Shockwave" /> and a
-    ///     tile-quantised <see cref="BlockWave" /> can be in flight together and will be composited
-    ///     in the order they were spawned.
-    /// </remarks>
+    /// <summary>Starts a wave; ignored on a server. Waves composite in spawn order.</summary>
     public static void Spawn(ITileWave wave)
     {
         if (Main.dedServ || !loaded)
@@ -87,30 +70,17 @@ internal sealed class TileShockwaveSystem : ModSystem
         }
     }
 
-    /// <summary>
-    ///     Runs the displacement passes into our own targets, before the scene starts.
-    /// </summary>
+    /// <summary>Runs the displacement passes into the ping-pong targets before the scene draws.</summary>
     private static void PrepareDistortion(On_Main.orig_CheckMonoliths orig)
     {
         orig();
 
-        // Cleared unconditionally so a frame that bails for any reason below cannot leave last
-        // frame's surface behind for the swap hook to pick up.
         distorted = null;
 
         if (!loaded || waves.Count == 0)
             return;
 
-        // drawToScreen means the tile targets were never populated: vanilla drew tiles straight
-        // to the backbuffer instead, and ReleaseTargets disposed the lot on the way in.
-        //
-        // It is set from Lighting.UpdateEveryFrame, which is
-        //     Main.LightingEveryFrame && !Main.RenderTargetsRequired && !Lighting.NotRetro
-        // so the usual "no targets under Retro lighting" warning is only two thirds true:
-        // RenderTargetsRequired is set by zoom (GameZoomTarget > 1), so a Retro-lighting player
-        // who is zoomed in does actually get populated targets and DOES see this effect. A mod that needs
-        // them unconditionally can clear Main.LightingEveryFrame, at the cost of retro lighting
-        // no longer relighting every frame, which is the entire point of those modes.
+        // No tile targets exist under drawToScreen (Retro/Trippy lighting without zoom).
         if (Main.drawToScreen)
             return;
 
@@ -124,8 +94,7 @@ internal sealed class TileShockwaveSystem : ModSystem
         if (!EnsureTarget(ref front, device, source.Width, source.Height))
             return;
 
-        // Captured once. Every wave in this pass must be positioned against the same origin, and
-        // the frame's tile re-render may move Main.sceneTilePos after this hook returns.
+        // Captured once: the frame's tile re-render may move sceneTilePos after this hook.
         var sceneOrigin = Main.sceneTilePos;
 
         Texture2D read = source;
@@ -139,9 +108,7 @@ internal sealed class TileShockwaveSystem : ModSystem
             if (!wave.Intersects(source, sceneOrigin))
                 continue;
 
-            // A pass cannot read and write the same surface. front takes every even pass, back
-            // every odd one; back is allocated only once a second visible wave actually turns up,
-            // so the common single-wave case costs one target instead of two.
+            // Even passes write front, odd passes write back; back is allocated on the second visible wave.
             if (applied == 1 && !EnsureTarget(ref back, device, source.Width, source.Height))
                 break;
 
@@ -153,8 +120,6 @@ internal sealed class TileShockwaveSystem : ModSystem
             applied++;
         }
 
-        // Unbind to null rather than restoring previous bindings, exactly what RenderTiles and
-        // friends do. Nothing is bound this early in the frame, so there is nothing to put back.
         device.SetRenderTarget(null);
 
         if (applied == 0)
@@ -164,9 +129,7 @@ internal sealed class TileShockwaveSystem : ModSystem
         snapshotScenePos = Main.sceneTilePos;
     }
 
-    /// <summary>
-    ///     Substitutes the distorted surface for the duration of the vanilla tile blit.
-    /// </summary>
+    /// <summary>Substitutes the distorted surface for the duration of the vanilla tile blit.</summary>
     private static void SwapInDistortion(On_Main.orig_DoDraw_Tiles_Solid orig, Main self)
     {
         var replacement = distorted;
@@ -178,10 +141,7 @@ internal sealed class TileShockwaveSystem : ModSystem
             return;
         }
 
-        // If tiles were re-rendered after the snapshot and the camera has since travelled further
-        // than the overscan, the snapshot no longer covers the screen and would show unpainted
-        // edges. One frame without the effect beats one frame with holes in the terrain. This is
-        // the same test vanilla uses to force an out-of-schedule rebuild.
+        // Skip the frame when the camera has moved past the snapshot's overscan.
         var wanted = Main.screenPosition - new Vector2(Main.offScreenRange);
 
         if (Math.Abs(snapshotScenePos.X - wanted.X) > Main.offScreenRange ||
@@ -196,9 +156,7 @@ internal sealed class TileShockwaveSystem : ModSystem
         Main.instance.tileTarget = replacement;
         Main.sceneTilePos = snapshotScenePos;
 
-        // finally, not just trailing assignments: orig swallows its own draw exceptions but
-        // DrawTileEntities inside it does not, and leaving one of our targets in that field would
-        // have Terraria dispose it in ReleaseTargets on the next resolution change.
+        // Restored in finally: a target left in tileTarget would be disposed by ReleaseTargets.
         try
         {
             orig(self);
@@ -215,17 +173,9 @@ internal sealed class TileShockwaveSystem : ModSystem
         device.SetRenderTarget(write);
         device.Clear(Color.Transparent);
 
-        // The wave configures its own shader. The system deliberately knows nothing about which
-        // uniforms exist -- that is the whole point of the interface, and it is what lets a smooth
-        // ring and a block heave share this loop.
         var shader = wave.PrepareShader(write, sceneOrigin);
 
-        // PointClamp because that is exactly what Main.DefaultSamplerState resolves to whenever
-        // the targets are in use. Linear filtering would soften every tile edge across the whole
-        // band, including where the displacement is sub-texel and nothing should have changed.
-        //
-        // CullNone rather than Main.Rasterizer: that flips to CullClockwise whenever the view
-        // matrix is mirrored, which would cull a plain full-target quad on gravity-flipped frames.
+        // CullNone: Main.Rasterizer culls this quad when gravity flips the view.
         Main.spriteBatch.Begin(
             SpriteSortMode.Immediate,
             BlendState.Opaque,
@@ -251,9 +201,7 @@ internal sealed class TileShockwaveSystem : ModSystem
 
         target?.Dispose();
 
-        // Matched to how vanilla allocates its own tile targets in InitTargets, except for the
-        // usage: PreserveContents, because these are read on a later hook in the same frame than
-        // the one that writes them.
+        // PreserveContents: written in CheckMonoliths, read later in the same frame.
         target = new RenderTarget2D(
             device,
             width,

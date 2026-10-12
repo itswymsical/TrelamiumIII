@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace TrelamiumIII.Core.NPCs;
+﻿namespace TrelamiumIII.Core.NPCs;
 
 public static class HairDatabase
 {
@@ -23,14 +21,6 @@ public static class HairDatabase
         public static readonly int[] Shinobi = [47, 78, 79, 94, 109 /*, 180, 190, 193, 197, 199, 209, 210, 211, 212, 213, 214, 215*/];
     }
 
-}
-
-public static class HairQuery
-{
-    public static int[] Intersect(int[] a, int[] b)
-    {
-        return a.Intersect(b).ToArray();
-    }
 }
 
 public static class HairstyleID // work in progress, im doing this manually lol.

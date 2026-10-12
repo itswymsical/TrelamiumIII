@@ -5,19 +5,36 @@ using Terraria.ObjectData;
 
 namespace TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
 
-public abstract class SeedBedTile : ModTile
+/// <summary>A seed bed for one soil. Registered by <see cref="SeedBedItem" />.</summary>
+public sealed class SeedBedTile : ModTile
 {
-    /// <summary>Growth attempts per random tick. Higher = faster progression.</summary>
-    public virtual int GrowthAttempts => 3;
+    private readonly string soil;
+    private readonly Color mapColor;
+
+    public SeedBedTile(string soil, Color mapColor, int soilDust, HerbType[] preferredHerbs)
+    {
+        this.soil = soil;
+        this.mapColor = mapColor;
+
+        SoilDust = soilDust;
+        PreferredHerbs = preferredHerbs;
+    }
+
+    public override string Name => $"SeedBedTile_{soil}";
+
+    /// <summary>Growth attempts per random tick.</summary>
+    public int GrowthAttempts => 3;
 
     /// <summary>1-in-N chance per attempt to advance a growth stage.</summary>
-    public virtual int GrowthChance => 10;
+    public int GrowthChance => 10;
 
     /// <summary>Herbs that thrive on this soil. Read by Silvian's botany job (PlantInSeedBedTask); growth ignores it so far.</summary>
-    public virtual HerbType[] PreferredHerbs => [];
+    public HerbType[] PreferredHerbs { get; }
 
-    public abstract Color MapColor { get; }
-    public virtual int SoilDust => DustID.Dirt;
+    public int SoilDust { get; }
+
+    /// <summary>The <see cref="SeedBedItem" /> this tile drops. Set at load.</summary>
+    internal int DropItem { get; set; }
 
     public override void SetStaticDefaults()
     {
@@ -40,12 +57,14 @@ public abstract class SeedBedTile : ModTile
         AdjTiles = [TileID.PlanterBox, TileID.ClayPot];
         TileID.Sets.IgnoredByNpcStepUp[Type] = true;
 
-        AddMapEntry(MapColor, CreateMapEntryName());
+        AddMapEntry(mapColor, CreateMapEntryName());
         DustType = SoilDust;
         HitSound = SoundID.Dig;
 
         TileObjectData.addTile(Type);
         FarmingSystem.SeedBedTypes.Add(Type, this);
+
+        RegisterItemDrop(DropItem);
     }
 
     public override void PostSetDefaults() => Main.tileNoSunLight[Type] = false;

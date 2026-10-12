@@ -402,14 +402,7 @@ public class MagnoliaTile : ModTile
             TileID.Grass,
         ];
 
-        TileObjectData.newTile.AnchorAlternateTiles = [
-            TileID.ClayPot,
-                TileID.PlanterBox,
-                ModContent.TileType<SeedBedTile_Ash>(),
-                ModContent.TileType<SeedBedTile_Dirt>(),
-                ModContent.TileType<SeedBedTile_Sand>(),
-                ModContent.TileType<SeedBedTile_Mud>(),
-            ];
+        TileObjectData.newTile.AnchorAlternateTiles = [TileID.ClayPot, TileID.PlanterBox, .. SeedBedItem.TileTypes];
 
         TileObjectData.addTile(Type);
 
