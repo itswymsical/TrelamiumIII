@@ -6,7 +6,6 @@ using Terraria.GameInput;
 using Terraria.UI;
 using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.Dialogue;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Jobs;

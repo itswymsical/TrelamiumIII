@@ -72,10 +72,10 @@ internal static class AlchemySlotOverlay
 /// <summary>Component slot. Acceptance follows <see cref="AlchemyStationRules.AcceptsComponent" />. Locked while brewing.</summary>
 internal class AlchemyComponentSlot : BasicItemSlot
 {
-    private readonly IAlchemyStationUI _ui;
+    private readonly AlchemyStationUIBase _ui;
     private readonly PotencyFlash _potencyFlash = new();
 
-    public AlchemyComponentSlot(Item[] items, int index, IAlchemyStationUI ui, float scale)
+    public AlchemyComponentSlot(Item[] items, int index, AlchemyStationUIBase ui, float scale)
         : base(items, index, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;
@@ -111,10 +111,10 @@ internal class AlchemyComponentSlot : BasicItemSlot
 /// <summary>Input slot. Acceptance follows <see cref="AlchemyStationRules.AcceptsInput" />. Locked while brewing.</summary>
 internal class AlchemyInputSlot : BasicItemSlot
 {
-    private readonly IAlchemyStationUI _ui;
+    private readonly AlchemyStationUIBase _ui;
     private readonly PotencyFlash _potencyFlash = new();
 
-    public AlchemyInputSlot(Item[] items, IAlchemyStationUI ui, float scale)
+    public AlchemyInputSlot(Item[] items, AlchemyStationUIBase ui, float scale)
         : base(items, 0, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;
@@ -174,9 +174,9 @@ internal class AlchemyBottleReturnSlot : BasicItemSlot
 /// </summary>
 internal class AlchemyOutputSlot : BasicItemSlot
 {
-    private readonly IAlchemyStationUI _ui;
+    private readonly AlchemyStationUIBase _ui;
 
-    public AlchemyOutputSlot(Item[] items, IAlchemyStationUI ui, float scale)
+    public AlchemyOutputSlot(Item[] items, AlchemyStationUIBase ui, float scale)
         : base(items, 0, ItemSlot.Context.InventoryItem, scale)
     {
         _ui = ui;

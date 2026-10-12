@@ -9,7 +9,7 @@ namespace TrelamiumIII.Core.UI.AlchemyStation;
 /// </summary>
 internal sealed class AlchemyPreview
 {
-    private readonly SlotState[] _ingredients = new SlotState[AlchemyStationUI.COMPONENT_SLOT_COUNT + 1];
+    private readonly SlotState[] _ingredients = new SlotState[AlchemyStationUIBase.COMPONENT_SLOT_COUNT + 1];
     private SlotState _bottles;
     private Item _output = new();
 
@@ -18,7 +18,7 @@ internal sealed class AlchemyPreview
     /// <summary>Largest batch the slotted stacks can pay for, capped by the output's max stack and the bottle slot's capacity.</summary>
     public int MaxBatches { get; private set; } = 1;
 
-    /// <summary><paramref name="components" /> holds at most <see cref="AlchemyStationUI.COMPONENT_SLOT_COUNT" /> slots.</summary>
+    /// <summary><paramref name="components" /> holds at most <see cref="AlchemyStationUIBase.COMPONENT_SLOT_COUNT" /> slots.</summary>
     public void Refresh(Item input, Item[] components, Item bottleReturn)
     {
         bool ingredientsChanged = Track(ref _ingredients[0], input);

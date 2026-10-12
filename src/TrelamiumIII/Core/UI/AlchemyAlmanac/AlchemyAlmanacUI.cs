@@ -7,19 +7,17 @@ using Terraria.GameContent;
 using Terraria.UI;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Alchemy.Brewing;
+using TrelamiumIII.Core.Books;
 using TrelamiumIII.Core.Books.Lore;
+using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.UI.AlchemyAlmanac;
 
 /// <summary>
-/// book that displays every alchemy output the player has
-/// discovered.
-/// <para>
-/// The UI has two view modes: Browse and Detail. Page flips animate transitions
-/// between any two spreads in either view.
-/// </para>
+///     Book of every discovered alchemy output, in Browse and Detail views; page flips animate between any two spreads.
+///     Composed by <see cref="BookRenderer" />.
 /// </summary>
-public class AlchemyAlmanacUI : IInGameNotification
+public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
 {
     #region Constants
     public const int PAGE_WIDTH = 310;
@@ -213,18 +211,41 @@ public class AlchemyAlmanacUI : IInGameNotification
 
     public bool ShouldBeRemoved => state == BookState.Closing && openProgress <= 0f;
 
+    private readonly BookRenderer renderer = new(PAGE_WIDTH, PAGE_HEIGHT, GUTTER);
+    private bool released;
+
     public AlchemyAlmanacUI()
     {
         Current = this;
         current = new SpreadKey(AlmanacCategory.Glossary, ViewMode.Browse, 0, 0);
         next = current;
 
-        AlchemyAlmanacSystem.InitTargets(PAGE_WIDTH, PAGE_HEIGHT);
+        renderer.Initialize();
+        BookRenderSystem.Register(this);
     }
+
+    /// <summary>Drops the open book; its targets are released on the main thread.</summary>
     internal static void ResetForWorldChange()
     {
+        if (Current is { } book)
+            Main.QueueMainThreadAction(book.Release);
+
         Current = null;
     }
+
+    private void Release()
+    {
+        if (released)
+            return;
+
+        released = true;
+        BookRenderSystem.Unregister(this);
+        renderer.Dispose();
+    }
+
+    void IOpenBook.BuildFrame() => renderer.Build(this);
+
+    void IOpenBook.ForceRelease() => Release();
 
     public static void ShowAlmanac()
     {
@@ -237,18 +258,44 @@ public class AlchemyAlmanacUI : IInGameNotification
     }
     #endregion
 
-    #region Public render hints (read by AlchemyAlmanacSystem)
+    #region IBookView
+    private static readonly Color PageTint = new(240, 240, 240);
+
     public bool IsForwardFlip => flipDir == FlipDir.Forward;
     public float PageTurnProgress => state == BookState.Flipping ? pageFlipProgress : 0f;
     public float OpenProgress => state == BookState.Opening ? 1f - openProgress : 0f;
     public float CloseProgress => state == BookState.Closing ? 1f - openProgress : 0f;
     public float Opacity => state is BookState.Opening or BookState.Closing ? openProgress : 1f;
 
+    /// <summary>Pages are redrawn live so hover and animation stay current.</summary>
+    public bool PagesDirty => true;
+
     public SpreadKey CurrentSpread => current;
     public SpreadKey NextSpread => next;
 
-    /// <summary>True when <see cref="current"/> is the cover/title pair (Recipes browse, index 0).</summary>
-    public bool OnCoverSpread => current.Category == AlmanacCategory.Glossary && current.View == ViewMode.Browse && current.Index == 0;
+    /// <summary>The cover/title pair (Glossary browse, index 0); its left side shows the cover.</summary>
+    private static bool IsCoverSpread(SpreadKey key) =>
+        key.Category == AlmanacCategory.Glossary && key.View == ViewMode.Browse && key.Index == 0;
+
+    bool IBookView.IsCover(BookSide side, bool upcoming) => side == BookSide.Left && IsCoverSpread(upcoming ? next : current);
+
+    void IBookView.DrawCover(SpriteBatch sb)
+    {
+        sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, PAGE_WIDTH, PAGE_HEIGHT), Color.Black);
+        DrawCoverImprint(sb);
+    }
+
+    void IBookView.DrawPage(SpriteBatch sb, BookSide side, bool upcoming)
+    {
+        bool isLeft = side == BookSide.Left;
+        var bounds = new Rectangle(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+        Texture2D paper = ModContent.Request<Texture2D>(Assets.Textures.UI.AlchemyBookPage.KEY, AssetRequestMode.ImmediateLoad).Value;
+
+        sb.Draw(TextureAssets.MagicPixel.Value, bounds, Color.White);
+        sb.Draw(paper, bounds, null, PageTint, 0f, Vector2.Zero, isLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0f);
+
+        DrawPageToTarget(sb, upcoming ? next : current, isLeft);
+    }
     #endregion
 
     #region IInGameNotification anchor
@@ -289,7 +336,11 @@ public class AlchemyAlmanacUI : IInGameNotification
 
             case BookState.Closing:
                 openProgress = Math.Max(0f, openProgress - OPEN_SPEED);
-                if (ShouldBeRemoved) Current = null;
+                if (ShouldBeRemoved)
+                {
+                    if (Current == this) Current = null;
+                    Release();
+                }
                 break;
         }
 
@@ -920,8 +971,8 @@ public class AlchemyAlmanacUI : IInGameNotification
     {
         float w = (PAGE_WIDTH * 2 + GUTTER) * UI_SCALE;
         float h = PAGE_HEIGHT * UI_SCALE;
-        float minX = (FILTER_TAB_W + 6f + BookCoverDrawer.COVER_MARGIN) * UI_SCALE;
-        float minY = (OVERLAY_BUTTON_H + 8f + BookCoverDrawer.COVER_MARGIN) * UI_SCALE;
+        float minX = (FILTER_TAB_W + 6f + BookCover.COVER_MARGIN) * UI_SCALE;
+        float minY = (OVERLAY_BUTTON_H + 8f + BookCover.COVER_MARGIN) * UI_SCALE;
 
         return new Vector2(
             Math.Max(minX, Main.screenWidth / 2f - w / 2f),
@@ -949,12 +1000,8 @@ public class AlchemyAlmanacUI : IInGameNotification
     #endregion
 
     #region Page content drawing
-    /// <summary>
-    /// Draws the contents of one side of the given spread in target-local coordinates
-    /// (origin = 0,0 = top-left of the page). Called by
-    /// <see cref="AlchemyAlmanacSystem.BuildFrame"/> with the target already bound.
-    /// </summary>
-    public void DrawPageToTarget(SpriteBatch sb, SpreadKey key, bool isLeft)
+    /// <summary>Draws one side of <paramref name="key" /> in page-local coordinates, over the paper.</summary>
+    private void DrawPageToTarget(SpriteBatch sb, SpreadKey key, bool isLeft)
     {
         if (key.Category == AlmanacCategory.Glossary)
         {
@@ -1006,11 +1053,8 @@ public class AlchemyAlmanacUI : IInGameNotification
         else DrawIngredientUses(sb, key.DetailItem, rowStart, VARIANTS_PER_PAGE);
     }
 
-    /// <summary>
-    /// Draws the gilded title imprint onto the (already-cleared) cover surface.
-    /// Called once by <see cref="AlchemyAlmanacSystem"/> to populate <c>CoverTarget</c>.
-    /// </summary>
-    public static void DrawCoverImprint(SpriteBatch sb)
+    /// <summary>Title imprint on the cover face.</summary>
+    private static void DrawCoverImprint(SpriteBatch sb)
     {
         var font = FontAssets.MouseText.Value;
         const string title = "OOPSIEES";
@@ -1267,36 +1311,9 @@ public class AlchemyAlmanacUI : IInGameNotification
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
     }
 
-    /// <summary>
-    /// Word-wraps text to maxWidth at the given scale. Honors explicit paragraph breaks via the
-    /// <c>[p]</c> token or newlines (each emitted as a blank line).
-    /// </summary>
-    private static List<string> WrapText(string text, float maxWidth, float scale)
-    {
-        var lines = new List<string>();
-        if (string.IsNullOrEmpty(text)) return lines;
-
-        var font = FontAssets.MouseText.Value;
-        string normalized = text.Replace("[p]", "\n");
-        foreach (var para in normalized.Split('\n'))
-        {
-            if (para.Length == 0) { lines.Add(string.Empty); continue; }
-
-            string line = "";
-            foreach (var word in para.Split(' '))
-            {
-                string test = line.Length > 0 ? line + " " + word : word;
-                if (font.MeasureString(test).X * scale > maxWidth && line.Length > 0)
-                {
-                    lines.Add(line);
-                    line = word;
-                }
-                else line = test;
-            }
-            if (line.Length > 0) lines.Add(line);
-        }
-        return lines;
-    }
+    /// <summary>Word-wraps in the mouse-text font at <paramref name="scale" />; <c>[p]</c> and newlines break paragraphs.</summary>
+    private static List<string> WrapText(string? text, float maxWidth, float scale)
+        => ProjectedText.Wrap(FontAssets.MouseText.Value, text?.Replace("[p]", "\n") ?? string.Empty, maxWidth, scale);
 
     /// <summary>Draws a centred, word-wrapped paragraph starting at baseY. No-op for empty text.</summary>
     private static void DrawWrappedDescription(SpriteBatch sb, string desc, float baseY)
@@ -2349,17 +2366,14 @@ public class AlchemyAlmanacUI : IInGameNotification
     #region IInGameNotification
     public void DrawInGame(SpriteBatch sb, Vector2 bottomAnchorPosition)
     {
-        if (Main.gameMenu || AlchemyAlmanacSystem.CompositeTarget == null) return;
+        if (Main.gameMenu || renderer.Composite is not { } composite) return;
 
         var origin = GetSpreadOrigin();
 
-
-        BookCoverDrawer.Draw(sb, origin, PAGE_WIDTH, PAGE_HEIGHT, GUTTER, Opacity, UI_SCALE);
+        BookCover.Draw(sb, origin, PAGE_WIDTH, PAGE_HEIGHT, GUTTER, Opacity, BookPalette.Default(), UI_SCALE);
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.Default, Main.Rasterizer, null, Main.UIScaleMatrix);
-        sb.Draw(
-            AlchemyAlmanacSystem.CompositeTarget,
-            origin, null, Color.White * Opacity, 0f, Vector2.Zero, UI_SCALE, SpriteEffects.None, 0f);
+        sb.Draw(composite, origin, null, Color.White * Opacity, 0f, Vector2.Zero, UI_SCALE, SpriteEffects.None, 0f);
 
         if (state == BookState.Reading || state == BookState.Flipping)
         {

@@ -78,7 +78,7 @@ public sealed class InlineTagSystem : ModSystem
     internal const string SPACE_TAG = "ttspace";
 
     /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
-    internal const string FORMAT_TAG = Authoring.FormatCodec.TAG;
+    internal const string FORMAT_TAG = Books.Authoring.FormatCodec.TAG;
 
     private static readonly string[] Tags =
     [

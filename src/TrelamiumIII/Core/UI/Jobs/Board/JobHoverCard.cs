@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using ReLogic.Graphics;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.UI.Projected;
 

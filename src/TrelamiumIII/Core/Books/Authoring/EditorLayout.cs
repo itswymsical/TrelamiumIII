@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>
 ///     Wraps the buffer and answers caret geometry. Metrics are per index (letters can differ in face and size) and pre-scaled; advances

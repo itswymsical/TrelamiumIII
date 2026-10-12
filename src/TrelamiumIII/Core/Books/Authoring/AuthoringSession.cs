@@ -4,7 +4,7 @@ using System.IO;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.Books.Layout;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>Which of the editable strings the shared buffer is pointed at.</summary>
 public enum EditorField
@@ -295,7 +295,7 @@ public sealed class AuthoringSession
     /// <summary>The configured source tree, or a folder in the save directory when none is set.</summary>
     private static string Root()
     {
-        AuthoringConfig config = AuthoringConfig.Instance;
+        DeveloperConfig config = DeveloperConfig.Instance;
 
         if (config.HasSourceDirectory && Directory.Exists(config.SourceDirectory))
             return config.SourceDirectory;

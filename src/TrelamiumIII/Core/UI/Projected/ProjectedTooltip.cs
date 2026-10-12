@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ReLogic.Graphics;
-using TrelamiumIII.Core.Dialogue.Projected;
 using TrelamiumIII.Core.Rarities;
 using TrelamiumIII.Core.Text.Tooltips;
 

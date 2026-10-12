@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>Settings shared by a whole paragraph, as opposed to per-character <see cref="CharFormat" />.</summary>
 public readonly record struct ParagraphFormat(

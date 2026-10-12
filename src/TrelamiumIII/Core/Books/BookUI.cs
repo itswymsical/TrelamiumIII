@@ -13,7 +13,7 @@ namespace TrelamiumIII.Core.Books;
 ///     A book on screen: open, read, turn and close. Subclasses address content by spread. Hosted as an <see cref="IInGameNotification" />,
 ///     which updates after vanilla consumes mouse-release flags, so clicks come from tracked edges.
 /// </summary>
-public abstract class BookUI : IInGameNotification, IBookView
+public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
 {
     private const float OPEN_SPEED = 0.042f;
     private const float FLIP_SPEED = 0.05f;
@@ -155,7 +155,7 @@ public abstract class BookUI : IInGameNotification, IBookView
         hoverPage ??= context.HoverPage;
     }
 
-    internal void BuildFrame()
+    void IOpenBook.BuildFrame()
     {
         // Cleared before drawing, not after: notifications update before the draw, so hover set during this draw has to
         // survive to the next update.
@@ -219,8 +219,7 @@ public abstract class BookUI : IInGameNotification, IBookView
         wasRightDown = Main.mouseRight;
     }
 
-    /// <summary>Tears the book down immediately, for unload, where the close animation can't finish.</summary>
-    internal void ForceRelease()
+    void IOpenBook.ForceRelease()
     {
         state = BookState.Closing;
         openProgress = 0f;

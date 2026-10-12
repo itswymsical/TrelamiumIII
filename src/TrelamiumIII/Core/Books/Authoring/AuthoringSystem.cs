@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework.Input;
 using Terraria.GameInput;
 using Terraria.UI;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>Owns the authoring desk (a dev tool opened by <c>/write</c>): whether it's up, and who has the screen.</summary>
 /// <remarks>Uses <see cref="IngameFancyUI" />, like the Bestiary, so the inventory closes and other layers stop taking input.</remarks>
