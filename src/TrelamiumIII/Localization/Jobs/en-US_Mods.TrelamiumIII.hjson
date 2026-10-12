@@ -46,25 +46,44 @@ Jobs: {
 	}
 
 	HerbalForager: {
-		Name: Herbal Forager
-		Description: "'It'll be worth the reward! Trust me!'"
+		Name: Trampled Beds
+		Description: "'Slimes got into the garden. I could use a hand.'"
 
 		Tasks: {
-			Set0.obj0: Brief with Silvian (let the dialogue play out)
-
 			// GatherItemTask: {0} = item name, {1} = amount.
 			Set1: {
-				obj0: Collect {0}
+				obj0: Craft seed beds (any soil)
 				obj1: Collect {0}
 				obj2: Collect {0}
-				obj3: Bring the herbs to Silvian
+				obj3: Bring everything to Silvian
 			}
+		}
+	}
+
+	BotanyBasics: {
+		Name: Green Thumb
+		Description: "'Botany's just payin' attention to what a plant wants.'"
+
+		Tasks: {
+			Set0: {
+				obj0: Place seed beds
+				obj1: Plant seeds in your seed beds
+			}
+
+			Set1.obj0: Tell Silvian how it went
+
+			Set2: {
+				obj0: Plant seeds in the soil they favor
+				obj1: Harvest a blooming herb
+			}
+
+			Set3.obj0: Show Silvian your harvest
 		}
 	}
 
 	HomeForager: {
 		Name: Home Forager
-		Description: '''"I'm a bit particular about housing – you can't have town without townsfolk!"'''
+		Description: '''"You can't have town without townsfolk!"'''
 
 		Tasks: {
 			Set0: {

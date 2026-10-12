@@ -8,7 +8,7 @@ namespace TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 
 /// <summary>
 ///     John Substrate's almanac passing from his nephew to the player, which is the only way to get it: the book has no
-///     recipe. Silvian hands it over once the last job of his line is done.
+///     recipe. Silvian hands it over once his botany lessons are done.
 /// </summary>
 /// <remarks>
 ///     The book changes hands when the handoff conversation plays through. Dismissed early, it plays again the next time
@@ -17,10 +17,10 @@ namespace TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 public static class SilvianAlmanac
 {
     /// <summary>
-    ///     The job whose completion ends with the handoff. His line is one job long for now; point this at the last one as
-    ///     it grows, and call <see cref="OfferIfDue" /> from that job's <see cref="Job.OnJobComplete" />.
+    ///     The job whose completion ends with the handoff: his botany lessons. That job's <see cref="Job.OnJobComplete" />
+    ///     calls <see cref="OfferIfDue" />.
     /// </summary>
-    public const int HandoffJob = JobID.HerbalForager;
+    public const int HandoffJob = JobID.BotanyBasics;
 
     public const string HandoffKey = "Silvian.Almanac_Handoff";
 

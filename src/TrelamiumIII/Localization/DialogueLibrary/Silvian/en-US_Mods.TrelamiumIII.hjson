@@ -1,9 +1,11 @@
 DialogueLibrary: {
 	Silvian: {
+		# The meeting. Behind the friendly questions he's working out where the player's head is at:
+		# a lot of qualia doesn't make someone good. The garden question is the real tell.
 		Greeting: {
 			Line1: {
-				Text: Greetings![] The name's Silvian, how 'bout yours?
-				Choice1.Text: "[speakerName:player], howdy!"
+				Text: Well,[] howdy![] Don't get many folks wanderin' up this way.[] Name's Silvian. Yours?
+				Choice1.Text: "[speakerName:player]."
 				Choice2.Text: John Terraria.
 				Choice3.Text: ...
 			}
@@ -11,93 +13,196 @@ DialogueLibrary: {
 
 		Greeting_True: {
 			Line1: {
-				Text: Pleasure to meet ya,[] [speakerName:player].[] Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
-				Choice1.Text: Trying to find my way around.
-				Choice2.Text: Here for trouble.
+				Text: "[speakerName:player].[] Good to meet ya.[] So what brings you 'round these parts?[] You ain't from here, I can tell that much."
+				Choice1.Text: Just finding my way around.
+				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...
 			}
 		}
 
 		Greeting_Lie: {
-			Line1.Text: Pleasure to meet ya,[] John.[] Or whatever your name is.
+			Line1.Text: John Terraria.[] Sure.[] And I'm the Lord of the Moon.
 
 			Line2: {
-				Text: Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
-				Choice1.Text: finding my way around.
-				Choice2.Text: Here for trouble.
+				Text: Keep your name if you want it.[] So what brings you 'round these parts?
+				Choice1.Text: Just finding my way around.
+				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...
 			}
 		}
 
 		Greeting_Silent: {
-			Line1.Text: Not too much of a talker,[] eh? []Not to worry.[] I ain't in it to pry.
+			Line1.Text: Not much of a talker, huh?[] That's alright.[] I talk enough for two.
 
 			Line2: {
-				Text: Say,[] what's a lad like you doing around these parts?[] You don't look too familiar to me.
-				Choice1.Text: Trying to find my way around.
-				Choice2.Text: Here for trouble.
+				Text: So what brings you 'round these parts?
+				Choice1.Text: Just finding my way around.
+				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...
 			}
 		}
 
 		Lost_Exploring: {
-			Line1.Text: I see,[] I see.
-			Line2.Text: Well then,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
-			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+			Line1.Text: Ha![] Ain't we all.
+			Line2.Text: Well, you picked a fine day to wander in.[] I've got a bit of a mess on my hands.
+
+			Line3: {
+				Text: Slimes got into my garden last night.[] Flattened every seed bed I had.[] If you'd come walkin' by while they were at it...[] what would you have done?
+				Choice1.Text: Chased them off.
+				Choice2.Text: Helped you clean up.
+				Choice3.Text: Joined in. Looked fun.
+				Choice4.Text: ...
+			}
 		}
 
 		Lost_Trouble: {
-			Line1.Text: I see,[] I see.[] You're new around here,[] so I'll cut you some slack.
-			Line2.Text: But [best know that kinda talkin' isn't met too nicely here].
-			Line3.Text: .....
-			Line4.Text: In any case![] You seem like the fiesty type.[] Say,[] how's a job sound?[] It'll be worth your while...!
+			Line1.Text: Trouble.[] Huh.
+			Line2.Text: Word of advice?[] [That kind of talk don't go over well 'round here.]
+
+			Line3: {
+				Text: Speakin' of trouble.[] Slimes got into my garden last night, flattened every seed bed I had.[] If you'd come walkin' by while they were at it...[] what would you have done?
+				Choice1.Text: Chased them off.
+				Choice2.Text: Helped you clean up.
+				Choice3.Text: Joined in. Looked fun.
+				Choice4.Text: ...
+			}
 		}
 
 		Lost_Speedrunning: {
-			Line1.Text: I have no clue what that means, but it sounds alright!
-			Line2.Text: Hey,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
-			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+			Line1.Text: No idea what that means,[] but you sound like you're in a hurry.
+			Line2.Text: Hold your horses a second, though.[] I've got a bit of a mess on my hands.
+
+			Line3: {
+				Text: Slimes got into my garden last night.[] Flattened every seed bed I had.[] If you'd come walkin' by while they were at it...[] what would you have done?
+				Choice1.Text: Chased them off.
+				Choice2.Text: Helped you clean up.
+				Choice3.Text: Joined in. Looked fun.
+				Choice4.Text: ...
+			}
 		}
 
 		Lost_Silent: {
-			Line1.Text: Hehe...[] I see, I see.[] No worries!
-			Line2.Text: Hey,[] If you need some help finding you're way around,[] or even just a guide,[] I'm your guy!
-			Line3.Text: Hey! actually...[] do you think I could borrow some of your time? I got a task at hand I could use the help on.
+			Line1.Text: ...[]Alright.[] Keep your secrets.
+			Line2.Text: Mind if I bend your ear anyway?[] I've got a bit of a mess on my hands.
+
+			Line3: {
+				Text: Slimes got into my garden last night.[] Flattened every seed bed I had.[] If you'd come walkin' by while they were at it...[] what would you have done?
+				Choice1.Text: Chased them off.
+				Choice2.Text: Helped you clean up.
+				Choice3.Text: Joined in. Looked fun.
+				Choice4.Text: ...
+			}
 		}
 
+		# Attunement (docs/act-one.md): Defend and Help would set Silvian to 1, Joking and Silent to 0, Serious to -1.
+		Garden_Defend: {
+			Line1.Text: Ha![] Somebody who'd stand their ground.[] I like that.
+			Line2.Text: Well, the garden won't fix itself.[] If you've got the time,[] there's work in it for ya.
+		}
+
+		Garden_Help: {
+			Line1.Text: ...Well, now.[] That's the right answer.
+			Line2.Text: Most folks would've just kept walkin'.[] And since you're offerin'...[] I could sure use the help.
+		}
+
+		Garden_Join: {
+			Line1.Text: ...[]Huh.
+
+			Line2: {
+				Text: You're jokin'.[] ...You're jokin',[] right?
+				Choice1.Text: Obviously.
+				Choice2.Text: Am I?
+			}
+		}
+
+		Garden_Joking: {
+			Line1.Text: Ha.[] Hah.[] Course you are.
+			Line2.Text: Gave me a turn there.[] Tell ya what, if you want to make it up to me,[] I could use a hand with the mess.
+		}
+
+		Garden_Serious: {
+			Line1.Text: ...[]I see.
+			Line2.Text: Then I reckon I'll be keepin' an eye on you.
+			Line3.Text: Still.[] Hands are hands,[] and I need some.[] Do right by my garden and we'll see what you're made of.
+		}
+
+		Garden_Silent: {
+			Line1.Text: Keepin' your cards close.[] Fair enough.
+			Line2.Text: Either way,[] the garden won't fix itself.[] If you've got the time,[] there's work in it for ya.
+		}
+
+		JobOffer.Line1.Text: Hey there,[] [speakerName:player]![] That job's still up for grabs, if you're of a mind.
+
 		HerbalForager_Greeting: {
-			Line1.Text: Decided to take the offer?[] Fantastic, my friend.
-			Line2.Text: I'll keep it easy on ya,[] I just need some herbs for my garden.[] Harvest's getting pretty low and I could use extra picking hands.
-			Line3.Text: I need some dayblooms, blinkroots, and maagnolias.[] You shouldn't have a problem with the magnolies, blinkroots might be a bit of a hassle though.
-			Line4.Text: Forage around until you find them![] I'll be here if you need me.
+			Line1.Text: You'll help?[] Fantastic.
+			Line2.Text: First thing's seed beds.[] Slimes squashed mine flat.[] Easy enough to make: red brick and a few blocks of soil at a work bench.[] Any soil'll do.
+			Line3.Text: Then magnolias.[] Ground into powder,[] they'll push a crop along quicker than anything.[] And I need mine up before the season turns.
+			Line4.Text: Last,[] salt.[] Slimes can't stand the stuff.[] Dries 'em right out.[] A good salt line round the beds and they'll think twice.
+			Line5.Text: You'll want brine for that.[] Ocean's thick with it,[] and there's salty pools inland if you know where to look.[] Bottle some up and cook it down in a furnace.
+			Line6.Text: Six of each oughta do it.[] I'll be right here.
 		}
 
 		HerbalForager_HandIn: {
 			Line1: {
-				Text: Well now,[] are those my herbs?
+				Text: Well now,[] is that everything?
 				Choice1.Text: Here you go.
 				Choice2.Text: Not yet.
 			}
 		}
 
 		HerbalForager_Complete: {
-			Line1.Text: Back already?[] Hehe,[] you're a fast one![] Can't be upset about that.
-			Line2.Text: As promised,[] here's your reward, pal.
-			Line3.Text: I'll be needing some extra hands again soon,[] so keep in touch.
+			Line1.Text: Seed beds,[] magnolias,[] salt...[] all here.
+			Line2.Text: You did good,[] [speakerName:player]. Real good.
+			Line3.Text: Here.[] Some beds for your own patch,[] and my old botanist glove.[] Puts some arm behind a dirt clod.[] Next slime that comes sniffin' around, give it a mouthful.
+
+			Line4: {
+				Text: Say...[] you ever think about learnin' botany proper?[] Soil,[] seeds,[] what grows where.[] I could teach ya.
+				Choice1.Text: I'd like that.
+				Choice2.Text: Maybe later.
+			}
 		}
 
-		JobOffer.Line1.Text: Hey there,[] [speakerName:player]![] That job's still up for grabs, if you're of a mind.
+		BotanyOffer: {
+			Line1: {
+				Text: Still thinkin' about those botany lessons?[] Offer stands.
+				Choice1.Text: I'd like that.
+				Choice2.Text: Maybe later.
+			}
+		}
 
-		# Handing over John Substrate's almanac, after the last job of his line. The book is given once this plays through.
+		BotanyOffer_Yes.Line1.Text: Ha![] Knew you had it in ya.[] Come find me when you're ready to get your hands dirty.
+		BotanyOffer_No.Line1.Text: No rush.[] Garden ain't goin' anywhere.
+
+		BotanyBasics_Greeting: {
+			Line1.Text: Lesson one:[] plants are picky.
+			Line2.Text: Put down a few seed beds and plant somethin' in 'em.[] Don't overthink it.[] Then come tell me how it went.
+		}
+
+		BotanyBasics_Soil: {
+			Line1.Text: Here's the thing nobody tells ya.[] Every plant's got a favorite dirt.
+			Line2.Text: Daybloom and blinkroot like plain soil.[] Moonglow and waterleaf want mud,[] and shiverthorn makes do with it.[] Waterleaf'll take sand too.[] Fireblossom and deathweed?[] Ash,[] if you can believe it.
+			Line3.Text: Put 'em where they're happy and they'll treat ya right.[] A seed's tag'll tell you, if you forget.
+			Line4.Text: ...[]Huh.[] Uncle J used to tell me this exact same stuff.
+			Line5.Text: Said botany and alchemy were the same lesson wearin' different hats.[] What a thing leans toward,[] what it likes,[] what it can't stand.[] Soil to a seed,[] salt to water.[] It's all chemistry,[] one big conversation.
+			Line6.Text: Anyhow.[] Plant a couple where they belong,[] then bring one to bloom.[] A pinch of magnolia powder'll hurry it along.
+		}
+
+		BotanyBasics_WrapUp: {
+			Line1.Text: Look at that.[] First bloom off your own beds.
+			Line2.Text: You've got a feel for it, [speakerName:player].[] Uncle J would've liked you.
+			Line3.Text: ...[]Hang on.[] There's somethin' I've been meanin' to give you.
+		}
+
+		# Handing over John Substrate's almanac, queued behind BotanyBasics_WrapUp. The book is given once this plays through.
 		Almanac_Handoff: {
-			Line1.Text: Oh![] Before ya run off,[] hold on a sec.
-			Line2.Text: This here's my Uncle John's almanac.[] John Substrate.[] Every page of it's in his own hand.
-			Line3.Text: He left it to me when he passed.[] Truth is,[] I've read it so many times I know it by heart.
-			Line4.Text: A book like this oughta be out there gettin' used,[] not sittin' on my shelf collectin' dust.
-			Line5.Text: So it's yours now,[] [speakerName:player].[] He left room in the back for whatever he didn't know.[] Fill it in for him,[] will ya?
+			Line1.Text: This here's my Uncle John's almanac.[] John Substrate.[] Every page in his own hand.
+			Line2.Text: He left it to me when he passed.[] I've read it so many times I know it by heart.
+			Line3.Text: But knowin' a book ain't the same as usin' it.[] This one oughta be out there doin' some good.
+			Line4.Text: Botany,[] alchemy, chemistry, it's all in there.[] He just never got to finish it.
+			Line5.Text: So it's yours now,[] [speakerName:player].[] He left room in the back for whatever he didn't know.[] Fill it in for him, will ya?
 		}
 
 		Banter1: {

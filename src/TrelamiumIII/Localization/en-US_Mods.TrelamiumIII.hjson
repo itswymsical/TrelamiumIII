@@ -1118,6 +1118,51 @@ Items: {
 		DisplayName: Twisted Fungus
 		Tooltip: "'A twisted fungal growth with unique properties'"
 	}
+
+	# Placeholder job items (docs/act-one.md). Text is provisional.
+	BandageRoll: {
+		DisplayName: Bandage Roll
+		Tooltip: "'Clean, for now'"
+	}
+
+	AntisepticTincture: {
+		DisplayName: Antiseptic Tincture
+		Tooltip: "'Stings. That's how you know it's working'"
+	}
+
+	SutureKit: {
+		DisplayName: Suture Kit
+		Tooltip: "'Needle, thread, and a steady hand sold separately'"
+	}
+
+	SilviansLetter: {
+		DisplayName: Silvian's Letter
+		Tooltip:
+			'''
+			Addressed to Argie
+			'The handwriting gets smaller toward the end'
+			'''
+	}
+
+	SporeSample: {
+		DisplayName: Spore Sample
+		Tooltip: "'Still glowing, faintly'"
+	}
+
+	BountyNotice: {
+		DisplayName: Bounty Notice
+		Tooltip: "'WANTED: one (1) big eye. Reward negotiable.'"
+	}
+
+	BotanistGlove: {
+		DisplayName: Botanist Glove
+		Tooltip:
+			'''
+			Right-click while holding dirt, mud, sand, silt, snow or ash to throw it
+			Thrown soil deals controlled damage
+			Snowballs deal 50% more damage
+			'''
+	}
 }
 
 Tiles: {
@@ -1229,6 +1274,7 @@ Projectiles: {
 	EarthenPike.DisplayName: Earthen Pike
 	ThrownTool.DisplayName: Thrown Tool
 	ArcticFlaskProjectile.DisplayName: Arctic Flask
+	SoilClodProjectile.DisplayName: Soil Clod
 }
 
 NPCs: {
@@ -1450,6 +1496,12 @@ SeedAmmo: {
 	Shiverthorn: Critical strikes inflict [buff/6fc5f6:Frostburn] for a short duration
 	Deathweed: Critical strikes inflict [buff/87b041:Poisoned] for a short duration
 	Waterleaf: Critical strikes inflict [buff/3d9eff:Wet] for a short duration
+}
+
+# Lines on soil blocks while the Botanist Glove is equipped (Content/Items/FarmingOverhaul/BotanistGlove).
+SoilThrow: {
+	Throw: Right-click to throw: {0} controlled damage
+	Inflicts: Inflicts {0}
 }
 
 # Element names behind [chem:...]. Keyed by ChemicalDamageType member so a translation can name

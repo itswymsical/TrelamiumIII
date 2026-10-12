@@ -1,33 +1,60 @@
 Almanac: {
 	FlavorText: {
 		// Conventional chemistry
-		Sulfur: Brimstone, scraped off the ash where the world runs hot. Smells like a promise it fully intends to keep.
-		Niter: On its own it does nothing at all. Set it beside something that burns and watch it turn polite company into an argument.
-		RockSalt: Boil the sea and this is what stays behind. Preserves, scours, and puts out fires nobody asked it to.
-		PureSalt: Crust from where brine met fresh water and lost the argument. Whiter than rock salt, and it knows it.
-		Quicklime: Limestone burnt past caring. Give it water and it gives you heat back, immediately and without discussion.
-		BoneAsh: What is left when you ask a bone the last question. Handle it respectfully; it has already been through enough.
-		Potash: Wood ash, wetted and dried again. The humblest thing in this book and half the book needs it.
+		Sulfur: Brimstone scraped off the ash where the world runs hot. Smells like a promise it fully intends to keep!
+		Niter: On its own it does nothing at all. But set it beside something that burns, and watch it turn polite company into an argument. Hehe.
+		RockSalt: Boil the brine and this is what you get! Preserves, scours, and puts out fires.
+		PureSalt: Crust from the mixture of brine and fresh water. More potent than rock salt, and it knows it.
+		Quicklime: Limestone burnt past giving a crap. Give it water and it gives you heat back, immediately and without room for discussion.
+		BoneAsh: A good ol' residue that you oughta handle respectfully; it's already been through enough.
+		Potash: Wood ash, wetted and dried. It's of the humblest things in this book, and half the almanac calls it a friend.
 		// Acids.
-		OilofVitriol: Green stone roasted until it weeps. It weeps on you too, if you're careless.
-		AquaFortis: Strong water. It will take apart every metal you own but one, and it is very smug about the exception.
-		SpiritofSalt: Salt persuaded to become a fume. Stays low, finds the corners, and waits there.
-		AquaRegia: Two acids that could not manage it alone. Together they dissolve even gold, which ought to tell you something about company.
-		BlueVitriol: Copper drowned in vitriol and come back blue. Useful, and prettier than it has any need to be.
+		OilofVitriol: Green stone roasted until it weeps like a baby. Careful! It'll weep on you too if you're careless.
+		AquaFortis: Folks call this 'strong water'; It will take apart every metal you own but one, that's for you to find out though.
+		SpiritofSalt: The salt's been persuaded to become a fume. I could never really explain what it's real purpose is, so you'll have to find out yourself.
+		AquaRegia: Two acids that could not manage it alone. Together they dissolve even gold, which ought to tell you something.
+		BlueVitriol: Copper drowned in vitriol comes back blue. It's useful, and prettier than it has any need to be.
 		// Alkalis.
-		SlakedLime: Quicklime that has already had its argument with water. Calm now. Puts fires out instead of starting them.
-		CausticLye: It cleans by unmaking. Do not test which of you it considers dirt.
-		FrigorificSalt: Mix these and the bottle pulls the warmth out of your hand. Cold you have to make, rather than find.
+		SlakedLime: Quicklime that's quarrelled with water. Although, this one puts fires out instead of starting them.
+		CausticLye: It cleans by unmaking things. Do not test which of you it considers dirt.
+		FrigorificSalt: Mix these and the bottle pulls the warmth right out of your hand! It's cold you make rather than find.
 		// Distillates and powders.
-		SpiritofOil: The first and lightest thing off the still, and the most eager to catch. Keep it away from the lamp, kid.
-		Pitch: What sulks in the bottom of the still afterwards. Slow, black, and sticks to whatever it lands on.
-		BlackPowder: Six of niter to one of sulfur to one of coal. Get the ratio wrong and it merely smoulders. Get it right and stand further back.
-		ColdFire: It lights itself. No spark, no flint, only air, and air is everywhere. Store it under water and think about that.
+		SpiritofOil: The first and lightest thing off the still, and the most eager to catch. Keep it away from the lamp, neph.
+		Pitch: A sticky residue you get out of crude oil. Sticks to whatever it lands on; I wouldn't recommend falling into it.
+		BlackPowder: Six of niter to one of sulfur to one of coal. Get the ratio wrong and it merely smoulders. Get it right and stand further back!
+		ColdFire: It lights itself. No spark, no flint, only air! Store it under water and think about that.
 		// Reagents the book had somehow never listed.
-		BottledOil: Thick, black, and patient. Everything it touches becomes easier to set alight.
-		BrineBottle: Salt water in a bottle. Not glamorous. Boil it down and it is where half the salt line begins.
-		FibrousSlurry: Pulped plant matter. Thickens, binds, and asks for nothing.
-		OxidizedCopper: Copper that has been left alone with the weather too long. The green is the interesting part.
-		RustedNugget: Iron that has been losing an argument with air for a very long time.
+		BottledOil: Thick, dark, and patient. Everything it touches becomes easier to set ablaze. Use with caution! I know how you like to play with fire.
+		BrineBottle: Salt water in a bottle. I wouldn't call it glamorous, but boil it down and you have the start of a salt pipeline.
+		FibrousSlurry: A keen solvent made of cobwebs and plant matter. Thickens, binds, and asks for nothing in return.
+		OxidizedCopper: Copper that has been left alone with the weather too long. The green is the interesting part!
+		RustedNugget: Iron that's had it's butt kicked by air overtime. The rust is the real alchemist here.
+		// Blocks
+		DirtBlock: Just dirt. But it has a story, and a place in the world. Don't forget that.
+		MudBlock: Dirt, and the water that made it. It has a story, and a place in the world. Don't forget that.
+		SandBlock: Most glance at it and see nothing. But sand's got a purpose. Keep it in mind, you'll see that primitive things can be mighty useful.
+		EbonsandBlock: Sand that's been through a lot. The corruption's left it baneful, which actually works in your favor.
+		CrimsandBlock: Sand that's been through a lot. The crimson's left it baneful, which actually works in your favor.
+		SnowBlock: The weather can be an alchemist too, snow's a perfect example. This water-soluble's got heart, let it melt and you'll see what I mean.
+		// Herbs
+		Daybloom: A flower that opens with the sun. It likes plain soil, and is quite charasmatic.
+		Magnolia: A mentor of the plant world. Magnolies have special pheromones that make other herbs wise up. Everyone wants these around.
+		Moonglow: A flower that opens with the moon. It likes mud, and it likes to be left alone.
+		Blinkroot: Blinkroots are shy until mature. They're easy to miss until they start illuminating the caverns. If you need a good catalyzer, these are your goto.
+		Waterleaf: Waterleafs are picky about their soil. They need conflict, which is why they grow on sand. If you need to dilute somethin', they'll be your handyman.
+		Shiverthorn: Shiverthorns are a hardy herb. They like to be left alone, and they like the cold. If you need a soft catalyst, these are your goto.
+		Fireblossom: Hot and fiery! These plants like ash, and have a burning passion for life. If you need somethin' volatile, these are your goto.
+		Sunflower: Always up bright and early, facing the sun. Sunflowers are a good source of oil, but make sure to treat them right.
+		Deathweed: Deathweeds are the only herb that can grow in the twisted biomes! They also vitiate the soil around them, so be careful where you plant them.
+		// Mushrooms
+		Mushroom: Your standard fungus. 'Shrooms are a good start to alchemy, but they don't have much to say for themselves. Argie would say otherwise.
+		GlowingMushroom: A mushroom that glows in the dark. Here's a secret: the glow is actually a chemical reaction!
+		FlyAgaric: A mushroom that can make you see things. It's a good catalyst, but don't get too carried away with it.
+		VileMushroom: Poison! I've tried eating one like a fool. Wouldn't recommend it. If you need a good poison, these are your goto.
+		ViciousMushroom: As the name suggests! They're quite vicious, and useful for making poisons.
+		// Misc
+		AntlionMandible: The jaw of a desert antlion. It's sharp, and a solid reagent.
+		Amber: Fossilized tree resin. A good way to make fire. Many like the fancy of it.
+		Cobweb: A spider's home. It's sticky, and a good solute.
 	}
 }
