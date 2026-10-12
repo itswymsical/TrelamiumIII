@@ -61,12 +61,15 @@ public class SilvianCommand : ModCommand
         }
     }
 
-    /// <summary>Back to never offered: <see cref="Job.Reset" /> leaves it on offer, so it is withdrawn after.</summary>
+    /// <summary>Back to never offered: <see cref="Job.Reset" /> leaves a job on offer, so each is withdrawn after.</summary>
     private static void ResetFirstJob(Player player)
     {
         var jobs = player.GetModPlayer<JobPlayer>();
 
-        jobs.GetOrCreateJob(JobID.HerbalForager)?.Reset();
-        jobs.LockJob(JobID.HerbalForager);
+        foreach (int jobId in (int[])[JobID.HerbalForager, JobID.BotanyBasics])
+        {
+            jobs.GetOrCreateJob(jobId)?.Reset();
+            jobs.LockJob(jobId);
+        }
     }
 }
