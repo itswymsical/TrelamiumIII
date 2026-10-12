@@ -1,5 +1,4 @@
 using ReLogic.Graphics;
-using TrelamiumIII.Core.Dialogue.Projected;
 
 namespace TrelamiumIII.Core.UI.Projected;
 
@@ -94,11 +93,11 @@ internal sealed class ProjectedPainter(SpriteBatch batch, ProjectedInk ink)
             batch.End();
 
         if (wanted == Mode.Art)
-            ProjectedSurfaces.BeginArt(batch);
+            BeginArt(batch);
         else if (ink == ProjectedInk.Pixelated)
-            ProjectedSurfaces.BeginInk(batch);
+            BeginInk(batch);
         else
-            ProjectedSurfaces.BeginSmooth(batch);
+            BeginSmooth(batch);
 
         mode = wanted;
     }
@@ -110,5 +109,54 @@ internal sealed class ProjectedPainter(SpriteBatch batch, ProjectedInk ink)
             batch.End();
 
         mode = Mode.None;
+    }
+
+    /// <summary>Coverage at which a glyph pixel counts as ink. Lower fattens the text.</summary>
+    private const float INK_THRESHOLD = 0.42f;
+
+    /// <summary>
+    ///     Point-sampled with a glyph coverage threshold, so a face that is magnified carries no partial pixels.
+    ///     Draws vertex colour only.
+    /// </summary>
+    internal static void BeginInk(SpriteBatch spriteBatch)
+    {
+        Effect? threshold = Assets.Shaders.GlyphThreshold.Asset.Value;
+
+        threshold?.Parameters["uThreshold"]?.SetValue(INK_THRESHOLD);
+
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.AlphaBlend,
+            SamplerState.PointClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            threshold,
+            Matrix.Identity);
+    }
+
+    /// <summary>Point-sampled and unshaded, for sprite art that carries its own colour.</summary>
+    internal static void BeginArt(SpriteBatch spriteBatch)
+    {
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.AlphaBlend,
+            SamplerState.PointClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
+            Matrix.Identity);
+    }
+
+    /// <summary>Linear-sampled and unshaded, for native-resolution text on a smoothly sampled face.</summary>
+    internal static void BeginSmooth(SpriteBatch spriteBatch)
+    {
+        spriteBatch.Begin(
+            SpriteSortMode.Immediate,
+            BlendState.AlphaBlend,
+            SamplerState.LinearClamp,
+            DepthStencilState.None,
+            RasterizerState.CullNone,
+            null,
+            Matrix.Identity);
     }
 }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>Which builder call an authored block turns into.</summary>
 public enum AuthoredBlockKind

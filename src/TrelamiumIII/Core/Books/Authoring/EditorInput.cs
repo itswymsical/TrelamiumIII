@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Input;
 using ReLogic.OS;
 using Terraria.GameInput;
 
-namespace TrelamiumIII.Core.Authoring;
+namespace TrelamiumIII.Core.Books.Authoring;
 
 /// <summary>
 ///     Turns a frame of keyboard state into buffer edits. Characters come from <see cref="TextInputEXT" /> to respect layouts, dead keys
