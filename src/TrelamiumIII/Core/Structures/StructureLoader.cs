@@ -5,7 +5,7 @@ namespace TrelamiumIII.Core.Structures;
 
 /// <summary>
 ///     Structures packaged with the mod, parsed once per load. Paths are relative to the mod root without the
-///     extension, e.g. <c>"Assets/Structures/SilvianHouse"</c>; a <c>.shstruct</c> is read when no <c>.tstruct</c> exists.
+///     extension, e.g. <c>"Assets/Structures/SilviansHouseV2"</c>; a <c>.shstruct</c> is read when no <c>.tstruct</c> exists.
 /// </summary>
 public sealed class StructureLoader : ModSystem
 {

@@ -163,7 +163,7 @@ public class GrottoPass : GenPass
         if (!Structures.TryPlace(ArgieLab, new Point(node.X, floorY), StructureAnchor.BottomCenter, out PlacedStructure placed))
             return;
 
-        StructureProtectionSystem.ArgieLabArea = placed.Area;
+        StructureProtectionSystem.ShieldedAreas.Add(placed.Area);
     }
 
     private BiomeMask BiomeBlob(int originX, int originY, int width, int height, FastNoiseLite noise, FastNoiseLite roughNoise,

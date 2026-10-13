@@ -66,6 +66,7 @@ public class WorldGenSystem : ModSystem
             tasks.Insert(oilIndex + 2, new BrinePass());
             tasks.Insert(oilIndex + 3, new ObsidianForestPass());
             tasks.Insert(oilIndex + 4, new SilvianHousePass());
+            tasks.Insert(oilIndex + 5, new AbandonedCabinPass());
         }
     }
 }
