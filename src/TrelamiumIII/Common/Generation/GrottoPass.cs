@@ -4,6 +4,8 @@ using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Seals;
+using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Utilities;
 
@@ -163,7 +165,7 @@ public class GrottoPass : GenPass
         if (!Structures.TryPlace(ArgieLab, new Point(node.X, floorY), StructureAnchor.BottomCenter, out PlacedStructure placed))
             return;
 
-        StructureProtectionSystem.ShieldedAreas.Add(placed.Area);
+        SealSystem.Seal(placed.Area, ModContent.GetInstance<WardSeal>());
     }
 
     private BiomeMask BiomeBlob(int originX, int originY, int width, int height, FastNoiseLite noise, FastNoiseLite roughNoise,

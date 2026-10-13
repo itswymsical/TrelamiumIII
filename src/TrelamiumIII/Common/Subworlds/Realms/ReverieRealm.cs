@@ -5,6 +5,8 @@ using Terraria.Utilities;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Reverie;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Seals;
+using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Content.Reverie;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.FbmScreen;
@@ -59,12 +61,8 @@ public class ReverieRealm : SubworldRealm
 
     public override void OnEnter() => SubworldSystem.hideUnderworld = true;
 
-    /// <summary> After <see cref="ModSystem.OnWorldLoad"/>, which clears protected areas. </summary>
-    public override void OnLoad()
-    {
-        if (StructureProtectionSystem.ProtectedAreas.Count == 0)
-            StructureProtectionSystem.ProtectedAreas.Add(new Rectangle(0, 0, Main.maxTilesX, Main.maxTilesY));
-    }
+    /// <summary> Seals the whole realm, over a generated or loaded world alike. </summary>
+    public override void OnLoad() => SealSystem.Seal(new Rectangle(0, 0, Main.maxTilesX, Main.maxTilesY), ModContent.GetInstance<RealmSeal>());
 
     public override void Update()
     {
