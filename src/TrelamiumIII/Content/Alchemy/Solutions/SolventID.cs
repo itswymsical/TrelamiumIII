@@ -19,7 +19,7 @@ public sealed class SolventID : ICustomAutoload
 
     #region Base solvents
 
-    public static int Brine { get; private set; }
+    public static int Brine => ModContent.ItemType<BrineBottleItem>();
 
     public static int BottledOil { get; private set; }
 
@@ -79,19 +79,6 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadBaseSolvents(Mod mod)
     {
-        Brine = Add(mod, new SolventItem("BrineBottleItem")
-        {
-            Rare = ItemRarityID.Blue,
-            AlmanacPotency = 2,
-            Temperaments = Temperament.Inert | Temperament.Alkaline,
-            Hidden = false,
-            LegacyNames = ["BrineBottle"],
-            Recipes = self => self.CreateRecipe()
-                .AddIngredient(ItemID.Bottle)
-                .AddCondition(WaterConditions.NearBrine)
-                .Register(),
-        });
-
         BottledOil = Add(mod, new SolventItem("BottledOilItem")
         {
             Value = Item.sellPrice(silver: 2),

@@ -12,6 +12,8 @@
 //   ColorA/B    look-specific palette
 // Vertex colour carries the tile light in rgb and the liquid's edge opacity in alpha.
 
+#include "LiquidPatterns.fxh"
+
 sampler2D NoiseSampler : register(s0);
 
 texture2D uCellTex;
@@ -44,37 +46,18 @@ float N(float2 p)
     return tex2D(NoiseSampler, p).r;
 }
 
-float Hash(float2 p)
-{
-    return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
-}
-
 float4 Output(float3 rgb, float alpha, float4 vertex)
 {
     alpha = saturate(alpha * Strength * vertex.a);
     return float4(rgb * vertex.rgb * alpha, alpha);
 }
 
-// Thin salt strands: iso-lines through two warped noise layers, stretched flat, drifting slowly and broken up by
-// a mask so they read as strands rather than contours, with the odd glint of a crystal.
+// Salt strands; see BrineStrands.
 float4 BrinePass(float4 vertex : COLOR0, float2 uv : TEXCOORD0) : COLOR0
 {
-    float2 w = World(uv);
-    float t = Time * Speed;
-    float2 p = w / (Scale * float2(900.0, 420.0));
+    float strand = BrineStrands(NoiseSampler, World(uv), Time, Speed, Scale);
 
-    float2 warp = float2(N(p * 0.5 + float2(t * 0.020, 0.0)), N(p * 0.5 + float2(0.31, t * 0.015))) - 0.5;
-    float n1 = N(p + warp * 0.35 + float2(t * 0.010, 0.0));
-    float n2 = N(p * 1.9 + warp * 0.5 + float2(-t * 0.013, 0.17));
-    float mask = smoothstep(0.42, 0.62, N(p * 0.8 + float2(0.71 - t * 0.008, 0.13)));
-
-    float s1 = 1.0 - saturate(abs(n1 - 0.5) * 22.0);
-    float s2 = 1.0 - saturate(abs(n2 - 0.5) * 28.0);
-    float strand = max(s1 * s1, s2 * s2 * 0.6) * (0.2 + 0.8 * mask);
-
-    float glint = step(0.9975, Hash(w + floor(Time * 1.5)));
-
-    return Output(lerp(ColorB, ColorA, saturate(strand + glint)), saturate(strand + glint), vertex);
+    return Output(lerp(ColorB, ColorA, strand), strand, vertex);
 }
 
 // Thick oil: broad, slow, heavily warped swirls whose crests carry a muted thin-film sheen.
