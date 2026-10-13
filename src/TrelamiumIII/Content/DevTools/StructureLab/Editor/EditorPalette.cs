@@ -5,12 +5,15 @@ using ModLiquidLib.ID;
 using ModLiquidLib.ModLoader;
 using Terraria.Map;
 using Terraria.ObjectData;
+using TrelamiumIII.Content.Ingress;
+using TrelamiumIII.Content.Tiles.Construction.Spruce;
 using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;
 
 /// <param name="Item">Drawn as the slot icon; 0 draws the tile or wall texture instead.</param>
-public sealed record PaletteEntry(Swatch Swatch, int Item, string Name, string Category);
+/// <param name="AlsoIn">A second category that lists the entry; sections show it under <paramref name="Category" /> only.</param>
+public sealed record PaletteEntry(Swatch Swatch, int Item, string Name, string Category, string? AlsoIn = null);
 
 /// <summary>
 ///     Everything the tools can write, per channel and sorted into categories. Built from the items that place things,
@@ -37,7 +40,7 @@ internal static partial class EditorPalette
     {
         Build();
 
-        return entries![channel].Where(entry => (category is null || entry.Category == category || entry.Category == Basics)
+        return entries![channel].Where(entry => (category is null || entry.Category == category || entry.AlsoIn == category || entry.Category == Basics)
                                                 && (search.Length == 0 || entry.Name.Contains(search, StringComparison.OrdinalIgnoreCase)));
     }
 
@@ -81,14 +84,14 @@ internal static partial class EditorPalette
                 bool grass = TileID.Sets.Conversion.Grass[item.createTile] || TileID.Sets.GrassSpecial[item.createTile];
 
                 if (seen.Add(swatch))
-                    blocks.Add(new PaletteEntry(swatch, itemType, grass ? TileLabel(item.createTile) : item.Name, BlockCategory(item.createTile, woodTiles)));
+                    blocks.Add(BlockEntry(swatch, itemType, grass ? TileLabel(item.createTile) : item.Name, woodTiles));
             }
             else if (item.createWall > WallID.None && item.createWall != voidWall)
             {
                 var swatch = new Swatch(SwatchKind.Wall, item.createWall);
 
                 if (seen.Add(swatch))
-                    walls.Add(new PaletteEntry(swatch, itemType, item.Name, WallCategory(item.createWall)));
+                    walls.Add(WallEntry(swatch, itemType, item.Name));
             }
             else if (item.paint > 0)
             {
@@ -126,7 +129,7 @@ internal static partial class EditorPalette
             var swatch = new Swatch(SwatchKind.Tile, type);
 
             if (seen.Add(swatch))
-                blocks.Add(new PaletteEntry(swatch, 0, TileLabel(type), BlockCategory(type, woodTiles)));
+                blocks.Add(BlockEntry(swatch, 0, TileLabel(type), woodTiles));
         }
     }
 
@@ -137,9 +140,33 @@ internal static partial class EditorPalette
             var swatch = new Swatch(SwatchKind.Wall, type);
 
             if (type != voidWall && seen.Add(swatch))
-                walls.Add(new PaletteEntry(swatch, 0, WallLabel(type), WallCategory(type)));
+                walls.Add(WallEntry(swatch, 0, WallLabel(type)));
         }
     }
+
+    /// <summary>
+    ///     This mod's blocks go under Trelamium and are also listed under the category of their kind, unless that is only the
+    ///     Building fallback.
+    /// </summary>
+    private static PaletteEntry BlockEntry(Swatch swatch, int item, string name, HashSet<int> woodTiles)
+    {
+        string kind = BlockCategory(swatch.Type, woodTiles);
+
+        return IsTrelamium(TileLoader.GetTile(swatch.Type))
+            ? new PaletteEntry(swatch, item, name, "Trelamium", kind == "Building" ? null : kind)
+            : new PaletteEntry(swatch, item, name, kind);
+    }
+
+    private static PaletteEntry WallEntry(Swatch swatch, int item, string name)
+    {
+        string kind = Main.wallHouse[swatch.Type] ? "Built" : "Natural";
+
+        return IsTrelamium(WallLoader.GetWall(swatch.Type))
+            ? new PaletteEntry(swatch, item, name, "Trelamium", kind)
+            : new PaletteEntry(swatch, item, name, kind);
+    }
+
+    private static bool IsTrelamium(ModType? content) => content?.Mod == TrelamiumIII.Instance;
 
     private static void AddLiquids(List<PaletteEntry> liquids)
     {
@@ -171,9 +198,6 @@ internal static partial class EditorPalette
     #region Categories
     private static string BlockCategory(int type, HashSet<int> woodTiles)
     {
-        if (type >= TileID.Count && TileLoader.GetTile(type).Mod == TrelamiumIII.Instance)
-            return "Trelamium";
-
         if (TileID.Sets.Platforms[type])
             return "Platforms";
 
@@ -203,18 +227,10 @@ internal static partial class EditorPalette
                    or TileID.LivingMahogany or TileID.LivingMahoganyLeaves or TileID.Ash or TileID.Hellstone;
     }
 
-    private static string WallCategory(int type)
-    {
-        if (type >= WallID.Count && WallLoader.GetWall(type).Mod == TrelamiumIII.Instance)
-            return "Trelamium";
-
-        return Main.wallHouse[type] ? "Built" : "Natural";
-    }
-
-    /// <summary>Tiles placed by the items of the Wood recipe group, modded woods registered to it included.</summary>
+    /// <summary>Tiles placed by the items of the Wood recipe group, modded woods registered to it included, and this mod's woods.</summary>
     private static HashSet<int> WoodTiles()
     {
-        HashSet<int> tiles = [];
+        HashSet<int> tiles = [ModContent.TileType<BramblewoodTile>(), ModContent.TileType<BramblerootTile>(), ModContent.TileType<SpruceWoodTile>()];
 
         if (RecipeGroup.recipeGroups.TryGetValue(RecipeGroupID.Wood, out RecipeGroup? group))
         {

@@ -11,7 +11,7 @@ namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;
 ///     Editing mode for the structure lab: the canvas takes the screen, the camera is free and the mouse runs the tools.
 ///     Opening a canvas starts it; the Structure Editor key (default ~) switches to building with vanilla tools and back.
 /// </summary>
-public sealed class StructureEditorMode : ModSystem
+public sealed partial class StructureEditorMode : ModSystem
 {
     public const int MaxBrush = 16;
 
@@ -54,6 +54,11 @@ public sealed class StructureEditorMode : ModSystem
         [EditorChannel.Paint] = Swatch.Empty
     };
 
+    /// <summary>Each kind's <see cref="ShapeSettings.Amount" />, once changed from its default.</summary>
+    private static readonly Dictionary<ShapeKind, int> ShapeAmounts = [];
+
+    private static EditorTool tool;
+
     /// <summary>A press in the world that has not been released yet.</summary>
     private static bool stroking;
 
@@ -61,7 +66,8 @@ public sealed class StructureEditorMode : ModSystem
     private static EditorTool strokeTool;
     private static Point lastCell;
     private static Point anchor;
-    private static HashSet<Point>? shape;
+    private static HashSet<Point>? preview;
+    private static (Rectangle Box, Point LineEnd, ShapeSettings Settings, bool Filled, int Brush) previewKey;
     private static Rectangle pendingFrame;
     private static bool panning;
     private static Vector2 panFrom;
@@ -73,7 +79,19 @@ public sealed class StructureEditorMode : ModSystem
 
     public static bool Active { get; private set; }
 
-    public static EditorTool Tool { get; set; }
+    /// <summary>Changing it writes a curve in progress.</summary>
+    public static EditorTool Tool
+    {
+        get => tool;
+        set
+        {
+            if (value == tool)
+                return;
+
+            FinishCurve(closed: false);
+            tool = value;
+        }
+    }
 
     public static EditorChannel Channel { get; set; }
 
@@ -83,6 +101,12 @@ public sealed class StructureEditorMode : ModSystem
 
     public static int BrushSize { get; private set; } = 1;
 
+    public static ShapeKind Shape { get; set; }
+
+    public static ShapeFacing Facing { get; set; }
+
+    public static ShapeSettings CurrentShape => new(Shape, Facing, AmountOf(Shape));
+
     /// <summary>World position at the centre of the screen.</summary>
     public static Vector2 Camera { get; private set; }
 
@@ -90,7 +114,7 @@ public sealed class StructureEditorMode : ModSystem
 
     public static bool HoverOnCanvas { get; private set; }
 
-    /// <summary>Box of the shape being dragged, for the status bar; empty otherwise.</summary>
+    /// <summary>Box of the shape or canvas being dragged, for the status bar; empty otherwise.</summary>
     public static Rectangle ShapeBox { get; private set; }
 
     public static string? Notice => noticeTimer > 0 ? notice : null;
@@ -122,6 +146,7 @@ public sealed class StructureEditorMode : ModSystem
         ui = null;
         userInterface = null;
         Active = false;
+        curve = null;
         EditorPalette.Unload();
     }
 
@@ -129,6 +154,7 @@ public sealed class StructureEditorMode : ModSystem
     internal static void OnDocumentOpened()
     {
         History.Clear();
+        curve = null;
         enterRequested = true;
     }
 
@@ -141,7 +167,7 @@ public sealed class StructureEditorMode : ModSystem
         exitRequested = false;
         enteredOnUpdate = Main.GameUpdateCount;
         stroking = false;
-        shape = null;
+        preview = null;
         zoomOnEnter = Main.GameZoomTarget;
         Camera = Main.LocalPlayer.Center;
 
@@ -154,7 +180,9 @@ public sealed class StructureEditorMode : ModSystem
         if (!Active)
             return;
 
+        CancelCanvasDrag();
         EndStroke();
+        FinishCurve(closed: false);
 
         Active = false;
         panning = false;
@@ -192,23 +220,56 @@ public sealed class StructureEditorMode : ModSystem
     public static void SwapSwatches() => (Primaries[Channel], Secondaries[Channel]) = (Secondaries[Channel], Primaries[Channel]);
 
     public static void ResizeBrush(int delta) => BrushSize = Math.Clamp(BrushSize + delta, 1, MaxBrush);
+
+    public static int AmountOf(ShapeKind kind) => ShapeAmounts.TryGetValue(kind, out int amount) ? amount : kind.Amount()?.Default ?? 0;
+
+    /// <summary>Steps the current kind's amount by <paramref name="steps" /> of its step size.</summary>
+    public static void ChangeShapeAmount(int steps)
+    {
+        if (Shape.Amount() is { } amount)
+            ShapeAmounts[Shape] = Math.Clamp(AmountOf(Shape) + steps * amount.Step, amount.Min, amount.Max);
+    }
+
+    /// <summary>Turns the shapes clockwise by <paramref name="quarters" /> quarter turns.</summary>
+    public static void TurnShape(int quarters) => Facing = Facing.Turned(quarters);
     #endregion
 
     #region Actions
+    /// <summary>Takes back the last edit, or the last node of a curve in progress.</summary>
     public static void Undo()
     {
         if (stroking)
             return;
 
-        Notify(History.Undo(StructureEditor.Canvas) ? "Undone." : "Nothing to undo.");
+        if (curve is not null)
+        {
+            RemoveCurveNode();
+            return;
+        }
+
+        if (!History.Undo(out Rectangle canvas))
+        {
+            Notify("Nothing to undo.");
+            return;
+        }
+
+        StructureEditor.Restore(canvas);
+        Notify("Undone.");
     }
 
     public static void Redo()
     {
-        if (stroking)
+        if (stroking || curve is not null)
             return;
 
-        Notify(History.Redo(StructureEditor.Canvas) ? "Redone." : "Nothing to redo.");
+        if (!History.Redo(out Rectangle canvas))
+        {
+            Notify("Nothing to redo.");
+            return;
+        }
+
+        StructureEditor.Restore(canvas);
+        Notify("Redone.");
     }
 
     public static void Save()
@@ -292,19 +353,14 @@ public sealed class StructureEditorMode : ModSystem
             return;
         }
 
-        if (ui.SearchFocused)
-            ui.UpdateSearch();
+        if (ui.TextFocused)
+            ui.UpdateText();
         else if (HandleKeys())
             return;
 
         UpdateCamera();
         UpdateMouse();
-
-        if (!pendingFrame.IsEmpty)
-        {
-            StructureWorld.Frame(pendingFrame);
-            pendingFrame = Rectangle.Empty;
-        }
+        FlushFrame();
     }
 
     public override void ModifyScreenPosition()
@@ -348,6 +404,15 @@ public sealed class StructureEditorMode : ModSystem
         // The press that opened the mode may still read as fresh on this update.
         bool justEntered = Main.GameUpdateCount - enteredOnUpdate < 2;
 
+        if (curve is not null && HandleCurveKeys(control))
+            return false;
+
+        if (ResizingCanvas && Pressed(Keys.Escape))
+        {
+            CancelCanvasDrag();
+            return false;
+        }
+
         if (Pressed(Keys.Escape) || (!justEntered && ToggleKeyPressed()))
         {
             Exit();
@@ -373,11 +438,32 @@ public sealed class StructureEditorMode : ModSystem
             return false;
         }
 
-        foreach (EditorTool tool in Enum.GetValues<EditorTool>())
+        foreach (EditorTool each in Enum.GetValues<EditorTool>())
         {
-            if (Pressed(tool.Shortcut()))
-                Tool = tool;
+            if (!Pressed(each.Shortcut()))
+                continue;
+
+            // The shape key again moves on to the next kind.
+            if (each == EditorTool.Shape && Tool == EditorTool.Shape)
+                Shape = (ShapeKind)(((int)Shape + 1) % Enum.GetValues<ShapeKind>().Length);
+
+            Tool = each;
         }
+
+        if (Pressed(Keys.O))
+        {
+            Tool = EditorTool.Shape;
+            Shape = ShapeKind.Ellipse;
+        }
+
+        if (Pressed(Keys.R))
+            TurnShape(shift ? -1 : 1);
+
+        if (Pressed(Keys.OemComma))
+            ChangeShapeAmount(-1);
+
+        if (Pressed(Keys.OemPeriod))
+            ChangeShapeAmount(1);
 
         if (Pressed(Keys.D1))
             Channel = EditorChannel.Blocks;
@@ -414,7 +500,7 @@ public sealed class StructureEditorMode : ModSystem
         float zoom = Main.GameViewMatrix.Zoom.X;
         var pan = Vector2.Zero;
 
-        if (!ui!.SearchFocused)
+        if (!ui!.TextFocused)
         {
             if (Down(Keys.A) || Down(Keys.Left))
                 pan.X--;
@@ -436,7 +522,7 @@ public sealed class StructureEditorMode : ModSystem
 
         // Middle drag, or left drag while Space is held, grabs the canvas.
         MouseState mouse = PlayerInput.MouseInfo;
-        bool grab = mouse.MiddleButton == ButtonState.Pressed || (!ui.SearchFocused && Down(Keys.Space) && mouse.LeftButton == ButtonState.Pressed);
+        bool grab = mouse.MiddleButton == ButtonState.Pressed || (!ui.TextFocused && Down(Keys.Space) && mouse.LeftButton == ButtonState.Pressed);
         var screenMouse = new Vector2(PlayerInput.MouseX, PlayerInput.MouseY);
 
         if (grab && (panning || !stroking))
@@ -460,6 +546,9 @@ public sealed class StructureEditorMode : ModSystem
 
         HoverCell = cell;
         HoverOnCanvas = canvas.Contains(cell);
+        hoverEdges = Tool == EditorTool.Canvas && !ui!.IsMouseOverPanel ? EdgesAt(MouseWorld()) : CanvasEdges.None;
+
+        UpdateCurvePreview();
 
         if (panning)
             return;
@@ -490,34 +579,41 @@ public sealed class StructureEditorMode : ModSystem
     #region Tools
     private static void BeginStroke(Point cell, bool secondary)
     {
-        EditorTool tool = Down(Keys.LeftAlt) || Down(Keys.RightAlt) ? EditorTool.Eyedropper : Tool;
+        EditorTool current = Down(Keys.LeftAlt) || Down(Keys.RightAlt) ? EditorTool.Eyedropper : Tool;
         Rectangle canvas = StructureEditor.Canvas;
 
-        if (tool == EditorTool.Eyedropper)
+        switch (current)
         {
-            if (canvas.Contains(cell))
-                SetSwatch(secondary, EditorPainter.Pick(cell.X, cell.Y, Channel, PaintTarget));
+            case EditorTool.Eyedropper:
+                if (canvas.Contains(cell))
+                    SetSwatch(secondary, EditorPainter.Pick(cell.X, cell.Y, Channel, PaintTarget));
 
-            return;
-        }
+                return;
 
-        if (tool == EditorTool.Fill)
-        {
-            if (canvas.Contains(cell))
-                Fill(cell, StrokeSwatch(tool, secondary));
+            case EditorTool.Fill:
+                if (canvas.Contains(cell))
+                    Fill(cell, StrokeSwatch(current, secondary));
 
-            return;
+                return;
+
+            case EditorTool.Curve:
+                BeginCurveNode(cell, secondary);
+                return;
+
+            case EditorTool.Canvas:
+                BeginCanvasDrag();
+                return;
         }
 
         stroking = true;
         strokeSecondary = secondary;
-        strokeTool = tool;
+        strokeTool = current;
         anchor = lastCell = cell;
 
-        if (tool.IsShape())
+        if (current.IsShape())
         {
-            shape = Raster.Shape(tool, anchor, cell, FilledShapes, BrushSize);
-            ShapeBox = Raster.Box(anchor, cell);
+            preview = null;
+            UpdateShape(cell);
             return;
         }
 
@@ -527,16 +623,20 @@ public sealed class StructureEditorMode : ModSystem
 
     private static void ContinueStroke(Point cell)
     {
-        if (strokeTool.IsShape())
+        switch (strokeTool)
         {
-            Point end = Down(Keys.LeftShift) || Down(Keys.RightShift) ? Raster.Constrain(strokeTool, anchor, cell) : cell;
-
-            if (end == lastCell)
+            case EditorTool.Curve:
+                DragCurveHandle();
                 return;
 
-            lastCell = end;
-            shape = Raster.Shape(strokeTool, anchor, end, FilledShapes, BrushSize);
-            ShapeBox = Raster.Box(anchor, end);
+            case EditorTool.Canvas:
+                DragCanvas();
+                return;
+        }
+
+        if (strokeTool.IsShape())
+        {
+            UpdateShape(cell);
             return;
         }
 
@@ -555,27 +655,61 @@ public sealed class StructureEditorMode : ModSystem
             return;
 
         stroking = false;
-        Rectangle canvas = StructureEditor.Canvas;
 
-        if (shape is not null)
+        switch (strokeTool)
+        {
+            case EditorTool.Curve:
+                return;
+
+            case EditorTool.Canvas:
+                EndCanvasDrag();
+                return;
+        }
+
+        Rectangle canvas = StructureEditor.Canvas;
+        HashSet<Point>? cells = preview;
+
+        preview = null;
+        ShapeBox = Rectangle.Empty;
+
+        // The lab is gone, so there is nothing to write or record.
+        if (canvas.IsEmpty)
+        {
+            History.Clear();
+            return;
+        }
+
+        if (cells is not null)
         {
             History.Begin(canvas);
             Swatch swatch = StrokeSwatch(strokeTool, strokeSecondary);
 
-            foreach (Point point in shape)
+            foreach (Point point in cells)
                 Paint(point, swatch);
-
-            shape = null;
-            ShapeBox = Rectangle.Empty;
         }
 
-        if (!pendingFrame.IsEmpty)
-        {
-            StructureWorld.Frame(pendingFrame);
-            pendingFrame = Rectangle.Empty;
-        }
-
+        FlushFrame();
         History.End(canvas);
+    }
+
+    /// <summary>Recomputes the dragged line or shape for the cursor at <paramref name="cell" />, with Shift and Alt as held now.</summary>
+    private static void UpdateShape(Point cell)
+    {
+        bool shift = Down(Keys.LeftShift) || Down(Keys.RightShift);
+        bool alt = Down(Keys.LeftAlt) || Down(Keys.RightAlt);
+        ShapeSettings settings = CurrentShape;
+        bool line = strokeTool == EditorTool.Line;
+        Point end = line && shift ? Raster.Snap45(anchor, cell) : cell;
+        Rectangle box = line ? Raster.Box(anchor, end) : Raster.DragBox(anchor, cell, shift ? EditorShapes.Aspect(settings) : null, alt);
+
+        var key = (box, line ? end : Point.Zero, settings, FilledShapes, BrushSize);
+
+        if (preview is not null && key == previewKey)
+            return;
+
+        previewKey = key;
+        ShapeBox = box;
+        preview = line ? Raster.Line(anchor, end, BrushSize) : Raster.Shape(settings, box, FilledShapes, BrushSize);
     }
 
     private static void Stamp(Point centre)
@@ -599,12 +733,7 @@ public sealed class StructureEditorMode : ModSystem
         foreach (Point point in region)
             Paint(point, swatch);
 
-        if (!pendingFrame.IsEmpty)
-        {
-            StructureWorld.Frame(pendingFrame);
-            pendingFrame = Rectangle.Empty;
-        }
-
+        FlushFrame();
         History.End(canvas);
         Notify($"Filled {region.Count} cells.");
     }
@@ -619,6 +748,15 @@ public sealed class StructureEditorMode : ModSystem
         pendingFrame = pendingFrame.IsEmpty ? cell : Rectangle.Union(pendingFrame, cell);
     }
 
+    private static void FlushFrame()
+    {
+        if (pendingFrame.IsEmpty)
+            return;
+
+        StructureWorld.Frame(pendingFrame);
+        pendingFrame = Rectangle.Empty;
+    }
+
     /// <summary>The eraser clears with the left button and voids with the right; the rest use the swatches.</summary>
     private static Swatch StrokeSwatch(EditorTool tool, bool secondary)
     {
@@ -630,39 +768,61 @@ public sealed class StructureEditorMode : ModSystem
     #endregion
 
     #region Drawing
-    /// <summary>Draws the shape being dragged, or the brush under the cursor, in the lab's world-space batch.</summary>
+    /// <summary>Draws the tool's preview under the cursor in the lab's world-space batch.</summary>
     internal static void DrawWorld(SpriteBatch batch)
     {
-        if (!Active || ui is null || (ui.IsMouseOverPanel && !stroking) || panning)
+        if (!Active || ui is null || panning)
             return;
 
-        EditorTool tool = stroking ? strokeTool : Tool;
-        Swatch swatch = StrokeSwatch(tool, stroking && strokeSecondary);
-
-        Color color = swatch.Kind switch
+        if (Tool == EditorTool.Canvas || ResizingCanvas)
         {
-            SwatchKind.Empty => EraseColor,
-            SwatchKind.Void => VoidColor,
-            _ => PreviewColor
-        };
-
-        if (shape is not null)
-        {
-            foreach (Point point in shape)
-            {
-                if (StructureEditor.Canvas.Contains(point))
-                    FillRect(batch, new Rectangle(point.X * 16, point.Y * 16, 16, 16), color * 0.4f);
-            }
-
+            DrawCanvasTool(batch);
             return;
         }
 
-        int size = tool.UsesBrush() ? BrushSize : 1;
+        EditorTool current = stroking ? strokeTool : Tool;
+        Color color = SwatchColor(StrokeSwatch(current, stroking ? strokeSecondary : curve?.Secondary ?? false));
+
+        if (curve is not null)
+        {
+            DrawCurve(batch, color);
+            return;
+        }
+
+        if (preview is not null)
+        {
+            DrawCells(batch, preview, color * 0.4f);
+            return;
+        }
+
+        if (ui.IsMouseOverPanel)
+            return;
+
+        int size = current.UsesBrush() ? BrushSize : 1;
         int start = -(size / 2);
         var footprint = new Rectangle((HoverCell.X + start) * 16, (HoverCell.Y + start) * 16, size * 16, size * 16);
 
         FillRect(batch, footprint, color * 0.25f);
         OutlineRect(batch, footprint, color * 0.9f);
+    }
+
+    private static Color SwatchColor(Swatch swatch) => swatch.Kind switch
+    {
+        SwatchKind.Empty => EraseColor,
+        SwatchKind.Void => VoidColor,
+        _ => PreviewColor
+    };
+
+    /// <summary>Tints the cells of <paramref name="cells" /> on the canvas and on screen.</summary>
+    private static void DrawCells(SpriteBatch batch, IEnumerable<Point> cells, Color color)
+    {
+        Rectangle visible = Rectangle.Intersect(StructureEditor.Canvas, VisibleCells());
+
+        foreach (Point point in cells)
+        {
+            if (visible.Contains(point))
+                FillRect(batch, new Rectangle(point.X * 16, point.Y * 16, 16, 16), color);
+        }
     }
 
     private static void FillRect(SpriteBatch batch, Rectangle world, Color color)
@@ -677,6 +837,33 @@ public sealed class StructureEditorMode : ModSystem
         FillRect(batch, new Rectangle(world.X, world.Bottom - 1, world.Width, 1), color);
         FillRect(batch, new Rectangle(world.X, world.Y, 1, world.Height), color);
         FillRect(batch, new Rectangle(world.Right - 1, world.Y, 1, world.Height), color);
+    }
+
+    /// <summary>A square of <paramref name="screenSize" /> screen pixels centred on a world position.</summary>
+    private static void DrawMarker(SpriteBatch batch, Vector2 world, float screenSize, Color color)
+    {
+        float size = screenSize / Main.GameViewMatrix.Zoom.X;
+        batch.Draw(TextureAssets.MagicPixel.Value, world - Main.screenPosition, new Rectangle(0, 0, 1, 1), color, 0f, new Vector2(0.5f), size,
+            SpriteEffects.None, 0f);
+    }
+
+    /// <summary>A line <paramref name="screenWidth" /> screen pixels wide between two world positions.</summary>
+    private static void DrawSegment(SpriteBatch batch, Vector2 from, Vector2 to, float screenWidth, Color color)
+    {
+        Vector2 delta = to - from;
+        float width = screenWidth / Main.GameViewMatrix.Zoom.X;
+
+        batch.Draw(TextureAssets.MagicPixel.Value, from - Main.screenPosition, new Rectangle(0, 0, 1, 1), color, delta.ToRotation(),
+            new Vector2(0f, 0.5f), new Vector2(delta.Length(), width), SpriteEffects.None, 0f);
+    }
+
+    /// <summary>The tiles on screen, with a tile of slack on each side.</summary>
+    private static Rectangle VisibleCells()
+    {
+        Vector2 size = new Vector2(PlayerInput.RealScreenWidth, PlayerInput.RealScreenHeight) / Main.GameViewMatrix.Zoom.X;
+        Vector2 topLeft = Camera - size / 2f;
+
+        return new Rectangle((int)(topLeft.X / 16f) - 1, (int)(topLeft.Y / 16f) - 1, (int)(size.X / 16f) + 3, (int)(size.Y / 16f) + 3);
     }
     #endregion
 

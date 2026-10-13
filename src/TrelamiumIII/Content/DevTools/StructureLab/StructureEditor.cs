@@ -25,6 +25,9 @@ public static class StructureEditor
 
     public static int MaxHeight => StructureLabRealm.WorldHeight - 2 * Margin;
 
+    /// <summary>The part of the lab a canvas may cover.</summary>
+    public static Rectangle Bounds => new(Margin, Margin, MaxWidth, MaxHeight);
+
     /// <summary>Name of the open structure; null when no canvas is up.</summary>
     public static string? DocumentName { get; private set; }
 
@@ -147,6 +150,85 @@ public static class StructureEditor
 
         Canvas = Rectangle.Empty;
         DocumentName = null;
+    }
+
+    /// <summary>
+    ///     Moves the canvas edges to <paramref name="area" />. Cells it stops covering are cleared, with any object reaching into
+    ///     them; cells it starts covering keep what the lab holds there.
+    /// </summary>
+    public static void Resize(Rectangle area)
+    {
+        RequireCanvas();
+
+        if (Fit(area) != area)
+            throw new ArgumentException($"A canvas stays inside the lab's {Bounds} and holds up to {MaxWidth}x{MaxHeight}.");
+
+        Rectangle old = Canvas;
+        Canvas = area;
+
+        foreach (Rectangle strip in Outside(old, area))
+        {
+            for (int i = strip.Left; i < strip.Right; i++)
+            {
+                for (int j = strip.Top; j < strip.Bottom; j++)
+                {
+                    if (Main.tile[i, j] is { HasTile: true } tile && Main.tileFrameImportant[tile.TileType])
+                        EditorPainter.Apply(i, j, EditorChannel.Blocks, Swatch.Empty, PaintTarget.Blocks);
+                }
+            }
+
+            StructureWorld.Clear(strip);
+        }
+
+        StructureWorld.Frame(old);
+    }
+
+    /// <summary>Sets the canvas bounds without touching any cell, for undo.</summary>
+    internal static void Restore(Rectangle area) => Canvas = area;
+
+    /// <summary><paramref name="area" /> cut down to <see cref="Bounds" /> and moved inside them.</summary>
+    public static Rectangle Fit(Rectangle area)
+    {
+        Rectangle bounds = Bounds;
+        int width = Math.Clamp(area.Width, 1, bounds.Width);
+        int height = Math.Clamp(area.Height, 1, bounds.Height);
+
+        return new Rectangle(Math.Clamp(area.X, bounds.Left, bounds.Right - width), Math.Clamp(area.Y, bounds.Top, bounds.Bottom - height),
+            width, height);
+    }
+
+    /// <summary>
+    ///     The canvas at <paramref name="width" /> x <paramref name="height" />, keeping the part named by
+    ///     <paramref name="anchor" /> in place: 0, 1 or 2 per axis for the left or top edge, the middle, or the right or bottom edge.
+    /// </summary>
+    public static Rectangle Anchored(int width, int height, Point anchor)
+    {
+        Rectangle canvas = Canvas;
+        return Fit(new Rectangle(canvas.X + (canvas.Width - width) * anchor.X / 2, canvas.Y + (canvas.Height - height) * anchor.Y / 2, width, height));
+    }
+
+    /// <summary>The cells of <paramref name="area" /> outside <paramref name="keep" />, as up to four strips.</summary>
+    private static IEnumerable<Rectangle> Outside(Rectangle area, Rectangle keep)
+    {
+        Rectangle inner = Rectangle.Intersect(area, keep);
+
+        if (inner.IsEmpty)
+        {
+            yield return area;
+            yield break;
+        }
+
+        if (inner.Left > area.Left)
+            yield return new Rectangle(area.Left, area.Top, inner.Left - area.Left, area.Height);
+
+        if (inner.Right < area.Right)
+            yield return new Rectangle(inner.Right, area.Top, area.Right - inner.Right, area.Height);
+
+        if (inner.Top > area.Top)
+            yield return new Rectangle(inner.Left, area.Top, inner.Width, inner.Top - area.Top);
+
+        if (inner.Bottom < area.Bottom)
+            yield return new Rectangle(inner.Left, inner.Bottom, inner.Width, area.Bottom - inner.Bottom);
     }
 
     private static Vector2 ArrivalPoint => new Vector2(Canvas.Center.X, Canvas.Bottom + ArrivalGap) * 16f;
