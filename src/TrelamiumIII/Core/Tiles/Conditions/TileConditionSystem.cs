@@ -48,8 +48,13 @@ public sealed class TileConditionSystem : ModSystem
         /// <summary>Null on a server and for conditions that draw nothing.</summary>
         public TileCanvas? Canvas;
 
+        public ConditionCanvasSource? CanvasSource;
+
         public int NextSerial;
     }
+
+    /// <summary>Canvases drawn from other sources, composited over every condition's.</summary>
+    private static readonly List<TileCanvas> overlays = [];
 
     private enum PendingKind : byte
     {
@@ -167,7 +172,10 @@ public sealed class TileConditionSystem : ModSystem
             condition.Load();
 
             if (!Main.dedServ && condition.RenderMode == TileConditionRenderMode.Canvas)
-                state.Canvas = new TileCanvas(condition, state.Tiles);
+            {
+                state.CanvasSource = new ConditionCanvasSource(condition, state.Tiles);
+                state.Canvas = new TileCanvas(state.CanvasSource);
+            }
 
             states.Add(state);
             byType[type] = state;
@@ -230,9 +238,13 @@ public sealed class TileConditionSystem : ModSystem
             state.Canvas = null;
         }
 
+        foreach (TileCanvas overlay in overlays)
+            overlay.Free();
+
         states.Clear();
         byType.Clear();
         pending.Clear();
+        overlays.Clear();
 
         compositeSpliced = false;
         reportedFailure = false;
@@ -264,6 +276,21 @@ public sealed class TileConditionSystem : ModSystem
         // After the drain, so a tile marked again this tick takes over from its own fading sample.
         foreach (ConditionState state in states)
             state.Canvas?.Update();
+
+        foreach (TileCanvas overlay in overlays)
+            overlay.Update();
+    }
+
+    /// <summary>Builds and composites a canvas for <paramref name="source" /> alongside the conditions'. Client only.</summary>
+    internal static TileCanvas? AddOverlay(ITileCanvasSource source)
+    {
+        if (Main.dedServ)
+            return null;
+
+        var canvas = new TileCanvas(source);
+        overlays.Add(canvas);
+
+        return canvas;
     }
 
     private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload)
@@ -330,7 +357,8 @@ public sealed class TileConditionSystem : ModSystem
         if (!state.Tiles.Remove(position, out TileConditionInstance instance))
             return false;
 
-        state.Canvas?.OnRemoved(in instance);
+        if (state.Canvas is { } canvas)
+            state.CanvasSource?.OnRemoved(canvas, in instance);
         state.Condition.OnExpired(in instance);
 
         return true;
@@ -558,11 +586,8 @@ public sealed class TileConditionSystem : ModSystem
 
         Rectangle covered = Rectangle.Empty;
 
-        foreach (ConditionState state in states)
+        foreach (TileCanvas canvas in AllCanvases())
         {
-            if (state.Canvas is not { } canvas)
-                continue;
-
             canvas.Build();
 
             Rectangle bounds = canvas.TileBounds;
@@ -585,13 +610,25 @@ public sealed class TileConditionSystem : ModSystem
 
         try
         {
-            foreach (ConditionState state in states)
-                state.Canvas?.Composite(mask, origin);
+            foreach (TileCanvas canvas in AllCanvases())
+                canvas.Composite(mask, origin);
         }
         catch (Exception exception)
         {
             ReportFailure(exception);
         }
+    }
+
+    private static IEnumerable<TileCanvas> AllCanvases()
+    {
+        foreach (ConditionState state in states)
+        {
+            if (state.Canvas is { } canvas)
+                yield return canvas;
+        }
+
+        foreach (TileCanvas overlay in overlays)
+            yield return overlay;
     }
 
     /// <summary>

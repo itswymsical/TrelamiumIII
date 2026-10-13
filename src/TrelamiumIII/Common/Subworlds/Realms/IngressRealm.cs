@@ -9,6 +9,8 @@ using TrelamiumIII.Common.Generation.Fortress;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Seals;
+using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Content.Ingress.Transition;
@@ -127,8 +129,11 @@ public class IngressRealm : SubworldRealm
 
         returnRift = null;
 
-        if (Fortress is { } fortress && StructureProtectionSystem.ProtectedAreas.Count == 0)
-            StructureProtectionSystem.ProtectedAreas.AddRange(fortress.ProtectedAreas);
+        if (Fortress is { } fortress)
+        {
+            foreach (Rectangle area in fortress.ProtectedAreas)
+                SealSystem.Seal(area, ModContent.GetInstance<RealmSeal>());
+        }
     }
 
     /// <summary>

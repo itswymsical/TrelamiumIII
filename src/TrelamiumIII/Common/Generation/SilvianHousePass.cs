@@ -2,6 +2,8 @@ using Terraria.IO;
 using Terraria.WorldBuilding;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Seals;
+using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 
 namespace TrelamiumIII.Common.Generation;
@@ -70,7 +72,7 @@ public class SilvianHousePass : GenPass
             if (!SurfaceSites.TryBuild(HousePath, GroundRow, sites, tier.MaxUnevenness, StructurePadding, TileID.Dirt, out PlacedStructure placed))
                 continue;
 
-            StructureProtectionSystem.ShieldedAreas.Add(placed.Area);
+            SealSystem.Seal(placed.Area, ModContent.GetInstance<WardSeal>());
             placed.ReserveFor<Silvian>(StandTile);
 
             int distance = SurfaceSites.DistanceToSpan(Main.spawnTileX, placed.Area.Left, placed.Area.Right - 1);

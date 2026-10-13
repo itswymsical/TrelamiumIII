@@ -8,14 +8,14 @@ using TrelamiumIII.Core.Graphics.Fields;
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
 /// <summary>
-///     Draws one condition's tiles as a continuous surface: each tile is splatted into a screen-space canvas as a quadratic
-///     B-spline, and the canvas is composited over the terrain through the condition's shader.
+///     Draws one source's tiles as a continuous surface: each tile is splatted into a screen-space canvas as a quadratic
+///     B-spline, and the canvas is composited over the terrain through the source's shader.
 /// </summary>
 /// <remarks>
-///     Target 0 holds coverage and the condition's data, target 1 the kernel weight and world light, all as weighted sums.
+///     Target 0 holds coverage and the source's data, target 1 the kernel weight and world light, all as weighted sums.
 ///     Samples are copied into open neighbours so the surface runs past the terrain edge and the terrain mask cuts it.
 /// </remarks>
-internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, TileConditionInstance> tiles) : ARenderTargetContentByRequest
+internal sealed class TileCanvas(ITileCanvasSource source) : ARenderTargetContentByRequest
 {
     /// <summary>Kernel half-width, in tiles.</summary>
     private const float KERNEL_RADIUS = 1.5f;
@@ -79,26 +79,27 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
 
     private int idleTicks;
 
-    private int PixelScale => Math.Max(condition.CanvasPixelScale, 1);
+    /// <summary>Quads written so far by the build in progress.</summary>
+    private int quadCount;
+
+    private TileCanvasWriter? writer;
+
+    public ITileCanvasSource Source => source;
+
+    private int PixelScale => Math.Max(source.CanvasPixelScale, 1);
 
     /// <summary>Tiles stamped by the last <see cref="Build" />, or empty.</summary>
     public Rectangle TileBounds => vertexCount == 0
         ? Rectangle.Empty
         : new Rectangle(boundsMin.X, boundsMin.Y, boundsMax.X - boundsMin.X + 1, boundsMax.Y - boundsMin.Y + 1);
 
-    /// <summary>Keeps a removed tile's last sample on the canvas while it fades out.</summary>
-    public void OnRemoved(in TileConditionInstance instance)
+    /// <summary>Keeps a removed tile's last sample on the canvas while it fades out over the source's fade-out ticks.</summary>
+    public void AddGhost(Point tile, TileCanvasSample sample, float weight)
     {
-        if (condition.FadeOutTicks <= 0 || !instance.Tile.HasTile)
+        if (source.FadeOutTicks <= 0 || weight <= 0f || sample.Coverage <= 0.01f)
             return;
 
-        float weight = FadeInWeight(in instance);
-        TileCanvasSample sample = condition.EncodeCanvas(in instance);
-
-        if (weight <= 0f || sample.Coverage <= 0.01f)
-            return;
-
-        ghosts.Add(new Ghost { Position = instance.Coordinates, Sample = sample, Weight = weight, Ticks = condition.FadeOutTicks });
+        ghosts.Add(new Ghost { Position = tile, Sample = sample, Weight = weight, Ticks = source.FadeOutTicks });
     }
 
     public void ClearGhosts() => ghosts.Clear();
@@ -111,7 +112,7 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
             Ghost ghost = ghosts[i];
 
             // A tile that took the condition again draws itself.
-            if (--ghost.Ticks <= 0 || tiles.ContainsKey(ghost.Position))
+            if (--ghost.Ticks <= 0 || source.Contains(ghost.Position))
             {
                 ghosts[i] = ghosts[^1];
                 ghosts.RemoveAt(ghosts.Count - 1);
@@ -122,7 +123,7 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
             ghosts[i] = ghost;
         }
 
-        if (tiles.Count > 0 || ghosts.Count > 0)
+        if (source.IsLive || ghosts.Count > 0)
         {
             idleTicks = 0;
             return;
@@ -138,7 +139,7 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
     /// <summary>Splats the visible tiles into the canvas. Call from <c>Main.CheckMonoliths</c>, before the scene draws.</summary>
     public void Build()
     {
-        vertexCount = tiles.Count > 0 || ghosts.Count > 0 ? BuildGeometry() : 0;
+        vertexCount = source.IsLive || ghosts.Count > 0 ? BuildGeometry() : 0;
 
         if (vertexCount == 0)
         {
@@ -156,28 +157,28 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
     /// <summary>Draws the canvas over the terrain. Call after the solid tile layer, before anything that stands on it.</summary>
     public void Composite(Texture2D mask, Vector2 maskOrigin)
     {
-        if (!IsReady || _target is not { IsDisposed: false } canvas || lightTarget is null || condition.Shader is not { Value: { } effect })
+        if (!IsReady || _target is not { IsDisposed: false } canvas || lightTarget is null || source.Shader is not { Value: { } effect })
             return;
 
-        Rectangle source = CanvasBounds(canvas.Width, canvas.Height);
+        Rectangle bounds = CanvasBounds(canvas.Width, canvas.Height);
 
-        if (source.IsEmpty)
+        if (bounds.IsEmpty)
             return;
 
         ApplyFrameParameters(effect, canvas, mask, maskOrigin);
-        condition.ApplyShaderParameters(effect);
+        source.ApplyShaderParameters(effect);
 
         int scale = PixelScale;
         SpriteBatch spriteBatch = Main.spriteBatch;
 
-        spriteBatch.Begin(SpriteSortMode.Immediate, condition.BlendState, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone);
+        spriteBatch.Begin(SpriteSortMode.Immediate, source.BlendState, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone);
 
         try
         {
             effect.CurrentTechnique.Passes[0].Apply();
 
-            // Destination is the source scaled by exactly PixelScale, so the uv the shader reads stays the canvas uv.
-            spriteBatch.Draw(canvas, new Rectangle(source.X * scale, source.Y * scale, source.Width * scale, source.Height * scale), source, Color.White);
+            // Destination is the bounds scaled by exactly PixelScale, so the uv the shader reads stays the canvas uv.
+            spriteBatch.Draw(canvas, new Rectangle(bounds.X * scale, bounds.Y * scale, bounds.Width * scale, bounds.Height * scale), bounds, Color.White);
         }
         finally
         {
@@ -264,46 +265,41 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
     private int BuildGeometry()
     {
         Rectangle area = VisibleTiles();
-        int quads = 0;
+        quadCount = 0;
 
         openCells.Clear();
 
-        foreach (KeyValuePair<Point, TileConditionInstance> pair in tiles)
-        {
-            if (!area.Contains(pair.Key))
-                continue;
+        source.Collect(area, writer ??= Stamp);
 
-            TileConditionInstance instance = pair.Value;
-            float weight = FadeInWeight(in instance);
-
-            if (weight > 0f)
-                Stamp(ref quads, pair.Key, condition.EncodeCanvas(in instance), weight);
-        }
-
-        int fadeOut = Math.Max(condition.FadeOutTicks, 1);
+        int fadeOut = Math.Max(source.FadeOutTicks, 1);
 
         foreach (Ghost ghost in ghosts)
         {
             if (area.Contains(ghost.Position))
-                Stamp(ref quads, ghost.Position, ghost.Sample, ghost.Weight * ghost.Ticks / fadeOut);
+                Stamp(ghost.Position, ghost.Sample, ghost.Weight * ghost.Ticks / fadeOut);
         }
 
         foreach (KeyValuePair<Point, OpenCell> pair in openCells)
         {
             OpenCell cell = pair.Value;
 
-            WriteQuad(ref quads, pair.Key, cell.Sample / cell.Count, cell.Weight / cell.Count);
+            WriteQuad(pair.Key, cell.Sample / cell.Count, cell.Weight / cell.Count);
         }
 
-        return quads * 4;
+        return quadCount * 4;
     }
 
-    private void Stamp(ref int quads, Point tile, TileCanvasSample sample, float weight)
+    private void Stamp(Point tile, TileCanvasSample sample, float weight)
     {
+        if (weight <= 0f)
+            return;
+
         var premultiplied = new Vector4(sample.Coverage, sample.Data.X, sample.Data.Y, sample.Data.Z) * weight;
 
-        WriteQuad(ref quads, tile, premultiplied, weight);
-        Spill(tile, premultiplied, weight);
+        WriteQuad(tile, premultiplied, weight);
+
+        if (source.SpillsIntoOpen)
+            Spill(tile, premultiplied, weight);
     }
 
     /// <summary>Copies a sample into its open neighbours, so the surface does not thin out toward the terrain edge.</summary>
@@ -318,7 +314,7 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
 
                 var neighbour = new Point(tile.X + dx, tile.Y + dy);
 
-                if (tiles.ContainsKey(neighbour) || !IsOpen(neighbour))
+                if (source.Contains(neighbour) || !IsOpen(neighbour))
                     continue;
 
                 ref OpenCell cell = ref CollectionsMarshal.GetValueRefOrAddDefault(openCells, neighbour, out _);
@@ -330,8 +326,10 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
         }
     }
 
-    private void WriteQuad(ref int quads, Point tile, Vector4 premultiplied, float weight)
+    private void WriteQuad(Point tile, Vector4 premultiplied, float weight)
     {
+        ref int quads = ref quadCount;
+
         if (quads >= MAX_QUADS)
             return;
 
@@ -421,9 +419,6 @@ internal sealed class TileCanvas(ITileCondition condition, Dictionary<Point, Til
 
         return right <= left || bottom <= top ? Rectangle.Empty : new Rectangle(left, top, right - left, bottom - top);
     }
-
-    private float FadeInWeight(in TileConditionInstance instance)
-        => condition.FadeInTicks <= 0 ? 1f : MathF.Min((instance.TotalAge + 1f) / condition.FadeInTicks, 1f);
 
     private static bool IsOpen(Point tile)
     {
