@@ -48,12 +48,31 @@ internal static class SilvianCounsel
 
     public static string HelpButton => Text("HelpButton");
 
-    /// <summary>A line of banter for his chat window.</summary>
+    /// <summary>A line of banter for his chat window, drawn from every group that fits the moment.</summary>
     public static string Chat(Player player)
     {
-        int count = CountEntries("Chat");
+        List<string> keys = [];
 
-        return count == 0 ? string.Empty : Format($"Chat.{Main.rand.Next(count)}", player.name);
+        AddEntries(keys, "Chat");
+
+        if (!Main.dayTime)
+            AddEntries(keys, "ChatNight");
+
+        if (Main.raining && player.ZoneOverworldHeight)
+            AddEntries(keys, "ChatRain");
+
+        if (player.GetModPlayer<SilvianPlayer>().AlmanacInherited)
+            AddEntries(keys, "ChatAlmanac");
+
+        return keys.Count == 0 ? string.Empty : Format(keys[Main.rand.Next(keys.Count)], player.name);
+    }
+
+    private static void AddEntries(List<string> keys, string group)
+    {
+        int count = CountEntries(group);
+
+        for (int i = 0; i < count; i++)
+            keys.Add($"{group}.{i}");
     }
 
     /// <summary>Whether Silvian has anything to say about <paramref name="item" />.</summary>

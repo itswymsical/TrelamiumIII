@@ -3,6 +3,7 @@ using System.Linq;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs.Actors;
+using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
@@ -44,6 +45,22 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
         return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest &&
             !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
+    }
+
+    /// <summary>
+    ///     Paces his house and garden, or the ground around where he stands when he spawned without one, and chats with
+    ///     any NPC that wanders by. Stays behind closed doors at night and in the rain.
+    /// </summary>
+    protected override IBehavior BuildScript()
+    {
+        Wander wander = Behavior.Wander(AnchorTile)
+            .UsingDoors(() => Main.dayTime && !Main.raining)
+            .Chatting();
+
+        if (Home is { } home)
+            wander.Within(home.Area).WithRadius(home.Area.Width);
+
+        return wander;
     }
 
     public override void PostAI()

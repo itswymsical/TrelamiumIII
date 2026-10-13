@@ -205,15 +205,47 @@ public abstract class WorldNPC : ModNPC
         NPC.homeTileY = -1;
 
         TickDespawn();
+        AnswerTownChat();
 
         if (AutoResumeScript)
             ResumeScript();
     }
 
     /// <summary>
+    /// A vanilla town NPC starting a chat puts its partner in a listening state (<c>ai[0]</c> 4, or 17 for
+    /// rock-paper-scissors) with the duration in <c>ai[1]</c> and itself in <c>ai[2]</c>, and raises the bubbles for
+    /// both. Vanilla AI never runs here, so the state is taken and answered with <see cref="Converse"/> instead.
+    /// </summary>
+    private void AnswerTownChat()
+    {
+        // An idle director leaves the tick to vanilla AI, which answers for itself.
+        if (NPC.ai[0] is not (4f or 17f) || Director is not { IsBusy: true })
+            return;
+
+        int partner = (int)NPC.ai[2];
+        int duration = (int)NPC.ai[1];
+
+        NPC.ai[0] = 0f;
+        NPC.ai[1] = 0f;
+        NPC.ai[2] = 0f;
+
+        if (Director.IsInterrupted || IsChatting || partner < 0 || partner >= Main.maxNPCs)
+            return;
+
+        Interrupt(new Converse(partner, duration, lead: false));
+    }
+
+    /// <summary>True while any player has this NPC's chat window open.</summary>
+    public bool IsChatting => TownChat.Talker(NPC) != null;
+
+    /// <summary>
     /// Restarts the script when the director falls idle, walking home first if the NPC
     /// has wandered too far to just pick up where it is.
     /// </summary>
+    /// <remarks>
+    /// The director vetoes vanilla AI, which is what turns a town NPC toward the player chatting with it, so an open chat
+    /// window cuts the script for <see cref="Listen"/> and the script starts over once it closes.
+    /// </remarks>
     private void ResumeScript()
     {
         if (Director is not { IsBusy: false })
@@ -223,10 +255,16 @@ public abstract class WorldNPC : ModNPC
         if (script == null)
             return;
 
+        if (IsChatting)
+        {
+            Director.Play(NPC, Behavior.Listen());
+            return;
+        }
+
         if (DistanceFromAnchor > AnchorReturnDistance)
             script = Behavior.WalkTo(AnchorTile).WithArrival(32f).Then(script);
 
-        Director.Play(NPC, script);
+        Director.Play(NPC, script.While(_ => !IsChatting));
     }
 
     /// <summary>
