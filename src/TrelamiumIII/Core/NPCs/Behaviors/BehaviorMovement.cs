@@ -198,6 +198,66 @@ public static class BehaviorMovement
     }
 
     /// <summary>
+    /// Opens a closed door in the NPC's way, as vanilla town NPCs do, and records it in <see cref="NPC.closeDoor"/> for
+    /// <see cref="TryCloseDoor"/>. Server or singleplayer only; the door state is synced.
+    /// </summary>
+    public static bool TryOpenDoor(NPC npc)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            return false;
+
+        int x = (int)((npc.Center.X + 15f * npc.direction) / 16f);
+        int y = (int)((npc.position.Y + npc.height - 16f) / 16f) - 2;
+        Tile tile = Framing.GetTileSafely(x, y);
+
+        if (!tile.HasUnactuatedTile || !TileLoader.IsClosedDoor(tile))
+            return false;
+
+        foreach (int side in new[] { npc.direction, -npc.direction })
+        {
+            if (!WorldGen.OpenDoor(x, y, side))
+                continue;
+
+            npc.closeDoor = true;
+            npc.doorX = x;
+            npc.doorY = y;
+            npc.netUpdate = true;
+            NetMessage.SendData(MessageID.ToggleDoorState, number: 0, number2: x, number3: y, number4: side);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Shuts the door <see cref="TryOpenDoor"/> opened once the NPC is more than two tiles past it.</summary>
+    public static void TryCloseDoor(NPC npc)
+    {
+        if (!npc.closeDoor || Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
+        float tileX = npc.Center.X / 16f;
+        if (Math.Abs(tileX - npc.doorX) <= 2f)
+            return;
+
+        if (TileLoader.CloseDoorID(Framing.GetTileSafely(npc.doorX, npc.doorY)) < 0)
+        {
+            npc.closeDoor = false;
+            return;
+        }
+
+        if (WorldGen.CloseDoor(npc.doorX, npc.doorY))
+        {
+            npc.closeDoor = false;
+            NetMessage.SendData(MessageID.ToggleDoorState, number: 1, number2: npc.doorX, number3: npc.doorY, number4: npc.direction);
+        }
+        else if (Math.Abs(tileX - npc.doorX) > 4f || Math.Abs(npc.Center.Y / 16f - npc.doorY) > 4f)
+        {
+            // Something is standing in the doorway and the NPC has moved on.
+            npc.closeDoor = false;
+        }
+    }
+
+    /// <summary>
     /// True when the NPC is standing on solid ground. Gates on velocity.Y == 0,
     /// which the engine sets when tile collision zeroes vertical movement.
     /// </summary>
@@ -211,8 +271,15 @@ public static class BehaviorMovement
     /// hands it back, mid-conversation.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// Leaves vanilla's listening states (4, and 17 for rock-paper-scissors) alone: a town NPC that starts a chat writes
+    /// them into its partner, and <see cref="WorldNPC"/> reads them after the tick to answer.
+    /// </remarks>
     public static void PinTownIdle(NPC npc)
     {
+        if (npc.ai[0] is 4f or 17f)
+            return;
+
         npc.ai[0] = 0f;
         npc.ai[1] = 300f;
     }

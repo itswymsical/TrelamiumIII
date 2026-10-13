@@ -4,13 +4,44 @@
 SilvianCounsel: {
 	HelpButton: Help
 
-	# His chat window. {0} is the player's name.
+	# His chat window. {0} is the player's name. Chat is always in the draw; the others join it while they apply.
 	Chat: {
 		0: How goes it, {0}? Garden's comin' along nicely, if I do say so myself.
 		1: Dayblooms want the sun, and blinkroots want the dark and the damp. Plants are a lot like people that way. Hehe.
 		2: Got a question? Hold it up and hit Help. I'm no Guide, but I know my herbs.
 		3: Bring me anything strange you dig up out there. I'll tell ya whether it's worth boilin'.
 		4: My uncle could name a potion just by the smell of it. Me, I still gotta read the label.
+		5: Salt line's holdin'. Saw a blue slime sniff at it this mornin' and turn right back around. Best thing I've seen all week.
+		6: Folks think gardenin's quiet work. Ain't nothin' quiet about a bunny in your seed beds at three in the mornin'.
+		7: I talk to the plants. Uncle J swore it helps. Can't say it does much for them, but it sure does somethin' for me.
+		8: You eat yet, {0}? You look like you've been livin' off whatever mushrooms you found on the ground. Don't do that, by the way.
+		9: Uncle J labeled his bottles in writin' so small you needed a lens to read it. Took me a whole summer to find the cough syrup.
+		10: If you ever see a slime wearin' a crown, you run. Don't ask me how I know.
+		11: Got a roof, a kettle and a garden. Man don't need much more than that. ...Maybe a second kettle.
+		12: Don't mind the dirt on the floor. Or my boots. Or, well, most things 'round here.
+		13: Hand me a seed and I'll tell ya where it wants to grow. Hand me a bottle and I'll tell ya what Uncle J would've done with it. Hand me a sword and I'll just sorta look at it.
+	}
+
+	# After dusk.
+	ChatNight: {
+		0: Bit late to be wanderin' about, {0}. Zombies ain't known for their manners.
+		1: Blinkroots are glowin' tonight. Pretty, ain't it? Uncle J called 'em the garden's night-lights.
+		2: Can't sleep either, huh? I've been countin' seeds instead of sheep. Up to four hundred and twelve.
+		3: Keep your voice down. Moonglow's openin' up and I don't wanna spook it.
+	}
+
+	# While it rains.
+	ChatRain: {
+		0: Now this is my kinda weather. Garden gets a drink and I don't haul a single bucket.
+		1: Wipe your feet, would ya? Mud's for the moonglow, not my floor.
+		2: Slimes love the rain. Reckon I'll be up all night watchin' the beds again.
+	}
+
+	# Once he has given the player his uncle's almanac.
+	ChatAlmanac: {
+		0: How's Uncle J's almanac treatin' ya? Don't go dog-earin' the pages. ...Alright, he dog-eared 'em too.
+		1: Filled in any of those blank pages yet? He'd be tickled pink to see somebody else's writin' in there.
+		2: Caught myself reachin' for the almanac on the shelf this mornin'. Forgot it's yours now. Habit, I guess.
 	}
 
 	# Help with nothing alchemical in hand, one per press, in order. Each session starts again from the top.
