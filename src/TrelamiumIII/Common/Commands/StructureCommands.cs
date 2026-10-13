@@ -19,8 +19,11 @@ public partial class StructureCommands : ModCommand
 
     public override CommandType Type => CommandType.Chat | CommandType.Console;
 
-    public override string Usage => "/sedit new <name> <width> <height> | open <name> | save [name] | edit | voidout | kit | exit"
-                                    + " | place <name> | import [name] | selftest [name]";
+    /// <summary>Resize anchors, in reading order of a 3x3 grid.</summary>
+    private static readonly string[] Anchors = ["tl", "t", "tr", "l", "c", "r", "bl", "b", "br"];
+
+    public override string Usage => "/sedit new <name> <width> <height> | open <name> | save [name] | resize <width> <height> [anchor] | edit"
+                                    + " | voidout | kit | exit | place <name> | import [name] | selftest [name]";
 
     public override string Description => "Structure lab: edit structures on a canvas and save them into the mod source.";
 
@@ -62,6 +65,10 @@ public partial class StructureCommands : ModCommand
 
                 case "save":
                     Save(caller, args);
+                    break;
+
+                case "resize":
+                    Resize(caller, args);
                     break;
 
                 case "voidout":
@@ -135,6 +142,27 @@ public partial class StructureCommands : ModCommand
 
         if (!StructureEditor.SavesToSource)
             caller.Reply("The mod source was not found, so this is outside the mod. Set the source directory in the Authoring config.", Color.Orange);
+    }
+
+    /// <summary>Resizes the open canvas, keeping the anchored part (tl, t, tr, l, c, r, bl, b or br; c by default) in place.</summary>
+    private static void Resize(CommandCaller caller, string[] args)
+    {
+        if (args.Length < 3 || !int.TryParse(args[1], out int width) || !int.TryParse(args[2], out int height) || width < 1 || height < 1)
+            throw new ArgumentException("Usage: /sedit resize <width> <height> [tl|t|tr|l|c|r|bl|b|br]");
+
+        int anchor = args.Length > 3 ? Array.IndexOf(Anchors, args[3].ToLowerInvariant()) : 4;
+
+        if (anchor < 0)
+            throw new ArgumentException($"'{args[3]}' is not an anchor; use one of {string.Join(", ", Anchors)}.");
+
+        if (!StructureEditor.InLab || StructureEditor.Canvas.IsEmpty)
+            throw new InvalidOperationException("No canvas is open. Use /sedit new or /sedit open.");
+
+        if (width > StructureEditor.MaxWidth || height > StructureEditor.MaxHeight)
+            throw new ArgumentException($"The lab holds canvases up to {StructureEditor.MaxWidth}x{StructureEditor.MaxHeight}.");
+
+        StructureEditorMode.ResizeCanvas(StructureEditor.Anchored(width, height, new Point(anchor % 3, anchor / 3)));
+        caller.Reply($"The canvas is {width}x{height}.", Color.LightGreen);
     }
 
     /// <summary>Places a structure in the current world with its bottom-centre on the cursor, as world generation would.</summary>

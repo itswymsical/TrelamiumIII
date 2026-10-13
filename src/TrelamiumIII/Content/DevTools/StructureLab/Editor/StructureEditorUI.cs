@@ -12,8 +12,8 @@ using TrelamiumIII.Core.Structures;
 namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;
 
 /// <summary>
-///     The structure editor's tool strip, palette and status bar. Rebuilt every draw like the authoring desk: controls
-///     register hotspots, and clicks go to the topmost one. The rest of the screen is the canvas.
+///     The structure editor's tool strip, tool options, palette and status bar. Rebuilt every draw like the authoring desk:
+///     controls register hotspots, and clicks go to the topmost one. The rest of the screen is the canvas.
 /// </summary>
 internal sealed class StructureEditorUI : UIState
 {
@@ -29,23 +29,40 @@ internal sealed class StructureEditorUI : UIState
     private const int StatusHeight = 28;
     private const int HeaderHeight = 20;
     private const int ChipHeight = 22;
+    private const int FieldWidth = 52;
+    private const int AnchorCell = 10;
+
+    /// <summary>Side of a generated icon, in icon pixels; each is drawn as a square of screen pixels.</summary>
+    private const int IconGrid = 16;
 
     private const string IconPath = "TrelamiumIII/Content/DevTools/StructureLab/Editor/Icons/";
 
     private static readonly Color SecondaryRing = new(255, 190, 60);
     private static readonly Color Muted = new(170, 175, 200);
+    private static readonly Color IconInk = new(28, 28, 38);
+    private static readonly Color IconLight = new(235, 235, 245);
+    private static readonly Color IconAccent = new(235, 135, 45);
 
     private readonly List<(Rectangle Area, Action Primary, Action? Secondary)> hotspots = [];
     private readonly Dictionary<string, Asset<Texture2D>> icons = [];
+    private readonly Dictionary<(ShapeSettings, bool), bool[,]> shapeIcons = [];
     private readonly List<GridRow> rows = [];
 
     private Rectangle toolbar;
+    private Rectangle options;
     private Rectangle panel;
     private Rectangle status;
     private Rectangle grid;
     private Rectangle searchBox;
     private string? tooltip;
     private string search = string.Empty;
+
+    private TextField focus;
+    private string widthText = string.Empty;
+    private string heightText = string.Empty;
+
+    /// <summary>Which part of the canvas a typed size keeps in place, 0 to 2 per axis.</summary>
+    private Point anchor = new(1, 1);
 
     /// <summary>The category shown, or null for all of them.</summary>
     private string? category;
@@ -54,13 +71,21 @@ internal sealed class StructureEditorUI : UIState
     private int maxFirstRow;
     private (EditorChannel Channel, string? Category, string Search, int Height) rowsBuiltFor;
 
+    private enum TextField
+    {
+        None,
+        Search,
+        Width,
+        Height
+    }
+
     /// <summary>A section title, or one row of slots.</summary>
     private readonly record struct GridRow(string? Header, PaletteEntry[]? Entries)
     {
         public int Height => Header is null ? SlotSize : HeaderHeight;
     }
 
-    public bool SearchFocused { get; private set; }
+    public bool TextFocused => focus != TextField.None;
 
     public bool PanelsHidden { get; set; }
 
@@ -69,7 +94,7 @@ internal sealed class StructureEditorUI : UIState
         get
         {
             Point cursor = Cursor;
-            return status.Contains(cursor) || (!PanelsHidden && (toolbar.Contains(cursor) || panel.Contains(cursor)));
+            return status.Contains(cursor) || (!PanelsHidden && (toolbar.Contains(cursor) || options.Contains(cursor) || panel.Contains(cursor)));
         }
     }
 
@@ -81,13 +106,16 @@ internal sealed class StructureEditorUI : UIState
     {
         base.LeftMouseDown(evt);
 
+        // A field's own hotspot focuses it again.
+        focus = TextField.None;
+
         if (Hotspot(Cursor) is { } hit)
         {
             hit.Primary();
             return;
         }
 
-        SearchFocused = false;
+        widthText = heightText = string.Empty;
     }
 
     public override void RightMouseDown(UIMouseEvent evt)
@@ -108,25 +136,91 @@ internal sealed class StructureEditorUI : UIState
             StructureEditorMode.Zoom(steps);
     }
 
-    /// <summary>Typing into the search box; Escape or Enter leaves it. Called by the mode instead of its shortcuts.</summary>
-    public void UpdateSearch()
+    /// <summary>
+    ///     Typing into the focused field. Escape leaves it; Enter leaves it and applies a typed canvas size; Tab moves between
+    ///     the size fields. Called by the mode instead of its shortcuts.
+    /// </summary>
+    public void UpdateText()
     {
-        if (Pressed(Keys.Escape) || Pressed(Keys.Enter))
+        bool sizeField = focus is TextField.Width or TextField.Height;
+
+        if (Pressed(Keys.Escape))
         {
-            SearchFocused = false;
+            if (sizeField)
+                widthText = heightText = string.Empty;
+
+            focus = TextField.None;
+            return;
+        }
+
+        if (Pressed(Keys.Enter))
+        {
+            focus = TextField.None;
+
+            if (sizeField)
+                ApplyCanvasSize();
+
+            return;
+        }
+
+        if (sizeField && Pressed(Keys.Tab))
+        {
+            focus = focus == TextField.Width ? TextField.Height : TextField.Width;
             return;
         }
 
         PlayerInput.WritingText = true;
         Main.instance.HandleIME();
 
-        string text = Main.GetInputText(search);
+        string current = focus switch
+        {
+            TextField.Search => search,
+            TextField.Width => widthText,
+            _ => heightText
+        };
 
-        if (text == search)
+        string text = Main.GetInputText(current);
+
+        if (sizeField)
+            text = string.Concat(text.Where(char.IsAsciiDigit).Take(4));
+
+        if (text == current)
             return;
 
-        search = text;
-        firstRow = 0;
+        switch (focus)
+        {
+            case TextField.Search:
+                search = text;
+                firstRow = 0;
+                break;
+
+            case TextField.Width:
+                widthText = text;
+                break;
+
+            default:
+                heightText = text;
+                break;
+        }
+    }
+
+    /// <summary>Resizes the canvas to the typed size, a blank field keeping that side, around <see cref="anchor" />.</summary>
+    private void ApplyCanvasSize()
+    {
+        Rectangle canvas = StructureEditor.Canvas;
+        int width = int.TryParse(widthText, out int typedWidth) && typedWidth > 0 ? typedWidth : canvas.Width;
+        int height = int.TryParse(heightText, out int typedHeight) && typedHeight > 0 ? typedHeight : canvas.Height;
+
+        widthText = heightText = string.Empty;
+        focus = TextField.None;
+
+        if (width > StructureEditor.MaxWidth || height > StructureEditor.MaxHeight)
+        {
+            StructureEditorMode.Notify($"The lab holds canvases up to {StructureEditor.MaxWidth} x {StructureEditor.MaxHeight}.");
+            return;
+        }
+
+        StructureEditorMode.ResizeCanvas(StructureEditor.Anchored(width, height, anchor));
     }
 
     private (Rectangle Area, Action Primary, Action? Secondary)? Hotspot(Point point)
@@ -157,11 +251,12 @@ internal sealed class StructureEditorUI : UIState
 
         if (PanelsHidden)
         {
-            toolbar = panel = grid = searchBox = Rectangle.Empty;
+            toolbar = options = panel = grid = searchBox = Rectangle.Empty;
         }
         else
         {
             DrawToolbar(spriteBatch, screen);
+            DrawOptions(spriteBatch);
             DrawPalette(spriteBatch, screen);
         }
 
@@ -185,14 +280,24 @@ internal sealed class StructureEditorUI : UIState
         foreach (EditorTool tool in tools)
         {
             EditorTool captured = tool;
-            IconButton(spriteBatch, ref y, x, Icon(tool.ToString()), StructureEditorMode.Tool == tool,
-                () => StructureEditorMode.Tool = captured, $"{Label(tool)} ({tool.Shortcut()})");
+            string tip = $"{Label(tool)} ({tool.Shortcut()})";
+
+            if (tool == EditorTool.Shape)
+            {
+                ShapeButton(spriteBatch, new Rectangle(x, y, ToolSize, ToolSize), ShapeIcon(StructureEditorMode.CurrentShape, false), IconLight,
+                    StructureEditorMode.Tool == tool, () => StructureEditorMode.Tool = captured, null, tip);
+
+                y += ToolSize + ToolGap;
+                continue;
+            }
+
+            IconButton(spriteBatch, ref y, x, Icon(tool.ToString()), StructureEditorMode.Tool == tool, () => StructureEditorMode.Tool = captured, tip);
         }
 
         y += GroupGap;
 
         IconButton(spriteBatch, ref y, x, Icon("Filled"), StructureEditorMode.FilledShapes,
-            () => StructureEditorMode.FilledShapes = !StructureEditorMode.FilledShapes, "Filled rectangles and ellipses (F)");
+            () => StructureEditorMode.FilledShapes = !StructureEditorMode.FilledShapes, "Filled shapes and closed curves (F)");
 
         TextButton(spriteBatch, new Rectangle(x, y, ToolSize, ToolSize), StructureEditorMode.BrushSize.ToString(), false,
             () => StructureEditorMode.ResizeBrush(1), () => StructureEditorMode.ResizeBrush(-1),
@@ -200,11 +305,12 @@ internal sealed class StructureEditorUI : UIState
 
         y += ToolSize + ToolGap + GroupGap;
 
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.BackArrow, false, StructureEditorMode.Undo, "Undo (Ctrl+Z)",
-            StructureEditorMode.History.CanUndo);
+        IconButton(spriteBatch, ref y, x, AuthoringSkin.BackArrow, false, StructureEditorMode.Undo,
+            StructureEditorMode.CurveInProgress ? "Remove the curve's last node (Ctrl+Z)" : "Undo (Ctrl+Z)",
+            StructureEditorMode.History.CanUndo || StructureEditorMode.CurveInProgress);
 
         IconButton(spriteBatch, ref y, x, AuthoringSkin.ForwardArrow, false, StructureEditorMode.Redo, "Redo (Ctrl+Y)",
-            StructureEditorMode.History.CanRedo);
+            StructureEditorMode.History.CanRedo && !StructureEditorMode.CurveInProgress);
 
         IconButton(spriteBatch, ref y, x, TextureAssets.Tile[ModContent.TileType<StructureVoidTile>()].Value, false,
             StructureEditorMode.VoidOutside, "Void outside: mark every empty cell joined to the canvas edge as void", iconSource: new Rectangle(0, 0, 16, 16));
@@ -247,11 +353,154 @@ internal sealed class StructureEditorUI : UIState
         EditorTool.Pencil => "Pencil",
         EditorTool.Eraser => "Eraser: left clears, right voids",
         EditorTool.Line => "Line (Shift snaps to 45 degrees)",
-        EditorTool.Rectangle => "Rectangle (Shift for a square)",
-        EditorTool.Ellipse => "Ellipse (Shift for a circle)",
+        EditorTool.Curve => "Curve: click for corners, drag for curves. Click the first node to close it, Enter to finish",
+        EditorTool.Shape => $"Shape: {StructureEditorMode.Shape}. Press again for the next shape, O for an ellipse",
         EditorTool.Fill => "Fill",
-        _ => "Eyedropper (or hold Alt)"
+        EditorTool.Eyedropper => "Eyedropper (or hold Alt)",
+        _ => "Canvas: drag the frame's edges and corners to resize it, or type a size"
     };
+    #endregion
+
+    #region Tool options
+    /// <summary>The bar beside the tool strip with the current tool's settings; none for tools without any.</summary>
+    private void DrawOptions(SpriteBatch spriteBatch)
+    {
+        options = Rectangle.Empty;
+
+        int x = toolbar.Right + 6 + 5;
+        int y = toolbar.Y + 5;
+
+        switch (StructureEditorMode.Tool)
+        {
+            case EditorTool.Shape:
+                DrawShapeOptions(spriteBatch, x, y);
+                break;
+
+            case EditorTool.Canvas:
+                DrawCanvasOptions(spriteBatch, x, y);
+                break;
+        }
+    }
+
+    private void DrawShapeOptions(SpriteBatch spriteBatch, int x, int y)
+    {
+        ShapeKind[] kinds = Enum.GetValues<ShapeKind>();
+        ShapeKind current = StructureEditorMode.Shape;
+        ShapeAmount? amount = current.Amount();
+        int amountWidth = amount is null ? 0 : (int)(FontAssets.MouseText.Value.MeasureString(AmountLabel(amount.Value)).X * TextScale) + 20;
+        int width = kinds.Length * (ToolSize + ToolGap) - ToolGap + GroupGap + ToolSize + (amount is null ? 0 : ToolGap + amountWidth);
+
+        OpenOptions(spriteBatch, x, y, width);
+
+        foreach (ShapeKind kind in kinds)
+        {
+            ShapeKind captured = kind;
+            var settings = new ShapeSettings(kind, StructureEditorMode.Facing, StructureEditorMode.AmountOf(kind));
+
+            ShapeButton(spriteBatch, new Rectangle(x, y, ToolSize, ToolSize), ShapeIcon(settings, false), IconLight, current == kind,
+                () => StructureEditorMode.Shape = captured, null, kind.ToString());
+
+            x += ToolSize + ToolGap;
+        }
+
+        x += GroupGap - ToolGap;
+
+        ShapeFacing facing = StructureEditorMode.Facing;
+
+        ShapeButton(spriteBatch, new Rectangle(x, y, ToolSize, ToolSize), ShapeIcon(new ShapeSettings(ShapeKind.Triangle, facing, 0), true),
+            IconAccent, false, () => StructureEditorMode.TurnShape(1), () => StructureEditorMode.TurnShape(-1),
+            $"Points {facing.ToString().ToLowerInvariant()}. Left click turns it clockwise, right click the other way (R, Shift+R)",
+            current.HasFacing());
+
+        if (amount is not { } value)
+            return;
+
+        x += ToolSize + ToolGap;
+
+        TextButton(spriteBatch, new Rectangle(x, y, amountWidth, ToolSize), AmountLabel(value), false,
+            () => StructureEditorMode.ChangeShapeAmount(1), () => StructureEditorMode.ChangeShapeAmount(-1),
+            $"{value.Label}. Left click raises it, right click lowers it (, and .)");
+    }
+
+    private static string AmountLabel(ShapeAmount amount)
+        => $"{amount.Label} {StructureEditorMode.AmountOf(StructureEditorMode.Shape)}{(amount.Percent ? "%" : string.Empty)}";
+
+    private void DrawCanvasOptions(SpriteBatch spriteBatch, int x, int y)
+    {
+        const int labelWidth = 18;
+        const int applyWidth = 58;
+        int anchorSize = AnchorCell * 3 + 4;
+        int width = (labelWidth + FieldWidth) * 2 + 6 + GroupGap + anchorSize + GroupGap + applyWidth;
+
+        OpenOptions(spriteBatch, x, y, width);
+
+        Rectangle size = StructureEditorMode.CanvasPreview;
+        int fieldY = y + (ToolSize - 26) / 2;
+
+        Text(spriteBatch, "W", new Vector2(x + 2, fieldY + 5), Muted);
+        x += labelWidth;
+        SizeField(spriteBatch, new Rectangle(x, fieldY, FieldWidth, 26), TextField.Width, widthText, size.Width);
+        x += FieldWidth + 6;
+
+        Text(spriteBatch, "H", new Vector2(x + 2, fieldY + 5), Muted);
+        x += labelWidth;
+        SizeField(spriteBatch, new Rectangle(x, fieldY, FieldWidth, 26), TextField.Height, heightText, size.Height);
+        x += FieldWidth + GroupGap;
+
+        DrawAnchor(spriteBatch, x, y + (ToolSize - anchorSize) / 2);
+        x += anchorSize + GroupGap;
+
+        TextButton(spriteBatch, new Rectangle(x, fieldY, applyWidth, 26), "Apply", false, ApplyCanvasSize, null,
+            "Resize the canvas to the typed size (Enter in a field)");
+    }
+
+    private void SizeField(SpriteBatch spriteBatch, Rectangle area, TextField field, string typed, int current)
+    {
+        bool focused = focus == field;
+        bool hover = area.Contains(Cursor);
+
+        AuthoringSkin.DrawPanel(spriteBatch, area, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
+
+        bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
+        bool showTyped = focused || typed.Length > 0;
+        string shown = showTyped ? typed + (caret ? "|" : string.Empty) : current.ToString();
+
+        Text(spriteBatch, shown, new Vector2(area.X + 7, area.Y + 5), showTyped && typed.Length > 0 ? SecondaryRing : Color.White);
+
+        Register(area, hover, () => focus = field, () =>
+        {
+            if (field == TextField.Width)
+                widthText = string.Empty;
+            else
+                heightText = string.Empty;
+        }, $"{field} in tiles. Type a size, Enter applies it, Tab moves to the other field. Right click clears it");
+    }
+
+    /// <summary>A 3x3 grid picking the part of the canvas that a typed size keeps in place.</summary>
+    private void DrawAnchor(SpriteBatch spriteBatch, int x, int y)
+    {
+        Texture2D pixel = TextureAssets.MagicPixel.Value;
+
+        for (int column = 0; column < 3; column++)
+        {
+            for (int row = 0; row < 3; row++)
+            {
+                var cell = new Point(column, row);
+                var area = new Rectangle(x + column * (AnchorCell + 2), y + row * (AnchorCell + 2), AnchorCell, AnchorCell);
+                bool hover = area.Contains(Cursor);
+                bool chosen = anchor == cell;
+
+                spriteBatch.Draw(pixel, area, chosen ? AuthoringSkin.Selection : hover ? AuthoringSkin.ButtonHover : AuthoringSkin.ButtonIdle);
+                Register(area, hover, () => anchor = cell, null, "Anchor: the part of the canvas a typed size keeps in place");
+            }
+        }
+    }
+
+    private void OpenOptions(SpriteBatch spriteBatch, int x, int y, int width)
+    {
+        options = new Rectangle(x - 5, y - 5, width + 10, ToolSize + 10);
+        AuthoringSkin.DrawPanel(spriteBatch, options, AuthoringSkin.Panel * 0.95f);
+    }
     #endregion
 
     #region Palette
@@ -385,15 +634,16 @@ internal sealed class StructureEditorUI : UIState
     {
         searchBox = new Rectangle(x, y, width, 26);
         bool hover = searchBox.Contains(Cursor);
+        bool focused = focus == TextField.Search;
 
-        AuthoringSkin.DrawPanel(spriteBatch, searchBox, (SearchFocused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
+        AuthoringSkin.DrawPanel(spriteBatch, searchBox, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
 
-        bool caret = SearchFocused && Main.GameUpdateCount / 30 % 2 == 0;
-        string shown = search.Length > 0 || SearchFocused ? search + (caret ? "|" : string.Empty) : "Search...";
+        bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
+        string shown = search.Length > 0 || focused ? search + (caret ? "|" : string.Empty) : "Search...";
 
-        Text(spriteBatch, Fit(shown, width - 12), new Vector2(x + 7, y + 5), search.Length > 0 || SearchFocused ? Color.White : Muted);
+        Text(spriteBatch, Fit(shown, width - 12), new Vector2(x + 7, y + 5), search.Length > 0 || focused ? Color.White : Muted);
 
-        Register(searchBox, hover, () => SearchFocused = true, () =>
+        Register(searchBox, hover, () => focus = TextField.Search, () =>
         {
             search = string.Empty;
             firstRow = 0;
@@ -513,17 +763,39 @@ internal sealed class StructureEditorUI : UIState
         Rectangle box = StructureEditorMode.ShapeBox;
         string size = box.IsEmpty ? string.Empty : $"  ({box.Width} x {box.Height})";
 
-        string left = $"{StructureEditorMode.Tool} | {channel} | L {EditorPalette.Find(channel, StructureEditorMode.Primary).Name}"
+        string left = $"{ToolName()} | {channel} | L {EditorPalette.Find(channel, StructureEditorMode.Primary).Name}"
                       + $" / R {EditorPalette.Find(channel, StructureEditorMode.Secondary).Name} | brush {StructureEditorMode.BrushSize}"
                       + $"{(StructureEditorMode.FilledShapes ? ", filled" : string.Empty)} | {where}{size} | zoom {Main.GameZoomTarget:0.0}x";
 
         Text(spriteBatch, left, new Vector2(status.X + 10, status.Y + 6), Color.White);
 
-        string right = StructureEditorMode.Notice ?? "WASD / middle drag: pan   Wheel: zoom   Tab: panels   ~: build mode";
+        string right = StructureEditorMode.Notice ?? Hint();
         float rightWidth = FontAssets.MouseText.Value.MeasureString(right).X * TextScale;
 
         Text(spriteBatch, right, new Vector2(status.Right - 10 - rightWidth, status.Y + 6), StructureEditorMode.Notice is null ? Muted : SecondaryRing);
     }
+
+    private static string ToolName()
+    {
+        ShapeKind shape = StructureEditorMode.Shape;
+
+        return StructureEditorMode.Tool switch
+        {
+            EditorTool.Shape when shape.HasFacing() => $"{shape} ({StructureEditorMode.Facing.ToString().ToLowerInvariant()})",
+            EditorTool.Shape => shape.ToString(),
+            EditorTool.Curve when StructureEditorMode.CurveInProgress => $"Curve ({StructureEditorMode.CurveNodes} nodes)",
+            EditorTool tool => tool.ToString()
+        };
+    }
+
+    private static string Hint() => StructureEditorMode.Tool switch
+    {
+        EditorTool.Curve when StructureEditorMode.CurveInProgress => "Enter: finish   Backspace: remove node   Esc: drop",
+        EditorTool.Curve => "Click: corner   Drag: curve   First node: close",
+        EditorTool.Shape => "Shift: own proportions   Alt: from centre   R: turn",
+        EditorTool.Canvas => "Drag the frame's edges or corners   Esc: cancel",
+        _ => "WASD / middle drag: pan   Wheel: zoom   Tab: panels   ~: build mode"
+    };
 
     /// <summary>The hovered control's tooltip, drawn last so it sits over everything.</summary>
     private void DrawTooltip(SpriteBatch spriteBatch, Rectangle screen)
@@ -561,12 +833,89 @@ internal sealed class StructureEditorUI : UIState
         Register(area, hover, act, secondary, tip);
     }
 
+    private void ShapeButton(SpriteBatch spriteBatch, Rectangle area, bool[,] mask, Color fill, bool active, Action act, Action? secondary,
+        string tip, bool enabled = true)
+    {
+        bool hover = enabled && area.Contains(Cursor);
+
+        AuthoringSkin.DrawButton(spriteBatch, area, hover, active);
+        DrawMask(spriteBatch, mask, area, fill, enabled ? 1f : 0.35f);
+
+        if (enabled)
+            Register(area, hover, act, secondary, tip);
+        else if (area.Contains(Cursor))
+            tooltip = tip;
+    }
+
     private void Register(Rectangle area, bool hover, Action act, Action? secondary, string tip)
     {
         hotspots.Add((area, act, secondary));
 
         if (hover)
             tooltip = tip;
+    }
+
+    /// <summary>The cells the shape tool would draw for <paramref name="settings" />, fitted to an icon at the kind's own proportions.</summary>
+    private bool[,] ShapeIcon(ShapeSettings settings, bool filled)
+    {
+        if (shapeIcons.TryGetValue((settings, filled), out bool[,]? mask))
+            return mask;
+
+        const int side = 13;
+        float aspect = EditorShapes.Aspect(settings);
+        int width = aspect >= 1f ? side : Math.Max(3, (int)MathF.Round(side * aspect));
+        int height = aspect >= 1f ? Math.Max(3, (int)MathF.Round(side / aspect)) : side;
+        var box = new Rectangle((IconGrid - width) / 2, (IconGrid - height) / 2, width, height);
+
+        mask = new bool[IconGrid, IconGrid];
+
+        foreach (Point point in Raster.Shape(settings, box, filled, 1))
+            mask[point.X, point.Y] = true;
+
+        return shapeIcons[(settings, filled)] = mask;
+    }
+
+    /// <summary>Draws an icon mask in <paramref name="fill" />, outlined in ink wherever it borders empty pixels.</summary>
+    private static void DrawMask(SpriteBatch spriteBatch, bool[,] mask, Rectangle area, Color fill, float opacity)
+    {
+        Texture2D pixel = TextureAssets.MagicPixel.Value;
+        int size = Math.Max(1, (area.Width - 4) / IconGrid);
+        int left = area.Center.X - IconGrid * size / 2;
+        int top = area.Center.Y - IconGrid * size / 2;
+
+        for (int x = 0; x < IconGrid; x++)
+        {
+            for (int y = 0; y < IconGrid; y++)
+            {
+                Color color;
+
+                if (mask[x, y])
+                    color = fill;
+                else if (Borders(mask, x, y))
+                    color = IconInk;
+                else
+                    continue;
+
+                spriteBatch.Draw(pixel, new Rectangle(left + x * size, top + y * size, size, size), color * opacity);
+            }
+        }
+    }
+
+    private static bool Borders(bool[,] mask, int x, int y)
+    {
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                int nx = x + dx;
+                int ny = y + dy;
+
+                if (nx >= 0 && ny >= 0 && nx < IconGrid && ny < IconGrid && mask[nx, ny])
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>A swatch's icon: its item, its tile or wall texture when no item places it, or a mark for air and void.</summary>

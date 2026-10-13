@@ -4,8 +4,8 @@ using TrelamiumIII.Core.Structures;
 namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;
 
 /// <summary>
-///     Undo and redo for the canvas. An edit captures the whole canvas before and after and keeps only the rectangle that
-///     differs, so side effects such as a broken chair are restored too.
+///     Undo and redo for the canvas. An edit captures its area before and after and keeps only the rectangle that differs,
+///     so side effects such as a broken chair are restored too. Steps are in world tiles and carry the canvas bounds.
 /// </summary>
 internal sealed class EditorHistory
 {
@@ -16,12 +16,15 @@ internal sealed class EditorHistory
     private readonly Stack<Step> redo = new();
 
     private StructureData? before;
+    private Rectangle area;
+    private Rectangle canvasBefore;
     private int storedCells;
 
-    /// <param name="Offset">Top-left of the changed rectangle, relative to the canvas.</param>
-    private sealed record Step(Point Offset, StructureData Before, StructureData After)
+    /// <param name="Origin">World tile of the changed rectangle's top-left.</param>
+    /// <param name="Before">The changed cells before the edit; null when only the canvas bounds changed.</param>
+    private sealed record Step(Point Origin, StructureData? Before, StructureData? After, Rectangle CanvasBefore, Rectangle CanvasAfter)
     {
-        public int Cells => Before.Cells.Length + After.Cells.Length;
+        public int Cells => (Before?.Cells.Length ?? 0) + (After?.Cells.Length ?? 0);
     }
 
     public bool Recording => before is not null;
@@ -38,10 +41,21 @@ internal sealed class EditorHistory
         storedCells = 0;
     }
 
-    /// <summary>Starts an edit; does nothing if one is already open.</summary>
-    public void Begin(Rectangle canvas) => before ??= StructureWorld.Capture(canvas);
+    /// <summary>Starts an edit of the canvas; does nothing if one is already open.</summary>
+    public void Begin(Rectangle canvas) => Begin(canvas, canvas);
 
-    /// <summary>Closes the open edit. False when it changed nothing.</summary>
+    /// <summary>Starts an edit that may change any cell of <paramref name="capture" />, which covers the canvas.</summary>
+    public void Begin(Rectangle canvas, Rectangle capture)
+    {
+        if (before is not null)
+            return;
+
+        canvasBefore = canvas;
+        area = capture;
+        before = StructureWorld.Capture(capture);
+    }
+
+    /// <summary>Closes the open edit with the canvas at <paramref name="canvas" />. False when it changed nothing.</summary>
     public bool End(Rectangle canvas)
     {
         if (before is not { } original)
@@ -49,39 +63,56 @@ internal sealed class EditorHistory
 
         before = null;
 
-        StructureData after = StructureWorld.Capture(canvas);
+        StructureData after = StructureWorld.Capture(area);
         Rectangle changed = Difference(original, after);
 
-        if (changed.IsEmpty)
+        if (changed.IsEmpty && canvas == canvasBefore)
             return false;
 
-        Push(new Step(changed.Location, original.Crop(changed), after.Crop(changed)));
+        var origin = new Point(area.X + changed.X, area.Y + changed.Y);
+
+        Push(changed.IsEmpty
+            ? new Step(origin, null, null, canvasBefore, canvas)
+            : new Step(origin, original.Crop(changed), after.Crop(changed), canvasBefore, canvas));
+
         return true;
     }
 
-    public bool Undo(Rectangle canvas)
+    /// <summary>Reverts the last edit; <paramref name="canvas" /> is the canvas bounds from before it.</summary>
+    public bool Undo(out Rectangle canvas)
     {
+        canvas = Rectangle.Empty;
+
         if (!CanUndo)
             return false;
 
         Step step = undo.Last!.Value;
         undo.RemoveLast();
 
-        StructureWorld.Place(step.Before, new Point(canvas.X + step.Offset.X, canvas.Y + step.Offset.Y), editable: true);
+        if (step.Before is not null)
+            StructureWorld.Place(step.Before, step.Origin, editable: true);
+
         redo.Push(step);
+        canvas = step.CanvasBefore;
 
         return true;
     }
 
-    public bool Redo(Rectangle canvas)
+    /// <summary>Reapplies the last undone edit; <paramref name="canvas" /> is the canvas bounds from after it.</summary>
+    public bool Redo(out Rectangle canvas)
     {
+        canvas = Rectangle.Empty;
+
         if (!CanRedo)
             return false;
 
         Step step = redo.Pop();
 
-        StructureWorld.Place(step.After, new Point(canvas.X + step.Offset.X, canvas.Y + step.Offset.Y), editable: true);
+        if (step.After is not null)
+            StructureWorld.Place(step.After, step.Origin, editable: true);
+
         undo.AddLast(step);
+        canvas = step.CanvasAfter;
 
         return true;
     }
