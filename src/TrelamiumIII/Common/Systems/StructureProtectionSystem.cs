@@ -10,69 +10,89 @@ namespace TrelamiumIII.Common.Systems;
 /// </summary>
 public class StructureProtectionSystem : ModSystem
 {
-    /// <summary>Argie's lab, in tile coordinates.</summary>
-    public static Rectangle ArgieLabArea { get; set; }
+    /// <summary>Story structures such as Argie's lab and Silvian's house, in tile coordinates. Drawn with the shield overlay.</summary>
+    public static List<Rectangle> ShieldedAreas { get; } = [];
 
     /// <summary>
     /// Realm structures such as the Ligneous Fortress and Reverie's hall, in tile coordinates. Unlike
-    /// <see cref="ArgieLabArea"/> they get no shield overlay: it restarts the sprite batch per tile, too costly at this size.
+    /// <see cref="ShieldedAreas"/> they get no shield overlay: it restarts the sprite batch per tile, too costly at this size.
     /// </summary>
     public static List<Rectangle> ProtectedAreas { get; } = [];
 
-    public override void OnWorldLoad()
-    {
-        ArgieLabArea = Rectangle.Empty;
-        ProtectedAreas.Clear();
-    }
+    public override void ClearWorld() => Reset();
 
-    public override void OnWorldUnload()
+    public override void OnWorldLoad() => Reset();
+
+    public override void OnWorldUnload() => Reset();
+
+    private static void Reset()
     {
-        ArgieLabArea = Rectangle.Empty;
+        ShieldedAreas.Clear();
         ProtectedAreas.Clear();
     }
 
     public override void SaveWorldData(TagCompound tag)
     {
-        tag["argieLabX"] = ArgieLabArea.X;
-        tag["argieLabY"] = ArgieLabArea.Y;
-        tag["argieLabWidth"] = ArgieLabArea.Width;
-        tag["argieLabHeight"] = ArgieLabArea.Height;
-
-        var fortress = new List<int>(ProtectedAreas.Count * 4);
-
-        foreach (Rectangle area in ProtectedAreas)
-            fortress.AddRange([area.X, area.Y, area.Width, area.Height]);
-
-        tag["protectedAreas"] = fortress;
+        tag["shieldedAreas"] = Flatten(ShieldedAreas);
+        tag["protectedAreas"] = Flatten(ProtectedAreas);
     }
 
     public override void LoadWorldData(TagCompound tag)
     {
-        if (tag.TryGet("argieLabX", out int x)
-         && tag.TryGet("argieLabY", out int y)
-         && tag.TryGet("argieLabWidth", out int w)
-         && tag.TryGet("argieLabHeight", out int h))
-        {
-            ArgieLabArea = new Rectangle(x, y, w, h);
-        }
-
-        ProtectedAreas.Clear();
-        IList<int> fortress = tag.GetList<int>("protectedAreas");
-
-        for (int k = 0; k + 3 < fortress.Count; k += 4)
-            ProtectedAreas.Add(new Rectangle(fortress[k], fortress[k + 1], fortress[k + 2], fortress[k + 3]));
+        Unflatten(tag.GetList<int>("shieldedAreas"), ShieldedAreas);
+        Unflatten(tag.GetList<int>("protectedAreas"), ProtectedAreas);
     }
 
     public override void NetSend(BinaryWriter writer)
     {
-        writer.Write(ArgieLabArea.X);
-        writer.Write(ArgieLabArea.Y);
-        writer.Write(ArgieLabArea.Width);
-        writer.Write(ArgieLabArea.Height);
+        Write(writer, ShieldedAreas);
+        Write(writer, ProtectedAreas);
+    }
 
-        writer.Write(ProtectedAreas.Count);
+    public override void NetReceive(BinaryReader reader)
+    {
+        Read(reader, ShieldedAreas);
+        Read(reader, ProtectedAreas);
+    }
 
-        foreach (Rectangle area in ProtectedAreas)
+    public static bool IsProtected(int x, int y) => IsShielded(x, y) || AnyContains(ProtectedAreas, x, y);
+
+    public static bool IsShielded(int x, int y) => AnyContains(ShieldedAreas, x, y);
+
+    private static bool AnyContains(List<Rectangle> areas, int x, int y)
+    {
+        foreach (Rectangle area in areas)
+        {
+            if (area.Contains(x, y))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static List<int> Flatten(List<Rectangle> areas)
+    {
+        var values = new List<int>(areas.Count * 4);
+
+        foreach (Rectangle area in areas)
+            values.AddRange([area.X, area.Y, area.Width, area.Height]);
+
+        return values;
+    }
+
+    private static void Unflatten(IList<int> values, List<Rectangle> areas)
+    {
+        areas.Clear();
+
+        for (int k = 0; k + 3 < values.Count; k += 4)
+            areas.Add(new Rectangle(values[k], values[k + 1], values[k + 2], values[k + 3]));
+    }
+
+    private static void Write(BinaryWriter writer, List<Rectangle> areas)
+    {
+        writer.Write(areas.Count);
+
+        foreach (Rectangle area in areas)
         {
             writer.Write(area.X);
             writer.Write(area.Y);
@@ -81,33 +101,12 @@ public class StructureProtectionSystem : ModSystem
         }
     }
 
-    public override void NetReceive(BinaryReader reader)
+    private static void Read(BinaryReader reader, List<Rectangle> areas)
     {
-        ArgieLabArea = new Rectangle(
-            reader.ReadInt32(),
-            reader.ReadInt32(),
-            reader.ReadInt32(),
-            reader.ReadInt32()
-        );
-
-        ProtectedAreas.Clear();
+        areas.Clear();
         int count = reader.ReadInt32();
 
         for (int k = 0; k < count; k++)
-            ProtectedAreas.Add(new Rectangle(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32()));
-    }
-
-    public static bool IsProtected(int x, int y)
-    {
-        if (ArgieLabArea != Rectangle.Empty && ArgieLabArea.Contains(x, y))
-            return true;
-
-        foreach (Rectangle area in ProtectedAreas)
-        {
-            if (area.Contains(x, y))
-                return true;
-        }
-
-        return false;
+            areas.Add(new Rectangle(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32()));
     }
 }

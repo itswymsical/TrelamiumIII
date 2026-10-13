@@ -44,8 +44,7 @@ public class StructureProtectionGlobalTile : GlobalTile
     public override void PostDraw(int i, int j, int type, SpriteBatch spriteBatch)
     {
         if (StructureProtectionPlayer.ShieldOpacity <= 0f) return;
-        if (!NearAnyProtectedArea(i, j)) return;
-        if (!StructureProtectionSystem.IsProtected(i, j)) return;
+        if (!StructureProtectionSystem.IsShielded(i, j)) return;
 
         Effect shader = ShieldEffect.Value;
         if (shader == null) return;
@@ -79,20 +78,6 @@ public class StructureProtectionGlobalTile : GlobalTile
 
         spriteBatch.End();
         spriteBatch.Begin(default, default, default, default, default, default);
-    }
-
-    private static bool NearAnyProtectedArea(int i, int j)
-    {
-        const int margin = 5;
-        var cabin = StructureProtectionSystem.ArgieLabArea;
-        if (cabin != Rectangle.Empty)
-        {
-            var expanded = new Rectangle(
-                cabin.X - margin, cabin.Y - margin,
-                cabin.Width + margin * 2, cabin.Height + margin * 2);
-            if (expanded.Contains(i, j)) return true;
-        }
-        return false;
     }
 }
 
