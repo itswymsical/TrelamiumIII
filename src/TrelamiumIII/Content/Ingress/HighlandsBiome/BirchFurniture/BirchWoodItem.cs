@@ -1,0 +1,11 @@
+﻿namespace TrelamiumIII.Content.Ingress.HighlandsBiome.BirchFurniture;
+
+public class BirchWoodItem : ModItem
+{
+    public override void SetDefaults()
+    {
+        base.SetDefaults();
+        Item.value = Item.sellPrice(0);
+        Item.DefaultToPlaceableTile(ModContent.TileType<BirchWoodTile>());
+    }
+}

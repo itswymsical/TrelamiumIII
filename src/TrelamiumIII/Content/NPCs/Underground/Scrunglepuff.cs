@@ -52,7 +52,7 @@ public class Scrunglepuff : ModNPC
     public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry)
     {
         bestiaryEntry.Info.AddRange([BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Biomes.Underground,
-            new FlavorTextBestiaryInfoElement("Mods.Reverie.NPCs.Scrunglepuff.Bestiary")
+            new FlavorTextBestiaryInfoElement("Mods.TrelamiumIII.NPCs.Scrunglepuff.Bestiary")
         ]);
     }
 
