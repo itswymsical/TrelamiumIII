@@ -23,7 +23,7 @@ public abstract class CustomTree : ModTile
     private const int WorldMargin = 20;
 
     /// <summary> Set while <see cref="Place"/> writes tiles, so <see cref="TileFrame"/> doesn't reject the half-built column. </summary>
-    private static bool growing;
+    protected static bool growing;
 
     private int[] anchorTiles = [];
 
@@ -152,8 +152,7 @@ public abstract class CustomTree : ModTile
                 Tile tile = Main.tile[x, y];
                 tile.HasTile = true;
                 tile.TileType = Type;
-                tile.TileFrameX = (short)WorldGen.genRand.Next(Sheet.Trunk.Count);
-                tile.TileFrameY = y == topY ? CanopyFrameY : (short)0;
+                (tile.TileFrameX, tile.TileFrameY) = RollFrame(baseY - y, height);
                 tile.Slope = SlopeType.Solid;
                 tile.IsHalfBlock = false;
             }
@@ -169,6 +168,16 @@ public abstract class CustomTree : ModTile
         if (!WorldGen.gen && !Main.dedServ && WorldGen.PlayerLOS(x, topY))
             LeafBurst(x, topY);
     }
+
+    /// <summary>
+    /// Frame X (trunk frame index) and Y for the tile <paramref name="fromBase"/> rows above the base of a
+    /// <paramref name="height"/>-tile column. The top tile (<c>fromBase == height - 1</c>) must use <see cref="CanopyFrameY"/>.
+    /// </summary>
+    protected virtual (short X, short Y) RollFrame(int fromBase, int height) =>
+        ((short)WorldGen.genRand.Next(Sheet.Trunk.Count), fromBase == height - 1 ? CanopyFrameY : (short)0);
+
+    /// <summary> Whether the tile registers for <see cref="SpecialDraw"/>, which runs every frame. </summary>
+    protected virtual bool UsesSpecialDraw(Tile tile) => tile.TileFrameY == CanopyFrameY;
 
     private bool IsAnchor(int x, int y) => WorldGen.SolidTile(x, y) && Array.IndexOf(anchorTiles, (int)Main.tile[x, y].TileType) >= 0;
 
@@ -256,7 +265,7 @@ public abstract class CustomTree : ModTile
 
         spriteBatch.Draw(TextureAssets.Tile[Type].Value, position + offscreen, trunk.Source(tile.TileFrameX), Lighting.GetColor(i, j), 0f, Vector2.Zero, 1f, SpriteEffects.None, 0f);
 
-        if (tile.TileFrameY == CanopyFrameY)
+        if (UsesSpecialDraw(tile))
             Main.instance.TilesRenderer.AddSpecialPoint(i, j, TileDrawing.TileCounterType.CustomNonSolid);
 
         return false;

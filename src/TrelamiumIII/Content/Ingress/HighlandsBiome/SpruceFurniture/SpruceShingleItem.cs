@@ -1,4 +1,4 @@
-﻿namespace TrelamiumIII.Content.Tiles.Construction.Spruce;
+﻿namespace TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
 
 public class SpruceShingles : ModItem
 {

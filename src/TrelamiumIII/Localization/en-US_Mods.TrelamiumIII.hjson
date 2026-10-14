@@ -1163,6 +1163,121 @@ Items: {
 			Snowballs deal 50% more damage
 			'''
 	}
+
+	BirchBathtubItem: {
+		DisplayName: Birch Bathtub Item
+		Tooltip: ""
+	}
+
+	BirchBedItem: {
+		DisplayName: Birch Bed Item
+		Tooltip: ""
+	}
+
+	BirchBookcaseItem: {
+		DisplayName: Birch Bookcase Item
+		Tooltip: ""
+	}
+
+	BirchCampfireItem: {
+		DisplayName: Birch Campfire Item
+		Tooltip: ""
+	}
+
+	BirchCandelabraItem: {
+		DisplayName: Birch Candelabra Item
+		Tooltip: ""
+	}
+
+	BirchChairItem: {
+		DisplayName: Birch Chair Item
+		Tooltip: ""
+	}
+
+	BirchChandelierItem: {
+		DisplayName: Birch Chandelier Item
+		Tooltip: ""
+	}
+
+	BirchChestItem: {
+		DisplayName: Birch Chest Item
+		Tooltip: ""
+	}
+
+	BirchClockItem: {
+		DisplayName: Birch Clock Item
+		Tooltip: ""
+	}
+
+	BirchDoorItem: {
+		DisplayName: Birch Door Item
+		Tooltip: ""
+	}
+
+	BirchDresserItem: {
+		DisplayName: Birch Dresser Item
+		Tooltip: ""
+	}
+
+	BirchFenceItem: {
+		DisplayName: Birch Fence Item
+		Tooltip: ""
+	}
+
+	BirchLampItem: {
+		DisplayName: Birch Lamp Item
+		Tooltip: ""
+	}
+
+	BirchLanternItem: {
+		DisplayName: Birch Lantern Item
+		Tooltip: ""
+	}
+
+	BirchPianoItem: {
+		DisplayName: Birch Piano Item
+		Tooltip: ""
+	}
+
+	BirchPlatformItem: {
+		DisplayName: Birch Platform Item
+		Tooltip: ""
+	}
+
+	BirchSinkItem: {
+		DisplayName: Birch Sink Item
+		Tooltip: ""
+	}
+
+	BirchSofaItem: {
+		DisplayName: Birch Sofa Item
+		Tooltip: ""
+	}
+
+	BirchTableItem: {
+		DisplayName: Birch Table Item
+		Tooltip: ""
+	}
+
+	BirchTorchItem: {
+		DisplayName: Birch Torch Item
+		Tooltip: ""
+	}
+
+	BirchWallItem: {
+		DisplayName: Birch Wall Item
+		Tooltip: ""
+	}
+
+	BirchWoodItem: {
+		DisplayName: Birch Wood Item
+		Tooltip: ""
+	}
+
+	BirchWorkbenchItem: {
+		DisplayName: Birch Workbench Item
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1194,6 +1309,8 @@ Tiles: {
 	SulfurTile.MapEntry: Sulfur
 	LodestoneTile.MapEntry: Lodestone
 	TuffTile.MapEntry: Tuff
+	BirchChestTile.MapEntry: Birch Chest Tile
+	BirchDresserTile.MapEntry: Birch Dresser Tile
 }
 
 Projectiles: {
@@ -1322,6 +1439,7 @@ NPCs: {
 	Silvian.DisplayName: Silvian
 	ArgieNPC.DisplayName: Argie
 	PermafrostNPC.DisplayName: Permafrost
+	Scrunglepuff.DisplayName: Scrunglepuff
 }
 
 Buffs: {
