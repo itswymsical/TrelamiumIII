@@ -6,7 +6,7 @@ using ModLiquidLib.ModLoader;
 using Terraria.Map;
 using Terraria.ObjectData;
 using TrelamiumIII.Content.Ingress;
-using TrelamiumIII.Content.Tiles.Construction.Spruce;
+using TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
 using TrelamiumIII.Core.Structures;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;

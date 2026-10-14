@@ -51,4 +51,14 @@ Biomes: {
 		DisplayName: Reverie Biome
 		TownNPCDialogueName: the Reverie Biome
 	}
+
+	HighlandDayBiome: {
+		DisplayName: Highland Day Biome
+		TownNPCDialogueName: the Highland Day Biome
+	}
+
+	HighlandNightBiome: {
+		DisplayName: Highland Night Biome
+		TownNPCDialogueName: the Highland Night Biome
+	}
 }

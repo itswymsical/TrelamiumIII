@@ -5,11 +5,16 @@ public sealed record TreeSheet(TrunkFrames Trunk, TreeCanopy Canopy, TreeLeaf[] 
 
 /// <summary>
 /// <paramref name="Count"/> frames of <paramref name="Size"/> along the texture's top row, <paramref name="Stride"/> pixels
-/// apart. <paramref name="Offset"/> places a frame's top-left relative to its tile's top-left.
+/// apart. <paramref name="Offset"/> places a frame's top-left relative to its tile's top-left. When <paramref name="Frames"/>
+/// is set it replaces the grid with explicit source rectangles, and <paramref name="Count"/> must match its length.
 /// </summary>
-public readonly record struct TrunkFrames(Point Size, int Stride, int Count, Point Offset)
+public readonly record struct TrunkFrames(Point Size, int Stride, int Count, Point Offset, Rectangle[]? Frames = null)
 {
-    public Rectangle Source(int index) => new(Math.Clamp(index, 0, Count - 1) * Stride, 0, Size.X, Size.Y);
+    public Rectangle Source(int index)
+    {
+        index = Math.Clamp(index, 0, Count - 1);
+        return Frames is null ? new(index * Stride, 0, Size.X, Size.Y) : Frames[index];
+    }
 }
 
 /// <summary>
