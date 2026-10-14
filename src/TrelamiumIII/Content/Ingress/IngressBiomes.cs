@@ -4,9 +4,9 @@ using TrelamiumIII.Common.Subworlds.Realms;
 
 namespace TrelamiumIII.Content.Ingress;
 
-public class IngressDaytimeBiome : ModBiome
+public class HighlandDayBiome : ModBiome
 {
-    public override int Music => Assets.Music.Woodhaven.Slot;
+    public override int Music => Assets.Music.HighlandsDay.Slot;
     public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
@@ -23,9 +23,9 @@ public class IngressDaytimeBiome : ModBiome
     }
 }
 
-public class IngressNighttimeBiome : ModBiome
+public class HighlandNightBiome : ModBiome
 {
-    public override int Music => Assets.Music.WoodhavenNight.Slot;
+    public override int Music => Assets.Music.HighlandsNight.Slot;
     public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
@@ -45,7 +45,7 @@ public class IngressNighttimeBiome : ModBiome
 // the underground
 public class IngressGardenBiome : ModBiome
 {
-    public override int Music => Assets.Music.OverworldEvening.Slot; // placeholder
+    public override int Music => Assets.Music.HighlandsDay.Slot; // placeholder
     public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";

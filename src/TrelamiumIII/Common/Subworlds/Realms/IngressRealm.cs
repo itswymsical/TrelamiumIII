@@ -8,15 +8,13 @@ using TrelamiumIII.Common.Generation.Caves;
 using TrelamiumIII.Common.Generation.Fortress;
 using TrelamiumIII.Common.Generation.Trees;
 using TrelamiumIII.Common.Generation.Utils;
-using TrelamiumIII.Common.Systems;
-using TrelamiumIII.Content.Seals;
-using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Content.Dryad;
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Content.Ingress.Transition;
+using TrelamiumIII.Content.Seals;
 using TrelamiumIII.Core.Graphics.Cinematics;
 using TrelamiumIII.Core.Graphics.FbmScreen;
-using TrelamiumIII.Core.Text;
+using TrelamiumIII.Core.Tiles.Seals;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Common.Subworlds.Realms;
@@ -79,11 +77,11 @@ public class IngressRealm : SubworldRealm
         new IngressSpawn(this)
     ];
 
-    public override bool ShouldSave => false;
+    public override bool ShouldSave => true;
     public override bool NormalUpdates => true;
     public override bool NoPlayerSaving => false;
 
-    public override int LoadingMusic => Assets.Music.IngressNight.Slot;
+    public override int LoadingMusic => Assets.Music.IlluminantInkiness.Slot;
     public override DynamicSpriteFont TipFont => base.TipFont;
     public override Color LoadingAccent => new(140, 220, 110);
     public static int GroundY => (int)(Main.maxTilesY * 0.52f);
@@ -106,11 +104,9 @@ public class IngressRealm : SubworldRealm
 
     private void ManageGameConditions()
     {
-        if (Main.slimeRain)
-            Main.slimeRain = false;
+       Main.slimeRain = false;
 
-
-        Main.townNPCCanSpawn[default] = false;
+       Main.townNPCCanSpawn[default] = false;
     }
 
     public override void OnEnter() => SubworldSystem.hideUnderworld = true;
