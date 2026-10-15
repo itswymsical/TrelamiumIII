@@ -25,8 +25,11 @@ public class TerracottaTile : ModTile
 
         Main.tileMergeDirt[Type] = true;
 
-        this.Merge(TileID.ClayBlock, TileID.Stone, TileID.Ebonstone, TileID.Crimstone,
-            TileID.Slush, TileID.Grass, TileID.SnowBlock, ModContent.TileType<HighlandsGrass>());
+        this.Merge(TileID.ClayBlock, ModContent.TileType<PeatTile>(),
+            ModContent.TileType<HighlandsGrass>(), ModContent.TileType<SnowHighlandsGrass>(),
+            ModContent.TileType<CorruptHighlandsGrass>(), ModContent.TileType<CrimsonHighlandsGrass>(),
+            ModContent.TileType<HallowHighlandsGrass>(),
+            ModContent.TileType<YellowTerracottaTile>(), ModContent.TileType<GrayTerracottaTile>());
 
         Main.tileBlockLight[Type] = true;
         MineResist = 0.35f;
@@ -46,8 +49,11 @@ public class YellowTerracottaTile : ModTile
 
         Main.tileMergeDirt[Type] = true;
 
-        this.Merge(TileID.ClayBlock, TileID.Stone, TileID.Ebonstone, TileID.Crimstone,
-            TileID.Slush, TileID.Grass, TileID.SnowBlock, ModContent.TileType<HighlandsGrass>());
+        this.Merge(TileID.ClayBlock, ModContent.TileType<PeatTile>(),
+            ModContent.TileType<HighlandsGrass>(), ModContent.TileType<SnowHighlandsGrass>(), 
+            ModContent.TileType<CorruptHighlandsGrass>(), ModContent.TileType<CrimsonHighlandsGrass>(), 
+            ModContent.TileType<HallowHighlandsGrass>(),
+            ModContent.TileType<TerracottaTile>(), ModContent.TileType<GrayTerracottaTile>());
 
         Main.tileBlockLight[Type] = true;
         MineResist = 0.35f;
@@ -67,8 +73,11 @@ public class GrayTerracottaTile : ModTile
 
         Main.tileMergeDirt[Type] = true;
 
-        this.Merge(TileID.ClayBlock, TileID.Stone, TileID.Ebonstone, TileID.Crimstone,
-            TileID.Slush, TileID.Grass, TileID.SnowBlock, ModContent.TileType<HighlandsGrass>());
+        this.Merge(TileID.ClayBlock, ModContent.TileType<PeatTile>(),
+            ModContent.TileType<HighlandsGrass>(), ModContent.TileType<SnowHighlandsGrass>(),
+            ModContent.TileType<CorruptHighlandsGrass>(), ModContent.TileType<CrimsonHighlandsGrass>(),
+            ModContent.TileType<HallowHighlandsGrass>(),
+            ModContent.TileType<TerracottaTile>(), ModContent.TileType<YellowTerracottaTile>());
 
         Main.tileBlockLight[Type] = true;
         MineResist = 0.35f;

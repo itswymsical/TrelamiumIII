@@ -27,7 +27,7 @@ public class HighlandsGrass : GrassTile
         TileID.Sets.Conversion.Grass[Type] = true;
         WaterPlantAnchorSystem.AddAnchorAlias(Type, TileID.Grass);
 
-        AddMapEntry(new Color(77, 122, 34));
+        AddMapEntry(new Color(35, 120, 84));
     }
 }
 
