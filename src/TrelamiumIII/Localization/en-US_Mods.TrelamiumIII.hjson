@@ -1278,6 +1278,21 @@ Items: {
 		DisplayName: Birch Workbench Item
 		Tooltip: ""
 	}
+
+	GrayTerracottaBlock: {
+		DisplayName: Gray Terracotta Block
+		Tooltip: ""
+	}
+
+	TerracottaBlock: {
+		DisplayName: Terracotta Block
+		Tooltip: ""
+	}
+
+	YellowTerracottaBlock: {
+		DisplayName: Yellow Terracotta Block
+		Tooltip: ""
+	}
 }
 
 Tiles: {
