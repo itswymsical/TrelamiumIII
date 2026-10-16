@@ -99,7 +99,7 @@ public static class AlchemyRecipeGroups
 
         AnyMineralSalt.Add(
             SoluteID.RockSalt, SoluteID.Niter,
-            SoluteID.FrigorificSalt);
+            SoluteID.FrigorificSalt, SoluteID.PureSalt);
 
         Iron.Add(ItemID.IronOre, ItemID.LeadOre);
 

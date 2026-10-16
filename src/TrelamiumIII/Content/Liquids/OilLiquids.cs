@@ -10,10 +10,11 @@ public class OilLiquids : ConditionalLiquid, ILiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
 
-    public LiquidSurface Surface => new("Acid")
+    public LiquidSurface Surface => new("Ripple")
     {
         ColorA = Rgb(255, 255, 104),
         ColorB = Rgb(254, 237, 154),
+        Scale = 0.88f,
     };
     public Color SurfaceTint(int i, int j)
         => ConditionAt(i, j).SurfaceTint;

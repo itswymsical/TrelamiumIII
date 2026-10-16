@@ -116,6 +116,24 @@ float4 AcidPass(float4 vertex : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     return Output(rgb, caustic * 0.5 + rim * 0.85 + fill * 0.2 + spot, vertex);
 }
 
+float4 RipplePass(float4 vertex : COLOR0, float2 uv : TEXCOORD0) : COLOR0
+{
+    float2 w = World(uv);
+
+    float t = Time * Speed;
+
+    float2 p = w / (Scale * 546.0);
+    float n = N(p + float2(t * 0.0168, -t * 0.0112));
+    float ripple = 1.0 - saturate(abs(n - 0.52) * 14.0);
+    ripple *= ripple;
+    float body = smoothstep(0.35, 0.68, n);
+    float3 rgb = lerp(ColorB, ColorA, body) * Tint;
+
+    float alpha = body * 0.15 + ripple * 0.65;
+
+    return Output(rgb, alpha, vertex);
+}
+
 technique Brine
 {
     pass BrineSurface
@@ -137,5 +155,13 @@ technique Acid
     pass AcidSurface
     {
         PixelShader = compile ps_3_0 AcidPass();
+    }
+}
+
+technique Ripple
+{
+    pass RippleSurface
+    {
+        PixelShader = compile ps_3_0 RipplePass();
     }
 }
