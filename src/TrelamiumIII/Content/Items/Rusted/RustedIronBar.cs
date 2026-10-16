@@ -13,7 +13,7 @@ public class RustedIronBar : ModItem
         Item.width = Item.height = 18;
         Item.maxStack = Item.CommonMaxStack;
         Item.rare = ItemRarityID.Gray;
-        Item.value = Item.sellPrice(Item.buyPrice(copper: 3));
+        Item.value = Item.sellPrice(copper: 3);
     }
 
     public override void AddRecipes()

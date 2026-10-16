@@ -17,9 +17,9 @@ public readonly record struct ObsidianForestShape(int HalfWidth, int DomeHeight,
     public const int ShellThickness = 5;
     public const float WarpAmplitude = 6f;
     public const float GrooveDepth = 3f;
-    public const float FluteDepth = 4f;
+    public const float StalacDepth = 4f;
 
-    public int Margin => (int)MathF.Ceiling(WarpAmplitude + GrooveDepth + FluteDepth) + ShellThickness + 3;
+    public int Margin => (int)MathF.Ceiling(WarpAmplitude + GrooveDepth + StalacDepth) + ShellThickness + 3;
 
     public Rectangle Bounds(Point center) => new(
         center.X - HalfWidth - Margin,
@@ -35,15 +35,11 @@ public readonly record struct ObsidianForestShape(int HalfWidth, int DomeHeight,
         SpireCount: WorldGen.genRand.Next(2, 5));
 }
 
-/// <summary>
-/// Builds one Obsidian Forest: a tuff cavern with horizontal grooves in its walls and flutes in its ceiling, tuff
-/// spires under obsidian caps, obsidian-lined acid pools sunk into the floor, gem trees and foliage.
-/// </summary>
 public static class ObsidianForestBuilder
 {
     private const float WarpFrequency = 0.025f;
     private const float GrooveFrequency = 0.55f;
-    private const float FluteFrequency = 0.33f;
+    private const float StalacFrequency = 0.33f;
     private const float VeinFrequency = 0.045f;
 
     /// <summary> Ridged-noise band width that turns shell tiles into obsidian. </summary>
@@ -108,8 +104,8 @@ public static class ObsidianForestBuilder
                 if (wy < center.Y)
                 {
                     // Flutes: columns where the ceiling reaches higher.
-                    float flute = MathF.Pow(MathF.Max(MathF.Sin(x * FluteFrequency + flutePhase), 0f), 6f);
-                    float dy = (wy - center.Y) / (shape.DomeHeight + ObsidianForestShape.FluteDepth * flute);
+                    float flute = MathF.Pow(MathF.Max(MathF.Sin(x * StalacFrequency + flutePhase), 0f), 6f);
+                    float dy = (wy - center.Y) / (shape.DomeHeight + ObsidianForestShape.StalacDepth * flute);
                     cavity[i, j] = dx * dx + dy * dy < 1f;
                 }
                 else
@@ -445,7 +441,7 @@ public static class ObsidianForestBuilder
                     Tile tile = Main.tile[x, y];
                     tile.LiquidType = acid;
                     tile.LiquidAmount = byte.MaxValue;
-                    tile.LiquidCondition() = 0;
+                    tile.LiquidCondition() = AcidLiquids.Instance.AquaFortis.Index;
                 }
             }
         }
