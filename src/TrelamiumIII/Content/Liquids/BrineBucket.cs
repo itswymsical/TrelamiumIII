@@ -34,7 +34,7 @@ public class BrineBucketItem : ModItem
 
     public override void HoldItem(Player player)
     {
-        LiquidUtils.PlaceLiquid(player, Item, LiquidID.Water, WaterConditions.Instance.Brine.Name);
+        LiquidUtils.PlaceLiquid(player, Item, LiquidID.Water, WaterLiquids.Instance.Brine.Name);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class BrineBucketItem : ModItem
         Tile tile = Main.tile[x, y];
         byte before = tile.LiquidAmount;
         bool brine = sItem.type == ItemID.EmptyBucket && before > 0 && tile.LiquidType == LiquidID.Water
-            && tile.LiquidCondition() == WaterConditions.Instance.Brine.Index;
+            && tile.LiquidCondition() == WaterLiquids.Instance.Brine.Index;
 
         int[] buckets = LiquidID_TLmod.Sets.CreateLiquidBucketItem;
         int waterBucket = buckets[LiquidID.Water];

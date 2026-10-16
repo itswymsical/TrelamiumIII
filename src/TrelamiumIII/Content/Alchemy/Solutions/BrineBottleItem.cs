@@ -20,7 +20,7 @@ internal sealed class BrineBottleItem : BottledLiquidItem
 
         Recipes = self => self.CreateRecipe()
             .AddIngredient(ItemID.Bottle)
-            .AddCondition(WaterConditions.NearBrine)
+            .AddCondition(WaterLiquids.NearBrine)
             .Register();
     }
 
@@ -31,5 +31,5 @@ internal sealed class BrineBottleItem : BottledLiquidItem
     protected override LiquidPalette Palette => LiquidPalette.Water;
 
     /// <summary>The world brine surface, slower and stronger: the bottle shows a 12-pixel patch of it.</summary>
-    protected override LiquidSurface Surface => surface ??= WaterConditions.Instance.Surface with { Speed = 0.5f, Strength = 0.85f };
+    protected override LiquidSurface Surface => surface ??= WaterLiquids.Instance.Surface with { Speed = 0.5f, Strength = 0.85f };
 }

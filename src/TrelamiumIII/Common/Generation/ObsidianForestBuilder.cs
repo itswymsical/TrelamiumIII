@@ -434,7 +434,7 @@ public static class ObsidianForestBuilder
 
     private static void FillPools(List<(int Left, int Right, int Level)> pools)
     {
-        int acid = LiquidLoader.LiquidType<AcidLiquid>();
+        int acid = LiquidLoader.LiquidType<AcidLiquids>();
 
         foreach ((int left, int right, int level) in pools)
         {

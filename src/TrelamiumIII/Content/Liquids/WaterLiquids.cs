@@ -8,9 +8,9 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Conditions on vanilla water: fresh by default, or brine. Brine tiles stay <see cref="LiquidID.Water" />, so
 ///     vanilla and other mods treat them as water (fishing, spawns, sponges, buckets).
 /// </summary>
-public sealed class WaterConditions : LiquidConditionSet, ILoadable, ILiquidSurface
+public sealed class WaterLiquids : LiquidConditionSet, ILoadable, ILiquidSurface
 {
-    public static WaterConditions Instance { get; private set; } = null!;
+    public static WaterLiquids Instance { get; private set; } = null!;
 
     /// <summary>Recipe condition: standing beside brine, the way vanilla checks for water.</summary>
     public static Condition NearBrine { get; private set; } = null!;

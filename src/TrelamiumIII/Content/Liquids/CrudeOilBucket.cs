@@ -1,6 +1,6 @@
 ﻿using ModLiquidLib.ModLoader;
-using TrelamiumIII.Utilities;
 using Terraria.GameContent.Creative;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Liquids;
 
@@ -11,7 +11,7 @@ public class CrudeOilBucketItem : ModItem
 		ItemID.Sets.AlsoABuildingItem[Type] = true;
 		ItemID.Sets.DuplicationMenuToolsFilter[Type] = true;
 
-		ModLiquidLib.ID.LiquidID_TLmod.Sets.CreateLiquidBucketItem[LiquidLoader.LiquidType<CrudeOilLiquid>()] = Type;
+		ModLiquidLib.ID.LiquidID_TLmod.Sets.CreateLiquidBucketItem[LiquidLoader.LiquidType<DarkOilLiquids>()] = Type;
 
 		CreativeItemSacrificesCatalog.Instance.SacrificeCountNeededByItemId[Type] = 5;
 	}
@@ -29,6 +29,6 @@ public class CrudeOilBucketItem : ModItem
 	}
 
 	public override void HoldItem(Player player) {
-		LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<CrudeOilLiquid>());
+		LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<DarkOilLiquids>());
 	}
 }

@@ -82,7 +82,7 @@ public abstract class ConditionalLiquid : ModLiquid
     protected void AddCorrosion(LiquidCondition? from, Predicate<int> tiles, ushort? becomes = null) => ConditionSet.AddCorrosion(from, tiles, becomes);
 
     /// <inheritdoc cref="LiquidConditionSet.AddItemReaction" />
-    protected void AddItemReaction(ItemReaction reaction) => ConditionSet.AddItemReaction(reaction);
+    protected void AddItemReaction(LiquidCondition? from, ItemReaction reaction) => ConditionSet.AddItemReaction(reaction);
 
     public LiquidCondition Get(byte index) => ConditionSet.Get(index);
 

@@ -1165,117 +1165,117 @@ Items: {
 	}
 
 	BirchBathtubItem: {
-		DisplayName: Birch Bathtub Item
+		DisplayName: Birch Bathtub
 		Tooltip: ""
 	}
 
 	BirchBedItem: {
-		DisplayName: Birch Bed Item
+		DisplayName: Birch Bed
 		Tooltip: ""
 	}
 
 	BirchBookcaseItem: {
-		DisplayName: Birch Bookcase Item
+		DisplayName: Birch Bookcase
 		Tooltip: ""
 	}
 
 	BirchCampfireItem: {
-		DisplayName: Birch Campfire Item
+		DisplayName: Birch Campfire
 		Tooltip: ""
 	}
 
 	BirchCandelabraItem: {
-		DisplayName: Birch Candelabra Item
+		DisplayName: Birch Candelabra
 		Tooltip: ""
 	}
 
 	BirchChairItem: {
-		DisplayName: Birch Chair Item
+		DisplayName: Birch Chair
 		Tooltip: ""
 	}
 
 	BirchChandelierItem: {
-		DisplayName: Birch Chandelier Item
+		DisplayName: Birch Chandelier
 		Tooltip: ""
 	}
 
 	BirchChestItem: {
-		DisplayName: Birch Chest Item
+		DisplayName: Birch Chest
 		Tooltip: ""
 	}
 
 	BirchClockItem: {
-		DisplayName: Birch Clock Item
+		DisplayName: Birch Clock
 		Tooltip: ""
 	}
 
 	BirchDoorItem: {
-		DisplayName: Birch Door Item
+		DisplayName: Birch Door
 		Tooltip: ""
 	}
 
 	BirchDresserItem: {
-		DisplayName: Birch Dresser Item
+		DisplayName: Birch Dresser
 		Tooltip: ""
 	}
 
 	BirchFenceItem: {
-		DisplayName: Birch Fence Item
+		DisplayName: Birch Fence
 		Tooltip: ""
 	}
 
 	BirchLampItem: {
-		DisplayName: Birch Lamp Item
+		DisplayName: Birch Lamp
 		Tooltip: ""
 	}
 
 	BirchLanternItem: {
-		DisplayName: Birch Lantern Item
+		DisplayName: Birch Lantern
 		Tooltip: ""
 	}
 
 	BirchPianoItem: {
-		DisplayName: Birch Piano Item
+		DisplayName: Birch Piano
 		Tooltip: ""
 	}
 
 	BirchPlatformItem: {
-		DisplayName: Birch Platform Item
+		DisplayName: Birch Platform
 		Tooltip: ""
 	}
 
 	BirchSinkItem: {
-		DisplayName: Birch Sink Item
+		DisplayName: Birch Sink
 		Tooltip: ""
 	}
 
 	BirchSofaItem: {
-		DisplayName: Birch Sofa Item
+		DisplayName: Birch Sofa
 		Tooltip: ""
 	}
 
 	BirchTableItem: {
-		DisplayName: Birch Table Item
+		DisplayName: Birch Table
 		Tooltip: ""
 	}
 
 	BirchTorchItem: {
-		DisplayName: Birch Torch Item
+		DisplayName: Birch Torch
 		Tooltip: ""
 	}
 
 	BirchWallItem: {
-		DisplayName: Birch Wall Item
+		DisplayName: Birch Wall
 		Tooltip: ""
 	}
 
 	BirchWoodItem: {
-		DisplayName: Birch Wood Item
+		DisplayName: Birch Wood
 		Tooltip: ""
 	}
 
 	BirchWorkbenchItem: {
-		DisplayName: Birch Workbench Item
+		DisplayName: Birch Workbench
 		Tooltip: ""
 	}
 
@@ -1293,6 +1293,16 @@ Items: {
 		DisplayName: Yellow Terracotta Block
 		Tooltip: ""
 	}
+
+	SeedBedItem_Peat: {
+		DisplayName: Seed Bed (Peat)
+		Tooltip: ""
+	}
+
+	SunflowerOilBucket: {
+		DisplayName: Sunflower Oil Bucket
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1300,7 +1310,8 @@ Tiles: {
 	SeedBedTile_Mud.MapEntry: Seed Bed (Mud)
 	SeedBedTile_Sand.MapEntry: Seed Bed (Sand)
 	SeedBedTile_Ash.MapEntry: Seed Bed (Ash)
-	AdvancedAlchemyStationBase.MapEntry: Advanced Alchemy Station Base
+	SeedBedTile_Peat.MapEntry: Seed Bed (Peat)
+	AdvancedAlchemyStationBase.MapEntry: Solution Synthesizer
 	AlchemyStationTile.MapEntry: Alchemy Station
 	MagnoliaTile.MapEntry: Magnolia
 	MyconidSporeTile.MapEntry: Myconid Spore
@@ -1324,8 +1335,8 @@ Tiles: {
 	SulfurTile.MapEntry: Sulfur
 	LodestoneTile.MapEntry: Lodestone
 	TuffTile.MapEntry: Tuff
-	BirchChestTile.MapEntry: Birch Chest Tile
-	BirchDresserTile.MapEntry: Birch Dresser Tile
+	BirchChestTile.MapEntry: Birch Chest
+	BirchDresserTile.MapEntry: Birch Dresser
 }
 
 Projectiles: {
@@ -1943,6 +1954,10 @@ Liquids: {
 		MapEntry: Brew
 		Conditions.Muddled: Muddled Brew
 	}
+
+	AcidLiquids.MapEntry: Acid Liquids
+	OilLiquids.MapEntry: Oil Liquids
+	DarkOilLiquids.MapEntry: Dark Oil Liquids
 }
 
 Conditions.NearBrine: Near Brine
