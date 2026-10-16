@@ -1303,6 +1303,11 @@ Items: {
 		DisplayName: Sunflower Oil Bucket
 		Tooltip: ""
 	}
+
+	SunflowerOilBottleItem: {
+		DisplayName: Bottled Sunflower Oil
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1960,7 +1965,10 @@ Liquids: {
 	DarkOilLiquids.MapEntry: Dark Oil Liquids
 }
 
-Conditions.NearBrine: Near Brine
+Conditions: {
+	NearBrine: Near Brine
+	NearSunflowerOil: Near Sunflower Oil
+}
 
 Configs: {
 	DeveloperConfig: {

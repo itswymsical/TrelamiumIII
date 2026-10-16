@@ -53,6 +53,12 @@ public partial class ChemistryRecipeSystem
 
         AlchemyRecipes.CreateRecipe([ItemID.Bottle, ItemID.BottledWater, SolventID.Inert], SolventID.BloodtoothExtract,
             new RecipeVariant(ModContent.ItemType<BloodtoothFungusItem>()));
+
+        AlchemyRecipes.CreateRecipe(bases, ModContent.ItemType<BrineBottleItem>(),
+            new RecipeVariant(ComponentMatcher.Of(AnyMineralSalt, 2)) { OutputStack = 2 });
+
+        AlchemyRecipes.CreateRecipe(bases, ModContent.ItemType<SunflowerOilBottleItem>(),
+            new RecipeVariant(ComponentMatcher.Of(ItemID.Sunflower, 1)) { OutputStack = 2 });
     }
 
     /// <summary>
