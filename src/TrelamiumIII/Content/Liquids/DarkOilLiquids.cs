@@ -1,40 +1,68 @@
-﻿using TrelamiumIII.Content.Alchemy.Reagents;
-using TrelamiumIII.Core;
-using TrelamiumIII.Core.Liquids;
-using Terraria.Audio;
+﻿using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent.Liquid;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Core;
+using TrelamiumIII.Core.Liquids;
 
 namespace TrelamiumIII.Content.Liquids;
 
 /// <summary>Oil base: crude by default. Pitch is the heavy residue, slower to flow and harder to wade.</summary>
-public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
+public class DarkOilLiquids : ConditionalLiquid, ILiquidSurface
 {
+    public static DarkOilLiquids Instance { get; private set; } = null!;
+
     private const int PitchFlowInterval = 4;
 
-    public LiquidSurface Surface { get; } = new("Oil")
+    public LiquidSurface Surface => new("Oil")
     {
         ColorA = Rgb(43, 33, 56),
         ColorB = Rgb(5, 5, 5),
+        Scale = 1f,
+        Speed = 0.7f,
     };
 
-    public Color SurfaceTint(int i, int j) => ConditionAt(i, j).Tint;
+    public LiquidSurface? SurfaceAt(int i, int j)
+    {
+        LiquidCondition condition = ConditionAt(i, j);
+
+        // Conditions without their own surface inherit the default style.
+        return condition.Surface ?? Default.Surface;
+    }
+
+    public Color SurfaceTint(int i, int j)
+        => ConditionAt(i, j).SurfaceTint;
 
     public LiquidCondition Crude { get; private set; } = null!;
 
     public LiquidCondition Pitch { get; private set; } = null!;
-
     public override string TextureBase => AssetReferences.Content.Liquids.CrudeOilLiquid.KEY;
+
+    public override void Load()
+    {
+        base.Load();
+        Instance = this;
+    }
+    public override void Unload()
+    {
+        Instance = null!;
+        base.Unload();
+    }
 
     protected override void DefineConditions()
     {
         Crude = AddCondition(new LiquidCondition("Crude"));
-        Pitch = AddCondition(new LiquidCondition("Pitch") { Tint = new Color(77, 45, 79), Strength = 0.88f });
+
+        Pitch = AddCondition(new LiquidCondition("Pitch")
+        {
+            Tint = new Color(77, 45, 79),
+            Strength = 0.88f,
+        });
     }
 
     /// <summary>The station's Bottled Oil + 4 Cobweb = 2 Pitch, with a bottle's worth of oil spent from the pool.</summary>
     protected override void DefineItemReactions()
-        => AddItemReaction(new ItemReaction(ItemID.Cobweb)
+        => AddItemReaction(Crude, new ItemReaction(ItemID.Cobweb)
         {
             Amount = 4,
             Ticks = 60,
@@ -68,8 +96,7 @@ public class CrudeOilLiquid : ConditionalLiquid, ILiquidSurface
 
         return (Main.GameUpdateCount + (uint)(i * 7 + j * 13)) % PitchFlowInterval == 0;
     }
-
-    protected override void OnPlayerContact(Player player, LiquidCondition condition)
+    protected override void OnPlayerContact(Player player, LiquidCondition condition) 
     {
         if (condition != Pitch)
         {

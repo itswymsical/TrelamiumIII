@@ -8,7 +8,7 @@ namespace TrelamiumIII.Content.Liquids;
 ///     a ModLiquid fires or not depending on which tile updated; here (liquidX, liquidY) always holds
 ///     <c>type</c> and a neighbour holds <c>otherLiquid</c>.
 ///     Brews submerge in anything they meet. Acids dissolve water and honey, turn lava to obsidian through
-///     <see cref="AcidLiquid.LiquidMerge" />, and sit beside everything else.
+///     <see cref="AcidLiquids.LiquidMerge" />, and sit beside everything else.
 /// </summary>
 public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
 {
@@ -20,7 +20,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
     public override bool PreLiquidMerge(int liquidX, int liquidY, int tileX, int tileY, int type, int otherLiquid)
     {
         int brew = LiquidLoader.LiquidType<BrewLiquid>();
-        int acid = LiquidLoader.LiquidType<AcidLiquid>();
+        int acid = LiquidLoader.LiquidType<AcidLiquids>();
 
         if (type == brew || otherLiquid == brew)
         {

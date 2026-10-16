@@ -34,6 +34,15 @@ public interface ILiquidSurface
     /// <summary>Whether (i, j) draws the surface at all, for liquids where only some conditions have one.</summary>
     bool HasSurface(int i, int j) => true;
 }
+/// <summary>
+/// use this interface when a conditional liquid's internal types should have different surface textures.
+/// Use <see cref="ILiquidSurface"/> for individual types or unified surfaces.
+/// </summary>
+public interface IConditionalLiquidSurface : ILiquidSurface
+{
+    LiquidSurface? SurfaceAt(int i, int j);
+
+}
 
 /// <summary>
 ///     Draws every <see cref="ILiquidSurface" /> liquid's surface each frame, over the composited water. Vanilla only

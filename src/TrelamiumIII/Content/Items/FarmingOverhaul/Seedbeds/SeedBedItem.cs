@@ -1,4 +1,5 @@
 using TrelamiumIII.Common.Systems;
+using TrelamiumIII.Content.Ingress;
 
 namespace TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
 
@@ -23,6 +24,7 @@ public sealed class SeedBedItem : ModItem, ICustomAutoload
     public static int Sand { get; private set; }
 
     public static int Ash { get; private set; }
+    public static int Peat { get; private set; }
 
     /// <summary>Every <see cref="SeedBedTile" /> type, available from load.</summary>
     public static int[] TileTypes { get; private set; } = [];
@@ -41,8 +43,9 @@ public sealed class SeedBedItem : ModItem, ICustomAutoload
 
         Sand = Add(mod, "Sand", ItemID.SandBlock, new(220, 200, 140), DustID.Sand, [HerbType.Waterleaf], out int sand);
         Ash = Add(mod, "Ash", ItemID.AshBlock, new(80, 70, 70), DustID.Ash, [HerbType.Fireblossom, HerbType.Deathweed], out int ash);
+        Peat = Add(mod, "Peat", ModContent.ItemType<PeatBlock>(), new(80, 70, 70), DustID.Ash, [HerbType.Fireblossom, HerbType.Deathweed], out int peat);
 
-        TileTypes = [dirt, mud, sand, ash];
+        TileTypes = [dirt, mud, sand, ash, peat];
     }
 
     private static int Add(Mod mod, string soil, int soilBlock, Color mapColor, int dust, HerbType[] herbs, out int tileType)

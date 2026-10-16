@@ -19,6 +19,9 @@ public class LiquidCondition(string name)
 
     public Vector3 Light { get; init; }
 
+    public LiquidSurface? Surface { get; init; }
+    public Color SurfaceTint { get; init; } = Color.White;
+
     /// <summary>Scales the liquid's contact effects, 0 to 1.</summary>
     public float Strength { get; init; } = 1f;
 

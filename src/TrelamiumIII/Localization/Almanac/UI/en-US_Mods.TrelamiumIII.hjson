@@ -61,4 +61,9 @@ Biomes: {
 		DisplayName: Highland Night Biome
 		TownNPCDialogueName: the Highland Night Biome
 	}
+
+	HighlandBiome: {
+		DisplayName: Highland Biome
+		TownNPCDialogueName: the Highland Biome
+	}
 }

@@ -12,7 +12,7 @@ namespace TrelamiumIII.Content.Liquids;
 ///     salt. Every acid dissolves water and honey (see <see cref="LiquidMixingGlobalLiquid" />). Dropped gold ore
 ///     dissolves into aqua regia as gold solution, one potency at a time.
 /// </summary>
-public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
+public sealed class AcidLiquids : ConditionalLiquid, ILiquidSurface
 {
     /// <summary>Gold ore one potency step dissolves; every step, 150 ore in all, makes a fully potent solution.</summary>
     private const int GoldOrePerPotency = 30;
@@ -78,7 +78,7 @@ public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
 
         foreach (LiquidCondition level in GoldSolution)
         {
-            AddItemReaction(new ItemReaction(ItemID.GoldOre)
+            AddItemReaction(from, new ItemReaction(ItemID.GoldOre)
             {
                 From = from,
                 Amount = GoldOrePerPotency,
@@ -122,7 +122,16 @@ public sealed class AcidLiquid : ConditionalLiquid, ILiquidSurface
 
     protected override void OnNPCContact(NPC npc, LiquidCondition condition)
     {
-        if (!npc.friendly && !npc.dontTakeDamage && !npc.immortal)
+        int ticks = (int)(60 + 120 * condition.Strength);
+
+        if (!npc.dontTakeDamage && !npc.immortal)
+        {
             ChemicalPayload.Contact(npc, ElementProfile.Caustic, null, FieldNode.NoOwner, null, condition.Strength);
+
+            npc.AddBuff(condition.Strength >= 0.85f ? BuffID.Venom : BuffID.Poisoned, ticks);
+
+            if (condition.Strength >= 0.6f)
+                npc.AddBuff(BuffID.Ichor, ticks);
+        }
     }
 }

@@ -10,7 +10,7 @@ namespace TrelamiumIII.Common.Generation;
 
 /// <summary>
 /// Turns one ocean, picked at random, to brine and sinks salt-crusted brine pools into the ground beside both oceans.
-/// Brine is a <see cref="WaterConditions"/> condition, so the water stays water to vanilla and other mods.
+/// Brine is a <see cref="WaterLiquids"/> condition, so the water stays water to vanilla and other mods.
 /// </summary>
 public class BrinePass : GenPass
 {
@@ -45,7 +45,7 @@ public class BrinePass : GenPass
         progress.Message = "Salting the sea...";
 
         var scan = new PlacementScan(progress);
-        byte brine = WaterConditions.Instance.Brine.Index;
+        byte brine = WaterLiquids.Instance.Brine.Index;
 
         SaltOcean(WorldGen.genRand.NextBool(), brine);
         progress.Set(0.6);

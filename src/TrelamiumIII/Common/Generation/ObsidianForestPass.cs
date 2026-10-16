@@ -12,7 +12,7 @@ namespace TrelamiumIII.Common.Generation;
 public class ObsidianForestPass : GenPass
 {
     private const int CandidateStride = 8;
-    private const int PlacementAttempts = 100;
+    private const int PlacementAttempts = 200;
     private const int StructurePadding = 20;
     private const int EdgeMargin = 250;
     private const float MinSolid = 0.5f;
@@ -23,7 +23,7 @@ public class ObsidianForestPass : GenPass
     private const int MaxUnderworldGap = 200;
 
     // Indexed by WorldGen.GetWorldSize(): small, medium, large.
-    private static readonly int[] Count = [2, 3, 4];
+    private static readonly int[] Count = [3, 5, 8];
 
     public ObsidianForestPass() : base("[T3] Obsidian Forest", 100f) { }
 
