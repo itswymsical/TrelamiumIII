@@ -124,10 +124,11 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadBrewedSolvents(Mod mod)
     {
-        Inert = Add(mod, new SolventItem("InertSolutionItem")
+        Inert = Add(mod, new SolventItem("AquaInteris")
         {
             Rare = ItemRarityID.Gray,
             AlmanacPotency = 1,
+            LegacyNames = ["InertSolutionItem"],
             Temperaments = Temperament.Inert,
             AlmanacRarity = ItemRarityID.White,
             Hidden = false,

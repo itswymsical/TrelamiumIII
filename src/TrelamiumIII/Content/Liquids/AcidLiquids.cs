@@ -38,6 +38,17 @@ public sealed class AcidLiquids : ConditionalLiquid, ILiquidSurface
 
     /// <summary>Aqua regia holding dissolved gold, by potency: index 0 is potency 1.</summary>
     public LiquidCondition[] GoldSolution { get; } = new LiquidCondition[SolutePotency.MAX];
+    public static AcidLiquids Instance { get; private set; } = null!;
+    public override void Load()
+    {
+        base.Load();
+        Instance = this;
+    }
+    public override void Unload()
+    {
+        Instance = null!;
+        base.Unload();
+    }
 
     protected override void DefineConditions()
     {

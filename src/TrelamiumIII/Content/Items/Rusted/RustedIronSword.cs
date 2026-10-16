@@ -16,7 +16,7 @@ public class RustedIronSword : ModItem
         Item.UseSound = SoundID.Item1;
         Item.crit = 2;
         Item.useTurn = true;
-        Item.value = Item.sellPrice(Item.buyPrice(copper: 8));
+        Item.value = Item.sellPrice(copper: 8);
     }
 
     public override void AddRecipes()

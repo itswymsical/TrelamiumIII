@@ -15,7 +15,7 @@ public partial class ChemistryRecipeSystem
     {
         AlchemyRecipes.CreateRecipe(ItemID.BottledWater, SolventID.Inert, new RecipeVariant(Mushroom));
 
-        int[] bases = [ItemID.BottledWater, SolventID.Inert];
+        int[] bases = [ItemID.BottledWater, SolventID.Inert, ModContent.ItemType<BrineBottleItem>()];
 
         AlchemyRecipes.CreateRecipe(bases, SolventID.HarmoniousTonic,
             new RecipeVariant(ItemID.CopperOre),

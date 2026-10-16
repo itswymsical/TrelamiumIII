@@ -580,7 +580,7 @@ Items: {
 
 	BrineBottleItem: {
 		DisplayName: Brine Bottle
-		Tooltip: ""
+		Tooltip: "Serves as a base solvent for alchemy"
 	}
 
 	CharcoalItem: {
@@ -604,8 +604,8 @@ Items: {
 	}
 
 	InertSolutionItem: {
-		DisplayName: Inert Solution
-		Tooltip: ""
+		DisplayName: Aqua Inertis
+		Tooltip: "Serves as a base solvent for alchemy"
 	}
 
 	MagnoliaItem: {
@@ -1050,7 +1050,7 @@ Items: {
 	}
 
 	AquaTerrae: {
-		DisplayName: Aqua Terrae
+		DisplayName: Aqua Terra
 		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
 	}
 

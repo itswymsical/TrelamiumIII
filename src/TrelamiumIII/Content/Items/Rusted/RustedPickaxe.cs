@@ -16,7 +16,7 @@ public class RustedPickaxe : ModItem
         Item.UseSound = SoundID.Item1;
         Item.damage = 2;
         Item.useTurn = true;
-        Item.value = Item.sellPrice(Item.buyPrice(copper: 15));
+        Item.value = Item.sellPrice(copper: 15);
     }
 
     public override void AddRecipes()
