@@ -32,23 +32,30 @@ public abstract class ConditionalLiquid : ModLiquid
 
     public sealed override string SlopeTexture => TextureBase + "_Slope";
 
+    /// <summary>Whether <see cref="Load" /> has run, after which each added condition gets its liquidfall straight away.</summary>
+    private bool defined;
+
     /// <summary>Adds conditions with <see cref="AddCondition" />, then mixes and reactions. The first is the default.</summary>
     protected abstract void DefineConditions();
 
     public override void Load()
     {
         DefineConditions();
+        defined = true;
 
+        foreach (LiquidCondition condition in Conditions)
+            AddFall(condition);
+    }
+
+    private void AddFall(LiquidCondition condition)
+    {
         // Waterfall styles autoload client-side only; on a dedicated server their texture array is never resized.
         if (Main.dedServ)
             return;
 
-        foreach (LiquidCondition condition in Conditions)
-        {
-            var fall = new ConditionLiquidfall(this, condition);
-            Mod.AddContent(fall);
-            falls.Add(fall);
-        }
+        var fall = new ConditionLiquidfall(this, condition);
+        Mod.AddContent(fall);
+        falls.Add(fall);
     }
 
     /// <summary>Adds item reactions with <see cref="AddItemReaction" />. Runs from SetStaticDefaults, once every item type is assigned.</summary>
@@ -67,7 +74,19 @@ public abstract class ConditionalLiquid : ModLiquid
 
     public override void Unload() => LiquidConditionSet.ClearRegistry();
 
-    protected LiquidCondition AddCondition(LiquidCondition condition) => ConditionSet.AddCondition(condition);
+    /// <summary>
+    ///     Adds a static condition. Other content may add more after <see cref="DefineConditions" />, up until
+    ///     SetStaticDefaults registers the set, as each solvent does to <see cref="Content.Liquids.SolventLiquid" />.
+    /// </summary>
+    protected LiquidCondition AddCondition(LiquidCondition condition)
+    {
+        ConditionSet.AddCondition(condition);
+
+        if (defined)
+            AddFall(condition);
+
+        return condition;
+    }
 
     /// <inheritdoc cref="LiquidConditionSet.AddMix" />
     protected void AddMix(LiquidCondition receiver, LiquidCondition donor, LiquidCondition result) => ConditionSet.AddMix(receiver, donor, result);
@@ -101,7 +120,7 @@ public abstract class ConditionalLiquid : ModLiquid
     public virtual byte Mix(byte receiver, byte donor) => ConditionSet.MixByTable(receiver, donor);
 
     /// <inheritdoc cref="LiquidConditionSet.BottledItem" />
-    public virtual int BottledItem(LiquidCondition condition) => 0;
+    public virtual int BottledItem(LiquidCondition condition) => ConditionSet.BottledItemByTable(condition);
 
     /// <summary>Contact effect on a player in this liquid, given the condition around them.</summary>
     protected virtual void OnPlayerContact(Player player, LiquidCondition condition) { }

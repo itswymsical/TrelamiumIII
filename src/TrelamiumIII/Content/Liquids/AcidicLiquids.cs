@@ -9,10 +9,11 @@ namespace TrelamiumIII.Content.Liquids;
 
 /// <summary>
 ///     Acid base. Plain acid is the world's; the vitriols and named acids come from it by contact with ore, sulfur and
-///     salt. Every acid dissolves water and honey (see <see cref="LiquidMixingGlobalLiquid" />). Dropped gold ore
-///     dissolves into aqua regia as gold solution, one potency at a time.
+///     salt. Every acid dissolves water and honey and neutralises alkalis into brine (see
+///     <see cref="LiquidMixingGlobalLiquid" />). Dropped gold ore dissolves into aqua regia as gold solution, one
+///     potency at a time.
 /// </summary>
-public sealed class AcidLiquids : ConditionalLiquid, ILiquidSurface
+public sealed class AcidicLiquids : ConditionalLiquid, ILiquidSurface
 {
     /// <summary>Gold ore one potency step dissolves; every step, 150 ore in all, makes a fully potent solution.</summary>
     private const int GoldOrePerPotency = 30;
@@ -38,7 +39,7 @@ public sealed class AcidLiquids : ConditionalLiquid, ILiquidSurface
 
     /// <summary>Aqua regia holding dissolved gold, by potency: index 0 is potency 1.</summary>
     public LiquidCondition[] GoldSolution { get; } = new LiquidCondition[SolutePotency.MAX];
-    public static AcidLiquids Instance { get; private set; } = null!;
+    public static AcidicLiquids Instance { get; private set; } = null!;
     public override void Load()
     {
         base.Load();

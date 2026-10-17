@@ -1968,6 +1968,9 @@ Liquids: {
 	AcidLiquids.MapEntry: Acid Liquids
 	OilLiquids.MapEntry: Oil Liquids
 	DarkOilLiquids.MapEntry: Dark Oil Liquids
+	AcidicLiquids.MapEntry: Acidic Liquids
+	AlkalineLiquids.MapEntry: Alkaline Liquids
+	SolventLiquid.MapEntry: Solvent Liquid
 }
 
 Conditions: {

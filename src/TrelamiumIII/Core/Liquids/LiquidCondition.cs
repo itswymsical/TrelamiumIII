@@ -1,3 +1,5 @@
+using Terraria.Localization;
+
 namespace TrelamiumIII.Core.Liquids;
 
 /// <summary>
@@ -19,8 +21,17 @@ public class LiquidCondition(string name)
 
     public Vector3 Light { get; init; }
 
+    /// <summary>This condition's own surface, for liquids implementing <see cref="IConditionalLiquidSurface" />.</summary>
     public LiquidSurface? Surface { get; init; }
+
     public Color SurfaceTint { get; init; } = Color.White;
+
+    private Condition? near;
+
+    /// <summary>Recipe condition: standing beside this liquid, the way vanilla checks for water.</summary>
+    public Condition Near => near ??= new Condition(
+        Language.GetText("Mods.TrelamiumIII.Conditions.NearLiquid").WithFormatArgs(DisplayName),
+        () => LiquidConditionSet.IsNear(Main.LocalPlayer, this));
 
     /// <summary>Scales the liquid's contact effects, 0 to 1.</summary>
     public float Strength { get; init; } = 1f;
