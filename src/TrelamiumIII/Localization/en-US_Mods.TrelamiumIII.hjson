@@ -580,7 +580,7 @@ Items: {
 
 	BrineBottleItem: {
 		DisplayName: Brine Bottle
-		Tooltip: "Serves as a base solvent for alchemy"
+		Tooltip: Serves as a base solvent for alchemy
 	}
 
 	CharcoalItem: {
@@ -605,7 +605,7 @@ Items: {
 
 	InertSolutionItem: {
 		DisplayName: Aqua Inertis
-		Tooltip: "Serves as a base solvent for alchemy"
+		Tooltip: Serves as a base solvent for alchemy
 	}
 
 	MagnoliaItem: {
@@ -1306,6 +1306,11 @@ Items: {
 
 	SunflowerOilBottleItem: {
 		DisplayName: Bottled Sunflower Oil
+		Tooltip: ""
+	}
+
+	AquaInteris: {
+		DisplayName: Aqua Interis
 		Tooltip: ""
 	}
 }
