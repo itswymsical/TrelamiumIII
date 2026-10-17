@@ -430,7 +430,7 @@ public static class ObsidianForestBuilder
 
     private static void FillPools(List<(int Left, int Right, int Level)> pools)
     {
-        int acid = LiquidLoader.LiquidType<AcidLiquids>();
+        int acid = LiquidLoader.LiquidType<AcidicLiquids>();
 
         foreach ((int left, int right, int level) in pools)
         {
@@ -441,7 +441,7 @@ public static class ObsidianForestBuilder
                     Tile tile = Main.tile[x, y];
                     tile.LiquidType = acid;
                     tile.LiquidAmount = byte.MaxValue;
-                    tile.LiquidCondition() = AcidLiquids.Instance.AquaFortis.Index;
+                    tile.LiquidCondition() = 0;
                 }
             }
         }

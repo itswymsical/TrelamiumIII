@@ -67,14 +67,13 @@ public class LiquidWand : ModItem
     {
         List<Mode> modes = [];
 
-        // Water has a condition set, so its conditions stand in for plain water.
+        // Water and lava have condition sets, so their conditions stand in for the plain liquids.
         foreach (LiquidConditionSet liquid in LiquidConditionSet.All)
         {
             foreach (LiquidCondition condition in liquid.Conditions.Where(condition => condition is not BrewCondition))
                 modes.Add(new Mode(liquid.LiquidType, condition.Name, $"{liquid.Name} / {condition.DisplayName}"));
         }
 
-        modes.Add(new Mode(LiquidID.Lava, null, "Lava"));
         modes.Add(new Mode(LiquidID.Honey, null, "Honey"));
 
         if (player.inventory.FirstOrDefault(item => !item.IsAir && BrewLiquid.IsBrew(item.type)) is { } potion)

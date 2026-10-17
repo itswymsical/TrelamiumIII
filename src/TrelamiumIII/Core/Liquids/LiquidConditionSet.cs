@@ -42,6 +42,8 @@ public abstract class LiquidConditionSet
 
     private readonly HashSet<int> floating = [];
 
+    private readonly Dictionary<LiquidCondition, int> bottled = [];
+
     /// <summary>Conditions added before <see cref="Register" />. Those past it are created at runtime and cleared with the world.</summary>
     private int staticCount;
 
@@ -216,7 +218,36 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>The item a bottle draws from liquid in <paramref name="condition" />, or 0 for none.</summary>
-    public virtual int BottledItem(LiquidCondition condition) => 0;
+    public virtual int BottledItem(LiquidCondition condition) => BottledItemByTable(condition);
+
+    /// <summary>The item set for <paramref name="condition" /> with <see cref="SetBottledItem" />, or 0.</summary>
+    public int BottledItemByTable(LiquidCondition condition) => bottled.GetValueOrDefault(condition);
+
+    /// <summary>Makes <paramref name="itemType" /> what a bottle draws from <paramref name="condition" />, as each solvent does for its liquid.</summary>
+    public void SetBottledItem(LiquidCondition condition, int itemType) => bottled[condition] = itemType;
+
+    /// <summary>Whether a near-full tile in <paramref name="condition" /> is in the area vanilla checks for adjacent water.</summary>
+    public static bool IsNear(Player player, LiquidCondition condition)
+    {
+        int centerX = (int)((player.position.X + player.width * 0.5f) / 16f);
+        int feetY = (int)((player.position.Y + player.height) / 16f);
+        int type = condition.Liquid.LiquidType;
+
+        for (int x = centerX - 4; x <= centerX + 4; x++)
+        {
+            for (int y = feetY - 3; y < feetY + 3; y++)
+            {
+                if (!WorldGen.InWorld(x, y))
+                    continue;
+
+                Tile tile = Main.tile[x, y];
+                if (tile.LiquidAmount > 200 && tile.LiquidType == type && tile.LiquidCondition() == condition.Index)
+                    return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     ///     The condition at (i, j), or of the neighbour it shows through when the tile holds none of this type, as half

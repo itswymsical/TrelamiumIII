@@ -28,5 +28,5 @@ internal sealed class SunflowerOilBottleItem : BottledLiquidItem
 
     protected override LiquidPalette Palette => new(new Color(255, 255, 104), new Color(254, 237, 154), new Color(255, 248, 204));
 
-    protected override LiquidSurface Surface => surface ??= OilLiquids.Instance.Surface with { Speed = 0.5f, Strength = 0.85f };
+    protected override LiquidSurface Surface => surface ??= OilLiquids.Instance.Sunflower.Surface! with { Speed = 0.5f, Strength = 0.85f };
 }

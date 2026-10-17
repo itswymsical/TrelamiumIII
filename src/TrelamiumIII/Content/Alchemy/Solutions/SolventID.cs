@@ -87,7 +87,7 @@ public sealed class SolventID : ICustomAutoload
             LegacyNames = ["BottledOil"],
             Recipes = self => self.CreateRecipe()
                 .AddIngredient(ItemID.Bottle)
-                .AddLiquid<DarkOilLiquids>()
+                .AddLiquid<OilLiquids>()
                 .Register(),
         });
     }

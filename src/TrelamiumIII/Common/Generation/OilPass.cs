@@ -38,7 +38,7 @@ public class OilPass : GenPass
         if (GenVars.UndergroundDesertLocation.IsEmpty)
             return;
 
-        int oilType = LiquidLoader.LiquidType<DarkOilLiquids>();
+        int oilType = LiquidLoader.LiquidType<OilLiquids>();
         int size = WorldGen.GetWorldSize();
         int lakeCount = WorldGen.genRand.Next(LakeMin[size], LakeMax[size] + 1);
         int pocketCount = WorldGen.genRand.Next(PocketMin[size], PocketMax[size] + 1);

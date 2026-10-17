@@ -35,13 +35,14 @@ public interface ILiquidSurface
     bool HasSurface(int i, int j) => true;
 }
 /// <summary>
-/// use this interface when a conditional liquid's internal types should have different surface textures.
-/// Use <see cref="ILiquidSurface"/> for individual types or unified surfaces.
+///     For a liquid whose conditions each carry their own surface, usually <see cref="LiquidCondition.Surface" />.
+///     <see cref="ILiquidSurface.Surface" /> is then the fallback for conditions without one. Use
+///     <see cref="ILiquidSurface" /> alone when every condition shares one surface.
 /// </summary>
 public interface IConditionalLiquidSurface : ILiquidSurface
 {
+    /// <summary>The surface drawn at (i, j), or null for none.</summary>
     LiquidSurface? SurfaceAt(int i, int j);
-
 }
 
 /// <summary>
@@ -53,7 +54,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
 {
     private readonly record struct Quad(Rectangle World, Color Light);
 
-    private static readonly Dictionary<(int Type, Color Tint), List<Quad>> batches = [];
+    private static readonly Dictionary<(LiquidSurface Surface, Color Tint), List<Quad>> batches = [];
 
     private static readonly HashSet<Point> collected = [];
 
@@ -112,8 +113,11 @@ public sealed class LiquidSurfaceSystem : ModSystem
     /// <summary>Records the visible part of a liquid tile. Liquids draw once per active water style, so repeats are skipped.</summary>
     internal static void Collect(int i, int j, int type, in LiquidRenderer.LiquidDrawCache cache, bool isBackgroundDraw)
     {
-        if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } surface
-            || !surface.HasSurface(i, j) || !collected.Add(new Point(i, j)))
+        if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } owner || !owner.HasSurface(i, j))
+            return;
+
+        LiquidSurface? surface = owner is IConditionalLiquidSurface conditional ? conditional.SurfaceAt(i, j) : owner.Surface;
+        if (surface is null || !collected.Add(new Point(i, j)))
             return;
 
         Rectangle source = cache.SourceRectangle;
@@ -124,7 +128,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
         Color light = Lighting.GetColor(i, j);
         light.A = (byte)(MathHelper.Clamp(cache.Opacity, 0f, 1f) * 255f);
 
-        var key = (type, surface.SurfaceTint(i, j));
+        var key = (surface, owner.SurfaceTint(i, j));
         if (!batches.TryGetValue(key, out List<Quad>? quads))
             batches[key] = quads = [];
 
@@ -165,12 +169,11 @@ public sealed class LiquidSurfaceSystem : ModSystem
 
         Rectangle view = new((int)Main.screenPosition.X - 32, (int)Main.screenPosition.Y - 32, Main.screenWidth + 64, Main.screenHeight + 64);
 
-        foreach (((int type, Color tint), List<Quad> quads) in batches)
+        foreach (((LiquidSurface surface, Color tint), List<Quad> quads) in batches)
         {
-            if (quads.Count == 0 || surfaces[type] is not { } owner)
+            if (quads.Count == 0)
                 continue;
 
-            LiquidSurface surface = owner.Surface;
             effect.CurrentTechnique = effect.Techniques[surface.Technique];
             effect.Parameters["Tint"]?.SetValue(tint.ToVector3());
             effect.Parameters["ColorA"]?.SetValue(surface.ColorA);

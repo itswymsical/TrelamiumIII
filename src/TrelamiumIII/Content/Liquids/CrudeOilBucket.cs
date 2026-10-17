@@ -11,7 +11,7 @@ public class CrudeOilBucketItem : ModItem
 		ItemID.Sets.AlsoABuildingItem[Type] = true;
 		ItemID.Sets.DuplicationMenuToolsFilter[Type] = true;
 
-		ModLiquidLib.ID.LiquidID_TLmod.Sets.CreateLiquidBucketItem[LiquidLoader.LiquidType<DarkOilLiquids>()] = Type;
+		ModLiquidLib.ID.LiquidID_TLmod.Sets.CreateLiquidBucketItem[LiquidLoader.LiquidType<OilLiquids>()] = Type;
 
 		CreativeItemSacrificesCatalog.Instance.SacrificeCountNeededByItemId[Type] = 5;
 	}
@@ -29,6 +29,6 @@ public class CrudeOilBucketItem : ModItem
 	}
 
 	public override void HoldItem(Player player) {
-		LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<DarkOilLiquids>());
+		LiquidUtils.PlaceLiquid(player, Item, LiquidLoader.LiquidType<OilLiquids>());
 	}
 }

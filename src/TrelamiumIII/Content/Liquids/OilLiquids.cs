@@ -1,43 +1,87 @@
 ﻿using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent.Liquid;
-using TrelamiumIII.Core;
+using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Core.Liquids;
 
 namespace TrelamiumIII.Content.Liquids;
 
-public class OilLiquids : ConditionalLiquid, ILiquidSurface
+/// <summary>
+///     Oil base: crude by default. Pitch is crude's heavy residue, slower to flow and harder to wade; sunflower oil is
+///     pressed, not drilled. Each carries its own surface. Every oil explodes on meeting lava.
+/// </summary>
+public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
 
-    public LiquidSurface Surface => new("Ripple")
+    private const int PitchFlowInterval = 4;
+
+    /// <summary>Crude's surface, which pitch shares.</summary>
+    public LiquidSurface Surface { get; } = new("Oil")
     {
-        ColorA = Rgb(255, 255, 104),
-        ColorB = Rgb(254, 237, 154),
-        Scale = 0.88f,
+        ColorA = Rgb(43, 33, 56),
+        ColorB = Rgb(5, 5, 5),
+        Scale = 1f,
+        Speed = 0.7f,
     };
-    public Color SurfaceTint(int i, int j)
-        => ConditionAt(i, j).SurfaceTint;
+
+    public LiquidSurface? SurfaceAt(int i, int j) => ConditionAt(i, j).Surface ?? Surface;
+
+    public Color SurfaceTint(int i, int j) => ConditionAt(i, j).SurfaceTint;
+
+    public LiquidCondition Crude { get; private set; } = null!;
+
+    public LiquidCondition Pitch { get; private set; } = null!;
 
     public LiquidCondition Sunflower { get; private set; } = null!;
-
-    public override string TextureBase => AssetReferences.Content.Liquids.BaseLiquid.KEY;
 
     public override void Load()
     {
         base.Load();
         Instance = this;
     }
+
     public override void Unload()
     {
         Instance = null!;
         base.Unload();
     }
 
+    /// <remarks>The grayscale BaseLiquid set: crude's tint matches the old dark crude sheet, and pitch darkens it further.</remarks>
     protected override void DefineConditions()
     {
-        Sunflower = AddCondition(new LiquidCondition("Sunflower") { Tint = new Color(252, 228, 137) });
+        Crude = AddCondition(new LiquidCondition("Crude") { Tint = new Color(72, 72, 74) });
+
+        Pitch = AddCondition(new LiquidCondition("Pitch")
+        {
+            Tint = new Color(22, 13, 23),
+            Strength = 0.88f,
+        });
+
+        Sunflower = AddCondition(new LiquidCondition("Sunflower")
+        {
+            Tint = new Color(252, 228, 137),
+            Surface = new LiquidSurface("Ripple")
+            {
+                ColorA = Rgb(255, 255, 104),
+                ColorB = Rgb(254, 237, 154),
+                Scale = 0.33f,
+                Speed = 1.55f
+            },
+        });
     }
+
+    /// <summary>The station's Bottled Oil + 4 Cobweb = 2 Pitch, with a bottle's worth of oil spent from the pool.</summary>
+    protected override void DefineItemReactions()
+        => AddItemReaction(Crude, new ItemReaction(ItemID.Cobweb)
+        {
+            From = Crude,
+            Amount = 4,
+            Ticks = 60,
+            Spent = SubmergedLiquidSystem.BottleVolume,
+            Product = SoluteID.Pitch,
+            ProductStack = 2,
+        });
 
     public override void SetStaticDefaults()
     {
@@ -55,25 +99,37 @@ public class OilLiquids : ConditionalLiquid, ILiquidSurface
         AllowEmitBreathBubbles = false;
     }
 
-    protected override Color MapColor(LiquidCondition condition) => Multiply(new Color(252, 228, 137), condition.Tint);
+    public override bool UpdateLiquid(int i, int j, Liquid liquid)
+    {
+        if (Liquid.quickSettle || WorldGen.gen || ConditionAt(i, j) != Pitch)
+            return true;
 
+        return (Main.GameUpdateCount + (uint)(i * 7 + j * 13)) % PitchFlowInterval == 0;
+    }
 
     protected override void OnPlayerContact(Player player, LiquidCondition condition)
     {
+        if (condition == Crude)
+        {
+            player.moveSpeed *= 0.25f;
+            return;
+        }
+
         player.moveSpeed *= 0.1f;
         player.velocity.Y = Math.Max(player.velocity.Y, -2f);
     }
 
     public override bool PreLiquidMerge(int liquidX, int liquidY, int tileX, int tileY, int otherLiquid)
     {
+        //TODO: let oil sit on top of water.
         if (otherLiquid == LiquidID.Lava)
         {
             if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-
                 int y = liquidY;
                 Tile tile = Main.tile[liquidX, liquidY];
 
+                // We grab the tile above to explode at by checking if the tile is not solid or sloped
                 if (tile.HasTile && tile.IsHalfBlock)
                 {
                     int yPos = y - 1;
@@ -87,15 +143,14 @@ public class OilLiquids : ConditionalLiquid, ILiquidSurface
                     }
                 }
 
+                // Same liquid removal dry bombs use.
                 DelegateMethods.v2_1 = new Vector2(liquidX, y);
                 DelegateMethods.f_1 = 3.5f;
                 Utils.PlotTileArea(liquidX, y, DelegateMethods.SpreadDry);
             }
 
-
             if (Main.netMode == NetmodeID.SinglePlayer)
                 ExplosionEffect(liquidX, liquidY);
-
 
             if (Main.netMode == NetmodeID.Server)
             {
@@ -106,6 +161,7 @@ public class OilLiquids : ConditionalLiquid, ILiquidSurface
                 packet.Send();
             }
         }
+
         return false;
     }
 
@@ -141,5 +197,66 @@ public class OilLiquids : ConditionalLiquid, ILiquidSurface
                 }
             }
         }
+    }
+}
+
+public class OilLiquidSplash : ModDust
+{
+    public override void OnSpawn(Dust dust)
+    {
+        dust.velocity *= 0.1f;
+        dust.velocity.Y = -0.5f;
+    }
+
+    public override bool MidUpdate(Dust dust)
+    {
+        if (dust.noGravity)
+        {
+            dust.scale += 0.03f;
+            if (dust.scale < 1f)
+            {
+                dust.velocity.Y += 0.075f;
+            }
+            dust.velocity.X *= 1.08f;
+            if (dust.velocity.X > 0f)
+            {
+                dust.rotation += 0.01f;
+            }
+            else
+            {
+                dust.rotation -= 0.01f;
+            }
+        }
+        else
+        {
+            if (!Collision.WetCollision(new Vector2(dust.position.X, dust.position.Y - 8f), 4, 4))
+            {
+                dust.scale = 0f;
+            }
+            else
+            {
+                dust.alpha += Main.rand.Next(2);
+                if (dust.alpha > 255)
+                {
+                    dust.scale = 0f;
+                }
+                dust.velocity.Y = -0.5f;
+
+                dust.alpha++;
+                dust.scale -= 0.01f;
+                dust.velocity.Y = -0.2f;
+
+                dust.velocity.X += Main.rand.Next(-10, 10) * 0.002f;
+                if (dust.velocity.X < -0.25)
+                {
+                    dust.velocity.X = -0.25f;
+                }
+                if (dust.velocity.X > 0.25)
+                {
+                    dust.velocity.X = 0.25f;
+                }
+            }
+        }
+        return true;
     }
 }

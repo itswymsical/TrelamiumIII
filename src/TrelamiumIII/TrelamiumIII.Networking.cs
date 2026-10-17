@@ -39,7 +39,7 @@ partial class TrelamiumIII
             case MessageType.LiquidMergeExplosion:
                 int x = reader.ReadInt32();
                 int y = reader.ReadInt32();
-                DarkOilLiquids.ExplosionEffect(x, y);
+                OilLiquids.ExplosionEffect(x, y);
                 break;
             case MessageType.TileCondition:
                 TileConditionSystem.ReceiveApply(reader, whoAmI);
