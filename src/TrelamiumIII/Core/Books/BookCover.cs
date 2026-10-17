@@ -75,22 +75,24 @@ public static class BookCover
     /// <summary>How far a tab tucks under the cover, so it reads as sitting behind the board.</summary>
     private const float TAB_OVERLAP = 5f;
 
-    public static Rectangle TabRect(Vector2 spreadOrigin, int index)
+    /// <param name="scale">Scale the cover was drawn at; tabs keep their size but follow the board's edge.</param>
+    public static Rectangle TabRect(Vector2 spreadOrigin, int index, float scale = 1f)
     {
-        float x = spreadOrigin.X - BookCover.COVER_MARGIN + TAB_INSET + index * (TAB_WIDTH + TAB_GAP);
-        float y = spreadOrigin.Y - BookCover.COVER_MARGIN - TAB_HEIGHT + TAB_OVERLAP;
+        float margin = BookCover.COVER_MARGIN * scale;
+        float x = spreadOrigin.X - margin + TAB_INSET + index * (TAB_WIDTH + TAB_GAP);
+        float y = spreadOrigin.Y - margin - TAB_HEIGHT + TAB_OVERLAP;
 
         return new Rectangle((int)x, (int)y, (int)TAB_WIDTH, (int)TAB_HEIGHT);
     }
 
     /// <summary>Index of the tab under the cursor, or -1.</summary>
-    public static int HitTest(Vector2 spreadOrigin, int count, Point mouse)
+    public static int HitTest(Vector2 spreadOrigin, int count, Point mouse, float scale = 1f)
     {
         for (int i = 0; i < count; i++)
         {
             // The overlapped strip belongs to the cover, not the tab, or a click meant for the
             // board's edge would register on whatever tab happens to be tucked under it.
-            Rectangle rect = TabRect(spreadOrigin, i);
+            Rectangle rect = TabRect(spreadOrigin, i, scale);
             rect.Height -= (int)TAB_OVERLAP;
 
             if (rect.Contains(mouse))
@@ -105,7 +107,8 @@ public static class BookCover
         Vector2 spreadOrigin,
         IReadOnlyList<BookTab> tabs,
         int hovered,
-        float opacity, BookPalette palette)
+        float opacity, BookPalette palette,
+        float coverScale = 1f)
     {
         Texture2D pixel = TextureAssets.MagicPixel.Value;
         DynamicSpriteFont font = FontAssets.MouseText.Value;
@@ -113,7 +116,7 @@ public static class BookCover
         for (int i = 0; i < tabs.Count; i++)
         {
             BookTab tab = tabs[i];
-            Rectangle rect = TabRect(spreadOrigin, i);
+            Rectangle rect = TabRect(spreadOrigin, i, coverScale);
             bool isHovered = i == hovered;
 
             Color fill = tab.Filled ? tab.Tint : palette.Shadow;

@@ -37,9 +37,19 @@ public interface IBookView
 /// <summary>
 ///     Owns one open book's render targets: four page targets (two leaves, two more mid-turn), redrawn live into one composite.
 /// </summary>
-public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : IDisposable
+/// <param name="density">
+///     Target pixels per page-local unit. Pages are still drawn in page-local units; a book shown magnified asks for the matching density,
+///     so its text is rasterised once at its final size rather than composed small and stretched.
+/// </param>
+public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter, float density = 1f) : IDisposable
 {
     private readonly int spreadWidth = pageWidth * 2 + gutter;
+
+    private readonly int pagePixelWidth = (int)MathF.Round(pageWidth * density);
+    private readonly int pagePixelHeight = (int)MathF.Round(pageHeight * density);
+
+    /// <summary>Where the right leaf starts in the composite, in target pixels.</summary>
+    private readonly int rightLeafPixelX = (int)MathF.Round((pageWidth + gutter) * density);
 
     private RenderTarget2D? currentLeft;
     private RenderTarget2D? currentRight;
@@ -83,12 +93,12 @@ public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : ID
             nextRight = NewPage(device);
             cover = NewPage(device);
 
-            Composite = new RenderTarget2D(device, spreadWidth, pageHeight, false, SurfaceFormat.Color, DepthFormat.None);
+            Composite = new RenderTarget2D(device, rightLeafPixelX + pagePixelWidth, pagePixelHeight, false, SurfaceFormat.Color, DepthFormat.None);
         });
     }
 
     private RenderTarget2D NewPage(GraphicsDevice device) =>
-        new(device, pageWidth, pageHeight, false, SurfaceFormat.Color, DepthFormat.None);
+        new(device, pagePixelWidth, pagePixelHeight, false, SurfaceFormat.Color, DepthFormat.None);
 
     /// <summary>Composes one frame. Call with no sprite batch open, where render targets may be swapped.</summary>
     public void Build(IBookView view)
@@ -104,9 +114,18 @@ public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : ID
             device.SetRenderTarget(cover);
             device.Clear(Color.Transparent);
 
-            BookBatch.BeginPage(spriteBatch);
-            view.DrawCover(spriteBatch);
-            spriteBatch.End();
+            BookBatch.Density = density;
+
+            try
+            {
+                BookBatch.BeginPage(spriteBatch);
+                view.DrawCover(spriteBatch);
+                spriteBatch.End();
+            }
+            finally
+            {
+                BookBatch.Density = 1f;
+            }
 
             device.SetRenderTarget(null);
             coverDrawn = true;
@@ -178,11 +197,12 @@ public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : ID
         // While closing, both leaves are on the mesh, so drawing them flat as well would double them.
         if (closing <= 0f)
         {
+            // Target pixels, not page-local units: the leaves go down 1:1 so nothing is resampled.
             if (leftFlat is not null)
                 spriteBatch.Draw(leftFlat, Vector2.Zero, Color.White);
 
             if (rightFlat is not null)
-                spriteBatch.Draw(rightFlat, new Vector2(outerSpineX, 0f), Color.White);
+                spriteBatch.Draw(rightFlat, new Vector2(rightLeafPixelX, 0f), Color.White);
         }
 
         spriteBatch.End();
@@ -245,9 +265,18 @@ public sealed class BookRenderer(int pageWidth, int pageHeight, int gutter) : ID
         device.SetRenderTarget(target);
         device.Clear(Color.Transparent);
 
-        BookBatch.BeginPage(spriteBatch);
-        view.DrawPage(spriteBatch, side, next);
-        spriteBatch.End();
+        BookBatch.Density = density;
+
+        try
+        {
+            BookBatch.BeginPage(spriteBatch);
+            view.DrawPage(spriteBatch, side, next);
+            spriteBatch.End();
+        }
+        finally
+        {
+            BookBatch.Density = 1f;
+        }
 
         device.SetRenderTarget(null);
     }
