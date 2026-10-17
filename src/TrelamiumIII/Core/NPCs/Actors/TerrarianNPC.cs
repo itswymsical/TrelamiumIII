@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Graphics;
+using Terraria.GameContent.Bestiary;
 using Terraria.ModLoader.IO;
 
 namespace TrelamiumIII.Core.NPCs.Actors;
@@ -68,6 +69,13 @@ public abstract class TerrarianNPC : WorldNPC
         // Last, so the pose reflects this tick's final position and a swing started
         // this tick shows its first animation frame immediately.
         Puppet.Update();
+    }
+
+    /// <summary>Swaps in <see cref="TerrarianEntryIcon"/>; the vanilla icon cannot draw a player model.</summary>
+    public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry)
+    {
+        base.SetBestiary(database, bestiaryEntry);
+        bestiaryEntry.Icon = new TerrarianEntryIcon(Type);
     }
 
     // Appearance
