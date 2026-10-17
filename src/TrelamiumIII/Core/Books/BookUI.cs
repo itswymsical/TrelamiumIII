@@ -55,6 +55,9 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
 
     public virtual int Gutter => 6;
 
+    /// <summary>Magnification of the spread on screen. Pages are still laid out at <see cref="PageWidth" /> by <see cref="PageHeight" />; their targets are rendered at this density.</summary>
+    protected virtual float RenderScale => 1f;
+
     /// <summary>Total spreads in this book. Read every frame, so it may grow as content unlocks.</summary>
     protected abstract int SpreadCount { get; }
 
@@ -87,7 +90,7 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
 
     protected void BeginShowing()
     {
-        renderer = new BookRenderer(PageWidth, PageHeight, Gutter);
+        renderer = new BookRenderer(PageWidth, PageHeight, Gutter, RenderScale);
         renderer.Initialize();
 
         BookRenderSystem.Register(this);
@@ -251,7 +254,7 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
 
         // Tabs are resolved first and swallow the click either way, so a right-click meant to clear
         // one does not shut the book instead.
-        hoveredTab = BookCover.HitTest(SpreadOrigin(), Tabs.Count, mouse);
+        hoveredTab = BookCover.HitTest(SpreadOrigin(), Tabs.Count, mouse, RenderScale);
 
         if (hoveredTab >= 0)
         {
@@ -352,11 +355,13 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
         IReadOnlyList<BookTab> tabs = Tabs;
 
         if (tabs.Count > 0)
-            BookCover.DrawBookTabs(spriteBatch, origin, tabs, hoveredTab, Opacity, BookPalette);
+            BookCover.DrawBookTabs(spriteBatch, origin, tabs, hoveredTab, Opacity, BookPalette, RenderScale);
 
-        BookCover.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity, BookPalette);
+        BookCover.Draw(spriteBatch, origin, PageWidth, PageHeight, Gutter, Opacity, BookPalette, RenderScale);
 
-        spriteBatch.Draw(renderer.Composite, origin, Color.White * Opacity);
+        // The targets are already at on-screen resolution (see BeginShowing), so the spread goes down 1:1 on a
+        // whole pixel; any fraction in the position or the scale would filter the text soft again.
+        spriteBatch.Draw(renderer.Composite, new Vector2((int)origin.X, (int)origin.Y), Color.White * Opacity);
 
         DrawHoverTooltip(spriteBatch);
     }
@@ -401,11 +406,11 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
 
     protected Vector2 SpreadOrigin()
     {
-        int totalWidth = PageWidth * 2 + Gutter;
+        float totalWidth = (PageWidth * 2 + Gutter) * RenderScale;
 
         return new Vector2(
             Main.screenWidth / 2f - totalWidth / 2f,
-            Main.screenHeight / 2f - PageHeight / 2f);
+            Main.screenHeight / 2f - PageHeight * RenderScale / 2f);
     }
 
     protected Rectangle PageRect(BookSide side)
@@ -413,9 +418,9 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
         Vector2 origin = SpreadOrigin();
 
         if (side == BookSide.Right)
-            origin.X += PageWidth + Gutter;
+            origin.X += (PageWidth + Gutter) * RenderScale;
 
-        return new Rectangle((int)origin.X, (int)origin.Y, PageWidth, PageHeight);
+        return new Rectangle((int)origin.X, (int)origin.Y, (int)(PageWidth * RenderScale), (int)(PageHeight * RenderScale));
     }
 
     /// <summary>Cursor in page-local space, or null when it is not over that leaf.</summary>
@@ -427,7 +432,7 @@ public abstract class BookUI : IInGameNotification, IBookView, IOpenBook
         if (!rect.Contains(mouse))
             return null;
 
-        return new Vector2(mouse.X - rect.X, mouse.Y - rect.Y);
+        return new Vector2(mouse.X - rect.X, mouse.Y - rect.Y) / RenderScale;
     }
 
     #endregion

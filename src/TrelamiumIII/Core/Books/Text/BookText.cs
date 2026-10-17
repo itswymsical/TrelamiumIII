@@ -272,8 +272,15 @@ public static class BookText
             out _,
             -1f);
 
-    private static Vector2 Snap(Vector2 position) =>
-        new((float)Math.Round(position.X), (float)Math.Round(position.Y));
+    /// <summary>Rounds to whole target pixels, which are <see cref="BookBatch.Density" /> per page-local unit.</summary>
+    private static Vector2 Snap(Vector2 position)
+    {
+        float density = BookBatch.Density;
+
+        return new Vector2(
+            (float)Math.Round(position.X * density) / density,
+            (float)Math.Round(position.Y * density) / density);
+    }
 
     /// <summary>A single positioned run: one word, or one atomic snippet.</summary>
     private readonly record struct TextPiece(TextSnippet Snippet, int SnippetIndex, float X, float Width);

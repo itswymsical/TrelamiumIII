@@ -39,6 +39,8 @@ public sealed class IlluminanceBookUI : BookUI
     public override int PageWidth => PAGE_WIDTH;
 
     public override int PageHeight => PAGE_HEIGHT;
+
+    protected override float RenderScale => BasicBookUI.READING_SCALE;
     public override BookPalette BookPalette => new BookPalette()
     {
         Cover = new Color(2, 19, 27),

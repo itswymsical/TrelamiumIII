@@ -5,6 +5,7 @@ using Terraria.Localization;
 using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Layout.Blocks;
 using TrelamiumIII.Core.Books.Text;
+using TrelamiumIII.Core.UI.AlchemyAlmanac;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
@@ -15,6 +16,9 @@ public sealed class BasicBookUI : BookUI
 {
     public const int PAGE_WIDTH = 290;
     public const int PAGE_HEIGHT = 430;
+
+    /// <summary>Magnifies a lore spread to the on-screen height of the Alchemist's Almanac.</summary>
+    public const float READING_SCALE = AlchemyAlmanacUI.PAGE_HEIGHT * AlchemyAlmanacUI.UI_SCALE / PAGE_HEIGHT;
 
     private const float MARGIN_X = 24f;
     private const float MARGIN_TOP = 26f;
@@ -37,6 +41,8 @@ public sealed class BasicBookUI : BookUI
     public override int PageWidth => PAGE_WIDTH;
 
     public override int PageHeight => PAGE_HEIGHT;
+
+    protected override float RenderScale => READING_SCALE;
 
     private BasicBookUI(BookDefinition definition)
     {
