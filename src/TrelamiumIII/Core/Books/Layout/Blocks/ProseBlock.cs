@@ -100,7 +100,7 @@ public sealed class ProseBlock : BookBlock
                 line,
                 Style.Face,
                 position,
-                Style.Color,
+                Style.DrawColor,
                 Style.Scale,
                 inner.Width - indent,
                 Style.Align);
@@ -187,7 +187,7 @@ public sealed class ProseBlock : BookBlock
         // A drop cap eats its own letter: it is drawn separately, so the flowed text starts after it.
         string? body = cap != '\0' ? source![1..].TrimStart() : source;
 
-        lines = BookText.Layout(body, Style.Face, width, Style.Scale, Style.Color, leading, leadingLines);
+        lines = BookText.Layout(body, Style.Face, width, Style.Scale, Style.DrawColor, leading, leadingLines);
         layoutWidth = width;
 
         return lines;
@@ -230,7 +230,7 @@ public sealed class ProseBlock : BookBlock
             text,
             position.X,
             position.Y - lift,
-            Style.Color,
+            Style.DrawColor,
             Color.Transparent,
             Vector2.Zero,
             scale);

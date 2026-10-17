@@ -3,27 +3,21 @@ using Terraria.GameContent;
 
 namespace TrelamiumIII.Core.Books;
 
-/// <summary>Page paper, drawn procedurally unless <see cref="Texture" /> is set (then mirrored on the left leaf).</summary>
+/// <summary>Page paper, drawn procedurally unless the palette names a <see cref="BookPalette.PageTexture" /> (then mirrored on the left leaf).</summary>
 public static class PagePaper
 {
-    private static readonly Color Base = new(235, 234, 211);
-    private static readonly Color Edge = new(150, 128, 92);
-
     /// <summary>Width of the shading that falls away from the spine.</summary>
     private const int GUTTER_SHADE = 26;
 
     /// <summary>Width of the shading along the outer edges.</summary>
     private const int EDGE_SHADE = 8;
 
-    /// <summary>Optional paper texture. Null draws the procedural fallback.</summary>
-    public static Asset<Texture2D>? Texture { get; set; }
-
     public static void Draw(SpriteBatch spriteBatch, int width, int height, BookSide side, BookPalette palette)
     {
-        if (Texture is { Value: { } texture })
+        if (palette.PageTexture is { } path)
         {
             spriteBatch.Draw(
-                texture,
+                ModContent.Request<Texture2D>(path, AssetRequestMode.ImmediateLoad).Value,
                 new Rectangle(0, 0, width, height),
                 null,
                 Color.White,

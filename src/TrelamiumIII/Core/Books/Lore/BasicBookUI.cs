@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ReLogic.Content;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.Localization;
@@ -44,9 +45,14 @@ public sealed class BasicBookUI : BookUI
 
     protected override float RenderScale => READING_SCALE;
 
+    private readonly BookPalette palette;
+
+    public override BookPalette BookPalette => palette;
+
     private BasicBookUI(BookDefinition definition)
     {
         Key = definition.Key;
+        palette = definition.Palette;
         content = definition.Build();
 
         var metrics = new PageMetrics(PAGE_WIDTH, PAGE_HEIGHT, MARGIN_X, MARGIN_TOP, MARGIN_BOTTOM);
@@ -148,7 +154,7 @@ public sealed class BasicBookUI : BookUI
             tabs.Add(new BookTab(
                 Language.GetTextValue(TrelamiumIII.Instance.GetLocalizationKey("LoreUI.ContentsTab")),
                 true,
-                new Color(96, 66, 34),
+                palette.Tab,
                 Language.GetTextValue(TrelamiumIII.Instance.GetLocalizationKey("LoreUI.ContentsTooltip"))));
         }
 
@@ -312,7 +318,7 @@ public sealed class BasicBookUI : BookUI
     }
 
     /// <summary>The page number, set in the outer bottom corner.</summary>
-    private static void DrawFolio(SpriteBatch spriteBatch, int pageIndex, BookSide side)
+    private void DrawFolio(SpriteBatch spriteBatch, int pageIndex, BookSide side)
     {
         string folio = (pageIndex + 1).ToString();
         const float scale = 0.62f;
@@ -328,7 +334,7 @@ public sealed class BasicBookUI : BookUI
             folio,
             x,
             y,
-            new Color(120, 98, 74),
+            palette.FolioInk,
             Color.Transparent,
             Vector2.Zero,
             scale);
@@ -340,10 +346,13 @@ public sealed class BasicBookUI : BookUI
         // the spread show through as the board itself.
         Texture2D pixel = TextureAssets.MagicPixel.Value;
 
-        spriteBatch.Draw(pixel, new Rectangle(0, 0, PAGE_WIDTH, PAGE_HEIGHT), new Color(58, 36, 18));
+        spriteBatch.Draw(pixel, new Rectangle(0, 0, PAGE_WIDTH, PAGE_HEIGHT), palette.Cover);
 
-        var gold = new Color(168, 132, 74);
+        Color gold = palette.CoverInk;
         var frame = new Rectangle(18, 22, PAGE_WIDTH - 36, PAGE_HEIGHT - 44);
+
+        if (palette.CoverArt is { } art)
+            spriteBatch.Draw(ModContent.Request<Texture2D>(art, AssetRequestMode.ImmediateLoad).Value, frame, Color.White);
 
         Layout.Blocks.ImageBlock.DrawBorder(spriteBatch, frame, gold * 0.8f);
 

@@ -63,7 +63,7 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
         if (Framed)
         {
             var border = new Rectangle((int)x, (int)y, (int)outerW, (int)(plate.Y + Matting * 2f));
-            DrawBorder(spriteBatch, border, Style.Color * 0.35f);
+            DrawBorder(spriteBatch, border, Style.DrawColor * 0.35f);
             x += Matting;
             y += Matting;
         }
@@ -94,7 +94,7 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
                 line,
                 CaptionStyle.Face,
                 new Vector2(inner.X, captionY),
-                CaptionStyle.Color,
+                CaptionStyle.DrawColor,
                 CaptionStyle.Scale,
                 inner.Width,
                 CaptionStyle.Align);
@@ -129,7 +129,7 @@ public sealed class ImageBlock(Asset<Texture2D> texture, string? caption = null)
         if (captionLines is not null && Math.Abs(captionWidth - width) < 0.5f)
             return captionLines;
 
-        captionLines = BookText.Layout(caption, CaptionStyle.Face, width, CaptionStyle.Scale, CaptionStyle.Color);
+        captionLines = BookText.Layout(caption, CaptionStyle.Face, width, CaptionStyle.Scale, CaptionStyle.DrawColor);
         captionWidth = width;
 
         return captionLines;

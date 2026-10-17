@@ -3,12 +3,28 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
+/// <summary>The series binding: deep teal boards around the Illuminance cover art.</summary>
+internal static class IlluminanceSeries
+{
+    public static BookPalette Palette => BookPalette.Default() with
+    {
+        Cover = new Color(2, 19, 27),
+        Spine = new Color(2, 19, 27),
+        Shadow = new Color(3, 42, 59),
+        Trim = new Color(30, 86, 113),
+        CoverArt = Assets.Textures.BookCoverArt.IlluminanceCover.KEY,
+    };
+}
+
 /// <summary>
 ///     Laine L.'s <em>Illuminance</em>, a scholar's memoir: the shape a long book takes, one Chapter call plus prose per chapter.
 /// </summary>
 public sealed class IlluminanceBook : ModLoreBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceI";
+
+    protected override BookPalette Palette => IlluminanceSeries.Palette;
+
     protected override void Build(BookBuilder book)
     {
         // Front matter: the title, then the table of contents. Contents may sit anywhere; it measures
@@ -55,6 +71,8 @@ public sealed class IlluminanceBook : ModLoreBook
 public sealed class IlluminanceBook2 : ModLoreBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceII";
+
+    protected override BookPalette Palette => IlluminanceSeries.Palette;
 
     protected override void Build(BookBuilder book)
     {
