@@ -42,7 +42,7 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
 
         foreach (BookTextLine line in laid)
         {
-            BookText.DrawLine(spriteBatch, line, Style.Face, new Vector2(inner.X, y), Style.Color, Style.Scale, inner.Width, Style.Align);
+            BookText.DrawLine(spriteBatch, line, Style.Face, new Vector2(inner.X, y), Style.DrawColor, Style.Scale, inner.Width, Style.Align);
             y += advance;
         }
 
@@ -54,7 +54,7 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
         spriteBatch.Draw(
             TextureAssets.MagicPixel.Value,
             new Rectangle((int)inner.X, (int)y, (int)inner.Width, (int)RULE_THICKNESS),
-            Style.Color * 0.45f);
+            Style.DrawColor * 0.45f);
     }
 
     private List<BookTextLine> LinesFor(float width)
@@ -62,7 +62,7 @@ public sealed class HeadingBlock(string? text, bool rule = true) : BookBlock
         if (lines is not null && Math.Abs(layoutWidth - width) < 0.5f)
             return lines;
 
-        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.Color);
+        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.DrawColor);
         layoutWidth = width;
 
         return lines;
@@ -93,7 +93,7 @@ public sealed class RuleBlock : BookBlock
                 (int)inner.Y,
                 (int)span,
                 (int)Math.Max(1f, Thickness)),
-            Style.Color * Opacity);
+            Style.DrawColor * Opacity);
     }
 }
 

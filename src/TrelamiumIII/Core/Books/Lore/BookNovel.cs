@@ -22,6 +22,9 @@ public sealed class BookDefinition
 {
     public required string Key { get; init; }
 
+    /// <summary>The book's colours and surfaces: cover, paper and the inks its styles didn't override.</summary>
+    public BookPalette Palette { get; init; } = BookPalette.Default();
+
     // Not `required`: the modifier would have to be as visible as the type, and these are only ever
     // set by the builder in this file.
     internal IReadOnlyList<BlockFactory> Blocks { get; init; } = [];
@@ -95,13 +98,29 @@ public sealed class BookBuilder(string key)
     /// <summary>Typeface stamped onto blocks declared from here on. Null leaves them on vanilla.</summary>
     private BookTypeface? typeface;
 
+    private BookPalette palette = BookPalette.Default();
+
     /// <summary>Index the next block will take. Decorations anchor to it.</summary>
     private int LastBlockIndex => blocks.Count - 1;
 
-    /// <summary>Nested builder for a panel or section, carrying the enclosing typeface inward.</summary>
-    internal BookBuilder(string key, BookTypeface? inherited) : this(key) => typeface = inherited;
+    /// <summary>Nested builder for a panel or section, carrying the enclosing typeface and palette inward.</summary>
+    internal BookBuilder(string key, BookTypeface? inherited, BookPalette inheritedPalette) : this(key)
+    {
+        typeface = inherited;
+        palette = inheritedPalette;
+    }
 
     #region Type
+
+    /// <summary>
+    ///     Sets the book's colours. Call before any block: styles take their ink from it as they are declared, as with
+    ///     <see cref="Typeface" />. Styles that name a <see cref="BlockStyle.Color" /> keep it.
+    /// </summary>
+    public BookBuilder Palette(BookPalette bookPalette)
+    {
+        palette = bookPalette;
+        return this;
+    }
 
     /// <summary>
     ///     Sets the typeface for blocks declared after this, until the next call (before any block, it's the book's). Use
@@ -129,13 +148,18 @@ public sealed class BookBuilder(string key)
     }
 
     /// <summary>
-    ///     Picks a block's style and stamps the current typeface. Call at declaration, not in the factory, which runs later with the wrong typeface.
+    ///     Picks a block's style and stamps the current typeface and palette ink. Call at declaration, not in the factory, which runs
+    ///     later with the wrong typeface.
     /// </summary>
     private BlockStyle Resolve(BlockStyle? style, BlockStyle fallback)
     {
         BlockStyle resolved = style ?? fallback;
 
-        return resolved.Typeface is null ? resolved with { Typeface = typeface } : resolved;
+        return resolved with
+        {
+            Typeface = resolved.Typeface ?? typeface,
+            Color = resolved.Color ?? palette.InkFor(resolved.InkRole),
+        };
     }
 
     #endregion
@@ -249,6 +273,7 @@ public sealed class BookBuilder(string key)
         BlockStyle? style = null)
     {
         BlockStyle resolved = Resolve(style, BlockStyle.Body) with { Align = align };
+        BlockStyle caption = Resolve(null, BlockStyle.Caption);
 
         blocks.Add((text, _) => new ImageBlock(texture, text.Get(captionKey))
         {
@@ -256,6 +281,7 @@ public sealed class BookBuilder(string key)
             Framed = framed,
             Frame = frame,
             Style = resolved,
+            CaptionStyle = caption,
         });
 
         return this;
@@ -264,7 +290,7 @@ public sealed class BookBuilder(string key)
     /// <summary>A bordered aside holding its own blocks.</summary>
     public BookBuilder Panel(Action<BookBuilder> contents, float padding = 8f, BlockStyle? style = null)
     {
-        var inner = new BookBuilder(key, typeface);
+        var inner = new BookBuilder(key, typeface, palette);
         contents(inner);
 
         List<BlockFactory> children = inner.blocks;
@@ -304,13 +330,14 @@ public sealed class BookBuilder(string key)
     {
         int target = anchorBlock ?? LastBlockIndex;
         BlockStyle handStyle = Resolve(style, BlockStyle.Hand);
+        Color notePaper = paper ?? palette.NotePaper;
 
         decorations.Add(text => new BookDecoration
         {
             Content = new StickyNoteBlock(text.Get(key))
             {
                 Style = handStyle,
-                Paper = paper ?? new Color(232, 214, 142),
+                Paper = notePaper,
             },
             AnchorBlockIndex = target,
             Anchor = anchor,
@@ -356,6 +383,7 @@ public sealed class BookBuilder(string key)
         var definition = new BookDefinition
         {
             Key = key,
+            Palette = palette,
             Blocks = blocks,
             Decorations = decorations,
             Chapters = chapters,

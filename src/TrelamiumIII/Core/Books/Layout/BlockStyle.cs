@@ -42,7 +42,13 @@ public readonly record struct BlockStyle()
     /// <summary>Additional inset applied to the first line only. Negative gives a hanging indent.</summary>
     public float FirstLineIndent { get; init; } = 0f;
 
-    public Color Color { get; init; } = new(37, 38, 38);
+    /// <summary>Explicit ink. Null takes the book palette's ink for <see cref="InkRole" />, stamped in when the block is declared.</summary>
+    public Color? Color { get; init; } = null;
+
+    public InkRole InkRole { get; init; } = InkRole.Body;
+
+    /// <summary>The ink to draw with; a style no book has stamped falls back to the default palette.</summary>
+    public Color DrawColor => Color ?? BookPalette.Default().InkFor(InkRole);
 
     /// <summary>Enlarges the opening letter across the first lines; ignored if the block doesn't start with a letter.</summary>
     public bool DropCap { get; init; } = false;
@@ -55,7 +61,7 @@ public readonly record struct BlockStyle()
     {
         Font = BookFont.Display,
         Scale = 0.62f,
-        Color = new Color(78, 48, 24),
+        InkRole = InkRole.Heading,
         SpaceBefore = 0f,
         SpaceAfter = 2f,
     };
@@ -64,7 +70,7 @@ public readonly record struct BlockStyle()
     public static BlockStyle Quote => new()
     {
         Scale = 0.76f,
-        Color = new Color(33, 33, 33),
+        InkRole = InkRole.Quote,
         IndentLeft = 20f,
         IndentRight = 14f,
         SpaceBefore = 4f,
@@ -75,7 +81,7 @@ public readonly record struct BlockStyle()
     public static BlockStyle Caption => new()
     {
         Scale = 0.68f,
-        Color = new Color(66, 66, 66),
+        InkRole = InkRole.Caption,
         Align = TextAlign.Center,
         LineSpacing = 1f,
         SpaceBefore = 3f,
@@ -87,7 +93,7 @@ public readonly record struct BlockStyle()
     {
         Font = BookFont.Hand,
         Scale = 0.5f,
-        Color = new Color(46, 32, 99),
+        InkRole = InkRole.Hand,
         LineSpacing = 1f,
     };
 }

@@ -7,7 +7,7 @@ namespace TrelamiumIII.Core.Books.Lore.Definitions;
 public sealed class CorridorOfDarknessBook : ModLoreBook
 {
     public override string Key => "Lore.CorridorOfDarkness";
-
+    protected override BookPalette Palette => BookPalette.Default() with { Cover = new Color(23, 12, 78), PageColor = Color.Black, Ink = new Color(255, 255, 255) };
     protected override void Build(BookBuilder book) => book
         .Heading("Title")
         .Chapter("Chapter")

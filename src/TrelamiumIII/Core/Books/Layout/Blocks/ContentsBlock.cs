@@ -108,7 +108,7 @@ public sealed class ContentsBlock : BookBlock
                 header,
                 inner.X,
                 y,
-                Style.Color,
+                Style.DrawColor,
                 Color.Transparent,
                 Vector2.Zero,
                 Style.Scale);
@@ -143,7 +143,7 @@ public sealed class ContentsBlock : BookBlock
         }
 
         var font = BookText.FontFor(Style.Face);
-        Color color = hovered ? Style.Color : Style.Color * 0.88f;
+        Color color = hovered ? Style.DrawColor : Style.DrawColor * 0.88f;
 
         float indent = entry.Depth * DEPTH_INDENT;
         float titleX = row.X + indent;

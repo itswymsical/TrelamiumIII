@@ -20,7 +20,7 @@ public class IlluminanceBookItem : ModItem
 
     public override bool? UseItem(Player player)
     {
-        IlluminanceBookUI.Open("IlluminanceSeries.IlluminanceI");
+        BasicBookUI.Open("IlluminanceSeries.IlluminanceI");
         return true;
     }
 }

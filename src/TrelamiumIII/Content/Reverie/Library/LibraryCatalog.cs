@@ -19,7 +19,7 @@ public enum LibraryCategory
 /// A book Edith can lend. <paramref name="LoreKey"/> is the <see cref="ModLoreBook"/> it opens; placeholder entries borrow
 /// an existing one. The cover is a mod texture path or, when <paramref name="CoverItem"/> is set, a vanilla item's art.
 /// </summary>
-public sealed record LibraryBook(string Id, LibraryCategory Category, string LoreKey, string? CoverPath = null, int CoverItem = 0, bool Illuminance = false)
+public sealed record LibraryBook(string Id, LibraryCategory Category, string LoreKey, string? CoverPath = null, int CoverItem = 0)
 {
     /// <summary> The catalog's title when it has one, otherwise the lore book's own. </summary>
     public string Title => Language.Exists(Key("Title"))
@@ -42,13 +42,7 @@ public sealed record LibraryBook(string Id, LibraryCategory Category, string Lor
         return ModContent.Request<Texture2D>(CoverPath!, ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
     }
 
-    public void Open()
-    {
-        if (Illuminance)
-            IlluminanceBookUI.Open(LoreKey);
-        else
-            BasicBookUI.Open(LoreKey);
-    }
+    public void Open() => BasicBookUI.Open(LoreKey);
 }
 
 /// <summary> Every book in Reverie, by category. Titles and blurbs live under <c>Mods.TrelamiumIII.Library.Books</c>. </summary>
@@ -64,8 +58,8 @@ public static class LibraryCatalog
 
     public static readonly IReadOnlyList<LibraryBook> Books =
     [
-        new("IlluminanceI", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceI", IlluminanceCover, Illuminance: true),
-        new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover, Illuminance: true),
+        new("IlluminanceI", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceI", IlluminanceCover),
+        new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover),
         new("RootAndReason", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.Book),
         new("QuietSeasons", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.SpellTome),
         new("WeightOfLight", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.MagnetSphere),

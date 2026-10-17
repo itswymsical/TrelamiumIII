@@ -139,7 +139,7 @@ public sealed class StickyNoteBlock(string? text) : BookBlock
                 line,
                 Style.Face,
                 new Vector2(inner.X + Padding, y),
-                Style.Color,
+                Style.DrawColor,
                 Style.Scale,
                 contentWidth,
                 Style.Align);
@@ -153,7 +153,7 @@ public sealed class StickyNoteBlock(string? text) : BookBlock
         if (lines is not null && Math.Abs(layoutWidth - width) < 0.5f)
             return lines;
 
-        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.Color);
+        lines = BookText.Layout(text, Style.Face, width, Style.Scale, Style.DrawColor);
         layoutWidth = width;
 
         return lines;
