@@ -1,6 +1,10 @@
 ﻿using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent.Bestiary;
+using Terraria.GameContent.ItemDropRules;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Items.Quest;
+using TrelamiumIII.Content.Jobs;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.NPCs.Underground;
@@ -70,23 +74,23 @@ public class Scrunglepuff : ModNPC
         NPC.aiStyle = -1;
     }
 
-    //public override float SpawnChance(NPCSpawnInfo spawnInfo)
-    //{
-    //    //if (spawnInfo.PlayerSafe || spawnInfo.Water)
-    //    //    return 0f;
+    /// <summary>
+    ///     Underground, out of water, and half as often in the glowing mushroom biome as in other caves. More common while
+    ///     Argie's fungus hunt still wants puffballs, which only works where the job lives: singleplayer, since a server
+    ///     never sees a client's jobs.
+    /// </summary>
+    public override float SpawnChance(NPCSpawnInfo spawnInfo)
+    {
+        if (spawnInfo.PlayerSafe || spawnInfo.Water || spawnInfo.Player.ZoneDungeon || spawnInfo.Player.ZoneLihzhardTemple)
+            return 0f;
 
-    //    bool validZone = spawnInfo.Player.ZoneDirtLayerHeight || spawnInfo.Player.ZoneRockLayerHeight;
-    //    if (!validZone)
-    //        return 0f;
+        if (!spawnInfo.Player.ZoneDirtLayerHeight && !spawnInfo.Player.ZoneRockLayerHeight)
+            return 0f;
 
-    //    var missionPlayer = spawnInfo.Player.GetModPlayer<MissionPlayer>();
-    //    var mission = missionPlayer.GetOrCreateMission(MissionID.PuffballHunt);
+        float chance = MycologyHunt.WantsPuffballs(spawnInfo.Player) ? 0.35f : 0.06f;
 
-    //    if (mission?.Status == MissionStatus.Locked || mission?.Progress == MissionProgress.Inactive)
-    //        return 0f;
-
-    //    return mission.Progress == MissionProgress.Ongoing ? 0.95f : 0.25f;
-    //}
+        return spawnInfo.Player.ZoneGlowshroom ? chance * 0.5f : chance;
+    }
 
     public override void OnSpawn(IEntitySource source)
     {
@@ -229,10 +233,11 @@ public class Scrunglepuff : ModNPC
         }
     }
 
-    //public override void ModifyNPCLoot(NPCLoot npcLoot)
-    //{
-    //    npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<PuffballItem>(), 1));
-    //}
+    public override void ModifyNPCLoot(NPCLoot npcLoot)
+    {
+        npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<PuffballItem>(), 1, 1, 2));
+        npcLoot.Add(ItemDropRule.ByCondition(new InGlowingMushroomBiome(), ModContent.ItemType<SporeSample>(), 2, 1, 2));
+    }
 
     public override void FindFrame(int frameHeight)
     {

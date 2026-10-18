@@ -97,6 +97,15 @@ public static class SpeakerRegistry
 
         Register(new SpeakerProfile
         {
+            Id = "Argie",
+            FrameCount = 1,
+            Font = TrelamiumFonts.PatrickHand,
+            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Argie.Speech.Asset]),
+            Color = new(255, 110, 80),
+        });
+
+        Register(new SpeakerProfile
+        {
             Id = "Permafrost",
             FrameCount = 1,
             Font = TrelamiumFonts.AndikaBoldItalic,

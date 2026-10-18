@@ -31,7 +31,10 @@ public class SurfacePlantPass : GenPass
                 }
                 if (WorldGen.genRand.NextBool(80))
                 {
-                    GrowBloodtoothFungus(x, y);
+                    GrowEvilFungus(x, y, TileID.CrimsonGrass,
+                        ModContent.TileType<BloodtoothFungusTileSmall>(), ModContent.TileType<BloodtoothFungusTileSpores>(), ModContent.TileType<BloodtoothFungusTileLarge>());
+                    GrowEvilFungus(x, y, TileID.CorruptGrass,
+                        ModContent.TileType<IndigoCapTileSmall>(), ModContent.TileType<IndigoCapTileSpores>(), ModContent.TileType<IndigoCapTileLarge>());
                 }
                 if (WorldGen.genRand.NextBool(125))
                 {
@@ -148,48 +151,28 @@ public class SurfacePlantPass : GenPass
         }
     }
 
-    private void GrowBloodtoothFungus(int x, int y)
+    /// <summary>One evil biome's fungus on its own grass: a large cluster where there is room, else a cap or spores.</summary>
+    private void GrowEvilFungus(int x, int y, int grassType, int smallType, int sporesType, int largeType)
     {
         Tile tile = Framing.GetTileSafely(x, y);
         Tile tileAbove = Framing.GetTileSafely(x, y - 1);
-        if (!tile.HasTile) return;
-        bool validTile =
-            tile.TileType == TileID.CrimsonGrass || tile.type == TileID.CorruptGrass;
-        if (!validTile) return;
-        if (validTile && !tileAbove.HasTile && !tile.LeftSlope && !tile.RightSlope && !tile.IsHalfBlock)
-        {
-            if (Main.rand.NextBool(2))
-            {
-                if (HasSpace_Plant(x, y))
-                {
-                    WorldGen.PlaceTile(x, y - 1, ModContent.TileType<BloodtoothFungusTileSmall>(), mute: true);
-                    if (Main.netMode == NetmodeID.Server)
-                    {
-                        NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
-                    }
-                }
-            }
-            else
-            {
-                if (HasSpace_Plant(x, y))
-                {
-                    WorldGen.PlaceTile(x, y - 1, ModContent.TileType<BloodtoothFungusTileSpores>(), mute: true);
-                    if (Main.netMode == NetmodeID.Server)
-                    {
-                        NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
-                    }
-                }
-            }
 
-            if (HasSpace_3x2(x, y))
-            {
-                WorldGen.PlaceTile(x, y - 1, ModContent.TileType<BloodtoothFungusTileLarge>(), mute: true);
-                if (Main.netMode == NetmodeID.Server)
-                {
-                    NetMessage.SendTileSquare(-1, x, y - 1, 1, TileChangeType.None);
-                }
-            }
-        }
+        if (!tile.HasTile || tile.TileType != grassType || tileAbove.HasTile || tile.LeftSlope || tile.RightSlope || tile.IsHalfBlock)
+            return;
+
+        int type;
+
+        if (WorldGen.genRand.NextBool(4) && HasSpace_3x2(x, y))
+            type = largeType;
+        else if (HasSpace_Plant(x, y))
+            type = WorldGen.genRand.NextBool(2) ? smallType : sporesType;
+        else
+            return;
+
+        WorldGen.PlaceTile(x, y - 1, type, mute: true);
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendTileSquare(-1, x - 1, y - 2, 3, 2, TileChangeType.None);
     }
 
     private bool HasSpace_3x2(int x, int y)

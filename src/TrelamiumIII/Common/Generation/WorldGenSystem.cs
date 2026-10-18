@@ -69,6 +69,7 @@ public class WorldGenSystem : ModSystem
             tasks.Insert(oilIndex + 5, new NitreCavePass());
             tasks.Insert(oilIndex + 6, new SilvianHousePass());
             tasks.Insert(oilIndex + 7, new AbandonedCabinPass());
+            tasks.Insert(oilIndex + 8, new ArgieLabPass());
         }
     }
 }

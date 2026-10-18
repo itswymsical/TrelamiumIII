@@ -28,10 +28,10 @@ public class SporadicSlime : ModNPC
     private const float MAX_FALL_SPEED = 10f;
 
     // Synced state
-    private int variantType = NPCID.BlueSlime;
+    protected int variantType = NPCID.BlueSlime;
 
     // Local state
-    private Vector2 squishScale = Vector2.One;
+    protected Vector2 squishScale = Vector2.One;
     private int groundPoundCooldown;
     private int groundPoundPhase;
     private float groundPoundTimer;
@@ -73,12 +73,14 @@ public class SporadicSlime : ModNPC
 
     public override void OnSpawn(IEntitySource source)
     {
-        variantType = VariantPool[Main.rand.Next(VariantPool.Length)];
+        variantType = PickVariant();
         CopyVariantStats();
         NPC.netUpdate = true;
     }
 
-    private void CopyVariantStats()
+    protected virtual int PickVariant() => VariantPool[Main.rand.Next(VariantPool.Length)];
+
+    protected virtual void CopyVariantStats()
     {
         NPC reference = new NPC();
         reference.SetDefaults(variantType);
@@ -370,46 +372,58 @@ public class SporadicSlime : ModNPC
         }
     }
 
+    protected virtual Texture2D BodyTexture => TextureAssets.Npc[NPCID.BlueSlime].Value;
+
+    /// <summary>The body's frame in <paramref name="texture" />, which may not be the texture the NPC frames against.</summary>
+    protected virtual Rectangle BodyFrame(Texture2D texture) => NPC.frame;
+
+    protected virtual Color BodyColor(Color drawColor)
+    {
+        Color color = NPC.color;
+        color.R = (byte)(color.R * drawColor.R / 255);
+        color.G = (byte)(color.G * drawColor.G / 255);
+        color.B = (byte)(color.B * drawColor.B / 255);
+        color.A = 175;
+
+        return color;
+    }
+
+    protected virtual Asset<Texture2D>[] ChunkAssets =>
+    [
+        AssetReferences.Content.Fungore.Sporeclot_Gore_1.Asset,
+        AssetReferences.Content.Fungore.Sporeclot_Gore_2.Asset,
+        Main.Assets.Request<Texture2D>($"Images/Item_{ItemID.Mushroom}"),
+    ];
+
+    protected virtual Color ChunkColor(Color drawColor) => drawColor * 0.85f;
+
     public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        Vector2 origin = NPC.frame.Size() / 2f;
         Vector2 drawPos = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
 
-        Color color = drawColor * 0.85f;
-
-        DrawMushroomChunks(drawPos, color);
+        DrawMushroomChunks(drawPos, ChunkColor(drawColor));
 
         return false;
     }
 
     public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        Texture2D texture = TextureAssets.Npc[NPCID.BlueSlime].Value;
-        Vector2 origin = NPC.frame.Size() / 2f;
+        Texture2D texture = BodyTexture;
+        Rectangle frame = BodyFrame(texture);
+        Vector2 origin = frame.Size() / 2f;
         Vector2 drawPos = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
 
         SpriteEffects effects = NPC.spriteDirection == 1
             ? SpriteEffects.None
             : SpriteEffects.FlipHorizontally;
 
-        Color finalColor = NPC.color;
-        finalColor.R = (byte)((finalColor.R * drawColor.R) / 255);
-        finalColor.G = (byte)((finalColor.G * drawColor.G) / 255);
-        finalColor.B = (byte)((finalColor.B * drawColor.B) / 255);
-        finalColor.A = (byte)175;
-
-        Main.EntitySpriteDraw(texture, drawPos, NPC.frame, finalColor, NPC.rotation,
+        Main.EntitySpriteDraw(texture, drawPos, frame, BodyColor(drawColor), NPC.rotation,
             origin, NPC.scale * squishScale, effects);
     }
 
     private void DrawMushroomChunks(Vector2 center, Color drawColor)
     {
-        Asset<Texture2D>[] chunkAssets = new[]
-        {
-            AssetReferences.Content.Fungore.Sporeclot_Gore_1.Asset,
-            AssetReferences.Content.Fungore.Sporeclot_Gore_2.Asset,
-            Main.Assets.Request<Texture2D>($"Images/Item_{ItemID.Mushroom}"),
-        };
+        Asset<Texture2D>[] chunkAssets = ChunkAssets;
 
         foreach (var asset in chunkAssets)
         {

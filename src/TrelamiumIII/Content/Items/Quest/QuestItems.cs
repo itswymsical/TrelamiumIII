@@ -1,9 +1,9 @@
 namespace TrelamiumIII.Content.Items.Quest;
 
 // Placeholder job items (docs/act-one.md). No sprites yet: PlaceholderTextures draws them until a PNG named after the
-// class is added next to this file. None has a source until its job is built.
+// class is added next to this file.
 
-/// <summary>Carried from Silvian to Argie.</summary>
+/// <summary>Carried from Silvian to Argie. Held, it shows the way to her (<see cref="LetterScent" />).</summary>
 public class SilviansLetter : ModItem
 {
     public override void SetDefaults()
@@ -13,6 +13,8 @@ public class SilviansLetter : ModItem
         Item.maxStack = 1;
         Item.rare = ItemRarityID.Quest;
     }
+
+    public override void HoldItem(Player player) => LetterScent.Emit(player);
 }
 
 /// <summary>Argie's survey samples, from the glowing mushroom biome.</summary>

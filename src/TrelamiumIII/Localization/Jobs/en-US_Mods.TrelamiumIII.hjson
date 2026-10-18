@@ -81,6 +81,33 @@ Jobs: {
 		}
 	}
 
+	MycologyHunt: {
+		Name: Fungal Survey
+		Description: "'Samples from outside the grotto. Gloves, please.'"
+
+		Tasks: {
+			// GatherItemTask: {0} = item name, {1} = amount.
+			Set0: {
+				obj0: Collect {0} shrooms
+				obj1: Collect {0} from Scrunglepuffs
+				obj2: Collect {0} from floating islands
+				obj3: Bring everything to Argie
+			}
+		}
+	}
+
+	SporeSurvey: {
+		Name: Something Under the Grotto
+		Description: "'Something big is moving under the lab. I'd like to know where.'"
+
+		Tasks: {
+			Set0: {
+				obj0: Collect {0} from the glowing mushroom biome's creatures
+				obj1: Bring the samples to Argie
+			}
+		}
+	}
+
 	HomeForager: {
 		Name: Home Forager
 		Description: '''"You can't have town without townsfolk!"'''

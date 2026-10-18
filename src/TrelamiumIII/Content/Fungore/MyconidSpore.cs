@@ -4,12 +4,15 @@ using Terraria.DataStructures;
 using Terraria.Enums;
 using Terraria.Localization;
 using Terraria.ObjectData;
-using TrelamiumIII.Common.Systems;
 using TrelamiumIII.Content.Rarities;
 using TrelamiumIII.Core;
 
 namespace TrelamiumIII.Content.Fungore;
 
+/// <summary>
+/// Fungore's summon. It no longer grows in the world: Argie makes it at the end of her spore survey
+/// (<see cref="Jobs.SporeSurvey" />), and it only works on the surface.
+/// </summary>
 public class MyconidSpore : ModItem
 {
     public override void SetDefaults()
@@ -19,9 +22,9 @@ public class MyconidSpore : ModItem
         Item.useStyle = ItemUseStyleID.HoldUp;
         Item.useTime = Item.useAnimation = 30;
         Item.rare = ModContent.RarityType<MyconidRarity>();
-        Item.createTile = ModContent.TileType<MyconidSporeTile>();
     }
-    public override bool CanUseItem(Player player) => !NPC.AnyNPCs(ModContent.NPCType<FungoreBoss>());
+
+    public override bool CanUseItem(Player player) => player.ZoneOverworldHeight && !NPC.AnyNPCs(ModContent.NPCType<FungoreBoss>());
 
     public override bool? UseItem(Player player)
     {
@@ -50,6 +53,11 @@ public class MyconidSpore : ModItem
         return true;
     }
 }
+
+/// <summary>
+/// The spore that used to grow on surface grass and wake Fungore when broken. Kept so worlds that grew some still load
+/// it; it no longer spreads, summons or drops anything.
+/// </summary>
 public class MyconidSporeTile : ModTile
 {
     public override string Texture => AssetReferences.Content.Fungore.MyconidSpore.KEY;
@@ -79,62 +87,7 @@ public class MyconidSporeTile : ModTile
         TileObjectData.addTile(Type);
 
         AddMapEntry(new Color(118, 102, 97), CreateMapEntryName());
-
-        RegisterItemDrop(ModContent.ItemType<MyconidSpore>());
     }
 
-    public override void KillTile(int i, int j, ref bool fail, ref bool effectOnly, ref bool noItem)
-    {
-        base.KillTile(i, j, ref fail, ref effectOnly, ref noItem);
-
-        if (DownedBossSystem.DownedFungore)
-            return;
-
-        if (!fail)
-        {
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-            {
-                int type = ModContent.NPCType<FungoreBoss>();
-
-                int spawnX = i * 16 + 8;
-                int spawnY = j * 16 + 16;
-
-                var source = new EntitySource_TileBreak(i, j);
-
-                int npcIndex = NPC.NewNPC(source, spawnX, spawnY, type);
-
-                if (npcIndex != Main.maxNPCs)
-                {
-                    if (Main.netMode == NetmodeID.SinglePlayer)
-                        Main.NewText(Language.GetTextValue("Announcement.HasAwoken", Main.npc[npcIndex].TypeName), 175, 75, 255);
-                    else
-                        ChatHelper.BroadcastChatMessage(NetworkText.FromKey("Announcement.HasAwoken", Main.npc[npcIndex].GetTypeNetName()), new Color(175, 75, 255));
-                }
-            }
-        }
-    }
-}
-public class MyconidSporeGlobal : GlobalTile
-{
-    public override void RandomUpdate(int i, int j, int type)
-    {
-        base.RandomUpdate(i, j, type);
-        var chance = DownedBossSystem.DownedFungore ? WorldGen.genRand.NextBool(2800) : WorldGen.genRand.NextBool(900);
-
-        if (type == TileID.Grass)
-        {
-            if (chance)
-            {
-                if (!Main.tile[i, j - 1].HasTile)
-                {
-                    WorldGen.PlaceTile(i, j - 1, ModContent.TileType<MyconidSporeTile>(), mute: true);
-
-                    if (Main.netMode == NetmodeID.Server)
-                    {
-                        NetMessage.SendTileSquare(-1, i, j - 1, 1);
-                    }
-                }
-            }
-        }
-    }
+    public override bool CanDrop(int i, int j) => false;
 }
