@@ -1,9 +1,9 @@
 ﻿using TrelamiumIII.Core.Components.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
-using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Trading;
 using TrelamiumIII.Utilities.Extensions;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Terraria.Chat;
 using Terraria.Localization;
@@ -18,8 +18,21 @@ public abstract class Villager : TerrarianNPC
 {
     public override bool CanDespawn => true;
 
-    /// <summary>No script, so the director idles and vanilla's Passive AI (aiStyle 7) runs between interrupts.</summary>
-    protected override IBehavior? BuildScript() => null;
+    protected override int WanderRadius => 20;
+
+    protected override int ChatChance => 300;
+
+    /// <summary>Weapons a villager may roll when it spawns. It keeps the one it rolls.</summary>
+    protected virtual int[] WeaponPool =>
+    [
+        ItemID.WoodenSword, ItemID.CopperBroadsword, ItemID.TinBroadsword,
+        ItemID.WoodenBow, ItemID.CopperBow,
+        ItemID.Shuriken, ItemID.ThrowingKnife,
+    ];
+
+    private int weapon;
+
+    public override int CombatWeapon => weapon;
 
     protected abstract Color[] HairPalette { get; }
     protected abstract Color[] EyePalette { get; }
@@ -40,6 +53,8 @@ public abstract class Villager : TerrarianNPC
 
     protected override void SetWorldNPCDefaults()
     {
+        weapon = Pick(WeaponPool);
+
         if (!UsesTradingSystem)
             return;
 
@@ -110,9 +125,17 @@ public abstract class Villager : TerrarianNPC
         if (firstButton && Trades is { Count: > 0 })
             OpenTradeUI();
     }
+
+    /// <summary>The weapon is rolled on every side, so the server's roll is the one clients use.</summary>
+    public override void SendExtraAI(BinaryWriter writer) => writer.Write(weapon);
+
+    public override void ReceiveExtraAI(BinaryReader reader) => weapon = reader.ReadInt32();
+
     public override void SaveData(TagCompound tag)
     {
         base.SaveData(tag);
+
+        tag["weapon"] = ItemIO.Save(new Item(weapon));
 
         // Null when UsesTradingSystem is false.
         if (Trades is null) return;
@@ -130,6 +153,9 @@ public abstract class Villager : TerrarianNPC
     public override void LoadData(TagCompound tag)
     {
         base.LoadData(tag);
+
+        if (tag.ContainsKey("weapon") && ItemIO.Load(tag.GetCompound("weapon")) is { IsAir: false } saved)
+            weapon = saved.type;
 
         if (Trades is null || !tag.ContainsKey("trades")) return;
 

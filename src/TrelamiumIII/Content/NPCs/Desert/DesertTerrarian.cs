@@ -7,6 +7,13 @@ namespace TrelamiumIII.Content.NPCs.Desert;
 
 public class DesertTerrarian : Villager
 {
+    protected override int[] WeaponPool =>
+    [
+        ItemID.PalmWoodSword, ItemID.CactusSword,
+        ItemID.PalmWoodBow,
+        ItemID.ThrowingKnife, ItemID.Javelin,
+    ];
+
     protected override Color[] HairPalette =>
     [
         new(102, 57, 49), // brown 

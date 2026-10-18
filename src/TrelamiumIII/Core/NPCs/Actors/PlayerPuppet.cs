@@ -106,6 +106,12 @@ public sealed class PlayerPuppet
     /// </summary>
     public bool IgnoreLighting { get; set; }
 
+    /// <summary>
+    /// Poses the front arm while no item is in use: radians from hanging straight down, mirrored by facing. Null leaves
+    /// the arm to the body frame.
+    /// </summary>
+    public float? FrontArmRotation { get; set; }
+
     // Equipment and use
 
     /// <summary>Puts an item in the hand without animating it. 0 empties it.</summary>
@@ -266,6 +272,9 @@ public sealed class PlayerPuppet
         }
 
         useJustStarted = false;
+
+        if (FrontArmRotation is { } rotation && !IsUsingItem)
+            Player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, rotation * Player.direction);
 
         // Body, leg and head frames, including the use-style poses.
         Player.PlayerFrame();

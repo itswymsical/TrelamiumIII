@@ -4,6 +4,8 @@ namespace TrelamiumIII.Content.NPCs;
 
 public class ShinobiNPC : Villager
 {
+    protected override int[] WeaponPool => [ItemID.Katana, ItemID.Shuriken, ItemID.ThrowingKnife];
+
     //public enum Phase
     //{
     //    Idle = 0,

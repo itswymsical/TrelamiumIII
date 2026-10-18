@@ -210,7 +210,7 @@ public class WorldNPCMapSystem : ModSystem, INeedRenderTargetContent
         {
             NPC npc = Main.npc[i];
 
-            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc)
+            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc || !WorldNPCDiscovery.IsRevealed(worldNpc))
                 continue;
 
             Vector2 center = npc.Center + new Vector2(0f, npc.gfxOffY);
@@ -367,7 +367,7 @@ public class WorldNPCMapSystem : ModSystem, INeedRenderTargetContent
         for (int i = 0; i < Main.maxNPCs; i++)
         {
             NPC npc = Main.npc[i];
-            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc)
+            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc || !WorldNPCDiscovery.IsRevealed(worldNpc))
                 continue;
 
             Vector2 center = npc.Center + new Vector2(0f, npc.gfxOffY);
@@ -445,7 +445,7 @@ public class WorldNPCMapSystem : ModSystem, INeedRenderTargetContent
         for (int i = 0; i < Main.maxNPCs; i++)
         {
             NPC npc = Main.npc[i];
-            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc)
+            if (!npc.active || npc.ModNPC is not WorldNPC worldNpc || !WorldNPCDiscovery.IsRevealed(worldNpc))
                 continue;
 
             Vector2 center = npc.Center + new Vector2(0f, npc.gfxOffY);

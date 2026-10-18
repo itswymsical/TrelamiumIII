@@ -21,6 +21,15 @@ Rarities: {
 JobInfo.NewJob: " seems to have a new task for you."
 
 Items: {
+	SporeSprayer: {
+		DisplayName: Spore Sprayer
+		Tooltip:
+			'''
+			Sprays a cone of glowing spore mist
+			'Argie swears it's mostly harmless. To people.'
+			'''
+	}
+
 	LibraryBookItem: {
 		DisplayName: Library Book
 		Tooltip: ""
@@ -1366,6 +1375,7 @@ Tiles: {
 }
 
 Projectiles: {
+	SporeMist.DisplayName: Spore Mist
 	TetanusShurikenProj.DisplayName: Tetanus Shuriken
 	SporeclotSacProj.DisplayName: Sporeclot Sac
 	SporeBlastProj.DisplayName: Spore Blast

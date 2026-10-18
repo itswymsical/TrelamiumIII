@@ -123,11 +123,11 @@ public sealed class PuppetCombat
         if (item.shoot <= ProjectileID.None || Main.netMode == NetmodeID.MultiplayerClient || !DealsDamage)
             return;
 
-        // Spears, flails and yoyos replace the item sprite with a projectile that
-        // positions itself from Main.player[owner] - it would hang off the local
-        // player's hand, not the NPC's. Those need a bespoke attack through OnUse;
-        // the animation still plays either way.
-        if (item.noUseGraphic)
+        // Spears, flails, yoyos and boomerangs replace the item sprite with a projectile
+        // that positions itself from Main.player[owner] - it would hang off the local
+        // player's hand, not the NPC's. Those need a bespoke attack through OnUse.
+        // Consumable throwables (knives, shurikens, javelins) fly free and fire normally.
+        if (item.noUseGraphic && !item.consumable)
             return;
 
         Shoot(item);

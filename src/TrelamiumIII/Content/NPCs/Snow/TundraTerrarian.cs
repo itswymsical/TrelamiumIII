@@ -6,6 +6,13 @@ namespace TrelamiumIII.Content.NPCs.Snow;
 
 public class TundraTerrarian : Villager
 {
+    protected override int[] WeaponPool =>
+    [
+        ItemID.BorealWoodSword,
+        ItemID.BorealWoodBow,
+        ItemID.Snowball, ItemID.Shuriken,
+    ];
+
     protected override Color[] HairPalette =>
     [
         new(60,  50,  40),  // dark brown
