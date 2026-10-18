@@ -93,21 +93,21 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
         // Talked to before the encounter could trigger, so the greeting plays as a small scene of its own.
         if (!silvian.Met)
-            return ChatEncounter.Play(SilvianEncounter.GreetingKey).Projected().AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
+            return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
 
         if (SilvianAlmanac.IsDue(player))
-            return ChatEncounter.Play(SilvianAlmanac.HandoffKey).Projected();
+            return ChatEncounter.Play(SilvianAlmanac.HandoffKey);
 
         // The greeting was cut short before it could offer his first job.
         if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Locked)
-            return ChatEncounter.Play(SilvianEncounter.JobOfferKey).Projected();
+            return ChatEncounter.Play(SilvianEncounter.JobOfferKey);
 
         // The first job's closing line asks about botany lessons; this asks again if that was declined or cut short.
         if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Completed && silvian.JobStateOf(JobID.BotanyBasics) == JobState.Locked)
-            return ChatEncounter.Play("Silvian.BotanyOffer").Projected();
+            return ChatEncounter.Play("Silvian.BotanyOffer");
 
         if (silvian.AlmanacOpened && !silvian.AskedAboutArgie)
-            return ChatEncounter.Play(SilvianEncounter.ArgieKey).Projected();
+            return ChatEncounter.Play(SilvianEncounter.ArgieKey);
 
         return ChatEncounter.None;
     }

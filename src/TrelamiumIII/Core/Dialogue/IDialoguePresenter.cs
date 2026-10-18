@@ -1,28 +1,12 @@
 namespace TrelamiumIII.Core.Dialogue;
 
-/// <summary>How a line of dialogue is put on screen.</summary>
-public enum DialogueStyle
-{
-    /// <summary>The anchored panel with a portrait frame, along the bottom of the screen.</summary>
-    Panel,
-
-    /// <summary>The pixelated bubble projected in perspective over its speaker.</summary>
-    Projected,
-
-    /// <summary>
-    ///     Whichever of the two suits the distance to the speaker, swapping mid-conversation.
-    /// </summary>
-    Adaptive,
-}
-
 /// <summary>
 ///     What the <see cref="DialogueManager" /> needs from a box, whichever box it opened.
 /// </summary>
 /// <remarks>
 ///     The manager owns one conversation at a time and knows nothing about how it looks -- queueing,
-///     music, letterboxing and zoom are the same work whether the line is in a portrait panel or a
-///     bubble hanging over the speaker's head. This is the seam that lets a second presentation exist
-///     without any of that being written twice.
+///     music, letterboxing and zoom are the same work however the line is drawn. This is the seam
+///     that lets another presentation exist without any of that being written twice.
 /// </remarks>
 public interface IDialoguePresenter
 {

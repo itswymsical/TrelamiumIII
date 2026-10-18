@@ -64,7 +64,7 @@ public sealed class HomeForager : Job
 
     public override void OnJobStart()
     {
-        Context.Play("Guide.HomeForager_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+        Context.Play("Guide.HomeForager_Greeting", zoomIn: true);
 
         //if (Context.IsLocal)
         //    MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
@@ -105,7 +105,7 @@ public sealed class HomeForager : Job
 
     public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
     {
-        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn").Projected(),
+        CheckInSet => ChatEncounter.Play("Guide.HomeForager_CheckIn"),
 
         // Nothing registered for the other sets yet, so the Guide keeps his ordinary greeting.
         _ => ChatEncounter.None

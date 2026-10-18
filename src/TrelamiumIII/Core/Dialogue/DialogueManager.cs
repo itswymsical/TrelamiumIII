@@ -36,21 +36,16 @@ public sealed class DialogueManager
     public delegate void DialogueEndHandler(string dialogueKey);
     public static event DialogueEndHandler OnDialogueEnd;
 
-    /// <param name="style">Which box the line opens in. See <see cref="DialogueStyle" />.</param>
-    /// <param name="anchor">
-    ///     What a projected box hangs off. Ignored by the panel box, which owns the bottom of the
-    ///     screen wherever the speaker is standing.
-    /// </param>
-    /// <param name="cursorTilt">Projected boxes tilt after the cursor while it is over them. Ignored by the panel box.</param>
+    /// <param name="anchor">What the box hangs off when a line names no speaker present in the world.</param>
+    /// <param name="cursorTilt">The box tilts after the cursor while it is over it.</param>
     public bool StartDialogue(
         string dialogueKey,
         bool zoomIn = false,
         bool letterbox = false,
         int? music = null,
-        DialogueStyle style = DialogueStyle.Panel,
         DialogueAnchor? anchor = null,
         bool root = true,
-        bool cursorTilt = true)
+        bool cursorTilt = false)
     {
         var queuedDialogue = new QueuedDialogue
         {
@@ -58,7 +53,6 @@ public sealed class DialogueManager
             ZoomIn = zoomIn,
             Letterbox = letterbox,
             Music = music,
-            Style = style,
             Anchor = anchor ?? DialogueAnchor.OnPlayer,
             Root = root,
             CursorTilt = cursorTilt
@@ -113,15 +107,8 @@ public sealed class DialogueManager
     }
 
     /// <summary>Opens <paramref name="dialogueKey" /> in the box <paramref name="presentation" /> asks for.</summary>
-    private static IDialoguePresenter? Present(string dialogueKey, QueuedDialogue presentation) => presentation.Style switch
-    {
-        DialogueStyle.Projected =>
-            ProjectedDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root, presentation.CursorTilt),
-        DialogueStyle.Adaptive =>
-            AdaptiveDialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root, presentation.CursorTilt),
-        _ =>
-            DialogueBox.CreateDialogue(dialogueKey, presentation.ZoomIn, presentation.Root),
-    };
+    private static IDialoguePresenter? Present(string dialogueKey, QueuedDialogue presentation) =>
+        DialogueBox.Create(dialogueKey, presentation.ZoomIn, presentation.Anchor, presentation.Root, presentation.CursorTilt);
 
     /// <summary>
     ///     Carries the conversation into the branch the player chose, presented the way the
@@ -365,7 +352,6 @@ public class QueuedDialogue
     public bool ZoomIn { get; set; }
     public bool Letterbox { get; set; }
     public int? Music { get; set; }
-    public DialogueStyle Style { get; set; }
     public DialogueAnchor Anchor { get; set; }
 
     /// <summary>Hold the line's speaker facing the player while they talk.</summary>

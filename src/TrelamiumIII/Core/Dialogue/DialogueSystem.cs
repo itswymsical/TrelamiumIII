@@ -7,7 +7,7 @@ namespace TrelamiumIII.Core.Dialogue;
 
 /// <summary>
 ///     Updates <see cref="DialogueManager" /> and draws it before vanilla's resource bars. Keeps the chat window shut
-///     while a <see cref="ProjectedDialogueBox" /> is live, so Enter advances the conversation.
+///     while a <see cref="DialogueBox" /> is live, so Enter advances the conversation.
 /// </summary>
 public sealed class DialogueSystem : ModSystem
 {
@@ -35,7 +35,7 @@ public sealed class DialogueSystem : ModSystem
     /// <remarks>Refuses to open rather than swallowing Enter, so chat already open stays open.</remarks>
     private static void SuppressChatWhileSpeaking(On_Main.orig_OpenPlayerChat orig)
     {
-        if (ProjectedPanelSystem.AnyLive<ProjectedDialogueBox>())
+        if (ProjectedPanelSystem.AnyLive<DialogueBox>())
             return;
 
         orig();

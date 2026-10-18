@@ -36,7 +36,7 @@ public static class SilvianAlmanac
     public static void OfferIfDue(JobContext context)
     {
         if (IsDue(context.Player))
-            context.Play(HandoffKey, style: DialogueStyle.Projected);
+            context.Play(HandoffKey);
     }
 
     /// <summary>Gives <paramref name="player" /> the book, once. Run when the handoff conversation completes.</summary>

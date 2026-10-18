@@ -616,7 +616,6 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
             DryadArrivalSystem.GreetingKey,
             zoomIn: true,
             letterbox: true,
-            style: DialogueStyle.Projected,
             anchor: DialogueAnchor.OnSpeaker(TrackedDryad()));
 
     /// <summary>

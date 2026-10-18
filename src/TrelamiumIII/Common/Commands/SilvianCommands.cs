@@ -45,7 +45,7 @@ public class SilvianCommand : ModCommand
 
             case "almanac":
                 silvian.AlmanacInherited = false;
-                bool opened = DialogueManager.Instance.StartDialogue(SilvianAlmanac.HandoffKey, style: DialogueStyle.Projected);
+                bool opened = DialogueManager.Instance.StartDialogue(SilvianAlmanac.HandoffKey);
 
                 caller.Reply(opened ? "Handoff started. The book is given when it plays through." : "The handoff could not start.", opened ? Color.Green : Color.Red);
                 break;
