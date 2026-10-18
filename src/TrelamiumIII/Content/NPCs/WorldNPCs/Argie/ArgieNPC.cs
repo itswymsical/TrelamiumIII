@@ -1,17 +1,29 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
+using TrelamiumIII.Content.Items.Quest;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
+using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Argie;
 
+/// <summary>
+///     The mycologist in the glowing mushroom biome, John Substrate's apprentice. She lives in her lab
+///     (<see cref="Common.Generation.ArgieLabPass" />), and Silvian's letter is how the player finds her. Meeting her plays
+///     as a scene (<see cref="ArgieMeeting" />) that ends on her fungus hunt; her spore survey after it is how the player
+///     gets the spore that wakes Fungore.
+/// </summary>
 public class ArgieNPC : TerrarianNPC, INarrativeSpeaker
 {
+    public const string GreetingKey = "Argie.Greeting";
+    public const string LetterGreetingKey = "Argie.Greeting_Letter";
+
     public override bool CanDespawn => false;
+
+    public override bool HiddenOnMapUntilMet => true;
 
     public override List<string> SetNPCNameList() => ["Argie"];
 
@@ -39,14 +51,16 @@ public class ArgieNPC : TerrarianNPC, INarrativeSpeaker
         NPC.DeathSound = SoundID.PlayerKilled;
     }
 
-    //public override float SpawnChance(NPCSpawnInfo spawnInfo)
-    //{
-    //    if (NPC.AnyNPCs(Type))
-    //        return 0f;
+    /// <summary>Paces her lab floor, or the ground around where she spawned without one.</summary>
+    protected override IBehavior BuildScript()
+    {
+        Wander wander = Behavior.Wander(AnchorTile).WithRadius(12);
 
-    //    return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest &&
-    //        !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
-    //}
+        if (Home is { } home)
+            wander.Within(home.Area);
+
+        return wander;
+    }
 
     public override void PostAI()
     {
@@ -72,36 +86,44 @@ public class ArgieNPC : TerrarianNPC, INarrativeSpeaker
 
     public ChatEncounter GetEncounter(Player player)
     {
+        var argie = player.GetModPlayer<ArgiePlayer>();
+        bool hasLetter = player.HasItem(ModContent.ItemType<SilviansLetter>());
+
+        if (!argie.Met)
+        {
+            return ChatEncounter.Play(hasLetter ? LetterGreetingKey : GreetingKey)
+                .Projected().AsScene().WithMusic(MusicID.Mushrooms);
+        }
+
+        // Met her before Silvian handed it over.
+        if (hasLetter && !argie.LetterDelivered)
+            return ChatEncounter.Play("Argie.LateLetter").Projected().AsScene();
+
         if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == Type && j.State == JobState.Active))
             return ChatEncounter.None; // let the jobs handle dialogue
 
-        var silvian = player.GetModPlayer<SilvianPlayer>();
+        // The meeting was cut short before it could offer her first job.
+        if (argie.JobStateOf(JobID.MycologyHunt) == JobState.Locked)
+            return ChatEncounter.Play("Argie.JobOffer").Projected();
 
-        // Talked to before the encounter could trigger, so the greeting plays as a small scene of its own.
-        if (!silvian.Met)
-            return ChatEncounter.Play(SilvianEncounter.GreetingKey).Projected().AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
+        if (argie.JobStateOf(JobID.MycologyHunt) == JobState.Completed && argie.JobStateOf(JobID.SporeSurvey) == JobState.Locked)
+            return ChatEncounter.Play("Argie.SurveyOffer").Projected();
 
-        if (SilvianAlmanac.IsDue(player))
-            return ChatEncounter.Play(SilvianAlmanac.HandoffKey).Projected();
-
-        // The greeting was cut short before it could offer his first job.
-        if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Locked)
-            return ChatEncounter.Play(SilvianEncounter.JobOfferKey).Projected();
+        if (ArgieMeeting.SporeDue(player))
+            return ChatEncounter.Play("Argie.SporeAgain").Projected();
 
         return ChatEncounter.None;
     }
 
     public override string GetChat()
     {
-        return Main.rand.Next(4) switch
+        return Main.rand.Next(5) switch
         {
-            0 => "Hello! Hello! Welcome to my Labratory!",
+            0 => "Hello! Hello! Welcome to my laboratory!",
             1 => "Mycelia is my brand! Could you lend me a hand? Perhaps two...",
             2 => "The bioluminescence here increases at night... I haven't slept in four days.",
-            3 => "Don't touch anything with your bare hands. I'm not saying something bad will happen. I'm just I don't know that something bad won't.",
+            3 => "Don't touch anything with your bare hands. I'm not saying something bad will happen. I'm just saying I don't know that something bad won't.",
             _ => "I talk to them sometimes. The mushrooms. Professionally, of course."
         };
     }
-
-    //public override void SetChatButtons(ref string button, ref string button2) => button = SilvianCounsel.HelpButton;
 }

@@ -19,6 +19,8 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 {
     public override bool CanDespawn => false;
 
+    public override bool HiddenOnMapUntilMet => true;
+
     public override List<string> SetNPCNameList() => ["Silvian"];
 
     protected override void SetAppearanceDefaults()

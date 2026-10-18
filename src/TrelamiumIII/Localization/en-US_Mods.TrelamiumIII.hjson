@@ -725,7 +725,12 @@ Items: {
 
 	MyconidSpore: {
 		DisplayName: Myconid Spore
-		Tooltip: Summons a Malevolent Myconid
+		Tooltip:
+			'''
+			Summons a Malevolent Myconid
+			Only works on the surface
+			'Argie doesn't know what it does either'
+			'''
 	}
 
 	WallBomb: {
@@ -1140,6 +1145,7 @@ Items: {
 		Tooltip:
 			'''
 			Addressed to Argie
+			Hold it to follow the scent of the glowing mushrooms to her
 			'A letter from John S.'
 			'''
 	}
@@ -1147,6 +1153,16 @@ Items: {
 	SporeSample: {
 		DisplayName: Spore Sample
 		Tooltip: "'...What is this?'"
+	}
+
+	PuffballItem: {
+		DisplayName: Puffball
+		Tooltip: "'Squeeze it. Go on.'"
+	}
+
+	IndigoCapItem: {
+		DisplayName: Indigo Cap
+		Tooltip: ""
 	}
 
 	BountyNotice: {
@@ -1476,6 +1492,11 @@ NPCs: {
 	ArgieNPC.DisplayName: Argie
 	PermafrostNPC.DisplayName: Permafrost
 	Scrunglepuff.DisplayName: Scrunglepuff
+
+	GlowingSporadicSlime: {
+		DisplayName: Glowing Sporadic Slime
+		Bestiary: A slime that has soaked up the glowing mushroom biome's spores. The mothers split into glowing young when popped, and every one of them carries samples a mycologist would want.
+	}
 }
 
 Buffs: {
@@ -1990,6 +2011,8 @@ Conditions: {
 	NearSunflowerOil: Near Sunflower Oil
 	# {0}: the liquid condition's display name.
 	NearLiquid: Near {0}
+	RainingForBottles: In the Rain
+	InGlowingMushroomBiome: When killed in the glowing mushroom biome
 }
 
 Configs: {

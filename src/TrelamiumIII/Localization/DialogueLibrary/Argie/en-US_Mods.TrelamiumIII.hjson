@@ -1,0 +1,112 @@
+DialogueLibrary: {
+	Argie: {
+		# Each [] is a pause anchor and must match the Pause count in ArgieDialogue.
+		# She hasn't slept, she talks to the mushrooms "professionally", and nobody touches anything barehanded.
+		
+		# The meeting without Silvian's letter. Both answers lead into Brighter.
+		Greeting: {
+			Line1.Text: Oh![] A visitor![] Hello! Hello![] Don't touch anything.
+			Line2.Text: Not with your bare hands, anyway.[] I'm not saying something bad will happen.[] I'm saying I don't know that it won't.
+
+			Line3: {
+				Text: Argie.[] Mycologist.[] This is my lab,[] and those are my colleagues.
+				Choice1.Text: Your colleagues?
+				Choice2.Text: ...
+			}
+		}
+
+		# The meeting with Silvian's letter in hand. The letter is John's, kept by Silvian since his death.
+		Greeting_Letter: {
+			Line1.Text: Oh![] A visitor![] Hello! Hello![] Don't touch anything.
+
+			Line2: {
+				Text: ...What's that you're holding?
+				Choice1.Text: A letter. Silvian asked me to bring it.
+				Choice2.Text: ...
+			}
+		}
+
+		Letter: {
+			Line1.Text: That's Mr. Substrate's handwriting![] ...Silvian kept this?[] He hasn't written me a word since the funeral.
+
+			Line2: {
+				Text: ...[] Sorry.[] I'll read it later.[] Properly.
+				Choice1.Text: Are you alright?
+				Choice2.Text: ...
+			}
+		}
+
+		# The mushrooms around the player brighten while this plays (ArgieMeeting). Ends by offering the fungus hunt.
+		Brighter: {
+			Line1.Text: ...Hold still.[] They're brighter around you.[] Why are they brighter around you?
+			Line2.Text: I've logged every cap in this grotto for six years.[] They have never once done that.
+			Line3.Text: Okay.[] Okay![] New plan.[] You're going to help me.
+			Line4.Text: I need fungi from outside the grotto to compare against.[] Fly agaric from the surface grass,[] puffballs,[] and dewdrop bonnets.
+			Line5.Text: Puffballs come off Scrunglepuffs,[] and they don't like giving them up.[] The bonnets only grow on clouds,[] up on the floating islands.
+			Line6.Text: Bring them back and I'll tell you what I find.[] Probably.
+		}
+
+		LateLetter: {
+			Line1.Text: Is that...[] John's hand?[] Silvian kept this?
+			Line2.Text: ...[] Thank you.[] I'll read it later.[] Properly.
+		}
+
+		JobOffer.Line1.Text: Where were we?[] Right.[] Fly agaric,[] puffballs,[] dewdrop bonnets.[] I need samples.
+
+		MycologyHunt_Greeting: {
+			Line1.Text: Five fly agaric,[] three puffballs,[] three dewdrop bonnets.[] Write it down.[] I would,[] but I'm out of paper.
+			Line2.Text: And gloves.[] Wear gloves.
+		}
+
+		MycologyHunt_HandIn: {
+			Line1: {
+				Text: You found them?[] Let me see,[] let me see!
+				Choice1.Text: Here.
+				Choice2.Text: Not yet.
+			}
+		}
+
+		MycologyHunt_Complete: {
+			Line1.Text: Fly agaric: calm.[] Puffball: calm.[] Bonnet: calm,[] and a little damp.
+			Line2.Text: Mine aren't.[] The mycelium under this grotto has been flinching for weeks.
+			Line3.Text: Something down there is big,[] and it's moving.
+
+			Line4: {
+				Text: I need spore samples from around the grotto to work out where.[] The locals carry them:[] the mushroom zombies,[] the crabs,[] the ladybugs.[] Will you help?
+				Choice1.Text: Of course.
+				Choice2.Text: Maybe later.
+			}
+		}
+
+		SurveyOffer: {
+			Line1: {
+				Text: The thing under the grotto.[] I still need those spore samples.
+				Choice1.Text: I'll get them.
+				Choice2.Text: Maybe later.
+			}
+		}
+
+		SurveyOffer_Yes.Line1.Text: Ten should do it.[] Twelve if you like me.
+		SurveyOffer_No.Line1.Text: Okay.[] I'll just sit here.[] On top of it.
+		SporeSurvey_Greeting.Line1.Text: Spore samples.[] Ten.[] Don't breathe through your mouth.
+
+		SporeSurvey_HandIn: {
+			Line1: {
+				Text: Samples?[] Give, give, give.
+				Choice1.Text: Here.
+				Choice2.Text: Not yet.
+			}
+		}
+
+		# The spore is in the job's reward bag. This is how Fungore is found now: it no longer grows in the world.
+		SporeSurvey_Complete: {
+			Line1.Text: It's right under us.[] Under the lab.[] Under my workbench.
+			Line2.Text: And it started moving...[] around when you showed up.[] Correlation isn't causation.[] Usually.
+			Line3.Text: I cultured something from your samples.[] It's a spore.[] I genuinely don't know what it does.
+			Line4.Text: Be careful with it.[] If you use it,[] use it on the surface.
+			Line5.Text: If something's coming up,[] I'd rather it came up out there than under my workbench.
+		}
+
+		SporeAgain.Line1.Text: Used it?[] Lost it?[] ...I made another.[] I make a lot of things.
+	}
+}
