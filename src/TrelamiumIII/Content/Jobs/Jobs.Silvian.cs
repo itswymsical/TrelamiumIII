@@ -37,13 +37,13 @@ public sealed class HerbalForager : Job
     private static IReadOnlyList<int> SeedBedItemTypes()
         => ModContent.GetContent<ModItem>().OfType<SeedBedItem>().Select(item => item.Type).ToArray();
 
-    public override void OnJobStart() => Context.Play("Silvian.HerbalForager_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+    public override void OnJobStart() => Context.Play("Silvian.HerbalForager_Greeting", zoomIn: true);
 
     /// <summary>The closing line asks whether the player wants botany lessons, which unlocks <see cref="BotanyBasics" />.</summary>
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
-        Context.Play("Silvian.HerbalForager_Complete", style: DialogueStyle.Projected);
+        Context.Play("Silvian.HerbalForager_Complete");
     }
 }
 
@@ -79,12 +79,12 @@ public sealed class BotanyBasics : Job
         providerNPC: ModContent.NPCType<Silvian>())
     { }
 
-    public override void OnJobStart() => Context.Play("Silvian.BotanyBasics_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+    public override void OnJobStart() => Context.Play("Silvian.BotanyBasics_Greeting", zoomIn: true);
 
     public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
     {
-        SoilLessonSet => ChatEncounter.Play("Silvian.BotanyBasics_Soil").Projected(),
-        WrapUpSet => ChatEncounter.Play("Silvian.BotanyBasics_WrapUp").Projected(),
+        SoilLessonSet => ChatEncounter.Play("Silvian.BotanyBasics_Soil"),
+        WrapUpSet => ChatEncounter.Play("Silvian.BotanyBasics_WrapUp"),
         _ => ChatEncounter.None
     };
 

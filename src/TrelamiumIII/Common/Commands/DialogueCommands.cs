@@ -54,7 +54,7 @@ public class DialogueCommand : ModCommand
     {
         if (args.Length < 2)
         {
-            caller.Reply("Usage: /dialogue play <Category.Conversation> [projected|adaptive]", Color.Yellow);
+            caller.Reply("Usage: /dialogue play <Category.Conversation> [tilt]", Color.Yellow);
             return;
         }
 
@@ -85,22 +85,15 @@ public class DialogueCommand : ModCommand
             }
         }
 
-        string mode = args.Length > 2 ? args[2] : string.Empty;
-
-        DialogueStyle style = DialogueStyle.Panel;
-
-        if (mode.StartsWith("proj", StringComparison.OrdinalIgnoreCase))
-            style = DialogueStyle.Projected;
-        else if (mode.StartsWith("adapt", StringComparison.OrdinalIgnoreCase))
-            style = DialogueStyle.Adaptive;
+        bool tilt = args.Skip(2).Any(mode => mode.StartsWith("tilt", StringComparison.OrdinalIgnoreCase));
 
         bool started = DialogueManager.Instance.StartDialogue(
             query,
-            style: style,
-            anchor: style == DialogueStyle.Panel ? null : DialogueAnchor.OnSpeaker(NearestNPC(caller.Player)));
+            anchor: DialogueAnchor.OnSpeaker(NearestNPC(caller.Player)),
+            cursorTilt: tilt);
 
         if (started)
-            caller.Reply($"Started: {query} ({style.ToString().ToLower()})", Color.Green);
+            caller.Reply($"Started: {query}{(tilt ? " (tilt)" : "")}", Color.Green);
         else
             caller.Reply($"Failed to start \"{query}\" (missing Line1.Text?).", Color.Red);
     }
@@ -178,7 +171,7 @@ public class DialogueCommand : ModCommand
     private static void ShowHelp(CommandCaller caller)
     {
         caller.Reply($" [i:{ItemID.Sign}] Dialogue Commands [i:{ItemID.Sign}]", new Color(255, 215, 0));
-        caller.Reply("/dialogue play <key> [projected|adaptive] - Start a dialogue (partial match ok)", Color.White);
+        caller.Reply("/dialogue play <key> [tilt] - Start a dialogue (partial match ok)", Color.White);
         caller.Reply("/dialogue stop         - Force-end the active dialogue", Color.White);
         caller.Reply("/dialogue list [filter]- List dialogue keys, optional substring filter", Color.White);
         caller.Reply("/dialogue help         - Show this help", Color.White);

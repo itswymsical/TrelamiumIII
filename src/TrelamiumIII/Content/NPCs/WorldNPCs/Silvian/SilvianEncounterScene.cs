@@ -196,7 +196,6 @@ internal sealed class SilvianEncounterScene(NPC silvian)
             zoomIn: true,
             letterbox: true,
             music: Assets.Music.HomeForagerMusic.Slot,
-            style: DialogueStyle.Projected,
             anchor: DialogueAnchor.OnSpeaker(Silvian));
 
         if (started)

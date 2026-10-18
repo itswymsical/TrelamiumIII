@@ -97,25 +97,25 @@ public class ArgieNPC : TerrarianNPC, INarrativeSpeaker
         if (!argie.Met)
         {
             return ChatEncounter.Play(hasLetter ? LetterGreetingKey : GreetingKey)
-                .Projected().AsScene().WithMusic(MusicID.Mushrooms);
+                .AsScene().WithMusic(MusicID.Mushrooms);
         }
 
         // Met her before Silvian handed it over.
         if (hasLetter && !argie.LetterDelivered)
-            return ChatEncounter.Play("Argie.LateLetter").Projected().AsScene();
+            return ChatEncounter.Play("Argie.LateLetter").AsScene();
 
         if (player.GetModPlayer<JobPlayer>().GetAllJobs().Any(j => j.ProviderNPC == Type && j.State == JobState.Active))
             return ChatEncounter.None; // let the jobs handle dialogue
 
         // The meeting was cut short before it could offer her first job.
         if (argie.JobStateOf(JobID.MycologyHunt) == JobState.Locked)
-            return ChatEncounter.Play("Argie.JobOffer").Projected();
+            return ChatEncounter.Play("Argie.JobOffer");
 
         if (argie.JobStateOf(JobID.MycologyHunt) == JobState.Completed && argie.JobStateOf(JobID.SporeSurvey) == JobState.Locked)
-            return ChatEncounter.Play("Argie.SurveyOffer").Projected();
+            return ChatEncounter.Play("Argie.SurveyOffer");
 
         if (ArgieMeeting.SporeDue(player))
-            return ChatEncounter.Play("Argie.SporeAgain").Projected();
+            return ChatEncounter.Play("Argie.SporeAgain");
 
         return ChatEncounter.None;
     }

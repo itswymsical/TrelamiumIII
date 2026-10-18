@@ -41,7 +41,7 @@ public sealed class GoldMine : Job
     public override JobCondition UnlockCondition => JobCondition.WorldDay(3);
 
     public override void OnJobStart()
-        => Context.Play("Merchant.GoldMine_Greeting", style: DialogueStyle.Projected);
+        => Context.Play("Merchant.GoldMine_Greeting");
 
     /// <summary>
     /// Nudges the player off a maxed-out category. Runs before the task sees the event, so a full pool here was full before

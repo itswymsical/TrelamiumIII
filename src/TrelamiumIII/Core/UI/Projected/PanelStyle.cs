@@ -106,9 +106,11 @@ internal static class PanelStyle
     ///     pinned inside the body while only the apex leans, so a speaker off to one side gets a tail
     ///     angled at them rather than one hanging off a corner.
     /// </param>
-    public static BubbleGeometry Measure(Point contentSize, int nameWidth, int nameHeight, float tailAim)
+    /// <param name="tail">Fraction of <see cref="TAIL_LENGTH" /> the tail extends; 0 draws no tail.</param>
+    public static BubbleGeometry Measure(Point contentSize, int nameWidth, int nameHeight, float tailAim, float tail = 1f)
     {
         int plateHeight = nameWidth > 0 ? nameHeight + NAME_GAP : 0;
+        int tailLength = (int)MathF.Round(TAIL_LENGTH * Math.Clamp(tail, 0f, 1f));
 
         Rectangle body = new(
             MARGIN,
@@ -131,10 +133,10 @@ internal static class PanelStyle
             ContentOrigin = new Point(body.X + PAD_X, body.Y + PAD_Y),
             NameTab = nameWidth > 0 ? new Rectangle(MARGIN, MARGIN, nameWidth, nameHeight) : Rectangle.Empty,
             TailBase = new Vector2(baseX, body.Bottom),
-            TailApex = new Vector2(centre + aim * (body.Width * 0.5f + TAIL_WIDTH), body.Bottom + TAIL_LENGTH),
+            TailApex = new Vector2(centre + aim * (body.Width * 0.5f + TAIL_WIDTH), body.Bottom + tailLength),
             Used = new Point(
                 MARGIN + Math.Max(body.Width, nameWidth) + BORDER,
-                body.Bottom + TAIL_LENGTH + BORDER * 2),
+                body.Bottom + tailLength + BORDER * 2),
         };
     }
 
@@ -169,6 +171,9 @@ internal static class PanelStyle
                 body.Height + grow * 2,
                 CHAMFER + grow,
                 color);
+
+            if (point.Y - join.Y < 1f)
+                return;
 
             float half = TAIL_WIDTH * 0.5f + grow;
 

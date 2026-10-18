@@ -301,12 +301,13 @@ public sealed class ActTrackerManager : ModSystem
 
     public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
     {
-        int resourceBarIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Resource Bars"));
+        // Above the info accessory readouts and hotbar, below hover text.
+        int mouseTextIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Mouse Text"));
 
-        if (resourceBarIndex == -1)
+        if (mouseTextIndex == -1)
             return;
 
-        layers.Insert(resourceBarIndex + 1, new LegacyGameInterfaceLayer(
+        layers.Insert(mouseTextIndex, new LegacyGameInterfaceLayer(
             "TrelamiumIII: Act Tracker",
             delegate
             {

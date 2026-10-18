@@ -35,9 +35,6 @@ public readonly record struct ChatEncounter
     /// <summary>Music to swap to for the duration, or null to leave it alone.</summary>
     public int? Music { get; init; }
 
-    /// <summary>Which box the line opens in. Defaults to the portrait panel.</summary>
-    public DialogueStyle Style { get; init; }
-
     /// <summary>
     /// Root the speaker in place, face it at the listener and animate a talking loop
     /// until the dialogue closes. Needs an <see cref="NPCDirector"/>; quietly skipped
@@ -55,17 +52,6 @@ public readonly record struct ChatEncounter
 
     /// <summary>With zoom and letterbox.</summary>
     public ChatEncounter AsScene() => this with { ZoomIn = true, Letterbox = true };
-
-    /// <summary>
-    ///     In the pixelated bubble that hangs over the speaker's head, rather than the portrait panel.
-    /// </summary>
-    public ChatEncounter Projected() => this with { Style = DialogueStyle.Projected };
-
-    /// <summary>
-    ///     In the bubble while the player is near the speaker, handing over to the portrait panel as
-    ///     they walk away and back again if they return.
-    /// </summary>
-    public ChatEncounter Adaptive() => this with { Style = DialogueStyle.Adaptive };
 
     public ChatEncounter WithMusic(int music) => this with { Music = music };
 
@@ -211,7 +197,7 @@ public static class NarrativeChat
 
         return DialogueManager.Instance.StartDialogue(
             encounter.DialogueKey, encounter.ZoomIn, encounter.Letterbox, encounter.Music,
-            encounter.Style, DialogueAnchor.OnSpeaker(npc), encounter.RootWhileSpeaking);
+            DialogueAnchor.OnSpeaker(npc), encounter.RootWhileSpeaking);
     }
 
     /// <summary>

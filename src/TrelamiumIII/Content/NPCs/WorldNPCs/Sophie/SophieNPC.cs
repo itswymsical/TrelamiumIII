@@ -18,5 +18,5 @@ public class SophieNPC : WorldNPC, INarrativeSpeaker
     }
 
     public ChatEncounter GetEncounter(Player player)
-        => ChatEncounter.Play("Sophie.Greeting").Adaptive();
+        => ChatEncounter.Play("Sophie.Greeting");
 }

@@ -37,7 +37,7 @@ public sealed class CrossingOver : Job
 
     public override JobCondition UnlockCondition => JobCondition.World(() => DryadArrivalSystem.Settled);
 
-    public override void OnJobStart() => Context.Play("Dryad.CrossingOver_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+    public override void OnJobStart() => Context.Play("Dryad.CrossingOver_Greeting", zoomIn: true);
 
     public override void Update()
     {

@@ -179,7 +179,7 @@ public abstract class Job
     /// </remarks>
     public virtual ChatEncounter GetChatEncounter(NPC npc, Player player)
         => CanHandIn(out var set, out var handInIndex) && set.Task[handInIndex] is HandInTask { PromptKey: { } prompt }
-            ? ChatEncounter.Play(prompt).Projected()
+            ? ChatEncounter.Play(prompt)
             : ChatEncounter.None;
 
     /// <summary>Job-level state to persist. Task progress saves itself; this is for the rest.</summary>

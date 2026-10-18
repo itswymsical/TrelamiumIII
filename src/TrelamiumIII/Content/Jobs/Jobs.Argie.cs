@@ -44,13 +44,13 @@ public sealed class MycologyHunt : Job
         return job is { State: JobState.Active, CurrentSet: { } set } && !set.Task[PuffballTask].IsCompleted;
     }
 
-    public override void OnJobStart() => Context.Play("Argie.MycologyHunt_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+    public override void OnJobStart() => Context.Play("Argie.MycologyHunt_Greeting", zoomIn: true);
 
     /// <summary>The closing lines offer <see cref="SporeSurvey" />.</summary>
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
-        Context.Play("Argie.MycologyHunt_Complete", style: DialogueStyle.Projected);
+        Context.Play("Argie.MycologyHunt_Complete");
     }
 }
 
@@ -77,11 +77,11 @@ public sealed class SporeSurvey : Job
         providerNPC: ModContent.NPCType<ArgieNPC>())
     { }
 
-    public override void OnJobStart() => Context.Play("Argie.SporeSurvey_Greeting", zoomIn: true, style: DialogueStyle.Projected);
+    public override void OnJobStart() => Context.Play("Argie.SporeSurvey_Greeting", zoomIn: true);
 
     public override void OnJobComplete(bool giveRewards = true)
     {
         base.OnJobComplete(giveRewards);
-        Context.Play("Argie.SporeSurvey_Complete", style: DialogueStyle.Projected);
+        Context.Play("Argie.SporeSurvey_Complete");
     }
 }

@@ -19,5 +19,5 @@ public class PermafrostNPC : WorldNPC, INarrativeSpeaker
     }
 
     public ChatEncounter GetEncounter(Player player)
-        => ChatEncounter.Play("Permafrost.Greeting").Projected();
+        => ChatEncounter.Play("Permafrost.Greeting");
 }

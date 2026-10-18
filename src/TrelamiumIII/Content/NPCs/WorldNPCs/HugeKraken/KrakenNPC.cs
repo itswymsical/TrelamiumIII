@@ -18,5 +18,5 @@ public class KrakenNPC : WorldNPC, INarrativeSpeaker
     }
 
     public ChatEncounter GetEncounter(Player player)
-        => ChatEncounter.Play("Kraken.Greeting").Adaptive();
+        => ChatEncounter.Play("Kraken.Greeting");
 }

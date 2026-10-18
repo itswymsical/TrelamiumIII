@@ -44,7 +44,7 @@ public sealed class Edith : ModNPC, INarrativeSpeaker
     public override bool CanChat() => true;
 
     public ChatEncounter GetEncounter(Player player) =>
-        ChatEncounter.Play(player.GetModPlayer<LibraryPlayer>().Loans.Count > 0 ? "Edith.GreetingLoans" : "Edith.Greeting").Projected();
+        ChatEncounter.Play(player.GetModPlayer<LibraryPlayer>().Loans.Count > 0 ? "Edith.GreetingLoans" : "Edith.Greeting");
 
     public override void AI()
     {
