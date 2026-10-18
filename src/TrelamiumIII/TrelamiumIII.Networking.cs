@@ -28,6 +28,8 @@ partial class TrelamiumIII
         SilvianEncounter,
         LiquidConditions,
         Seals,
+        SharedWorldData,
+        AlmanacDiscovery,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -69,6 +71,12 @@ partial class TrelamiumIII
                 break;
             case MessageType.Seals:
                 SealSystem.Receive(reader, whoAmI);
+                break;
+            case MessageType.SharedWorldData:
+                Common.Subworlds.SharedWorldData.Receive(reader, whoAmI);
+                break;
+            case MessageType.AlmanacDiscovery:
+                Core.Alchemy.AlmanacDiscoverySystem.Receive(reader, whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

@@ -35,6 +35,8 @@ public class WorldTimeSystem : ModSystem, Subworlds.ISharedWorldData
 
     public override void LoadWorldData(TagCompound tag) => TotalDaysElapsed = tag.GetInt("TotalDaysElapsed");
 
+    public void MergeWorldData(TagCompound tag) => TotalDaysElapsed = Math.Max(TotalDaysElapsed, tag.GetInt("TotalDaysElapsed"));
+
     public override void NetSend(BinaryWriter writer) => writer.Write(TotalDaysElapsed);
 
     public override void NetReceive(BinaryReader reader)

@@ -19,8 +19,9 @@ public class AlmanacDiscoverySystem : ModSystem, Common.Subworlds.ISharedWorldDa
     /// <summary>Mark a brewed output as discovered. Returns true if newly added.</summary>
     public static bool Unlock(int itemType)
     {
-        if (itemType <= 0) return false;
-        return _unlocked.Add(itemType);
+        if (itemType <= 0 || !_unlocked.Add(itemType)) return false;
+        Share(DiscoverySet.Output, itemType);
+        return true;
     }
 
     public static bool IsIngredientObtained(int itemType) =>
@@ -35,6 +36,8 @@ public class AlmanacDiscoverySystem : ModSystem, Common.Subworlds.ISharedWorldDa
         // materials are visible from the start, and repeat obtains shouldn't re-toast.
         bool wasVisible = IsIngredientVisible(itemType);
         if (!_ingredients.Add(itemType)) return false;
+
+        Share(DiscoverySet.Ingredient, itemType);
 
         //if (!wasVisible)
         //    Main.NewText($"[i:{ModContent.ItemType<AlchemistsAlmanacItem>()}] The almanac has updated with a new ingredient!", Color.GreenYellow);
@@ -104,6 +107,12 @@ public class AlmanacDiscoverySystem : ModSystem, Common.Subworlds.ISharedWorldDa
         LoadSet(_ingredients, tag, "almanacIngVanilla", "almanacIngMod");
     }
 
+    public void MergeWorldData(TagCompound tag)
+    {
+        LoadSet(_unlocked, tag, "almanacVanilla", "almanacMod");
+        LoadSet(_ingredients, tag, "almanacIngVanilla", "almanacIngMod");
+    }
+
     // Modded item IDs aren't stable across reloads, so those persist by mod/internal name.
     private static void SaveSet(HashSet<int> set, TagCompound tag, string vanillaKey, string modKey)
     {
@@ -169,6 +178,45 @@ public class AlmanacDiscoverySystem : ModSystem, Common.Subworlds.ISharedWorldDa
         _ingredients.Clear();
         count = reader.ReadInt32();
         for (int i = 0; i < count; i++) _ingredients.Add(reader.ReadInt32());
+    }
+
+    private enum DiscoverySet : byte
+    {
+        Output,
+        Ingredient,
+    }
+
+    /// <summary>A client reports a new discovery to the server; the server announces it to every client, the reporter included.</summary>
+    private static void Share(DiscoverySet set, int itemType)
+    {
+        if (Main.netMode == NetmodeID.SinglePlayer) return;
+
+        ModPacket packet = TrelamiumIII.Instance.GetPacket();
+        packet.Write((byte)TrelamiumIII.MessageType.AlmanacDiscovery);
+        packet.Write((byte)set);
+        packet.Write(itemType);
+        packet.Send();
+    }
+
+    internal static void Receive(BinaryReader reader, int whoAmI)
+    {
+        var set = (DiscoverySet)reader.ReadByte();
+        int itemType = reader.ReadInt32();
+
+        if (Main.netMode != NetmodeID.Server)
+        {
+            // Added directly: going through Unlock/ObtainIngredient would report it back.
+            (set == DiscoverySet.Output ? _unlocked : _ingredients).Add(itemType);
+            return;
+        }
+
+        // Only what the client-side recorders could have recorded: real recipe outputs and alchemy materials.
+        if (whoAmI >= Main.maxPlayers || itemType <= 0 || itemType >= ItemLoader.ItemCount) return;
+
+        if (set == DiscoverySet.Output && AlmanacIndex.HasRecipeFor(itemType))
+            Unlock(itemType);
+        else if (set == DiscoverySet.Ingredient && (AlchemyIngredients.IsSubstanceType(itemType) || AlchemyIngredients.IsInputType(itemType)))
+            ObtainIngredient(itemType);
     }
 }
 

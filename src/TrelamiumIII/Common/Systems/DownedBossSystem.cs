@@ -42,6 +42,13 @@ public sealed class DownedBossSystem : ModSystem, Subworlds.ISharedWorldData
         SeenEyeOfCthulhuWake = tag.ContainsKey(nameof(SeenEyeOfCthulhuWake));
     }
 
+    public void MergeWorldData(TagCompound tag)
+    {
+        DownedFungore |= tag.ContainsKey(nameof(DownedFungore));
+        DownedWoodenWarden |= tag.ContainsKey(nameof(DownedWoodenWarden));
+        SeenEyeOfCthulhuWake |= tag.ContainsKey(nameof(SeenEyeOfCthulhuWake));
+    }
+
     public override void NetSend(BinaryWriter writer)
     {
         writer.Write(DownedFungore);

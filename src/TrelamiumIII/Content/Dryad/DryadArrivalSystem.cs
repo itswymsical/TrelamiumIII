@@ -158,6 +158,20 @@ public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
         housedFor = tag.TryGet(HousedForKey, out double housed) ? housed : -1;
     }
 
+    /// <summary>Stage and settling only move forward. Another world's run in progress counts as briefed; the housing timer stays this world's.</summary>
+    public void MergeWorldData(TagCompound tag)
+    {
+        var incoming = tag.ContainsKey(StageKey) ? (DryadArrivalStage)tag.GetByte(StageKey) : DryadArrivalStage.Dormant;
+
+        if (incoming == DryadArrivalStage.Arriving)
+            incoming = DryadArrivalStage.Briefed;
+
+        if (incoming > Stage)
+            Stage = incoming;
+
+        Settled |= tag.GetBool(SettledKey);
+    }
+
     public override void PostWorldLoad()
     {
         if (Main.netMode == NetmodeID.MultiplayerClient)
