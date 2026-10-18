@@ -126,17 +126,19 @@ public abstract class Villager : TerrarianNPC
             OpenTradeUI();
     }
 
-    /// <summary>The weapon is rolled on every side, so the server's roll is the one clients use.</summary>
+    /// <summary>The weapon, offers and stock are rolled on every side and loaded only on the server, so clients take the server's.</summary>
     public override void SendExtraAI(BinaryWriter writer)
     {
         base.SendExtraAI(writer);
         writer.Write(weapon);
+        WriteTradeState(writer);
     }
 
     public override void ReceiveExtraAI(BinaryReader reader)
     {
         base.ReceiveExtraAI(reader);
         weapon = reader.ReadInt32();
+        ReadTradeState(reader);
     }
 
     public override void SaveData(TagCompound tag)
@@ -170,7 +172,7 @@ public abstract class Villager : TerrarianNPC
         Trades.Clear();
 
         // Matched by output, each stock entry used once: a pool can grant the same item from two trades.
-        var pool = GetStockPool();
+        var pool = GetIndexedStockPool();
 
         foreach (var entry in tag.GetList<TagCompound>("trades"))
         {
@@ -238,9 +240,87 @@ public abstract class Villager : TerrarianNPC
     protected virtual List<StockEntry> GetStockPool() => [];
     protected static TradeOffer Trade() => new();
 
+    private List<StockEntry> GetIndexedStockPool()
+    {
+        var pool = GetStockPool();
+        for (int i = 0; i < pool.Count; i++)
+            pool[i].Offer.PoolIndex = i;
+
+        return pool;
+    }
+
+    /// <summary>The current offer drawn from stock pool entry <paramref name="poolIndex"/>, or null.</summary>
+    public TradeOffer? FindTrade(int poolIndex) => poolIndex < 0 ? null : Trades?.Find(t => t.PoolIndex == poolIndex);
+
+    /// <summary>Offers as pool index and remaining uses, then every inventory slot as type and stack.</summary>
+    private void WriteTradeState(BinaryWriter writer)
+    {
+        writer.Write(Trades != null);
+        if (Trades == null)
+            return;
+
+        writer.Write((byte)Trades.Count);
+        foreach (var offer in Trades)
+        {
+            writer.Write7BitEncodedInt(offer.PoolIndex + 1);
+            writer.Write7BitEncodedInt(offer.UsesRemaining + 1);
+        }
+
+        foreach (Item item in CarriedInventory)
+        {
+            writer.Write7BitEncodedInt(item.IsAir ? 0 : item.type);
+            if (!item.IsAir)
+                writer.Write7BitEncodedInt(item.stack);
+        }
+    }
+
+    private void ReadTradeState(BinaryReader reader)
+    {
+        if (!reader.ReadBoolean())
+            return;
+
+        var offers = new (int PoolIndex, int Uses)[reader.ReadByte()];
+        for (int i = 0; i < offers.Length; i++)
+            offers[i] = (reader.Read7BitEncodedInt() - 1, reader.Read7BitEncodedInt() - 1);
+
+        foreach (Item slot in CarriedInventory)
+        {
+            int type = reader.Read7BitEncodedInt();
+            if (type <= 0)
+            {
+                slot.TurnToAir();
+                continue;
+            }
+
+            if (slot.type != type)
+                slot.SetDefaults(type);
+
+            slot.stack = reader.Read7BitEncodedInt();
+        }
+
+        // Offers from outside the pool (index -1) can't be rebuilt here and are left out.
+        int[] indices = offers.Where(o => o.PoolIndex >= 0).Select(o => o.PoolIndex).ToArray();
+        bool rebuild = Trades == null || !Trades.Select(t => t.PoolIndex).SequenceEqual(indices);
+
+        if (rebuild)
+        {
+            var pool = GetIndexedStockPool();
+            Trades = indices.Where(i => i < pool.Count).Select(i => pool[i].Offer).ToList();
+        }
+
+        foreach (var (poolIndex, uses) in offers)
+        {
+            if (FindTrade(poolIndex) is TradeOffer offer)
+                offer.UsesRemaining = uses;
+        }
+
+        if (rebuild)
+            TradeUI.Refresh(this);
+    }
+
     private void SetTradeInventory()
     {
-        var stock = GetStockPool();
+        var stock = GetIndexedStockPool();
         int picks = Main.rand.Next(2, 4);
 
         for (int i = 0; i < picks && stock.Count > 0; i++)

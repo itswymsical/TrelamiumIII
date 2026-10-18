@@ -89,7 +89,8 @@ public static class TradeUI
             return;
         }
 
-        if (CurrentTrader == null || !CurrentTrader.NPC.active)
+        // A sync can reuse the slot for another NPC, which replaces the ModNPC instance.
+        if (CurrentTrader == null || !CurrentTrader.NPC.active || CurrentTrader.NPC.ModNPC != CurrentTrader)
         {
             Close();
             return;
@@ -263,9 +264,24 @@ public static class TradeUI
         }
     }
 
-    private static void TryFire(TradeOffer offer)
+    private static void TryFire(TradeOffer offer) => TradeNet.Trade(CurrentTrader, offer, 1, bulk: false);
+
+    private static void ExecuteBuyAll(TradeOffer offer) => TradeNet.Trade(CurrentTrader, offer, int.MaxValue, bulk: true);
+
+    /// <summary>Called once trades went through: at once in singleplayer, on the server's grant in multiplayer. 0 means refused.</summary>
+    internal static void OnTraded(int count, bool bulk)
     {
-        if (!offer.DoTrade(Main.LocalPlayer, CurrentTrader)) return;
+        if (count <= 0)
+        {
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            return;
+        }
+
+        if (bulk)
+        {
+            SoundEngine.PlaySound(SoundID.Coins);
+            return;
+        }
 
         if (_holdFireCount % 3 == 0)
             SoundEngine.PlaySound(SoundID.Grab);
@@ -273,19 +289,11 @@ public static class TradeUI
         _holdFireCount++;
     }
 
-    private static void ExecuteBuyAll(TradeOffer offer)
+    /// <summary>Rebuilds the rows after a server sync replaced <paramref name="trader"/>'s offers.</summary>
+    internal static void Refresh(Villager trader)
     {
-        int count = 0;
-        const int safety = 999;
-
-        while (count < safety && offer.CanExecute(Main.LocalPlayer, CurrentTrader))
-        {
-            if (!offer.DoTrade(Main.LocalPlayer, CurrentTrader)) break;
-            count++;
-        }
-
-        if (count > 0)
-            SoundEngine.PlaySound(SoundID.Coins);
+        if (IsOpen && CurrentTrader == trader)
+            BuildDisplayCache();
     }
 
     private static void DrawBuyAllButton(SpriteBatch sb, Rectangle rect, bool hovered, bool enabled)
