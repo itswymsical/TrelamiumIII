@@ -127,9 +127,17 @@ public abstract class Villager : TerrarianNPC
     }
 
     /// <summary>The weapon is rolled on every side, so the server's roll is the one clients use.</summary>
-    public override void SendExtraAI(BinaryWriter writer) => writer.Write(weapon);
+    public override void SendExtraAI(BinaryWriter writer)
+    {
+        base.SendExtraAI(writer);
+        writer.Write(weapon);
+    }
 
-    public override void ReceiveExtraAI(BinaryReader reader) => weapon = reader.ReadInt32();
+    public override void ReceiveExtraAI(BinaryReader reader)
+    {
+        base.ReceiveExtraAI(reader);
+        weapon = reader.ReadInt32();
+    }
 
     public override void SaveData(TagCompound tag)
     {

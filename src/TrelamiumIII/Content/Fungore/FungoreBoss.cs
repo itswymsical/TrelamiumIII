@@ -13,6 +13,7 @@ using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Core.Graphics.Shockwaves;
+using TrelamiumIII.Core.NPCs;
 using static TrelamiumIII.Utilities.EaseFunction;
 
 namespace TrelamiumIII.Content.Fungore;
@@ -225,6 +226,9 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Frames of struggling before the cloud goes up.</summary>
     private const int DEATH_TICKS = 199;
 
+    /// <summary>Ticks the server waits after the cloud before the kill, so lagging clients still reach it.</summary>
+    private const int DEATH_KILL_DELAY = 10;
+
     /// <summary>Airborne frames a retreat waits for the floor before despawning in the air.</summary>
     private const int RETREAT_FALL_TIMEOUT = 180;
 
@@ -432,8 +436,14 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Client-side; the entrance is cosmetic and is never synced.</summary>
     private bool introStarted;
 
+    /// <summary>Client-side: this instance moved the camera out and owes the return.</summary>
+    private bool cameraHeld;
+
     /// <summary>Client-side, for the same reason: each client schedules the fill against its own mix.</summary>
     private bool deathFillFired;
+
+    /// <summary>Set by the server right before the kill, so <see cref="CheckDead" /> lets it through.</summary>
+    private bool deathFinished;
 
     private Vector2 squish = Vector2.One;
 
@@ -520,6 +530,9 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Places him under the floor near whoever summoned him, and starts the entrance.</summary>
     public override void OnSpawn(IEntitySource source)
     {
+        if (ClientSpawnGuard.Reject(NPC))
+            return;
+
         NPC.TargetClosest(false);
 
         Player target = Target;
@@ -682,11 +695,16 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Intercepts the kill so the death animation gets to run before he actually dies.</summary>
     public override bool CheckDead()
     {
-        if (State == FungoreState.Death)
+        if (deathFinished)
             return true;
 
         NPC.life = 1;
         NPC.dontTakeDamage = true;
+
+        // A strike that lands mid-animation (sent before the client saw the state) only refills the 1 life.
+        if (State == FungoreState.Death)
+            return false;
+
         NPC.velocity.X = 0f;
 
         SetState(FungoreState.Death);
@@ -703,15 +721,17 @@ public sealed class FungoreBoss : ModNPC
             return;
 
         introStarted = true;
-        CameraSystem.MoveCameraOut(EMERGE_RUMBLE_TICKS, NPC.Center);
 
-        if (State == FungoreState.Emerge && StateTimer <= EMERGE_RUMBLE_TICKS)
-        {
-            BossIntroSystem.Play(CreateIntro());
-        }
+        // A client that first sees him after the entrance gets neither the card nor the camera move.
+        if (State != FungoreState.Emerge || StateTimer > EMERGE_RUMBLE_TICKS)
+            return;
+
+        cameraHeld = true;
+        CameraSystem.MoveCameraOut(EMERGE_RUMBLE_TICKS, NPC.Center);
+        BossIntroSystem.Play(CreateIntro());
     }
 
-    private static BossIntro CreateIntro() => new()
+    private BossIntro CreateIntro() => new()
     {
         Name = Lang.GetNPCNameValue(ModContent.NPCType<FungoreBoss>()),
         Epithet = Language.GetTextValue($"Mods.{nameof(TrelamiumIII)}.NPCs.{nameof(FungoreBoss)}.Epithet"),
@@ -725,7 +745,19 @@ public sealed class FungoreBoss : ModNPC
 
         // Settled by DoLanding: the landing is a fall of unknown length, not a fixed hold.
         AutoSettle = false,
+
+        BossIndex = NPC.whoAmI,
+        OnAbandon = ReleaseCamera,
     };
+
+    private void ReleaseCamera()
+    {
+        if (!cameraHeld)
+            return;
+
+        cameraHeld = false;
+        CameraSystem.ReturnCamera(30);
+    }
 
     private void UpdateEmerge()
     {
@@ -904,7 +936,8 @@ public sealed class FungoreBoss : ModNPC
 
             // Everything the entrance owns comes off here, at the exact frame the fight starts.
             BossIntroSystem.Settle();
-            CameraSystem.ReturnCamera(30);
+            ReleaseCamera();
+
             return;
         }
 
@@ -1881,8 +1914,10 @@ public sealed class FungoreBoss : ModNPC
 
         // The kill itself is the server's, like any other. A client doing it locally would remove
         // the boss early and then have it reappear on the next sync.
-        if (Main.netMode == NetmodeID.MultiplayerClient)
+        if (StateTimer < DEATH_TICKS + DEATH_KILL_DELAY || Main.netMode == NetmodeID.MultiplayerClient)
             return;
+
+        deathFinished = true;
 
         NPC.life = 0;
         NPC.HitEffect();

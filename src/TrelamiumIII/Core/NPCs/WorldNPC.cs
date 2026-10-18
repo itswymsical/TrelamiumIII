@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Terraria.Chat;
 using Terraria.DataStructures;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
@@ -248,7 +249,7 @@ public abstract partial class WorldNPC : ModNPC
     /// </summary>
     private void TickDespawn()
     {
-        if (!CanDespawn || HasActiveJob || HasHome)
+        if (!CanDespawn || HasActiveJob || HasHome || Main.netMode == NetmodeID.MultiplayerClient)
             return;
 
         timeAlive++;
@@ -302,7 +303,13 @@ public abstract partial class WorldNPC : ModNPC
 
     public override bool ModifyDeathMessage(ref NetworkText customText, ref Color color)
     {
-        Main.NewText($"{NPC.GivenName} was slain...", Color.Red);
+        string message = $"{NPC.GivenName} was slain...";
+
+        if (Main.netMode == NetmodeID.Server)
+            ChatHelper.BroadcastChatMessage(NetworkText.FromLiteral(message), Color.Red);
+        else if (Main.netMode == NetmodeID.SinglePlayer)
+            Main.NewText(message, Color.Red);
+
         return false;
     }
 

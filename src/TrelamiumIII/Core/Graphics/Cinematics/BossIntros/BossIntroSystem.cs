@@ -73,6 +73,9 @@ internal sealed class BossIntroSystem : ModSystem
     /// <summary>Tick <see cref="Settle" /> was called on, or -1 while the entrance is still running.</summary>
     private static int outroStart = -1;
 
+    /// <summary>Type of the NPC at <see cref="BossIntro.BossIndex" /> when the intro started.</summary>
+    private static int bossType = -1;
+
     public static bool IsPlaying => current is not null;
 
     /// <summary>True once the fight has started and the furniture is on its way out.</summary>
@@ -93,6 +96,7 @@ internal sealed class BossIntroSystem : ModSystem
         current = intro;
         timer = 0;
         outroStart = -1;
+        bossType = intro.BossIndex >= 0 && intro.BossIndex < Main.maxNPCs ? Main.npc[intro.BossIndex].type : -1;
     }
 
     /// <summary>
@@ -134,16 +138,37 @@ internal sealed class BossIntroSystem : ModSystem
 
         timer++;
 
+        if (outroStart < 0 && IsBossGone(intro))
+        {
+            intro.OnAbandon?.Invoke();
+            Stop();
+            return;
+        }
+
         if (timer < intro.RevealTick)
             Rumble(intro);
         else if (timer == intro.RevealTick)
             Reveal(intro);
 
         if (outroStart < 0 && timer >= SettleTick(intro))
+        {
             Settle();
+
+            if (!intro.AutoSettle)
+                intro.OnAbandon?.Invoke();
+        }
 
         if (timer >= EndTick(intro))
             current = null;
+    }
+
+    private static bool IsBossGone(BossIntro intro)
+    {
+        if (intro.BossIndex < 0 || intro.BossIndex >= Main.maxNPCs)
+            return false;
+
+        NPC boss = Main.npc[intro.BossIndex];
+        return !boss.active || boss.type != bossType;
     }
 
     /// <summary>Tick the system settles on by itself: the end of the hold, or <see cref="BossIntro.MaxLength" /> as a manual intro's backstop.</summary>

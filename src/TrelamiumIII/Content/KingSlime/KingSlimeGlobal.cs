@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.Localization;
+using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
@@ -15,10 +18,14 @@ namespace TrelamiumIII.Content.KingSlime;
 
 public class KingSlimeRework : GlobalNPC
 {
+    public override bool InstancePerEntity => true;
+
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation)
     {
         return entity.type == NPCID.KingSlime;
     }
+
+    private static KingSlimeRework Of(NPC npc) => npc.GetGlobalNPC<KingSlimeRework>();
 
     private AIState GetState(NPC npc)
     {
@@ -74,7 +81,8 @@ public class KingSlimeRework : GlobalNPC
         )
     };
 
-    private static Dictionary<int, PatternData> npcPatternData = new();
+    /// <summary>Server-side decision state; clients never read it.</summary>
+    private PatternData pattern;
 
     private struct PatternData
     {
@@ -85,30 +93,13 @@ public class KingSlimeRework : GlobalNPC
         public bool patternOverride;
     }
 
-    private PatternData GetPatternData(NPC npc)
-    {
-        if (!npcPatternData.ContainsKey(npc.whoAmI))
-        {
-            npcPatternData[npc.whoAmI] = new PatternData
-            {
-                currentPattern = PatternType.Phase1,
-                patternStep = 0,
-                currentRepetition = 0,
-                patternTimer = 0,
-                patternOverride = false
-            };
-        }
-        return npcPatternData[npc.whoAmI];
-    }
+    private PatternData GetPatternData(NPC npc) => Of(npc).pattern;
 
-    private void SetPatternData(NPC npc, PatternData data)
-    {
-        npcPatternData[npc.whoAmI] = data;
-    }
+    private void SetPatternData(NPC npc, PatternData data) => Of(npc).pattern = data;
 
     #endregion
 
-    private static Dictionary<int, NPCExtraData> npcExtraData = new();
+    private NPCExtraData extra = NPCExtraData.Initial;
 
     private struct NPCExtraData
     {
@@ -127,7 +118,6 @@ public class KingSlimeRework : GlobalNPC
         public TeleportPhase teleportPhase;
         public Vector2 teleportDestination;
         public float teleportScaleMultiplier;
-        public bool isInvulnerable;
         public Vector2 lastPosition;
         public Vector2 teleportStartPos;
         public float stuckTimer;
@@ -136,54 +126,69 @@ public class KingSlimeRework : GlobalNPC
         public bool deathAnimationStarted;
         public float deathScale;
         public int deathAnimationPhase;
+
+        /// <summary>Set by the authority right before the kill, so <see cref="CheckDead" /> lets it through.</summary>
+        public bool deathAnimationFinished;
+
+        /// <summary>Local, unsynced: each side plays the death cue and the finale burst once.</summary>
+        public bool deathCuePlayed;
+
+        public bool finaleFired;
         public bool introStarted;
         public float introScaleMultiplier;
         public int feedings;
         public int slimesEaten;
-    }
 
-    private NPCExtraData GetExtraData(NPC npc)
-    {
-        if (!npcExtraData.ContainsKey(npc.whoAmI))
+        public static NPCExtraData Initial => new()
         {
-            npcExtraData[npc.whoAmI] = new NPCExtraData
-            {
-                squishScale = Vector2.One,
-                wasGliding = false,
-                targetStrolls = 3,
-                rotationSway = 0f,
-                wobbleTimer = 0f,
-                isWobbling = false,
-                groundPoundCount = 0,
-                targetGroundPounds = 1,
-                baseDefense = 18,
-                lastConsumeTime = -CONSUME_COOLDOWN,
-                lineOfSightTimer = 0f,
-                teleportTimer = 0f,
-                teleportPhase = TeleportPhase.Prepare,
-                teleportDestination = Vector2.Zero,
-                teleportScaleMultiplier = 1f,
-                isInvulnerable = false,
-                lastPosition = Vector2.Zero,
-                teleportStartPos = Vector2.Zero,
-                stuckTimer = 0f,
-                bounceHouseSlams = 0,
-                targetBounceSlams = 3,
-                deathAnimationStarted = false,
-                deathScale = 1f,
-                deathAnimationPhase = 0,
-                introStarted = false,
-                introScaleMultiplier = 1f,
-                feedings = 0,
-                slimesEaten = 0
-            };
-        }
-        return npcExtraData[npc.whoAmI];
+            squishScale = Vector2.One,
+            targetStrolls = 3,
+            targetGroundPounds = 1,
+            baseDefense = 18,
+            lastConsumeTime = -CONSUME_COOLDOWN,
+            teleportPhase = TeleportPhase.Prepare,
+            teleportScaleMultiplier = 1f,
+            targetBounceSlams = 3,
+            deathScale = 1f,
+            introScaleMultiplier = 1f,
+        };
     }
 
-    private void SetExtraData(NPC npc, NPCExtraData data)
+    private NPCExtraData GetExtraData(NPC npc) => Of(npc).extra;
+
+    private void SetExtraData(NPC npc, NPCExtraData data) => Of(npc).extra = data;
+
+    /// <summary>The per-attack counters clients need to run the current state; pattern choice stays on the server.</summary>
+    public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
     {
-        npcExtraData[npc.whoAmI] = data;
+        var data = GetExtraData(npc);
+
+        bitWriter.WriteBit(data.teleportPhase == TeleportPhase.Execute);
+        bitWriter.WriteBit(data.deathAnimationStarted);
+
+        binaryWriter.Write((byte)data.deathAnimationPhase);
+        binaryWriter.Write(data.deathScale);
+        binaryWriter.Write((byte)Math.Clamp(data.groundPoundCount, 0, byte.MaxValue));
+        binaryWriter.Write((byte)Math.Clamp(data.targetGroundPounds, 0, byte.MaxValue));
+        binaryWriter.Write((byte)Math.Clamp(data.bounceHouseSlams, 0, byte.MaxValue));
+        binaryWriter.Write((byte)Math.Clamp(data.targetBounceSlams, 0, byte.MaxValue));
+    }
+
+    public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader)
+    {
+        var data = GetExtraData(npc);
+
+        data.teleportPhase = bitReader.ReadBit() ? TeleportPhase.Execute : TeleportPhase.Prepare;
+        data.deathAnimationStarted = bitReader.ReadBit();
+
+        data.deathAnimationPhase = binaryReader.ReadByte();
+        data.deathScale = binaryReader.ReadSingle();
+        data.groundPoundCount = binaryReader.ReadByte();
+        data.targetGroundPounds = binaryReader.ReadByte();
+        data.bounceHouseSlams = binaryReader.ReadByte();
+        data.targetBounceSlams = binaryReader.ReadByte();
+
+        SetExtraData(npc, data);
     }
 
     /// <summary>Scale from health alone, before any teleport or intro multiplier.</summary>
@@ -349,7 +354,10 @@ public class KingSlimeRework : GlobalNPC
             target = Main.player[npc.target];
             if (!target.active || target.dead)
             {
-                SetState(npc, AIState.Despawning);
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    SetState(npc, AIState.Despawning);
+
+                ApplyStateFlags(npc);
                 return;
             }
         }
@@ -376,7 +384,8 @@ public class KingSlimeRework : GlobalNPC
         HandleDustTrail(npc);
         HandleSlimeTrail(npc);
 
-        if (GetState(npc) is not (AIState.DeathAnimation or AIState.Intro))
+        // Clients run the current state from synced ai[] and extra AI; only the authority picks the next one.
+        if (GetState(npc) is not (AIState.DeathAnimation or AIState.Intro) && Main.netMode != NetmodeID.MultiplayerClient)
         {
             UpdateLOS(npc, target);
             HandlePatternTeleport(npc, target);
@@ -412,8 +421,30 @@ public class KingSlimeRework : GlobalNPC
                 break;
         }
 
+        ApplyStateFlags(npc);
+
         NPCUtils.SlopedCollision(npc);
         NPCUtils.CheckPlatform(npc, target);
+    }
+
+    /// <summary>
+    ///     Sets <see cref="NPC.hide" /> and <see cref="NPC.dontTakeDamage" /> from the synced state every tick, on every side.
+    ///     Neither is in the NPC packet, so a latched value outlives the state on a client that missed its exit.
+    /// </summary>
+    private void ApplyStateFlags(NPC npc)
+    {
+        var timer = GetTimer(npc);
+
+        var (hidden, invulnerable) = GetState(npc) switch
+        {
+            AIState.Intro => (timer < INTRO_REVEAL_TICKS, true),
+            AIState.Teleporting when IsTeleportHidden(GetExtraData(npc).teleportPhase, timer) => (true, true),
+            AIState.DeathAnimation => (false, true),
+            _ => (false, false),
+        };
+
+        npc.hide = hidden;
+        npc.dontTakeDamage = invulnerable;
     }
 
     public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
@@ -531,6 +562,9 @@ public class KingSlimeRework : GlobalNPC
 
     private void StartPatternAttack(NPC npc, AIState newState, Player target)
     {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
         SetState(npc, newState);
         GetTimer(npc) = 0;
 
@@ -640,7 +674,7 @@ public class KingSlimeRework : GlobalNPC
         if (extraData.lineOfSightTimer >= LINE_OF_SIGHT_TIMEOUT * 1.5f)
             shouldTeleport = true;
 
-        if (shouldTeleport && Main.netMode != NetmodeID.MultiplayerClient && BeginTeleport(npc, target))
+        if (shouldTeleport && BeginTeleport(npc, target))
         {
             patternData.patternOverride = true;
             SetPatternData(npc, patternData);
@@ -681,7 +715,7 @@ public class KingSlimeRework : GlobalNPC
                 shouldOverride = true;
         }
 
-        if (shouldOverride && Main.netMode != NetmodeID.MultiplayerClient)
+        if (shouldOverride)
         {
             patternData.patternOverride = true;
             SetPatternData(npc, patternData);
@@ -694,6 +728,9 @@ public class KingSlimeRework : GlobalNPC
 
     private void ResumeBattlePattern(NPC npc)
     {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
         var patternData = GetPatternData(npc);
         patternData.patternOverride = false;
         SetPatternData(npc, patternData);
@@ -705,36 +742,39 @@ public class KingSlimeRework : GlobalNPC
     #endregion
 
     #region State Methods
+    /// <summary>
+    ///     Holds the slime at 1 life until the death animation has played. The authority starts it; a client's own lethal
+    ///     hit only waits for the server's state.
+    /// </summary>
     public override bool CheckDead(NPC npc)
     {
         var extraData = GetExtraData(npc);
 
-        if (!extraData.deathAnimationStarted)
-        {
-            extraData.deathAnimationStarted = true;
-            extraData.deathAnimationPhase = 0;
-            extraData.deathScale = npc.scale;
-            SetExtraData(npc, extraData);
+        if (extraData.deathAnimationFinished)
+            return true;
 
-            SetState(npc, AIState.DeathAnimation);
-            GetTimer(npc) = 0;
+        npc.life = 1;
+        npc.dontTakeDamage = true;
 
-            npc.life = 1;
-            npc.dontTakeDamage = true;
-
-            Main.StopSlimeRain();
-
-            SoundEngine.PlaySound(Assets.SFX.KingSlimeDeath.Asset with
-            {
-                Volume = 0.8f,
-                PitchVariance = 0.1f
-            }, npc.Center);
-
+        if (extraData.deathAnimationStarted || Main.netMode == NetmodeID.MultiplayerClient)
             return false;
-        }
 
-        return true;
+        extraData.deathAnimationStarted = true;
+        extraData.deathAnimationPhase = 0;
+        extraData.deathScale = npc.scale;
+        SetExtraData(npc, extraData);
+
+        SetState(npc, AIState.DeathAnimation);
+        GetTimer(npc) = 0;
+        npc.netUpdate = true;
+
+        Main.StopSlimeRain();
+
+        return false;
     }
+
+    /// <summary>Ticks the authority waits after the finale before the kill, so lagging clients still play it.</summary>
+    private const int DEATH_KILL_DELAY = 10;
 
     private void DoDeathAnimation(NPC npc, Player target)
     {
@@ -742,6 +782,17 @@ public class KingSlimeRework : GlobalNPC
         ref float timer = ref GetTimer(npc);
 
         npc.velocity *= 0.92f;
+
+        if (!extraData.deathCuePlayed)
+        {
+            extraData.deathCuePlayed = true;
+
+            SoundEngine.PlaySound(Assets.SFX.KingSlimeDeath.Asset with
+            {
+                Volume = 0.8f,
+                PitchVariance = 0.1f
+            }, npc.Center);
+        }
 
         switch (extraData.deathAnimationPhase)
         {
@@ -801,39 +852,47 @@ public class KingSlimeRework : GlobalNPC
                 break;
 
             case 2: // big finish
-                for (var i = 0; i < 150; i++)
+                if (!extraData.finaleFired)
                 {
-                    var dustVel = Main.rand.NextVector2CircularEdge(12f, 12f);
-                    var dust = Dust.NewDustDirect(npc.Center, 0, 0, DustID.t_Slime,
-                        dustVel.X, dustVel.Y, 150, new Color(86, 162, 255, 150), 2f);
-                    dust.noGravity = true;
-                    dust.velocity = dustVel;
+                    extraData.finaleFired = true;
+
+                    for (var i = 0; i < 150; i++)
+                    {
+                        var dustVel = Main.rand.NextVector2CircularEdge(12f, 12f);
+                        var dust = Dust.NewDustDirect(npc.Center, 0, 0, DustID.t_Slime,
+                            dustVel.X, dustVel.Y, 150, new Color(86, 162, 255, 150), 2f);
+                        dust.noGravity = true;
+                        dust.velocity = dustVel;
+                    }
+
+                    GelVolley.Radial(npc, count: 12, minSpeed: 7f, maxSpeed: 11f);
+
+                    // The Nerdy Slime comes from vanilla's kill handler, once per world.
+                    CameraSystem.shake = 20;
+
+                    SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with
+                    {
+                        Volume = 1f,
+                        Pitch = -0.3f
+                    }, npc.Center);
+
+                    SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with
+                    {
+                        Volume = 1f,
+                        Pitch = -0.25f
+                    }, npc.Center);
                 }
 
-                GelVolley.Radial(npc, count: 12, minSpeed: 7f, maxSpeed: 11f);
+                if (timer < DEATH_KILL_DELAY || Main.netMode == NetmodeID.MultiplayerClient)
+                    break;
 
-                // The Nerdy Slime comes from vanilla's kill handler, once per world.
-                CameraSystem.shake = 20;
-
-                SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with
-                {
-                    Volume = 1f,
-                    Pitch = -0.3f
-                }, npc.Center);
-
-                SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with
-                {
-                    Volume = 1f,
-                    Pitch = -0.25f
-                }, npc.Center);
-
-                timer = 0;
+                extraData.deathAnimationFinished = true;
+                SetExtraData(npc, extraData);
 
                 npc.life = 0;
-                npc.dontTakeDamage = false;
                 NPC.downedSlimeKing = true;
                 npc.checkDead();
-                break;
+                return;
         }
 
         SetExtraData(npc, extraData);
@@ -1285,13 +1344,6 @@ public class KingSlimeRework : GlobalNPC
                     var fadeProgress = MathHelper.Clamp((20f - timer) / 20f, 0f, 1f);
                     extraData.teleportScaleMultiplier = 0.5f + fadeProgress * 0.5f;
 
-                    if (timer >= 20f)
-                    {
-                        extraData.isInvulnerable = true;
-                        npc.dontTakeDamage = true;
-                        npc.hide = true;
-                    }
-
                     if (timer == 20f)
                     {
                         Gore.NewGore(npc.GetSource_FromAI(),
@@ -1301,9 +1353,6 @@ public class KingSlimeRework : GlobalNPC
                 }
                 else if (timer <= 35f)
                 {
-                    npc.hide = true;
-                    extraData.isInvulnerable = true;
-                    npc.dontTakeDamage = true;
                     extraData.teleportScaleMultiplier = 0.5f;
                 }
                 else if (timer >= 35f && Main.netMode != NetmodeID.MultiplayerClient)
@@ -1314,17 +1363,15 @@ public class KingSlimeRework : GlobalNPC
                     npc.netUpdate = true;
                 }
 
+                SetExtraData(npc, extraData);
                 TeleportDust(npc, 1f);
-                break;
+                return;
 
             case TeleportPhase.Execute:
                 npc.aiAction = 0;
 
                 if (timer <= 10f)
                 {
-                    npc.hide = true;
-                    extraData.isInvulnerable = true;
-                    npc.dontTakeDamage = true;
                     extraData.teleportScaleMultiplier = 0.5f;
 
                     var windUpProgress = timer / 10f;
@@ -1346,30 +1393,23 @@ public class KingSlimeRework : GlobalNPC
                     var fadeInProgress = MathHelper.Clamp((timer - 10f) / 15f, 0f, 1f);
                     extraData.teleportScaleMultiplier = 0.5f + fadeInProgress * 0.5f;
 
-                    if (fadeInProgress >= 0.1f)
-                    {
-                        npc.hide = false;
-                        extraData.isInvulnerable = false;
-                        npc.dontTakeDamage = false;
-                    }
-                    else
-                    {
-                        npc.hide = true;
-                        extraData.isInvulnerable = true;
-                        npc.dontTakeDamage = true;
-                    }
-
                     TeleportDust(npc, 3f - fadeInProgress * 2f);
                 }
                 else if (timer >= 25f && Main.netMode != NetmodeID.MultiplayerClient)
                 {
+                    SetExtraData(npc, extraData);
                     CompleteTeleport(npc);
+                    return;
                 }
                 break;
         }
 
         SetExtraData(npc, extraData);
     }
+
+    /// <summary>Hidden and untouchable from tick 20 of the wind-up until tick 12 of the reappearance.</summary>
+    private static bool IsTeleportHidden(TeleportPhase phase, float timer)
+        => phase == TeleportPhase.Prepare ? timer >= 20f : timer < 12f;
 
 
     /// <summary>
@@ -1396,9 +1436,6 @@ public class KingSlimeRework : GlobalNPC
         var extraData = GetExtraData(npc);
 
         npc.TargetClosest();
-        npc.hide = false;
-        extraData.isInvulnerable = false;
-        npc.dontTakeDamage = false;
         extraData.teleportScaleMultiplier = 1f;
         extraData.teleportPhase = TeleportPhase.Prepare;
         extraData.lastPosition = npc.Center;
@@ -1464,7 +1501,7 @@ public class KingSlimeRework : GlobalNPC
             dust.fadeIn = 1.2f;
         }
 
-        if (IsFeedingDone(npc, timer))
+        if (Main.netMode != NetmodeID.MultiplayerClient && IsFeedingDone(npc, timer))
         {
             extraData.lastConsumeTime = Main.GameUpdateCount;
             SetExtraData(npc, extraData);
@@ -1525,11 +1562,8 @@ public class KingSlimeRework : GlobalNPC
         var extraData = GetExtraData(npc);
         ref float timer = ref GetTimer(npc);
 
-        // Derived every tick rather than latched, so a client that missed the start still agrees.
-        npc.dontTakeDamage = true;
         npc.damage = 0;
         npc.velocity.X = 0f;
-        npc.hide = timer < INTRO_REVEAL_TICKS;
 
         if (timer == 1 && Main.netMode != NetmodeID.MultiplayerClient)
             MoveToEntrance(npc, target);
@@ -1625,8 +1659,6 @@ public class KingSlimeRework : GlobalNPC
         extraData.introScaleMultiplier = 1f;
         SetExtraData(npc, extraData);
 
-        npc.hide = false;
-        npc.dontTakeDamage = false;
         npc.damage = 12;
 
         StartPatternAttack(npc, AttackPatterns[PatternType.Phase1].States[0], target);
@@ -1893,10 +1925,9 @@ public class KingSlimeRework : GlobalNPC
         if ((!hasLineOfSight || !heightDifferenceOk) && !shouldIgnoreLineOfSight)
         {
             extraData.teleportTimer += 2f;
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-                extraData.lineOfSightTimer += 1.5f;
+            extraData.lineOfSightTimer += 1.5f;
         }
-        else if (Main.netMode != NetmodeID.MultiplayerClient)
+        else
         {
             extraData.lineOfSightTimer -= 2f;
             if (extraData.lineOfSightTimer < 0f)
@@ -2041,8 +2072,8 @@ public class KingSlimeRework : GlobalNPC
 
     private void TeleportDust(NPC npc, float velocityMultiplier)
     {
-        var extraData = GetExtraData(npc);
-        if (extraData.isInvulnerable) return;
+        if (IsTeleportHidden(GetExtraData(npc).teleportPhase, GetTimer(npc)))
+            return;
 
         for (var i = 0; i < 10; i++)
         {
@@ -2325,40 +2356,14 @@ public class KingSlimeRework : GlobalNPC
 
     public override void OnSpawn(NPC npc, IEntitySource source)
     {
-        base.OnSpawn(npc, source);
+        if (ClientSpawnGuard.Reject(npc))
+            return;
 
-        // NPC slots are reused, so an entry left by a despawned fight would carry its counters into this one.
-        npcPatternData.Remove(npc.whoAmI);
-        npcExtraData.Remove(npc.whoAmI);
-
-        if (Main.netMode != NetmodeID.MultiplayerClient)
-            SetState(npc, AIState.Intro);
+        SetState(npc, AIState.Intro);
 
         Main.StartSlimeRain();
 
         Main.slimeRain = true;
-    }
-    public override void OnKill(NPC npc)
-    {
-        if (npcPatternData.ContainsKey(npc.whoAmI))
-            npcPatternData.Remove(npc.whoAmI);
-
-        if (npcExtraData.ContainsKey(npc.whoAmI))
-            npcExtraData.Remove(npc.whoAmI);
-    }
-
-    public override bool CheckActive(NPC npc)
-    {
-        if (!npc.active)
-        {
-            if (npcPatternData.ContainsKey(npc.whoAmI))
-                npcPatternData.Remove(npc.whoAmI);
-
-            if (npcExtraData.ContainsKey(npc.whoAmI))
-                npcExtraData.Remove(npc.whoAmI);
-        }
-
-        return true; // Allow normal despawn logic
     }
     #endregion
 }

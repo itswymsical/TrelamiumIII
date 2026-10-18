@@ -75,6 +75,12 @@ internal sealed class BossIntro
     /// </summary>
     public int MaxLength { get; init; } = 60 * 14;
 
+    /// <summary>Whoami of the boss. A manual intro stops early once that slot no longer holds the boss.</summary>
+    public int BossIndex { get; init; } = -1;
+
+    /// <summary>Runs when a manual intro ends without <see cref="BossIntroSystem.Settle" />: boss gone, or <see cref="MaxLength" /> hit.</summary>
+    public Action? OnAbandon { get; init; }
+
     public float LineIntensity { get; init; } = 0.8f;
 
     public float LineDensity { get; init; } = 48f;

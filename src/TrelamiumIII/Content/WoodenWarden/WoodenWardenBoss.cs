@@ -12,6 +12,7 @@ using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Core.Graphics.Shockwaves;
+using TrelamiumIII.Core.NPCs;
 using static TrelamiumIII.Utilities.EaseFunction;
 
 namespace TrelamiumIII.Content.WoodenWarden;
@@ -376,6 +377,9 @@ public sealed class WoodenWardenBoss : ModNPC
     private bool introStarted;
     private bool musicStarted;
 
+    /// <summary>Set by the server right before the kill, so <see cref="CheckDead" /> lets it through.</summary>
+    private bool deathFinished;
+
     public override void SetStaticDefaults()
     {
         Main.npcFrameCount[Type] = 1;
@@ -467,6 +471,9 @@ public sealed class WoodenWardenBoss : ModNPC
     /// <summary>Places it above its station over whoever summoned it, and starts the descent.</summary>
     public override void OnSpawn(IEntitySource source)
     {
+        if (ClientSpawnGuard.Reject(NPC))
+            return;
+
         NPC.TargetClosest(false);
 
         NPC.Center = HoverAnchor() - Vector2.UnitY * ARRIVE_DROP;
@@ -594,11 +601,16 @@ public sealed class WoodenWardenBoss : ModNPC
     /// <summary>Intercepts the kill so the death can play out before it actually dies. Server-side.</summary>
     public override bool CheckDead()
     {
-        if (State == WardenState.Death)
+        if (deathFinished)
             return true;
 
         NPC.life = 1;
         NPC.dontTakeDamage = true;
+
+        // A strike that lands mid-animation (sent before the client saw the state) only refills the 1 life.
+        if (State == WardenState.Death)
+            return false;
+
         NPC.velocity *= 0.3f;
 
         deathStartY = NPC.Center.Y;
@@ -1259,6 +1271,8 @@ public sealed class WoodenWardenBoss : ModNPC
         // then have it reappear on the next sync.
         if (tick < DEATH_BURST_TICK + DEATH_KILL_DELAY || Main.netMode == NetmodeID.MultiplayerClient)
             return;
+
+        deathFinished = true;
 
         NPC.life = 0;
         NPC.HitEffect();

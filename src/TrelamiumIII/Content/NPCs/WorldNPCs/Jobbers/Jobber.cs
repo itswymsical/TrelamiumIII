@@ -375,6 +375,7 @@ public class Jobber : Villager
 
     public override void SendExtraAI(BinaryWriter writer)
     {
+        base.SendExtraAI(writer);
         writer.Write(JobberId);
         writer.Write(HasActiveJob);
         JobberRequest.Write(writer, Request);
@@ -382,6 +383,7 @@ public class Jobber : Villager
 
     public override void ReceiveExtraAI(BinaryReader reader)
     {
+        base.ReceiveExtraAI(reader);
         JobberId = reader.ReadInt32();
         HasActiveJob = reader.ReadBoolean();
         Request = JobberRequest.Read(reader);

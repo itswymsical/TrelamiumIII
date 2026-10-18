@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameContent.Bestiary;
 using Terraria.ModLoader.IO;
@@ -349,6 +350,48 @@ public abstract class TerrarianNPC : WorldNPC
             // Round-trip through SetDye so the c* shader cache stays in sync.
             SetDye(slot, ItemIO.Load(entry.GetCompound("item")).type);
         }
+    }
+
+    /// <summary>Head, body and leg armour and vanity: the slots appearance rolls write.</summary>
+    private static readonly int[] SyncedArmorSlots = [0, 1, 2, 10, 11, 12];
+
+    /// <summary>Appearance is rolled on every side and loaded only on the server, so clients take the server's.</summary>
+    public override void SendExtraAI(BinaryWriter writer)
+    {
+        writer.Write(Male);
+        writer.Write((byte)ClothingStyle);
+        writer.Write7BitEncodedInt(HairType);
+
+        foreach (Color color in (Color[])[HairColor, SkinColor, EyeColor, ShirtColor, UnderShirtColor, PantsColor, ShoeColor])
+            writer.Write(color.PackedValue);
+
+        foreach (int slot in SyncedArmorSlots)
+            writer.Write7BitEncodedInt(DummyPlayer.armor[slot].type);
+    }
+
+    public override void ReceiveExtraAI(BinaryReader reader)
+    {
+        Male = reader.ReadBoolean();
+        ClothingStyle = reader.ReadByte();
+        HairType = reader.Read7BitEncodedInt();
+
+        HairColor = new Color { PackedValue = reader.ReadUInt32() };
+        SkinColor = new Color { PackedValue = reader.ReadUInt32() };
+        EyeColor = new Color { PackedValue = reader.ReadUInt32() };
+        ShirtColor = new Color { PackedValue = reader.ReadUInt32() };
+        UnderShirtColor = new Color { PackedValue = reader.ReadUInt32() };
+        PantsColor = new Color { PackedValue = reader.ReadUInt32() };
+        ShoeColor = new Color { PackedValue = reader.ReadUInt32() };
+
+        foreach (int slot in SyncedArmorSlots)
+        {
+            int type = reader.Read7BitEncodedInt();
+
+            if (DummyPlayer.armor[slot].type != type)
+                DummyPlayer.armor[slot].SetDefaults(type);
+        }
+
+        NPC.HitSound = Male ? SoundID.PlayerHit : SoundID.FemaleHit;
     }
 
     private static List<TagCompound> SaveItems(Item[] items)
