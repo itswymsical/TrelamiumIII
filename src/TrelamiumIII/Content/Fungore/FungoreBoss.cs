@@ -32,6 +32,9 @@ public sealed class FungoreBoss : ModNPC
         BunnyHop,
         Burrow,
         Death,
+
+        /// <summary>No living target: digs into the floor and despawns.</summary>
+        Retreat,
     }
 
     #region sheet
@@ -133,6 +136,17 @@ public sealed class FungoreBoss : ModNPC
     private const float PUNCH_LUNGE = 5f;
     private const float DASH_LUNGE = 12.5f;
 
+    /// <summary>Per-tick multiplier on the lunge speed during a strike.</summary>
+    private const float PUNCH_DECAY = 0.9f;
+
+    private const float DASH_DECAY = 0.968f;
+
+    /// <summary>A strike that misses and covers less than this fraction of its open-ground lunge counts as blocked.</summary>
+    private const float BLOCKED_TRAVEL = 0.35f;
+
+    /// <summary>Dash punches allowed back to back before a different action is forced.</summary>
+    private const int MAX_DASH_CHAIN = 2;
+
     /// <summary>1-in-N chance of a dash punch rather than a step-in, per phase.</summary>
     private static readonly int[] DashOdds = [4, 2, 2];
 
@@ -210,6 +224,9 @@ public sealed class FungoreBoss : ModNPC
 
     /// <summary>Frames of struggling before the cloud goes up.</summary>
     private const int DEATH_TICKS = 199;
+
+    /// <summary>Airborne frames a retreat waits for the floor before despawning in the air.</summary>
+    private const int RETREAT_FALL_TIMEOUT = 180;
 
     /// <summary>Fraction of maximum life at which he stops fighting properly and starts hopping.</summary>
     private const float CRITICAL_LIFE = 0.22f;
@@ -366,6 +383,15 @@ public sealed class FungoreBoss : ModNPC
     private int punchesLeft;
 
     private bool dashing;
+
+    /// <summary>Consecutive dash strikes. Server-side decision state, not synced.</summary>
+    private int dashChain;
+
+    /// <summary>Center X at the first strike tick, for the blocked-strike check.</summary>
+    private float strikeStartX;
+
+    /// <summary>Whether the hitbox overlapped the target at any point during the current strike.</summary>
+    private bool strikeConnected;
 
     private int slamsSinceSuper;
 
@@ -534,7 +560,7 @@ public sealed class FungoreBoss : ModNPC
 
         StartIntro();
 
-        if (State is not (FungoreState.Emerge or FungoreState.Death))
+        if (State is not (FungoreState.Emerge or FungoreState.Death or FungoreState.Retreat))
             Retarget();
 
         switch (State)
@@ -569,6 +595,10 @@ public sealed class FungoreBoss : ModNPC
 
             case FungoreState.Death:
                 UpdateDeath();
+                break;
+
+            case FungoreState.Retreat:
+                UpdateRetreat();
                 break;
 
             default:
@@ -613,6 +643,7 @@ public sealed class FungoreBoss : ModNPC
     private int ContactDamage => State switch
     {
         FungoreState.Death => 0,
+        FungoreState.Retreat => 0,
 
         // Harmless until he lands, just as he's invulnerable until then.
         FungoreState.Emerge when landTick < 0 => 0,
@@ -646,7 +677,7 @@ public sealed class FungoreBoss : ModNPC
     }
 
     /// <summary>Never culled mid-performance its an entrance: a tunnel or a death needs to finish.</summary>
-    public override bool CheckActive() => State is not (FungoreState.Emerge or FungoreState.Burrow or FungoreState.Death);
+    public override bool CheckActive() => State is not (FungoreState.Emerge or FungoreState.Burrow or FungoreState.Death or FungoreState.Retreat);
 
     /// <summary>Intercepts the kill so the death animation gets to run before he actually dies.</summary>
     public override bool CheckDead()
@@ -898,8 +929,20 @@ public sealed class FungoreBoss : ModNPC
         if (NPC.target is < 0 or >= Main.maxPlayers || Target is not { active: true, dead: false })
             NPC.TargetClosest(false);
 
-        if (Target is not { active: true, dead: false })
-            NPC.EncourageDespawn(30);
+        if (Target is { active: true, dead: false } || Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
+        // EncourageDespawn is undone by vanilla CheckActive while a dead player is within a screen of him.
+        if (State == FungoreState.Burrow)
+        {
+            // Breaching phases through tiles, so a burrow is finished rather than cut; underground there is nothing to show.
+            if (Underground)
+                Despawn();
+
+            return;
+        }
+
+        SetState(FungoreState.Retreat);
     }
 
     private void UpdateIdle()
@@ -981,10 +1024,15 @@ public sealed class FungoreBoss : ModNPC
         {
             switch (Main.rand.Next(3))
             {
-                case 0:
-                    BeginPunch(dash: gap > MELEE_RANGE);
+                case 0 when InPunchReach(target, gap):
+                    BeginPunch(dash: false);
                     return;
 
+                case 0 when gap > MELEE_RANGE && CanDash(target, gap):
+                    BeginPunch(dash: true);
+                    return;
+
+                case 0:
                 case 1:
                     SetState(FungoreState.Jump);
                     return;
@@ -995,14 +1043,14 @@ public sealed class FungoreBoss : ModNPC
             }
         }
 
-        if (reachable && gap <= MELEE_RANGE)
+        if (InPunchReach(target, gap))
         {
             BeginPunch(dash: false);
             return;
         }
 
         // Available from phase one, just rarer: it's the move players most need to learn.
-        if (reachable && gap <= DASH_RANGE && Main.rand.NextBool(DashOdds[Phase - 1]))
+        if (gap > MELEE_RANGE && CanDash(target, gap) && Main.rand.NextBool(DashOdds[Phase - 1]))
         {
             BeginPunch(dash: true);
             return;
@@ -1041,13 +1089,21 @@ public sealed class FungoreBoss : ModNPC
         SetState(burrow ? FungoreState.Burrow : FungoreState.BunnyHop);
     }
 
+    /// <summary>Within jab range horizontally, with the hitboxes sharing some height.</summary>
+    private bool InPunchReach(Player target, float gap) =>
+        gap <= MELEE_RANGE && target.Bottom.Y > NPC.Top.Y && target.Top.Y < NPC.Bottom.Y;
+
+    private bool CanDash(Player target, float gap) =>
+        dashChain < MAX_DASH_CHAIN && gap <= DASH_RANGE && Math.Abs(target.Bottom.Y - NPC.Bottom.Y) < SAME_FLOOR;
+
+    /// <summary>
+    ///     Frustration is no longer cleared here: a punch can start in range and still be walled off. The strike's
+    ///     outcome decides it in <see cref="UpdatePunch" />.
+    /// </summary>
     private void BeginPunch(bool dash)
     {
         dashing = dash;
         punchesLeft = Main.rand.Next(2, Phase >= 2 ? 5 : 4);
-
-        // He got there. Whatever the arena was doing to him, it has stopped.
-        frustration = 0;
 
         SetState(FungoreState.Punch);
     }
@@ -1059,6 +1115,9 @@ public sealed class FungoreBoss : ModNPC
 
         // Claims this tick's increment, so the new state's frame 0 (which caches targets and sets up the attack) still runs.
         entered = true;
+
+        if (state is not (FungoreState.Punch or FungoreState.Idle))
+            dashChain = 0;
 
         landTick = -1;
         travelEnd = -1;
@@ -1096,9 +1155,8 @@ public sealed class FungoreBoss : ModNPC
             return;
 
         float gap = Math.Abs(target.Center.X - NPC.Center.X);
-        bool reachable = Math.Abs(target.Bottom.Y - NPC.Bottom.Y) < SAME_FLOOR;
 
-        if (reachable && gap <= MELEE_RANGE)
+        if (InPunchReach(target, gap))
         {
             BeginPunch(dash: false);
             return;
@@ -1140,11 +1198,18 @@ public sealed class FungoreBoss : ModNPC
             {
                 NPC.velocity.X = facing * (dashing ? DASH_LUNGE : PUNCH_LUNGE);
 
+                strikeStartX = NPC.Center.X;
+                strikeConnected = false;
+                dashChain = dashing ? dashChain + 1 : 0;
+
                 SoundEngine.PlaySound(RoarSound with { Volume = 0.6f, Pitch = -0.3f }, NPC.Center);
             }
 
+            if (Target is { active: true, dead: false } struck && NPC.Hitbox.Intersects(struck.Hitbox))
+                strikeConnected = true;
+
             // A dash carries; a jab is a step. Same move, different follow-through.
-            NPC.velocity.X *= dashing ? 0.968f : 0.9f;
+            NPC.velocity.X *= dashing ? DASH_DECAY : PUNCH_DECAY;
 
             SetFrame(COLUMN_PUNCH, strike < strikeTicks / 2 ? PUNCH_STRIKE_FIRST : PUNCH_STRIKE_LAST);
 
@@ -1170,21 +1235,49 @@ public sealed class FungoreBoss : ModNPC
 
         punchesLeft--;
 
-        if (punchesLeft > 0)
+        // Missed and barely moved: a wall, step or slope stopped the lunge. Ends the flurry, and repeats send him under.
+        if (!strikeConnected && Math.Abs(NPC.Center.X - strikeStartX) < LungeDistance * BLOCKED_TRAVEL)
         {
-            // Follow-ups dash only if the target backed out of reach; a flurry that always dashed would cross the arena.
-            dashing = Target is { active: true } target
-                      && Math.Abs(target.Center.X - NPC.Center.X) > MELEE_RANGE;
+            frustration++;
 
-            SetState(FungoreState.Punch);
+            SetState(FungoreState.Idle);
 
             return;
+        }
+
+        frustration = 0;
+
+        if (punchesLeft > 0 && Target is { active: true } target)
+        {
+            float gap = Math.Abs(target.Center.X - NPC.Center.X);
+
+            // Follow-ups dash only if the target backed out of reach, within the dash chain cap.
+            if (gap <= MELEE_RANGE || CanDash(target, gap))
+            {
+                dashing = gap > MELEE_RANGE;
+
+                SetState(FungoreState.Punch);
+
+                return;
+            }
         }
 
         SetState(FungoreState.Idle);
     }
 
     private int StrikeTicks => dashing ? DASH_STRIKE_TICKS : PUNCH_STRIKE_TICKS;
+
+    /// <summary>Horizontal distance the current strike's lunge covers on open ground.</summary>
+    private float LungeDistance
+    {
+        get
+        {
+            float decay = dashing ? DASH_DECAY : PUNCH_DECAY;
+            float speed = dashing ? DASH_LUNGE : PUNCH_LUNGE;
+
+            return speed * decay * (1f - MathF.Pow(decay, StrikeTicks)) / (1f - decay);
+        }
+    }
 
     private bool PunchIsStriking
     {
@@ -1388,11 +1481,22 @@ public sealed class FungoreBoss : ModNPC
 
         float progress = Math.Clamp(dropTicks / (float)SUPER_DROP_TICKS, 0f, 1f);
 
+        // The drop's first frames are the turn, so facing is re-taken once here and then held for the fall.
+        if (dropTicks == 0)
+        {
+            int before = facing;
+
+            FaceTarget();
+
+            if (facing != before && Main.netMode == NetmodeID.Server)
+                NPC.netUpdate = true;
+        }
+
         dropTicks++;
 
         NPC.velocity.Y = Math.Max(SUPER_DROP_SPEED * EaseQuadIn.Ease(progress), 1f);
 
-        NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, CloseHorizontal(6f), 0.06f);
+        NPC.velocity.X = ClampToFacing(MathHelper.Lerp(NPC.velocity.X, CloseHorizontal(6f), 0.06f));
 
         SetFrame(COLUMN_SUPER, RowAcross(SUPER_DROP_FIRST, SUPER_DROP_LAST, progress));
     }
@@ -1785,6 +1889,61 @@ public sealed class FungoreBoss : ModNPC
         NPC.checkDead();
     }
 
+    /// <summary>Falls to the floor if airborne, digs into it, and despawns.</summary>
+    private void UpdateRetreat()
+    {
+        int tick = (int)StateTimer;
+
+        NPC.noTileCollide = false;
+
+        if (landTick < 0)
+        {
+            // Tick 0 is skipped: a velocity servo from the previous state can leave Y at zero in mid-air.
+            if (!grounded || tick == 0)
+            {
+                if (!grounded)
+                    SetFrame(COLUMN_JUMP, JUMP_FALL);
+
+                if (tick >= RETREAT_FALL_TIMEOUT)
+                    Despawn();
+
+                return;
+            }
+
+            landTick = tick;
+        }
+
+        int since = tick - landTick;
+
+        NPC.dontTakeDamage = true;
+
+        if (since < BURROW_DIVE_TICKS)
+        {
+            Dive(since);
+
+            return;
+        }
+
+        Despawn();
+    }
+
+    /// <summary>Removes him without a kill, as vanilla CheckActive does. Server-side only.</summary>
+    private void Despawn()
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
+        NPC.active = false;
+
+        if (Main.netMode != NetmodeID.Server)
+            return;
+
+        NPC.netSkip = -1;
+        NPC.life = 0;
+
+        NetMessage.SendData(MessageID.SyncNPC, number: NPC.whoAmI);
+    }
+
     /// <summary>The last of him: a cloud that hangs over the arena and does nothing at all.</summary>
     private void Bloom()
     {
@@ -1825,7 +1984,7 @@ public sealed class FungoreBoss : ModNPC
 
     private void Airborne(float drive, float maxDrift)
     {
-        NPC.velocity.X = MathHelper.Clamp(NPC.velocity.X + HorizontalDirection * drive, -maxDrift, maxDrift);
+        NPC.velocity.X = ClampToFacing(MathHelper.Clamp(NPC.velocity.X + HorizontalDirection * drive, -maxDrift, maxDrift));
 
         SetFrame(COLUMN_JUMP, NPC.velocity.Y switch
         {
@@ -1836,6 +1995,12 @@ public sealed class FungoreBoss : ModNPC
     }
 
     private int HorizontalDirection => Target is { active: true } target ? Math.Sign(target.Center.X - NPC.Center.X) : 0;
+
+    /// <summary>
+    ///     Zeroes horizontal speed pointing away from <see cref="facing" />. Facing is locked in the air, so steering past
+    ///     zero would play the forward fall while moving backwards.
+    /// </summary>
+    private float ClampToFacing(float velocityX) => facing > 0 ? Math.Max(velocityX, 0f) : Math.Min(velocityX, 0f);
 
     /// <summary>Launch speed that lands him roughly on the target, capped at <paramref name="max" />; solved against flight time.</summary>
     /// <param name="flightTicks"><see cref="BallisticFlight" /> for gravity-owned jumps; a fixed figure for the curve-driven super slam.</param>
@@ -1865,7 +2030,7 @@ public sealed class FungoreBoss : ModNPC
     /// </summary>
     private void UpdatePlatformDrop()
     {
-        if (State is FungoreState.Emerge or FungoreState.Burrow)
+        if (State is FungoreState.Emerge or FungoreState.Burrow or FungoreState.Retreat)
             return;
 
         if (dropThrough > 0)
