@@ -197,7 +197,8 @@ internal sealed class MusicDirector : ModSystem
         score = null;
     }
 
-    public override void OnWorldUnload() => Stop(0f);
+    /// <remarks>Save and quit unloads the world on a worker thread, and FNA3D only stops sounds on the main one.</remarks>
+    public override void OnWorldUnload() => Main.QueueMainThreadAction(static () => Stop(0f));
 
     /// <summary>Lets vanilla decide the track, then overrides the answer while keeping the method's other bookkeeping.</summary>
     private static void ClaimCurrentTrack(On_Main.orig_UpdateAudio_DecideOnNewMusic orig, Main self)

@@ -1127,7 +1127,7 @@ Items: {
 
 	AntisepticTincture: {
 		DisplayName: Antiseptic Tincture
-		Tooltip: "'Stings. That's how you know it's working'"
+		Tooltip: "'Stings. That's how you know it's working!'"
 	}
 
 	SutureKit: {
@@ -1140,13 +1140,13 @@ Items: {
 		Tooltip:
 			'''
 			Addressed to Argie
-			'The handwriting gets smaller toward the end'
+			'A letter from John S.'
 			'''
 	}
 
 	SporeSample: {
 		DisplayName: Spore Sample
-		Tooltip: "'Still glowing, faintly'"
+		Tooltip: "'...What is this?'"
 	}
 
 	BountyNotice: {
@@ -1924,13 +1924,15 @@ ChemicalAccessoryStats: {
 
 DamageClasses.ChemicalDamageClass.DisplayName: controlled damage
 
+# The map shows each tile's condition name; MapEntry is only the fallback.
 Liquids: {
-	CrudeOilLiquid: {
+	OilLiquids: {
 		MapEntry: Oil
 
 		Conditions: {
 			Crude: Crude Oil
 			Pitch: Pitch
+			Sunflower: Sunflower Oil
 		}
 	}
 
@@ -1941,7 +1943,24 @@ Liquids: {
 		}
 	}
 
-	AcidLiquid: {
+	Lava.Conditions.Molten: Lava
+
+	AlkalineLiquids: {
+		MapEntry: Alkali
+
+		Conditions: {
+			Lye: Lye
+			Limewater: Limewater
+			SpiritOfHartshorn: Spirit of Hartshorn
+		}
+	}
+
+	SolventLiquid: {
+		MapEntry: Solvent
+		Conditions.Mixed: Mixed Solvent
+	}
+
+	AcidicLiquids: {
 		MapEntry: Acid
 
 		Conditions: {
@@ -1964,18 +1983,13 @@ Liquids: {
 		MapEntry: Brew
 		Conditions.Muddled: Muddled Brew
 	}
-
-	AcidLiquids.MapEntry: Acid Liquids
-	OilLiquids.MapEntry: Oil Liquids
-	DarkOilLiquids.MapEntry: Dark Oil Liquids
-	AcidicLiquids.MapEntry: Acidic Liquids
-	AlkalineLiquids.MapEntry: Alkaline Liquids
-	SolventLiquid.MapEntry: Solvent Liquid
 }
 
 Conditions: {
 	NearBrine: Near Brine
 	NearSunflowerOil: Near Sunflower Oil
+	# {0}: the liquid condition's display name.
+	NearLiquid: Near {0}
 }
 
 Configs: {

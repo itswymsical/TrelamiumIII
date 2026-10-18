@@ -41,7 +41,8 @@ internal static class SkillTreeRenderer
     {
         On_Main.CheckMonoliths -= BuildFrame;
 
-        Release();
+        // Mods unload on a worker thread, and FNA3D only frees graphics resources on the main one.
+        Main.QueueMainThreadAction(Release);
     }
 
     /// <summary>Records what the next frame should draw. Called from the field's update, in UI pixels.</summary>
