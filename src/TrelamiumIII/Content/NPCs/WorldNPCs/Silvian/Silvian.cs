@@ -3,7 +3,7 @@ using System.Linq;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs.Actors;
-using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Core.NPCs.Combat;
 using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
@@ -49,21 +49,18 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
             !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
     }
 
-    /// <summary>
-    ///     Paces his house and garden, or the ground around where he stands when he spawned without one, and chats with
-    ///     any NPC that wanders by. Stays behind closed doors at night and in the rain.
-    /// </summary>
-    protected override IBehavior BuildScript()
-    {
-        Wander wander = Behavior.Wander(AnchorTile)
-            .UsingDoors(() => Main.dayTime && !Main.raining)
-            .Chatting();
+    /// <summary>Paces his house and garden, or 12 tiles around his anchor without one.</summary>
+    protected override int WanderRadius => Home?.Area.Width ?? 12;
 
-        if (Home is { } home)
-            wander.Within(home.Area).WithRadius(home.Area.Width);
+    /// <summary>Stays behind closed doors at night and in the rain.</summary>
+    protected override bool CanUseDoors => Main.dayTime && !Main.raining;
 
-        return wander;
-    }
+    protected override int ChatChance => 300;
+
+    /// <summary>Cuts down anything that comes close with his sickle.</summary>
+    public override int CombatWeapon => ItemID.Sickle;
+
+    protected override CombatStyle GetCombatStyle() => CombatStyle.Melee with { DetectRange = 160f, LeashRange = 200f };
 
     public override void PostAI()
     {

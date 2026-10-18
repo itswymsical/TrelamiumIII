@@ -5,19 +5,12 @@ using TrelamiumIII.Core.NPCs.Housing;
 namespace TrelamiumIII.Content.Items.Quest;
 
 /// <summary>
-///     The scent trail <see cref="SilviansLetter" /> shows while held: a swaying line of glowing motes from the
-///     player toward Argie's lab. It gives the direction only and does not path around terrain.
+///     The scent trail <see cref="SilviansLetter" /> shows while held. Points at Argie's home anchor (see <see cref="WorldNPCHousing"/>). client-side local, and visual only.
 /// </summary>
-/// <remarks>
-///     Aims at her home's anchor, which every client has (<see cref="WorldNPCHousing" /> syncs it), and falls back to
-///     Argie herself in a world whose lab was never reserved. Local and visual only.
-/// </remarks>
 public static class LetterScent
 {
-    /// <summary>Length of the trail in world pixels, before it reaches her.</summary>
     private const float MAX_LENGTH = 32f * 16f;
 
-    /// <summary>Within this distance the trail stops short of her instead of running its full length.</summary>
     private const float ARRIVE_DISTANCE = 6f * 16f;
 
     private const float SWAY = 22f;

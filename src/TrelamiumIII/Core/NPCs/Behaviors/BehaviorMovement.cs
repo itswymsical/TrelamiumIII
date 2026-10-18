@@ -272,15 +272,91 @@ public static class BehaviorMovement
     /// </para>
     /// </summary>
     /// <remarks>
-    /// Leaves vanilla's listening states (4, and 17 for rock-paper-scissors) alone: a town NPC that starts a chat writes
-    /// them into its partner, and <see cref="WorldNPC"/> reads them after the tick to answer.
+    /// Leaves vanilla's listening states (4, and 17 for rock-paper-scissors) alone, since a town NPC starting a chat writes
+    /// them into its partner. Leaves <see cref="WorldNPC"/>s alone: their base AI resumes from its own state.
     /// </remarks>
     public static void PinTownIdle(NPC npc)
     {
-        if (npc.ai[0] is 4f or 17f)
+        if (npc.ModNPC is WorldNPC || npc.ai[0] is 4f or 17f)
             return;
 
         npc.ai[0] = 0f;
         npc.ai[1] = 300f;
+    }
+
+    /// <summary>Rows the floor may rise or fall from one column to the next in <see cref="TraceFloor" />.</summary>
+    private const int MaxFloorStep = 1;
+
+    /// <summary>
+    /// The leftmost and rightmost columns reachable on foot from <paramref name="anchor" /> (a body row), at most
+    /// <paramref name="radius" /> tiles out and inside <paramref name="bounds" />. Walls, drops and closed doors end it,
+    /// unless <paramref name="throughDoors" />.
+    /// </summary>
+    public static (int Left, int Right) TraceFloor(Point anchor, int radius, Rectangle? bounds, bool throughDoors)
+    {
+        int y = anchor.Y;
+
+        if (!Standable(anchor.X, y, throughDoors))
+        {
+            if (Standable(anchor.X, y - 1, throughDoors))
+                y--;
+            else if (Standable(anchor.X, y + 1, throughDoors))
+                y++;
+            else
+                return (anchor.X, anchor.X);
+        }
+
+        return (TraceFloor(anchor.X, y, -1, radius, bounds, throughDoors), TraceFloor(anchor.X, y, 1, radius, bounds, throughDoors));
+    }
+
+    private static int TraceFloor(int x, int y, int direction, int radius, Rectangle? bounds, bool throughDoors)
+    {
+        for (int i = 0; i < radius; i++)
+        {
+            int next = x + direction;
+
+            if (bounds is { } area && (next < area.Left || next >= area.Right))
+                break;
+
+            int? row = null;
+
+            for (int step = 0; step <= MaxFloorStep && row == null; step++)
+            {
+                if (Standable(next, y - step, throughDoors) && Clear(x, y - 2 - step, throughDoors))
+                    row = y - step;
+                else if (step > 0 && Standable(next, y + step, throughDoors))
+                    row = y + step;
+            }
+
+            if (row == null)
+                break;
+
+            x = next;
+            y = row.Value;
+        }
+
+        return x;
+    }
+
+    /// <summary>Floor under the column and three rows of headroom above it.</summary>
+    private static bool Standable(int x, int y, bool throughDoors)
+    {
+        if (!WorldGen.InWorld(x, y, 10))
+            return false;
+
+        Tile floor = Main.tile[x, y + 1];
+        bool hasFloor = floor.HasUnactuatedTile && (Main.tileSolid[floor.TileType] || Main.tileSolidTop[floor.TileType]);
+
+        return hasFloor && Clear(x, y, throughDoors) && Clear(x, y - 1, throughDoors) && Clear(x, y - 2, throughDoors);
+    }
+
+    private static bool Clear(int x, int y, bool throughDoors)
+    {
+        Tile tile = Framing.GetTileSafely(x, y);
+
+        if (!tile.HasUnactuatedTile || !Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType])
+            return true;
+
+        return throughDoors && TileLoader.IsClosedDoor(tile);
     }
 }

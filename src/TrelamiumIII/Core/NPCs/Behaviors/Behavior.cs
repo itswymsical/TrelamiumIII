@@ -257,9 +257,6 @@ public abstract class Behavior : IBehavior
     /// <inheritdoc cref="Stay(Point)"/>
     public static Stay Stay(Vector2 worldPosition) => new Stay().At(worldPosition);
 
-    /// <summary>Paces the floor around a tile like an idle town NPC. Runs forever.</summary>
-    public static Wander Wander(Point tile) => new Wander().At(tile);
-
     /// <summary>Faces whoever has the NPC's chat window open, finishing once it closes.</summary>
     public static Listen Listen() => new();
 

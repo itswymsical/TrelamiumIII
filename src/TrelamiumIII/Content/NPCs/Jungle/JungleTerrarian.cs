@@ -7,6 +7,13 @@ namespace TrelamiumIII.Content.NPCs.Jungle;
 
 public class JungleTerrarian : Villager
 {
+    protected override int[] WeaponPool =>
+    [
+        ItemID.RichMahoganySword,
+        ItemID.RichMahoganyBow,
+        ItemID.PoisonedKnife, ItemID.ThrowingKnife,
+    ];
+
     protected override Color[] HairPalette =>
     [        
         new(102, 57, 49), // brown 

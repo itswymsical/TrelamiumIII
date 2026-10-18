@@ -14,20 +14,19 @@ namespace TrelamiumIII.Core.NPCs;
 /// cutscene actors, and the occasional one that turns on you.
 ///
 /// <para>
-/// What it provides is placement and script. It holds an anchor it belongs to and
-/// returns to, carries an inventory, saves itself into the world when asked, and runs
-/// behaviours through an <see cref="NPCDirector"/>. It says nothing about how the NPC
-/// looks - a world NPC is a sprite like any other unless a subclass says otherwise.
-/// <see cref="Actors.TerrarianNPC"/> is the subclass that renders as a player.
+/// What it provides is placement and AI. It holds an anchor it belongs to and returns
+/// to, carries an inventory, saves itself into the world when asked, and runs a town
+/// AI modelled on vanilla's aiStyle 7 (see <see cref="TownState"/>). An
+/// <see cref="NPCDirector"/> behaviour pauses that AI while it plays. It says nothing
+/// about how the NPC looks - <see cref="Actors.TerrarianNPC"/> renders as a player.
 /// </para>
 ///
 /// <para>
-/// Override <see cref="SetWorldNPCDefaults"/> for stats and <see cref="BuildScript"/>
-/// for what it does. Both have workable defaults, so a purely conversational NPC
-/// needs neither.
+/// Override <see cref="SetWorldNPCDefaults"/> for stats, and the town AI properties
+/// (<see cref="WanderRadius"/>, <see cref="CombatWeapon"/>...) for what it does.
 /// </para>
 /// </summary>
-public abstract class WorldNPC : ModNPC
+public abstract partial class WorldNPC : ModNPC
 {
     private NPCDirector director;
     private bool directorResolved;
@@ -88,19 +87,13 @@ public abstract class WorldNPC : ModNPC
         }
     }
 
-    /// <summary>Set false for actors that drive themselves from <see cref="ModNPC.AI"/>.</summary>
     protected virtual bool UsesDirector => true;
 
     /// <summary>
-    /// What this NPC does when it has nothing else on. Rebuilt whenever the director
-    /// falls idle, so a script that finishes simply starts again.
-    ///
-    /// <para>
-    /// The default holds the anchor; null leaves the NPC to its vanilla aiStyle. Override
-    /// for a patrol, a work loop, or a <see cref="Select"/> that reacts to what's nearby.
-    /// </para>
+    /// A behaviour the director plays in place of the town AI for as long as it runs, rebuilt whenever it finishes.
+    /// Null, the default, leaves the NPC to the town AI. For test rigs and set pieces.
     /// </summary>
-    protected virtual IBehavior? BuildScript() => Behavior.Stay(AnchorTile);
+    protected virtual IBehavior? BuildScript() => null;
 
     /// <summary>How far it may drift before walking home rather than resuming in place.</summary>
     protected virtual float AnchorReturnDistance => 200f;
@@ -121,6 +114,12 @@ public abstract class WorldNPC : ModNPC
     /// head for a <see cref="Actors.TerrarianNPC"/>.
     /// </summary>
     public virtual string MapHeadTexture => null;
+
+    /// <summary>
+    /// Leaves the map icon off until the local player has been near this NPC once in this world
+    /// (<see cref="WorldNPCDiscovery"/>), so the map can't give away where a story NPC lives.
+    /// </summary>
+    public virtual bool HiddenOnMapUntilMet => false;
 
     /// <summary>
     /// Kept across world reloads. Otherwise <see cref="WorldNPCPersistenceSystem"/> removes it after load, unless it
@@ -172,6 +171,7 @@ public abstract class WorldNPC : ModNPC
         NPC.defense = 0;
         NPC.lifeMax = 200;
         NPC.knockBackResist = 0.5f;
+        // CanTalk and CanBeTalkedTo require aiStyle 7; PreAI runs the town AI in its place.
         NPC.aiStyle = NPCAIStyleID.Passive;
         NPC.npcSlots = 0f;
 
@@ -205,47 +205,20 @@ public abstract class WorldNPC : ModNPC
         NPC.homeTileY = -1;
 
         TickDespawn();
-        AnswerTownChat();
 
         if (AutoResumeScript)
             ResumeScript();
-    }
 
-    /// <summary>
-    /// A vanilla town NPC starting a chat puts its partner in a listening state (<c>ai[0]</c> 4, or 17 for
-    /// rock-paper-scissors) with the duration in <c>ai[1]</c> and itself in <c>ai[2]</c>, and raises the bubbles for
-    /// both. Vanilla AI never runs here, so the state is taken and answered with <see cref="Converse"/> instead.
-    /// </summary>
-    private void AnswerTownChat()
-    {
-        // An idle director leaves the tick to vanilla AI, which answers for itself.
-        if (NPC.ai[0] is not (4f or 17f) || Director is not { IsBusy: true })
-            return;
-
-        int partner = (int)NPC.ai[2];
-        int duration = (int)NPC.ai[1];
-
-        NPC.ai[0] = 0f;
-        NPC.ai[1] = 0f;
-        NPC.ai[2] = 0f;
-
-        if (Director.IsInterrupted || IsChatting || partner < 0 || partner >= Main.maxNPCs)
-            return;
-
-        Interrupt(new Converse(partner, duration, lead: false));
+        SettleTownState();
     }
 
     /// <summary>True while any player has this NPC's chat window open.</summary>
     public bool IsChatting => TownChat.Talker(NPC) != null;
 
     /// <summary>
-    /// Restarts the script when the director falls idle, walking home first if the NPC
-    /// has wandered too far to just pick up where it is.
+    /// Restarts <see cref="BuildScript"/> when the director falls idle, walking home first if the NPC has wandered too far
+    /// to pick up where it is. An open chat window plays <see cref="Listen"/> instead, and the script restarts after.
     /// </summary>
-    /// <remarks>
-    /// The director vetoes vanilla AI, which is what turns a town NPC toward the player chatting with it, so an open chat
-    /// window cuts the script for <see cref="Listen"/> and the script starts over once it closes.
-    /// </remarks>
     private void ResumeScript()
     {
         if (Director is not { IsBusy: false })

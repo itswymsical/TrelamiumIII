@@ -5,7 +5,7 @@ using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Jobs;
 using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Core.NPCs.Actors;
-using TrelamiumIII.Core.NPCs.Behaviors;
+using TrelamiumIII.Core.NPCs.Combat;
 using TrelamiumIII.Utilities.Extensions;
 
 namespace TrelamiumIII.Content.NPCs.WorldNPCs.Argie;
@@ -52,15 +52,20 @@ public class ArgieNPC : TerrarianNPC, INarrativeSpeaker
     }
 
     /// <summary>Paces her lab floor, or the ground around where she spawned without one.</summary>
-    protected override IBehavior BuildScript()
-    {
-        Wander wander = Behavior.Wander(AnchorTile).WithRadius(12);
+    protected override int WanderRadius => 12;
 
-        if (Home is { } home)
-            wander.Within(home.Area);
+    /// <summary>Mists anything that gets near with her <see cref="SporeSprayer" />, backing off to keep it at arm's length.</summary>
+    public override int CombatWeapon => ModContent.ItemType<SporeSprayer>();
 
-        return wander;
-    }
+    protected override CombatStyle GetCombatStyle() => new(
+        DetectRange: 220f,
+        PreferredRange: 70f,
+        StrikeRange: 110f,
+        RetreatRange: 36f,
+        Cooldown: 10,
+        CooldownVariance: 12,
+        ArcHeight: 0f,
+        LeashRange: 240f);
 
     public override void PostAI()
     {

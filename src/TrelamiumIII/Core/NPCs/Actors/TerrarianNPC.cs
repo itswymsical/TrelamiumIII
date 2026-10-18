@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria.GameContent.Bestiary;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Core.NPCs.Combat;
 
 namespace TrelamiumIII.Core.NPCs.Actors;
 
@@ -66,9 +67,43 @@ public abstract class TerrarianNPC : WorldNPC
     {
         base.PostAI();
 
+        Puppet.FrontArmRotation = GameArmRotation();
+
         // Last, so the pose reflects this tick's final position and a swing started
         // this tick shows its first animation frame immediately.
         Puppet.Update();
+    }
+
+    /// <summary>Uses <see cref="WorldNPC.CombatWeapon"/> through the puppet, arming it as an ally on first use.</summary>
+    protected override bool BeginAttack(Vector2 aimAt)
+    {
+        if (CombatWeapon <= 0)
+            return false;
+
+        if (Puppet.Combat == null)
+            Puppet.ArmWith(PuppetAllegiance.Ally);
+
+        Puppet.Hold(CombatWeapon);
+        return Puppet.BeginUse(aimAt);
+    }
+
+    /// <summary>
+    /// Front arm during rock-paper-scissors: pumped for 40 ticks before each of the three reveals, held out for 20 after.
+    /// Null outside a game or while the director has the NPC.
+    /// </summary>
+    private float? GameArmRotation()
+    {
+        if (State is not (TownState.GameLead or TownState.GameListen) || Director is { IsBusy: true })
+            return null;
+
+        int beat = StateTicks % 420;
+        if (beat >= 180)
+            return null;
+
+        int round = beat % 60;
+        float lift = round < 40 ? 0.45f + 0.4f * MathF.Abs(MathF.Sin(round * MathHelper.Pi / 10f)) : 0.15f;
+
+        return -(MathHelper.PiOver2 + lift);
     }
 
     /// <summary>Swaps in <see cref="TerrarianEntryIcon"/>; the vanilla icon cannot draw a player model.</summary>

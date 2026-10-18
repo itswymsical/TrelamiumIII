@@ -1,6 +1,5 @@
 namespace TrelamiumIII.Content.Alchemy.Reagents;
 
-/// <summary>Dropped by Scrunglepuffs. One of the fungi Argie's first job asks for.</summary>
 public class PuffballItem : ModItem
 {
     public override void SetDefaults()
