@@ -64,9 +64,11 @@ public class WorldGenSystem : ModSystem
         {
             tasks.Insert(oilIndex + 1, new OilPass());
             tasks.Insert(oilIndex + 2, new BrinePass());
-            tasks.Insert(oilIndex + 3, new ObsidianForestPass());
-            tasks.Insert(oilIndex + 4, new SilvianHousePass());
-            tasks.Insert(oilIndex + 5, new AbandonedCabinPass());
+            tasks.Insert(oilIndex + 3, new SurfaceBrinePass());
+            tasks.Insert(oilIndex + 4, new ObsidianForestPass());
+            tasks.Insert(oilIndex + 5, new NitreCavePass());
+            tasks.Insert(oilIndex + 6, new SilvianHousePass());
+            tasks.Insert(oilIndex + 7, new AbandonedCabinPass());
         }
     }
 }

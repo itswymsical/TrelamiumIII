@@ -52,7 +52,8 @@ public interface IConditionalLiquidSurface : ILiquidSurface
 /// </summary>
 public sealed class LiquidSurfaceSystem : ModSystem
 {
-    private readonly record struct Quad(Rectangle World, Color Light);
+    /// <summary>A collected rectangle. Light is read at draw time, since quads outlive the frame they were collected in.</summary>
+    private readonly record struct Quad(Rectangle World, Point Tile, byte Opacity);
 
     private static readonly Dictionary<(LiquidSurface Surface, Color Tint), List<Quad>> batches = [];
 
@@ -125,14 +126,13 @@ public sealed class LiquidSurfaceSystem : ModSystem
             return;
 
         var world = new Rectangle(i * 16 + (int)cache.LiquidOffset.X, j * 16 + (int)cache.LiquidOffset.Y, source.Width, source.Height);
-        Color light = Lighting.GetColor(i, j);
-        light.A = (byte)(MathHelper.Clamp(cache.Opacity, 0f, 1f) * 255f);
+        byte opacity = (byte)(MathHelper.Clamp(cache.Opacity, 0f, 1f) * 255f);
 
         var key = (surface, owner.SurfaceTint(i, j));
         if (!batches.TryGetValue(key, out List<Quad>? quads))
             batches[key] = quads = [];
 
-        quads.Add(new Quad(world, light));
+        quads.Add(new Quad(world, new Point(i, j), opacity));
     }
 
     private void DrawAfterWater(ILContext il)
@@ -189,8 +189,12 @@ public sealed class LiquidSurfaceSystem : ModSystem
                 if (!view.Intersects(quad.World))
                     continue;
 
+                // Vertex colour: the tile's current light in rgb, the liquid's edge opacity in alpha.
+                Color light = Lighting.GetColor(quad.Tile.X, quad.Tile.Y);
+                light.A = quad.Opacity;
+
                 var destination = new Rectangle(quad.World.X - (int)Main.screenPosition.X, quad.World.Y - (int)Main.screenPosition.Y, quad.World.Width, quad.World.Height);
-                spriteBatch.Draw(noiseTexture, destination, quad.World, quad.Light);
+                spriteBatch.Draw(noiseTexture, destination, quad.World, light);
             }
 
             spriteBatch.End();

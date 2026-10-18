@@ -50,10 +50,17 @@ internal sealed class TileShockwaveSystem : ModSystem
         waves.Clear();
         distorted = null;
 
-        front?.Dispose();
-        back?.Dispose();
+        // Mods unload on a worker thread, and FNA3D only frees graphics resources on the main one.
+        RenderTarget2D? oldFront = front;
+        RenderTarget2D? oldBack = back;
         front = null;
         back = null;
+
+        Main.QueueMainThreadAction(() =>
+        {
+            oldFront?.Dispose();
+            oldBack?.Dispose();
+        });
     }
 
     public override void PostUpdateEverything()

@@ -165,7 +165,7 @@ public class BrinePass : GenPass
     }
 
     /// <summary> Salt where the pool meets its shell: the rim at the surface row, and patches below it. </summary>
-    private static void CrustWithSalt(Rectangle bounds, int level, byte brine)
+    internal static void CrustWithSalt(Rectangle bounds, int level, byte brine)
     {
         ushort salt = (ushort)ModContent.TileType<PureSaltTile>();
 

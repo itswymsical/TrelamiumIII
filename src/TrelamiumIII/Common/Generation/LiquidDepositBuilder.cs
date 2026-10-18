@@ -364,7 +364,7 @@ public static class LiquidDepositBuilder
     }
 
     /// <summary> Styles follow the vanilla Piles pass: LargePiles2 29-34 on desert floors, LargePiles 8-15 and LargePiles2 23-28 on stone. </summary>
-    private static void PlaceLargeRubble(int x, int y, bool desert)
+    public static void PlaceLargeRubble(int x, int y, bool desert)
     {
         if (desert)
             WorldGen.PlaceTile(x, y, TileID.LargePiles2, mute: true, style: WorldGen.genRand.Next(29, 35));
@@ -375,7 +375,7 @@ public static class LiquidDepositBuilder
     }
 
     /// <summary> Plain rock styles: 0-11 for 1x1 piles, 0-5 for 2x1 piles. </summary>
-    private static void PlaceSmallRubble(int x, int y)
+    public static void PlaceSmallRubble(int x, int y)
     {
         if (WorldGen.genRand.NextBool(3))
             WorldGen.PlaceSmallPile(x, y, WorldGen.genRand.Next(6), 1);

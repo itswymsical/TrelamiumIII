@@ -53,9 +53,9 @@ internal static class IlluminantInkScene
 
     public static void Unload()
     {
-        // Graphics resources must not outlive the mod, and Main.QueueMainThreadAction is unnecessary
-        // here: Unload for client content already runs on the main thread.
-        Release();
+        // Graphics resources must not outlive the mod. Mods unload on a worker thread, and FNA3D only
+        // frees them on the main one, which is live behind the menu when mods are reloaded.
+        Main.QueueMainThreadAction(Release);
     }
 
     /// <summary>

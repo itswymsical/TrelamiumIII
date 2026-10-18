@@ -58,7 +58,7 @@ public sealed class AcidicLiquids : ConditionalLiquid, ILiquidSurface
         BlueVitriol = AddCondition(new LiquidCondition("BlueVitriol") { Tint = new Color(70, 160, 255), Strength = 0.35f });
         GreenVitriol = AddCondition(new LiquidCondition("GreenVitriol") { Tint = new Color(120, 235, 160), Strength = 0.35f });
         SpiritOfSalt = AddCondition(new LiquidCondition("SpiritOfSalt") { Tint = new Color(235, 250, 190), Strength = 0.7f });
-        AquaFortis = AddCondition(new LiquidCondition("AquaFortis") { Tint = new Color(255, 200, 80), Strength = 0.85f });
+        AquaFortis = AddCondition(new LiquidCondition("AquaFortis") { Tint = new Color(255, 221, 149), Strength = 0.85f });
         AquaRegia = AddCondition(new LiquidCondition("AquaRegia") { Tint = new Color(255, 130, 50), Strength = 1f });
 
         for (int level = 0; level < GoldSolution.Length; level++)
