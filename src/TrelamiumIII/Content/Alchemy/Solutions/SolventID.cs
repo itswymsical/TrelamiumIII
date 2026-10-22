@@ -19,7 +19,7 @@ public sealed class SolventID : ICustomAutoload
 
     #region Base solvents
 
-    public static int Brine => ModContent.ItemType<BrineBottleItem>();
+    public static int AquaSalis => ModContent.ItemType<AquaSalis>();
 
     public static int BottledOil { get; private set; }
 
@@ -28,15 +28,13 @@ public sealed class SolventID : ICustomAutoload
     #region Acids
 
     public static int OilOfVitriol { get; private set; }
-    public static int AquaFortis { get; private set; }
-
     public static int AquaRegia { get; private set; }
 
     #endregion
 
     #region Brewed solvents
 
-    public static int Inert { get; private set; }
+    public static int AquaInertis { get; private set; }
 
     public static int Dead { get; private set; }
 
@@ -46,19 +44,19 @@ public sealed class SolventID : ICustomAutoload
 
     #region Principle tonics
 
-    public static int HarmoniousTonic { get; private set; }
+    public static int AquaHarmonia { get; private set; }
 
-    public static int VitalTonic { get; private set; }
+    public static int AquaVitae { get; private set; }
 
-    public static int SpecularTonic { get; private set; }
+    public static int AquaSpecularis { get; private set; }
 
-    public static int MartialTonic { get; private set; }
+    public static int AquaFortis { get; private set; }
 
-    public static int FortunateTonic { get; private set; }
+    public static int AquaFortunae { get; private set; }
 
-    public static int BriskTonic { get; private set; }
+    public static int AquaVivida { get; private set; }
 
-    public static int BaneTonic { get; private set; }
+    public static int AquaPestis { get; private set; }
 
     #endregion
 
@@ -103,15 +101,6 @@ public sealed class SolventID : ICustomAutoload
             Temperaments = Temperament.Acidic,
         });
 
-        AquaFortis = Add(mod, new SolventItem("AquaFortisItem")
-        {
-            TexturePath = Placeholder,
-            Rare = ItemRarityID.Blue,
-            Value = Item.sellPrice(silver: 5),
-            AlmanacPotency = 4,
-            Temperaments = Temperament.Acidic | Temperament.Volatile,
-        });
-
         AquaRegia = Add(mod, new SolventItem("AquaRegiaItem")
         {
             TexturePath = Placeholder,
@@ -124,7 +113,7 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadBrewedSolvents(Mod mod)
     {
-        Inert = Add(mod, new SolventItem("AquaInteris")
+        AquaInertis = Add(mod, new SolventItem("AquaInteris")
         {
             Rare = ItemRarityID.Gray,
             AlmanacPotency = 1,
@@ -158,13 +147,13 @@ public sealed class SolventID : ICustomAutoload
     /// <summary>One tonic per <see cref="PrincipleType" />, differing only in name and principle.</summary>
     private static void LoadTonics(Mod mod)
     {
-        HarmoniousTonic = AddTonic(mod, "HarmoniousTonic", PrincipleType.Harmony);
-        VitalTonic = AddTonic(mod, "VitalTonic", PrincipleType.Vital);
-        SpecularTonic = AddTonic(mod, "SpecularTonic", PrincipleType.Specular);
-        MartialTonic = AddTonic(mod, "MartialTonic", PrincipleType.Martial);
-        FortunateTonic = AddTonic(mod, "FortunateTonic", PrincipleType.Fortune);
-        BriskTonic = AddTonic(mod, "BriskTonic", PrincipleType.Brisk);
-        BaneTonic = AddTonic(mod, "BaneTonic", PrincipleType.Bane);
+        AquaHarmonia = AddTonic(mod, "HarmoniousTonic", PrincipleType.Harmony);
+        AquaVitae = AddTonic(mod, "VitalTonic", PrincipleType.Vital);
+        AquaSpecularis = AddTonic(mod, "SpecularTonic", PrincipleType.Specular);
+        AquaFortis = AddTonic(mod, "MartialTonic", PrincipleType.Martial);
+        AquaFortunae = AddTonic(mod, "FortunateTonic", PrincipleType.Fortune);
+        AquaVivida = AddTonic(mod, "BriskTonic", PrincipleType.Brisk);
+        AquaPestis = AddTonic(mod, "BaneTonic", PrincipleType.Bane);
     }
 
     private static void LoadSolutes(Mod mod)

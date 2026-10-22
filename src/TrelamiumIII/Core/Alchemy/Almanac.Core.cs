@@ -208,7 +208,7 @@ public static class AlmanacIngredientInfo
 }
 
 
-/// <summary>Read-only views over <see cref="AlchemyRecipes"/> for browsing, filtering and searching in the Almanac.</summary>
+/// <summary>Read-only views over <see cref="AlchemyCore"/> for browsing, filtering and searching in the Almanac.</summary>
 public static class AlmanacIndex
 {
     private static List<int> _allOutputs;
@@ -238,7 +238,7 @@ public static class AlmanacIndex
     {
         if (outputType <= 0) yield break;
 
-        foreach (var r in AlchemyRecipes.All)
+        foreach (var r in AlchemyCore.All)
         {
             if (ResolveType(r) == outputType)
                 yield return r;
@@ -255,7 +255,7 @@ public static class AlmanacIndex
             yield break;
         }
 
-        foreach (var r in AlchemyRecipes.All)
+        foreach (var r in AlchemyCore.All)
         {
             if (r.InputType == itemType && r.InputInfusion == infusion)
             {
@@ -279,7 +279,7 @@ public static class AlmanacIndex
     {
         if (itemType <= 0) yield break;
 
-        foreach (var r in AlchemyRecipes.All)
+        foreach (var r in AlchemyCore.All)
         {
             if (r.InputType == itemType)
             {
@@ -302,7 +302,7 @@ public static class AlmanacIndex
     public static bool HasRecipeFor(int outputType)
     {
         if (outputType <= 0) return false;
-        foreach (var r in AlchemyRecipes.All)
+        foreach (var r in AlchemyCore.All)
             if (ResolveType(r) == outputType) return true;
         return false;
     }
@@ -329,7 +329,7 @@ public static class AlmanacIndex
         if (_allOutputs != null) return;
 
         var byType = new Dictionary<int, BrewCategory>();
-        foreach (var r in AlchemyRecipes.All)
+        foreach (var r in AlchemyCore.All)
         {
             int t = ResolveType(r);
             if (t <= 0) continue;
@@ -391,7 +391,6 @@ internal static class AlmanacDefinitions
             ItemType = ItemID.BottledWater,
             AlmanacPotency = 0,
             Hidden = false,
-            Rarity = ItemRarityID.White,
         });
 
         AlmanacEntryRegistry.Register(new AlmanacEntry
@@ -400,7 +399,6 @@ internal static class AlmanacDefinitions
             AlmanacPotency = 0,
             Hidden = false,
             Temperaments = Temperament.None,
-            Rarity = ItemRarityID.White,
         });
 
         AlmanacEntryRegistry.Register(new AlmanacEntry
@@ -408,7 +406,6 @@ internal static class AlmanacDefinitions
             ItemType = ItemID.BottledHoney,
             AlmanacPotency = 3,
             Temperaments = Temperament.Acidic,
-            Rarity = ItemRarityID.Yellow,
         });
     }
 
@@ -428,9 +425,9 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Blinkroot,
             AlmanacPotency = 1,
-            Temperaments = Temperament.Catalytic,
+            Temperaments = Temperament.Kinetic,
             Hidden = false,
-            Principle = PrincipleType.Specular | PrincipleType.Vital,
+            Principle = PrincipleType.Specular,
         });
 
         AlmanacEntryRegistry.Register(new AlmanacEntry
@@ -476,7 +473,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.Shiverthorn,
             AlmanacPotency = 3,
-            Temperaments = Temperament.Alkaline | Temperament.Catalytic,
+            Temperaments = Temperament.Inert,
             Rarity = ItemRarityID.Blue,
             Hidden = false,
             Principle = PrincipleType.Brisk,
@@ -493,8 +490,8 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.YellowMarigold,
             AlmanacPotency = 2,
-            Rarity = ItemRarityID.Blue,
-            Principle = PrincipleType.Vital
+            Principle = PrincipleType.Vital,
+            Temperaments = Temperament.Kinetic,
         });
         #endregion
 
@@ -505,7 +502,7 @@ internal static class AlmanacDefinitions
             AlmanacPotency = 1,
             Temperaments = Temperament.Inert,
             Hidden = false,
-            Principle = PrincipleType.Harmony,
+            Principle = PrincipleType.Vital,
         });
 
         AlmanacEntryRegistry.Register(new AlmanacEntry
@@ -520,7 +517,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.ViciousMushroom,
             AlmanacPotency = 2,
-            Temperaments = Temperament.Acidic,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Bane,
         });
         #endregion
@@ -538,7 +535,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.TinOre,
             AlmanacPotency = 2,
-            Temperaments = Temperament.Catalytic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Brisk,
         });
 
@@ -546,7 +543,7 @@ internal static class AlmanacDefinitions
         {
             ItemType = ItemID.IronOre,
             AlmanacPotency = 3,
-            Temperaments = Temperament.Kinetic,
+            Temperaments = Temperament.Volatile | Temperament.Acidic, // ackshually, iron ions dissolved in water act as weak acids
             Principle = PrincipleType.Martial,
         });
 

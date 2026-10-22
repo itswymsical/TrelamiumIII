@@ -47,7 +47,7 @@ public static class AlmanacLexicon
         LexiconRow.Entry("Liquor", "liquid"),
         LexiconRow.Entry("Aqua fortis", "\"strong water\"; nitric acid"),
         LexiconRow.Entry("Aqua regia", "\"royal water\"; dissolves even gold"),
-        LexiconRow.Entry("Aqua vitae", "\"water of life\"; distilled spirit"),
+        LexiconRow.Entry("Aqua vitae", "\"water of life\"; find out."),
         LexiconRow.Entry("Oleum", "oil"),
         LexiconRow.Entry("Tinctura", "tincture; a coloured extraction"),
         LexiconRow.Entry("Elixir", "a highly refined preparation"),

@@ -6,16 +6,16 @@ namespace TrelamiumIII.Content.Alchemy.Solutions;
 
 /// <summary>Bottled brine: a water bottle carrying the brine surface's salt strands.</summary>
 [LegacyName("BrineBottle")]
-internal sealed class BrineBottleItem : BottledLiquidItem
+internal sealed class AquaSalis : BottledLiquidItem
 {
     private static LiquidSurface? surface;
 
-    public BrineBottleItem()
+    public AquaSalis()
     {
         Rare = ItemRarityID.Blue;
 
         AlmanacPotency = 2;
-        Temperaments = Temperament.Inert | Temperament.Alkaline;
+        Temperaments = Temperament.Alkaline;
         Hidden = false;
 
         Recipes = self => self.CreateRecipe()

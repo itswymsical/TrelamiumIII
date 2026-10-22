@@ -158,16 +158,16 @@ public class TundraTerrarian : Villager
             Trade().ForCoins(Item.buyPrice(gold: 1, silver: 50))
                             .Grants(ItemID.Extractinator)),
 
-        new(() => AddInvItem(SolventID.SpecularTonic, 11),
+        new(() => AddInvItem(SolventID.AquaSpecularis, 11),
             Trade().For(ItemID.FrostMinnow)
-                            .Grants(SolventID.SpecularTonic, 1)),
+                            .Grants(SolventID.AquaSpecularis, 1)),
 
-        new(() => AddInvItem(SolventID.FortunateTonic, 5),
+        new(() => AddInvItem(SolventID.AquaFortunae, 5),
             Trade().For(ItemID.AtlanticCod, 2)
-                            .Grants(SolventID.FortunateTonic, 1)),
+                            .Grants(SolventID.AquaFortunae, 1)),
 
-        new(() => AddInvItem(SolventID.VitalTonic, 5),
+        new(() => AddInvItem(SolventID.AquaVitae, 5),
             Trade().For(ItemID.Salmon)
-                            .Grants(SolventID.VitalTonic, 1)),
+                            .Grants(SolventID.AquaVitae, 1)),
     ];
 }

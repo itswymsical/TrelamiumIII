@@ -99,7 +99,7 @@ public static class SpeakerRegistry
         {
             Id = "Argie",
             FrameCount = 1,
-            Font = TrelamiumFonts.PatrickHand,
+            Font = TrelamiumFonts.AndikaBoldItalic,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Argie.Speech.Asset]),
             Color = new(255, 110, 80),
         });

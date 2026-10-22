@@ -12,45 +12,45 @@ public partial class ChemistryRecipeSystem
     /// </summary>
     private static void RegisterAugmentations()
     {
-        AlchemyRecipes.CreateRecipe(ItemID.IronskinPotion, ItemID.IronskinPotion,
-            new RecipeVariant(ComponentMatcher.Of(SoluteID.BoneAsh, minPotency: 5))
+        AlchemyCore.AddResult(ItemID.IronskinPotion, ItemID.IronskinPotion,
+            new SoluteInput(ComponentMatcher.Of(SoluteID.BoneAsh, minPotency: 5))
             {
                 Augment = b => b.Add(BuffID.Wrath, potency: 1, durationTicks: Time(secs: 25)),
             },
-            new RecipeVariant(ComponentMatcher.Of(ItemID.IronOre, minPotency: 2, maxPotency: 4))
+            new SoluteInput(ComponentMatcher.Of(ItemID.IronOre, minPotency: 2, maxPotency: 4))
             {
                 Augment = b => b.Add(BuffID.Endurance, potency: b.Level + 1, durationTicks: Time(2)),
             },
-            new RecipeVariant(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 3))
+            new SoluteInput(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 3))
             {
                 Augment = b => b.Add(BuffID.Endurance, potency: 3, durationTicks: Time(1)),
             });
 
         // Up to three Fallen Stars; each one raises the added Mana Regeneration's potency and duration.
-        AlchemyRecipes.CreateRecipe(ItemID.RegenerationPotion, ItemID.RegenerationPotion,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.FallenStar, minPotency: 1, maxPotency: 3))
+        AlchemyCore.AddResult(ItemID.RegenerationPotion, ItemID.RegenerationPotion,
+            new SoluteInput(ComponentMatcher.Of(ItemID.FallenStar, minPotency: 1, maxPotency: 3))
             {
                 Augment = b => b.Add(BuffID.ManaRegeneration, potency: b.Level, durationTicks: Time(secs: 22 * b.Level)),
             });
 
-        AlchemyRecipes.CreateRecipe(ItemID.LesserHealingPotion, ItemID.LesserHealingPotion,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 4))
+        AlchemyCore.AddResult(ItemID.LesserHealingPotion, ItemID.LesserHealingPotion,
+            new SoluteInput(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 4))
             {
                 Augment = b => b.Add(VirtualBuff.Restoration, potency: b.Level),
             });
 
-        AlchemyRecipes.CreateRecipe(ItemID.HealingPotion, ItemID.HealingPotion,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 4))
+        AlchemyCore.AddResult(ItemID.HealingPotion, ItemID.HealingPotion,
+            new SoluteInput(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 4))
             {
                 Augment = b => b.Add(VirtualBuff.Restoration, potency: b.Level),
             });
 
-        AlchemyRecipes.CreateRecipe(ItemID.GreaterHealingPotion, ItemID.GreaterHealingPotion,
-            new RecipeVariant(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 5))
+        AlchemyCore.AddResult(ItemID.GreaterHealingPotion, ItemID.GreaterHealingPotion,
+            new SoluteInput(ComponentMatcher.Of(ItemID.GoldOre, minPotency: 1, maxPotency: 5))
             {
                 Augment = b => b.Add(VirtualBuff.Restoration, potency: b.Level),
             },
-            new RecipeVariant(ComponentMatcher.Of(ItemID.PixieDust, minPotency: 2, maxPotency: 4))
+            new SoluteInput(ComponentMatcher.Of(ItemID.PixieDust, minPotency: 2, maxPotency: 4))
             {
                 Augment = b => b.Add(BuffID.Regeneration, potency: b.Level, durationTicks: Time(secs: 25 * b.Level)),
             });

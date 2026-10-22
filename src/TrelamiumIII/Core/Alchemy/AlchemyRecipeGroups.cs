@@ -4,6 +4,8 @@ using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Items.FarmingOverhaul.SatchelContent;
 using TrelamiumIII.Content.Items.Rusted;
+using TrelamiumIII.Content.Ingress;
+using TrelamiumIII.Content.Ingress.HighlandsBiome;
 
 namespace TrelamiumIII.Core.Alchemy;
 
@@ -59,8 +61,7 @@ public static class AlchemyRecipeGroups
     public static readonly AlchemyComponentGroup AnyHerb = new("AnyHerb");
     public static readonly AlchemyComponentGroup RottenChunkVertabrae = new("AnyEvilDrop");
     public static readonly AlchemyComponentGroup AnyStandardFish = new("AnyStandardFish");
-    public static readonly AlchemyComponentGroup AnySoil = new("AnySoil");
-    public static readonly AlchemyComponentGroup DirtOrMud = new("DirtOrMud");
+    public static readonly AlchemyComponentGroup Dirts = new("AnySoil");
     public static readonly AlchemyComponentGroup AnyButterfly = new("AnyButterfly");
     public static readonly AlchemyComponentGroup AnyBaseBottle = new("AnyBaseBottle");
 
@@ -72,15 +73,15 @@ public static class AlchemyRecipeGroups
     public static readonly AlchemyComponentGroup AnyAcid = new("AnyAcid");
     public static readonly AlchemyComponentGroup AnyAlkali = new("AnyAlkali");
     public static readonly AlchemyComponentGroup AnyMineralSalt = new("AnyMineralSalt");
+    public static readonly AlchemyComponentGroup Clays = new("Clays");
 
     // Declared after the groups: static initializers run in textual order.
     private static readonly AlchemyComponentGroup[] All =
     [
         AnyOre, Critters, Iron, Silver, Gold, SpecularFishOrMoonglow, AnyEvilOre, Mushroom, AnyEvilMushroom,
-        CorruptTiles, BloodTiles, AnyHerb, RottenChunkVertabrae, AnyStandardFish, AnySoil, DirtOrMud, AnyButterfly,
-        AnyBaseBottle, ShiverthornOrWaterleaf, ShiverthornOrSeeds, AnyAcid, AnyAlkali, AnyMineralSalt,
+        CorruptTiles, BloodTiles, AnyHerb, RottenChunkVertabrae, AnyStandardFish, Dirts, Clays, AnyButterfly,
+        AnyBaseBottle, ShiverthornOrWaterleaf, ShiverthornOrSeeds, AnyAcid, AnyAlkali, AnyMineralSalt
     ];
-
     /// <summary>
     ///     Fills every group. Cannot be folded into the declarations above: <see cref="SoluteID" />,
     ///     <see cref="SolventID" /> and <see cref="ModContent.ItemType{T}" /> all read 0 until content
@@ -147,12 +148,12 @@ public static class AlchemyRecipeGroups
 
         ShiverthornOrSeeds.Add(ItemID.Shiverthorn, ItemID.ShiverthornSeeds);
 
-        AnySoil.Add(
-            ItemID.DirtBlock, ItemID.MudBlock,
-            ItemID.EbonsandBlock, ItemID.CrimsandBlock, ItemID.PearlsandBlock,
-            ItemID.EbonstoneBlock, ItemID.CrimstoneBlock, ItemID.PearlstoneBlock);
+        Clays.Add(ItemID.ClayBlock, ModContent.ItemType<TerracottaBlock>(),
+            ModContent.ItemType<YellowTerracottaBlock>(),
+            ModContent.ItemType<GrayTerracottaBlock>());
 
-        DirtOrMud.Add(ItemID.DirtBlock, ItemID.MudBlock);
+        Dirts.Add(
+            ItemID.DirtBlock, ItemID.MudBlock, ModContent.ItemType<PeatBlock>());
 
         AnyButterfly.Add(
             ItemID.GoldButterfly, ItemID.HellButterfly, ItemID.JuliaButterfly,
@@ -160,7 +161,7 @@ public static class AlchemyRecipeGroups
             ItemID.SulphurButterfly, ItemID.TreeNymphButterfly, ItemID.UlyssesButterfly,
             ItemID.ZebraSwallowtailButterfly);
 
-        AnyBaseBottle.Add(ItemID.Bottle, ItemID.BottledWater, SolventID.Inert);
+        AnyBaseBottle.Add(ItemID.Bottle, ItemID.BottledWater, SolventID.AquaInertis);
 
         SpecularFishOrMoonglow.Add(ItemID.SpecularFish, ItemID.Moonglow);
     }

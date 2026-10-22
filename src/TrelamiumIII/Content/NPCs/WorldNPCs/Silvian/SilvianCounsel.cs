@@ -181,7 +181,7 @@ internal static class SilvianCounsel
     /// <summary>How it is made: the recipe once brewed, hints before that. Empty when nothing makes it and it isn't a brew.</summary>
     private static string Making(Player player, int type)
     {
-        if (!AlchemyRecipes.Produces(type))
+        if (!AlchemyCore.Produces(type))
             return ChemicalRoles.Of(type) == ChemicalRole.Solution ? Text("NoRecipe") : string.Empty;
 
         AlchemyRecipe? recipe = Simplest(type);

@@ -538,37 +538,37 @@ Items: {
 	}
 
 	BaneTonicItem: {
-		DisplayName: Tonic of Bane
+		DisplayName: Aqua Pestis
 		Tooltip: The perfect vessel for vitiating agents and weaponry
 	}
 
 	BriskTonicItem: {
-		DisplayName: Tonic of Brisk
+		DisplayName: Aqua Vivida
 		Tooltip: The perfect vessel for movement-based potions
 	}
 
 	FortunateTonicItem: {
-		DisplayName: Tonic of Fortune
+		DisplayName: Aqua Fortunae
 		Tooltip: The perfect vessel for luck-based/baleful potions
 	}
 
 	HarmoniousTonicItem: {
-		DisplayName: Tonic of Harmony
+		DisplayName: Aqua Harmonia
 		Tooltip: The perfect vessel for affective serums
 	}
 
 	MartialTonicItem: {
-		DisplayName: Tonic of Martial
+		DisplayName: Aqua Fortis
 		Tooltip: The perfect vessel for combat-oriented potions
 	}
 
 	SpecularTonicItem: {
-		DisplayName: Tonic of Lucidity
+		DisplayName: Aqua Specularis
 		Tooltip: The perfect vessel for specular-natured/sight-based potions
 	}
 
 	VitalTonicItem: {
-		DisplayName: Tonic of Vitality
+		DisplayName: Aqua Vitae
 		Tooltip: The perfect vessel for life/rejuvinating potions
 	}
 
@@ -585,11 +585,6 @@ Items: {
 	BottledOilItem: {
 		DisplayName: Bottled Oil
 		Tooltip: Don't tell anyone you have this...
-	}
-
-	BrineBottleItem: {
-		DisplayName: Brine Bottle
-		Tooltip: Serves as a base solvent for alchemy
 	}
 
 	CharcoalItem: {
@@ -610,11 +605,6 @@ Items: {
 	FlyAgaricItem: {
 		DisplayName: Fly Agaric
 		Tooltip: Provides temporary swiftness
-	}
-
-	InertSolutionItem: {
-		DisplayName: Aqua Inertis
-		Tooltip: Serves as a base solvent for alchemy
 	}
 
 	MagnoliaItem: {
@@ -1064,7 +1054,7 @@ Items: {
 	}
 
 	AquaTerrae: {
-		DisplayName: Aqua Terra
+		DisplayName: Aqua Terrae
 		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
 	}
 
@@ -1336,6 +1326,16 @@ Items: {
 
 	AquaInteris: {
 		DisplayName: Aqua Interis
+		Tooltip: Serves as a base solvent for alchemy
+	}
+
+	AquaSalis: {
+		DisplayName: Aqua Salis
+		Tooltip: Serves as a base solvent for alchemy
+	}
+
+	SunflowerSeeds: {
+		DisplayName: Sunflower Seeds
 		Tooltip: ""
 	}
 }

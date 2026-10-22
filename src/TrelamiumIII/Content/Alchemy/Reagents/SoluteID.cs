@@ -95,7 +95,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Alchemy.Reagents.Niter.KEY,
             Value = Item.sellPrice(copper: 60),
             AlmanacPotency = 2,
-            Temperaments = Temperament.Volatile | Temperament.Catalytic,
+            Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Bane,
             Recipes = self =>
             {
@@ -125,7 +125,7 @@ public sealed class SoluteID : ICustomAutoload
             Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<RockSaltTile>()),
 
             Recipes = self => self.CreateRecipe(3)
-                .AddIngredient(SolventID.Brine)
+                .AddIngredient(SolventID.AquaSalis)
                 .AddTile(TileID.Furnaces)
                 .Register(),
         });
@@ -135,7 +135,7 @@ public sealed class SoluteID : ICustomAutoload
             TexturePath = AssetReferences.Content.Alchemy.Reagents.FrigorificSalt.KEY,
             Value = Item.sellPrice(copper: 20),
             AlmanacPotency = 1,
-            Temperaments = Temperament.Inert | Temperament.Alkaline,
+            Temperaments = Temperament.Alkaline,
             Principle = PrincipleType.Harmony,
             LegacyNames = ["SaltBlockItem"],
 
