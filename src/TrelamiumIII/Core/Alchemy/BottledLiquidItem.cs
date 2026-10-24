@@ -37,13 +37,27 @@ public readonly record struct LiquidPalette(Color Shadow, Color Body, Color High
 /// </summary>
 public abstract class BottledLiquidItem : ChemicalItem
 {
+    /// <summary>What <see cref="Bake" /> measured on the liquid mask: its opaque rectangle and shade range.</summary>
+    private sealed class MaskMetrics
+    {
+        public Vector4 Bounds;
+        public Vector2 ShadeRange;
+    }
+
     [CloneByReference]
     private Asset<Texture2D>? baked;
 
     [CloneByReference]
     private Asset<Texture2D>? mask;
 
-    protected BottledLiquidItem() : base(null) { }
+    [CloneByReference]
+    private Asset<Texture2D>? bareGlass;
+
+    [CloneByReference]
+    private MaskMetrics? metrics;
+
+    /// <param name="name">Internal name when it isn't the class name, such as one kept from an older item.</param>
+    protected BottledLiquidItem(string? name = null) : base(name) { }
 
     protected abstract BottleTemplate Template { get; }
 
@@ -54,6 +68,12 @@ public abstract class BottledLiquidItem : ChemicalItem
     ///     Null draws none.
     /// </summary>
     protected virtual LiquidSurface? Surface => null;
+
+    /// <summary>
+    ///     Whether <see cref="Surface" />'s technique draws the whole liquid rather than a pattern over the baked one. Slots and
+    ///     dropped items then draw it under the bare glass, so it can leave cells empty.
+    /// </summary>
+    protected virtual bool SurfaceIsLiquid => false;
 
     public override string Texture => Template.Glass;
 
@@ -66,6 +86,8 @@ public abstract class BottledLiquidItem : ChemicalItem
             return;
 
         mask = ModContent.Request<Texture2D>(Template.Liquid);
+        bareGlass = ModContent.Request<Texture2D>(Template.Glass);
+        metrics = new MaskMetrics();
         baked = new Asset<Texture2D>(FullName);
         baked.SetToLoadingState();
         TextureAssets.Item[Type] = baked;
@@ -79,20 +101,37 @@ public abstract class BottledLiquidItem : ChemicalItem
             Main.QueueMainThreadAction(asset.Dispose);
     }
 
+    public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor,
+        Vector2 origin, float scale)
+        => !SurfaceIsLiquid || !DrawSurface(spriteBatch, position, frame, drawColor, 0f, origin, scale);
+
     public override void PostDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor,
         Vector2 origin, float scale)
-        => DrawSurface(spriteBatch, position, frame, drawColor, 0f, origin, scale);
+    {
+        if (!SurfaceIsLiquid)
+            DrawSurface(spriteBatch, position, frame, drawColor, 0f, origin, scale);
+    }
 
-    /// <remarks>Placed where <c>Main.DrawItem</c> draws a dropped item's sprite.</remarks>
+    public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale,
+        int whoAmI)
+        => !SurfaceIsLiquid || !DrawSurfaceInWorld(spriteBatch, alphaColor, rotation, scale);
+
     public override void PostDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale, int whoAmI)
     {
+        if (!SurfaceIsLiquid)
+            DrawSurfaceInWorld(spriteBatch, alphaColor, rotation, scale);
+    }
+
+    /// <remarks>Placed where <c>Main.DrawItem</c> draws a dropped item's sprite.</remarks>
+    private bool DrawSurfaceInWorld(SpriteBatch spriteBatch, Color color, float rotation, float scale)
+    {
         if (mask is not { IsLoaded: true })
-            return;
+            return false;
 
         Rectangle frame = mask.Value.Frame();
         Vector2 position = Item.position - Main.screenPosition + new Vector2(Item.width / 2, Item.height - frame.Height * 0.5f);
 
-        DrawSurface(spriteBatch, position, frame, alphaColor, rotation, frame.Size() * 0.5f, scale);
+        return DrawSurface(spriteBatch, position, frame, color, rotation, frame.Size() * 0.5f, scale);
     }
 
     private void Bake()
@@ -107,17 +146,26 @@ public abstract class BottledLiquidItem : ChemicalItem
 
         float darkest = 1f;
         float lightest = 0f;
+        var bounds = new Vector4(liquid.Width, liquid.Height, 0f, 0f);
 
-        foreach (Color shade in shades)
+        for (int i = 0; i < shades.Length; i++)
         {
+            Color shade = shades[i];
             if (shade.A == 0)
                 continue;
 
             darkest = MathF.Min(darkest, shade.R / (float)shade.A);
             lightest = MathF.Max(lightest, shade.R / (float)shade.A);
+
+            int x = i % liquid.Width;
+            int y = i / liquid.Width;
+            bounds = new Vector4(MathF.Min(bounds.X, x), MathF.Min(bounds.Y, y), MathF.Max(bounds.Z, x + 1), MathF.Max(bounds.W, y + 1));
         }
 
         float range = MathF.Max(lightest - darkest, 1f / 255f);
+
+        metrics!.Bounds = bounds;
+        metrics.ShadeRange = new Vector2(darkest, range);
 
         // Premultiplied glass over premultiplied liquid.
         for (int i = 0; i < pixels.Length; i++)
@@ -135,14 +183,17 @@ public abstract class BottledLiquidItem : ChemicalItem
         baked!.SubmitLoadedContent(texture, null);
     }
 
-    private void DrawSurface(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color color, float rotation, Vector2 origin, float scale)
+    /// <summary>Draws <see cref="Surface" />, then with <see cref="SurfaceIsLiquid" /> the glass over it. False when nothing drew.</summary>
+    private bool DrawSurface(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color color, float rotation, Vector2 origin, float scale)
     {
-        if (Surface is not { } surface || baked is not { IsLoaded: true } || mask is not { IsLoaded: true }
+        if (Surface is not { } surface || baked is not { IsLoaded: true } || metrics is null
+            || mask is not { IsLoaded: true } || bareGlass is not { IsLoaded: true }
             || Assets.Shaders.BottleLiquid.Asset.Value is not { } effect || effect.Techniques[surface.Technique] is not { } technique)
-            return;
+            return false;
 
         effect.CurrentTechnique = technique;
         effect.Parameters["uNoiseTex"]?.SetValue(Assets.Textures.Noise.Perlin.Asset.Value);
+        effect.Parameters["uGlassTex"]?.SetValue(bareGlass.Value);
         effect.Parameters["Time"]?.SetValue(Main.GlobalTimeWrappedHourly);
         effect.Parameters["TextureSize"]?.SetValue(mask.Value.Size());
         effect.Parameters["PixelSize"]?.SetValue(2f);
@@ -151,6 +202,11 @@ public abstract class BottledLiquidItem : ChemicalItem
         effect.Parameters["Strength"]?.SetValue(surface.Strength);
         effect.Parameters["ColorA"]?.SetValue(surface.ColorA);
         effect.Parameters["ColorB"]?.SetValue(surface.ColorB);
+        effect.Parameters["Shadow"]?.SetValue(Palette.Shadow.ToVector3());
+        effect.Parameters["Body"]?.SetValue(Palette.Body.ToVector3());
+        effect.Parameters["Highlight"]?.SetValue(Palette.Highlight.ToVector3());
+        effect.Parameters["ShadeRange"]?.SetValue(metrics.ShadeRange);
+        effect.Parameters["LiquidBounds"]?.SetValue(metrics.Bounds);
 
         SpriteBatchState home = SpriteBatchState.Capture(spriteBatch);
         spriteBatch.End();
@@ -161,6 +217,12 @@ public abstract class BottledLiquidItem : ChemicalItem
         spriteBatch.End();
         // FNA rebinds texture parameters on every Apply without checking for disposal.
         effect.Parameters["uNoiseTex"]?.SetValue((Texture?)null);
+        effect.Parameters["uGlassTex"]?.SetValue((Texture?)null);
         home.Begin(spriteBatch);
+
+        if (SurfaceIsLiquid)
+            spriteBatch.Draw(bareGlass.Value, position, frame, color, rotation, origin, scale, SpriteEffects.None, 0f);
+
+        return true;
     }
 }

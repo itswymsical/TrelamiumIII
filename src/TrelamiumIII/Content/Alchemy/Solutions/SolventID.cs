@@ -34,7 +34,7 @@ public sealed class SolventID : ICustomAutoload
 
     #region Brewed solvents
 
-    public static int AquaInertis { get; private set; }
+    public static int AquaInertis => ModContent.ItemType<AquaInertis>();
 
     public static int Dead { get; private set; }
 
@@ -113,16 +113,6 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadBrewedSolvents(Mod mod)
     {
-        AquaInertis = Add(mod, new SolventItem("AquaInteris")
-        {
-            Rare = ItemRarityID.Gray,
-            AlmanacPotency = 1,
-            LegacyNames = ["InertSolutionItem"],
-            Temperaments = Temperament.Inert,
-            AlmanacRarity = ItemRarityID.White,
-            Hidden = false,
-        });
-
         Dead = Add(mod, new SolventItem("DeadSolutionItem")
         {
             Rare = ItemRarityID.Gray,

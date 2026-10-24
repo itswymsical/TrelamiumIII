@@ -1377,6 +1377,7 @@ Tiles: {
 	TuffTile.MapEntry: Tuff
 	BirchChestTile.MapEntry: Birch Chest
 	BirchDresserTile.MapEntry: Birch Dresser
+	NiterTile.MapEntry: Niter Tile
 }
 
 Projectiles: {

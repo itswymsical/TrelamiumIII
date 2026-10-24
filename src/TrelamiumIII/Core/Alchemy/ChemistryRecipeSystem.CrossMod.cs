@@ -41,46 +41,38 @@ public partial class ChemistryRecipeSystem
         }
         #endregion
 
-        #region Zephyr
-        AlchemyCore.AddResult(ItemID.BottledWater, zephyr,
-            new BrewRecipe(cloudstalk, ItemID.Cloud, ItemID.Moonglow) { Potency = 1, DurationTicks = Time(3) },
-            new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.Cloud, 2), ItemID.Moonglow) { Potency = 2, DurationTicks = Time(5) });
+        AlchemyCore.Result(zephyr)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(cloudstalk, ItemID.Cloud, ItemID.Moonglow) { Potency = 1, DurationTicks = Time(3) },
+                new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.Cloud, 2), ItemID.Moonglow) { Potency = 2, DurationTicks = Time(5) })
+            .From(SolventID.AquaVivida,
+                new BrewRecipe(cloudstalk, ItemID.Moonglow) { Potency = 2, DurationTicks = Time(4, 30) },
+                new BrewRecipe(cloudstalk, ItemID.Cloud, ItemID.Moonglow) { Potency = 3, DurationTicks = Time(6) });
 
-        AlchemyCore.AddResult(SolventID.AquaVivida, zephyr,
-            new BrewRecipe(cloudstalk, ItemID.Moonglow) { Potency = 2, DurationTicks = Time(4, 30) },
-            new BrewRecipe(cloudstalk, ItemID.Cloud, ItemID.Moonglow) { Potency = 3, DurationTicks = Time(6) });
-        #endregion
+        AlchemyCore.Result(soaring)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(cloudstalk, ItemID.SoulofFlight, ItemID.Damselfish) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(4) },
+                new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish) { Potency = 2, StrengthPercent = 110, DurationTicks = Time(5) },
+                new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish) { Potency = 3, StrengthPercent = 118, DurationTicks = Time(6) })
+            .From(SolventID.AquaVivida,
+                new BrewRecipe(cloudstalk, ItemID.SoulofFlight, ItemID.Damselfish) { Potency = 2, StrengthPercent = 112, DurationTicks = Time(4) },
+                new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish) { Potency = 3, StrengthPercent = 115, DurationTicks = Time(5) },
+                new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish) { Potency = 5, StrengthPercent = 120, DurationTicks = Time(6) });
 
-        #region Soaring
-        AlchemyCore.AddResult(ItemID.BottledWater, soaring,
-            new BrewRecipe(cloudstalk, ItemID.SoulofFlight, ItemID.Damselfish) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(4) },
-            new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish) { Potency = 2, StrengthPercent = 110, DurationTicks = Time(5) },
-            new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish) { Potency = 3, StrengthPercent = 118, DurationTicks = Time(6) });
+        AlchemyCore.Result(remedy)
+            // Vital Tonic brews these one potency higher (see BrewFormula.SolventBonus).
+            .From([ItemID.BottledWater, SolventID.AquaVitae],
+                new BrewRecipe(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot) { Potency = 2, StrengthPercent = 100, DurationTicks = Time(10) })
+            .From(ModContent.ItemType<MagnoliaSolutionItem>(),
+                new BrewRecipe(ItemID.Stinger, ItemID.WaterleafSeeds, ItemID.BlinkrootSeeds) { Potency = 1, StrengthPercent = 75, DurationTicks = Time(8) });
 
-        AlchemyCore.AddResult(SolventID.AquaVivida, soaring,
-            new BrewRecipe(cloudstalk, ItemID.SoulofFlight, ItemID.Damselfish) { Potency = 2, StrengthPercent = 112, DurationTicks = Time(4) },
-            new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 2), ItemID.Damselfish) { Potency = 3, StrengthPercent = 115, DurationTicks = Time(5) },
-            new BrewRecipe(cloudstalk, ComponentMatcher.Of(ItemID.SoulofFlight, 5), ItemID.Damselfish) { Potency = 5, StrengthPercent = 120, DurationTicks = Time(6) });
-        #endregion
-
-        #region Remedy
-        // Vital Tonic brews these one potency higher (see BrewFormula.SolventBonus).
-        AlchemyCore.AddResult([ItemID.BottledWater, SolventID.AquaVitae], remedy,
-            new BrewRecipe(ItemID.Stinger, ItemID.Waterleaf, ItemID.Blinkroot) { Potency = 2, StrengthPercent = 100, DurationTicks = Time(10) });
-
-        AlchemyCore.AddResult(ModContent.ItemType<MagnoliaSolutionItem>(), remedy,
-            new BrewRecipe(ItemID.Stinger, ItemID.WaterleafSeeds, ItemID.BlinkrootSeeds) { Potency = 1, StrengthPercent = 75, DurationTicks = Time(8) });
-        #endregion
-
-        #region Quench
-        AlchemyCore.AddResult([ItemID.BottledWater, SolventID.AquaVitae], quench,
-            new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Blinkroot) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) },
-            new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Moonglow) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) });
-
-        AlchemyCore.AddResult(SolventID.AquaVitae, quench,
-            new BrewRecipe(gar, ItemID.Waterleaf, Gold) { Potency = 3, StrengthPercent = 125, DurationTicks = Time(secs: 20) },
-            new BrewRecipe(gar, ItemID.Waterleaf, ItemID.SoulofLight) { Potency = 4, StrengthPercent = 125, DurationTicks = Time(secs: 30) });
-        #endregion
+        AlchemyCore.Result(quench)
+            .From([ItemID.BottledWater, SolventID.AquaVitae],
+                new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Blinkroot) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) },
+                new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Moonglow) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) })
+            .From(SolventID.AquaVitae,
+                new BrewRecipe(gar, ItemID.Waterleaf, Gold) { Potency = 3, StrengthPercent = 125, DurationTicks = Time(secs: 20) },
+                new BrewRecipe(gar, ItemID.Waterleaf, ItemID.SoulofLight) { Potency = 4, StrengthPercent = 125, DurationTicks = Time(secs: 30) });
     }
 
     /// <summary>Calamity Mod recipes.</summary>
@@ -117,53 +109,62 @@ public partial class ChemistryRecipeSystem
         if (missing)
             return;
 
-        AlchemyCore.AddResult(ItemID.BottledWater, photosynthesis,
-            new BrewRecipe(essenceOfSunlight, bloodOrb) { Potency = 3, DurationTicks = Time(10) },
-            new BrewRecipe(essenceOfSunlight, ItemID.Daybloom));
+        AlchemyCore.Result(photosynthesis)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(essenceOfSunlight, bloodOrb) { Potency = 3, DurationTicks = Time(10) },
+                new BrewRecipe(essenceOfSunlight, ItemID.Daybloom));
 
-        AlchemyCore.AddResult(ItemID.BottledWater, anechoicCoating,
-            new BrewRecipe(bloodOrb));
+        AlchemyCore.Result(anechoicCoating)
+            .From(ItemID.BottledWater, new BrewRecipe(bloodOrb));
 
-        AlchemyCore.AddResult(ItemID.SuperManaPotion, astralInjection,
-            new BrewRecipe(starblightSoot, aureusCell) { OutputStack = 3 });
+        AlchemyCore.Result(astralInjection)
+            .From(ItemID.SuperManaPotion, new BrewRecipe(starblightSoot, aureusCell) { OutputStack = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, bounding,
-            new BrewRecipe(ItemID.PinkGel, ItemID.Moonglow));
+        AlchemyCore.Result(bounding)
+            .From(ItemID.BottledWater, new BrewRecipe(ItemID.PinkGel, ItemID.Moonglow));
 
-        AlchemyCore.AddResult(ItemID.BottledWater, calcium,
-            new BrewRecipe(ancientBoneDust),
-            new BrewRecipe(ancientBoneDust, bloodOrb) { Potency = 3 });
+        AlchemyCore.Result(calcium)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(ancientBoneDust),
+                new BrewRecipe(ancientBoneDust, bloodOrb) { Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, ceaselessHunger,
-            new BrewRecipe(darkPlasma),
-            new BrewRecipe(darkPlasma, bloodOrb) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(ceaselessHunger)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(darkPlasma),
+                new BrewRecipe(darkPlasma, bloodOrb) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, gravityNormalizer,
-            new BrewRecipe(aureusCell, bloodOrb),
-            new BrewRecipe(aldebaranAlewife, aureusCell) { Potency = 3 });
+        AlchemyCore.Result(gravityNormalizer)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(aureusCell, bloodOrb),
+                new BrewRecipe(aldebaranAlewife, aureusCell) { Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, shadow,
-            new BrewRecipe(shadowfish, ItemID.Blinkroot),
-            new BrewRecipe(shadowfish, bloodOrb) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(shadow)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(shadowfish, ItemID.Blinkroot),
+                new BrewRecipe(shadowfish, bloodOrb) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, soaring,
-            new BrewRecipe(sunkenSailfish, ItemID.SoulofFlight),
-            new BrewRecipe(bloodOrb, ItemID.SoulofFlight) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(soaring)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(sunkenSailfish, ItemID.SoulofFlight),
+                new BrewRecipe(bloodOrb, ItemID.SoulofFlight) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, sulphurskin,
-            new BrewRecipe(sulphurousSand, ItemID.Waterleaf),
-            new BrewRecipe(bloodOrb, ItemID.Waterleaf) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(sulphurskin)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(sulphurousSand, ItemID.Waterleaf),
+                new BrewRecipe(bloodOrb, ItemID.Waterleaf) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, zen,
-            new BrewRecipe(purifiedGel, ItemID.Daybloom),
-            new BrewRecipe(ComponentMatcher.Of(bloodOrb, 5), ItemID.Fireblossom) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(zen)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(purifiedGel, ItemID.Daybloom),
+                new BrewRecipe(ComponentMatcher.Of(bloodOrb, 5), ItemID.Fireblossom) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, zerg,
-            new BrewRecipe(ComponentMatcher.Of(purifiedGel, 2), ComponentMatcher.Of(ItemID.Fireblossom, 2)),
-            new BrewRecipe(ComponentMatcher.Of(bloodOrb, 5), ComponentMatcher.Of(purifiedGel, 2)) { OutputStack = 2, Potency = 3 });
+        AlchemyCore.Result(zerg)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(ComponentMatcher.Of(purifiedGel, 2), ComponentMatcher.Of(ItemID.Fireblossom, 2)),
+                new BrewRecipe(ComponentMatcher.Of(bloodOrb, 5), ComponentMatcher.Of(purifiedGel, 2)) { OutputStack = 2, Potency = 3 });
 
-        AlchemyCore.AddResult(ItemID.BottledWater, omniscience,
-            new BrewRecipe(ItemID.HunterPotion, ItemID.SpelunkerPotion, ItemID.TrapsightPotion));
+        AlchemyCore.Result(omniscience)
+            .From(ItemID.BottledWater, new BrewRecipe(ItemID.HunterPotion, ItemID.SpelunkerPotion, ItemID.TrapsightPotion));
     }
 
     /// <summary>A cross-mod item's type, or 0 with a logged warning and <paramref name="missing" /> set.</summary>

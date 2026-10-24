@@ -5,9 +5,9 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-public sealed class BrewRecipe
+public sealed record BrewRecipe
 {
-    public ComponentMatcher[] Components { get; }
+    public ComponentMatcher[] Components { get; init; }
 
     /// <summary>Stack size of the produced item before the player's output-count multiplier.</summary>
     public int OutputStack { get; init; } = 1;
@@ -49,13 +49,44 @@ public sealed class BrewRecipe
     public string? SuppressValidation { get; init; }
 
     /// <summary>
-    /// One input combination for a shared output (see <see cref="AlchemyCore.AddResult"/>). A plain item type
+    /// One input combination for a shared output (see <see cref="AlchemyCore.Result"/>). A plain item type
     /// requires potency 1; <c>ComponentMatcher.Of(type, 3)</c> requires potency 3.
     /// </summary>
     public BrewRecipe(params ComponentMatcher[] components)
     {
         Components = components;
     }
+}
+
+/// <summary>
+/// Every recipe producing <see cref="Output"/>, declared in one chain from <see cref="AlchemyCore.Result"/>. Each
+/// <see cref="From(int, BrewRecipe[])"/> registers variants for one input; <see cref="Augment"/> takes the output itself as input.
+/// </summary>
+public readonly struct BrewResult
+{
+    public int Output { get; }
+
+    public BrewResult(int output)
+    {
+        Output = output;
+    }
+
+    /// <summary>Registers each variant for <paramref name="input"/>.</summary>
+    public BrewResult From(int input, params BrewRecipe[] variants)
+    {
+        AlchemyCore.AddResult(input, Output, variants);
+        return this;
+    }
+
+    /// <inheritdoc cref="AlchemyCore.AddResult(int[], int, BrewRecipe[])"/>
+    public BrewResult From(int[] inputs, params BrewRecipe[] variants)
+    {
+        AlchemyCore.AddResult(inputs, Output, variants);
+        return this;
+    }
+
+    /// <summary>Variants brewed from <see cref="Output"/> itself: the input's brew carries over and each adds its effects (see <see cref="BrewFormula"/>).</summary>
+    public BrewResult Augment(params BrewRecipe[] variants) => From(Output, variants);
 }
 
 /// <summary>
@@ -120,7 +151,7 @@ public sealed class AlchemyResolution
     }
 }
 
-/// <summary>Central registry of alchemy recipes, added via <see cref="Register"/> or <see cref="AddResult"/>.</summary>
+/// <summary>Central registry of alchemy recipes, added per output via <see cref="Result"/> or one at a time via <see cref="Register"/>.</summary>
 public static class AlchemyCore
 {
     private static readonly List<AlchemyRecipe> _recipes = new();
@@ -142,6 +173,9 @@ public static class AlchemyCore
 
     /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
+
+    /// <summary>Starts the chain declaring every recipe that produces <paramref name="output"/>.</summary>
+    public static BrewResult Result(int output) => new(output);
 
     /// <summary>Registers each variant for one input type.</summary>
     public static void AddResult(int _base, int recipe, params BrewRecipe[] variants) =>

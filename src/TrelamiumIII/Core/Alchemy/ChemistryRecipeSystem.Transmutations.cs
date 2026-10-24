@@ -11,19 +11,18 @@ public partial class ChemistryRecipeSystem
     /// </summary>
     private static void RegisterTransmutations()
     {
-        AlchemyCore.AddResult(ItemID.SwiftnessPotion, ItemID.RegenerationPotion,
-            new BrewRecipe(SolventID.AquaHarmonia));
+        AlchemyCore.Result(ItemID.RegenerationPotion)
+            .From(ItemID.SwiftnessPotion, new BrewRecipe(SolventID.AquaHarmonia));
 
-        AlchemyCore.AddResult(ItemID.SwiftnessPotion, ItemID.ManaRegenerationPotion,
-            new BrewRecipe(SolventID.AquaHarmonia, ItemID.FallenStar));
+        AlchemyCore.Result(ItemID.ManaRegenerationPotion)
+            .From(ItemID.SwiftnessPotion, new BrewRecipe(SolventID.AquaHarmonia, ItemID.FallenStar));
 
-        AlchemyCore.AddResult(ItemID.RestorationPotion, ItemID.HealingPotion,
-            new BrewRecipe(SolventID.AquaVitae, ItemID.Mushroom));
-
-        AlchemyCore.AddResult(ItemID.RestorationPotion, ItemID.HealingPotion,
-            new BrewRecipe([
-                ComponentMatcher.Of(SolventID.AquaVitae, minPotency: 1, maxPotency: 4), 
-                ComponentMatcher.Of(ItemID.Mushroom, minPotency: 1, maxPotency: 4)
-                ]));
+        AlchemyCore.Result(ItemID.HealingPotion)
+            .From(ItemID.RestorationPotion,
+                new BrewRecipe(SolventID.AquaVitae, ItemID.Mushroom),
+                new BrewRecipe([
+                    ComponentMatcher.Of(SolventID.AquaVitae, minPotency: 1, maxPotency: 4),
+                    ComponentMatcher.Of(ItemID.Mushroom, minPotency: 1, maxPotency: 4)
+                    ]));
     }
 }
