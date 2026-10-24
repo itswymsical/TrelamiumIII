@@ -160,11 +160,10 @@ public sealed class SolventID : ICustomAutoload
     /// <param name="tonic">The old internal name, which is also the legacy name.</param>
     /// <remarks>Rated one star explicitly: 0 would draw as unrated.</remarks>
     private static int AddTonic(Mod mod, string tonic, PrincipleType principle) =>
-        Add(mod, new SolventItem(tonic + "Item")
+        Add(mod, new TonicItem(tonic + "Item", principle)
         {
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = AlmanacEntryRegistry.DefaultAlmanacPotency,
-            Principle = principle,
             LegacyNames = [tonic],
         });
 

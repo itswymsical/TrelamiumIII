@@ -25,10 +25,33 @@ public readonly record struct LiquidPalette(Color Shadow, Color Body, Color High
     /// <summary>Vanilla Bottled Water.</summary>
     public static LiquidPalette Water { get; } = new(new Color(9, 61, 191), new Color(51, 107, 249), new Color(147, 177, 253));
 
+    /// <summary>
+    ///     A palette around <paramref name="body" />, such as a principle's colour: the shadow is the same hue darker and more
+    ///     saturated, the highlight paler.
+    /// </summary>
+    public static LiquidPalette Around(Color body) => new(Shade(body, 0.7f, 1.35f), body, Shade(body, 1.2f, 0.4f));
+
     /// <param name="shade">0 at the mask's darkest shade, 1 at its lightest.</param>
     public Color At(float shade) => shade < BodyStop
         ? Color.Lerp(Shadow, Body, shade / BodyStop)
         : Color.Lerp(Body, Highlight, (shade - BodyStop) / (1f - BodyStop));
+
+    /// <summary><paramref name="color" /> with its HSV value and saturation scaled and its hue kept.</summary>
+    private static Color Shade(Color color, float value, float saturation)
+    {
+        Vector3 rgb = color.ToVector3();
+        float max = MathF.Max(rgb.X, MathF.Max(rgb.Y, rgb.Z));
+        float min = MathF.Min(rgb.X, MathF.Min(rgb.Y, rgb.Z));
+        float v = MathF.Min(max * value, 1f);
+
+        if (max <= min)
+            return new Color(new Vector3(v));
+
+        Vector3 hue = (rgb - new Vector3(min)) / (max - min);
+        float s = MathF.Min((max - min) / max * saturation, 1f);
+
+        return new Color(v * (Vector3.One - s * (Vector3.One - hue)));
+    }
 }
 
 /// <summary>
@@ -56,8 +79,11 @@ public abstract class BottledLiquidItem : ChemicalItem
     [CloneByReference]
     private MaskMetrics? metrics;
 
-    /// <param name="name">Internal name when it isn't the class name, such as one kept from an older item.</param>
+    /// <param name="name">Internal name when it isn't the class name, such as one kept from an older item or a table instance.</param>
     protected BottledLiquidItem(string? name = null) : base(name) { }
+
+    /// <summary>The <c>Splash</c> technique: liquid sloshing in the bottle. It draws the whole liquid, so pair it with <see cref="SurfaceIsLiquid" />.</summary>
+    protected static LiquidSurface Splash { get; } = new("Splash");
 
     protected abstract BottleTemplate Template { get; }
 
@@ -194,7 +220,8 @@ public abstract class BottledLiquidItem : ChemicalItem
         effect.CurrentTechnique = technique;
         effect.Parameters["uNoiseTex"]?.SetValue(Assets.Textures.Noise.Perlin.Asset.Value);
         effect.Parameters["uGlassTex"]?.SetValue(bareGlass.Value);
-        effect.Parameters["Time"]?.SetValue(Main.GlobalTimeWrappedHourly);
+        // Offset per item type, so different bottles side by side don't move in step.
+        effect.Parameters["Time"]?.SetValue(Main.GlobalTimeWrappedHourly + Type * 3.7f % 60f);
         effect.Parameters["TextureSize"]?.SetValue(mask.Value.Size());
         effect.Parameters["PixelSize"]?.SetValue(2f);
         effect.Parameters["Scale"]?.SetValue(surface.Scale);

@@ -7,8 +7,6 @@ namespace TrelamiumIII.Content.Alchemy.Solutions;
 [LegacyName("InertSolutionItem")]
 internal sealed class AquaInertis : BottledLiquidItem
 {
-    private static readonly LiquidSurface surface = new("Splash");
-
     /// <remarks>Keeps the internal name it had as a <see cref="SolventID" /> table entry.</remarks>
     public AquaInertis() : base("AquaInteris")
     {
@@ -27,7 +25,7 @@ internal sealed class AquaInertis : BottledLiquidItem
     /// <summary>The colours of the old hand-drawn sprite's liquid.</summary>
     protected override LiquidPalette Palette { get; } = new(new Color(63, 96, 137), new Color(122, 160, 181), new Color(231, 247, 248));
 
-    protected override LiquidSurface Surface => surface;
+    protected override LiquidSurface Surface => Splash;
 
     protected override bool SurfaceIsLiquid => true;
 }

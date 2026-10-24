@@ -2276,14 +2276,14 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
     // ToString() name-matching would silently fail on combined principles).
     private static readonly (PrincipleType Flag, string Name, string Metal, int Ore, string Domain, string Reacts, Color Color)[] _principles =
     {
-        (PrincipleType.Vital,    "Vital",    "Gold",     ItemID.GoldOre,     "life, regen, vigour, light",  "nourishes, perfects",  new Color(255, 215,  90)),
-        (PrincipleType.Specular, "Specular", "Silver",   ItemID.SilverOre,   "perception, sight, the mind", "reveals, reflects",    new Color(180, 210, 255)),
-        (PrincipleType.Martial,  "Martial",  "Iron",     ItemID.IronOre,     "damage, crit, defence",       "ignites, amplifies",   new Color(230,  95,  80)),
-        (PrincipleType.Brisk,    "Brisk",    "Tin",      ItemID.TinOre,      "speed, motion, travel",       "quickens, catalyses",  new Color(110, 220, 210)),
-        (PrincipleType.Fortune,  "Fortune",  "Platinum", ItemID.PlatinumOre, "luck, yield, abundance",      "expands, multiplies",  new Color(150, 210, 120)),
-        (PrincipleType.Harmony,  "Harmony",  "Copper",   ItemID.CopperOre,   "calm, allure, accord",        "binds, neutralises",   new Color(235, 150, 190)),
-        (PrincipleType.Bane,     "Bane",     "Lead",     ItemID.LeadOre,     "toxin, decay, the curse",     "corrodes, lingers",    new Color(175, 125, 215)),
-        (PrincipleType.None,     "None",     "",         0,                  "a neutral solvent",           "carries others",       new Color(165, 165, 165)),
+        (PrincipleType.Vital,    "Vital",    "Gold",     ItemID.GoldOre,     "life, regen, vigour, light",  "nourishes, perfects",  PrincipleColors.Of(PrincipleType.Vital)),
+        (PrincipleType.Specular, "Specular", "Silver",   ItemID.SilverOre,   "perception, sight, the mind", "reveals, reflects",    PrincipleColors.Of(PrincipleType.Specular)),
+        (PrincipleType.Martial,  "Martial",  "Iron",     ItemID.IronOre,     "damage, crit, defence",       "ignites, amplifies",   PrincipleColors.Of(PrincipleType.Martial)),
+        (PrincipleType.Brisk,    "Brisk",    "Tin",      ItemID.TinOre,      "speed, motion, travel",       "quickens, catalyses",  PrincipleColors.Of(PrincipleType.Brisk)),
+        (PrincipleType.Fortune,  "Fortune",  "Platinum", ItemID.PlatinumOre, "luck, yield, abundance",      "expands, multiplies",  PrincipleColors.Of(PrincipleType.Fortune)),
+        (PrincipleType.Harmony,  "Harmony",  "Copper",   ItemID.CopperOre,   "calm, allure, accord",        "binds, neutralises",   PrincipleColors.Of(PrincipleType.Harmony)),
+        (PrincipleType.Bane,     "Bane",     "Lead",     ItemID.LeadOre,     "toxin, decay, the curse",     "corrodes, lingers",    PrincipleColors.Of(PrincipleType.Bane)),
+        (PrincipleType.None,     "None",     "",         0,                  "a neutral solvent",           "carries others",       PrincipleColors.Neutral),
     };
 
     /// <summary>
