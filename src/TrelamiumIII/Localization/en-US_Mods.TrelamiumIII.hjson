@@ -133,6 +133,11 @@ Items: {
 		Tooltip: ""
 	}
 
+	BlueVitriol: {
+		DisplayName: Blue Vitriol
+		Tooltip: ""
+	}
+
 	SlakedLimeItem: {
 		DisplayName: Slaked Lime
 		Tooltip: ""
@@ -1568,6 +1573,16 @@ Buffs: {
 	Gallantry: {
 		DisplayName: Gallantry
 		Description: +{0} defense
+	}
+
+	AcidDebuff: {
+		DisplayName: Acid?!
+		Description: You are melting via acid.
+	}
+
+	NitricAcidDebuff: {
+		DisplayName: NITRIC Acid?!
+		Description: You are melting via nitric acid.
 	}
 }
 

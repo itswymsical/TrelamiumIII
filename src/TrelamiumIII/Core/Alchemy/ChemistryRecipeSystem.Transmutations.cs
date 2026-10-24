@@ -12,16 +12,16 @@ public partial class ChemistryRecipeSystem
     private static void RegisterTransmutations()
     {
         AlchemyCore.AddResult(ItemID.SwiftnessPotion, ItemID.RegenerationPotion,
-            new SoluteInput(SolventID.AquaHarmonia));
+            new BrewRecipe(SolventID.AquaHarmonia));
 
         AlchemyCore.AddResult(ItemID.SwiftnessPotion, ItemID.ManaRegenerationPotion,
-            new SoluteInput(SolventID.AquaHarmonia, ItemID.FallenStar));
+            new BrewRecipe(SolventID.AquaHarmonia, ItemID.FallenStar));
 
         AlchemyCore.AddResult(ItemID.RestorationPotion, ItemID.HealingPotion,
-            new SoluteInput(SolventID.AquaVitae, ItemID.Mushroom));
+            new BrewRecipe(SolventID.AquaVitae, ItemID.Mushroom));
 
         AlchemyCore.AddResult(ItemID.RestorationPotion, ItemID.HealingPotion,
-            new SoluteInput([
+            new BrewRecipe([
                 ComponentMatcher.Of(SolventID.AquaVitae, minPotency: 1, maxPotency: 4), 
                 ComponentMatcher.Of(ItemID.Mushroom, minPotency: 1, maxPotency: 4)
                 ]));

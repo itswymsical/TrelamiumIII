@@ -97,6 +97,9 @@ public sealed class SoluteID : ICustomAutoload
             AlmanacPotency = 2,
             Temperaments = Temperament.Volatile,
             Principle = PrincipleType.Bane,
+
+            Defaults = item => item.DefaultToPlaceableTile(ModContent.TileType<NiterTile>()),
+
             Recipes = self =>
             {
                 self.CreateRecipe(3)
@@ -158,8 +161,9 @@ public sealed class SoluteID : ICustomAutoload
         {
             Value = Item.sellPrice(copper: 50),
             AlmanacPotency = 2,
-            Temperaments = Temperament.Inert | Temperament.Alkaline,
-            Principle = PrincipleType.Bane | PrincipleType.Vital,
+            Temperaments = Temperament.Volatile,
+            Traits = ChemicalTrait.Flammable,
+            Principle = PrincipleType.Martial,
             Recipes = self => self.CreateRecipe(2)
                 .AddIngredient(ItemID.Bone, 5)
                 .AddTile(TileID.Furnaces)
@@ -193,8 +197,9 @@ public sealed class SoluteID : ICustomAutoload
             Principle = PrincipleType.Bane,
         });
 
-        BlueVitriol = Add(mod, new SoluteItem("BlueVitriolItem")
+        BlueVitriol = Add(mod, new SoluteItem("BlueVitriol")
         {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.BlueVitriol.KEY,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 4),
             AlmanacPotency = 3,
@@ -251,6 +256,8 @@ public sealed class SoluteID : ICustomAutoload
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
             Temperaments = Temperament.Inert,
+            Principle = PrincipleType.Harmony,
+
         });
 
         BlackPowder = Add(mod, new SoluteItem("BlackPowderItem")
@@ -259,7 +266,7 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 6),
             AlmanacPotency = 4,
-            Temperaments = Temperament.Volatile | Temperament.Kinetic,
+            Temperaments = Temperament.Kinetic,
             Principle = PrincipleType.Martial,
         });
 
@@ -268,8 +275,8 @@ public sealed class SoluteID : ICustomAutoload
             Rare = ItemRarityID.Orange,
             Value = Item.sellPrice(silver: 15),
             AlmanacPotency = 5,
-            Temperaments = Temperament.Volatile | Temperament.Catalytic,
-            Principle = PrincipleType.Martial | PrincipleType.Specular,
+            Temperaments = Temperament.Catalytic,
+            Principle = PrincipleType.Specular,
         });
     }
 

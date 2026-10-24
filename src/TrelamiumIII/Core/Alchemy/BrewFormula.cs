@@ -23,7 +23,7 @@ public static class BrewFormula
             : 0;
 
     /// <param name="authoredInput">The input type the variant's values were authored for.</param>
-    public static Item CreateOutput(int outputType, SoluteInput variant, in BrewContext context, int authoredInput)
+    public static Item CreateOutput(int outputType, BrewRecipe variant, in BrewContext context, int authoredInput)
     {
         var output = new Item();
         output.SetDefaults(outputType);
@@ -47,7 +47,7 @@ public static class BrewFormula
         return output;
     }
 
-    private static PotionBrew? CreateBrew(Item output, SoluteInput variant, in BrewContext context, int authoredInput)
+    private static PotionBrew? CreateBrew(Item output, BrewRecipe variant, in BrewContext context, int authoredInput)
     {
         BrewComposition composition = context.Composition;
         int duration = variant.DurationTicks > 0 ? variant.DurationTicks : variant.DurationSeconds * 60;
@@ -117,7 +117,7 @@ public static class BrewFormula
             ? BrewTuning.Create(output.buffType, output.buffTime, potency)
             : BrewTuning.CreateRestoration(potency);
 
-    private static AlchemicalEffect WithAuthored(AlchemicalEffect effect, SoluteInput variant, int duration)
+    private static AlchemicalEffect WithAuthored(AlchemicalEffect effect, BrewRecipe variant, int duration)
     {
         if (variant.StrengthPercent > 0)
             effect = effect with { StrengthPercent = variant.StrengthPercent };
@@ -128,6 +128,6 @@ public static class BrewFormula
         return effect;
     }
 
-    private static AlchemicalEffect WithOreTier(AlchemicalEffect effect, SoluteInput variant) =>
+    private static AlchemicalEffect WithOreTier(AlchemicalEffect effect, BrewRecipe variant) =>
         variant.MaxOreTier > 0 ? effect with { Params = effect.Params with { MaxOreTier = variant.MaxOreTier } } : effect;
 }

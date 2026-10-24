@@ -1,6 +1,7 @@
 using Terraria.GameContent.Liquid;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Buffs;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Liquids;
@@ -109,7 +110,7 @@ public sealed class AcidicLiquids : ConditionalLiquid, ILiquidSurface
 
         LiquidRenderer.DEFAULT_OPACITY[Type] = 0.75f;
         SlopeOpacity = 0.7f; 
-        SplashDustType = DustID.CursedTorch;
+        SplashDustType = DustID.BubbleBurst_Green;
 
         SplashSound = SoundID.Splash with { Pitch = -.07f };
 
@@ -126,7 +127,8 @@ public sealed class AcidicLiquids : ConditionalLiquid, ILiquidSurface
 
         int ticks = (int)(60 + 120 * condition.Strength);
 
-        player.AddBuff(condition.Strength >= 0.85f ? BuffID.Venom : BuffID.Poisoned, ticks);
+        player.AddBuff(condition.Index >= AquaFortis.Index ? 
+            ModContent.BuffType<NitricAcidDebuff>() : ModContent.BuffType<AcidDebuff>(), ticks);
 
         if (condition.Strength >= 0.6f)
             player.AddBuff(BuffID.Ichor, ticks);
@@ -140,7 +142,8 @@ public sealed class AcidicLiquids : ConditionalLiquid, ILiquidSurface
         {
             ChemicalPayload.Contact(npc, ElementProfile.Caustic, null, FieldNode.NoOwner, null, condition.Strength);
 
-            npc.AddBuff(condition.Strength >= 0.85f ? BuffID.Venom : BuffID.Poisoned, ticks);
+            npc.AddBuff(condition.Index >= AquaFortis.Index ?
+                ModContent.BuffType<NitricAcidDebuff>() : ModContent.BuffType<AcidDebuff>(), ticks);
 
             if (condition.Strength >= 0.6f)
                 npc.AddBuff(BuffID.Ichor, ticks);

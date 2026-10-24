@@ -3,6 +3,7 @@ using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Content.Items.Lodestone;
 using TrelamiumIII.Content.Items.Rusted;
+using TrelamiumIII.Content.ObsidianForest;
 using static TrelamiumIII.Common.Generation.Ores.Depth;
 using static TrelamiumIII.Common.Generation.Ores.WorldLayer;
 
@@ -70,7 +71,10 @@ public static class OreTable
         veins.Add(new(cinnabar, Between(Rock, Underworld, 0.2f), Between(Rock, Underworld, 0.85f), 80f, (2, 6), (5, 7), [TileID.Stone, TileID.Ash], Clustering: 0.35f));
 
         ushort rockSalt = (ushort)ModContent.TileType<RockSaltTile>();
-        veins.Add(new(rockSalt, Between(RockHigh, Rock, 0.17f), Between(Rock, RockLow, 0.55f), 80f, (3, 5), (4, 7), StoneTiles, Clustering: 0.45f));
+        veins.Add(new(rockSalt, At(Rock), At(Bottom), 80f, (3, 4), (3, 6), StoneTiles, Clustering: 0.45f));
+        
+        ushort niter = (ushort)ModContent.TileType<NiterTile>();
+        veins.Add(new(niter, At(Rock), At(Bottom), 80f, (3, 4), (3, 6), [TileID.Stone, (ushort)ModContent.TileType<TuffTile>()], Clustering: 0.55f));
 
         // Salt beds through the underground snow biome. Shinies runs after Generate Ice Biome, so snow and ice are
         // already down. Misses off them are retried, so nearly every vein counted lands in the snow: about 40 on a

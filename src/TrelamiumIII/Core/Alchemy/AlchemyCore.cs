@@ -5,7 +5,7 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Alchemy;
 
-public sealed class SoluteInput
+public sealed class BrewRecipe
 {
     public ComponentMatcher[] Components { get; }
 
@@ -52,7 +52,7 @@ public sealed class SoluteInput
     /// One input combination for a shared output (see <see cref="AlchemyCore.AddResult"/>). A plain item type
     /// requires potency 1; <c>ComponentMatcher.Of(type, 3)</c> requires potency 3.
     /// </summary>
-    public SoluteInput(params ComponentMatcher[] components)
+    public BrewRecipe(params ComponentMatcher[] components)
     {
         Components = components;
     }
@@ -144,20 +144,20 @@ public static class AlchemyCore
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
 
     /// <summary>Registers each variant for one input type.</summary>
-    public static void AddResult(int _base, int recipe, params SoluteInput[] variants) =>
+    public static void AddResult(int _base, int recipe, params BrewRecipe[] variants) =>
         AddResult([_base], recipe, variants);
 
     /// <summary>
     /// Registers each variant for every input type. A variant's authored values apply to the first input; the others differ
     /// by <see cref="BrewFormula.SolventBonus"/>.
     /// </summary>
-    public static void AddResult(int[] _bases, int recipe, params SoluteInput[] variants)
+    public static void AddResult(int[] _bases, int recipe, params BrewRecipe[] variants)
     {
         int authoredInput = _bases[0];
 
         foreach (int inputType in _bases)
         {
-            foreach (SoluteInput variant in variants)
+            foreach (BrewRecipe variant in variants)
             {
                 Register(new AlchemyRecipe
                 {
@@ -424,10 +424,10 @@ public sealed class AlchemyRecipe
     /// <summary>Builds the output from the slotted ingredients.</summary>
     public Func<BrewContext, Item> CreateOutput { get; init; }
 
-    /// <inheritdoc cref="SoluteInput.ReturnsBottle" />
+    /// <inheritdoc cref="BrewRecipe.ReturnsBottle" />
     public bool? ReturnsBottleOverride { get; init; }
 
-    /// <inheritdoc cref="SoluteInput.SuppressValidation" />
+    /// <inheritdoc cref="BrewRecipe.SuppressValidation" />
     public string? SuppressValidation { get; init; }
 
     /// <summary>

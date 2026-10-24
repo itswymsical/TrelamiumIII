@@ -13,38 +13,6 @@ namespace TrelamiumIII.Core.Alchemy;
 
 public partial class ChemistryRecipeSystem
 {
-    /// <summary>Miscellaneous craftable items (e.g. unholy water, love potion).</summary>
-    private static void RegisterMisc()
-    {
-        AlchemyCore.AddResult(ItemID.BottledWater, ItemID.UnholyWater,
-            new SoluteInput(CorruptTiles, ItemID.CorruptSeeds) { OutputStack = 4 },
-            new SoluteInput(ItemID.VileMushroom, Dirts, ItemID.Worm) { OutputStack = 4 });
-
-        AlchemyCore.AddResult(ItemID.BottledWater, ItemID.BloodWater,
-            new SoluteInput(BloodTiles, ItemID.CrimsonSeeds) { OutputStack = 4 },
-            new SoluteInput(ItemID.ViciousMushroom, Dirts, ItemID.Worm) { OutputStack = 4 });
-
-        AlchemyCore.AddResult(ItemID.BottledWater, ItemID.HolyWater,
-            new SoluteInput(ItemID.PixieDust, ItemID.HallowedSeeds) { OutputStack = 4 });
-
-        AlchemyCore.AddResult(ItemID.BottledWater, ItemID.LovePotion,
-            new SoluteInput(ItemID.LifeCrystal, ItemID.FallenStar) { OutputStack = 4 },
-            new SoluteInput(ItemID.PrincessFish, ItemID.Shiverthorn) { OutputStack = 8 });
-
-        AlchemyCore.AddResult(ItemID.BottledWater, ItemID.StinkPotion,
-            new SoluteInput(ItemID.Stinkfish, ItemID.Deathweed) { OutputStack = 2 },
-            new SoluteInput(ItemID.Stinkfish, ItemID.DeathweedSeeds));
-
-        AlchemyCore.AddResult(ItemID.Bottle, ItemID.ViciousPowder,
-            new SoluteInput(ItemID.ViciousMushroom) { OutputStack = 5, CustomOutput = BottleOf(ItemID.ViciousPowder) });
-
-        AlchemyCore.AddResult(ItemID.Bottle, ItemID.VilePowder,
-            new SoluteInput(ItemID.VileMushroom) { OutputStack = 5, CustomOutput = BottleOf(ItemID.VilePowder) });
-
-        AlchemyCore.AddResult(ItemID.Bottle, ModContent.ItemType<RustedNugget>(),
-            new SoluteInput(ItemID.IronOre) { CustomOutput = BottleOf(ModContent.ItemType<RustedNugget>()) });
-    }
-
     private static void RegisterWeapons()
     {
         int crimsonFlask = ModContent.ItemType<CrimsonEffusionFlaskItem>();
@@ -63,8 +31,8 @@ public partial class ChemistryRecipeSystem
         // Effusion Flask
         AlchemyCore.AddResult(SolventID.BloodtoothExtract, crimsonFlask,
         [
-            new SoluteInput(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 16 },
-            new SoluteInput(ItemID.Deathweed) { OutputStack = 8 },
+            new BrewRecipe(ItemID.ViciousPowder, ItemID.Deathweed) { OutputStack = 16 },
+            new BrewRecipe(ItemID.Deathweed) { OutputStack = 8 },
             .. AnyTwoOf(ItemID.ViciousPowder, ItemID.Deathweed, bloodtooth, potency: 2, stack: 18),
         ]);
 
@@ -81,39 +49,39 @@ public partial class ChemistryRecipeSystem
 
         // Hyperborean
         AlchemyCore.AddResult(simpleSolvents, hyperboreanFlask,
-            new SoluteInput(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ItemID.CopperOre, ComponentMatcher.Of(SoluteID.Niter, 2))
+            new BrewRecipe(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ItemID.CopperOre, ComponentMatcher.Of(SoluteID.Niter, 2))
             { OutputStack = 16, });
 
         AlchemyCore.AddResult(tonics, hyperboreanFlask,
-            new SoluteInput(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ComponentMatcher.Of(SoluteID.Niter, 2)) { OutputStack = 16 });
+            new BrewRecipe(ComponentMatcher.Of(ShiverthornOrSeeds, 2), ComponentMatcher.Of(SoluteID.Niter, 2)) { OutputStack = 16 });
 
         // Starflask
         AlchemyCore.AddResult(tonics, starflask,
-            new SoluteInput(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 },
-            new SoluteInput(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(ItemID.Gel, 3)) { OutputStack = 16 });
+            new BrewRecipe(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(SoluteID.Niter, 1)) { OutputStack = 16 },
+            new BrewRecipe(ComponentMatcher.Of(ItemID.FallenStar, 2), ComponentMatcher.Of(ItemID.Gel, 3)) { OutputStack = 16 });
 
         // Thermite Flask
         AlchemyCore.AddResult([SolventID.FibrousSlurry, SolventID.AquaFortis, SolventID.AquaFortis], therm,
-            new SoluteInput(
+            new BrewRecipe(
                 ComponentMatcher.Of(BlackPowderOrRust, 1), 
                 ComponentMatcher.Of(SoluteID.Sulfur, 2), 
                 ComponentMatcher.Of(ItemID.Hellstone, 2)) { OutputStack = 16 });
 
         // Phytoncide
         AlchemyCore.AddResult(simpleSolvents, phytoncide,
-            new SoluteInput(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 },
+            new BrewRecipe(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 16 },
 
-            new SoluteInput(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(ItemID.Stinger, 1), 
+            new BrewRecipe(ComponentMatcher.Of(ItemID.JungleSpores, 2), ComponentMatcher.Of(ItemID.Stinger, 1), 
             ComponentMatcher.Of(SoluteID.Potash, 1)) { OutputStack = 24 });
 
         // Mud Bottle
         int mudBottle = ModContent.ItemType<AquaTerrae>();
 
         AlchemyCore.AddResult(SolventID.AquaInertis, mudBottle,
-            new SoluteInput(ComponentMatcher.Of(Dirts, 2)) { OutputStack = 16 });
+            new BrewRecipe(ComponentMatcher.Of(Dirts, 2)) { OutputStack = 16 });
 
         AlchemyCore.AddResult(ItemID.BottledWater, mudBottle,
-            new SoluteInput(Dirts, Mushroom) { OutputStack = 16 });
+            new BrewRecipe(Dirts, Mushroom) { OutputStack = 16 });
 
         // Overgrowth
         int magnolia = ModContent.ItemType<MagnoliaItem>();
@@ -124,46 +92,46 @@ public partial class ChemistryRecipeSystem
             int flask = OvergrowthFlaskID.Of(strain);
 
             AlchemyCore.AddResult(flowerStuffs, flask,
-                new SoluteInput(strain.Seed, Dirts, magnolia) { OutputStack = 16 });
+                new BrewRecipe(strain.Seed, Dirts, magnolia) { OutputStack = 16 });
 
             if (!strain.IsDefault)
-                AlchemyCore.AddResult(grassFlask, flask, new SoluteInput(strain.Seed));
+                AlchemyCore.AddResult(grassFlask, flask, new BrewRecipe(strain.Seed));
         }
 
         // --- Gas Canisters ---
         // Vilespore
         AlchemyCore.AddResult(canister, GasCanisterAmmo.ContactVilespore,
-            new SoluteInput(ComponentMatcher.Of(ItemID.VileMushroom, 2),
+            new BrewRecipe(ComponentMatcher.Of(ItemID.VileMushroom, 2),
             ComponentMatcher.Of(ItemID.Deathweed, 1),
             ComponentMatcher.Of(SoluteID.Niter, 1)));
 
         AlchemyCore.AddResult(canister, GasCanisterAmmo.TimedVilespore,
-            new SoluteInput(ComponentMatcher.Of(ItemID.VileMushroom, 2),
+            new BrewRecipe(ComponentMatcher.Of(ItemID.VileMushroom, 2),
             ComponentMatcher.Of(ItemID.Deathweed, 1),
             ComponentMatcher.Of(SoluteID.Pitch, 1)));
 
         AlchemyCore.AddResult(canister, GasCanisterAmmo.ContactVilespore,
-            new SoluteInput(ComponentMatcher.Of(ModContent.ItemType<VilesporeFlaskItem>(), 1)));
+            new BrewRecipe(ComponentMatcher.Of(ModContent.ItemType<VilesporeFlaskItem>(), 1)));
 
         // Hyperborean
         AlchemyCore.AddResult(canister, GasCanisterAmmo.ContactHyperborean,
-            new SoluteInput(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
+            new BrewRecipe(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
             ComponentMatcher.Of(SoluteID.Niter, 1)));
 
         AlchemyCore.AddResult(canister, GasCanisterAmmo.TimedHyperborean,
-            new SoluteInput(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
+            new BrewRecipe(ComponentMatcher.Of(ShiverthornOrSeeds, 2),
             ComponentMatcher.Of(SoluteID.Pitch, 1)));
 
         AlchemyCore.AddResult(canister, GasCanisterAmmo.ContactHyperborean,
-            new SoluteInput(ComponentMatcher.Of(ModContent.ItemType<ArcticFlaskItem>(), 1)));
+            new BrewRecipe(ComponentMatcher.Of(ModContent.ItemType<ArcticFlaskItem>(), 1)));
     }
 
     /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>
-    private static SoluteInput[] AnyTwoOf(int a, int b, int c, int potency, int stack) =>
+    private static BrewRecipe[] AnyTwoOf(int a, int b, int c, int potency, int stack) =>
     [
-        new SoluteInput(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(b, potency)) { OutputStack = stack },
-        new SoluteInput(ComponentMatcher.Of(b, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
-        new SoluteInput(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
+        new BrewRecipe(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(b, potency)) { OutputStack = stack },
+        new BrewRecipe(ComponentMatcher.Of(b, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
+        new BrewRecipe(ComponentMatcher.Of(a, potency), ComponentMatcher.Of(c, potency)) { OutputStack = stack },
     ];
 
     /// <summary>An empty Bottle holding <paramref name="storedType" />, for recipes whose product stays in the bottle.</summary>
