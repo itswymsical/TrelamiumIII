@@ -37,20 +37,14 @@ public partial class ChemistryRecipeSystem : ModSystem
         RegisterMisc();
         RegisterWeapons();
 
-        // TODO: redo potion variants, keep vanilla recipes
-        //RegisterCombatPotions();
-        //RegisterUtilityPotions();
-        //RegisterVisionPotions();
-        //RegisterFishingPotions();
-        //RegisterLuckPotions();
-
-        //RegisterTransmutations();
-
         if (ModLoader.HasMod("SpiritReforged"))
             RegisterSpiritReforged();
 
         //if (ModLoader.HasMod("CalamityMod"))
         //    RegisterCalamity();
+
+        // After every recipe, so each potion's ingredients are known.
+        AlchemyCore.AddPotencySteps();
 
         AlchemyRecipeGroups.Populate();
     }
@@ -65,6 +59,7 @@ public partial class ChemistryRecipeSystem : ModSystem
         AlchemyRecipeGroups.Clear();
         EffectBehaviors.ClearRuntime();   // cross-mod entries hold another mod's types
         QuenchHook.Unhook();              // ...and this one lives on another mod's static event
+        BrewModifiers.ClearEffects();     // BrewEffects are this session's mod types
     }
 
     /// <summary>A brew duration in ticks.</summary>
@@ -195,59 +190,209 @@ public partial class ChemistryRecipeSystem : ModSystem
     }
 
     /// <summary>
-    /// general recipes for potions and useful items.
+    /// Vanilla's potion recipes, at potency 2 with a seed variant (see <see cref="HerbsOrSeeds" />), plus augmentations. Vanilla
+    /// amounts become slot levels and <see cref="BrewRecipe.InputStack" />; four-ingredient recipes keep their key ingredient with
+    /// any two of the herbs, since the station has three slots.
     /// </summary>
     private static void RegisterSolutions()
     {
+        #region Recovery
         AlchemyCore.Result(ItemID.LesserHealingPotion)
             .From(ItemID.Bottle,
                 new BrewRecipe(ItemID.Mushroom, ItemID.Gel) { Potency = 1 },
-                new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2), ItemID.Gel) { Potency = 2 });
+                new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2), ItemID.Gel) { Potency = 2 })
+            .Augment(ComponentMatcher.Of(ItemID.Mushroom, 2)).Amplify(+15)
+            .Augment(ComponentMatcher.Of(ItemID.GoldOre, 2)).Amplify(+30)
+            .Augment(ComponentMatcher.Of(ItemID.PinkGel, 2)).Buff(BuffID.Regeneration, potency: 2, durationTicks: Time(secs: 30));
 
-        AlchemyCore.Result(ItemID.RegenerationPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.HealingPotion)
+            .From(ItemID.LesserHealingPotion, new BrewRecipe(ItemID.GlowingMushroom) { Potency = 2, InputStack = 2 });
 
-        AlchemyCore.Result(ItemID.IronskinPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(Iron, ItemID.Daybloom) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.GreaterHealingPotion)
+            .From(ItemID.BottledWater,
+                new BrewRecipe(ComponentMatcher.Of(ItemID.PixieDust, 3), ItemID.CrystalShard) { Potency = 2, InputStack = 3, OutputStack = 3 });
 
-        AlchemyCore.Result(ItemID.SwiftnessPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.SuperHealingPotion)
+            .From(ItemID.GreaterHealingPotion,
+                new BrewRecipe(ItemID.FragmentSolar, ItemID.FragmentVortex, ItemID.FragmentNebula) { Potency = 2, InputStack = 4, OutputStack = 4 },
+                new BrewRecipe(ItemID.FragmentSolar, ItemID.FragmentVortex, ItemID.FragmentStardust) { Potency = 2, InputStack = 4, OutputStack = 4 },
+                new BrewRecipe(ItemID.FragmentSolar, ItemID.FragmentNebula, ItemID.FragmentStardust) { Potency = 2, InputStack = 4, OutputStack = 4 },
+                new BrewRecipe(ItemID.FragmentVortex, ItemID.FragmentNebula, ItemID.FragmentStardust) { Potency = 2, InputStack = 4, OutputStack = 4 });
 
-        AlchemyCore.Result(ItemID.MiningPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.AntlionMandible) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.ManaPotion)
+            .From(ItemID.LesserManaPotion, new BrewRecipe(ItemID.GlowingMushroom) { Potency = 2, InputStack = 2 });
 
-        AlchemyCore.Result(ItemID.SpelunkerPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow, Gold) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.SuperManaPotion)
+            .From(ItemID.GreaterManaPotion,
+                new BrewRecipe(ItemID.FallenStar, ComponentMatcher.Of(ItemID.CrystalShard, 3), ItemID.UnicornHorn)
+                {
+                    Potency = 2, InputStack = 15, OutputStack = 15,
+                });
 
-        AlchemyCore.Result(ItemID.ThornsPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Deathweed, ItemID.Cactus) { Potency = 2 }));
+        AlchemyCore.Result(ItemID.RestorationPotion)
+            .From(ItemID.Bottle, new BrewRecipe(ItemID.Mushroom, ItemID.GlowingMushroom, ItemID.PinkGel) { Potency = 2 });
+        #endregion
 
-        AlchemyCore.Result(ItemID.WaterWalkingPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.SharkFin) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.ShinePotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.NightOwlPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.InvisibilityPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.GillsPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.Coral) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.TrapsightPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ComponentMatcher.Of(ItemID.Cobweb, 5)) { Potency = 2 }));
-
-        AlchemyCore.Result(ItemID.BuilderPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow) { Potency = 2 }));
+        #region Attack
+        AlchemyCore.Result(ItemID.AmmoReservationPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.DoubleCod, ItemID.Moonglow) { Potency = 2 }));
 
         AlchemyCore.Result(ItemID.ArcheryPotion)
             .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Lens) { Potency = 2 }));
 
+        AlchemyCore.Result(ItemID.BattlePotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Deathweed, RottenChunkVertabrae) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.MagicPowerPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Deathweed, ItemID.FallenStar) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.RagePotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Hemopiranha, ItemID.Deathweed) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.SummoningPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.VariegatedLardfish, ItemID.Moonglow) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.TitanPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Bone, ItemID.Deathweed, ItemID.Shiverthorn) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.WrathPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Ebonkoi, ItemID.Deathweed) { Potency = 2 }));
+        #endregion
+
+        #region Defense
+        AlchemyCore.Result(ItemID.CalmingPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Damselfish, ItemID.Daybloom) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.EndurancePotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.ArmoredCavefish, ItemID.Blinkroot) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.HeartreachPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.CrimsonTigerfish, ItemID.Daybloom) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.InfernoPotion)
+            .From(ItemID.BottledWater,
+                HerbsOrSeeds(new BrewRecipe(ItemID.FlarefinKoi, ComponentMatcher.Of(ItemID.Obsidifish, 2), ItemID.Fireblossom) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.InvisibilityPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.IronskinPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(Iron, ItemID.Daybloom) { Potency = 2 }))
+            .Augment(ComponentMatcher.Of(SoluteID.BoneAsh, 2)).Amplify(+15)
+            .Augment(ComponentMatcher.Of(ItemID.BlinkrootSeeds, 5)).Amplify(+35)
+            .Augment(ItemID.ArmoredCavefish).Buff(BuffID.Endurance, potency: 2, durationTicks: Time(secs: 30));
+
+        AlchemyCore.Result(ItemID.LifeforcePotion)
+            .From(ItemID.BottledWater, KeyAndAnyTwoHerbs(ItemID.Prismite, ItemID.Moonglow, ItemID.Shiverthorn, ItemID.Waterleaf));
+
+        AlchemyCore.Result(ItemID.ManaRegenerationPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Daybloom, ItemID.FallenStar) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.RegenerationPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 2 }))
+            .Augment(ComponentMatcher.Of(ItemID.Gel, 2)).Amplify(+15)
+            .Augment(ComponentMatcher.Of(ItemID.DaybloomSeeds, 5)).Amplify(+35)
+            .Augment(ComponentMatcher.Of(ItemID.PinkGel, 2)).Heal(+25);
+
+        AlchemyCore.Result(ItemID.ThornsPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Deathweed, ItemID.Cactus) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.WarmthPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.FrostMinnow, ItemID.Shiverthorn) { Potency = 2 }));
+        #endregion
+
+        #region Movement
+        AlchemyCore.Result(ItemID.FeatherfallPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot, ItemID.Feather) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.FlipperPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ItemID.Waterleaf) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.GillsPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.Coral) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.GravitationPotion)
+            .From(ItemID.BottledWater, KeyAndAnyTwoHerbs(ItemID.Feather, ItemID.Fireblossom, ItemID.Deathweed, ItemID.Blinkroot));
+
+        AlchemyCore.Result(ItemID.ObsidianSkinPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Fireblossom, ItemID.Waterleaf, ItemID.Obsidian) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.SwiftnessPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Cactus) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.WaterWalkingPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.SharkFin) { Potency = 2 }));
+        #endregion
+
+        #region Detection and vision
+        AlchemyCore.Result(ItemID.BiomeSightPotion)
+            .From(ItemID.BottledWater,
+                KeyAndAnyTwoHerbs(ComponentMatcher.Of(ItemID.GrassSeeds, 5), ItemID.Fireblossom, ItemID.Blinkroot, ItemID.Moonglow));
+
+        AlchemyCore.Result(ItemID.TrapsightPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ComponentMatcher.Of(ItemID.Cobweb, 5)) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.HunterPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.NightOwlPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.ShinePotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.SpelunkerPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow, Gold) { Potency = 2 }));
+        #endregion
+
+        #region Fishing
+        AlchemyCore.Result(ItemID.CratePotion)
+            .From(ItemID.BottledWater, KeyAndAnyTwoHerbs(ItemID.Amber, ItemID.Moonglow, ItemID.Shiverthorn, ItemID.Waterleaf));
+
+        AlchemyCore.Result(ItemID.FishingPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.CrispyHoneyBlock, ItemID.Waterleaf) { Potency = 2 }));
+
+        // Vanilla brews Sonar from Gills' exact ingredients, so the Specular Tonic tells them apart.
         AlchemyCore.Result(ItemID.SonarPotion)
             .From(SolventID.AquaSpecularis, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.Coral) { Potency = 2 }));
+        #endregion
+
+        #region Luck
+        AlchemyCore.Result(ItemID.LuckPotionLesser)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.LadyBug, ItemID.WhitePearl) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.LuckPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.LadyBug, ItemID.BlackPearl) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.LuckPotionGreater)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Waterleaf, ItemID.LadyBug, ItemID.PinkPearl) { Potency = 2 }));
+        #endregion
+
+        #region Other buffs
+        AlchemyCore.Result(ItemID.BuilderPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Shiverthorn, ItemID.Moonglow) { Potency = 2 }));
+
+        AlchemyCore.Result(ItemID.MiningPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.AntlionMandible) { Potency = 2 }));
+        #endregion
+
+        #region Travel and other potions
+        AlchemyCore.Result(ItemID.RecallPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.SpecularFish, ItemID.Daybloom)));
+
+        AlchemyCore.Result(ItemID.PotionOfReturn)
+            .From(ItemID.RecallPotion, new BrewRecipe(ItemID.Obsidifish));
+
+        AlchemyCore.Result(ItemID.TeleportationPotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.ChaosFish, ItemID.Fireblossom)));
+
+        AlchemyCore.Result(ItemID.WormholePotion)
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.SpecularFish, ItemID.Blinkroot) { InputStack = 3, OutputStack = 3 }));
+
+        // Vanilla takes one of each of the seven herbs; three slots take any three.
+        AlchemyCore.Result(ItemID.GenderChangePotion)
+            .From(ItemID.BottledWater, new BrewRecipe(AnyHerb, AnyHerb, AnyHerb));
+        #endregion
     }
 
     /// <summary>Miscellaneous craftable items (e.g. unholy water, love potion).</summary>
@@ -401,6 +546,17 @@ public partial class ChemistryRecipeSystem : ModSystem
 
         return swapped ? [herbal, herbal with { Components = seeded, Potency = potency, StrengthPercent = strength }] : [herbal];
     }
+
+    /// <summary>
+    /// A four-ingredient vanilla recipe on three slots: <paramref name="key" /> with each pair of <paramref name="a" />,
+    /// <paramref name="b" /> and <paramref name="c" />, at potency 2 with seed variants.
+    /// </summary>
+    private static BrewRecipe[] KeyAndAnyTwoHerbs(ComponentMatcher key, int a, int b, int c) =>
+    [
+        .. HerbsOrSeeds(new BrewRecipe(key, a, b) { Potency = 2 }),
+        .. HerbsOrSeeds(new BrewRecipe(key, a, c) { Potency = 2 }),
+        .. HerbsOrSeeds(new BrewRecipe(key, b, c) { Potency = 2 }),
+    ];
 
     /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>
     private static BrewRecipe[] AnyTwoOf(int a, int b, int c, int potency, int stack) =>

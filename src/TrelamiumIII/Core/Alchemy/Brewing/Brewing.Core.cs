@@ -4,7 +4,8 @@ using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
 /// <summary>
-/// A potion's principle and its list of effects. Reference type, so <see cref="BrewGlobalItem"/> deep-clones it; equality is structural.
+/// A potion's principle, effects, timed modifiers and augmentation history. Reference type, so <see cref="BrewGlobalItem"/>
+/// deep-clones it; equality is structural.
 /// </summary>
 public sealed class PotionBrew
 {
@@ -14,22 +15,71 @@ public sealed class PotionBrew
     /// <summary>The effects this potion applies on consume. Never empty for a branded item.</summary>
     public List<AlchemicalEffect> Effects { get; init; } = new();
 
+    /// <summary>Stats and custom effects started on drink, each on its own timer under <see cref="SaturationBuff"/>.</summary>
+    public List<TimedModifier> Modifiers { get; init; } = new();
+
+    /// <summary>Flat life restored on drink, on top of the item's own (scaled) heal.</summary>
+    public int HealLife { get; set; }
+
+    /// <summary>Flat mana restored on drink, on top of the item's own (scaled) restore.</summary>
+    public int HealMana { get; set; }
+
+    /// <summary><see cref="Augmentation.Key"/> of each augmentation applied, in order. Potency steps are not recorded.</summary>
+    public List<string> Augments { get; init; } = new();
+
     /// <summary>The headline effect drives the tooltip's potency stars and the buff-line rewrite.</summary>
     public AlchemicalEffect Primary => Effects[0];
 
-    /// <summary>Deep copy (effects are value types, so a fresh list is a complete clone).</summary>
-    public PotionBrew Clone() => new() { Principle = Principle, Effects = new List<AlchemicalEffect>(Effects) };
+    /// <summary>Number of augmentations applied; past <see cref="BrewDilution.FREE_STAGES"/> each one dilutes the brew.</summary>
+    public int Stage => Augments.Count;
+
+    public int TimesAugmentedBy(string key)
+    {
+        int count = 0;
+        foreach (string applied in Augments)
+            if (applied == key) count++;
+        return count;
+    }
+
+    /// <summary>Deep copy (effects and modifiers are value types, so fresh lists are a complete clone).</summary>
+    public PotionBrew Clone() => new()
+    {
+        Principle = Principle,
+        Effects = new List<AlchemicalEffect>(Effects),
+        Modifiers = new List<TimedModifier>(Modifiers),
+        HealLife = HealLife,
+        HealMana = HealMana,
+        Augments = new List<string>(Augments),
+    };
 
     public override bool Equals(object? obj) =>
-        obj is PotionBrew o && Principle == o.Principle && Effects.SequenceEqual(o.Effects);
+        obj is PotionBrew o && Principle == o.Principle && HealLife == o.HealLife && HealMana == o.HealMana
+        && Effects.SequenceEqual(o.Effects) && Modifiers.SequenceEqual(o.Modifiers) && Augments.SequenceEqual(o.Augments);
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
         hash.Add(Principle);
+        hash.Add(HealLife);
+        hash.Add(HealMana);
         foreach (var e in Effects) hash.Add(e);
+        foreach (var m in Modifiers) hash.Add(m);
+        foreach (string a in Augments) hash.Add(a);
         return hash.ToHashCode();
     }
+}
+
+/// <summary>A stat or custom effect a brew starts on drink: <see cref="IBrewModifier"/> <paramref name="Key"/> at <paramref name="Value"/>.</summary>
+public readonly record struct TimedModifier(string Key, float Value, int DurationTicks);
+
+/// <summary>Diminishing returns on augmentation: the first stages are free, every later one costs the primary effect potency.</summary>
+public static class BrewDilution
+{
+    /// <summary>Augmentations a brew takes before dilution starts.</summary>
+    public const int FREE_STAGES = 2;
+
+    /// <summary>Potency each augmentation past <see cref="FREE_STAGES"/> takes from the primary effect.</summary>
+    public const int POTENCY_PER_STAGE = 1;
 }
 
 /// <summary>
@@ -61,7 +111,8 @@ public readonly record struct AlchemicalEffect(
     EffectParams Params = default);
 
 /// <summary>
-/// Fluent brew authoring: boost, re-gate or combine effects onto a recipe's base effect. Only the resolved list is stored.
+/// Edits a brew in place: boost, shift, re-gate or combine effects, and add timed modifiers or flat restores. Augmentation
+/// steps (<see cref="AugmentStep"/>) are recorded as calls on this.
 /// </summary>
 public sealed class BrewBuilder
 {
@@ -71,6 +122,11 @@ public sealed class BrewBuilder
     /// <summary>The composition's potency (1-5): the leading solute's consumed level, or the highest solute's when augmenting.</summary>
     public int Level { get; }
 
+    /// <summary>The primary effect's current potency.</summary>
+    public int CurrentPotency => _brew.Primary.Potency;
+
+    public PotionBrew Brew => _brew;
+
     public BrewBuilder(PotionBrew brew, int baseDurationTicks, int level = 1)
     {
         _brew = brew;
@@ -78,25 +134,49 @@ public sealed class BrewBuilder
         Level = Math.Clamp(level, 1, 5);
     }
 
-    /// <summary>Boost (or cut) the primary effect's magnitude, as a percent of the vanilla effect.</summary>
-    public BrewBuilder Amplify(int strengthPercent)
+    /// <summary>Adds <paramref name="strengthPercent"/> points to the primary effect's magnitude (negative cuts it).</summary>
+    public BrewBuilder Amplify(int strengthPercent) => Amplify(_brew.Primary.BaseBuff, strengthPercent);
+
+    /// <summary>Adds <paramref name="strengthPercent"/> points to the effect riding <paramref name="baseBuff"/>, if the brew has one.</summary>
+    public BrewBuilder Amplify(int baseBuff, int strengthPercent)
     {
-        _brew.Effects[0] = _brew.Effects[0] with { StrengthPercent = strengthPercent };
+        int index = _brew.Effects.FindIndex(e => e.BaseBuff == baseBuff);
+
+        if (index >= 0)
+        {
+            AlchemicalEffect effect = _brew.Effects[index];
+            _brew.Effects[index] = effect with { StrengthPercent = Math.Max(1, effect.StrengthPercent + strengthPercent) };
+        }
+
+        return this;
+    }
+
+    /// <summary>Moves the primary effect <paramref name="levels"/> along the potency curve, clamped to 1-5.</summary>
+    public BrewBuilder Potency(int levels)
+    {
+        _brew.Effects[0] = BrewTuning.Shift(_brew.Effects[0], _brew.Effects[0].Potency + levels);
         return this;
     }
 
     /// <summary>Rewrite the primary effect's params: e.g. <c>Detour(p =&gt; p with { MaxOreTier = 2 })</c>.</summary>
-    public BrewBuilder Detour(Func<EffectParams, EffectParams> edit)
+    public BrewBuilder Detour(Func<EffectParams, EffectParams> edit) => Detour(_brew.Primary.BaseBuff, edit);
+
+    /// <summary>Rewrite the params of the effect riding <paramref name="baseBuff"/>, if the brew has one.</summary>
+    public BrewBuilder Detour(int baseBuff, Func<EffectParams, EffectParams> edit)
     {
-        _brew.Effects[0] = _brew.Effects[0] with { Params = edit(_brew.Effects[0].Params) };
+        int index = _brew.Effects.FindIndex(e => e.BaseBuff == baseBuff);
+
+        if (index >= 0)
+            _brew.Effects[index] = _brew.Effects[index] with { Params = edit(_brew.Effects[index].Params) };
+
         return this;
     }
 
     /// <summary>
-    /// Combines another effect onto the potion, replacing one on the same buff; <paramref name="durationTicks"/> defaults to
-    /// the potion's buff time, or 60 s.
+    /// Combines another buff effect onto the potion, replacing one on the same buff; <paramref name="durationTicks"/> defaults
+    /// to the potion's buff time, or 60 s.
     /// </summary>
-    public BrewBuilder Add(int baseBuff, int potency, int durationTicks = 0)
+    public BrewBuilder Buff(int baseBuff, int potency, int durationTicks = 0)
     {
         int baseDur = durationTicks > 0 ? durationTicks
             : _baseDurationTicks > 0 ? _baseDurationTicks
@@ -109,6 +189,47 @@ public sealed class BrewBuilder
             _brew.Effects[existing] = effect;
         else
             _brew.Effects.Add(effect);
+
+        return this;
+    }
+
+    /// <summary>Starts <paramref name="stat"/> at <paramref name="value"/> on drink for <paramref name="durationTicks"/>.</summary>
+    public BrewBuilder Stat(BrewStat stat, float value, int durationTicks) => Modifier(stat.Key, value, durationTicks);
+
+    /// <summary>Starts the custom effect <typeparamref name="T"/> on drink for <paramref name="durationTicks"/>.</summary>
+    public BrewBuilder Effect<T>(int durationTicks, float value = 1f) where T : BrewEffect =>
+        Modifier(ModContent.GetInstance<T>().Key, value, durationTicks);
+
+    /// <summary>Restores <paramref name="life"/> more on drink; a potion that doesn't heal heals this much.</summary>
+    public BrewBuilder Heal(int life)
+    {
+        _brew.HealLife = Math.Max(0, _brew.HealLife + life);
+        return this;
+    }
+
+    /// <summary>Restores <paramref name="mana"/> more on drink; a potion that doesn't restore mana restores this much.</summary>
+    public BrewBuilder Mana(int mana)
+    {
+        _brew.HealMana = Math.Max(0, _brew.HealMana + mana);
+        return this;
+    }
+
+    /// <summary>A modifier already on the brew adds <paramref name="value"/> and keeps the longer duration.</summary>
+    private BrewBuilder Modifier(string key, float value, int durationTicks)
+    {
+        int existing = _brew.Modifiers.FindIndex(m => m.Key == key);
+
+        if (existing >= 0)
+        {
+            TimedModifier current = _brew.Modifiers[existing];
+            _brew.Modifiers[existing] = current with
+            {
+                Value = current.Value + value,
+                DurationTicks = Math.Max(current.DurationTicks, durationTicks),
+            };
+        }
+        else
+            _brew.Modifiers.Add(new TimedModifier(key, value, Math.Max(1, durationTicks)));
 
         return this;
     }
@@ -137,7 +258,7 @@ public static class BrewTuning
 
     /// <summary>
     /// Moves an effect to <paramref name="potency"/> along the curve: strength changes by <see cref="STRENGTH_PER_LEVEL"/> per
-    /// level, duration by the ratio of the duration scales, and params reset to the new potency's defaults.
+    /// level, duration by the ratio of the duration scales. Default params move to the new potency's defaults; detoured ones stay.
     /// </summary>
     public static AlchemicalEffect Shift(AlchemicalEffect effect, int potency)
     {
@@ -150,12 +271,15 @@ public static class BrewTuning
         int duration = effect.DurationTicks <= 0 ? 0
             : Math.Max(60, (int)(effect.DurationTicks * DurationScale(potency) / DurationScale(effect.Potency)));
 
+        IEffectBehavior? behavior = EffectBehaviors.Get(effect.BaseBuff);
+        EffectParams defaults = behavior?.DefaultParams(effect.Potency) ?? EffectParams.None;
+
         return effect with
         {
             Potency = potency,
             StrengthPercent = Math.Max(1, effect.StrengthPercent + levels * STRENGTH_PER_LEVEL),
             DurationTicks = duration,
-            Params = EffectBehaviors.Get(effect.BaseBuff)?.DefaultParams(potency) ?? EffectParams.None,
+            Params = effect.Params == defaults ? behavior?.DefaultParams(potency) ?? EffectParams.None : effect.Params,
         };
     }
 

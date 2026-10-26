@@ -12,6 +12,9 @@ public sealed record BrewRecipe
     /// <summary>Stack size of the produced item before the player's output-count multiplier.</summary>
     public int OutputStack { get; init; } = 1;
 
+    /// <summary>Items taken from the input slot per batch, e.g. vanilla's two Bottles. 0 derives it (see <see cref="AlchemyRecipe.InputCostOf"/>).</summary>
+    public int InputStack { get; init; }
+
     /// <summary>Optional override for output construction.</summary>
     public Func<Item> CustomOutput { get; init; }
 
@@ -32,9 +35,6 @@ public sealed record BrewRecipe
 
     /// <summary>Override a gated effect's max ore tier (Spelunker). 0 = use the potency default.</summary>
     public int MaxOreTier { get; init; }
-
-    /// <summary>Optional pass after the primary effect: boost, re-gate, or add further effects.</summary>
-    public Action<BrewBuilder>? Augment { get; init; }
 
     /// <summary>Required input infusion; None means plain input only, so one input type can key different recipes.</summary>
     public Temperament InputInfusion { get; init; }
@@ -60,7 +60,8 @@ public sealed record BrewRecipe
 
 /// <summary>
 /// Every recipe producing <see cref="Output"/>, declared in one chain from <see cref="AlchemyCore.Result"/>. Each
-/// <see cref="From(int, BrewRecipe[])"/> registers variants for one input; <see cref="Augment"/> takes the output itself as input.
+/// <see cref="From(int, BrewRecipe[])"/> registers variants for one input; <see cref="Augment"/> starts an augmentation of the
+/// output itself.
 /// </summary>
 public readonly struct BrewResult
 {
@@ -85,8 +86,16 @@ public readonly struct BrewResult
         return this;
     }
 
-    /// <summary>Variants brewed from <see cref="Output"/> itself: the input's brew carries over and each adds its effects (see <see cref="BrewFormula"/>).</summary>
-    public BrewResult Augment(params BrewRecipe[] variants) => From(Output, variants);
+    /// <summary>
+    /// An augmentation of <see cref="Output"/> with <paramref name="components"/>: the potion's brew carries over and the
+    /// returned step's calls edit it, e.g. <c>.Augment(ItemID.GoldOre).Heal(+30)</c>.
+    /// </summary>
+    public AugmentStep Augment(params ComponentMatcher[] components)
+    {
+        var augmentation = new Augmentation(Output, components);
+        AlchemyCore.AddAugmentation(augmentation);
+        return new AugmentStep(this, augmentation);
+    }
 }
 
 /// <summary>
@@ -156,8 +165,11 @@ public static class AlchemyCore
 {
     private static readonly List<AlchemyRecipe> _recipes = new();
     private static readonly HashSet<int> _outputTypes = new();
+    private static readonly List<Augmentation> _augmentations = new();
 
     public static IReadOnlyList<AlchemyRecipe> All => _recipes;
+
+    public static IReadOnlyList<Augmentation> Augmentations => _augmentations;
 
     public static void Register(AlchemyRecipe recipe)
     {
@@ -169,7 +181,59 @@ public static class AlchemyCore
     {
         _recipes.Clear();
         _outputTypes.Clear();
+        _augmentations.Clear();
     }
+
+    /// <summary>Registers the recipe that applies <paramref name="augmentation"/> to its own output.</summary>
+    public static void AddAugmentation(Augmentation augmentation)
+    {
+        _augmentations.Add(augmentation);
+
+        Register(new AlchemyRecipe
+        {
+            InputType = augmentation.Output,
+            OutputItemType = augmentation.Output,
+            Components = augmentation.Components,
+            InputStack = 1,
+            Accepts = augmentation.Accepts,
+            DynamicComponents = augmentation.IsPotencyStep ? augmentation.StepComponents : null,
+            CreateOutput = context => BrewFormula.CreateAugmented(augmentation, context),
+        });
+    }
+
+    /// <summary>
+    /// A potency step for each ingredient of each brewed potion's recipes: a potion at potency P takes that ingredient at level
+    /// P + 1 for one more potency. Ingredients an explicit augmentation of the same potion already uses are skipped, as are
+    /// dissolved potions. Call once, after every recipe is registered.
+    /// </summary>
+    public static void AddPotencySteps()
+    {
+        var claimed = new HashSet<(int Output, int Type, AlchemyComponentGroup? Group, Temperament Infusion)>();
+
+        foreach (Augmentation augmentation in _augmentations)
+            foreach (ComponentMatcher matcher in augmentation.Components)
+                claimed.Add((augmentation.Output, matcher.ExactType, matcher.Group, matcher.Infusion));
+
+        foreach (AlchemyRecipe recipe in _recipes.ToArray())
+        {
+            if (recipe.InputType == recipe.OutputItemType || !IsBrewed(recipe.OutputItemType))
+                continue;
+
+            foreach (ComponentMatcher matcher in recipe.Components)
+            {
+                if (ChemicalRoles.IsPotion(BrewCompositions.FirstMember(matcher)))
+                    continue;
+
+                if (claimed.Add((recipe.OutputItemType, matcher.ExactType, matcher.Group, matcher.Infusion)))
+                    AddAugmentation(Augmentation.PotencyStep(recipe.OutputItemType, matcher));
+            }
+        }
+    }
+
+    /// <summary>Whether <see cref="BrewFormula"/> brands this output with a brew: it grants a buff or restores life or mana.</summary>
+    private static bool IsBrewed(int itemType) =>
+        ContentSamples.ItemsByType.TryGetValue(itemType, out Item? sample)
+        && (sample.buffType > 0 || sample.healLife > 0 || sample.healMana > 0);
 
     /// <summary>Whether some recipe produces this item, so the recipe system only takes over routes it actually replaces.</summary>
     public static bool Produces(int itemType) => _outputTypes.Contains(itemType);
@@ -199,6 +263,7 @@ public static class AlchemyCore
                     InputInfusion = variant.InputInfusion,
                     OutputItemType = recipe,
                     Components = variant.Components,
+                    InputStack = variant.InputStack,
                     ReturnsBottleOverride = variant.ReturnsBottle,
                     SuppressValidation = variant.SuppressValidation,
                     CreateOutput = variant.CustomOutput is { } custom
@@ -247,10 +312,11 @@ public static class AlchemyCore
             }
 
             // Strictly greater, so the first registration wins an equal-demand tie.
-            if (recipe.TotalMinPotency <= bestDemand) continue;
+            int demand = recipe.TotalMinPotencyFor(input);
+            if (demand <= bestDemand) continue;
 
             best = recipe;
-            bestDemand = recipe.TotalMinPotency;
+            bestDemand = demand;
             bestCosts = costs.ToArray();
             bestPotencies = potencies.ToArray();
         }
@@ -269,7 +335,7 @@ public static class AlchemyCore
         // The output is built at the consumed levels, not the slotted stacks.
         var composition = BrewCompositions.Of(input, components, bestPotencies);
 
-        int extraLevels = -best.TotalMinPotency;
+        int extraLevels = -bestDemand;
         foreach (int level in bestPotencies)
             extraLevels += level;
 
@@ -285,7 +351,7 @@ public static class AlchemyCore
             Composition = composition,
             ComponentCosts = bestCosts,
             RequiredPotencies = bestPotencies,
-            InputCost = AlchemyRecipe.InputCostOf(input),
+            InputCost = best.InputCostFor(input),
         };
     }
 
@@ -420,6 +486,10 @@ public readonly struct ComponentMatcher
     /// <summary>Whether the slot's level above <see cref="MinPotency"/> is consumed and raises the brew's potency.</summary>
     public bool IsRanged => MaxPotency > MinPotency;
 
+    /// <summary>The same type or group and infusion, requiring and consuming exactly <paramref name="level"/>.</summary>
+    public ComponentMatcher AtLevel(int level) =>
+        Group != null ? new ComponentMatcher(Group, level, level) : new ComponentMatcher(ExactType, Infusion, level, level);
+
     /// <summary>Type-level acceptance (almanac indexing: "which recipes use this item type").</summary>
     public bool Matches(int itemType) =>
         Group != null ? Group.Contains(itemType) : itemType == ExactType;
@@ -455,6 +525,15 @@ public sealed class AlchemyRecipe
     /// <summary>Required component slots (1-3): unordered, duplicates allowed, each with its own minimum potency.</summary>
     public ComponentMatcher[] Components { get; init; } = Array.Empty<ComponentMatcher>();
 
+    /// <summary>Optional per-input slot rules replacing <see cref="Components"/> when matching, e.g. levels that track the input's potency.</summary>
+    public Func<Item, ComponentMatcher[]>? DynamicComponents { get; init; }
+
+    /// <summary>Optional gate on the input instance, checked before the slots (e.g. an augmentation the potion can't take again).</summary>
+    public Func<Item, bool>? Accepts { get; init; }
+
+    /// <inheritdoc cref="BrewRecipe.InputStack" />
+    public int InputStack { get; init; }
+
     /// <summary>Builds the output from the slotted ingredients.</summary>
     public Func<BrewContext, Item> CreateOutput { get; init; }
 
@@ -473,14 +552,19 @@ public sealed class AlchemyRecipe
         && ChemicalRoles.Of(OutputItemType) == ChemicalRole.Solute);
 
     /// <summary>Sum of component minimum potencies; ranks matches so the more demanding recipe wins.</summary>
-    public int TotalMinPotency
+    public int TotalMinPotency => SumMinPotency(Components);
+
+    /// <summary><see cref="TotalMinPotency"/> of the slot rules <paramref name="input"/> is matched against.</summary>
+    public int TotalMinPotencyFor(Item input) => SumMinPotency(ComponentsFor(input));
+
+    /// <summary><see cref="DynamicComponents"/> for <paramref name="input"/>, else <see cref="Components"/>.</summary>
+    public ComponentMatcher[] ComponentsFor(Item input) => DynamicComponents?.Invoke(input) ?? Components;
+
+    private static int SumMinPotency(ComponentMatcher[] components)
     {
-        get
-        {
-            int sum = 0;
-            for (int i = 0; i < Components.Length; i++) sum += Components[i].MinPotency;
-            return sum;
-        }
+        int sum = 0;
+        for (int i = 0; i < components.Length; i++) sum += components[i].MinPotency;
+        return sum;
     }
 
     /// <summary>The output at minimum slot levels with no input item, for almanac display and indexing.</summary>
@@ -489,6 +573,9 @@ public sealed class AlchemyRecipe
     /// <summary>Items consumed from the input per batch: one potency level's stack for a solute, otherwise 1.</summary>
     public static int InputCostOf(Item input) =>
         ChemicalRoles.Of(input) == ChemicalRole.Solute ? SolutePotency.StackPerPotency(input.type) : 1;
+
+    /// <summary><see cref="InputStack"/> when set, else <see cref="InputCostOf"/>.</summary>
+    public int InputCostFor(Item input) => InputStack > 0 ? InputStack : InputCostOf(input);
 
     /// <summary>
     /// Whether the input and slots satisfy this recipe. <paramref name="slotCosts"/> and <paramref name="slotPotencies"/> receive
@@ -504,23 +591,26 @@ public sealed class AlchemyRecipe
         if (input is null || input.IsAir) return false;
         if (input.type != InputType) return false;
         if (SolutionGlobalItem.GetInfusion(input) != InputInfusion) return false;
+        if (Accepts != null && !Accepts(input)) return false;
+
+        ComponentMatcher[] components = ComponentsFor(input);
 
         int filled = 0;
         for (int i = 0; i < slots.Length; i++)
             if (slots[i] is { IsAir: false }) filled++;
-        if (filled != Components.Length) return false;
+        if (filled != components.Length) return false;
 
-        int inputCost = InputCostOf(input);
+        int inputCost = InputCostFor(input);
         bool inputCovered = input.stack >= inputCost;
 
-        if (inputCovered && Assign(slots, slotCosts, slotPotencies, requirePotency: true))
+        if (inputCovered && Assign(components, slots, slotCosts, slotPotencies, requirePotency: true))
             return true;
 
         // The shape may fit with something under its requirement. Re-assign ignoring potency so the
         // requirement survives for the station to display, and name the first short item.
         slotCosts.Clear();
         slotPotencies.Clear();
-        if (!Assign(slots, slotCosts, slotPotencies, requirePotency: false))
+        if (!Assign(components, slots, slotCosts, slotPotencies, requirePotency: false))
         {
             slotCosts.Clear();
             slotPotencies.Clear();
@@ -546,16 +636,16 @@ public sealed class AlchemyRecipe
     /// Claims a slot per matcher, most specific first. A claimed slot receives its level clamped to the matcher's range (never
     /// 0, which marks it claimed) and that level's cost. Without <paramref name="requirePotency"/> it receives the minimum.
     /// </summary>
-    private bool Assign(Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, bool requirePotency)
+    private static bool Assign(ComponentMatcher[] components, Item[] slots, Span<int> slotCosts, Span<int> slotPotencies, bool requirePotency)
     {
         // Insertion sort: these arrays are 1–3 long, so this beats allocating a comparison.
-        Span<int> order = stackalloc int[Components.Length];
+        Span<int> order = stackalloc int[components.Length];
         for (int i = 0; i < order.Length; i++) order[i] = i;
         for (int i = 1; i < order.Length; i++)
         {
             int cur = order[i];
             int j = i - 1;
-            while (j >= 0 && ClaimsFirst(Components[cur], Components[order[j]]))
+            while (j >= 0 && ClaimsFirst(components[cur], components[order[j]]))
             {
                 order[j + 1] = order[j];
                 j--;
@@ -565,7 +655,7 @@ public sealed class AlchemyRecipe
 
         foreach (int matcherIdx in order)
         {
-            var matcher = Components[matcherIdx];
+            var matcher = components[matcherIdx];
             bool found = false;
 
             for (int j = 0; j < slots.Length; j++)

@@ -807,43 +807,48 @@ public abstract class FieldLayer
         if (target is null || nodes.Count == 0)
             return Rectangle.Empty;
 
-        Vector2 half = new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f;
-        Vector2 zoom = Main.GameViewMatrix.Zoom;
+        Point origin = target.Origin();
 
         float minX = float.MaxValue, minY = float.MaxValue;
         float maxX = float.MinValue, maxY = float.MinValue;
 
         foreach (var node in nodes)
         {
-            // The same transform the target was built under: unzoomed screen offset, then scaled
-            // about the screen centre. A radius has to travel through the zoom as well.
-            Vector2 centre = (node.Position - Main.screenPosition - half) * zoom + half;
+            // In target texels, the space the target was built in: world, on the grid from origin.
+            Vector2 centre = target.WorldToTexel(node.Position, origin);
 
             // Widened by the stretch, or a node elongated along its heading would be clipped by the
             // rectangle that was measured as though it were still round.
-            Vector2 extent = new Vector2(node.Radius * (1f + StampStretch)) * zoom;
+            float extent = node.Radius * (1f + StampStretch) / Math.Max(target.PixelScale, 1);
 
-            minX = MathF.Min(minX, centre.X - extent.X);
-            minY = MathF.Min(minY, centre.Y - extent.Y);
-            maxX = MathF.Max(maxX, centre.X + extent.X);
-            maxY = MathF.Max(maxY, centre.Y + extent.Y);
+            minX = MathF.Min(minX, centre.X - extent);
+            minY = MathF.Min(minY, centre.Y - extent);
+            maxX = MathF.Max(maxX, centre.X + extent);
+            maxY = MathF.Max(maxY, centre.Y + extent);
         }
-
-        int scale = target.PixelScale;
 
         // Snapped outward to whole texels so the sub-rectangle stays on the grid the shader
         // quantises to; a half-texel offset here would shift every cell decision by half a cell.
-        int left = (int)MathF.Floor(minX / scale) - BOUNDS_MARGIN_TEXELS;
-        int top = (int)MathF.Floor(minY / scale) - BOUNDS_MARGIN_TEXELS;
-        int right = (int)MathF.Ceiling(maxX / scale) + BOUNDS_MARGIN_TEXELS;
-        int bottom = (int)MathF.Ceiling(maxY / scale) + BOUNDS_MARGIN_TEXELS;
+        int left = (int)MathF.Floor(minX) - BOUNDS_MARGIN_TEXELS;
+        int top = (int)MathF.Floor(minY) - BOUNDS_MARGIN_TEXELS;
+        int right = (int)MathF.Ceiling(maxX) + BOUNDS_MARGIN_TEXELS;
+        int bottom = (int)MathF.Ceiling(maxY) + BOUNDS_MARGIN_TEXELS;
 
-        (int width, int height) = FieldSurface.ScreenSize(scale);
+        // Clipped to the view as well as the target. The target is sized for the unzoomed screen,
+        // so zoomed in, most of it is off screen and not worth rasterising.
+        Vector2 half = new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f;
+        Vector2 viewTopLeft = Main.screenPosition + half - half / Main.GameViewMatrix.Zoom;
+        Vector2 viewBottomRight = Main.screenPosition + half + half / Main.GameViewMatrix.Zoom;
 
-        left = Math.Max(left, 0);
-        top = Math.Max(top, 0);
-        right = Math.Min(right, width);
-        bottom = Math.Min(bottom, height);
+        Vector2 viewMin = target.WorldToTexel(viewTopLeft, origin);
+        Vector2 viewMax = target.WorldToTexel(viewBottomRight, origin);
+
+        (int width, int height) = target.Size();
+
+        left = Math.Max(left, Math.Max((int)MathF.Floor(viewMin.X), 0));
+        top = Math.Max(top, Math.Max((int)MathF.Floor(viewMin.Y), 0));
+        right = Math.Min(right, Math.Min((int)MathF.Ceiling(viewMax.X), width));
+        bottom = Math.Min(bottom, Math.Min((int)MathF.Ceiling(viewMax.Y), height));
 
         return right <= left || bottom <= top
             ? Rectangle.Empty
@@ -881,7 +886,10 @@ public abstract class FieldLayer
         var effect = shader.Value;
         var device = Main.graphics.GraphicsDevice;
 
-        ApplyScreenParameters(effect, target.PixelScale);
+        Point origin = target.Origin();
+
+        ApplyScreenParameters(effect, target.TexelSize());
+        target.ApplyGrid(effect, origin);
 
         // The second half of the field. A layer that never raises FlowStrength or TemperatureBlend
         // leaves this sampler untouched, which is what keeps the cost off layers that want none of
@@ -906,17 +914,16 @@ public abstract class FieldLayer
         BindAdditionalTextures(device);
         effect.CurrentTechnique.Passes[0].Apply();
 
-        // Destination is the source scaled by exactly PixelScale, so the sub-rectangle lands on the
-        // same pixels the full-screen quad used to. SpriteBatch builds texcoords from the source
-        // rectangle against the whole texture, so the uv the shader reads is still absolute -- its
-        // world reconstruction and its neighbour taps need no adjusting for the smaller draw.
-        var destination = new Rectangle(
-            source.X * target.PixelScale,
-            source.Y * target.PixelScale,
-            source.Width * target.PixelScale,
-            source.Height * target.PixelScale);
+        // The sub-rectangle goes back where its world texels are, each one scaled up to its zoomed
+        // screen size -- the zoom upscaling the field with everything else. Position and scale
+        // rather than a destination rectangle, because a zoomed texel is not a whole number of
+        // pixels and rounding each edge would stretch the draw off the grid. SpriteBatch builds
+        // texcoords from the source rectangle against the whole texture, so the uv the shader reads
+        // is still absolute -- its world reconstruction and its neighbour taps need no adjusting for
+        // the smaller draw.
+        Vector2 position = target.TexelToScreen(source.TopLeft(), origin);
 
-        spriteBatch.Draw(field, destination, source, Color.White);
+        spriteBatch.Draw(field, position, source, Color.White, 0f, Vector2.Zero, target.TexelSize(), SpriteEffects.None, 0f);
 
         spriteBatch.End();
 
@@ -955,11 +962,15 @@ public abstract class FieldLayer
     ///     pixel, zero <c>NoiseStretch</c> flattens the FBM, and zero <c>DepthRange</c> flattens the body.
     /// </remarks>
     internal static void ApplyScreenParameters(Effect effect, int pixelScale)
+        => ApplyScreenParameters(effect, new Vector2(pixelScale));
+
+    /// <param name="texelSize">Screen pixels per field texel.</param>
+    internal static void ApplyScreenParameters(Effect effect, Vector2 texelSize)
     {
         effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["Aspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
         effect.Parameters["WorldOffset"]?.SetValue(Main.screenPosition / Main.screenHeight);
-        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(pixelScale / (float)Main.screenWidth, pixelScale / (float)Main.screenHeight));
+        effect.Parameters["FieldTexel"]?.SetValue(texelSize / new Vector2(Main.screenWidth, Main.screenHeight));
 
         // The field target bakes the zoom into its own transform, so a shader reading world
         // position back out of a screen uv has to undo it -- without this it silently assumes 1 and

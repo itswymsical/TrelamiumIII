@@ -1585,6 +1585,11 @@ Buffs: {
 		DisplayName: NITRIC Acid?!
 		Description: You are melting via nitric acid.
 	}
+
+	SaturationBuff: {
+		DisplayName: Saturated
+		Description: An augmented brew lingers in you
+	}
 }
 
 Misc: {

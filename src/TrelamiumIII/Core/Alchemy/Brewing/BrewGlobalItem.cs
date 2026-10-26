@@ -25,6 +25,19 @@ public class BrewGlobalItem : GlobalItem
             foreach (var effect in b.Effects)
                 if (effect.BaseBuff > 0)
                     fx.OnDrink(effect);
+
+            foreach (var modifier in b.Modifiers)
+                fx.OnDrink(modifier);
+
+            // Healing potions add the flat restore in GetHealLife/GetHealMana; anything else restores it here.
+            if (item.healLife <= 0 && b.HealLife > 0)
+                player.Heal(b.HealLife);
+
+            if (item.healMana <= 0 && b.HealMana > 0)
+            {
+                player.statMana = Math.Min(player.statManaMax2, player.statMana + b.HealMana);
+                player.ManaEffect(b.HealMana);
+            }
         }
         else if (item.buffType > 0)
             fx.ClearBrew(item.buffType);   // a plain potion supersedes any brewed override
@@ -59,17 +72,23 @@ public class BrewGlobalItem : GlobalItem
         return 0;
     }
 
+    /// <summary><paramref name="baseHeal"/> scaled by the Restoration strength, plus the brew's flat <paramref name="bonus"/>.</summary>
+    private int Restored(int baseHeal, int bonus)
+    {
+        int str = RestorationStrength();
+        int heal = str > 0 ? (int)Math.Round(baseHeal * str / 100.0) : baseHeal;
+        return heal + bonus;
+    }
+
     public override void GetHealLife(Item item, Player player, bool quickHeal, ref int healValue)
     {
         // Compose politely with other mods: scale whatever the heal currently is, not item.healLife.
-        int str = RestorationStrength();
-        if (str > 0) healValue = (int)Math.Round(healValue * str / 100.0);
+        if (Brew is { } b) healValue = Restored(healValue, b.HealLife);
     }
 
     public override void GetHealMana(Item item, Player player, bool quickHeal, ref int healValue)
     {
-        int str = RestorationStrength();
-        if (str > 0) healValue = (int)Math.Round(healValue * str / 100.0);
+        if (Brew is { } b) healValue = Restored(healValue, b.HealMana);
     }
 
     // A reference-type payload must be deep-copied on clone, or two items would share one effect list.
@@ -99,20 +118,21 @@ public class BrewGlobalItem : GlobalItem
         // Rewrite the stock buff lines to match the brew. Virtual primaries (negative ids) have no vanilla buff to describe.
         string? desc = EffectBehaviors.Describe(primary);
         string? vanillaDesc = primary.BaseBuff > 0 ? Lang.GetBuffDescription(primary.BaseBuff) : null;
-        int restoStr = RestorationStrength();
         foreach (var line in tooltips)
         {
             if (line.Mod != "Terraria") continue;
             if (line.Name == "BuffTime" && primary.BaseBuff > 0)
-                line.Text = DurationWords(primary.DurationTicks);
+                line.Text = BrewText.DurationWords(primary.DurationTicks);
             else if (desc != null && primary.BaseBuff > 0
                      && (line.Name == "Tooltip0" || line.Text == vanillaDesc))
                 line.Text = desc;
-            else if (restoStr > 0 && line.Name == "HealLife")
-                line.Text = $"Restores {(int)Math.Round(item.healLife * restoStr / 100.0)} life";
-            else if (restoStr > 0 && line.Name == "HealMana")
-                line.Text = $"Restores {(int)Math.Round(item.healMana * restoStr / 100.0)} mana";
+            else if (line.Name == "HealLife")
+                line.Text = $"Restores {Restored(item.healLife, b.HealLife)} life";
+            else if (line.Name == "HealMana")
+                line.Text = $"Restores {Restored(item.healMana, b.HealMana)} mana";
         }
+
+        var extraColor = new Color(190, 245, 190);
 
         // Extra brewed effects (augmentation: combine) each get their own line, with duration.
         for (int i = 1; i < b.Effects.Count; i++)
@@ -120,9 +140,29 @@ public class BrewGlobalItem : GlobalItem
             var e = b.Effects[i];
             string? extra = EffectBehaviors.Describe(e);
             if (extra == null) continue;
-            string time = e.BaseBuff > 0 && e.DurationTicks > 0 ? $" ({ShortDuration(e.DurationTicks)})" : "";
-            tooltips.Add(new TooltipLine(Mod, $"BrewExtra{i}", $"Also: {extra}{time}")
-            { OverrideColor = new Color(190, 245, 190) });
+            string time = e.BaseBuff > 0 && e.DurationTicks > 0 ? $" ({BrewText.ShortDuration(e.DurationTicks)})" : "";
+            tooltips.Add(new TooltipLine(Mod, $"BrewExtra{i}", $"Also: {extra}{time}") { OverrideColor = extraColor });
+        }
+
+        for (int i = 0; i < b.Modifiers.Count; i++)
+        {
+            var m = b.Modifiers[i];
+            if (BrewModifiers.Describe(m) is not { } text) continue;
+            tooltips.Add(new TooltipLine(Mod, $"BrewModifier{i}", $"Also: {text} ({BrewText.ShortDuration(m.DurationTicks)})")
+            { OverrideColor = extraColor });
+        }
+
+        if (item.healLife <= 0 && b.HealLife > 0)
+            tooltips.Add(new TooltipLine(Mod, "BrewHealLife", $"Also: Restores {b.HealLife} life") { OverrideColor = extraColor });
+
+        if (item.healMana <= 0 && b.HealMana > 0)
+            tooltips.Add(new TooltipLine(Mod, "BrewHealMana", $"Also: Restores {b.HealMana} mana") { OverrideColor = extraColor });
+
+        if (b.Stage > 0)
+        {
+            string diluted = b.Stage > BrewDilution.FREE_STAGES ? ", diluted" : "";
+            tooltips.Add(new TooltipLine(Mod, "BrewStage", $"Augmented ×{b.Stage}{diluted}")
+            { OverrideColor = BrewCategories.ColorOf(BrewCategory.Augmentation) });
         }
 
         // Potency stars are drawn over this label in PostDrawTooltipLine.
@@ -142,6 +182,18 @@ public class BrewGlobalItem : GlobalItem
                 ["str"] = e.StrengthPercent, ["tier"] = e.Params.MaxOreTier,
             });
         tag["effects"] = list;
+
+        if (b.Modifiers.Count > 0)
+        {
+            var modifiers = new List<TagCompound>();
+            foreach (var m in b.Modifiers)
+                modifiers.Add(new TagCompound { ["key"] = m.Key, ["val"] = m.Value, ["dur"] = m.DurationTicks });
+            tag["modifiers"] = modifiers;
+        }
+
+        if (b.HealLife > 0) tag["healLife"] = b.HealLife;
+        if (b.HealMana > 0) tag["healMana"] = b.HealMana;
+        if (b.Augments.Count > 0) tag["augments"] = new List<string>(b.Augments);
     }
 
     public override void LoadData(Item item, TagCompound tag)
@@ -152,7 +204,23 @@ public class BrewGlobalItem : GlobalItem
             foreach (var t in list)
                 effects.Add(new AlchemicalEffect(t.GetInt("buff"), t.GetInt("pot"), t.GetInt("dur"),
                     t.GetInt("str"), new EffectParams(t.GetInt("tier"))));
-            Brew = new PotionBrew { Principle = (PrincipleType)tag.GetInt("domain"), Effects = effects };
+
+            // A modifier whose effect no longer loads is dropped rather than kept as a dead key.
+            var modifiers = new List<TimedModifier>();
+            if (tag.TryGet("modifiers", out List<TagCompound> saved))
+                foreach (var t in saved)
+                    if (BrewModifiers.Get(t.GetString("key")) is not null)
+                        modifiers.Add(new TimedModifier(t.GetString("key"), t.GetFloat("val"), t.GetInt("dur")));
+
+            Brew = new PotionBrew
+            {
+                Principle = (PrincipleType)tag.GetInt("domain"),
+                Effects = effects,
+                Modifiers = modifiers,
+                HealLife = tag.GetInt("healLife"),
+                HealMana = tag.GetInt("healMana"),
+                Augments = tag.TryGet("augments", out List<string> augments) ? augments : new List<string>(),
+            };
         }
         else if (tag.ContainsKey("buff"))   // legacy single-effect save format
         {
@@ -179,6 +247,21 @@ public class BrewGlobalItem : GlobalItem
             writer.Write(e.StrengthPercent);
             writer.Write(e.Params.MaxOreTier);
         }
+
+        writer.Write((byte)b.Modifiers.Count);
+        foreach (var m in b.Modifiers)
+        {
+            writer.Write(m.Key);
+            writer.Write(m.Value);
+            writer.Write(m.DurationTicks);
+        }
+
+        writer.Write(b.HealLife);
+        writer.Write(b.HealMana);
+
+        writer.Write((byte)b.Augments.Count);
+        foreach (string augment in b.Augments)
+            writer.Write(augment);
     }
 
     public override void NetReceive(Item item, BinaryReader reader)
@@ -190,7 +273,25 @@ public class BrewGlobalItem : GlobalItem
         for (int i = 0; i < count; i++)
             effects.Add(new AlchemicalEffect(reader.ReadInt32(), reader.ReadInt32(),
                 reader.ReadInt32(), reader.ReadInt32(), new EffectParams(reader.ReadInt32())));
-        Brew = new PotionBrew { Principle = domain, Effects = effects };
+
+        byte modifierCount = reader.ReadByte();
+        var modifiers = new List<TimedModifier>(modifierCount);
+        for (int i = 0; i < modifierCount; i++)
+            modifiers.Add(new TimedModifier(reader.ReadString(), reader.ReadSingle(), reader.ReadInt32()));
+
+        int healLife = reader.ReadInt32();
+        int healMana = reader.ReadInt32();
+
+        byte augmentCount = reader.ReadByte();
+        var augments = new List<string>(augmentCount);
+        for (int i = 0; i < augmentCount; i++)
+            augments.Add(reader.ReadString());
+
+        Brew = new PotionBrew
+        {
+            Principle = domain, Effects = effects, Modifiers = modifiers,
+            HealLife = healLife, HealMana = healMana, Augments = augments,
+        };
     }
 
     // Draw potency as bestiary stars after the "Potency" label (matches the almanac's stars).
@@ -201,17 +302,21 @@ public class BrewGlobalItem : GlobalItem
 
         PotencyMeter.DrawAfterTooltipLabel(line, b.Primary.Potency);
     }
+}
 
-    private static string DurationWords(int ticks)
+/// <summary>Duration wording shared by brew tooltips and buff text.</summary>
+public static class BrewText
+{
+    public static string DurationWords(int ticks)
     {
         int totalSeconds = ticks / 60;
         int m = totalSeconds / 60, s = totalSeconds % 60;
         return s == 0 ? $"Duration: {m} minutes" : $"Duration: {m} minutes {s} seconds";
     }
 
-    private static string ShortDuration(int ticks)
+    public static string ShortDuration(int ticks)
     {
-        int totalSeconds = ticks / 60;
+        int totalSeconds = (ticks + 59) / 60;
         int m = totalSeconds / 60, s = totalSeconds % 60;
         return m == 0 ? $"{s}s" : s == 0 ? $"{m}m" : $"{m}m {s}s";
     }

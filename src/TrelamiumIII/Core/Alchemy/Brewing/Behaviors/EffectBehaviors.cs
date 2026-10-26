@@ -33,8 +33,9 @@ public static class EffectBehaviors
         [BuffID.Regeneration] = new DeltaBehavior((4f, "life regeneration", asPercent: false, reductionString: false,
                                     (p, delta) => p.lifeRegen += (int)MathF.Round(delta))),
 
+        // pickSpeed is a use-time multiplier, so faster mining subtracts.
         [BuffID.Mining] = new DeltaBehavior((0.25f, "mining speed", asPercent: true, reductionString: false,
-                                    (p, delta) => p.pickSpeed += delta)),
+                                    (p, delta) => p.pickSpeed -= delta)),
 
         [BuffID.Rage] = new DeltaBehavior((0.1f, "critical chance", asPercent: true, reductionString: false,
                                     (p, delta) => p.allCrit += delta)),
@@ -46,29 +47,31 @@ public static class EffectBehaviors
             (0.5f, "knockback", asPercent: true, reductionString: false, (p, delta) => p.allKB += delta)),
 
         [BuffID.Lifeforce] = new DeltaBehavior(
-            (0.2f, "max life", asPercent: true, reductionString: false, (p, delta) => p.statLifeMax2 += (int)delta)),
+            (0.2f, "max life", asPercent: true, reductionString: false,
+                (p, delta) => p.statLifeMax2 += (int)MathF.Round(p.statLifeMax * delta))),
 
         [BuffID.MagicPower] = new DeltaBehavior(
             (0.2f, "magic damage", asPercent: true, reductionString: false, (p, delta) => p.magicDamage += delta)),
 
         [BuffID.ManaRegeneration] = new DeltaBehavior(
-            (4f, "mana regeneration", asPercent: false, reductionString: false, (p, delta) => p.manaRegen += (int)delta)),
+            (4f, "mana regeneration", asPercent: false, reductionString: false, (p, delta) => p.manaRegen += (int)MathF.Round(delta))),
 
         [BuffID.Endurance] = new DeltaBehavior(
-            (0.1f, "damage taken", asPercent: true, reductionString: true, (p, delta) => p.endurance += (int)delta)),
+            (0.1f, "damage taken", asPercent: true, reductionString: true, (p, delta) => p.endurance += delta)),
 
         [BuffID.Fishing] = new DeltaBehavior(
-            (0.15f, "fishing power", asPercent: true, reductionString: false, (p, delta) => p.fishingSkill += (int)delta)),
+            (15f, "fishing power", asPercent: false, reductionString: false, (p, delta) => p.fishingSkill += (int)MathF.Round(delta))),
 
         [BuffID.Summoning] = new DeltaBehavior(
-            (1, "your max number of minions", asPercent: false, reductionString: false, (p, delta) => p.maxMinions += (int)delta)),
+            (1, "your max number of minions", asPercent: false, reductionString: false, (p, delta) => p.maxMinions += (int)MathF.Round(delta))),
 
         [BuffID.Archery] = new DeltaBehavior(
-            (0.1f, "bow damage", asPercent: true, reductionString: false, (p, delta) => p.arrowDamage += (int)delta),
+            (0.1f, "bow damage", asPercent: true, reductionString: false, (p, delta) => p.arrowDamage += delta),
             (0.2f, "arrow speed", asPercent: true, reductionString: false, (p, delta) => p.GetAttackSpeed(DamageClass.Ranged) += delta)),
 
+        // Vanilla's Thorns sets thorns to 1 (attackers take 100% of the hit back).
         [BuffID.Thorns] = new DeltaBehavior(
-            (0.1f, "contact damage", asPercent: true, reductionString: false, (p, delta) => p.thorns += (int)delta),
+            (1f, "contact damage", asPercent: true, reductionString: false, (p, delta) => p.thorns += delta),
             (0.10f, "knockback", asPercent: true, reductionString: false, (p, delta) => p.GetKnockback(DamageClass.Generic) += delta)),
 
         [BuffID.Spelunker] = new SpelunkerBehavior(),

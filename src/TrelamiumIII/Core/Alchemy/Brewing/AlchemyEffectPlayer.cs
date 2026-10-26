@@ -7,12 +7,21 @@ namespace TrelamiumIII.Core.Alchemy.Brewing;
 
 /// <summary>
 /// Applies brewed effects: the vanilla buff owns icon and timer, and each effect runs its <see cref="IEffectBehavior"/>. Keyed by buff id.
+/// Timed modifiers keep their own timers and show as one <see cref="SaturationBuff"/>.
 /// </summary>
 public class AlchemyEffectPlayer : ModPlayer
 {
     private readonly Dictionary<int, AlchemicalEffect> _active = new();   // keyed by vanilla buff id
     private readonly List<int> _pendingDuration = new();
     private readonly List<int> _expired = new();
+
+    private readonly Dictionary<string, ActiveModifier> _modifiers = new();
+    private readonly List<string> _modifierKeys = new();
+    private bool _saturationPending;
+    private float _regenCarry;
+
+    /// <summary>A running <see cref="TimedModifier"/>: its value and ticks left.</summary>
+    public record struct ActiveModifier(float Value, int TicksLeft);
 
     /// <summary>Register a brewed effect on consume: track it and flag its duration for override.</summary>
     public void OnDrink(in AlchemicalEffect fx)
@@ -22,10 +31,52 @@ public class AlchemyEffectPlayer : ModPlayer
         _pendingDuration.Add(fx.BaseBuff);
     }
 
+    /// <summary>Start a timed modifier. A weaker one doesn't replace a stronger one; an equal one keeps the longer timer.</summary>
+    public void OnDrink(in TimedModifier modifier)
+    {
+        if (modifier.DurationTicks <= 0 || BrewModifiers.Get(modifier.Key) is null) return;
+
+        if (_modifiers.TryGetValue(modifier.Key, out ActiveModifier current))
+        {
+            if (current.Value > modifier.Value) return;
+            if (current.Value == modifier.Value && current.TicksLeft >= modifier.DurationTicks) return;
+        }
+
+        _modifiers[modifier.Key] = new ActiveModifier(modifier.Value, modifier.DurationTicks);
+        _saturationPending = true;
+    }
+
+    public IReadOnlyDictionary<string, ActiveModifier> ActiveModifiers => _modifiers;
+
     /// <summary>Extra percentage points of crate chance from an active brew. Rebuilt each tick.</summary>
     public int CrateChanceBonus;
 
-    public override void ResetEffects() => CrateChanceBonus = 0;
+    /// <summary>Percent added to positive life regeneration by <see cref="BrewStats.LifeRegen"/>. Rebuilt each tick.</summary>
+    public float LifeRegenPercent;
+
+    public override void ResetEffects()
+    {
+        CrateChanceBonus = 0;
+        LifeRegenPercent = 0f;
+    }
+
+    public override void UpdateLifeRegen()
+    {
+        if (LifeRegenPercent <= 0f || Player.lifeRegen <= 0)
+            return;
+
+        // lifeRegen is an int per-tick rate, so the fractional part carries over instead of rounding to nothing.
+        _regenCarry += Player.lifeRegen * LifeRegenPercent / 100f;
+        int whole = (int)_regenCarry;
+        Player.lifeRegen += whole;
+        _regenCarry -= whole;
+    }
+
+    public override void NaturalLifeRegen(ref float regen)
+    {
+        if (LifeRegenPercent > 0f)
+            regen *= 1f + LifeRegenPercent / 100f;
+    }
 
     public override void ModifyFishingAttempt(ref FishingAttempt attempt)
     {
@@ -71,11 +122,52 @@ public class AlchemyEffectPlayer : ModPlayer
             _pendingDuration.Clear();
         }
 
+        TickModifiers();
+
         // Stats consumed in UpdateEquips must be written here, between buff ticks and equips; PostUpdateEquips is a frame late.
-        if (_active.Count == 0) return;
         foreach (var (buff, fx) in _active)
             if (Player.HasBuff(buff))
                 EffectBehaviors.Get(buff)?.ApplyPreEquips(Player, fx);
+
+        foreach (var (key, modifier) in _modifiers)
+            BrewModifiers.Get(key)?.ApplyPreEquips(Player, modifier.Value);
+    }
+
+    /// <summary>
+    /// Counts modifiers down and keeps <see cref="SaturationBuff"/> on the longest one. The buff going missing outside a fresh
+    /// drink means it expired or was cancelled from the buff bar, and either way the modifiers end with it.
+    /// </summary>
+    private void TickModifiers()
+    {
+        int saturation = ModContent.BuffType<SaturationBuff>();
+        int index = Player.FindBuffIndex(saturation);
+
+        if (_modifiers.Count > 0 && index < 0 && !_saturationPending)
+            _modifiers.Clear();
+
+        _modifierKeys.Clear();
+        _modifierKeys.AddRange(_modifiers.Keys);
+        int longest = 0;
+
+        foreach (string key in _modifierKeys)
+        {
+            ActiveModifier modifier = _modifiers[key];
+            int left = modifier.TicksLeft - 1;
+            if (left <= 0) { _modifiers.Remove(key); continue; }
+
+            _modifiers[key] = modifier with { TicksLeft = left };
+            longest = Math.Max(longest, left);
+        }
+
+        if (longest > 0)
+        {
+            if (index >= 0) Player.buffTime[index] = longest;
+            else Player.AddBuff(saturation, longest);
+        }
+        else if (index >= 0)
+            Player.DelBuff(index);
+
+        _saturationPending = false;
     }
 
     public override void PostUpdateEquips()
@@ -83,6 +175,9 @@ public class AlchemyEffectPlayer : ModPlayer
         // Lift the local player's Spelunker gate before re-gating below, so a lapsed brew stops hiding ores.
         bool isLocal = Player.whoAmI == Main.myPlayer;
         if (isLocal) SpelunkerReveal.BeginFrame();
+
+        foreach (var (key, modifier) in _modifiers)
+            BrewModifiers.Get(key)?.Apply(Player, modifier.Value);
 
         if (_active.Count == 0) return;
 
@@ -97,26 +192,49 @@ public class AlchemyEffectPlayer : ModPlayer
 
     public override void SaveData(TagCompound tag)
     {
-        if (_active.Count == 0) return;
-        var list = new List<TagCompound>();
-        foreach (var fx in _active.Values)
-            list.Add(new TagCompound
-            {
-                ["buff"] = fx.BaseBuff, ["pot"] = fx.Potency, ["dur"] = fx.DurationTicks,
-                ["str"] = fx.StrengthPercent, ["tier"] = fx.Params.MaxOreTier,
-            });
-        tag["activeEffects"] = list;
+        if (_active.Count > 0)
+        {
+            var list = new List<TagCompound>();
+            foreach (var fx in _active.Values)
+                list.Add(new TagCompound
+                {
+                    ["buff"] = fx.BaseBuff, ["pot"] = fx.Potency, ["dur"] = fx.DurationTicks,
+                    ["str"] = fx.StrengthPercent, ["tier"] = fx.Params.MaxOreTier,
+                });
+            tag["activeEffects"] = list;
+        }
+
+        if (_modifiers.Count > 0)
+        {
+            var list = new List<TagCompound>();
+            foreach (var (key, modifier) in _modifiers)
+                list.Add(new TagCompound { ["key"] = key, ["val"] = modifier.Value, ["left"] = modifier.TicksLeft });
+            tag["activeModifiers"] = list;
+        }
     }
 
     public override void LoadData(TagCompound tag)
     {
         _active.Clear();
-        if (!tag.TryGet("activeEffects", out List<TagCompound> list)) return;
-        foreach (var t in list)
+        _modifiers.Clear();
+
+        if (tag.TryGet("activeEffects", out List<TagCompound> effects))
         {
-            var fx = new AlchemicalEffect(t.GetInt("buff"), t.GetInt("pot"), t.GetInt("dur"),
-                t.GetInt("str"), new EffectParams(t.GetInt("tier")));
-            _active[fx.BaseBuff] = fx;
+            foreach (var t in effects)
+            {
+                var fx = new AlchemicalEffect(t.GetInt("buff"), t.GetInt("pot"), t.GetInt("dur"),
+                    t.GetInt("str"), new EffectParams(t.GetInt("tier")));
+                _active[fx.BaseBuff] = fx;
+            }
+        }
+
+        if (tag.TryGet("activeModifiers", out List<TagCompound> modifiers))
+        {
+            // The saved Saturation buff may be gone (buffNoSave, or another mod), so re-add it on the first tick.
+            foreach (var t in modifiers)
+                if (BrewModifiers.Get(t.GetString("key")) is not null)
+                    _modifiers[t.GetString("key")] = new ActiveModifier(t.GetFloat("val"), t.GetInt("left"));
+            _saturationPending = _modifiers.Count > 0;
         }
     }
 }

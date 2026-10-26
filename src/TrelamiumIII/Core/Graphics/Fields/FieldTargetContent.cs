@@ -23,7 +23,104 @@ namespace TrelamiumIII.Core.Graphics.Fields;
 /// </remarks>
 internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetContentByRequest
 {
+    /// <summary>World pixels per field texel.</summary>
+    /// <remarks>
+    ///     World pixels, not screen pixels. A texel tied to the screen stays the same size as the
+    ///     camera zooms while the tiles around it grow, so at full zoom the field resolves finer than
+    ///     the art it sits in. Tied to the world, the zoom upscales the field with everything else.
+    /// </remarks>
     public int PixelScale { get; set; } = 2;
+
+    /// <summary>
+    ///     The target's size in texels: enough to cover the unzoomed screen at
+    ///     <see cref="PixelScale" /> world pixels per texel, plus one for the grid's phase.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Deliberately not sized to the zoomed view. A size that follows the zoom steps a whole
+    ///         texel at a time while the zoom eases continuously, and every step resizes every texel
+    ///         at once -- the field re-cuts itself on each frame of a zoom and jitters. Zooming in
+    ///         only shows less of the world, so the unzoomed size always covers it; the texels past
+    ///         the view are clipped by <c>FieldBounds</c> and cost nothing.
+    ///     </para>
+    ///     <para>
+    ///         The extra texel is for <see cref="Origin" />: flooring the view's corner onto the grid
+    ///         can start the target up to a texel before the screen does.
+    ///     </para>
+    /// </remarks>
+    public (int Width, int Height) Size()
+    {
+        // A zoom below one shows more world than the screen; nothing in vanilla goes there, but a
+        // camera mod could, and an undersized target would cut the field off at its edge.
+        Vector2 texel = Vector2.Min(Main.GameViewMatrix.Zoom, Vector2.One) * Math.Max(PixelScale, 1);
+
+        return ((int)Math.Ceiling(Main.screenWidth / texel.X) + 1, (int)Math.Ceiling(Main.screenHeight / texel.Y) + 1);
+    }
+
+    /// <summary>
+    ///     The world texel the target's top-left corner sits on: the view's top-left, floored onto
+    ///     the <see cref="PixelScale" /> grid.
+    /// </summary>
+    /// <remarks>
+    ///     Anchoring here is what locks the grid to the world. Anchored to the screen, the cells sit
+    ///     still while the world slides and zooms under them, so every pan and every frame of a zoom
+    ///     moves where each cell falls on the field.
+    /// </remarks>
+    public Point Origin()
+    {
+        int scale = Math.Max(PixelScale, 1);
+        Vector2 half = new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f;
+        Vector2 viewTopLeft = Main.screenPosition + half - half / Main.GameViewMatrix.Zoom;
+
+        return new Point((int)MathF.Floor(viewTopLeft.X / scale), (int)MathF.Floor(viewTopLeft.Y / scale));
+    }
+
+    /// <summary>Screen pixels per texel: <see cref="PixelScale" /> world pixels, zoomed.</summary>
+    public Vector2 TexelSize() => Main.GameViewMatrix.Zoom * Math.Max(PixelScale, 1);
+
+    /// <summary>Where a point in target texels lands on the screen.</summary>
+    public Vector2 TexelToScreen(Vector2 texel, Point origin)
+    {
+        Vector2 half = new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f;
+        Vector2 world = (origin.ToVector2() + texel) * Math.Max(PixelScale, 1);
+
+        return (world - Main.screenPosition - half) * Main.GameViewMatrix.Zoom + half;
+    }
+
+    /// <summary>A world position in target texels.</summary>
+    public Vector2 WorldToTexel(Vector2 world, Point origin) => world / Math.Max(PixelScale, 1) - origin.ToVector2();
+
+    /// <summary>
+    ///     Points the composite shader's screen uniforms at this target's grid.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         <c>GasFbm.fx</c> rebuilds world position from its uv as
+    ///         <c>(uv * aspect - half) / Zoom + half + WorldOffset</c>, written for a target that
+    ///         covered exactly the screen. This one covers a world-anchored rectangle instead, but the
+    ///         map is still affine in uv, so solving for the <c>Zoom</c> and <c>WorldOffset</c> that
+    ///         make it land on the same world position keeps the noise locked to the world with no
+    ///         change to the shader.
+    ///     </para>
+    ///     <para>
+    ///         Run after <see cref="FieldLayer.ApplyScreenParameters(Effect, Vector2)" />, which
+    ///         writes the screen-covering values.
+    ///     </para>
+    /// </remarks>
+    public void ApplyGrid(Effect effect, Point origin)
+    {
+        (int width, int height) = Size();
+        int scale = Math.Max(PixelScale, 1);
+        float screenHeight = Main.screenHeight;
+
+        Vector2 half = new Vector2(Main.screenWidth / screenHeight, 1f) * 0.5f;
+        Vector2 zoom = new Vector2(Main.screenWidth / (float)(width * scale), screenHeight / (height * scale));
+        Vector2 worldOffset = origin.ToVector2() * scale / screenHeight + half / zoom - half;
+
+        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / width, 1f / height));
+        effect.Parameters["Zoom"]?.SetValue(zoom);
+        effect.Parameters["WorldOffset"]?.SetValue(worldOffset);
+    }
 
     /// <summary>The attribute surface, or null before the first accumulation.</summary>
     public RenderTarget2D? Attributes => attributes;
@@ -79,7 +176,7 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
         if (stampShader is not { Value: { } stamp } || layer.StampTexture is not { } stampTexture)
             return;
 
-        (int width, int height) = FieldSurface.ScreenSize(PixelScale);
+        (int width, int height) = Size();
 
         // Not the vanilla helper: it takes the back buffer's eight-bit format, which clamps these
         // sums flat the moment two blobs overlap. See FieldSurface.
@@ -125,13 +222,14 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
     }
 
     /// <summary>
-    ///     Screen pixels to clip space, by way of the field target's own grid.
+    ///     Stamp positions (world minus <see cref="Main.screenPosition" />) to clip space, by way of
+    ///     the field target's own grid.
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         <see cref="Main.GameViewMatrix" /> cannot be used directly: it is built for a
-    ///         full-size surface, so its translation would put the zoom pivot off-centre here.
-    ///         Rebuild it about the smaller target, then project that onto the target.
+    ///         No zoom here at all: the target holds the world at <see cref="PixelScale" /> world
+    ///         pixels per texel from <see cref="Origin" />, and the composite applies the zoom when
+    ///         it puts the target back on the screen.
     ///     </para>
     ///     <para>
     ///         The projection matches what <see cref="SpriteBatch" /> builds for itself, which is a
@@ -142,12 +240,14 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
     /// </remarks>
     private Matrix Transform(int width, int height)
     {
-        Vector2 fullScreenCenter = new Vector2(Main.screenWidth, Main.screenHeight) / 2f;
-        Vector2 scaledCenter = fullScreenCenter / PixelScale;
+        int scale = Math.Max(PixelScale, 1);
 
-        Matrix toTarget = Matrix.CreateTranslation(-fullScreenCenter.X, -fullScreenCenter.Y, 0f)
-                          * Matrix.CreateScale(Main.GameViewMatrix.Zoom.X / PixelScale, Main.GameViewMatrix.Zoom.Y / PixelScale, 1f)
-                          * Matrix.CreateTranslation(scaledCenter.X, scaledCenter.Y, 0f);
+        // Folded into one offset before it reaches the matrix: screenPosition and the origin are
+        // each far from zero deep in a world, and their difference is small and exact.
+        Vector2 offset = Main.screenPosition - Origin().ToVector2() * scale;
+
+        Matrix toTarget = Matrix.CreateTranslation(offset.X, offset.Y, 0f)
+                          * Matrix.CreateScale(1f / scale, 1f / scale, 1f);
 
         return toTarget * Matrix.CreateOrthographicOffCenter(0f, width, height, 0f, -1f, 1f);
     }

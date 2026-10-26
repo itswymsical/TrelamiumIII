@@ -9,7 +9,7 @@ public readonly record struct BrewContext(BrewComposition Composition, int Extra
 /// <summary>
 ///     Builds recipe outputs. A variant's authored values describe the brew at its authored potency in its first input; ranged
 ///     slot levels and a larger <see cref="SolventBonus" /> raise that potency, and <see cref="BrewTuning.Shift" /> moves
-///     strength and duration with it. Augmenting a potion into itself keeps the input's brew.
+///     strength and duration with it. Augmenting a potion into itself keeps the input's brew (see <see cref="CreateAugmented" />).
 /// </summary>
 public static class BrewFormula
 {
@@ -77,8 +77,40 @@ public static class BrewFormula
             brew = new PotionBrew { Principle = composition.Principle, Effects = { primary } };
         }
 
-        variant.Augment?.Invoke(new BrewBuilder(brew, output.buffTime, composition.Potency));
         return brew;
+    }
+
+    /// <summary>
+    ///     The input potion's brew with <paramref name="augmentation" />'s edits, recorded as one more stage. Every stage past
+    ///     <see cref="BrewDilution.FREE_STAGES" /> then costs the primary effect potency; potency steps are not stages. Previews
+    ///     augment the output's default brew.
+    /// </summary>
+    public static Item CreateAugmented(Augmentation augmentation, in BrewContext context)
+    {
+        var output = new Item();
+        output.SetDefaults(augmentation.Output);
+
+        Item source = context.Input is { IsAir: false } input ? input : output;
+
+        if (source.GetGlobalItem<BrewGlobalItem>().Brew is not { Effects.Count: > 0 } carried)
+            return output;
+
+        PotionBrew brew = carried.Clone();
+        var builder = new BrewBuilder(brew, output.buffTime, context.Composition.Potency);
+
+        foreach (Action<BrewBuilder> edit in augmentation.Edits)
+            edit(builder);
+
+        if (!augmentation.IsPotencyStep)
+        {
+            brew.Augments.Add(augmentation.Key);
+
+            if (brew.Stage > BrewDilution.FREE_STAGES)
+                builder.Potency(-BrewDilution.POTENCY_PER_STAGE);
+        }
+
+        output.GetGlobalItem<BrewGlobalItem>().Brew = brew;
+        return output;
     }
 
     /// <summary>
