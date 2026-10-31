@@ -2,6 +2,7 @@ Keybinds: {
 	"Skip Cutscene.DisplayName": Skip Cutscene
 	"Fast Forward Dialogue.DisplayName": Fast-forward Dialogue
 	"Skill Tree.DisplayName": Skill  Tree
+	"Stake Blueprint.DisplayName": Stake Blueprint
 	StructureEditor.DisplayName: Structure Editor
 }
 

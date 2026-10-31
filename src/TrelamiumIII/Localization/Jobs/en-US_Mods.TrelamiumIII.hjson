@@ -24,6 +24,16 @@ Jobs: {
 		HoverHint: More info
 	}
 
+	// Building a structure from its blueprint (Core/Jobs/Blueprints).
+	Blueprint: {
+		// After a blueprint task while it has no site. {0} = the key bound to Stake Blueprint.
+		Unstaked: (press {0} to pick a site)
+		Unbound: (bind Stake Blueprint in Controls to pick a site)
+		// Over the blueprint while it follows the cursor.
+		HoldHint: Left-click to build here, right-click to cancel
+		OffWorld: Too close to the edge of the world
+	}
+
 	// The one-time walkthrough after the Guide's opening job (Core/UI/Jobs/JobTrackerHint).
 	TrackerHint: {
 		// {0} = the key bound to the inventory.
@@ -131,6 +141,19 @@ Jobs: {
 			Set2.obj0: Create suitible housing for the Merchant
 			Set3.obj0: Create an extra housing
 			Set4.obj0: Check in with the Guide
+		}
+	}
+
+	# A sample blueprint job (Content/Jobs/Townhome). Placeholder text.
+	Townhome: {
+		Name: Townhome
+		Description: '''"Folks will need somewhere to live. I've drawn up the plans, if you'll do the building."'''
+
+		Tasks: {
+			Set0.obj0: Raise the frame
+			Set1.obj0: Put up the walls
+			Set2.obj0: Furnish the rooms
+			Set3.obj0: Show the Guide
 		}
 	}
 
