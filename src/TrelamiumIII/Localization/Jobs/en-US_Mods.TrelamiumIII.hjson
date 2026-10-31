@@ -110,7 +110,7 @@ Jobs: {
 
 	HomeForager: {
 		Name: Home Forager
-		Description: '''"You can't have town without townsfolk!"'''
+		Description: '''"This place is empty... you look strong."'''
 
 		Tasks: {
 			Set0: {

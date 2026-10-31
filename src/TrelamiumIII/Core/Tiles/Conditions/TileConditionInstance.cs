@@ -66,6 +66,19 @@ public struct TileConditionInstance
     public byte Variant;
 
     /// <summary>
+    ///     This tile's own colour, or transparent for the condition's palette as authored.
+    /// </summary>
+    /// <remarks>
+    ///     What lets one condition carry every colour of slime: a green slime's splash and a pink
+    ///     one's are the same condition with different tints. Replaced, not mixed, by a
+    ///     re-application. Only conditions that read it do anything with it; see
+    ///     <see cref="FilmCondition" /> and <see cref="TileFilmLook.TintStrength" />.
+    /// </remarks>
+    public Color Tint;
+
+    public readonly bool HasTint => Tint.A > 0;
+
+    /// <summary>
     ///     Identifies this slot for the eviction queue.
     /// </summary>
     internal int Serial;

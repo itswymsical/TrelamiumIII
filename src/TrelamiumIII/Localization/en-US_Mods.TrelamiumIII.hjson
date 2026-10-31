@@ -1343,6 +1343,11 @@ Items: {
 		DisplayName: Sunflower Seeds
 		Tooltip: ""
 	}
+
+	TileConditionWand: {
+		DisplayName: Tile Condition Wand
+		Tooltip: ""
+	}
 }
 
 Tiles: {

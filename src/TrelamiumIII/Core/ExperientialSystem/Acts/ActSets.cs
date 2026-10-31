@@ -181,6 +181,7 @@ public static class ActCurves
     public static readonly int[] Craft = [30, 90, 200, 400, 700, 1150, 1750, 2600, 3800, 5200];
 
     public static readonly int[] Fishing = [10, 25, 40, 60, 85, 110, 175, 225, 360, 500];
+    public static readonly int[] Coins = [1000, 5000, 7500, 10000, 100000, 250000, 500000, 7500000, 25000000, 500000000];
 
 
     /// <summary>Ordinary enemy kills, counted per family.</summary>

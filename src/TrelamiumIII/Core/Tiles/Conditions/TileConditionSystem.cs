@@ -62,7 +62,7 @@ public sealed class TileConditionSystem : ModSystem
         Remove,
     }
 
-    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync, byte Variant, ChemicalPayload? Payload);
+    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync, byte Variant, ChemicalPayload? Payload, Color? Tint);
 
     private static readonly List<ConditionState> states = [];
 
@@ -84,6 +84,13 @@ public sealed class TileConditionSystem : ModSystem
     public static T? Get<T>() where T : class, ITileCondition
         => byType.TryGetValue(typeof(T), out ConditionState? state) ? (T)state.Condition : null;
 
+    /// <summary>The registered condition of <paramref name="type" />, or null before load or for a type that is not one.</summary>
+    public static ITileCondition? Get(Type type)
+        => byType.TryGetValue(type, out ConditionState? state) ? state.Condition : null;
+
+    /// <summary>Every registered condition, in wire order. For tooling that enumerates them.</summary>
+    public static IEnumerable<ITileCondition> All => states.Select(static state => state.Condition);
+
     /// <summary>
     ///     Lays <typeparamref name="T" /> on the tile at (<paramref name="i" />, <paramref name="j" />).
     /// </summary>
@@ -104,16 +111,65 @@ public sealed class TileConditionSystem : ModSystem
     ///     <see cref="TileConditionInstance.Variant" />, which is most of them.
     /// </param>
     /// <param name="payload">The chemical release responsible, kept on the instance. Not synced.</param>
+    /// <param name="tint">
+    ///     This tile's own colour, or null for the condition's palette. See
+    ///     <see cref="TileConditionInstance.Tint" />.
+    /// </param>
     /// <returns>
     ///     Whether the application was accepted. A deferred one returns true on the promise, since
     ///     the condition has not been asked yet.
     /// </returns>
-    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null) where T : class, ITileCondition
-        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload);
+    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null) where T : class, ITileCondition
+        => byType.TryGetValue(typeof(T), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload, tint);
 
     /// <inheritdoc cref="Apply{T}" />
-    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null)
-        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload);
+    public static bool Apply(ITileCondition condition, int i, int j, float intensity = 1f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null)
+        => byType.TryGetValue(condition.GetType(), out ConditionState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload, tint);
+
+    /// <summary>
+    ///     Lays <typeparamref name="T" /> on every tile within <paramref name="radius" /> pixels of
+    ///     <paramref name="center" />, thinning from <paramref name="intensity" /> at the middle to
+    ///     <paramref name="edge" /> times that at the rim.
+    /// </summary>
+    /// <remarks>
+    ///     Not synced unless asked. An area is nearly always laid by something every machine already
+    ///     simulates -- a projectile bursting, an NPC landing -- and a packet per tile to say so
+    ///     again is a lot of packets.
+    /// </remarks>
+    /// <param name="edge">Intensity at the rim as a fraction of the centre's, 0..1.</param>
+    /// <returns>Tiles that took it.</returns>
+    public static int ApplyCircle<T>(Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = false, byte variant = 0, Color? tint = null) where T : class, ITileCondition
+        => byType.TryGetValue(typeof(T), out ConditionState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, sync, variant, tint) : 0;
+
+    /// <inheritdoc cref="ApplyCircle{T}" />
+    public static int ApplyCircle(ITileCondition condition, Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = TileConditionInstance.NoOwner, bool sync = false, byte variant = 0, Color? tint = null)
+        => byType.TryGetValue(condition.GetType(), out ConditionState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, sync, variant, tint) : 0;
+
+    private static int ApplyCircle(ConditionState state, Vector2 center, float radius, float intensity, float edge, float duration, int owner, bool sync, byte variant, Color? tint)
+    {
+        int reach = (int)MathF.Ceiling(radius / 16f);
+        int centerX = (int)(center.X / 16f);
+        int centerY = (int)(center.Y / 16f);
+        int applied = 0;
+
+        for (int x = centerX - reach; x <= centerX + reach; x++)
+        {
+            for (int y = centerY - reach; y <= centerY + reach; y++)
+            {
+                float distance = Vector2.Distance(new Vector2(x * 16f + 8f, y * 16f + 8f), center);
+
+                if (distance > radius)
+                    continue;
+
+                float falloff = 1f - distance / MathF.Max(radius, 1f);
+
+                if (Apply(state, x, y, intensity * MathHelper.Lerp(edge, 1f, falloff), duration, owner, sync, variant, null, tint))
+                    applied++;
+            }
+        }
+
+        return applied;
+    }
 
     public static bool Remove<T>(int i, int j) where T : class, ITileCondition
     {
@@ -122,7 +178,7 @@ public sealed class TileConditionSystem : ModSystem
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false, 0, null));
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false, 0, null, null));
             return true;
         }
 
@@ -263,6 +319,7 @@ public sealed class TileConditionSystem : ModSystem
 
         foreach (ConditionState state in states)
         {
+            (state.Condition as TileCondition)?.ResetContacts();
             state.Condition.UpdateGlobal();
             UpdateBatch(state);
         }
@@ -293,14 +350,14 @@ public sealed class TileConditionSystem : ModSystem
         return canvas;
     }
 
-    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload)
+    private static bool Apply(ConditionState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload, Color? tint)
     {
         if (!WorldGen.InWorld(i, j, 1))
             return false;
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync, variant, payload));
+            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync, variant, payload, tint));
             return true;
         }
 
@@ -325,6 +382,7 @@ public sealed class TileConditionSystem : ModSystem
             Owner = owner,
             Payload = payload,
             Variant = variant,
+            Tint = tint ?? default,
 
             // Re-application refreshes the slot rather than replacing it, so the entry the eviction
             // queue is already holding stays the one that matches.
@@ -347,7 +405,7 @@ public sealed class TileConditionSystem : ModSystem
         }
 
         if (sync && Main.netMode != NetmodeID.SinglePlayer)
-            SendApply(state, i, j, instance.Intensity, life, instance.Owner, instance.Variant);
+            SendApply(state, i, j, instance.Intensity, life, instance.Owner, instance.Variant, instance.Tint);
 
         return true;
     }
@@ -540,7 +598,7 @@ public sealed class TileConditionSystem : ModSystem
             ConditionState state = states[op.Id];
 
             if (op.Kind == PendingKind.Apply)
-                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync, op.Variant, op.Payload);
+                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync, op.Variant, op.Payload, op.Tint);
             else
                 Remove(state, new Point(op.X, op.Y));
         }
@@ -637,7 +695,7 @@ public sealed class TileConditionSystem : ModSystem
     /// </summary>
     private const byte NO_OWNER_BYTE = 255;
 
-    private static void SendApply(ConditionState state, int i, int j, float intensity, float duration, int owner, byte variant, int ignoreClient = -1)
+    private static void SendApply(ConditionState state, int i, int j, float intensity, float duration, int owner, byte variant, Color tint, int ignoreClient = -1)
     {
         ModPacket packet = ModContent.GetInstance<TrelamiumIII>().GetPacket();
 
@@ -649,6 +707,7 @@ public sealed class TileConditionSystem : ModSystem
         packet.Write((ushort)Math.Clamp(duration, 0f, ushort.MaxValue));
         packet.Write(owner is >= 0 and < NO_OWNER_BYTE ? (byte)owner : NO_OWNER_BYTE);
         packet.Write(variant);
+        packet.Write(tint.PackedValue);
         packet.Send(-1, ignoreClient);
     }
 
@@ -661,6 +720,7 @@ public sealed class TileConditionSystem : ModSystem
         float duration = reader.ReadUInt16();
         byte ownerByte = reader.ReadByte();
         byte variant = reader.ReadByte();
+        var tint = new Color { PackedValue = reader.ReadUInt32() };
 
         if (id < 0 || id >= states.Count)
             return;
@@ -669,11 +729,11 @@ public sealed class TileConditionSystem : ModSystem
 
         ConditionState state = states[id];
 
-        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant, payload: null);
+        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant, payload: null, tint.A > 0 ? tint : null);
 
         // The server is the only one that has heard this, so it is the only one that can tell the
         // rest, minus the client it came from, which already has it.
         if (Main.netMode == NetmodeID.Server)
-            SendApply(state, i, j, intensity, duration, owner, variant, ignoreClient: whoAmI);
+            SendApply(state, i, j, intensity, duration, owner, variant, tint, ignoreClient: whoAmI);
     }
 }

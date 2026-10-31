@@ -69,7 +69,6 @@ public class PhytoncideFlaskProjectile : ChemicalProjectile
     public override string Texture => AssetReferences.Content.Items.Weapons.PhytoncideFlaskItem.KEY;
 
     protected override GasField? Field => FieldSystem.GetLayer<PhytoncideSporeField>();
-
     protected override TrailProfile? Trail => TrailProfile.Shed with
     {
         NodeRadius = 5f,

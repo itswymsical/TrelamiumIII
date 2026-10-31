@@ -51,6 +51,20 @@ public sealed record TileFilmLook
     /// <summary>World pixels the coat may stand proud of the terrain into open air.</summary>
     public float SurfaceLip { get; init; }
 
+    /// <summary>
+    ///     How far each tile's own colour re-dyes the palette, 0..1. Zero draws every tile as authored.
+    /// </summary>
+    /// <remarks>
+    ///     The dye is the ratio of the tile's colour to <see cref="BodyColor" />, applied to every
+    ///     colour here, so a tile carrying the body colour (which is what an untinted tile carries)
+    ///     draws exactly as authored and the palette's shading survives any tint. A neutral grey body
+    ///     makes the tint the whole colour; a coloured one makes the tint a shift away from it.
+    /// </remarks>
+    public float TintStrength { get; init; }
+
+    /// <summary>How much of their own colour the rim and highlight keep under a tint, 0..1.</summary>
+    public float TintWash { get; init; } = 0.5f;
+
     public void Apply(Effect effect)
     {
         effect.Parameters["Threshold"]?.SetValue(Threshold);
@@ -74,5 +88,8 @@ public sealed record TileFilmLook
         effect.Parameters["EmissiveEdge"]?.SetValue(EmissiveEdge);
         effect.Parameters["AmbientLight"]?.SetValue(AmbientLight);
         effect.Parameters["SurfaceLip"]?.SetValue(SurfaceLip);
+
+        effect.Parameters["TintStrength"]?.SetValue(TintStrength);
+        effect.Parameters["TintWash"]?.SetValue(TintWash);
     }
 }

@@ -75,6 +75,17 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
         return new Point((int)MathF.Floor(viewTopLeft.X / scale), (int)MathF.Floor(viewTopLeft.Y / scale));
     }
 
+    /// <summary>The <see cref="Origin" /> the current contents were drawn from.</summary>
+    /// <remarks>
+    ///     The composite reads this rather than asking again. A grid recomputed later in the frame
+    ///     only matches the one the stamps landed on if nothing has moved the camera or the zoom in
+    ///     between, and when something has, the whole field slides by the difference.
+    /// </remarks>
+    public Point BuiltOrigin { get; private set; }
+
+    /// <summary>The <see cref="Size" /> the current contents were drawn at.</summary>
+    public (int Width, int Height) BuiltSize { get; private set; }
+
     /// <summary>Screen pixels per texel: <see cref="PixelScale" /> world pixels, zoomed.</summary>
     public Vector2 TexelSize() => Main.GameViewMatrix.Zoom * Math.Max(PixelScale, 1);
 
@@ -107,9 +118,10 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
     ///         writes the screen-covering values.
     ///     </para>
     /// </remarks>
-    public void ApplyGrid(Effect effect, Point origin)
+    public void ApplyGrid(Effect effect)
     {
-        (int width, int height) = Size();
+        (int width, int height) = BuiltSize;
+        Point origin = BuiltOrigin;
         int scale = Math.Max(PixelScale, 1);
         float screenHeight = Main.screenHeight;
 
@@ -177,6 +189,7 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
             return;
 
         (int width, int height) = Size();
+        Point origin = Origin();
 
         // Not the vanilla helper: it takes the back buffer's eight-bit format, which clamps these
         // sums flat the moment two blobs overlap. See FieldSurface.
@@ -200,7 +213,7 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
         device.DepthStencilState = DepthStencilState.None;
         device.RasterizerState = RasterizerState.CullNone;
 
-        stamp.Parameters["uWorldViewProjection"]?.SetValue(Transform(width, height));
+        stamp.Parameters["uWorldViewProjection"]?.SetValue(Transform(origin, width, height));
         stamp.Parameters["uStamp"]?.SetValue(stampTexture);
 
         foreach (EffectPass pass in stamp.CurrentTechnique.Passes)
@@ -218,6 +231,9 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
         }
 
         device.SetRenderTargets(null);
+
+        BuiltOrigin = origin;
+        BuiltSize = (width, height);
         _wasPrepared = true;
     }
 
@@ -238,13 +254,13 @@ internal sealed class FieldTargetContent(FieldLayer layer) : ARenderTargetConten
     ///         composite shader quantises to by half a cell.
     ///     </para>
     /// </remarks>
-    private Matrix Transform(int width, int height)
+    private Matrix Transform(Point origin, int width, int height)
     {
         int scale = Math.Max(PixelScale, 1);
 
         // Folded into one offset before it reaches the matrix: screenPosition and the origin are
         // each far from zero deep in a world, and their difference is small and exact.
-        Vector2 offset = Main.screenPosition - Origin().ToVector2() * scale;
+        Vector2 offset = Main.screenPosition - origin.ToVector2() * scale;
 
         Matrix toTarget = Matrix.CreateTranslation(offset.X, offset.Y, 0f)
                           * Matrix.CreateScale(1f / scale, 1f / scale, 1f);

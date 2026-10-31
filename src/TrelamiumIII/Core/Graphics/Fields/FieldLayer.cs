@@ -802,12 +802,12 @@ public abstract class FieldLayer
     ///     it, so the only way not to pay was not to rasterise. A cloud entirely off screen now
     ///     costs nothing at all rather than a full pass that discards every pixel.
     /// </remarks>
-    private Rectangle FieldBounds()
+    /// <param name="origin">The grid to measure against: the one about to be built, or the one last built.</param>
+    /// <param name="size">That grid's size in texels.</param>
+    private Rectangle FieldBounds(Point origin, (int Width, int Height) size)
     {
         if (target is null || nodes.Count == 0)
             return Rectangle.Empty;
-
-        Point origin = target.Origin();
 
         float minX = float.MaxValue, minY = float.MaxValue;
         float maxX = float.MinValue, maxY = float.MinValue;
@@ -843,7 +843,7 @@ public abstract class FieldLayer
         Vector2 viewMin = target.WorldToTexel(viewTopLeft, origin);
         Vector2 viewMax = target.WorldToTexel(viewBottomRight, origin);
 
-        (int width, int height) = target.Size();
+        (int width, int height) = size;
 
         left = Math.Max(left, Math.Max((int)MathF.Floor(viewMin.X), 0));
         top = Math.Max(top, Math.Max((int)MathF.Floor(viewMin.Y), 0));
@@ -861,7 +861,7 @@ public abstract class FieldLayer
         if (target is null || nodes.Count == 0 || Main.gameMenu || Main.dedServ)
             return;
 
-        if (FieldBounds().IsEmpty)
+        if (FieldBounds(target.Origin(), target.Size()).IsEmpty)
             return;
 
         target.Request();
@@ -877,7 +877,9 @@ public abstract class FieldLayer
         if (!target.IsReady || target.GetTarget() is not { } field)
             return;
 
-        Rectangle source = FieldBounds();
+        // The grid the field was stamped on, not one asked for now: see FieldTargetContent.BuiltOrigin.
+        Point origin = target.BuiltOrigin;
+        Rectangle source = FieldBounds(origin, target.BuiltSize);
 
         if (source.IsEmpty)
             return;
@@ -886,10 +888,8 @@ public abstract class FieldLayer
         var effect = shader.Value;
         var device = Main.graphics.GraphicsDevice;
 
-        Point origin = target.Origin();
-
         ApplyScreenParameters(effect, target.TexelSize());
-        target.ApplyGrid(effect, origin);
+        target.ApplyGrid(effect);
 
         // The second half of the field. A layer that never raises FlowStrength or TemperatureBlend
         // leaves this sampler untouched, which is what keeps the cost off layers that want none of

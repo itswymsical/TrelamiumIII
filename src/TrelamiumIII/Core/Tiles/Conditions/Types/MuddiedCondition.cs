@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>A coat of mud over the terrain. Drags whatever walks through it and leaves NPCs <see cref="Mired" />.</summary>
-public sealed class MuddiedCondition : TileCondition
+public sealed class MuddiedCondition : FilmCondition
 {
     private const float PLAYER_DRAG = 0.92f;
 
@@ -13,7 +11,7 @@ public sealed class MuddiedCondition : TileCondition
 
     private const int MIRED_TICKS = 45;
 
-    private static readonly TileFilmLook Look = new()
+    protected override TileFilmLook Look { get; } = new()
     {
         Threshold = 0.22f,
         NoiseScale = 0.07f,
@@ -36,45 +34,13 @@ public sealed class MuddiedCondition : TileCondition
 
     public override int MaxTiles => 900;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
-
-    public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
-
     public override int FadeInTicks => 6;
 
     public override int FadeOutTicks => 18;
 
-    private Asset<Texture2D>? noiseTexture;
-
-    private readonly HashSet<Entity> draggedThisTick = [];
-
-    public override void Load()
-    {
-        if (Main.dedServ)
-            return;
-
-        noiseTexture = Assets.Textures.Noise.LiquidNoise.Asset;
-    }
-
-    public override void Unload()
-    {
-        noiseTexture = null;
-        draggedThisTick.Clear();
-    }
-
-    public override void UpdateGlobal() => draggedThisTick.Clear();
-
-    public override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        Look.Apply(effect);
-    }
-
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
-        if (instance.IsOwnedBy(player) || !draggedThisTick.Add(player))
+        if (instance.IsOwnedBy(player) || !FirstContact(player))
             return;
 
         player.velocity.X *= MathHelper.Lerp(1f, PLAYER_DRAG, instance.Strength);
@@ -86,7 +52,7 @@ public sealed class MuddiedCondition : TileCondition
     /// <summary>Drags on every machine; the debuff comes from the server, which syncs it.</summary>
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)
     {
-        if (npc.noTileCollide || npc.friendly || !draggedThisTick.Add(npc))
+        if (npc.noTileCollide || npc.friendly || !FirstContact(npc))
             return;
 
         npc.velocity.X *= MathHelper.Lerp(1f, NPC_DRAG, instance.Strength);

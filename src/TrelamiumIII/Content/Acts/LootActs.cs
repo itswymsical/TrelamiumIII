@@ -10,7 +10,6 @@ internal sealed class LootActs : IActProvider
     [
         Pickup("act.heartpickup", ActCategory.Collection, [ItemID.Heart, ItemID.CandyApple, ItemID.CandyCane]),
         Pickup("act.manapickup", ActCategory.Collection, [ItemID.Star, ItemID.SoulCake, ItemID.SugarPlum]),
-        Pickup("act.coins", ActCategory.Exploration, [ItemID.CopperCoin, ItemID.SilverCoin, ItemID.GoldCoin, ItemID.PlatinumCoin]),
     ];
 
     private static DataAct Pickup(string id, ActCategory category, int[] items)

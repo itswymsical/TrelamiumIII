@@ -1,0 +1,261 @@
+﻿using ReLogic.Content;
+using TrelamiumIII.Content.Buffs;
+using TrelamiumIII.Utilities.Extensions;
+
+namespace TrelamiumIII.Core.Tiles.Conditions.Types;
+
+public sealed class AcidCondition : TileCondition
+{
+    private const float QUENCH_PER_PROBE = 16f;
+    private const float SPENT_HEAT = 0.02f;
+
+    private const float DISSOLVE_FRACTION = 0.25f;
+
+    private const float FIRE_FADE_HEAT = 0.15f;
+
+    private const float MAX_CHAR = 0.82f;
+
+    public override float Duration => BurnProfile.Standard.Duration;
+
+    public override int MaxTiles => 1200;
+
+    public override Asset<Effect>? Shader => Assets.Shaders.TileBurnMask.Asset;
+
+    private Asset<Texture2D>? noiseTexture;
+
+    public override void Load()
+    {
+        if (Main.dedServ)
+            return;
+
+        noiseTexture = Assets.Textures.Noise.Melt_03.Asset;
+    }
+
+    public override void Unload() => noiseTexture = null;
+    public override void OnApplied(ref TileConditionInstance instance)
+    {
+        BurnProfile profile = BurnProfile.Get(instance.Variant);
+
+        instance.Level = MathF.Max(instance.Level, profile.Ignition * instance.Intensity);
+        instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
+    }
+
+    public override void UpdateTile(ref TileConditionInstance instance)
+    {
+        BurnProfile profile = BurnProfile.Get(instance.Variant);
+
+        bool fuelled = instance.Fade > 1f - profile.FuelFraction;
+
+        // Intensity caps the fire as well as starting it, so the thin rim of a scorch smoulders and
+        // never catches while its centre rages.
+        float ceiling = profile.Peak * instance.Intensity;
+
+        float delta = fuelled ? profile.HeatGain : -profile.HeatDecay;
+
+        instance.Level = MathHelper.Clamp(instance.Level + delta, 0f, ceiling);
+
+        var stage = BurnProfile.StageOf(instance.Level);
+
+        instance.Stage = (byte)stage;
+
+        if (stage >= BurnStage.Burning && profile.SpreadChance > 0f)
+            Spread(in instance, profile);
+
+        // A fire whose heat is gone has nothing left to do but finish blackening, so it hands the
+        // rest of its life to the char and stops costing anything but a draw.
+        if (instance.Level <= SPENT_HEAT)
+        {
+            if (profile.ConsumesTiles)
+                Consume(ref instance);
+
+            return;
+        }
+
+        if (Main.dedServ || !OnScreen(in instance))
+            return;
+
+        Embers(in instance, stage);
+    }
+
+    private static void Spread(in TileConditionInstance instance, BurnProfile profile)
+    {
+        if (!Main.rand.NextBool() || Main.rand.NextFloat() > profile.SpreadChance * instance.Level)
+            return;
+
+        (int dx, int dy) = Main.rand.Next(4) switch
+        {
+            0 => (-1, 0),
+            1 => (1, 0),
+            2 => (0, -1),
+            _ => (0, 1),
+        };
+
+        int x = instance.X + dx;
+        int y = instance.Y + dy;
+
+        if (TileConditionSystem.Has<BurnedCondition>(x, y))
+            return;
+
+        Corrode(x, y, profile, instance.Intensity * profile.SpreadFalloff, instance.Owner);
+    }
+
+    private static void Consume(ref TileConditionInstance instance)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            return;
+
+        WorldGen.KillTile(instance.X, instance.Y, noItem: true);
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendTileSquare(-1, instance.X, instance.Y, 1);
+
+        instance.Life = 0f;
+    }
+
+    private static void Embers(in TileConditionInstance instance, BurnStage stage)
+    {
+        float heat = instance.Level;
+
+        Lighting.AddLight(instance.WorldCenter, 0.42f * heat, 0.17f * heat, 0.03f * heat);
+
+        if (!Main.rand.NextBool((int)MathHelper.Lerp(340f, 60f, heat)))
+            return;
+
+        Dust ember = Dust.NewDustPerfect(
+            instance.WorldPosition + new Vector2(Main.rand.NextFloat(16f), Main.rand.NextFloat(16f)),
+            // Fire throws sparks; something merely smouldering throws ash, which is the visible
+            // difference between a tile that is alight and one that is only still warm.
+            stage >= BurnStage.Burning ? DustID.Torch : DustID.Ash,
+            new Vector2(Main.rand.NextFloat(-0.25f, 0.25f), Main.rand.NextFloat(-1.4f, -0.4f)),
+            0,
+            default,
+            Main.rand.NextFloat(0.7f, 1.3f) * MathHelper.Lerp(0.5f, 1.2f, heat)
+        );
+
+        ember.noGravity = true;
+    }
+
+    /// <summary>Heat as an average, char and flame as amounts scaled by the mark's coverage.</summary>
+    public override TileCanvasSample EncodeCanvas(in TileConditionInstance instance)
+    {
+        float coverage = Coverage(in instance);
+        float fire = MathHelper.Clamp(instance.Level / FIRE_FADE_HEAT, 0f, 1f);
+
+        return new TileCanvasSample(coverage, new Vector3(instance.Level, coverage * CharProgress(in instance) * MAX_CHAR, coverage * fire));
+    }
+
+    private static float Coverage(in TileConditionInstance instance)
+        => instance.Intensity * MathHelper.Clamp(instance.Fade / DISSOLVE_FRACTION, 0f, 1f);
+
+    /// <summary>Counted from the first ignition, so re-lighting a tile does not clean its char off.</summary>
+    private static float CharProgress(in TileConditionInstance instance)
+        => MathHelper.Clamp(instance.TotalAge / 60f * BurnProfile.Get(instance.Variant).CharRate, 0f, 1f);
+
+    public override void ApplyShaderParameters(Effect effect)
+    {
+        if (noiseTexture is { Value: { } noise })
+            effect.Parameters["uNoiseTex"]?.SetValue(noise);
+
+        effect.Parameters["FireThreshold"]?.SetValue(0.4f);
+        effect.Parameters["FireNoiseScale"]?.SetValue(0.09f);
+        effect.Parameters["FireNoiseStrength"]?.SetValue(0.8f);
+        effect.Parameters["FireDrift"]?.SetValue(new Vector2(0.012f, 0.06f));
+        effect.Parameters["FireEdgeWidth"]?.SetValue(0.22f);
+        effect.Parameters["FireBodyAlpha"]?.SetValue(0.86f);
+        effect.Parameters["FireEdgeAlpha"]?.SetValue(0.95f);
+
+        effect.Parameters["EmberColor"]?.SetValue(new Vector3(0.15f, 0.49f, 0.00f));
+        effect.Parameters["CoolColor"]?.SetValue(new Vector3(0.00f, 1.00f, 0.25f));
+        effect.Parameters["HotColor"]?.SetValue(new Vector3(0.50f, 1.00f, 0.00f));
+        effect.Parameters["FlashColor"]?.SetValue(new Vector3(0.87f, 1.00f, 0.51f));
+
+        effect.Parameters["CharColor"]?.SetValue(new Vector3(0.196f, 0.267f, 0.075f));
+        effect.Parameters["CharAlpha"]?.SetValue(0.85f);
+        effect.Parameters["CharThreshold"]?.SetValue(0.05f);
+        effect.Parameters["CharSoftness"]?.SetValue(0.6f);
+        effect.Parameters["CharNoiseScale"]?.SetValue(0.2f);
+        effect.Parameters["CharNoiseStrength"]?.SetValue(0.6f);
+        effect.Parameters["CharBands"]?.SetValue(5f);
+    }
+
+    public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
+    {
+        if (instance.Level < 0.22f)
+            return;
+
+        player.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(60f, 180f, instance.Level));
+    }
+
+    public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)
+    {
+        if (instance.Level < 0.22f)
+            return;
+
+        npc.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(80f, 220f, instance.Level));
+    }
+
+    private static void Smoke(Vector2 position, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            Dust steam = Dust.NewDustPerfect(
+                position + Main.rand.NextVector2Circular(7f, 7f),
+                DustID.Cloud,
+                new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-1.4f, -0.6f)),
+                120,
+                Color.DarkGray,
+                Main.rand.NextFloat(0.7f, 1.2f)
+            );
+
+            steam.noGravity = true;
+        }
+    }
+
+    public override void OnLiquidContact(ref TileConditionInstance instance, int liquidType, int amount)
+    {
+        if (liquidType == LiquidID.Water)
+        {
+            instance.Life = instance.MaxLife;
+            instance.Level = MathF.Min(instance.Level + 0.1f, 1f);
+
+            return;
+        }
+
+        float share = amount / 255f;
+
+        instance.Life -= QUENCH_PER_PROBE * share;
+        instance.Level = MathF.Max(instance.Level - share * 0.25f, 0f);
+        instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
+
+        if (!Main.dedServ)
+            Smoke(instance.WorldCenter, 1);
+    }
+
+    public static bool Corrode(int i, int j, BurnProfile profile, float intensity = 1f, int owner = TileConditionInstance.NoOwner)
+        => TileConditionSystem.Apply<AcidCondition>(i, j, intensity, profile.Duration, owner, sync: false, variant: profile.Id);
+    
+    public static void Melt(Vector2 center, float radius, float intensity = 1f, BurnProfile? profile = null)
+    {
+        BurnProfile rules = profile ?? BurnProfile.Standard;
+
+        int reach = (int)MathF.Ceiling(radius / 16f);
+        int centerX = (int)(center.X / 16f);
+        int centerY = (int)(center.Y / 16f);
+
+        for (int x = centerX - reach; x <= centerX + reach; x++)
+        {
+            for (int y = centerY - reach; y <= centerY + reach; y++)
+            {
+                float distance = Vector2.Distance(new Vector2(x * 16f + 8f, y * 16f + 8f), center);
+
+                if (distance > radius)
+                    continue;
+
+                float falloff = 1f - distance / MathF.Max(radius, 1f);
+
+                Corrode(x, y, rules, intensity * MathHelper.Lerp(0.4f, 1f, falloff));
+            }
+        }
+    }
+
+}

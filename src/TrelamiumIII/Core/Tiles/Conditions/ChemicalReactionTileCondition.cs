@@ -4,7 +4,14 @@ using TrelamiumIII.Core.Gas;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
-public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSource
+/// <summary>
+/// functions as the tile condition for chemical fields that derive from a chemical weapons.
+/// <para>
+/// Example: a thermite field leaving a 'burning' TileCondition with the tiles it intersects with. 
+/// <see cref="ChemicalReactionTileCondition"/> instances also have mutable chemical stat shares with the emitter field that creates it.
+/// </para>
+/// </summary>
+public abstract class ChemicalReactionTileCondition : FilmCondition, IChemicalSource
 {
     public abstract ChemicalDamageType ChemicalType { get; }
 
@@ -50,9 +57,7 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     public override int MaxTiles => 700;
 
-    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
-
-    public override Asset<Effect>? Shader => Assets.Shaders.TileConditionMask.Asset;
+    protected override Asset<Texture2D> NoiseTexture => Assets.Textures.Noise.Turbulence_06.Asset;
 
     protected virtual Vector3 BodyColor => Element.BodyColor;
 
@@ -67,12 +72,10 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
 
     protected virtual Vector2 NoiseDrift => Element.NoiseDrift;
 
-    private Asset<Texture2D>? noiseTexture;
-
     private TileFilmLook? look;
 
     /// <summary>The coat's look, built from the element palette on first use.</summary>
-    protected virtual TileFilmLook Look => look ??= new TileFilmLook
+    protected override TileFilmLook Look => look ??= new TileFilmLook
     {
         Threshold = Threshold,
         NoiseScale = NoiseScale,
@@ -89,17 +92,9 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
         SurfaceLip = 1f,
     };
 
-    public override void Load()
-    {
-        if (Main.dedServ)
-            return;
-
-        noiseTexture = Assets.Textures.Noise.Turbulence_06.Asset;
-    }
-
     public override void Unload()
     {
-        noiseTexture = null;
+        base.Unload();
         look = null;
     }
 
@@ -172,14 +167,6 @@ public abstract class ChemicalReactionTileCondition : TileCondition, IChemicalSo
             owner: instance.Owner,
             payload: instance.Payload?.Derived
         );
-    }
-
-    public override void ApplyShaderParameters(Effect effect)
-    {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
-
-        Look.Apply(effect);
     }
 
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ReLogic.Content;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
@@ -7,13 +8,35 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 ///     the handful of drawing and sampling helpers a condition normally wants.
 /// </summary>
 /// <remarks>
-///     Derived types are discovered and registered automatically by
-///     <see cref="TileConditionSystem" />, so a new condition is one file and nothing else. It needs
-///     a parameterless constructor and it must not keep per-tile state: see
-///     <see cref="ITileCondition" /> for why.
+///     <para>
+///         Derived types are discovered and registered automatically by
+///         <see cref="TileConditionSystem" />, so a new condition is one file and nothing else. It
+///         needs a parameterless constructor and it must not keep per-tile state: see
+///         <see cref="ITileCondition" /> for why.
+///     </para>
+///     <para>
+///         A coat that is only a palette and some rules for what touches it -- slime, mud, a stain --
+///         should extend <see cref="FilmCondition" /> instead, which does the drawing.
+///     </para>
 /// </remarks>
 public abstract class TileCondition : ITileCondition
 {
+    private readonly HashSet<Entity> touchedThisTick = [];
+
+    /// <summary>
+    ///     True the first time <paramref name="entity" /> touches this condition this tick, false
+    ///     after.
+    /// </summary>
+    /// <remarks>
+    ///     Contact hooks run once per marked tile under the hitbox, so a player standing across three
+    ///     slimed tiles is slowed three times over. Anything that should happen once per entity --
+    ///     drag, a debuff, a sound -- belongs behind this.
+    /// </remarks>
+    protected bool FirstContact(Entity entity) => touchedThisTick.Add(entity);
+
+    /// <summary>Forgets this tick's contacts. Called by the system before <see cref="UpdateGlobal" />.</summary>
+    internal void ResetContacts() => touchedThisTick.Clear();
+
     public virtual string Name => GetType().Name;
 
     public virtual float Duration => 8f * 60f;

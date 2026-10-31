@@ -31,6 +31,43 @@ public class ZoomHandler : ModSystem
 
     public static float ClampedExtraZoomTarget => Math.Min(1, ExtraZoomTarget);
 
+    public override void Load()
+    {
+        if (!Main.dedServ)
+            On_Main.DoDraw_UpdateCameraPosition += PrimeFrameZoom;
+    }
+
+    public override void Unload()
+    {
+        if (!Main.dedServ)
+            On_Main.DoDraw_UpdateCameraPosition -= PrimeFrameZoom;
+    }
+
+    /// <summary>
+    ///     Settles this frame's zoom and puts it on <see cref="Main.GameViewMatrix" /> right after the
+    ///     camera moves, ahead of <c>Main.CheckMonoliths</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Vanilla only writes the frame's zoom after <c>CheckMonoliths</c> has run, so every
+    ///     render target built there -- fields, tile condition canvases, shockwaves -- was drawn with
+    ///     last frame's zoom and then composited with this frame's. While the zoom eases the two
+    ///     differ by several texels a frame, and the targets jitter.
+    ///     <see cref="ModifyTransformMatrix" /> then writes the same value again, so nothing later in
+    ///     the frame sees a difference.
+    /// </remarks>
+    private static void PrimeFrameZoom(On_Main.orig_DoDraw_UpdateCameraPosition orig)
+    {
+        orig();
+
+        UpdateZoom();
+        Main.GameViewMatrix.Zoom = ScaleVector;
+
+        // A new zoom only marks the matrix dirty, and it rebuilds against whatever viewport is bound
+        // when it is next read. Read now, while that is still the back buffer, rather than from inside
+        // some CheckMonoliths pass with a half-size target bound.
+        _ = Main.GameViewMatrix.TransformationMatrix;
+    }
+
     public override void PostUpdateEverything()
     {
         TickZoom();
@@ -39,7 +76,6 @@ public class ZoomHandler : ModSystem
     public override void ModifyTransformMatrix(ref SpriteViewMatrix Transform)
     {
         Transform.Zoom = ScaleVector;
-        UpdateZoom();
     }
 
     public static void AddFlatZoom(float value)
