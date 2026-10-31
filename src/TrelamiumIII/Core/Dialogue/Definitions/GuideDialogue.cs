@@ -1,4 +1,6 @@
-﻿namespace TrelamiumIII.Core.Dialogue.Definitions;
+﻿using TrelamiumIII.Core.UI.Jobs;
+
+namespace TrelamiumIII.Core.Dialogue.Definitions;
 
 class GuideDialogue : ModDialogue
 {
@@ -82,10 +84,12 @@ class GuideDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16), new Pause(24)])
             .Register();
 
+        // Ends on the Guide pointing the player at their job tracker, which the hint then shows them.
         Dialogue.Define("Guide.HomeForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
             .Line(Speaker, emote: 0, speed: 1f, [new Pause(14), new Pause(48), new Pause(36), new Pause(20)])
+            .OnComplete(JobTrackerHint.Begin)
             .Register();
     }
 }

@@ -24,6 +24,15 @@ Jobs: {
 		HoverHint: More info
 	}
 
+	// The one-time walkthrough after the Guide's opening job (Core/UI/Jobs/JobTrackerHint).
+	TrackerHint: {
+		// {0} = the key bound to the inventory.
+		OpenInventory: Press {0} to open your inventory.
+		TrackerTitle: Job Tracker
+		TrackerBody: Shows your progress on every job you've taken.
+		Dismiss: Got it
+	}
+
 	// Repeatable gathering jobs from wandering jobbers (Content/NPCs/Jobbers).
 	Jobber: {
 		Name: Odd Job

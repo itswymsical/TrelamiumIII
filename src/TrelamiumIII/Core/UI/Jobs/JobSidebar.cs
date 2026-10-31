@@ -71,6 +71,15 @@ public class JobSidebar
 
     #region Properties
     public bool ShouldBeRemoved => false;
+
+    /// <summary>
+    /// The area the panel took up when it last drew, in UI space, or null when it drew nothing.
+    /// For anything that points at the tracker, such as <see cref="JobTrackerHint"/>.
+    /// </summary>
+    public Rectangle? Bounds { get; private set; }
+
+    /// <summary>How faded in the panel is, 0..1.</summary>
+    public float Visibility => alpha;
     #endregion
 
     #region Constructor
@@ -230,6 +239,7 @@ public class JobSidebar
     {
         alpha = isFadingOut ? fadeInProgress - fadeoutProgress : fadeInProgress;
         alpha = MathHelper.Clamp(alpha, 0f, 1f);
+        Bounds = null;
         DrawTaskList(spriteBatch, bottomAnchorPosition);
     }
 
@@ -240,6 +250,10 @@ public class JobSidebar
         if (!ShouldDrawPanel(currentList)) return;
 
         var layout = CalculateLayout(currentList);
+
+        // From the pin, which hangs off the left of the panel, down to the last row.
+        Bounds = new Rectangle(layout.PosX - 44, layout.PosY - 4, PANEL_WIDTH + 52, layout.ContentBottomY - layout.PosY + 8);
+
         DrawIcon(spriteBatch, layout);
         DrawTitle(spriteBatch, layout);
         DrawPinButton(spriteBatch, layout);
@@ -953,6 +967,12 @@ public class JobSidebarManager : ModSystem
     public JobSidebarManager() => Instance = this;
 
     private JobSidebar currentNotification;
+
+    /// <summary>The tracker panel's area as it was last drawn, or null when it is not up.</summary>
+    public Rectangle? TrackerBounds => currentNotification?.Bounds;
+
+    /// <summary>How faded in the tracker panel is, 0..1.</summary>
+    public float TrackerVisibility => currentNotification?.Visibility ?? 0f;
 
     public override void Unload()
     {
