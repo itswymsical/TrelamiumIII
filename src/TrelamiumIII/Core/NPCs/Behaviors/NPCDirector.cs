@@ -139,7 +139,7 @@ public class NPCDirector : NPCComponent
             return;
 
         // Player-rendered actors get their frames from Player.PlayerFrame instead.
-        if (npc.ModNPC is TerrarianNPC)
+        if (TerrarianModel.Of(npc) != null)
             return;
 
         if (Leaf is IFramedBehavior framed)

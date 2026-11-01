@@ -73,7 +73,7 @@ public sealed class BehaviorContext
     public WorldNPC Actor => NPC.ModNPC as WorldNPC;
 
     /// <summary>The player-model driver, when this NPC renders as a Terrarian.</summary>
-    public PlayerPuppet Puppet => (NPC.ModNPC as TerrarianNPC)?.Puppet;
+    public PlayerPuppet Puppet => TerrarianModel.Of(NPC)?.Puppet;
 
     /// <summary>Nearest living player within range, or null.</summary>
     public Player NearestPlayer(float range = 1000f)

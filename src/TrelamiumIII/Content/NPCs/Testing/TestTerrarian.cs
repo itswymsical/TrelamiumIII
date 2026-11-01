@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TrelamiumIII.Content.NPCs.WorldNPCs.Guide;
 using TrelamiumIII.Core.NPCs.Actors;
 using TrelamiumIII.Core.NPCs.Behaviors;
 using TrelamiumIII.Core.NPCs.Combat;
@@ -42,6 +43,9 @@ public class TestTerrarian : TerrarianNPC
 
         /// <summary>Walk home from wherever it is. Checks travel and arrival.</summary>
         GoHome,
+
+        /// <summary>Wear the Guide's outfit and swing. Checks texture outfits: sheets framed, skin and helmet hidden under them.</summary>
+        Outfit,
     }
 
     private const int MeleeWeapon = ItemID.CopperBroadsword;
@@ -128,6 +132,7 @@ public class TestTerrarian : TerrarianNPC
         .When(_ => Mode == TestMode.Follow, FollowPlayer)
         .When(_ => Mode == TestMode.Talk, TalkForever)
         .When(_ => Mode == TestMode.GoHome, GoHome)
+        .When(_ => Mode == TestMode.Outfit, Outfitted)
         .Otherwise(Idle);
 
     private IBehavior Idle()
@@ -226,12 +231,24 @@ public class TestTerrarian : TerrarianNPC
             Behavior.Do(_ => Mode = TestMode.Idle));
     }
 
+    /// <summary>Swinging, so the composite arms show over the outfit's body sheet.</summary>
+    private IBehavior Outfitted()
+    {
+        Stance(hostile: false, presenting: false, outfit: ModContent.GetInstance<GuideOutfit>());
+
+        return Behavior.Loop(() => Behavior.Sequence(
+            Fight.Use(MeleeWeapon, ctx => ctx.NearestPlayer(600f)?.Center),
+            Behavior.Wait(48)));
+    }
+
     /// <summary>
     /// Sets up a mode. Hostile modes clear <c>friendly</c> and <c>immortal</c>, since world NPCs are invulnerable by default.
+    /// Every mode but <see cref="TestMode.Outfit"/> takes the outfit off.
     /// </summary>
-    private void Stance(bool hostile, bool presenting)
+    private void Stance(bool hostile, bool presenting, ActorOutfit? outfit = null)
     {
         Puppet.PresentHeldItem = presenting;
+        Outfit = outfit;
 
         if (hostile == turnedHostile)
             return;

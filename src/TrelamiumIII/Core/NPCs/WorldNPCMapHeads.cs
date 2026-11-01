@@ -156,11 +156,11 @@ public class WorldNPCMapSystem : ModSystem, INeedRenderTargetContent
 
         // Player head render target path. Only an actor drawn from a backing player
         // has a head to render; a sprite-based world NPC must name a MapHeadTexture.
-        if (worldNpc is not Actors.TerrarianNPC actor)
+        if (Actors.TerrarianModel.Of(worldNpc.NPC) is not { } model)
             return false;
 
         var content = GetOrCreate(npcIndex);
-        content.UsePlayer(actor.DummyPlayer);
+        content.UsePlayer(model.Player);
         content.UseColor(Color.White);
         content.Request();
         _dirty = true;

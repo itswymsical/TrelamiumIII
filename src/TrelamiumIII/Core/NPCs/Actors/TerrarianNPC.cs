@@ -14,13 +14,14 @@ namespace TrelamiumIII.Core.NPCs.Actors;
 ///
 /// <para>
 /// Everything about appearance and item posing lives here rather than on
-/// <see cref="WorldNPC"/>, so an NPC with its own sprite pays none of it. The
-/// <see cref="Puppet"/> keeps that player animating - see
-/// <see cref="PlayerPuppet"/> for why it has to.
+/// <see cref="WorldNPC"/>, so an NPC with its own sprite pays none of it. The look
+/// itself is a <see cref="TerrarianModel"/>, which any NPC can carry; this class
+/// wires one into a world NPC's AI, draw, save and sync, and keeps the appearance
+/// setters close to hand.
 /// </para>
 ///
 /// <para>
-/// Set the look in <see cref="SetAppearanceDefaults"/>; it runs after
+/// Set the look in <see cref="SetAppearanceDefaults"/>; it runs before
 /// <see cref="WorldNPC.SetWorldNPCDefaults"/>, on a puppet that already exists.
 /// </para>
 /// </summary>
@@ -28,41 +29,28 @@ public abstract class TerrarianNPC : WorldNPC
 {
     public override string Texture => AssetReferences.Core.NPCs.Actors.WorldNPC.KEY;
 
+    /// <summary>The player model this NPC renders as.</summary>
+    public TerrarianModel Model { get; private set; }
+
     /// <summary>
     /// Drives the backing player's pose, item animation and held-item visuals.
     /// Updated once per tick from <see cref="PostAI"/>.
     /// </summary>
-    public PlayerPuppet Puppet { get; private set; }
+    public PlayerPuppet Puppet => Model?.Puppet;
 
     /// <summary>The backing player. All appearance state lives on it.</summary>
-    public Player DummyPlayer => Puppet?.Player;
+    public Player DummyPlayer => Model?.Player;
 
     public sealed override void SetDefaults()
     {
-        Puppet = new PlayerPuppet(NPC, new Player());
-        InitializeDummyPlayer();
+        Model = new TerrarianModel(NPC);
+        SetAppearanceDefaults();
 
         base.SetDefaults();
     }
 
     /// <summary>Hair, skin, clothes, equipment. Called once the puppet exists.</summary>
     protected abstract void SetAppearanceDefaults();
-
-    /// <summary>
-    /// Safe defaults so the backing player renders without the engine mistaking it for
-    /// a real, networked one.
-    /// </summary>
-    private void InitializeDummyPlayer()
-    {
-        DummyPlayer.direction = -1;
-        DummyPlayer.gravDir = 1f;
-        DummyPlayer.isDisplayDollOrInanimate = true;
-        DummyPlayer.dead = false;
-        DummyPlayer.ghost = false;
-        DummyPlayer.active = true;
-        DummyPlayer.whoAmI = Main.maxPlayers;
-        SetAppearanceDefaults();
-    }
 
     public override void PostAI()
     {
@@ -88,23 +76,13 @@ public abstract class TerrarianNPC : WorldNPC
         return Puppet.BeginUse(aimAt);
     }
 
-    /// <summary>
-    /// Front arm during rock-paper-scissors: pumped for 40 ticks before each of the three reveals, held out for 20 after.
-    /// Null outside a game or while the director has the NPC.
-    /// </summary>
+    /// <summary>Front arm during rock-paper-scissors. Null outside a game or while the director has the NPC.</summary>
     private float? GameArmRotation()
     {
         if (State is not (TownState.GameLead or TownState.GameListen) || Director is { IsBusy: true })
             return null;
 
-        int beat = StateTicks % 420;
-        if (beat >= 180)
-            return null;
-
-        int round = beat % 60;
-        float lift = round < 40 ? 0.45f + 0.4f * MathF.Abs(MathF.Sin(round * MathHelper.Pi / 10f)) : 0.15f;
-
-        return -(MathHelper.PiOver2 + lift);
+        return TownPoses.RockPaperScissorsArm(StateTicks % TownPoses.RockPaperScissorsCycle);
     }
 
     /// <summary>Swaps in <see cref="TerrarianEntryIcon"/>; the vanilla icon cannot draw a player model.</summary>
@@ -185,57 +163,31 @@ public abstract class TerrarianNPC : WorldNPC
         set => Puppet.IgnoreLighting = value;
     }
 
-    // Equipment.
-    //   armor[0..2]   head, body, legs        armor[10..12] their vanity slots
-    //   armor[3..9]   accessories             armor[13..19] their vanity slots
+    /// <summary>Texture clothing laid over the armour slots. Null wears the armour.</summary>
+    public ActorOutfit? Outfit
+    {
+        get => Model.Outfit;
+        set => Model.Outfit = value;
+    }
+
+    // Equipment. Slot layout on TerrarianModel.
 
     /// <summary>Sets head armour or vanity. 0 clears it.</summary>
-    public void SetHeadSlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 10 : 0, itemId);
+    public void SetHeadSlot(int itemId, bool vanity = true) => Model.SetHeadSlot(itemId, vanity);
 
     /// <summary>Sets body armour or vanity. 0 clears it.</summary>
-    public void SetBodySlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 11 : 1, itemId);
+    public void SetBodySlot(int itemId, bool vanity = true) => Model.SetBodySlot(itemId, vanity);
 
     /// <summary>Sets leg armour or vanity. 0 clears it.</summary>
-    public void SetLegSlot(int itemId, bool vanity = true) => SetArmorSlot(vanity ? 12 : 2, itemId);
+    public void SetLegSlot(int itemId, bool vanity = true) => Model.SetLegSlot(itemId, vanity);
 
     /// <summary>Sets an accessory in slot 0-6, or its vanity counterpart.</summary>
-    public void SetAccessory(int slotIndex, int itemId, bool vanity = false)
-    {
-        if (slotIndex < 0 || slotIndex > 6)
-            throw new ArgumentOutOfRangeException(nameof(slotIndex), "Accessory slot index must be 0-6.");
-
-        SetArmorSlot(vanity ? 13 + slotIndex : 3 + slotIndex, itemId);
-    }
-
-    private void SetArmorSlot(int slot, int itemId)
-    {
-        if (slot < 0 || slot >= DummyPlayer.armor.Length)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-
-        DummyPlayer.armor[slot].SetDefaults(itemId);
-    }
+    public void SetAccessory(int slotIndex, int itemId, bool vanity = false) => Model.SetAccessory(slotIndex, itemId, vanity);
 
     /// <summary>
     /// Sets a dye. Slots mirror armour: 0 head, 1 body, 2 legs, 3-9 accessories.
     /// </summary>
-    public void SetDye(int slotIndex, int dyeItemId)
-    {
-        if (slotIndex < 0 || slotIndex >= DummyPlayer.dye.Length)
-            throw new ArgumentOutOfRangeException(nameof(slotIndex));
-
-        DummyPlayer.dye[slotIndex].SetDefaults(dyeItemId);
-
-        // The dummy never runs Player.UpdateEquips, so the c* shader cache fields that
-        // PlayerDrawSet.BoringSetup reads are never filled in. Mirror them here.
-        int shaderId = DummyPlayer.dye[slotIndex].dye;
-
-        switch (slotIndex)
-        {
-            case 0: DummyPlayer.cHead = shaderId; break;
-            case 1: DummyPlayer.cBody = shaderId; break;
-            case 2: DummyPlayer.cLegs = shaderId; break;
-        }
-    }
+    public void SetDye(int slotIndex, int dyeItemId) => Model.SetDye(slotIndex, dyeItemId);
 
     // Drawing
 
@@ -243,34 +195,11 @@ public abstract class TerrarianNPC : WorldNPC
 
     public sealed override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        Puppet.SyncTransform();
-
-        spriteBatch.End();
-        PreparePlayerRender();
-
-        // Every layer runs, the held item included. PlayerDrawSet takes the weapon
-        // from Player.lastVisualizedSelectedItem and its position from
-        // Player.itemLocation, both of which PlayerPuppet.Update wrote this tick.
-        Main.PlayerRenderer.DrawPlayer(
-            Main.Camera, DummyPlayer, DummyPlayer.position,
-            DummyPlayer.fullRotation, DummyPlayer.fullRotationOrigin,
-            shadow: 0f, scale: 1f);
-
-        FinalizePlayerRender();
-
-        spriteBatch.Begin(
-            SpriteSortMode.Immediate, BlendState.AlphaBlend,
-            Main.DefaultSamplerState, DepthStencilState.None,
-            Main.Rasterizer, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        Model.Draw(spriteBatch, PreparePlayerRender, FinalizePlayerRender);
 
         PostDrawActor(spriteBatch, screenPos, drawColor);
 
-        if (Combat.PuppetDebug.ShowHitboxes)
-        {
-            Combat.PuppetDebug.DrawHitbox(spriteBatch, NPC.Hitbox, Color.CornflowerBlue);
-            Puppet.Combat?.DrawDebug(spriteBatch);
-        }
+        Model.DrawDebug(spriteBatch);
     }
 
     /// <summary>
@@ -304,6 +233,9 @@ public abstract class TerrarianNPC : WorldNPC
 
         tag["armor"] = SaveItems(DummyPlayer.armor);
         tag["dyes"] = SaveItems(DummyPlayer.dye);
+
+        if (Outfit != null)
+            tag["outfit"] = Outfit.FullName;
     }
 
     public override void LoadData(TagCompound tag)
@@ -324,6 +256,10 @@ public abstract class TerrarianNPC : WorldNPC
         // Sound identity follows gender, which SetAppearanceDefaults picked before load.
         NPC.HitSound = Male ? SoundID.PlayerHit : SoundID.FemaleHit;
         NPC.DeathSound = SoundID.PlayerKilled;
+
+        // An outfit that has since been removed leaves whatever SetAppearanceDefaults chose.
+        if (tag.ContainsKey("outfit") && ModContent.TryFind(tag.GetString("outfit"), out ActorOutfit outfit))
+            Outfit = outfit;
 
         if (tag.ContainsKey("armor"))
         {
@@ -367,6 +303,8 @@ public abstract class TerrarianNPC : WorldNPC
 
         foreach (int slot in SyncedArmorSlots)
             writer.Write7BitEncodedInt(DummyPlayer.armor[slot].type);
+
+        writer.Write7BitEncodedInt(Outfit == null ? 0 : Outfit.Type + 1);
     }
 
     public override void ReceiveExtraAI(BinaryReader reader)
@@ -390,6 +328,8 @@ public abstract class TerrarianNPC : WorldNPC
             if (DummyPlayer.armor[slot].type != type)
                 DummyPlayer.armor[slot].SetDefaults(type);
         }
+
+        Outfit = ActorOutfit.Get(reader.Read7BitEncodedInt() - 1);
 
         NPC.HitSound = Male ? SoundID.PlayerHit : SoundID.FemaleHit;
     }
