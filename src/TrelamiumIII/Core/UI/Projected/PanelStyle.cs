@@ -51,7 +51,7 @@ internal static class PanelStyle
     ///     The surface a bubble is drawn into, in texels. Sized once for the largest box this style
     ///     allows; anything smaller is sampled out of the corner of it.
     /// </summary>
-    public const int SURFACE_WIDTH = 400;
+    public const int SURFACE_WIDTH = 576;
 
     public const int SURFACE_HEIGHT = 384;
 

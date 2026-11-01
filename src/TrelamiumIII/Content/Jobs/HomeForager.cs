@@ -1,57 +1,100 @@
 using System.Collections.Generic;
 using Terraria.ModLoader.IO;
+using TrelamiumIII.Content.Items.Quest;
 using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Core.Jobs.Blueprints;
 
 namespace TrelamiumIII.Content.Jobs;
 
-/// <summary>The Guide walks the player through gathering materials, building three approved rooms, then checking in.</summary>
+/// <summary>
+///     The Guide's opening job: gather what a house takes, raise his house and then the Merchant's from his plans near
+///     spawn, build one of the player's own design, then check in.
+/// </summary>
+/// <remarks>
+///     <para>
+///         Each house is a stage that stakes it, with <see cref="GuidesPlans"/>, and a stage that builds it: frame,
+///         walls and furniture together. A finished house gets its tenant (<see cref="BlueprintHousing"/>): the Guide
+///         moves into his, and the Merchant arrives for his.
+///     </para>
+///     <para>
+///         The materials are only held, not handed in, since they're what the houses are built from. Both houses read
+///         placeholder structures until the real ones are captured over <c>GuideHouse</c> and <c>MerchantHouse</c>.
+///     </para>
+/// </remarks>
 public sealed class HomeForager : Job
 {
-    /// <summary>First and last set that asks for a house. Each credits one.</summary>
-    private const int FirstHousingSet = 1;
-    private const int LastHousingSet = 3;
+    private const int GuideSiteSet = 1;
+    private const int GuideHouseSet = 2;
+    private const int MerchantSiteSet = 3;
+    private const int MerchantHouseSet = 4;
+
+    /// <summary>A house of the player's own: the only stage that runs the Guide's housing commentary.</summary>
+    private const int OwnHouseSet = 5;
 
     /// <summary>The last set: go back to the Guide and hand the job in.</summary>
-    private const int CheckInSet = 4;
+    private const int CheckInSet = 6;
 
     /// <summary>The Guide is a talker, so he gets a shorter leash than the default.</summary>
     protected override int SpeechCooldown => 180;
 
+    private readonly Blueprint guideHouse;
+    private readonly Blueprint merchantHouse;
+
     /// <summary>Kept so <see cref="OnEvent"/> can ask which rooms have already counted.</summary>
     private readonly ValidHousingTask housingTask;
 
-    public HomeForager() : base(
+    public HomeForager() : this(Plans("GuideHouse"), Plans("MerchantHouse")) { }
+
+    /// <param name="guideHouse">Shared by its staking and building stages, so the site is staked once.</param>
+    /// <param name="merchantHouse">Likewise.</param>
+    private HomeForager(Blueprint guideHouse, Blueprint merchantHouse) : base(
         JobID.HomeForager, "HomeForager.Name", "HomeForager.Description",
         taskList:
         [
             [
-                new BreakTileTask("HomeForager.Tasks.Set0.obj0", TileID.Trees, 40),
-                new PickupItemTask("HomeForager.Tasks.Set0.obj1", ItemID.StoneBlock, 25)
+                new GatherItemTask("HomeForager.Tasks.Set0.obj0", ItemID.Wood, 100, consume: false),
+                new GatherItemTask("HomeForager.Tasks.Set0.obj1", ItemID.ClayBlock, 20, consume: false),
+                new GatherItemTask("HomeForager.Tasks.Set0.obj2", ItemID.Furnace, consume: false),
+                new GatherItemTask("HomeForager.Tasks.Set0.obj3", ItemID.WoodenHammer, consume: false)
             ],
-            [new ValidHousingTask("HomeForager.Tasks.Set1.obj0")],
-            [new ValidHousingTask("HomeForager.Tasks.Set2.obj0")],
-            [new ValidHousingTask("HomeForager.Tasks.Set3.obj0")],
-            [new TalkToNPCTask("HomeForager.Tasks.Set4.obj0", NPCID.Guide)]
+            [new StakeBlueprintTask("HomeForager.Tasks.Set1.obj0", guideHouse)],
+            Build(guideHouse, "Set2"),
+            [new StakeBlueprintTask("HomeForager.Tasks.Set3.obj0", merchantHouse)],
+            Build(merchantHouse, "Set4"),
+            [new ValidHousingTask("HomeForager.Tasks.Set5.obj0")],
+            [new TalkToNPCTask("HomeForager.Tasks.Set6.obj0", NPCID.Guide)]
         ],
         rewards:
         [
-            new JobReward(ItemID.SilverCoin, 75),
+            new JobReward(ItemID.GoldCoin, 5),
             new JobReward(ItemID.IronBar, 5)
         ],
         providerNPC: NPCID.Guide)
     {
-        // The three housing sets share one ledger of credited rooms, so showing the same house three
-        // times clears one set, not all of them.
-        var ledger = new HashSet<Point>();
+        this.guideHouse = guideHouse;
+        this.merchantHouse = merchantHouse;
 
-        for (var set = FirstHousingSet; set <= LastHousingSet; set++)
-            ((ValidHousingTask)TaskList[set].Task[0]).ShareLedger(ledger);
-
-        housingTask = (ValidHousingTask)TaskList[FirstHousingSet].Task[0];
+        // The planned houses pass a housing check too; a house of their own means one that isn't.
+        housingTask = ((ValidHousingTask)TaskList[OwnHouseSet].Task[0]).Excluding(IsPlanned);
     }
+
+    private static Blueprint Plans(string structure) => new($"Assets/Structures/{structure}") { Zone = BlueprintZone.NearSpawn() };
+
+    /// <summary>One stage that builds all of <paramref name="house"/> at once, each layer its own line on the tracker.</summary>
+    private static List<JobTask> Build(Blueprint house, string set) =>
+    [
+        new BlueprintTask($"HomeForager.Tasks.{set}.obj0", house, BlueprintLayer.Blocks),
+        new BlueprintTask($"HomeForager.Tasks.{set}.obj1", house, BlueprintLayer.Walls),
+        new BlueprintTask($"HomeForager.Tasks.{set}.obj2", house, BlueprintLayer.Furniture)
+    ];
+
+    /// <summary>Whether <paramref name="room"/> is inside either house built from the Guide's plans.</summary>
+    private bool IsPlanned(Point room) => Covers(guideHouse, room) || Covers(merchantHouse, room);
+
+    private static bool Covers(Blueprint house, Point room) => house.Site is { } site && house.AreaAt(site).Contains(room);
 
     /// <summary>The opening job, so it is offered from the world's first day.</summary>
     public override JobCondition UnlockCondition => JobCondition.WorldDay(0);
@@ -74,24 +117,54 @@ public sealed class HomeForager : Job
     {
         base.OnJobComplete(giveRewards);
 
+        if (Context.IsLocal)
+            Context.Revoke(ModContent.ItemType<GuidesPlans>());
+
         //if (Context.IsLocal)
         //    MusicDirector.Stop(1.5f);
     }
 
     public override void OnSetAdvanced(int previousSet, int newSet)
-        => Context.Play($"Guide.HomeForager_Set{newSet}");
+    {
+        if (Context.IsLocal)
+        {
+            // A finished house gets its tenant before the Guide says anything about it.
+            if (previousSet == GuideHouseSet)
+                BlueprintHousing.MoveIn(NPCID.Guide, guideHouse);
+            else if (previousSet == MerchantHouseSet)
+                BlueprintHousing.MoveIn(NPCID.Merchant, merchantHouse);
+
+            if (newSet is GuideSiteSet or MerchantSiteSet)
+                HandOverPlans();
+        }
+
+        Context.Play($"Guide.HomeForager_Set{newSet}");
+    }
+
+    /// <summary>Gives the player the Guide's plans for a staking stage, unless they're still carrying a copy.</summary>
+    private void HandOverPlans()
+    {
+        int plans = ModContent.ItemType<GuidesPlans>();
+
+        if (!Context.Player.HasItem(plans))
+            Context.Grant(plans);
+    }
 
     /// <summary>
-    /// The Guide's building commentary. Runs before the task sees the event, so "already credited" means a re-shown room.
+    /// The Guide's building commentary, while the player builds their own house. Runs before the task sees the event, so
+    /// "already credited" means a re-shown room.
     /// </summary>
     public override void OnEvent(GameEvent evt)
     {
         // Manual checks only: vanilla re-scans housing constantly on its own.
-        if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck)
+        if (evt.Type != GameEventType.HousingChecked || !evt.IsManualCheck || CurrentTaskSet != OwnHouseSet)
             return;
 
-        if (CurrentTaskSet < FirstHousingSet || CurrentTaskSet > LastHousingSet)
+        if (evt.RoomId is Point planned && IsPlanned(planned))
+        {
+            Speak("Guide.HomeForager_Planned");
             return;
+        }
 
         if (evt.Issue != HousingIssue.None)
         {
@@ -135,8 +208,18 @@ public sealed class ValidHousingTask(string key) : JobTask(key, 1)
 {
     private HashSet<Point> creditedRooms = [];
 
+    /// <summary>Rooms that never count, by their <see cref="GameEvent.RoomId"/>. Null counts every room.</summary>
+    private Func<Point, bool>? excluded;
+
     /// <summary>Points this task at a ledger shared with its siblings.</summary>
     public void ShareLedger(HashSet<Point> ledger) => creditedRooms = ledger;
+
+    /// <summary>Leaves out the rooms <paramref name="rule"/> picks, such as ones the job had built to its own plans.</summary>
+    public ValidHousingTask Excluding(Func<Point, bool> rule)
+    {
+        excluded = rule;
+        return this;
+    }
 
     public bool HasCredited(Point room) => creditedRooms.Contains(room);
 
@@ -145,7 +228,8 @@ public sealed class ValidHousingTask(string key) : JobTask(key, 1)
         && evt.Amount == 1                              // passed the full check
         && !evt.IsOccupied
         && evt.RoomId is Point room
-        && !creditedRooms.Contains(room);               // and isn't one already counted
+        && !creditedRooms.Contains(room)                // and isn't one already counted
+        && excluded?.Invoke(room) != true;
 
     public override int CreditFor(GameEvent evt)
     {

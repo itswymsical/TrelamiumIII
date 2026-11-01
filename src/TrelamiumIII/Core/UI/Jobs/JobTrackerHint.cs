@@ -47,6 +47,9 @@ public sealed class JobTrackerHint : ModSystem
 
     private const int ARROW = 9;
 
+    /// <summary>Screen y of the first step's box, which holds still.</summary>
+    private const int TOP = 110;
+
     private static readonly Color PanelColor = new Color(63, 65, 151) * 0.9f;
 
     private static readonly Color HighlightColor = new(255, 214, 90);
@@ -165,7 +168,7 @@ public sealed class JobTrackerHint : ModSystem
 
         var box = new Rectangle(
             (int)(Main.screenWidth / 2f - size.X / 2f) - PADDING,
-            110 + (int)(MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * 3f),
+            TOP,
             (int)size.X + PADDING * 2,
             (int)size.Y + PADDING * 2 - 8);
 
@@ -185,11 +188,11 @@ public sealed class JobTrackerHint : ModSystem
         if (shown <= 0f)
             return;
 
+        // A blink in opacity only; nothing about the hint moves.
         float pulse = 0.5f + 0.5f * MathF.Sin(Main.GlobalTimeWrappedHourly * 5f);
-        Color glow = Color.Lerp(HighlightColor, Color.White, pulse * 0.4f) * shown;
 
         Fill(spriteBatch, tracker, HighlightColor * (0.06f + 0.06f * pulse) * shown);
-        Outline(spriteBatch, tracker, glow);
+        Outline(spriteBatch, tracker, HighlightColor * (0.6f + 0.4f * pulse) * shown);
 
         DynamicSpriteFont font = FontAssets.MouseText.Value;
 
@@ -206,11 +209,9 @@ public sealed class JobTrackerHint : ModSystem
         int width = (int)MathF.Max(titleSize.X, MathF.Max(bodySize.X, dismissSize.X)) + PADDING * 2;
         int height = (int)(titleSize.Y + bodySize.Y + dismissSize.Y) + PADDING;
 
-        // Left of the tracker, nudging toward it, never off the top of the screen.
-        int nudge = (int)(MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * 3f);
-
+        // Left of the tracker, never off the top of the screen.
         var box = new Rectangle(
-            tracker.Left - GAP - ARROW - width + nudge,
+            tracker.Left - GAP - ARROW - width,
             Math.Max(tracker.Center.Y - height / 2, 10),
             width,
             height);

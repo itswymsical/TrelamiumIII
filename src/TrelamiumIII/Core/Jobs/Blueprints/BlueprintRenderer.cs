@@ -113,6 +113,10 @@ public sealed class BlueprintRenderer : ModSystem
         var area = blueprint.AreaAt(topLeft);
         var visible = Rectangle.Intersect(area, VisibleTiles());
 
+        // Where it may go, so a red outline has somewhere to point.
+        if (blueprint.Zone is not null)
+            Outline(batch, blueprint.Zone.Area(), FitsColor * 0.25f);
+
         for (var pass = 0; pass < 2; pass++)
         {
             foreach (var piece in blueprint.Pieces)
@@ -130,9 +134,9 @@ public sealed class BlueprintRenderer : ModSystem
             }
         }
 
-        var fits = blueprint.FitsAt(topLeft);
+        var fits = blueprint.CanStakeAt(topLeft, out var problemKey);
         var color = fits ? FitsColor : WrongColor;
-        var hint = TrelamiumIII.Instance.GetLocalization(fits ? "Jobs.Blueprint.HoldHint" : "Jobs.Blueprint.OffWorld").Value;
+        var hint = TrelamiumIII.Instance.GetLocalization(problemKey ?? "Jobs.Blueprint.HoldHint").Value;
 
         Outline(batch, area, color * 0.8f);
         Utils.DrawBorderString(batch, hint, new Vector2(area.Left * 16, area.Top * 16 - 28) - Main.screenPosition, color);

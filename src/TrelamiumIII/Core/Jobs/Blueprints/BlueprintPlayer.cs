@@ -6,10 +6,14 @@ using TrelamiumIII.Common.Systems;
 namespace TrelamiumIII.Core.Jobs.Blueprints;
 
 /// <summary>
-///     Staking a blueprint's site by hand. The stake key picks up a blueprint underway, unstaked ones first; it then
-///     follows the cursor until a left click puts it down there. Right click, or the key again, lets go of it.
+///     Staking a blueprint's site by hand. The stake key, or a plans item that calls <see cref="Toggle"/>, picks up a
+///     blueprint underway, unstaked ones first; it then follows the cursor until a left click puts it down there. Right
+///     click, or the key again, lets go of it.
 /// </summary>
-/// <remarks>A site the job fixed can't be picked up. One the player staked can be moved at any time, since progress is re-read from wherever it lands.</remarks>
+/// <remarks>
+///     A site the job fixed can't be picked up. One the player staked can be moved at any time, since progress is re-read
+///     from wherever it lands. A click outside the blueprint's <see cref="Blueprint.Zone"/> does nothing.
+/// </remarks>
 public sealed class BlueprintPlayer : ModPlayer
 {
     /// <summary>The blueprint following the cursor, or null.</summary>
@@ -18,19 +22,31 @@ public sealed class BlueprintPlayer : ModPlayer
     /// <summary>Set by the click that staked or let go, so it doesn't also swing the held item. Cleared once both buttons are up.</summary>
     private bool swallowClick;
 
+    /// <summary>Whether there is a blueprint underway that <see cref="Toggle"/> would pick up.</summary>
+    public bool HasMovable => FirstMovable() is not null;
+
     public override void OnEnterWorld() => Holding = null;
+
+    /// <summary>Lets go of the blueprint in hand, or picks one up. Returns whether anything changed.</summary>
+    public bool Toggle()
+    {
+        var wasHolding = Holding is not null;
+
+        Holding = wasHolding ? null : FirstMovable();
+
+        if (!wasHolding && Holding is null)
+            return false;
+
+        SoundEngine.PlaySound(SoundID.MenuTick);
+
+        return true;
+    }
 
     public override void ProcessTriggers(TriggersSet triggersSet)
     {
         if (KeybindsSystem.StakeBlueprintKeybind.JustPressed)
         {
-            var wasHolding = Holding is not null;
-
-            Holding = wasHolding ? null : FirstMovable();
-
-            if (wasHolding || Holding is not null)
-                SoundEngine.PlaySound(SoundID.MenuTick);
-
+            Toggle();
             return;
         }
 
@@ -57,7 +73,7 @@ public sealed class BlueprintPlayer : ModPlayer
 
         var topLeft = HeldOrigin(Holding);
 
-        if (!Holding.FitsAt(topLeft))
+        if (!Holding.CanStakeAt(topLeft, out _))
             return;
 
         Holding.Stake(topLeft);

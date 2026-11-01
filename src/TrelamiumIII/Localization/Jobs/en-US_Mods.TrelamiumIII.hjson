@@ -32,6 +32,8 @@ Jobs: {
 		// Over the blueprint while it follows the cursor.
 		HoldHint: Left-click to build here, right-click to cancel
 		OffWorld: Too close to the edge of the world
+		// Held outside a blueprint's BlueprintZone.NearSpawn.
+		FarFromSpawn: Too far from spawn
 	}
 
 	// The one-time walkthrough after the Guide's opening job (Core/UI/Jobs/JobTrackerHint).
@@ -132,15 +134,32 @@ Jobs: {
 		Description: '''"This place is empty... you look strong."'''
 
 		Tasks: {
+			// GatherItemTask: {0} = item name, {1} = amount.
 			Set0: {
-				obj0: Chop down tree logs
-				obj1: Mine and gather stone blocks
+				obj0: Chop {0}
+				obj1: Dig up {0}
+				obj2: Craft a {0}
+				obj3: Craft a {0}
 			}
 
-			Set1.obj0: Create suitible housing for the Guide
-			Set2.obj0: Create suitible housing for the Merchant
-			Set3.obj0: Create an extra housing
-			Set4.obj0: Check in with the Guide
+			Set1.obj0: Use the Guide's plans to pick a spot near spawn for his house
+
+			Set2: {
+				obj0: Raise the frame of the Guide's house
+				obj1: Put up its walls
+				obj2: Furnish it
+			}
+
+			Set3.obj0: Pick a spot near spawn for the Merchant's house
+
+			Set4: {
+				obj0: Raise the frame of the Merchant's house
+				obj1: Put up its walls
+				obj2: Furnish it
+			}
+
+			Set5.obj0: Build a house of your own design
+			Set6.obj0: Check in with the Guide
 		}
 	}
 

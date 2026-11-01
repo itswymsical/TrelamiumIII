@@ -58,21 +58,42 @@ class GuideDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .Register();
 
-        // Set transitions, fired as each stage of the job is cleared.
+        // A room from the Guide's own plans, shown while the player should be building one of their own.
+        Dialogue.Define("Guide.HomeForager_Planned")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Register();
+
+        // Set transitions, fired as each stage of the job is cleared. See HomeForager.OnSetAdvanced.
+        // Materials gathered: the plans for his house.
         Dialogue.Define("Guide.HomeForager_Set1")
             .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16)])
             .Register();
 
+        // His house staked.
         Dialogue.Define("Guide.HomeForager_Set2")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
             .Register();
 
+        // His house built, and he's moved in: the Merchant's plans.
         Dialogue.Define("Guide.HomeForager_Set3")
-            .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.2f, new Pause(16))
             .Register();
 
+        // The Merchant's house staked.
         Dialogue.Define("Guide.HomeForager_Set4")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Register();
+
+        // The Merchant has arrived: one more house, without plans.
+        Dialogue.Define("Guide.HomeForager_Set5")
+            .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16), new Pause(16)])
+            .Register();
+
+        // A house of their own: that's a town.
+        Dialogue.Define("Guide.HomeForager_Set6")
             .Line(Speaker, emote: 0, speed: 1.2f, new Pause(24))
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16)])
             .Register();

@@ -44,6 +44,13 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
 
     private const int WIDTH_STEP = 22;
 
+    /// <summary>
+    ///     Wrap width while docked, in texels: a wide, low text box across the bottom of the screen rather than a
+    ///     bubble. About 730 screen pixels at UI scale 1. Bounded by <see cref="PanelStyle.SURFACE_WIDTH" /> the
+    ///     same way as <see cref="MAX_TEXT_WIDTH" />.
+    /// </summary>
+    private const int DOCKED_TEXT_WIDTH = 540;
+
     /// <summary>Rows a line may take before the box stretches wider to hold it.</summary>
     private const int COMPACT_LINES = 3;
 
@@ -100,7 +107,7 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     private const float UNDOCK_INSET = 48f;
 
     /// <summary>Gap between a docked box and the bottom of the screen, in UI pixels.</summary>
-    private const float DOCK_MARGIN = 28f;
+    private const float DOCK_MARGIN = 76f;
 
     /// <summary>Size of a docked box relative to one hanging over its speaker.</summary>
     private const float DOCK_SCALE = 0.85f;
@@ -162,6 +169,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
 
     /// <summary>Wrap width the current line was laid out at, in texels.</summary>
     private int wrapWidth = TEXT_WIDTH;
+
+    /// <summary>Whether the current line was laid out for the docked box, at <see cref="DOCKED_TEXT_WIDTH" />.</summary>
+    private bool wrappedDocked;
 
     /// <summary>Per-line shrink for long lines; fixed once the line is laid out.</summary>
     private float density = 1f;
@@ -358,8 +368,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     private void Adopt(DialogueData line)
     {
         current = line;
-        layout = Wrap(line.PlainText);
-        density = MathF.Max(1f - Math.Max(layout.LineCount - COMPACT_LINES, 0) * DENSITY_STEP, MIN_DENSITY);
         revealedOn = new int[line.PlainText.Length];
 
         // Re-resolved per line: a conversation with two people in it has to move between their heads,
@@ -370,6 +378,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         // whatever the last speaker needed would have it swing round as it arrives.
         UpdateFacing(snap: true);
         UpdateDock(snap: !dockSettled);
+
+        // After docking is decided, since a docked box wraps wider.
+        Relayout();
 
         RootSpeaker();
 
@@ -386,17 +397,36 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         choiceSlot = MeasureChoiceSlot();
     }
 
+    /// <summary>Lays out the current line for the box as it stands, docked or hanging.</summary>
+    private void Relayout()
+    {
+        if (current is null)
+            return;
+
+        layout = Wrap(current.PlainText);
+        density = MathF.Max(1f - Math.Max(layout.LineCount - COMPACT_LINES, 0) * DENSITY_STEP, MIN_DENSITY);
+    }
+
     /// <summary>
     ///     Lays the line out at the narrowest width that keeps it to <see cref="COMPACT_LINES" /> rows,
-    ///     stretching no further than <see cref="MAX_TEXT_WIDTH" />.
+    ///     stretching no further than <see cref="MAX_TEXT_WIDTH" />. Docked, it takes
+    ///     <see cref="DOCKED_TEXT_WIDTH" /> outright.
     /// </summary>
     /// <remarks>
     ///     A wide, short box covers less of the scene than a narrow, tall one and keeps clear of the
     ///     speaker it hangs over, so a long line spends width before it spends height. Run once per
-    ///     line, never per frame: a handful of layouts at most, and the result is fixed while it types.
+    ///     line, and again only if the box docks or undocks mid-line; never per frame.
     /// </remarks>
     private TextGlyphLayout Wrap(string text)
     {
+        wrappedDocked = docked;
+
+        if (docked)
+        {
+            wrapWidth = DOCKED_TEXT_WIDTH;
+            return TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
+        }
+
         wrapWidth = TEXT_WIDTH;
         TextGlyphLayout laid = TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
 
@@ -767,6 +797,12 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         if (current is null)
             return;
 
+        UpdateDock();
+
+        // Docking or undocking mid-line re-wraps it, rather than leaving it at the other state's width.
+        if (docked != wrappedDocked)
+            Relayout();
+
         int nameWidth = NamePlateWidth();
         int nameHeight = (int)MathF.Ceiling(Font.LineSpacing * NAME_SCALE) + 2;
 
@@ -774,18 +810,22 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         // instead of collapsing to a sliver.
         float lineHeight = Font.LineSpacing * TEXT_SCALE;
         float maxHeight = MathF.Max(PanelStyle.MaxContentHeight(nameWidth > 0 ? nameHeight : 0), lineHeight);
+        float finishedHeight = Math.Clamp(MathF.Max(layout.LineCount, 1) * lineHeight, lineHeight, maxHeight);
 
-        Vector2 needed = new(
-            Math.Clamp(MathF.Ceiling(layout.ExtentAfter(charIndex)), MIN_TEXT_WIDTH, wrapWidth),
-            Math.Clamp(MathF.Max(layout.LinesAfter(charIndex), 1) * lineHeight, lineHeight, maxHeight));
+        // Docked, the box opens at the whole line's size and holds it while the line types, as a text box
+        // would. Hanging, it grows with the words, as a bubble would.
+        Vector2 needed = wrappedDocked
+            ? new Vector2(wrapWidth, finishedHeight)
+            : new Vector2(
+                Math.Clamp(MathF.Ceiling(layout.ExtentAfter(charIndex)), MIN_TEXT_WIDTH, wrapWidth),
+                Math.Clamp(MathF.Max(layout.LinesAfter(charIndex), 1) * lineHeight, lineHeight, maxHeight));
 
         smoothedSize = Vector2.Lerp(smoothedSize, needed, 0.22f);
         smoothedSize = Vector2.Max(smoothedSize, needed);
 
         Point content = new((int)MathF.Round(smoothedSize.X), (int)MathF.Ceiling(smoothedSize.Y));
 
-        UpdateDock();
-        UpdateFit(nameWidth, nameHeight, Math.Clamp(MathF.Max(layout.LineCount, 1) * lineHeight, lineHeight, maxHeight));
+        UpdateFit(nameWidth, nameHeight, finishedHeight);
         UpdateFacing();
 
         // The tail retracts as the box docks; at the bottom of the screen there is nobody to point at.

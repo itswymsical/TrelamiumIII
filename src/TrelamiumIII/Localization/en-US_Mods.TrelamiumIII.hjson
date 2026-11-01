@@ -1145,6 +1145,15 @@ Items: {
 		Tooltip: "'Needle, thread, and a steady hand sold separately'"
 	}
 
+	GuidesPlans: {
+		DisplayName: Guide's Plans
+		Tooltip:
+			'''
+			Use to lay out the house you're building
+			'Drawn in a careful, practiced hand'
+			'''
+	}
+
 	SilviansLetter: {
 		DisplayName: Silvian's Letter
 		Tooltip:

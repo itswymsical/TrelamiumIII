@@ -66,6 +66,9 @@ public sealed class Blueprint(string path)
     /// <summary>Whether a block also has to be hammered to the blueprint's slope or half block.</summary>
     public bool MatchShapes { get; init; }
 
+    /// <summary>Where the player may stake it. Null allows anywhere in the world.</summary>
+    public BlueprintZone? Zone { get; init; }
+
     private StructureData? data;
     private BlueprintPiece[]? pieces;
 
@@ -120,6 +123,29 @@ public sealed class Blueprint(string path)
     public Rectangle AreaAt(Point topLeft) => new(topLeft.X, topLeft.Y, Data.Width, Data.Height);
 
     public bool FitsAt(Point topLeft) => StructureWorld.InWorld(AreaAt(topLeft));
+
+    /// <summary>Whether the player may stake it at <paramref name="topLeft"/>; if not, <paramref name="problemKey"/> says why.</summary>
+    public bool CanStakeAt(Point topLeft, out string? problemKey)
+    {
+        if (!FitsAt(topLeft))
+            problemKey = "Jobs.Blueprint.OffWorld";
+        else if (Zone is not null && !Zone.Allows(AreaAt(topLeft)))
+            problemKey = Zone.ProblemKey;
+        else
+            problemKey = null;
+
+        return problemKey is null;
+    }
+
+    /// <summary>World tiles of the furniture that counts as a chair: one inside every room the structure has.</summary>
+    public IEnumerable<Point> ChairsAt(Point site)
+    {
+        foreach (var piece in Pieces)
+        {
+            if (piece.Layer == BlueprintLayer.Furniture && Array.IndexOf(TileID.Sets.RoomNeeds.CountsAsChair, (int)piece.Type) >= 0)
+                yield return new Point(site.X + piece.Cells[0].X, site.Y + piece.Cells[0].Y);
+        }
+    }
     #endregion
 
     #region Progress

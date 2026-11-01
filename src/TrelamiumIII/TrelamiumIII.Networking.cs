@@ -31,6 +31,7 @@ partial class TrelamiumIII
         SharedWorldData,
         AlmanacDiscovery,
         VillagerTrade,
+        BlueprintMoveIn,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -81,6 +82,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.VillagerTrade:
                 Core.NPCs.Trading.TradeNet.Receive(reader, whoAmI);
+                break;
+            case MessageType.BlueprintMoveIn:
+                Core.Jobs.Blueprints.BlueprintHousing.Receive(reader);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

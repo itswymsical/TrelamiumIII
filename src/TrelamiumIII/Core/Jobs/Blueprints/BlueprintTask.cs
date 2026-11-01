@@ -6,6 +6,15 @@ using TrelamiumIII.Core.Events;
 
 namespace TrelamiumIII.Core.Jobs.Blueprints;
 
+/// <summary>A task about a <see cref="Blueprint"/>, which makes it one the player can stake and the renderer draws.</summary>
+public interface IBlueprintTask
+{
+    Blueprint Blueprint { get; }
+
+    /// <summary>The layers this task asks for, drawn clearly while it's underway. None for a task that only stakes the site.</summary>
+    BlueprintLayer Layers { get; }
+}
+
 /// <summary>
 ///     Build the <paramref name="layers"/> of <paramref name="blueprint"/> at its site. Progress is read from the world, so
 ///     breaking a piece takes it back off the count, and anyone's building counts.
@@ -14,8 +23,9 @@ namespace TrelamiumIII.Core.Jobs.Blueprints;
 ///     Tasks of one job that build the same structure should share one <see cref="Blueprint"/>, so its site is staked
 ///     once: the frame, then the walls, then the furniture, as stages over the same house. Until the job stakes the site
 ///     itself, the player does, with <see cref="KeybindsSystem.StakeBlueprintKeybind"/> (<see cref="BlueprintPlayer"/>).
+///     A <see cref="StakeBlueprintTask"/> before the building makes picking the site a step of its own.
 /// </remarks>
-public sealed class BlueprintTask(string key, Blueprint blueprint, BlueprintLayer layers = BlueprintLayer.All) : JobTask(key)
+public sealed class BlueprintTask(string key, Blueprint blueprint, BlueprintLayer layers = BlueprintLayer.All) : JobTask(key), IBlueprintTask
 {
     /// <summary>Ticks between recounts. A count is cheap, but there's no need for one every tick.</summary>
     private const int CountInterval = 10;
@@ -49,9 +59,9 @@ public sealed class BlueprintTask(string key, Blueprint blueprint, BlueprintLaye
         return Blueprint.Built(Layers) - Count;
     }
 
-    /// <summary>The blueprint tasks of every stage underway for <paramref name="jobs"/>.</summary>
-    public static IEnumerable<BlueprintTask> Underway(JobPlayer jobs)
-        => jobs.ActiveJobs().SelectMany(job => job.CurrentSet?.Task ?? []).OfType<BlueprintTask>();
+    /// <summary>The blueprint tasks of every stage underway for <paramref name="jobs"/>, building or staking.</summary>
+    public static IEnumerable<IBlueprintTask> Underway(JobPlayer jobs)
+        => jobs.ActiveJobs().SelectMany(job => job.CurrentSet?.Task ?? []).OfType<IBlueprintTask>();
 
     /// <summary>The requirement is the blueprint's piece count, which can't be read until content has loaded.</summary>
     private void SyncRequirement() => RequiredCount = Math.Max(1, Blueprint.Required(Layers));

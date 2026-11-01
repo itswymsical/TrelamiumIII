@@ -93,17 +93,36 @@ DialogueLibrary: {
 		HomeForager_NotEnclosed.Line1.Text: Hm.[] Either that room is enormous, or something is letting the outside in.[] Check for gaps, and remember the background needs walls too.
 		HomeForager_Corrupt.Line1.Text: Nobody is going to live there.[] The land itself has turned.[] Find cleaner ground, or clear that out first.
 		HomeForager_NoValidSpot.Line1.Text: Everything is there, but there is nowhere to stand![] Clear the floor a little and give them some space.
+		# A room from one of the planned houses, checked while the player should be building their own.
+		HomeForager_Planned.Line1.Text: That one's from my plans![] Build one of your own this time.
 
 		# Fired as each stage of the job is cleared.
+		# Materials gathered: he hands over his plans.
 		HomeForager_Set1: {
 			Line1.Text: Look at all that![] That's plenty to build with.
-			Line2.Text: Now put up a proper room for me. Walls all round, a door, a light, a table and a chair.[] Then open the housing menu and point at it,[] and I'll tell you if it will do.
+			Line2.Text: Here, take my plans.[] Find a good patch of ground near here and lay them out,[] and we'll start with my house.
 		}
 
-		HomeForager_Set2.Line1.Text: That'll do nicely![] One more, I think.[] The merchant will want a place of their own.
-		HomeForager_Set3.Line1.Text: You're getting quick at this![] One more empty room,[] and we'll have space for whoever wanders in next.
+		# His house staked.
+		HomeForager_Set2.Line1.Text: A fine spot![] Now build it just as it's drawn.[] Anything in the way will show up red.
 
-		HomeForager_Set4: {
+		# His house built, and he's moved in.
+		HomeForager_Set3: {
+			Line1.Text: Now that's a house![] I'll be moving my things in tonight.
+			Line2.Text: There's a merchant passing through who'd stay if he had a roof.[] His plans are on the next page.
+		}
+
+		# The Merchant's house staked.
+		HomeForager_Set4.Line1.Text: Same as before.[] Build it to the drawing,[] and he'll be along.
+
+		# The Merchant has arrived.
+		HomeForager_Set5: {
+			Line1.Text: And there he is,[] right on time!
+			Line2.Text: One more house,[] and this time no plans.[] Walls all round, a door, a light, a table and a chair.[] Then point the housing menu at it and I'll tell you if it will do.
+		}
+
+		# A house of their own.
+		HomeForager_Set6: {
 			Line1.Text: Well now.[] That's a town.
 			Line2.Text: Come and talk to me when you've caught your breath,[] and I'll see you paid properly.[] You've earned it.
 		}
