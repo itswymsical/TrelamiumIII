@@ -81,7 +81,7 @@ float SparkleDensity;       // fraction of grains that sparkle
 float SparkleSpeed;         // twinkle rate, radians/sec
 float3 SparkleColor;
 
-float3 AmbientLight;        // floor under the light recovered from the canvas
+float3 AmbientLight;        // floor under the light recovered from the canvas; zero unless the coat glows
 
 float2 WorldAt(float2 uv)
 {
@@ -150,8 +150,8 @@ float4 FrostPass(float2 uv : TEXCOORD0) : COLOR0
 
     color *= light;
 
-    // The front and the rime are ice at its thinnest, catching light, so they hold up in shadow.
-    float3 halfLit = lerp(light, float3(1.0, 1.0, 1.0), 0.5);
+    // The front and the rime are ice at its thinnest, catching more of the light there is; none in the dark.
+    float3 halfLit = saturate(light * 1.5);
 
     color = lerp(color, EdgeColor * halfLit, front);
     alpha = max(alpha, front * EdgeAlpha);
@@ -162,7 +162,7 @@ float4 FrostPass(float2 uv : TEXCOORD0) : COLOR0
     float grain = Hash(floor(world / CellSize));
     float twinkle = step(1.0 - SparkleDensity, grain) * pow(saturate(sin(Time * SparkleSpeed + grain * 40.0)), 16.0);
 
-    return float4(color * alpha + SparkleColor * twinkle * alpha, alpha);
+    return float4(color * alpha + SparkleColor * light * twinkle * alpha, alpha);
 }
 
 technique TileFrostMask

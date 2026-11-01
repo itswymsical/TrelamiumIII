@@ -1,6 +1,7 @@
 using ReLogic.Graphics;
 using SubworldLibrary;
 using System.Collections.Generic;
+using System.Reflection;
 using Terraria.IO;
 using Terraria.Utilities;
 using Terraria.WorldBuilding;
@@ -22,13 +23,22 @@ using TrelamiumIII.Utilities;
 namespace TrelamiumIII.Common.Subworlds.Realms;
 
 /// <summary>
-/// Rolling dirt over Brambleroot with the canopy tree at the centre. The tree's shaft ends in a hub cave, and branches
-/// of caverns and grottos grow out of the hub.
+/// Temperate highlands over Brambleroot, with the canopy tree in a grove of Ingress grass at the centre. Out from the grove
+/// the surface runs through rolling hills, snow-capped basalt mountains, cliff-walled plateaus and river valleys, cut by up
+/// to two canyons that drop into the caves. The tree's shaft ends in a hub cave, and branches of caverns and grottos grow
+/// out of the hub.
 /// </summary>
 public class IngressRealm : SubworldRealm
 {
     /// <summary> Tiles from the canopy tree's ground down to the end of its shaft. </summary>
     public const int ShaftDepth = 250;
+
+    /// <summary>
+    /// Ground depth as a fraction of the world height. The canopy tree's crown reaches ~300 tiles above its ground and
+    /// has to stay below the sky zone (worldSurface * 0.35) and space gravity (70 + worldSurface / 6 at this width).
+    /// The mountains' peaks stop well short of the crown's height.
+    /// </summary>
+    private const float SurfaceDepthRatio = 0.4f;
 
     private const int WorldEdge = 10;
     private const int HeightAmplitude = 30;
@@ -42,13 +52,31 @@ public class IngressRealm : SubworldRealm
     private const float ShaftEndBelowHubCenter = 4f;
     private const int UnderworldClearance = 20;
 
-    /// <summary> <see cref="SurfaceRegion.Name"/> of the highlands regions. </summary>
-    private const string HighlandsRegion = "Highlands";
+    // Region names of the landscape's segments.
+    private const string HillsRegion = "Hills";
+    private const string MountainRegion = "Mountain";
+    private const string PlateauRegion = "Plateau";
+    private const string ValleyRegion = "Valley";
+
+    /// <summary> Rows above the base line past which trees stop growing. </summary>
+    private const int TreelineRows = 95;
+
+    /// <summary> Rows above the base line where the snow caps begin, before the noise moves the line. </summary>
+    private const int SnowlineRows = 120;
+
+    /// <summary> Columns either side of the canopy tree that keep Ingress grass, before the noise moves the grove's edge. </summary>
+    private const int SiteGroveRadius = SiteFlatRadius;
 
     private Layout layout;
     private SurfaceTerrain? terrain;
     private CaveNetwork? caves;
     private Rectangle treeArea;
+
+    /// <summary> Columns the canyons cut through at their rims, which the surface dressing leaves alone. </summary>
+    private readonly List<(int Left, int Right)> canyons = [];
+
+    /// <summary> Columns of the evil patch, once <see cref="IngressBlight"/> has grown it; null before or if it found no room. </summary>
+    private (int Left, int Right)? blight;
 
     /// <summary> Floor tile of the Dryad's rift home, set by <see cref="IngressSpawn"/> and placed in <see cref="OnLoad"/>. </summary>
     private Point? returnRift;
@@ -59,6 +87,12 @@ public class IngressRealm : SubworldRealm
     public override int Width => 4200;
     public override string Name => "Ingress";
     public override int Height => 1480;
+
+    /// <summary> Row the surface swings around before regions lift and sink it; known on clients too, for the sky's horizon. </summary>
+    internal static int BaseSurfaceY => (int)(Main.maxTilesY * SurfaceDepthRatio);
+
+    /// <summary> Row of the treeline: above it no trees grow, and the alpine weather of <see cref="Content.Ingress.HighlandsBiome.HighlandsWeather"/> begins. </summary>
+    internal static int AlpineRow => BaseSurfaceY - TreelineRows;
 
     /// <summary>
     /// Lowest row generated content may reach. Below <see cref="Main.UnderworldLayer"/> vanilla applies hell light, hell
@@ -73,6 +107,8 @@ public class IngressRealm : SubworldRealm
         new IngressSlate(this),
         new IngressGrass(this),
         new IngressCaves(this),
+        new IngressCanyons(this),
+        new IngressBlight(this),
         new SmoothPass("Smoothing Tiles", 100f),
         new IngressHighlands(this),
         new IngressCanopyTree(this),
@@ -80,7 +116,8 @@ public class IngressRealm : SubworldRealm
         new IngressFortress(this),
         new IngressCavePools(this),
         new IngressVegetation(),
-        new IngressFlora(),
+        new IngressFlora(this),
+        new IngressCleanup(),
         new IngressSpawn(this)
     ];
 
@@ -182,14 +219,43 @@ public class IngressRealm : SubworldRealm
         public Point ShaftEnd => new(SiteX + HubOffset, SiteY + ShaftDepth);
     }
 
+    /// <summary> Rows above the base line the ground at row <paramref name="y"/> stands. </summary>
+    private int Elevation(int y) => layout.SurfaceY - y;
+
+    /// <summary> Whether column <paramref name="x"/> is within <paramref name="margin"/> of the canopy tree's flat ground and its blend. </summary>
+    private bool NearSite(int x, int margin) => Math.Abs(x - layout.SiteX) <= SiteFlatRadius + SiteBlendWidth + margin;
+
+    /// <summary> Whether column <paramref name="x"/> is within <paramref name="margin"/> of a canyon's rim. </summary>
+    private bool InCanyon(int x, int margin) => canyons.Exists(canyon => x + margin >= canyon.Left && x - margin <= canyon.Right);
+
+    /// <summary> Whether no landscape segment reaches column <paramref name="x"/>, leaving the base rolling hills. </summary>
+    private static bool InBaseTerrain(SurfaceTerrain terrain, int x)
+    {
+        foreach (SurfaceRegion region in terrain.Regions)
+        {
+            if (region.Weight(x) > 0f)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static FastNoiseLite CreateNoise(float frequency)
+    {
+        var noise = new FastNoiseLite(WorldGen.genRand.Next());
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        noise.SetFrequency(frequency);
+        return noise;
+    }
+
+    /// <summary>
+    /// Lays out the landscape and fills the ground. Each side of the site is walked outward in segments, hills first and
+    /// then mountains, plateaus, valleys and more hills in no repeating order, each a <see cref="SurfaceRegion"/> on the
+    /// shared terrain. Mountains are basalt under a thinning skin of peat with snow over the snowline; any step tall enough
+    /// to read as a cliff is bare rock; river channels are lined with clay and lakes with banded strata.
+    /// </summary>
     private class IngressFloor(IngressRealm realm) : GenPass("[T3] Ingress Floor", 150f)
     {
-        /// <summary>
-        /// Ground depth as a fraction of the world height. The canopy tree's crown reaches ~300 tiles above its ground and
-        /// has to stay below the sky zone (worldSurface * 0.35) and space gravity (70 + worldSurface / 6 at this width).
-        /// </summary>
-        private const float SurfaceDepthRatio = 0.4f;
-
         private const float SurfaceFrequency = 0.0041f;
         private const int WorldSurfaceMargin = 25;
         private const int DirtBottomJitter = 6;
@@ -202,35 +268,117 @@ public class IngressRealm : SubworldRealm
         // Rows under the surface the shore strata are looked up for; the strata themselves reach less.
         private const int StrataSearchDepth = 28;
 
-        private const int HighlandsDistanceMin = 650;
-        private const int HighlandsDistanceMax = 1500;
-        private const int HighlandsHalfWidth = 200;
-        private const int HighlandsFalloff = 170;
-        private const float HighlandsAmplitude = 46f;
-        private const float HighlandsLift = 22f;
-        private const float HighlandsWarp = 70f;
+        private const int LandscapeSiteGap = 40;
+        private const int LandscapeEdgeMargin = 140;
 
-        private const int LakesMin = 2;
-        private const int LakesMax = 3;
+        private const int HillsSpanMin = 260;
+        private const int HillsSpanMax = 400;
+        private const int HillsFalloff = 90;
+        private const float HillsAmplitude = 46f;
+        private const float HillsLift = 22f;
+        private const float HillsWarp = 70f;
+        private const float HillsWeight = 1.5f;
+
+        private const int LakesMin = 1;
+        private const int LakesMax = 2;
         private const int LakeRadiusMin = 18;
-        private const int LakeRadiusMax = 34;
+        private const int LakeRadiusMax = 30;
         private const int LakeDepthMin = 8;
         private const int LakeDepthMax = 14;
         private const int LakeSpacing = 110;
+
+        // Peaks top out near 260 rows above the base line, still 100 rows short of the sky layer.
+        private const int MountainSpanMin = 520;
+        private const int MountainSpanMax = 700;
+        private const int MountainCoreMin = 8;
+        private const int MountainCoreMax = 20;
+        private const int MountainLiftMin = 115;
+        private const int MountainLiftMax = 160;
+        private const int MountainRidgeMin = 45;
+        private const int MountainRidgeMax = 70;
+        private const float MountainAmplitude = 28f;
+        private const float MountainWarp = 50f;
+
+        /// <summary> Power of the mountains' pointed lift falloff; past 1 the slopes steepen toward the summit. </summary>
+        private const float MountainPeak = 1.5f;
+        private const float MountainWeight = 3f;
+
+        private const int PlateauSpanMin = 260;
+        private const int PlateauSpanMax = 420;
+        private const int PlateauMargin = 20;
+        private const int CliffFalloffMin = 5;
+        private const int CliffFalloffMax = 10;
+        private const int PlateauLiftMin = 45;
+        private const int PlateauLiftMax = 75;
+        private const float PlateauAmplitude = 10f;
+        private const float PlateauWarp = 30f;
+        private const float EscarpmentChance = 0.5f;
+        private const float PlateauWeight = 2f;
+
+        private const int ValleySpanMin = 380;
+        private const int ValleySpanMax = 540;
+        private const int ValleyFalloff = 80;
+        private const int ValleyDepthMin = 14;
+        private const int ValleyDepthMax = 22;
+        private const float ValleyAmplitude = 5f;
+        private const float ValleyWeight = 2.5f;
+
+        private const int RiverBankMargin = 15;
+        private const int RiverDepthMin = 5;
+        private const int RiverDepthMax = 8;
+
+        /// <summary> Mountain weight past which the ground is basalt, before the noise jitters the edge. </summary>
+        private const float BasaltWeight = 0.2f;
+
+        private const float BasaltEdgeJitter = 0.08f;
+
+        /// <summary> Mountain weight past <see cref="BasaltWeight"/> over which the basalt core deepens to its full root. </summary>
+        private const float BasaltDeepenWeight = 0.35f;
+        private const float RockNoiseFrequency = 0.03f;
+
+        /// <summary> Peat over the basalt at the mountain's foot, thinning to <see cref="SkinRowsHigh"/> from <see cref="SkinThinFrom"/> rows up over <see cref="SkinThinRange"/>. </summary>
+        private const float SkinRowsLow = 12f;
+
+        private const float SkinRowsHigh = 2f;
+        private const float SkinThinFrom = 30f;
+        private const float SkinThinRange = 90f;
+        private const int BasaltRootRows = 10;
+        private const float BasaltRootJitter = 6f;
+
+        /// <summary> Rows a column's side may stand above its lower neighbour before it reads as a cliff face; less on a mountain, where it reads as a crag. </summary>
+        private const int FaceRows = 4;
+
+        private const int CragRows = 3;
+        private const int FaceRockDepth = 3;
+
+        private const float SnowlineJitter = 12f;
+        private const int SnowRowsMin = 4;
+        private const int SnowRowsMax = 14;
+        private const int SnowRiseRows = 6;
+
+        private static readonly (string Kind, double Weight)[] SegmentWeights =
+        [
+            (HillsRegion, HillsWeight),
+            (MountainRegion, MountainWeight),
+            (PlateauRegion, PlateauWeight),
+            (ValleyRegion, ValleyWeight)
+        ];
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             progress.Message = "Generating Ingress Floor";
 
-            int surfaceY = (int)(Main.maxTilesY * SurfaceDepthRatio);
+            int surfaceY = BaseSurfaceY;
             int siteX = Main.maxTilesX / 2;
             int siteY = surfaceY;
 
             var terrain = new SurfaceTerrain(WorldGen.genRand.Next(), SurfaceFrequency, surfaceY, new SurfaceProfile(HeightAmplitude, 0f, 0f),
                 siteX, SiteFlatRadius, SiteBlendWidth);
 
-            AddHighlands(terrain, siteX);
+            PlanLandscape(terrain, siteX);
             realm.terrain = terrain;
+            realm.canyons.Clear();
+            realm.blight = null;
 
             realm.layout = new Layout(surfaceY, siteX, siteY, WorldGen.genRand.Next(-HubOffsetMax, HubOffsetMax + 1),
                 WorldGen.genRand.Next(), WorldGen.genRand.NextBool(2) ? 1 : -1);
@@ -240,30 +388,40 @@ public class IngressRealm : SubworldRealm
             Main.worldSurface = surfaceY + terrain.LowestOffset + WorldSurfaceMargin;
             Main.rockLayer = realm.layout.RockLayerY;
 
-            ushort peat = (ushort)ModContent.TileType<PeatTile>();
-            ushort[] strata =
-            [
-                (ushort)ModContent.TileType<TerracottaTile>(),
-                TileID.ClayBlock,
-                (ushort)ModContent.TileType<GrayTerracottaTile>()
-            ];
+            var materials = new Materials(
+                Peat: (ushort)ModContent.TileType<PeatTile>(),
+                Strata:
+                [
+                    (ushort)ModContent.TileType<TerracottaTile>(),
+                    TileID.ClayBlock,
+                    (ushort)ModContent.TileType<GrayTerracottaTile>()
+                ],
+                Clay: TileID.ClayBlock,
+                Snow: TileID.SnowBlock,
+                Basalt: (ushort)ModContent.TileType<BasaltTile>(),
+                Slate: (ushort)ModContent.TileType<SlateTile>());
 
+            int[] heights = new int[Main.maxTilesX];
             int[] dirtBottom = new int[Main.maxTilesX];
+
+            for (int x = 0; x < Main.maxTilesX; x++)
+                heights[x] = terrain.HeightAt(x);
+
+            FastNoiseLite rockNoise = CreateNoise(RockNoiseFrequency);
 
             for (int x = 0; x < Main.maxTilesX; x++)
             {
                 progress.Set(x / (double)Main.maxTilesX * 0.7);
 
-                int height = terrain.HeightAt(x);
+                int height = heights[x];
+                Column column = PlanColumn(terrain, heights, x, rockNoise, materials);
                 dirtBottom[x] = height + DirtThickness + WorldGen.genRand.Next(-DirtBottomJitter, DirtBottomJitter + 1);
 
                 for (int y = height; y < Main.maxTilesY; y++)
                 {
                     Tile tile = Main.tile[x, y];
                     tile.HasTile = true;
-
-                    int band = y - height < StrataSearchDepth ? terrain.ShoreBand(x, y, height) : -1;
-                    tile.TileType = band >= 0 ? strata[band] : peat;
+                    tile.TileType = column.TileAt(terrain, x, y, materials);
                 }
             }
 
@@ -272,22 +430,152 @@ public class IngressRealm : SubworldRealm
             PlaceDirtWalls(dirtBottom);
         }
 
-        /// <summary> Up to two highland regions, on either side of the site or both, far enough out that their falloff clears its flat ground. </summary>
-        private static void AddHighlands(SurfaceTerrain terrain, int siteX)
+        /// <summary>
+        /// Walks each side of the site out to the world's edge in segments. The first is always hills; after that no kind
+        /// repeats, and a side without a mountain takes one once only a mountain and one more segment would still fit, so
+        /// every side gets one. Lakes and rivers go in last, since their levels read the finished terrain.
+        /// </summary>
+        private static void PlanLandscape(SurfaceTerrain terrain, int siteX)
         {
-            int count = WorldGen.genRand.NextBool(2) ? 2 : 1;
-            int side = WorldGen.genRand.NextBool(2) ? 1 : -1;
+            int siteEdge = SiteFlatRadius + SiteBlendWidth + LandscapeSiteGap;
 
-            for (int i = 0; i < count; i++)
+            foreach (int side in (int[])[-1, 1])
             {
-                int center = siteX + (i == 0 ? side : -side) * WorldGen.genRand.Next(HighlandsDistanceMin, HighlandsDistanceMax + 1);
-                var region = new SurfaceRegion(HighlandsRegion, center, HighlandsHalfWidth, HighlandsFalloff, new SurfaceProfile(HighlandsAmplitude, HighlandsLift, HighlandsWarp));
+                int cursor = siteX + side * siteEdge;
+                int end = side < 0 ? LandscapeEdgeMargin : Main.maxTilesX - LandscapeEdgeMargin;
+                string? previous = null;
+                bool hasMountain = false;
 
-                terrain.AddRegion(region);
+                while (PickSegment(previous, hasMountain, Math.Abs(end - cursor)) is { } kind)
+                {
+                    (int min, int max) = SpanRange(kind);
+                    int span = Math.Min(WorldGen.genRand.Next(min, max + 1), Math.Abs(end - cursor));
+                    int far = cursor + side * span;
+
+                    terrain.AddRegion(CreateRegion(kind, Math.Min(cursor, far), Math.Max(cursor, far)));
+
+                    cursor = far;
+                    previous = kind;
+                    hasMountain |= kind == MountainRegion;
+                }
             }
 
             foreach (SurfaceRegion region in terrain.Regions)
-                terrain.AddLakes(region, WorldGen.genRand.Next(LakesMin, LakesMax + 1), LakeRadiusMin, LakeRadiusMax, LakeDepthMin, LakeDepthMax, LakeSpacing, WorldGen.genRand);
+            {
+                if (region.Name == HillsRegion)
+                    terrain.AddLakes(region, WorldGen.genRand.Next(LakesMin, LakesMax + 1), LakeRadiusMin, LakeRadiusMax, LakeDepthMin, LakeDepthMax, LakeSpacing, WorldGen.genRand);
+                else if (region.Name == ValleyRegion)
+                    terrain.AddRiver(region, RiverBankMargin, RiverDepthMin, RiverDepthMax, WorldGen.genRand);
+            }
+        }
+
+        private static string? PickSegment(string? previous, bool hasMountain, int room)
+        {
+            if (previous is null)
+                return room >= HillsSpanMin ? HillsRegion : null;
+
+            if (!hasMountain && room >= MountainSpanMin && room < MountainSpanMax + ValleySpanMax)
+                return MountainRegion;
+
+            var picks = new WeightedRandom<string>(WorldGen.genRand);
+
+            foreach ((string kind, double weight) in SegmentWeights)
+            {
+                if (kind != previous && room >= SpanRange(kind).Min)
+                    picks.Add(kind, weight);
+            }
+
+            return picks.elements.Count > 0 ? picks.Get() : null;
+        }
+
+        private static (int Min, int Max) SpanRange(string kind) => kind switch
+        {
+            MountainRegion => (MountainSpanMin, MountainSpanMax),
+            PlateauRegion => (PlateauSpanMin, PlateauSpanMax),
+            ValleyRegion => (ValleySpanMin, ValleySpanMax),
+            _ => (HillsSpanMin, HillsSpanMax)
+        };
+
+        /// <summary> A region filling the columns from <paramref name="left"/> to <paramref name="right"/>, falloff included. </summary>
+        private static SurfaceRegion CreateRegion(string kind, int left, int right)
+        {
+            int span = right - left;
+            int center = (left + right) / 2;
+
+            switch (kind)
+            {
+                case MountainRegion:
+                {
+                    int core = WorldGen.genRand.Next(MountainCoreMin, MountainCoreMax + 1);
+                    var profile = new SurfaceProfile(MountainAmplitude, WorldGen.genRand.Next(MountainLiftMin, MountainLiftMax + 1), MountainWarp,
+                        WorldGen.genRand.Next(MountainRidgeMin, MountainRidgeMax + 1), MountainPeak);
+
+                    return new SurfaceRegion(kind, center, core, span / 2 - core, profile);
+                }
+                case PlateauRegion:
+                {
+                    // A mesa stands up as cliffs on both sides; an escarpment climbs gently from one and drops sheer to the other.
+                    int width = span - PlateauMargin * 2;
+                    int cliff = WorldGen.genRand.Next(CliffFalloffMin, CliffFalloffMax + 1);
+                    var profile = new SurfaceProfile(PlateauAmplitude, WorldGen.genRand.Next(PlateauLiftMin, PlateauLiftMax + 1), PlateauWarp);
+
+                    if (WorldGen.genRand.NextFloat() >= EscarpmentChance)
+                        return new SurfaceRegion(kind, center, width / 2 - cliff, cliff, profile);
+
+                    int core = width / 4;
+                    int gentle = width - core * 2 - cliff;
+                    bool cliffRight = WorldGen.genRand.NextBool();
+                    int fallLeft = cliffRight ? gentle : cliff;
+                    int fallRight = cliffRight ? cliff : gentle;
+
+                    return new SurfaceRegion(kind, left + PlateauMargin + fallLeft + core, core, fallLeft, profile, fallRight);
+                }
+                case ValleyRegion:
+                {
+                    var profile = new SurfaceProfile(ValleyAmplitude, -WorldGen.genRand.Next(ValleyDepthMin, ValleyDepthMax + 1), 0f);
+                    return new SurfaceRegion(kind, center, span / 2 - ValleyFalloff, ValleyFalloff, profile);
+                }
+                default:
+                    return new SurfaceRegion(kind, center, Math.Max(span / 2 - HillsFalloff, 20), HillsFalloff, new SurfaceProfile(HillsAmplitude, HillsLift, HillsWarp));
+            }
+        }
+
+        /// <summary> What column <paramref name="x"/> is made of, read off the finished heights so faces and slopes are known. </summary>
+        private static Column PlanColumn(SurfaceTerrain terrain, int[] heights, int x, FastNoiseLite noise, Materials materials)
+        {
+            int height = heights[x];
+            int elevation = terrain.BaseY - height;
+            int lower = Math.Max(heights[Math.Max(x - 1, 0)], heights[Math.Min(x + 1, Main.maxTilesX - 1)]);
+            int face = lower - height;
+            float weight = terrain.WeightOf(MountainRegion, x) + noise.GetNoise(x, 0f) * BasaltEdgeJitter;
+            bool mountain = weight > BasaltWeight;
+
+            int rockFrom = int.MaxValue;
+            int rockTo = int.MinValue;
+
+            if (mountain)
+            {
+                float thin = Math.Clamp((elevation - SkinThinFrom) / SkinThinRange, 0f, 1f);
+                float skin = MathHelper.Lerp(SkinRowsLow, SkinRowsHigh, thin) + noise.GetNoise(x, 300f) * 2f;
+                int root = terrain.BaseY + BasaltRootRows + (int)(noise.GetNoise(x, 600f) * BasaltRootJitter);
+
+                // The core deepens inward from the edge, so it meets the peat on a slant rather than a vertical seam.
+                float depth = Math.Clamp((weight - BasaltWeight) / BasaltDeepenWeight, 0f, 1f);
+
+                rockFrom = height + Math.Max((int)skin, 0);
+                rockTo = (int)MathHelper.Lerp(rockFrom, root, depth);
+            }
+
+            if (face >= (mountain ? CragRows : FaceRows))
+            {
+                rockFrom = height;
+                rockTo = Math.Max(rockTo, lower + FaceRockDepth);
+            }
+
+            int snowline = SnowlineRows + (int)(noise.GetNoise(x, 900f) * SnowlineJitter);
+            int snow = elevation > snowline ? Math.Min(SnowRowsMin + (elevation - snowline) / SnowRiseRows, SnowRowsMax) : 0;
+
+            return new Column(height, snow, terrain.RiverbedDepth(x), rockFrom, rockTo, mountain ? materials.Basalt : materials.Slate);
         }
 
         /// <summary> On <see cref="ContentBottom"/> under the canopy tree, shifted part of the way toward the spawn side. </summary>
@@ -299,13 +587,14 @@ public class IngressRealm : SubworldRealm
             return FortressLayout.Create(origin, new UnifiedRandom(WorldGen.genRand.Next()));
         }
 
+        /// <summary> Small vanilla mounds on the stretches of base terrain between the segments. </summary>
         private static void PlaceMounds(int surfaceY, int siteX, SurfaceTerrain terrain)
         {
             int x = WorldGen.genRand.Next(100, 200);
 
             while (x < Main.maxTilesX - 100)
             {
-                if (Math.Abs(x - siteX) > SiteFlatRadius + SiteBlendWidth + MoundClearance && terrain.WeightOf(HighlandsRegion, x) <= 0f)
+                if (Math.Abs(x - siteX) > SiteFlatRadius + SiteBlendWidth + MoundClearance && InBaseTerrain(terrain, x))
                     WorldGen.Mountinater(x, surfaceY + 32);
 
                 x += WorldGen.genRand.Next(200, 400);
@@ -323,11 +612,40 @@ public class IngressRealm : SubworldRealm
                     Main.tile[x, y].WallType = WallID.FlowerUnsafe;
             }
         }
+
+        private readonly record struct Materials(ushort Peat, ushort[] Strata, ushort Clay, ushort Snow, ushort Basalt, ushort Slate);
+
+        /// <summary>
+        /// One column of ground from its surface at <paramref name="Height"/> down: <paramref name="Snow"/> rows of snow,
+        /// then <paramref name="Clay"/> rows of riverbed, then <paramref name="Rock"/> between <paramref name="RockFrom"/>
+        /// and <paramref name="RockTo"/>, then shore strata or peat.
+        /// </summary>
+        private readonly record struct Column(int Height, int Snow, int Clay, int RockFrom, int RockTo, ushort Rock)
+        {
+            public ushort TileAt(SurfaceTerrain terrain, int x, int y, Materials materials)
+            {
+                int depth = y - Height;
+
+                if (depth < Snow)
+                    return materials.Snow;
+
+                if (depth < Clay)
+                    return materials.Clay;
+
+                if (y >= RockFrom && y < RockTo)
+                    return Rock;
+
+                int band = depth < StrataSearchDepth ? terrain.ShoreBand(x, y, Height) : -1;
+                return band >= 0 ? materials.Strata[band] : materials.Peat;
+            }
+        }
     }
 
     /// <summary>
     /// Slate through the peat: veins below the surface layer, and a few outcrops just under the ground that break the surface
-    /// away from the canopy tree's site. Runs before grass and caves, so caves cut through the slate and exposed slate stays bare.
+    /// away from the canopy tree's site. The mountains get basalt instead: boulders half-sunk into their slopes and seams just
+    /// under them. Runs before grass and caves, so caves cut through the rock, exposed rock stays bare, and smoothing rounds
+    /// the boulders off.
     /// </summary>
     private class IngressSlate(IngressRealm realm) : GenPass("[T3] Ingress Slate", 40f)
     {
@@ -345,6 +663,19 @@ public class IngressRealm : SubworldRealm
         private const int OutcropStrengthMax = 10;
         private const int OutcropStepsMin = 6;
         private const int OutcropStepsMax = 20;
+
+        private const float BasaltWeight = 0.3f;
+        private const int BasaltSpacingMin = 18;
+        private const int BasaltSpacingMax = 45;
+        private const float BoulderChance = 0.55f;
+        private const int BoulderStrengthMin = 5;
+        private const int BoulderStrengthMax = 8;
+        private const int BoulderStepsMin = 2;
+        private const int BoulderStepsMax = 4;
+        private const int SeamStrengthMin = 6;
+        private const int SeamStrengthMax = 12;
+        private const int SeamStepsMin = 6;
+        private const int SeamStepsMax = 16;
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
@@ -365,6 +696,7 @@ public class IngressRealm : SubworldRealm
             }
 
             PlaceOutcrops(slate);
+            PlaceBasalt();
         }
 
         private void PlaceOutcrops(ushort slate)
@@ -380,23 +712,82 @@ public class IngressRealm : SubworldRealm
                 WorldGen.TileRunner(x, y, WorldGen.genRand.Next(OutcropStrengthMin, OutcropStrengthMax + 1), WorldGen.genRand.Next(OutcropStepsMin, OutcropStepsMax + 1), slate);
             }
         }
+
+        private void PlaceBasalt()
+        {
+            if (realm.terrain is not { } terrain)
+                return;
+
+            ushort basalt = (ushort)ModContent.TileType<BasaltTile>();
+
+            for (int x = WorldEdge + BasaltSpacingMax; x < Main.maxTilesX - WorldEdge - BasaltSpacingMax; x += WorldGen.genRand.Next(BasaltSpacingMin, BasaltSpacingMax + 1))
+            {
+                if (terrain.WeightOf(MountainRegion, x) < BasaltWeight)
+                    continue;
+
+                int y = SurfaceRow(x);
+
+                if (WorldGen.genRand.NextFloat() < BoulderChance)
+                {
+                    WorldGen.TileRunner(x, y - 1, WorldGen.genRand.Next(BoulderStrengthMin, BoulderStrengthMax + 1), WorldGen.genRand.Next(BoulderStepsMin, BoulderStepsMax + 1),
+                        basalt, addTile: true);
+                }
+                else
+                {
+                    WorldGen.TileRunner(x, y + WorldGen.genRand.Next(OutcropDepthMax + 1), WorldGen.genRand.Next(SeamStrengthMin, SeamStrengthMax + 1),
+                        WorldGen.genRand.Next(SeamStepsMin, SeamStepsMax + 1), basalt);
+                }
+            }
+        }
     }
 
+    /// <summary>
+    /// Highlands grass over the whole surface, then the canopy tree's grove turned back to Ingress grass, its edge wandering
+    /// with the noise.
+    /// </summary>
     private class IngressGrass(IngressRealm realm) : GrassSpreadPass("[T3] Ingress Grass", 100f)
     {
-        private const int LivingTreeClearance = 60;
+        private const float GroveEdgeFrequency = 0.06f;
+        private const float GroveEdgeJitter = 14f;
+        private const int GroveRowsAbove = 3;
+        private const int GroveRowsBelow = 14;
 
         protected override string GetProgressMessage() => "Spreading Grass";
 
         protected override ushort GetSoilTileType() => (ushort)ModContent.TileType<PeatTile>();
 
-        protected override ushort GetGrassTileType() => (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
+        protected override ushort GetGrassTileType() => (ushort)ModContent.TileType<HighlandsGrass>();
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             base.ApplyPass(progress, configuration);
+            PlantGrove();
             StonePatches();
-            LivingTrees();
+        }
+
+        private void PlantGrove()
+        {
+            ushort highlands = (ushort)ModContent.TileType<HighlandsGrass>();
+            ushort ingress = (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
+            FastNoiseLite edge = CreateNoise(GroveEdgeFrequency);
+            int siteX = realm.layout.SiteX;
+            int reach = SiteGroveRadius + (int)GroveEdgeJitter;
+
+            for (int x = siteX - reach; x <= siteX + reach; x++)
+            {
+                if (Math.Abs(x - siteX) > SiteGroveRadius + edge.GetNoise(x, 0f) * GroveEdgeJitter)
+                    continue;
+
+                int surface = SurfaceRow(x);
+
+                for (int y = surface - GroveRowsAbove; y < surface + GroveRowsBelow; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+
+                    if (tile.HasTile && tile.TileType == highlands)
+                        tile.TileType = ingress;
+                }
+            }
         }
 
         /// <summary> After grass spreads, because <see cref="WorldGen.StonePatch"/> needs grass on top and no wall behind it. </summary>
@@ -406,7 +797,7 @@ public class IngressRealm : SubworldRealm
 
             while (x < Main.maxTilesX - 100)
             {
-                if (!NearSite(x, 0) && WorldGen.StonePatch(x, SurfaceRow(x)))
+                if (!realm.NearSite(x, 0) && WorldGen.StonePatch(x, SurfaceRow(x)))
                 {
                     x += WorldGen.genRand.Next(100, 200);
                     continue;
@@ -415,24 +806,6 @@ public class IngressRealm : SubworldRealm
                 x += WorldGen.genRand.Next(20, 40);
             }
         }
-
-        private void LivingTrees()
-        {
-            int x = WorldGen.genRand.Next(150, 300);
-
-            while (x < Main.maxTilesX - 150)
-            {
-                if (!NearSite(x, LivingTreeClearance) && WorldGen.GrowLivingTree(x, SurfaceRow(x) - 1, patch: true))
-                {
-                    x += WorldGen.genRand.Next(250, 450);
-                    continue;
-                }
-
-                x += WorldGen.genRand.Next(15, 35);
-            }
-        }
-
-        private bool NearSite(int x, int margin) => Math.Abs(x - realm.layout.SiteX) <= SiteFlatRadius + SiteBlendWidth + margin;
     }
 
     private class IngressCaves(IngressRealm realm) : GenPass("[T3] Ingress Caves", 250f)
@@ -656,32 +1029,526 @@ public class IngressRealm : SubworldRealm
     }
 
     /// <summary>
-    /// Dresses the highland regions <see cref="IngressFloor"/> shaped: highland grass over the surface, water in the lakes
-    /// it dug, birch and spruce groves, and ground plants. After smoothing so slopes are final and before the canopy tree
-    /// and vegetation passes, which see its trees as obstacles.
+    /// One or two canyons cut from the surface down into the caves: wide at the rim, narrowing and wandering as they drop,
+    /// with rock shelves jutting from alternate walls. The upper part stays open to the sky; below it the canyon keeps a back
+    /// wall. After the caves so each canyon's foot can tunnel to the nearest cavern, and before smoothing so the walls
+    /// weather with the rest of the terrain.
+    /// </summary>
+    private class IngressCanyons(IngressRealm realm) : GenPass("[T3] Ingress Canyons", 60f)
+    {
+        private const int CountMin = 1;
+        private const int CountMax = 2;
+        private const int Attempts = 60;
+        private const int EdgeClearance = 300;
+        private const int SiteClearance = 220;
+        private const int Spacing = 700;
+        private const int LakeClearance = 40;
+
+        /// <summary> Mountain weight anywhere across the cut past which a spot is rejected, so canyons stay off the slopes. </summary>
+        private const float MountainLimit = 0.15f;
+
+        private const int RimHalfWidthMin = 26;
+        private const int RimHalfWidthMax = 38;
+        private const int FootHalfWidthMin = 9;
+        private const int FootHalfWidthMax = 14;
+        private const int RimFlareRows = 22;
+        private const float RimFlare = 14f;
+
+        private const float MeanderMin = 10f;
+        private const float MeanderMax = 22f;
+        private const float MeanderFrequency = 0.012f;
+        private const float WallJitter = 4f;
+        private const float WallFrequency = 0.08f;
+
+        private const float LedgeFrequency = 0.07f;
+        private const float LedgeThreshold = 0.3f;
+        private const float LedgeColumns = 11f;
+
+        /// <summary> Columns each side of the centre line a shelf always leaves open, so a ledge never closes the canyon. </summary>
+        private const float MinCutHalfWidth = 3f;
+
+        private const int FootBelowRockLayer = 40;
+        private const float FootRadius = 10f;
+        private const float FootWarp = 3f;
+
+        /// <summary> Fraction of the depth from the rim that is left without a back wall, so the sky shows down into it. </summary>
+        private const float OpenSkyFraction = 0.35f;
+
+        /// <summary> Columns either side of a canyon's centre line its cut can reach. </summary>
+        private const int Reach = RimHalfWidthMax + (int)RimFlare + (int)WallJitter + (int)MeanderMax;
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "Cutting canyons";
+
+            if (realm.terrain is not { } terrain)
+                return;
+
+            int count = WorldGen.genRand.Next(CountMin, CountMax + 1);
+            var picked = new List<int>();
+
+            for (int attempt = 0; attempt < Attempts && picked.Count < count; attempt++)
+            {
+                int x = WorldGen.genRand.Next(EdgeClearance, Main.maxTilesX - EdgeClearance);
+
+                if (!Suitable(terrain, x, picked))
+                    continue;
+
+                picked.Add(x);
+                Carve(x);
+                progress.Set(picked.Count / (double)count);
+            }
+        }
+
+        private bool Suitable(SurfaceTerrain terrain, int x, List<int> picked)
+        {
+            if (realm.NearSite(x, SiteClearance) || picked.Exists(other => Math.Abs(other - x) < Spacing))
+                return false;
+
+            foreach (SurfaceLake lake in terrain.Lakes)
+            {
+                if (Math.Abs(x - lake.Center) < lake.Radius + Reach + LakeClearance)
+                    return false;
+            }
+
+            for (int column = x - Reach; column <= x + Reach; column++)
+            {
+                if (terrain.WeightOf(MountainRegion, column) > MountainLimit)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void Carve(int x)
+        {
+            var carver = new CaveCarver(WorldGen.genRand.Next());
+            FastNoiseLite meander = CreateNoise(MeanderFrequency);
+            FastNoiseLite walls = CreateNoise(WallFrequency);
+            FastNoiseLite ledges = CreateNoise(LedgeFrequency);
+
+            // From just above the highest ground across the cut, so the rim opens cleanly on both banks.
+            int rim = int.MaxValue;
+
+            for (int column = x - Reach; column <= x + Reach; column++)
+                rim = Math.Min(rim, SurfaceRow(column));
+
+            rim -= 2;
+
+            int foot = realm.layout.RockLayerY + FootBelowRockLayer;
+            int openUntil = rim + (int)((foot - rim) * OpenSkyFraction);
+            float meanderColumns = WorldGen.genRand.NextFloat(MeanderMin, MeanderMax);
+            int rimHalfWidth = WorldGen.genRand.Next(RimHalfWidthMin, RimHalfWidthMax + 1);
+            int footHalfWidth = WorldGen.genRand.Next(FootHalfWidthMin, FootHalfWidthMax + 1);
+            ushort peatWall = (ushort)ModContent.WallType<PeatWall>();
+            float center = x;
+
+            for (int y = rim; y <= foot; y++)
+            {
+                float t = (y - rim) / (float)(foot - rim);
+                float half = MathHelper.Lerp(rimHalfWidth, footHalfWidth, MathF.Pow(t, 0.7f));
+                float flare = 1f - (y - rim) / (float)RimFlareRows;
+
+                if (flare > 0f)
+                    half += flare * flare * RimFlare;
+
+                // The rim stays put and the cut wanders more the deeper it goes.
+                center = x + meander.GetNoise(0f, y) * meanderColumns * MathF.Min(t * 4f, 1f);
+
+                float leftHalf = half + walls.GetNoise(-500f, y) * WallJitter;
+                float rightHalf = half + walls.GetNoise(500f, y) * WallJitter;
+                float ledge = ledges.GetNoise(x, y);
+                float jut = (MathF.Abs(ledge) - LedgeThreshold) / (1f - LedgeThreshold) * LedgeColumns;
+
+                if (jut > 0f)
+                {
+                    if (ledge > 0f)
+                        leftHalf -= jut;
+                    else
+                        rightHalf -= jut;
+                }
+
+                int from = (int)MathF.Round(center - MathF.Max(leftHalf, MinCutHalfWidth));
+                int to = (int)MathF.Round(center + MathF.Max(rightHalf, MinCutHalfWidth));
+
+                for (int column = from; column <= to; column++)
+                {
+                    carver.Clear(column, y);
+
+                    Tile tile = Main.tile[column, y];
+
+                    if (y < openUntil)
+                        tile.WallType = WallID.None;
+                    else if (tile.WallType == WallID.None)
+                        tile.WallType = peatWall;
+                }
+            }
+
+            var bottom = new Vector2(center, foot);
+            carver.CarveBlob(bottom, FootRadius, FootWarp);
+            ConnectToCaves(carver, bottom);
+
+            Rectangle carved = carver.CarvedArea;
+            realm.canyons.Add((carved.Left, carved.Right));
+            GrassRim(carved);
+        }
+
+        private void ConnectToCaves(CaveCarver carver, Vector2 bottom)
+        {
+            if (realm.caves is null)
+                return;
+
+            CaveNode? nearest = null;
+
+            foreach (CaveNode node in realm.caves.Nodes)
+            {
+                if (nearest is null || Vector2.DistanceSquared(node.Center, bottom) < Vector2.DistanceSquared(nearest.Center, bottom))
+                    nearest = node;
+            }
+
+            if (nearest is not null)
+                carver.CarveTunnel(bottom, nearest.Center);
+        }
+
+        /// <summary> Highlands grass on the peat the cut exposed above the surface layer; <see cref="IngressFlora"/> grows Ingress grass below it. </summary>
+        private static void GrassRim(Rectangle carved)
+        {
+            ushort peat = (ushort)ModContent.TileType<PeatTile>();
+            ushort grass = (ushort)ModContent.TileType<HighlandsGrass>();
+            int bottom = Math.Min(carved.Bottom, (int)Main.worldSurface);
+
+            for (int x = carved.Left - 1; x <= carved.Right + 1; x++)
+            {
+                for (int y = carved.Top; y < bottom; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+
+                    if (tile.HasTile && tile.TileType == peat && ExposedToAir(x, y))
+                        tile.TileType = grass;
+                }
+            }
+        }
+
+        private static bool ExposedToAir(int x, int y)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (!Main.tile[x + dx, y + dy].HasTile)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// One patch of the main world's evil out in the highlands, grown the way vanilla grows its own: corruption sinks chasms
+    /// with shadow orbs at their feet, crimson digs a heart cavern with hearts in its pockets. Inside the patch the rock turns
+    /// to ebonstone or crimstone, the grass to the evil highland grass and the walls to the evil's, with veins of the stone
+    /// through the peat and altars standing on it. After the caves and canyons so they don't cut through it, and before
+    /// smoothing, as in vanilla.
+    /// </summary>
+    private class IngressBlight(IngressRealm realm) : GenPass("[T3] Ingress Blight", 60f)
+    {
+        private const int HalfWidthMin = 110;
+        private const int HalfWidthMax = 160;
+        private const int SiteClearance = 320;
+        private const int CanyonClearance = 40;
+        private const float MountainLimit = 0.1f;
+        private const int FallbackAttempts = 60;
+
+        /// <summary> Columns at each edge over which the conversion thins out at random, as vanilla's does. </summary>
+        private const int EdgeRagged = 5;
+
+        // Vanilla converts down to between 30 and 50 rows under the surface layer, wandering a row or two a column.
+        private const int DepthMin = 30;
+        private const int DepthMax = 50;
+
+        private const int MainChasmStepsMin = 150;
+        private const int MainChasmStepsMax = 300;
+        private const int SideChasmSpacingMin = 35;
+        private const int SideChasmSpacingMax = 60;
+        private const int SideChasmStepsMin = 50;
+        private const int SideChasmStepsMax = 100;
+        private const int SideChasmClearance = 20;
+
+        /// <summary> Veins of evil stone per tile of the converted area. </summary>
+        private const double VeinDensity = 0.0012;
+        private const int VeinStrengthMin = 5;
+        private const int VeinStrengthMax = 12;
+        private const int VeinStepsMin = 8;
+        private const int VeinStepsMax = 24;
+
+        private const int AltarsMin = 3;
+        private const int AltarsMax = 5;
+        private const int AltarAttempts = 400;
+        private const int AltarDepth = 90;
+
+        private static readonly FieldInfo HeartCount = typeof(WorldGen).GetField("heartCount", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = WorldGen.crimson ? "Growing the crimson" : "Spreading the corruption";
+
+            if (realm.terrain is not { } terrain || !TryPlace(terrain, out int center, out int halfWidth))
+                return;
+
+            int left = center - halfWidth;
+            int right = center + halfWidth;
+            realm.blight = (left, right);
+
+            if (WorldGen.crimson)
+            {
+                // Hearts are placed from positions CrimStart records; the main world's are still in there otherwise.
+                HeartCount.SetValue(null, 0);
+                WorldGen.CrimStart(center, SurfaceRow(center) - 10);
+                WorldGen.CrimPlaceHearts();
+            }
+            else
+            {
+                SinkChasms(center, left, right);
+            }
+
+            progress.Set(0.5);
+            Convert(left, right);
+            Veins(left, right);
+            progress.Set(0.8);
+
+            // Corruption's chasms set an altar near each of their feet, as in vanilla; the crimson's are placed here.
+            if (WorldGen.crimson)
+                PlaceAltars(left, right);
+        }
+
+        /// <summary> A hills segment far from the canopy tree, the canyons and the mountains; failing that, any such stretch of ground. </summary>
+        private bool TryPlace(SurfaceTerrain terrain, out int center, out int halfWidth)
+        {
+            halfWidth = WorldGen.genRand.Next(HalfWidthMin, HalfWidthMax + 1);
+            var candidates = new List<int>();
+
+            foreach (SurfaceRegion region in terrain.Regions)
+            {
+                if (region.Name == HillsRegion && Fits(terrain, region.Center, halfWidth))
+                    candidates.Add(region.Center);
+            }
+
+            for (int attempt = 0; candidates.Count == 0 && attempt < FallbackAttempts; attempt++)
+            {
+                int x = WorldGen.genRand.Next(WorldEdge + halfWidth + 100, Main.maxTilesX - WorldEdge - halfWidth - 100);
+
+                if (Fits(terrain, x, halfWidth))
+                    candidates.Add(x);
+            }
+
+            center = candidates.Count > 0 ? candidates[WorldGen.genRand.Next(candidates.Count)] : 0;
+            return candidates.Count > 0;
+        }
+
+        private bool Fits(SurfaceTerrain terrain, int center, int halfWidth)
+        {
+            if (center - halfWidth < WorldEdge + 50 || center + halfWidth > Main.maxTilesX - WorldEdge - 50)
+                return false;
+
+            if (Math.Abs(center - realm.layout.SiteX) < SiteFlatRadius + SiteBlendWidth + SiteClearance + halfWidth || realm.InCanyon(center, halfWidth + CanyonClearance))
+                return false;
+
+            for (int x = center - halfWidth; x <= center + halfWidth; x += 8)
+            {
+                if (terrain.WeightOf(MountainRegion, x) > MountainLimit)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary> Vanilla's corruption: one long chasm with orbs at the centre, and shorter ones spaced along the rest. </summary>
+        private static void SinkChasms(int center, int left, int right)
+        {
+            WorldGen.ChasmRunner(center, SurfaceRow(center), WorldGen.genRand.Next(MainChasmStepsMin, MainChasmStepsMax + 1), makeOrb: true);
+
+            for (int x = left + WorldGen.genRand.Next(SideChasmSpacingMin); x < right; x += WorldGen.genRand.Next(SideChasmSpacingMin, SideChasmSpacingMax + 1))
+            {
+                if (Math.Abs(x - center) > SideChasmClearance)
+                    WorldGen.ChasmRunner(x, SurfaceRow(x), WorldGen.genRand.Next(SideChasmStepsMin, SideChasmStepsMax + 1), makeOrb: true);
+            }
+        }
+
+        /// <summary>
+        /// Rock to the evil's stone, the highlands' grasses to the evil highland grass and the walls to the evil's, from the
+        /// surface down to a wandering depth under the surface layer. Peat is left as it is, as vanilla leaves dirt; any peat
+        /// the chasms bared above the surface layer grows the evil grass.
+        /// </summary>
+        private static void Convert(int left, int right)
+        {
+            bool crimson = WorldGen.crimson;
+            ushort stone = crimson ? TileID.Crimstone : TileID.Ebonstone;
+            ushort grass = (ushort)(crimson ? ModContent.TileType<CrimsonHighlandsGrass>() : ModContent.TileType<CorruptHighlandsGrass>());
+            ushort stoneWall = crimson ? WallID.CrimstoneUnsafe : WallID.EbonstoneUnsafe;
+            ushort grassWall = crimson ? WallID.CrimsonGrassUnsafe : WallID.CorruptGrassUnsafe;
+
+            ushort slate = (ushort)ModContent.TileType<SlateTile>();
+            ushort basalt = (ushort)ModContent.TileType<BasaltTile>();
+            ushort peat = (ushort)ModContent.TileType<PeatTile>();
+            ushort peatWall = (ushort)ModContent.WallType<PeatWall>();
+            ushort[] grasses = [(ushort)ModContent.TileType<HighlandsGrass>(), (ushort)ModContent.TileType<SnowHighlandsGrass>(), (ushort)ModContent.TileType<Content.Ingress.IngressGrass>(), TileID.Grass];
+
+            double depth = Main.worldSurface + DepthMin;
+
+            for (int x = left - EdgeRagged; x <= right + EdgeRagged; x++)
+            {
+                depth = Math.Clamp(depth + WorldGen.genRand.Next(-2, 3), Main.worldSurface + DepthMin, Main.worldSurface + DepthMax);
+
+                // Past the edge the conversion only reaches this column some of the time.
+                if (x < left + WorldGen.genRand.Next(EdgeRagged) - EdgeRagged / 2 || x > right - WorldGen.genRand.Next(EdgeRagged) + EdgeRagged / 2)
+                    continue;
+
+                for (int y = WorldEdge; y < depth; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+
+                    if (tile.WallType == WallID.FlowerUnsafe)
+                        tile.WallType = grassWall;
+                    else if (tile.WallType == peatWall)
+                        tile.WallType = stoneWall;
+
+                    if (!tile.HasTile)
+                        continue;
+
+                    if (tile.TileType == slate || tile.TileType == basalt || tile.TileType == TileID.Stone)
+                        tile.TileType = stone;
+                    else if (Array.IndexOf(grasses, tile.TileType) >= 0 || (tile.TileType == peat && y < Main.worldSurface && ExposedToAir(x, y)))
+                        tile.TileType = grass;
+                }
+            }
+        }
+
+        private static void Veins(int left, int right)
+        {
+            ushort stone = WorldGen.crimson ? TileID.Crimstone : TileID.Ebonstone;
+            int top = (int)Main.worldSurface - DepthMax;
+            int bottom = (int)Main.worldSurface + DepthMax;
+            int veins = (int)((right - left) * (double)(bottom - top) * VeinDensity);
+
+            for (int i = 0; i < veins; i++)
+            {
+                int x = WorldGen.genRand.Next(left, right + 1);
+                int from = Math.Max(top, SurfaceRow(x) + 4);
+
+                // A chasm column's first floor can lie below the whole band.
+                if (from >= bottom)
+                    continue;
+
+                WorldGen.TileRunner(x, WorldGen.genRand.Next(from, bottom), WorldGen.genRand.Next(VeinStrengthMin, VeinStrengthMax + 1), WorldGen.genRand.Next(VeinStepsMin, VeinStepsMax + 1), stone);
+            }
+        }
+
+        /// <summary> Altars on open floors of the evil stone, from the surface down into the chasms, as vanilla scatters its own. </summary>
+        private static void PlaceAltars(int left, int right)
+        {
+            ushort stone = WorldGen.crimson ? TileID.Crimstone : TileID.Ebonstone;
+            int style = WorldGen.crimson ? 1 : 0;
+            int wanted = WorldGen.genRand.Next(AltarsMin, AltarsMax + 1);
+
+            for (int attempt = 0; attempt < AltarAttempts && wanted > 0; attempt++)
+            {
+                int x = WorldGen.genRand.Next(left, right + 1);
+                int y = WorldGen.genRand.Next(SurfaceRow(x) - 2, (int)Main.worldSurface + AltarDepth);
+
+                // Down through open air to the first floor.
+                while (y < Main.maxTilesY - WorldEdge && !Main.tile[x, y + 1].HasTile)
+                    y++;
+
+                Tile floor = Main.tile[x, y + 1];
+
+                if (floor.TileType != stone || Main.tile[x, y].HasTile || WorldGen.IsTileNearby(x, y, TileID.DemonAltar, 30))
+                    continue;
+
+                WorldGen.Place3x2(x, y, TileID.DemonAltar, style);
+
+                if (Main.tile[x, y].HasTile && Main.tile[x, y].TileType == TileID.DemonAltar)
+                    wanted--;
+            }
+        }
+
+        private static bool ExposedToAir(int x, int y)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (!Main.tile[x + dx, y + dy].HasTile)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Dresses the surface after smoothing, so slopes are final: water in the lakes and river channels, snowy grass under
+    /// the snow caps, the living trees, gravel paths, spruce and birch groves, and ground plants. Before the canopy tree and
+    /// vegetation passes, which see its trees as obstacles.
     /// </summary>
     private class IngressHighlands(IngressRealm realm) : GenPass("[T3] Ingress Highlands", 80f)
     {
-        private const float GrassWeight = 0.5f;
-        private const float GrassEdgeJitter = 0.15f;
-        private const float GrassEdgeFrequency = 0.08f;
-        private const int GrassRowsAbove = 3;
-        private const int GrassRowsBelow = 14;
-
-        private const int LakeTilesMax = 12000;
+        private const int LakeTilesMax = 20000;
         private const int LakeLevelFallbacks = 8;
 
-        private const float TreeWeight = 0.6f;
-        private const int TreeStepMin = 5;
-        private const int TreeStepMax = 11;
-        private const int TreeCanopyClearance = 2;
-        private const int TreeSpacing = 5;
-        private const float GroveFrequency = 0.02f;
-        private const float GroveChanceBase = 0.3f;
-        private const float GroveChanceRange = 0.55f;
-        private const float SpruceBias = 0.45f;
+        /// <summary> Rows under the snowline over which grass turns snowy, patchily at the bottom and wholly at the top. </summary>
+        private const int AlpineBandRows = 35;
 
-        private const float PlantWeight = 0.4f;
+        private const float AlpineFrequency = 0.08f;
+        private const float AlpinePatchiness = 0.35f;
+
+        private const int LivingTreeEdge = 150;
+        private const int LivingTreeSpacingMin = 380;
+        private const int LivingTreeSpacingMax = 650;
+        private const int LivingTreeRetryMin = 15;
+        private const int LivingTreeRetryMax = 35;
+        private const int LivingTreeSiteClearance = 60;
+        private const int LivingTreeWaterClearance = 20;
+        private const int LivingTreeTreelineMargin = 15;
+
+        /// <summary> Rows up past which a living tree is always spruce, as on any mountain or plateau past <see cref="RuggedWeight"/>. </summary>
+        private const int SpruceElevation = 45;
+
+        private const float RuggedWeight = 0.3f;
+        private const float ValleyBirchWeight = 0.5f;
+
+        private const int TrailLengthMin = 140;
+        private const int TrailLengthMax = 260;
+        private const int PathGapMin = 90;
+        private const int PathGapMax = 260;
+        private const int PathLengthMin = 40;
+        private const int PathLengthMax = 130;
+
+        /// <summary> Rows the ground may step between neighbouring columns before a path gives up on the slope. </summary>
+        private const int PathStepMax = 2;
+
+        private const int PathMissesMax = 3;
+        private const int PathFadeColumns = 6;
+        private const float PathFrayDensity = 0.15f;
+        private const float PathDepthChance = 0.55f;
+
+        // Tried every few columns, since this pass alone grows the surface's forests: vanilla's AddTrees would also root in the snow caps.
+        private const int TreeStepMin = 3;
+        private const int TreeStepMax = 6;
+        private const int TreeCanopyClearance = 2;
+        private const int TreeSpacing = 4;
+        private const float GroveFrequency = 0.012f;
+        private const float MeadowChance = 0.08f;
+        private const float GroveChance = 1f;
+        private const float GroveEdgeLow = 0.35f;
+        private const float GroveEdgeHigh = 0.75f;
+        private const float SpruceBase = 0.42f;
+        private const float SpruceBias = 0.35f;
+        private const float AltitudeBias = 0.5f;
+        private const float AltitudeBiasFrom = 20f;
+        private const float AltitudeBiasRange = 80f;
+
         private const float PlantChance = 0.28f;
         private const float BushChance = 0.05f;
         private const float RockChance = 0.015f;
@@ -691,52 +1558,36 @@ public class IngressRealm : SubworldRealm
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
-            if (realm.terrain is not { } terrain || terrain.Regions.Count == 0)
+            if (realm.terrain is not { } terrain)
                 return;
 
             progress.Message = "Raising the highlands";
 
-            ushort highlandsGrass = (ushort)ModContent.TileType<HighlandsGrass>();
-
-            ConvertGrass(terrain, highlandsGrass);
-            progress.Set(0.25);
+            ushort grass = (ushort)ModContent.TileType<HighlandsGrass>();
+            ushort snowGrass = (ushort)ModContent.TileType<SnowHighlandsGrass>();
 
             FillLakes(terrain);
-            progress.Set(0.4);
+            progress.Set(0.15);
 
-            GrowTrees(terrain, highlandsGrass);
-            progress.Set(0.8);
+            DressAlpine(grass, snowGrass);
+            progress.Set(0.25);
 
-            PlacePlants(terrain, highlandsGrass);
+            progress.Message = "Growing the living trees";
+            GrowLivingTrees(terrain, grass, snowGrass);
+            progress.Set(0.45);
+
+            progress.Message = "Laying gravel paths";
+            LayPaths((ushort)ModContent.TileType<GravelTile>());
+            progress.Set(0.55);
+
+            progress.Message = "Planting groves";
+            GrowTrees(grass, snowGrass);
+            progress.Set(0.85);
+
+            PlacePlants(grass, snowGrass);
         }
 
-        /// <summary> Swaps the surface's Ingress grass inside the regions; a noise-jittered threshold keeps the edge from following the weight in a clean line. </summary>
-        private static void ConvertGrass(SurfaceTerrain terrain, ushort highlandsGrass)
-        {
-            ushort ingressGrass = (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
-            FastNoiseLite edge = CreateNoise(GrassEdgeFrequency);
-
-            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
-            {
-                if (terrain.WeightOf(HighlandsRegion, x) + edge.GetNoise(x, 0f) * GrassEdgeJitter < GrassWeight)
-                    continue;
-
-                int surface = SurfaceRow(x);
-
-                for (int y = surface - GrassRowsAbove; y < surface + GrassRowsBelow; y++)
-                {
-                    Tile tile = Main.tile[x, y];
-
-                    if (!tile.HasTile || tile.TileType != ingressGrass)
-                        continue;
-
-                    tile.TileType = highlandsGrass;
-                    WorldGen.SquareTileFrame(x, y, true);
-                }
-            }
-        }
-
-        /// <summary> Fills each bowl to its level, or to a shallower one if the basin doesn't hold that high. </summary>
+        /// <summary> Fills each lake and river to its level, or to a shallower one if the basin doesn't hold that high. </summary>
         private static void FillLakes(SurfaceTerrain terrain)
         {
             var bounds = new Rectangle(WorldEdge, WorldEdge, Main.maxTilesX - WorldEdge * 2, Main.maxTilesY - WorldEdge * 2);
@@ -755,51 +1606,179 @@ public class IngressRealm : SubworldRealm
             }
         }
 
-        /// <summary> Groves where the density noise is high, spruce or birch by a second noise so each stand leans one way. </summary>
-        private static void GrowTrees(SurfaceTerrain terrain, ushort highlandsGrass)
+        /// <summary> Grass under the snowline turns snowy in clumps, likelier the closer it stands to the snow. </summary>
+        private void DressAlpine(ushort grass, ushort snowGrass)
         {
-            FastNoiseLite density = CreateNoise(GroveFrequency);
-            FastNoiseLite kind = CreateNoise(GroveFrequency);
+            FastNoiseLite patches = CreateNoise(AlpineFrequency);
 
-            for (int x = WorldEdge + 20; x < Main.maxTilesX - WorldEdge - 20; x += WorldGen.genRand.Next(TreeStepMin, TreeStepMax + 1))
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
             {
-                if (terrain.WeightOf(HighlandsRegion, x) < TreeWeight)
+                int ground = SurfaceRow(x);
+                float rise = (realm.Elevation(ground) - (SnowlineRows - AlpineBandRows)) / (float)AlpineBandRows;
+
+                if (rise <= 0f || rise + patches.GetNoise(x, 0f) * AlpinePatchiness < 0.5f)
                     continue;
+
+                Tile tile = Main.tile[x, ground];
+
+                if (tile.HasTile && tile.TileType == grass)
+                    tile.TileType = snowGrass;
+            }
+        }
+
+        private void GrowLivingTrees(SurfaceTerrain terrain, ushort grass, ushort snowGrass)
+        {
+            int x = WorldEdge + LivingTreeEdge + WorldGen.genRand.Next(LivingTreeSpacingMin / 2);
+
+            while (x < Main.maxTilesX - WorldEdge - LivingTreeEdge)
+            {
+                x += TryGrowLivingTree(terrain, x, grass, snowGrass)
+                    ? WorldGen.genRand.Next(LivingTreeSpacingMin, LivingTreeSpacingMax + 1)
+                    : WorldGen.genRand.Next(LivingTreeRetryMin, LivingTreeRetryMax + 1);
+            }
+        }
+
+        /// <summary> Spruce up high and on the rugged ground, birch down in the valleys, either elsewhere. </summary>
+        private bool TryGrowLivingTree(SurfaceTerrain terrain, int x, ushort grass, ushort snowGrass)
+        {
+            if (realm.NearSite(x, LivingTreeSiteClearance))
+                return false;
+
+            int ground = SurfaceRow(x);
+            int elevation = realm.Elevation(ground);
+            Tile tile = Main.tile[x, ground];
+
+            if (elevation > TreelineRows - LivingTreeTreelineMargin || !tile.HasTile || (tile.TileType != grass && tile.TileType != snowGrass))
+                return false;
+
+            float rugged = MathF.Max(terrain.WeightOf(MountainRegion, x), terrain.WeightOf(PlateauRegion, x));
+            HighlandLivingTree.Species species = rugged > RuggedWeight || elevation > SpruceElevation || tile.TileType == snowGrass ? HighlandLivingTree.Species.Spruce
+                : terrain.WeightOf(ValleyRegion, x) > ValleyBirchWeight || WorldGen.genRand.NextBool() ? HighlandLivingTree.Species.Birch
+                : HighlandLivingTree.Species.Spruce;
+
+            int reach = HighlandLivingTree.Reach(species);
+
+            if (realm.InCanyon(x, reach))
+                return false;
+
+            foreach (SurfaceLake lake in terrain.Lakes)
+            {
+                if (Math.Abs(x - lake.Center) <= lake.Radius + reach + LivingTreeWaterClearance)
+                    return false;
+            }
+
+            return !HighlandLivingTree.Grow(new Point(x, ground), species, WorldGen.genRand).IsEmpty;
+        }
+
+        /// <summary> Trails out of the grove on both sides, then shorter paths scattered over the rest of the surface. </summary>
+        private void LayPaths(ushort gravel)
+        {
+            int siteX = realm.layout.SiteX;
+
+            foreach (int side in (int[])[-1, 1])
+                LayPath(siteX + side * (SiteGroveRadius - PathFadeColumns), side, WorldGen.genRand.Next(TrailLengthMin, TrailLengthMax + 1), gravel);
+
+            for (int x = WorldEdge + WorldGen.genRand.Next(PathGapMin, PathGapMax + 1); x < Main.maxTilesX - WorldEdge; x += WorldGen.genRand.Next(PathGapMin, PathGapMax + 1))
+            {
+                if (!realm.NearSite(x, 0) && !realm.InCanyon(x, 0))
+                    x = LayPath(x, 1, WorldGen.genRand.Next(PathLengthMin, PathLengthMax + 1), gravel);
+            }
+        }
+
+        /// <summary>
+        /// Gravels the surface grass from <paramref name="start"/> along <paramref name="direction"/>, fraying at both ends,
+        /// until the length runs out, the ground steps too steeply, or it runs into water or something other than grass.
+        /// </summary>
+        /// <returns> The column the path stopped at. </returns>
+        private static int LayPath(int start, int direction, int length, ushort gravel)
+        {
+            ushort peat = (ushort)ModContent.TileType<PeatTile>();
+            int previous = SurfaceRow(start);
+            int misses = 0;
+            int x = start;
+
+            for (int i = 0; i < length; i++, x += direction)
+            {
+                if (x < WorldEdge || x >= Main.maxTilesX - WorldEdge)
+                    break;
 
                 int ground = SurfaceRow(x);
 
-                if (!IsOpenGrass(x, ground, highlandsGrass))
+                if (Math.Abs(ground - previous) > PathStepMax)
+                    break;
+
+                previous = ground;
+                Tile tile = Main.tile[x, ground];
+
+                if (!IsSurfaceGrass(tile) || Main.tile[x, ground - 1].LiquidAmount > 0)
+                {
+                    if (++misses > PathMissesMax)
+                        break;
+
+                    continue;
+                }
+
+                misses = 0;
+
+                float fray = Math.Min(Math.Min(i, length - 1 - i) / (float)PathFadeColumns, 1f);
+
+                if (WorldGen.genRand.NextFloat() >= MathHelper.Lerp(PathFrayDensity, 1f, fray))
                     continue;
 
-                float grove = (density.GetNoise(x, 0f) + 1f) * 0.5f;
+                tile.TileType = gravel;
 
-                if (WorldGen.genRand.NextFloat() >= GroveChanceBase + grove * GroveChanceRange)
+                Tile below = Main.tile[x, ground + 1];
+
+                if (WorldGen.genRand.NextFloat() < PathDepthChance && below.HasTile && (below.TileType == peat || IsSurfaceGrass(below)))
+                    below.TileType = gravel;
+            }
+
+            return x;
+        }
+
+        private static bool IsSurfaceGrass(Tile tile) => tile.HasTile
+            && (tile.TileType == ModContent.TileType<HighlandsGrass>() || tile.TileType == ModContent.TileType<SnowHighlandsGrass>() || tile.TileType == ModContent.TileType<Content.Ingress.IngressGrass>());
+
+        /// <summary>
+        /// Groves where the density noise is high and meadow between them. A second noise leans each stand to spruce or birch,
+        /// and height leans it further to spruce. Snowy grass and the blight's grass grow only spruce, which birch can't root in.
+        /// </summary>
+        private void GrowTrees(ushort grass, ushort snowGrass)
+        {
+            FastNoiseLite density = CreateNoise(GroveFrequency);
+            FastNoiseLite kind = CreateNoise(GroveFrequency);
+            ushort corrupt = (ushort)ModContent.TileType<CorruptHighlandsGrass>();
+            ushort crimson = (ushort)ModContent.TileType<CrimsonHighlandsGrass>();
+
+            for (int x = WorldEdge + 20; x < Main.maxTilesX - WorldEdge - 20; x += WorldGen.genRand.Next(TreeStepMin, TreeStepMax + 1))
+            {
+                int ground = SurfaceRow(x);
+                int elevation = realm.Elevation(ground);
+                bool blighted = IsOpenGrass(x, ground, corrupt, crimson);
+
+                if (elevation > TreelineRows || !(blighted || IsOpenGrass(x, ground, grass, snowGrass)))
                     continue;
 
-                float spruceChance = 0.5f + kind.GetNoise(x, 100f) * SpruceBias;
-                bool grown = WorldGen.genRand.NextFloat() < spruceChance
+                float grove = Math.Clamp(((density.GetNoise(x, 0f) + 1f) * 0.5f - GroveEdgeLow) / (GroveEdgeHigh - GroveEdgeLow), 0f, 1f);
+
+                if (WorldGen.genRand.NextFloat() >= MeadowChance + grove * grove * (3f - 2f * grove) * GroveChance)
+                    continue;
+
+                float altitude = Math.Clamp((elevation - AltitudeBiasFrom) / AltitudeBiasRange, 0f, 1f);
+                float spruceChance = SpruceBase + kind.GetNoise(x, 100f) * SpruceBias + (altitude - 0.3f) * AltitudeBias;
+                bool spruce = blighted || Main.tile[x, ground].TileType == snowGrass || WorldGen.genRand.NextFloat() < spruceChance;
+
+                // Birch grows straight off the grass, as vanilla's AddTrees grows trees: BirchTree is the ModTree highlands grass picks.
+                bool grown = spruce
                     ? Core.Tiles.CustomTree.TryGrow<SpruceTree>(x, ground - 1, TreeCanopyClearance)
-                    : TryGrowBirch(x, ground - 1);
+                    : WorldGen.GrowTree(x, ground);
 
                 if (grown)
                     x += TreeSpacing;
             }
         }
 
-        /// <summary> Places the sapling and grows it as its random update would; a failed growth takes the sapling back. </summary>
-        private static bool TryGrowBirch(int x, int y)
-        {
-            if (!WorldGen.PlaceTile(x, y, ModContent.TileType<BirchSapling>(), mute: true, forced: true, style: WorldGen.genRand.Next(3)))
-                return false;
-
-            if (WorldGen.GrowTree(x, y))
-                return true;
-
-            WorldGen.KillTile(x, y, noItem: true);
-            return false;
-        }
-
-        private static void PlacePlants(SurfaceTerrain terrain, ushort highlandsGrass)
+        private static void PlacePlants(ushort grass, ushort snowGrass)
         {
             int plant = ModContent.TileType<TemperatePlants>();
             int bush = ModContent.TileType<WinterberryBushTile>();
@@ -807,19 +1786,16 @@ public class IngressRealm : SubworldRealm
 
             for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge - RockWidth; x++)
             {
-                if (terrain.WeightOf(HighlandsRegion, x) < PlantWeight)
-                    continue;
-
                 int ground = SurfaceRow(x);
 
-                if (!IsOpenGrass(x, ground, highlandsGrass))
+                if (!IsOpenGrass(x, ground, grass, snowGrass))
                     continue;
 
                 float roll = WorldGen.genRand.NextFloat();
 
                 if (roll < RockChance)
                 {
-                    if (RockFits(x, ground, highlandsGrass) && WorldGen.PlaceTile(x + 1, ground - 1, rock, mute: true))
+                    if (RockFits(x, ground, grass) && WorldGen.PlaceTile(x + 1, ground - 1, rock, mute: true))
                         x += RockWidth;
                 }
                 else if (roll < RockChance + BushChance)
@@ -833,33 +1809,26 @@ public class IngressRealm : SubworldRealm
             }
         }
 
-        /// <summary> Flat highland grass at (<paramref name="x"/>, <paramref name="y"/>) with an empty, dry tile above it. </summary>
-        private static bool IsOpenGrass(int x, int y, ushort highlandsGrass)
+        /// <summary> Flat highland or snowy grass at (<paramref name="x"/>, <paramref name="y"/>) with an empty, dry tile above it. </summary>
+        private static bool IsOpenGrass(int x, int y, ushort grass, ushort snowGrass)
         {
             Tile tile = Main.tile[x, y];
             Tile above = Main.tile[x, y - 1];
 
-            return tile.HasTile && tile.TileType == highlandsGrass && !tile.IsHalfBlock && tile.Slope == SlopeType.Solid
+            return tile.HasTile && (tile.TileType == grass || tile.TileType == snowGrass) && !tile.IsHalfBlock && tile.Slope == SlopeType.Solid
                 && !above.HasTile && above.LiquidAmount == 0;
         }
 
-        private static bool RockFits(int x, int y, ushort highlandsGrass)
+        /// <summary> Three columns of flat highland grass, which the rock anchors to, with headroom over them. </summary>
+        private static bool RockFits(int x, int y, ushort grass)
         {
             for (int column = x; column < x + RockWidth; column++)
             {
-                if (!IsOpenGrass(column, y, highlandsGrass) || Main.tile[column, y - 2].HasTile)
+                if (!IsOpenGrass(column, y, grass, grass) || Main.tile[column, y - 2].HasTile)
                     return false;
             }
 
             return true;
-        }
-
-        private static FastNoiseLite CreateNoise(float frequency)
-        {
-            var noise = new FastNoiseLite(WorldGen.genRand.Next());
-            noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-            noise.SetFrequency(frequency);
-            return noise;
         }
     }
 
@@ -1005,9 +1974,10 @@ public class IngressRealm : SubworldRealm
     /// <summary>
     /// Below the surface layer: Ingress grass on exposed peat, Tanglewood trees, Ousia vines, and cattails and lily pads in
     /// pools. Foliage goes on flat grass both there and on the surface. Runs after the pools and the surface trees so pool
-    /// beds, slopes and trunks are final; cave trees go before vines and foliage so they get clear floor.
+    /// beds, slopes and trunks are final; cave trees go before vines and foliage so they get clear floor. The blight keeps its
+    /// bare peat, so none of it grows there.
     /// </summary>
-    private class IngressFlora() : GenPass("[T3] Ingress Flora", 140f)
+    private class IngressFlora(IngressRealm realm) : GenPass("[T3] Ingress Flora", 140f)
     {
         private const float TreeChance = 0.15f;
         private const float TreeDensityFrequency = 0.01f;
@@ -1069,10 +2039,13 @@ public class IngressRealm : SubworldRealm
             PlaceWaterPlants(grass, top, bottom);
         }
 
-        private static void SpreadGrass(ushort peat, ushort grass, int top, int bottom)
+        private void SpreadGrass(ushort peat, ushort grass, int top, int bottom)
         {
             for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
             {
+                if (realm.blight is { } blight && x >= blight.Left && x <= blight.Right)
+                    continue;
+
                 for (int y = top; y < bottom; y++)
                 {
                     Tile tile = Main.tile[x, y];
@@ -1387,7 +2360,7 @@ public class IngressRealm : SubworldRealm
         {
             progress.Message = "Growing Flora and Trees";
 
-            WorldGen.AddTrees();
+            // No vanilla trees: on this surface they only take root in the snow caps, above the treeline.
             WorldGen.GrowGlowTulips();
             GrowTanglewoodTrees();
         }
@@ -1408,6 +2381,66 @@ public class IngressRealm : SubworldRealm
                     Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.MediumTanglewoodTree>(x, ground - 1);
                 else
                     Core.Tiles.CustomTree.TryGrow<Content.Ingress.Trees.SmallTanglewoodTree>(x, ground - 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Last, after everything that grows or carves. Generation should leave no sapling behind, so any still standing either
+    /// grows into its tree now or is cleared; saplings stand two tiles tall, and both growers find the ground from either
+    /// half. Altars and orbs a later chasm or root cut into are cleared too: framing would break them as the world loads,
+    /// and a broken altar smashes, and a broken orb breaks, as if the player had done it.
+    /// </summary>
+    private class IngressCleanup() : GenPass("[T3] Ingress Cleanup", 5f)
+    {
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "Tidying up";
+
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+            {
+                for (int y = WorldEdge; y < Main.maxTilesY - WorldEdge; y++)
+                {
+                    Tile tile = Main.tile[x, y];
+
+                    if (!tile.HasTile)
+                        continue;
+
+                    if (TileID.Sets.TreeSapling[tile.TileType])
+                        ClearIfStunted(x, y, tile);
+                    else if (tile.TileType == TileID.DemonAltar)
+                        ClearIfBroken(x, y, tile, width: 3, height: 2);
+                    else if (tile.TileType == TileID.ShadowOrbs)
+                        ClearIfBroken(x, y, tile, width: 2, height: 2);
+                }
+            }
+        }
+
+        private static void ClearIfStunted(int x, int y, Tile tile)
+        {
+            bool grown = TileLoader.GetTile(tile.TileType) is Core.Tiles.SaplingTile sapling ? sapling.TryGrow(x, y) : WorldGen.GrowTree(x, y);
+            Tile after = Main.tile[x, y];
+
+            if (!grown && after.HasTile && TileID.Sets.TreeSapling[after.TileType])
+                after.ClearTile();
+        }
+
+        /// <summary> Clears this tile of a <paramref name="width"/> by <paramref name="height"/> object unless every tile of the object is still there. </summary>
+        private static void ClearIfBroken(int x, int y, Tile tile, int width, int height)
+        {
+            int left = x - tile.TileFrameX / 18 % width;
+            int top = y - tile.TileFrameY / 18 % height;
+
+            for (int column = left; column < left + width; column++)
+            {
+                for (int row = top; row < top + height; row++)
+                {
+                    if (Main.tile[column, row] is not { HasTile: true } part || part.TileType != tile.TileType)
+                    {
+                        tile.ClearTile();
+                        return;
+                    }
+                }
             }
         }
     }

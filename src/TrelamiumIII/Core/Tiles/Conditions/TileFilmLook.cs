@@ -42,11 +42,11 @@ public sealed record TileFilmLook
     /// <summary>Opacity of the coat's top surface. Zero turns it off.</summary>
     public float HighlightAlpha { get; init; }
 
-    /// <summary>How far the rim and highlight ignore world light, 0..1.</summary>
+    /// <summary>How much more of the world light the rim and highlight catch, 0..1; they still go dark with the tile.</summary>
     public float EmissiveEdge { get; init; }
 
-    /// <summary>Floor under the world light recovered from the canvas.</summary>
-    public Vector3 AmbientLight { get; init; } = new(0.2f);
+    /// <summary>Floor under the world light recovered from the canvas. Zero, so a coat is no more visible than its tile; a glowing coat lights itself with <see cref="Lighting.AddLight(Vector2, Vector3)"/> instead.</summary>
+    public Vector3 AmbientLight { get; init; }
 
     /// <summary>World pixels the coat may stand proud of the terrain into open air.</summary>
     public float SurfaceLip { get; init; }

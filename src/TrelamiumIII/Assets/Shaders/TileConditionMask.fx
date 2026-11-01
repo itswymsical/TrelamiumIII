@@ -65,7 +65,7 @@ float3 HighlightColor;      // the top of the coat; zero alpha turns it off
 float HighlightAlpha;
 
 float EmissiveEdge;         // how far rim and highlight ignore world light, 0..1
-float3 AmbientLight;        // floor under the light recovered from the canvas
+float3 AmbientLight;        // floor under the light recovered from the canvas; zero unless the coat glows
 
 float TintStrength;         // how far each tile's colour re-dyes the palette; 0 draws it as authored
 float TintWash;             // how much of their own colour the rim and highlight keep under a tint
@@ -143,7 +143,8 @@ float4 FilmPass(float2 uv : TEXCOORD0) : COLOR0
     if (d < Threshold)
         discard;
 
-    float3 edgeLight = lerp(light, float3(1.0, 1.0, 1.0), EmissiveEdge);
+    // Catches more of the light there is rather than lighting itself, so the coat goes dark with its tile.
+    float3 edgeLight = saturate(light * (1.0 + EmissiveEdge));
 
     // The top of the coat: its lip over a floor, or with no lip, the terrain's own top row.
     float overFloor = lip * Terrain(world + float2(0.0, SurfaceLip));

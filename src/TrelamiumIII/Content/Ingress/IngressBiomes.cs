@@ -1,68 +1,13 @@
 ﻿using SubworldLibrary;
-using Terraria.GameContent.Skies;
 using Terraria.Graphics.Effects;
 using TrelamiumIII.Common.Generation;
 using TrelamiumIII.Common.Subworlds.Realms;
+using TrelamiumIII.Content.Ingress.HighlandsBiome;
 using TrelamiumIII.Content.Ingress.HighlandsBiome.BirchFurniture;
 
 namespace TrelamiumIII.Content.Ingress;
 
-public class HighlandsSky : CustomSky
-{
-    private bool _isActive;
-    private float _intensity;
-
-    public override void Update(GameTime gameTime)
-    {
-        if (_isActive)
-        {
-            _intensity += 0.05f;
-            if (_intensity > 1f) _intensity = 1f;
-        }
-        else
-        {
-            _intensity -= 0.05f;
-            if (_intensity < 0f) _intensity = 0f;
-        }
-    }
-
-    public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth)
-    {
-        if (minDepth <= 0f && maxDepth > 0f && _intensity > 0f)
-        {
-            Color tintColor = new Color(126, 192, 162);
-
-            float targetAlpha = 0.11f * _intensity;
-            Color finalColor = tintColor * targetAlpha;
-
-            Rectangle screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
-
-            spriteBatch.Draw(Terraria.GameContent.TextureAssets.MagicPixel.Value, screenRect, finalColor);
-        }
-    }
-
-    public override bool IsActive()
-    {
-        return _isActive || _intensity > 0f;
-    }
-
-    public override void Activate(Vector2 position, params object[] args)
-    {
-        _isActive = true;
-    }
-
-    public override void Deactivate(params object[] args)
-    {
-        _isActive = false;
-    }
-
-    public override void Reset()
-    {
-        _isActive = false;
-        _intensity = 0f;
-    }
-}
-
+/// <summary> The Temperate Highlands: the whole of Ingress's surface, by day and night. Its sky, fog and light live in <see cref="HighlandsAtmosphere"/>. </summary>
 public class HighlandBiome : ModBiome
 {
     public int GetMusic()
@@ -96,16 +41,28 @@ public class HighlandBiome : ModBiome
 
     public override int BiomeTorchItemType => ModContent.ItemType<BirchTorchItem>();
     public override int BiomeCampfireItemType => ModContent.ItemType<BirchCampfireItem>();
+    /// <summary>
+    /// Drives the sky through <see cref="SkyManager"/> directly: <see cref="Player.ManageSpecialBiomeVisuals"/> also
+    /// dereferences a scene filter under the same key, unchecked, and the highlands' fog is a filter of its own.
+    /// </summary>
     public override void SpecialVisuals(Player player, bool isActive)
     {
-        base.SpecialVisuals(player, isActive);
+        if (player.whoAmI != Main.myPlayer || SkyManager.Instance[HighlandsSky.Key] is not HighlandsSky sky || sky.Wanted == isActive)
+            return;
+
+        if (isActive)
+            SkyManager.Instance.Activate(HighlandsSky.Key);
+        else
+            SkyManager.Instance.Deactivate(HighlandsSky.Key);
     }
+
+    /// <summary> Sky height too, since the tallest peaks can reach toward it. </summary>
     public override bool IsBiomeActive(Player player)
     {
         if (!SubworldSystem.IsActive<IngressRealm>())
             return false;
 
-        return player.ZoneOverworldHeight && Main.dayTime;
+        return player.ZoneOverworldHeight || player.ZoneSkyHeight;
     }
 }
 

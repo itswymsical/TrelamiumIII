@@ -32,6 +32,12 @@ public sealed class SharedWorldData : ModSystem, ICopyWorldData
     private const string Key = "TrelamiumIII.SharedWorldData";
     private const string VanillaKey = "Vanilla";
 
+    /// <summary>
+    /// The main world's evil. Not progression, but every realm has to agree with it: Ingress grows a patch of the same
+    /// one, and a realm generates before it could otherwise know which.
+    /// </summary>
+    private const string CrimsonKey = "Crimson";
+
     /// <summary>Ticks between change checks on a server.</summary>
     private const int SyncInterval = 60;
 
@@ -83,6 +89,9 @@ public sealed class SharedWorldData : ModSystem, ICopyWorldData
                 field.SetValue(null, true);
         }
 
+        if (tag.TryGet(CrimsonKey, out bool crimson))
+            WorldGen.crimson = crimson;
+
         foreach (ModSystem system in Participants())
         {
             if (tag.TryGet(system.FullName, out TagCompound data))
@@ -102,6 +111,7 @@ public sealed class SharedWorldData : ModSystem, ICopyWorldData
         }
 
         tag[VanillaKey] = vanilla;
+        tag[CrimsonKey] = WorldGen.crimson;
 
         foreach (ModSystem system in Participants())
         {

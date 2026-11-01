@@ -1,6 +1,4 @@
-using Terraria.Graphics.Effects;
 using Terraria.Localization;
-using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Core.Books.Lore;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Graphics;
@@ -34,11 +32,6 @@ public sealed partial class TrelamiumIII : Mod
     {
         TrelamiumFonts.Load(this);
         SpeakerRegistry.Load();
-
-        if (!Main.dedServ)
-        {
-            SkyManager.Instance["TrelamiumIII:HighlandsSky"] = new HighlandsSky();
-        }
     }
 
     public override void Unload()

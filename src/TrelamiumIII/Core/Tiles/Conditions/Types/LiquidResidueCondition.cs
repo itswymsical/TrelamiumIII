@@ -30,7 +30,6 @@ public sealed class LiquidResidueCondition : FilmCondition
         HighlightColor = new Vector3(0.95f),
         HighlightAlpha = 0.4f,
         EmissiveEdge = 0.15f,
-        AmbientLight = new Vector3(0.15f),
         TintStrength = 1f,
         TintWash = 0.75f,
     };

@@ -37,7 +37,6 @@ public sealed class MagmaCondition : FilmCondition
         HighlightColor = new Vector3(1f, 0.9f, 0.55f),
         HighlightAlpha = 0.7f,
         EmissiveEdge = 0.6f,
-        AmbientLight = new Vector3(0.75f),
         SurfaceLip = 2f,
         TintStrength = 1f,
         TintWash = 0.3f,

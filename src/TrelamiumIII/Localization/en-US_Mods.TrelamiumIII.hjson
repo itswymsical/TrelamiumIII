@@ -1358,6 +1358,16 @@ Items: {
 		DisplayName: Tile Condition Wand
 		Tooltip: ""
 	}
+
+	BasaltBlock: {
+		DisplayName: Basalt Block
+		Tooltip: ""
+	}
+
+	GravelBlock: {
+		DisplayName: Gravel Block
+		Tooltip: ""
+	}
 }
 
 Tiles: {

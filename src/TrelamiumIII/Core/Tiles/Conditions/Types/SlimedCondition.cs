@@ -28,7 +28,6 @@ public sealed class SlimedCondition : FilmCondition
         HighlightColor = new Vector3(0.88f, 0.97f, 1.00f),
         HighlightAlpha = 0.85f,
         EmissiveEdge = 0.25f,
-        AmbientLight = new Vector3(0.25f),
         SurfaceLip = 2f,
         TintStrength = 1f,
         TintWash = 0.55f,

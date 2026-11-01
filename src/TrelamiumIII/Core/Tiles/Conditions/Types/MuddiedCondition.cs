@@ -26,7 +26,6 @@ public sealed class MuddiedCondition : FilmCondition
         OutlineAlpha = 0.92f,
         HighlightColor = new Vector3(0.55f, 0.43f, 0.3f),
         HighlightAlpha = 0.6f,
-        AmbientLight = new Vector3(0.2f),
         SurfaceLip = 2f,
     };
 

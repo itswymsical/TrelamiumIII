@@ -140,7 +140,7 @@ internal static class FrostFilm
         effect.Parameters["SparkleSpeed"]?.SetValue(2.2f);
         effect.Parameters["SparkleColor"]?.SetValue(new Vector3(0.9f, 0.97f, 1f));
 
-        effect.Parameters["AmbientLight"]?.SetValue(new Vector3(0.22f));
+        effect.Parameters["AmbientLight"]?.SetValue(Vector3.Zero);
     }
 
     /// <summary>

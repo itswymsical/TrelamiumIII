@@ -119,7 +119,9 @@ float4 BurnPass(float2 uv : TEXCOORD0) : COLOR0
     float2 tiles = cellWorld / 16.0;
 
     float4 canvas = tex2Dlod(CanvasSampler, float4(cell, 0.0, 0.0));
-    float weight = tex2Dlod(LightSampler, float4(cell, 0.0, 0.0)).r;
+    float4 lightSum = tex2Dlod(LightSampler, float4(cell, 0.0, 0.0));
+    float weight = lightSum.r;
+    float3 light = lightSum.gba / max(weight, 0.0001);
     float heat = saturate(canvas.g / max(weight, 0.0001));
 
     // Still and world-locked, so the scorch keeps its shape while the fire moves over it. The mottling scales the
@@ -143,7 +145,8 @@ float4 BurnPass(float2 uv : TEXCOORD0) : COLOR0
     if (alpha <= 0.004)
         discard;
 
-    return float4(fireColor * fireAlpha + CharColor * sootAlpha * (1.0 - fireAlpha), alpha);
+    // The fire lights itself; the soot is lit by the world like the tile under it.
+    return float4(fireColor * fireAlpha + CharColor * light * sootAlpha * (1.0 - fireAlpha), alpha);
 }
 
 technique TileBurnMask
