@@ -623,6 +623,11 @@ Items: {
 		Tooltip: Advances plants to their next growth stage.
 	}
 
+	WinterberryItem: {
+		DisplayName: Winterberries
+		Tooltip: ""
+	}
+
 	MagnoliaSeedsItem: {
 		DisplayName: Magnolia Seeds
 		Tooltip: ""
@@ -1379,6 +1384,7 @@ Tiles: {
 	AdvancedAlchemyStationBase.MapEntry: Solution Synthesizer
 	AlchemyStationTile.MapEntry: Alchemy Station
 	MagnoliaTile.MapEntry: Magnolia
+	WinterberryBushTile.MapEntry: Winterberry Bush
 	MyconidSporeTile.MapEntry: Myconid Spore
 	SpruceChestTile.MapEntry: Spruce Chest
 	SpruceDresserTile.MapEntry: Spruce Dresser

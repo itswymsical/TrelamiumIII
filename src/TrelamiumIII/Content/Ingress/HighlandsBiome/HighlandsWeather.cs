@@ -66,15 +66,18 @@ public sealed class AlpineFrostRule : TileConditionRule
 
 /// <summary>
 /// Spawns the highlands' weather around the local player. Mist rises off exposed ground everywhere in the highlands, as
-/// vanilla's graveyard fog does, thicker at dawn, dusk and night and in the rain, and now and then a string of it blows off
-/// a ledge. Up on the peaks, sleet falls and freezes what it hits, and gusts carry ice crystals and freezing mist past.
+/// vanilla's graveyard fog does, into <see cref="HighlandsMistField"/>: thicker at dawn, dusk and night and in the rain, and
+/// now and then a string of it blows off a ledge. Up on the peaks, sleet falls and freezes what it hits, and gusts carry ice
+/// crystals and freezing mist past.
 /// </summary>
 public sealed class HighlandsWeather : ModSystem
 {
     // Vanilla's graveyard works the same area and gives each floor tile one chance in 120 a tick at full fog.
     private const int MistAreaWidth = 120;
     private const int MistAreaHeight = 40;
-    private const float MistChancePerDensity = 1f / 240f;
+    private const float MistChancePerDensity = 1f / 200f;
+    private const float MistRadiusMin = 30f;
+    private const float MistRadiusMax = 56f;
     private const int MistBelowSurfaceRows = 5;
     private const float RainMistBoost = 1f;
     private const int MistLifeMin = 420;
@@ -85,8 +88,15 @@ public sealed class HighlandsWeather : ModSystem
     private const int DriftPuffsMin = 3;
     private const int DriftPuffsMax = 8;
 
-    /// <summary> Pixels between puffs in a string, per unit of puff scale: vanilla's 1.4 speed times 6.5. </summary>
-    private const float DriftPuffSpacing = 9f;
+    /// <summary> Gap between puffs in a string, as a fraction of a puff's radius, so they merge into one streak. </summary>
+    private const float DriftPuffSpacing = 0.8f;
+
+    private const float DriftSpeed = 1.4f;
+    private const float DriftCalmWind = 0.25f;
+    private const float DriftRadiusMin = 20f;
+    private const float DriftRadiusMax = 34f;
+    private const int DriftLifeMin = 160;
+    private const int DriftLifeMax = 260;
 
     private const float SleetBase = 0.3f;
     private const float SleetGust = 2.5f;
@@ -112,15 +122,18 @@ public sealed class HighlandsWeather : ModSystem
     private const int BudgetShare = 2;
 
     /// <summary>
-    /// The weather's own particles, ticked and drawn here: mist and sleet are numerous and constant, and in the shared list
-    /// they would push out every other effect.
+    /// The weather's own particles, ticked and drawn here: sleet is numerous and constant, and in the shared list it would
+    /// push out every other effect.
     /// </summary>
     private static readonly List<Particle> particles = [];
 
     private int ticks;
 
-    /// <summary> This tick's mist colour, read by every mist particle so they don't each work out the palette. </summary>
+    /// <summary> This tick's mist colour, so <see cref="HighlandsMistField"/> doesn't work out the palette each time it draws. </summary>
     internal static Color MistTint { get; private set; } = Color.White;
+
+    /// <summary> Speed the ground mist drifts at, in pixels a tick: vanilla's floor-cloud drift. </summary>
+    internal static float MistWind => 0.4f * Main.WindForVisuals;
 
     private static int Capacity => ModContent.GetInstance<VFXConfig>().ParticleCount * BudgetShare;
 
@@ -190,9 +203,8 @@ public sealed class HighlandsWeather : ModSystem
                 if (Main.rand.NextFloat() >= chance || !IsFloor(x, y))
                     continue;
 
-                float rise = Main.rand.NextFloat(16f);
-                Spawn<HighlandsMistParticle>(new Vector2(x * 16 + 8, y * 16 - 8 - rise), Vector2.Zero, Main.rand.Next(MistLifeMin, MistLifeMax + 1),
-                    variant: rise < 4f ? 3 : Main.rand.Next(3), scale: Main.rand.NextFloat(0.8f, 1f));
+                FieldSystem.GetLayer<HighlandsMistField>()?.SpawnNode(new Vector2(x * 16 + 8, y * 16 - 8 - Main.rand.NextFloat(16f)), new Vector2(MistWind, 0f),
+                    radius: Main.rand.NextFloat(MistRadiusMin, MistRadiusMax), life: Main.rand.Next(MistLifeMin, MistLifeMax + 1));
             }
         }
 
@@ -209,21 +221,24 @@ public sealed class HighlandsWeather : ModSystem
         }
     }
 
-    /// <summary> A string of faint cloud leaving a ledge along the wind, each puff a little further on, as vanilla's airborne clouds do. </summary>
+    /// <summary> A string of thin mist leaving a ledge along the wind, each puff a little further on, as vanilla's airborne clouds do. </summary>
     private static void BlowDrift(Vector2 position)
     {
-        float wind = HighlandsDriftParticle.Wind;
+        if (FieldSystem.GetLayer<HighlandsMistField>() is not { } mist)
+            return;
+
+        // With a floor on its speed, so a still day still carries it off.
+        float wind = DriftSpeed * (Main.WindForVisuals >= 0f ? 1f : -1f) * MathF.Max(MathF.Abs(Main.WindForVisuals), DriftCalmWind);
         float heading = Main.rand.NextFloatDirection() * 0.15f;
 
         for (int i = Main.rand.Next(DriftPuffsMin, DriftPuffsMax + 1); i > 0; i--)
         {
-            float scale = Main.rand.NextFloat(1.1f, 2.2f);
+            float radius = Main.rand.NextFloat(DriftRadiusMin, DriftRadiusMax);
             Vector2 velocity = new Vector2(wind, 0f).RotatedBy(heading);
 
-            Spawn<HighlandsDriftParticle>(position + Main.rand.NextVector2Circular(4f, 4f), velocity, Main.rand.Next(360, 540),
-                variant: Main.rand.Next(2), scale: scale, rotation: velocity.ToRotation());
+            mist.SpawnNode(position + Main.rand.NextVector2Circular(4f, 4f), velocity, radius, Main.rand.Next(DriftLifeMin, DriftLifeMax + 1));
 
-            position += velocity.SafeNormalize(Vector2.UnitX) * DriftPuffSpacing * scale;
+            position += velocity.SafeNormalize(Vector2.UnitX) * radius * DriftPuffSpacing;
             heading += Main.rand.NextFloatDirection() * 0.05f;
         }
     }
@@ -324,103 +339,6 @@ public sealed class HighlandsWeather : ModSystem
         }
 
         return true;
-    }
-}
-
-/// <summary>
-/// Highland mist hugging the ground, drawn with vanilla's graveyard floor-cloud sprites through world light and tinted by
-/// the palette. Like vanilla's, it rides the wind and fades in while there is ground under it, and fades away once it
-/// drifts off a ledge or runs out of time.
-/// </summary>
-public sealed class HighlandsMistParticle : Particle
-{
-    // Vanilla's floor clouds peak at alpha 220 of 255, and fade a step of alpha each tick.
-    private const float MaxOpacity = 35f / 255f;
-    private const float FadeStep = 1f / 255f;
-    private const float Drift = 0.4f;
-    private const int FadeOutTime = 30;
-
-    private float opacity;
-
-    public override string[] Textures =>
-        [$"Images/Gore_{GoreID.AmbientFloorCloud1}", $"Images/Gore_{GoreID.AmbientFloorCloud2}", $"Images/Gore_{GoreID.AmbientFloorCloud3}", $"Images/Gore_{GoreID.AmbientFloorCloud4}"];
-
-    public override float Gravity => 0f;
-
-    public override float Drag => 1f;
-
-    public override bool TileCollide => false;
-
-    public override bool LiquidCollide => false;
-
-    public override int FadeOutTicks => 0;
-
-    public override void Update()
-    {
-        Velocity = new Vector2(Drift * Main.WindForVisuals, 0f);
-        Color = HighlandsWeather.MistTint;
-
-        Point tile = Position.ToTileCoordinates();
-        bool grounded = WorldGen.InWorld(tile.X, tile.Y + 2, 10) && !WorldGen.SolidTile(tile.X, tile.Y)
-            && (WorldGen.SolidTile(tile.X, tile.Y + 1) || WorldGen.SolidTile(tile.X, tile.Y + 2));
-
-        if (grounded && TimeLeft > FadeOutTime)
-            opacity = MathF.Min(opacity + FadeStep, MaxOpacity);
-        else if ((opacity -= FadeStep) <= 0f)
-            Kill();
-    }
-
-    public override bool PreDraw(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, Color lightColor)
-    {
-        spriteBatch.Draw(texture, drawPosition, null, lightColor * opacity, 0f, texture.Size() * 0.5f, Scale, SpriteEffects.None, 0f);
-        return false;
-    }
-}
-
-/// <summary> A faint puff of cloud blown along the wind, vanilla's airborne graveyard cloud tinted by the palette; it thins away against anything solid. </summary>
-public sealed class HighlandsDriftParticle : Particle
-{
-    // Vanilla's airborne clouds peak at alpha 240 of 255.
-    private const float MaxOpacity = 18f / 255f;
-    private const float FadeStep = 0.2f / 255f;
-    private const int FadeOutTime = 60;
-    private const float Speed = 1.4f;
-
-    /// <summary> Speed along the wind, with a floor so a still day still carries it off. </summary>
-    internal static float Wind => Speed * (Main.WindForVisuals >= 0f ? 1f : -1f) * MathF.Max(MathF.Abs(Main.WindForVisuals), 0.25f);
-
-    private float opacity;
-
-    public override string[] Textures => [$"Images/Gore_{GoreID.AmbientAirborneCloud1}", $"Images/Gore_{GoreID.AmbientAirborneCloud3}"];
-
-    public override float Gravity => 0f;
-
-    public override float Drag => 1f;
-
-    public override bool TileCollide => false;
-
-    public override bool LiquidCollide => false;
-
-    public override int FadeOutTicks => 0;
-
-    public override void Update()
-    {
-        Color = HighlandsWeather.MistTint;
-        Rotation = Velocity.ToRotation();
-
-        Point tile = Position.ToTileCoordinates();
-        bool blocked = WorldGen.InWorld(tile.X, tile.Y, 10) && WorldGen.SolidTile(tile.X, tile.Y);
-
-        if (!blocked && TimeLeft > FadeOutTime)
-            opacity = MathF.Min(opacity + FadeStep * 5f, MaxOpacity);
-        else if ((opacity -= FadeStep * 5f) <= 0f)
-            Kill();
-    }
-
-    public override bool PreDraw(SpriteBatch spriteBatch, Texture2D texture, Vector2 drawPosition, Color lightColor)
-    {
-        spriteBatch.Draw(texture, drawPosition, null, lightColor * opacity, Rotation, texture.Size() * 0.5f, Scale, SpriteEffects.None, 0f);
-        return false;
     }
 }
 

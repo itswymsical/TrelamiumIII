@@ -1,4 +1,5 @@
-using TrelamiumIII.Content.Alchemy;
+using System.Linq;
+using TrelamiumIII.Core.Tiles;
 
 namespace TrelamiumIII.Core.ExperientialSystem.Acts;
 
@@ -70,7 +71,7 @@ public static class ActSets
 
     public static readonly int[] HerbTiles =
     [
-        TileID.ImmatureHerbs, TileID.MatureHerbs, TileID.BloomingHerbs, ModContent.TileType<MagnoliaTile>()
+        TileID.ImmatureHerbs, TileID.MatureHerbs, TileID.BloomingHerbs, .. TrelamiumIII.Instance.GetContent<CustomHerb>().Select(herb => (int)herb.Type)
     ];
 
     public static readonly int[] Slimes =

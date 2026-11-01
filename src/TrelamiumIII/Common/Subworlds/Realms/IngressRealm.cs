@@ -57,6 +57,7 @@ public class IngressRealm : SubworldRealm
     private const string MountainRegion = "Mountain";
     private const string PlateauRegion = "Plateau";
     private const string ValleyRegion = "Valley";
+    private const string TaigaRegion = "Taiga";
 
     /// <summary> Rows above the base line past which trees stop growing. </summary>
     private const int TreelineRows = 95;
@@ -84,7 +85,7 @@ public class IngressRealm : SubworldRealm
     /// <summary> The Ligneous Fortress of the last generation; null before one and in multiplayer clients. </summary>
     internal FortressLayout? Fortress { get; private set; }
 
-    public override int Width => 4200;
+    public override int Width => 6000;
     public override string Name => "Ingress";
     public override int Height => 1480;
 
@@ -288,20 +289,29 @@ public class IngressRealm : SubworldRealm
         private const int LakeSpacing = 110;
 
         // Peaks top out near 260 rows above the base line, still 100 rows short of the sky layer.
-        private const int MountainSpanMin = 520;
-        private const int MountainSpanMax = 700;
-        private const int MountainCoreMin = 8;
-        private const int MountainCoreMax = 20;
-        private const int MountainLiftMin = 115;
-        private const int MountainLiftMax = 160;
-        private const int MountainRidgeMin = 45;
-        private const int MountainRidgeMax = 70;
+        private const int MountainSpanMin = 800;
+        private const int MountainSpanMax = 1100;
+        private const int MountainCoreMin = 40;
+        private const int MountainCoreMax = 90;
+        private const int MountainLiftMin = 130;
+        private const int MountainLiftMax = 175;
+        private const int MountainRidgeMin = 35;
+        private const int MountainRidgeMax = 55;
         private const float MountainAmplitude = 28f;
         private const float MountainWarp = 50f;
 
         /// <summary> Power of the mountains' pointed lift falloff; past 1 the slopes steepen toward the summit. </summary>
         private const float MountainPeak = 1.5f;
         private const float MountainWeight = 3f;
+
+        // Only ever placed on a mountain's far side, so it has no weight among the random picks.
+        private const int TaigaSpanMin = 500;
+        private const int TaigaSpanMax = 800;
+        private const int TaigaFalloff = 160;
+        private const int TaigaLiftMin = 30;
+        private const int TaigaLiftMax = 50;
+        private const float TaigaAmplitude = 20f;
+        private const float TaigaWarp = 40f;
 
         private const int PlateauSpanMin = 260;
         private const int PlateauSpanMax = 420;
@@ -356,6 +366,9 @@ public class IngressRealm : SubworldRealm
         private const int SnowRowsMax = 14;
         private const int SnowRiseRows = 6;
 
+        private const int SpikeReach = 3;
+        private const int SpikeRise = 6;
+
         private static readonly (string Kind, double Weight)[] SegmentWeights =
         [
             (HillsRegion, HillsWeight),
@@ -397,6 +410,7 @@ public class IngressRealm : SubworldRealm
                     (ushort)ModContent.TileType<GrayTerracottaTile>()
                 ],
                 Clay: TileID.ClayBlock,
+                Pool: (ushort)ModContent.TileType<GrayTerracottaTile>(),
                 Snow: TileID.SnowBlock,
                 Basalt: (ushort)ModContent.TileType<BasaltTile>(),
                 Slate: (ushort)ModContent.TileType<SlateTile>());
@@ -406,6 +420,8 @@ public class IngressRealm : SubworldRealm
 
             for (int x = 0; x < Main.maxTilesX; x++)
                 heights[x] = terrain.HeightAt(x);
+
+            Despike(heights);
 
             FastNoiseLite rockNoise = CreateNoise(RockNoiseFrequency);
 
@@ -431,9 +447,23 @@ public class IngressRealm : SubworldRealm
         }
 
         /// <summary>
+        /// Caps any column standing more than <see cref="SpikeRise"/> rows above both of its neighbours
+        /// <see cref="SpikeReach"/> columns away, so the ridges top out in crags a few tiles wide rather than one-tile needles.
+        /// A cliff's edge has a high neighbour on one side, so cliffs are left as they are.
+        /// </summary>
+        private static void Despike(int[] heights)
+        {
+            int[] source = (int[])heights.Clone();
+
+            for (int x = SpikeReach; x < heights.Length - SpikeReach; x++)
+                heights[x] = Math.Max(source[x], Math.Min(source[x - SpikeReach], source[x + SpikeReach]) - SpikeRise);
+        }
+
+        /// <summary>
         /// Walks each side of the site out to the world's edge in segments. The first is always hills; after that no kind
-        /// repeats, and a side without a mountain takes one once only a mountain and one more segment would still fit, so
-        /// every side gets one. Lakes and rivers go in last, since their levels read the finished terrain.
+        /// repeats, a side without a mountain takes one once only a mountain and one more segment would still fit, so every
+        /// side gets one, and each mountain comes down into a taiga on its far side where there is room. Lakes and rivers
+        /// go in last, since their levels read the finished terrain.
         /// </summary>
         private static void PlanLandscape(SurfaceTerrain terrain, int siteX)
         {
@@ -446,7 +476,7 @@ public class IngressRealm : SubworldRealm
                 string? previous = null;
                 bool hasMountain = false;
 
-                while (PickSegment(previous, hasMountain, Math.Abs(end - cursor)) is { } kind)
+                while ((previous == MountainRegion && Math.Abs(end - cursor) >= TaigaSpanMin ? TaigaRegion : PickSegment(previous, hasMountain, Math.Abs(end - cursor))) is { } kind)
                 {
                     (int min, int max) = SpanRange(kind);
                     int span = Math.Min(WorldGen.genRand.Next(min, max + 1), Math.Abs(end - cursor));
@@ -491,6 +521,7 @@ public class IngressRealm : SubworldRealm
         private static (int Min, int Max) SpanRange(string kind) => kind switch
         {
             MountainRegion => (MountainSpanMin, MountainSpanMax),
+            TaigaRegion => (TaigaSpanMin, TaigaSpanMax),
             PlateauRegion => (PlateauSpanMin, PlateauSpanMax),
             ValleyRegion => (ValleySpanMin, ValleySpanMax),
             _ => (HillsSpanMin, HillsSpanMax)
@@ -534,6 +565,12 @@ public class IngressRealm : SubworldRealm
                 {
                     var profile = new SurfaceProfile(ValleyAmplitude, -WorldGen.genRand.Next(ValleyDepthMin, ValleyDepthMax + 1), 0f);
                     return new SurfaceRegion(kind, center, span / 2 - ValleyFalloff, ValleyFalloff, profile);
+                }
+                case TaigaRegion:
+                {
+                    // A raised forest floor the mountain's foot runs out onto, easing back down at its far end.
+                    var profile = new SurfaceProfile(TaigaAmplitude, WorldGen.genRand.Next(TaigaLiftMin, TaigaLiftMax + 1), TaigaWarp);
+                    return new SurfaceRegion(kind, center, span / 2 - TaigaFalloff, TaigaFalloff, profile);
                 }
                 default:
                     return new SurfaceRegion(kind, center, Math.Max(span / 2 - HillsFalloff, 20), HillsFalloff, new SurfaceProfile(HillsAmplitude, HillsLift, HillsWarp));
@@ -613,7 +650,8 @@ public class IngressRealm : SubworldRealm
             }
         }
 
-        private readonly record struct Materials(ushort Peat, ushort[] Strata, ushort Clay, ushort Snow, ushort Basalt, ushort Slate);
+        /// <param name="Pool"> The one material lining the small bowl lakes, where banded strata would clash in so little space. </param>
+        private readonly record struct Materials(ushort Peat, ushort[] Strata, ushort Clay, ushort Pool, ushort Snow, ushort Basalt, ushort Slate);
 
         /// <summary>
         /// One column of ground from its surface at <paramref name="Height"/> down: <paramref name="Snow"/> rows of snow,
@@ -635,8 +673,9 @@ public class IngressRealm : SubworldRealm
                 if (y >= RockFrom && y < RockTo)
                     return Rock;
 
-                int band = depth < StrataSearchDepth ? terrain.ShoreBand(x, y, Height) : -1;
-                return band >= 0 ? materials.Strata[band] : materials.Peat;
+                bool bowl = false;
+                int band = depth < StrataSearchDepth ? terrain.ShoreBand(x, y, Height, out bowl) : -1;
+                return band < 0 ? materials.Peat : bowl ? materials.Pool : materials.Strata[band];
             }
         }
     }
@@ -742,8 +781,8 @@ public class IngressRealm : SubworldRealm
     }
 
     /// <summary>
-    /// Highlands grass over the whole surface, then the canopy tree's grove turned back to Ingress grass, its edge wandering
-    /// with the noise.
+    /// Highlands grass over the whole surface, then the canopy tree's grove turned back to Ingress grass and the taigas to
+    /// podzol, each edge wandering with the noise.
     /// </summary>
     private class IngressGrass(IngressRealm realm) : GrassSpreadPass("[T3] Ingress Grass", 100f)
     {
@@ -751,6 +790,11 @@ public class IngressRealm : SubworldRealm
         private const float GroveEdgeJitter = 14f;
         private const int GroveRowsAbove = 3;
         private const int GroveRowsBelow = 14;
+
+        /// <summary> Taiga weight past which the grass is podzol, before the noise moves the edge. </summary>
+        private const float PodzolWeight = 0.45f;
+
+        private const float PodzolEdgeJitter = 0.2f;
 
         protected override string GetProgressMessage() => "Spreading Grass";
 
@@ -762,31 +806,49 @@ public class IngressRealm : SubworldRealm
         {
             base.ApplyPass(progress, configuration);
             PlantGrove();
+            PlantTaigas();
             StonePatches();
         }
 
         private void PlantGrove()
         {
-            ushort highlands = (ushort)ModContent.TileType<HighlandsGrass>();
-            ushort ingress = (ushort)ModContent.TileType<Content.Ingress.IngressGrass>();
             FastNoiseLite edge = CreateNoise(GroveEdgeFrequency);
             int siteX = realm.layout.SiteX;
             int reach = SiteGroveRadius + (int)GroveEdgeJitter;
 
             for (int x = siteX - reach; x <= siteX + reach; x++)
             {
-                if (Math.Abs(x - siteX) > SiteGroveRadius + edge.GetNoise(x, 0f) * GroveEdgeJitter)
-                    continue;
+                if (Math.Abs(x - siteX) <= SiteGroveRadius + edge.GetNoise(x, 0f) * GroveEdgeJitter)
+                    Regrass(x, (ushort)ModContent.TileType<Content.Ingress.IngressGrass>());
+            }
+        }
 
-                int surface = SurfaceRow(x);
+        private void PlantTaigas()
+        {
+            if (realm.terrain is not { } terrain)
+                return;
 
-                for (int y = surface - GroveRowsAbove; y < surface + GroveRowsBelow; y++)
-                {
-                    Tile tile = Main.tile[x, y];
+            FastNoiseLite edge = CreateNoise(GroveEdgeFrequency);
 
-                    if (tile.HasTile && tile.TileType == highlands)
-                        tile.TileType = ingress;
-                }
+            for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge; x++)
+            {
+                if (terrain.WeightOf(TaigaRegion, x) + edge.GetNoise(x, 0f) * PodzolEdgeJitter >= PodzolWeight)
+                    Regrass(x, (ushort)ModContent.TileType<PodzolGrass>());
+            }
+        }
+
+        /// <summary> Swaps the highlands grass at the top of column <paramref name="x"/> for <paramref name="grass"/>. </summary>
+        private static void Regrass(int x, ushort grass)
+        {
+            ushort highlands = (ushort)ModContent.TileType<HighlandsGrass>();
+            int surface = SurfaceRow(x);
+
+            for (int y = surface - GroveRowsAbove; y < surface + GroveRowsBelow; y++)
+            {
+                Tile tile = Main.tile[x, y];
+
+                if (tile.HasTile && tile.TileType == highlands)
+                    tile.TileType = grass;
             }
         }
 
@@ -1506,6 +1568,15 @@ public class IngressRealm : SubworldRealm
         private const int LivingTreeEdge = 150;
         private const int LivingTreeSpacingMin = 380;
         private const int LivingTreeSpacingMax = 650;
+
+        /// <summary> Taiga weight past which a stretch counts as taiga: its living spruce stand far closer together. </summary>
+        private const float TaigaWeight = 0.4f;
+
+        private const int TaigaLivingTreeSpacingMin = 90;
+        private const int TaigaLivingTreeSpacingMax = 160;
+        private const float TaigaGroveChance = 0.9f;
+        private const float TaigaBushChance = 0.06f;
+        private const float ForegroundBushChance = 0.02f;
         private const int LivingTreeRetryMin = 15;
         private const int LivingTreeRetryMax = 35;
         private const int LivingTreeSiteClearance = 60;
@@ -1553,7 +1624,9 @@ public class IngressRealm : SubworldRealm
         private const float BushChance = 0.05f;
         private const float RockChance = 0.015f;
         private const int PlantStyles = 45;
-        private const int BushStyles = 12;
+
+        /// <summary> A winterberry bush's style is its growth stage, so wild ones come up at any of them. </summary>
+        private const int BushStyles = 3;
         private const int RockWidth = 3;
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
@@ -1632,13 +1705,18 @@ public class IngressRealm : SubworldRealm
 
             while (x < Main.maxTilesX - WorldEdge - LivingTreeEdge)
             {
-                x += TryGrowLivingTree(terrain, x, grass, snowGrass)
-                    ? WorldGen.genRand.Next(LivingTreeSpacingMin, LivingTreeSpacingMax + 1)
-                    : WorldGen.genRand.Next(LivingTreeRetryMin, LivingTreeRetryMax + 1);
+                bool taiga = terrain.WeightOf(TaigaRegion, x) > TaigaWeight;
+
+                if (!TryGrowLivingTree(terrain, x, grass, snowGrass))
+                    x += WorldGen.genRand.Next(LivingTreeRetryMin, LivingTreeRetryMax + 1);
+                else if (taiga)
+                    x += WorldGen.genRand.Next(TaigaLivingTreeSpacingMin, TaigaLivingTreeSpacingMax + 1);
+                else
+                    x += WorldGen.genRand.Next(LivingTreeSpacingMin, LivingTreeSpacingMax + 1);
             }
         }
 
-        /// <summary> Spruce up high and on the rugged ground, birch down in the valleys, either elsewhere. </summary>
+        /// <summary> Spruce up high, on the rugged ground and through the taigas; birch down in the valleys; either elsewhere. </summary>
         private bool TryGrowLivingTree(SurfaceTerrain terrain, int x, ushort grass, ushort snowGrass)
         {
             if (realm.NearSite(x, LivingTreeSiteClearance))
@@ -1647,12 +1725,14 @@ public class IngressRealm : SubworldRealm
             int ground = SurfaceRow(x);
             int elevation = realm.Elevation(ground);
             Tile tile = Main.tile[x, ground];
+            ushort podzol = (ushort)ModContent.TileType<PodzolGrass>();
 
-            if (elevation > TreelineRows - LivingTreeTreelineMargin || !tile.HasTile || (tile.TileType != grass && tile.TileType != snowGrass))
+            if (elevation > TreelineRows - LivingTreeTreelineMargin || !tile.HasTile || (tile.TileType != grass && tile.TileType != snowGrass && tile.TileType != podzol))
                 return false;
 
             float rugged = MathF.Max(terrain.WeightOf(MountainRegion, x), terrain.WeightOf(PlateauRegion, x));
-            HighlandLivingTree.Species species = rugged > RuggedWeight || elevation > SpruceElevation || tile.TileType == snowGrass ? HighlandLivingTree.Species.Spruce
+            rugged = MathF.Max(rugged, terrain.WeightOf(TaigaRegion, x));
+            HighlandLivingTree.Species species = rugged > RuggedWeight || elevation > SpruceElevation || tile.TileType == snowGrass || tile.TileType == podzol ? HighlandLivingTree.Species.Spruce
                 : terrain.WeightOf(ValleyRegion, x) > ValleyBirchWeight || WorldGen.genRand.NextBool() ? HighlandLivingTree.Species.Birch
                 : HighlandLivingTree.Species.Spruce;
 
@@ -1737,11 +1817,13 @@ public class IngressRealm : SubworldRealm
         }
 
         private static bool IsSurfaceGrass(Tile tile) => tile.HasTile
-            && (tile.TileType == ModContent.TileType<HighlandsGrass>() || tile.TileType == ModContent.TileType<SnowHighlandsGrass>() || tile.TileType == ModContent.TileType<Content.Ingress.IngressGrass>());
+            && (tile.TileType == ModContent.TileType<HighlandsGrass>() || tile.TileType == ModContent.TileType<SnowHighlandsGrass>()
+                || tile.TileType == ModContent.TileType<PodzolGrass>() || tile.TileType == ModContent.TileType<Content.Ingress.IngressGrass>());
 
         /// <summary>
-        /// Groves where the density noise is high and meadow between them. A second noise leans each stand to spruce or birch,
-        /// and height leans it further to spruce. Snowy grass and the blight's grass grow only spruce, which birch can't root in.
+        /// Groves where the density noise is high and meadow between them; the taigas are all grove. A second noise leans each
+        /// stand to spruce or birch, and height leans it further to spruce. Snowy grass, podzol and the blight's grass grow only
+        /// spruce, which birch can't root in.
         /// </summary>
         private void GrowTrees(ushort grass, ushort snowGrass)
         {
@@ -1749,24 +1831,36 @@ public class IngressRealm : SubworldRealm
             FastNoiseLite kind = CreateNoise(GroveFrequency);
             ushort corrupt = (ushort)ModContent.TileType<CorruptHighlandsGrass>();
             ushort crimson = (ushort)ModContent.TileType<CrimsonHighlandsGrass>();
+            ushort podzol = (ushort)ModContent.TileType<PodzolGrass>();
 
             for (int x = WorldEdge + 20; x < Main.maxTilesX - WorldEdge - 20; x += WorldGen.genRand.Next(TreeStepMin, TreeStepMax + 1))
             {
                 int ground = SurfaceRow(x);
                 int elevation = realm.Elevation(ground);
-                bool blighted = IsOpenGrass(x, ground, corrupt, crimson);
 
-                if (elevation > TreelineRows || !(blighted || IsOpenGrass(x, ground, grass, snowGrass)))
+                // So much of the taiga's floor is sloped that it would thin the forest out; there a tree squares its own footing.
+                Tile footing = Main.tile[x, ground];
+
+                if (footing.HasTile && footing.TileType == podzol)
+                {
+                    footing.Slope = SlopeType.Solid;
+                    footing.IsHalfBlock = false;
+                }
+
+                bool spruceOnly = IsOpenGrass(x, ground, corrupt, crimson) || IsOpenGrass(x, ground, podzol, snowGrass);
+
+                if (elevation > TreelineRows || !(spruceOnly || IsOpenGrass(x, ground, grass, grass)))
                     continue;
 
                 float grove = Math.Clamp(((density.GetNoise(x, 0f) + 1f) * 0.5f - GroveEdgeLow) / (GroveEdgeHigh - GroveEdgeLow), 0f, 1f);
+                float chance = Main.tile[x, ground].TileType == podzol ? TaigaGroveChance : MeadowChance + grove * grove * (3f - 2f * grove) * GroveChance;
 
-                if (WorldGen.genRand.NextFloat() >= MeadowChance + grove * grove * (3f - 2f * grove) * GroveChance)
+                if (WorldGen.genRand.NextFloat() >= chance)
                     continue;
 
                 float altitude = Math.Clamp((elevation - AltitudeBiasFrom) / AltitudeBiasRange, 0f, 1f);
                 float spruceChance = SpruceBase + kind.GetNoise(x, 100f) * SpruceBias + (altitude - 0.3f) * AltitudeBias;
-                bool spruce = blighted || Main.tile[x, ground].TileType == snowGrass || WorldGen.genRand.NextFloat() < spruceChance;
+                bool spruce = spruceOnly || WorldGen.genRand.NextFloat() < spruceChance;
 
                 // Birch grows straight off the grass, as vanilla's AddTrees grows trees: BirchTree is the ModTree highlands grass picks.
                 bool grown = spruce
@@ -1784,9 +1878,26 @@ public class IngressRealm : SubworldRealm
             int bush = ModContent.TileType<WinterberryBushTile>();
             int rock = ModContent.TileType<TemperateRockTile>();
 
+            ushort podzol = (ushort)ModContent.TileType<PodzolGrass>();
+
             for (int x = WorldEdge; x < Main.maxTilesX - WorldEdge - RockWidth; x++)
             {
                 int ground = SurfaceRow(x);
+
+                if (WorldGen.genRand.NextFloat() < ForegroundBushChance && TryPlaceForegroundBush(x, ground, grass, snowGrass, podzol))
+                {
+                    x += ForegroundBushTile.Width;
+                    continue;
+                }
+
+                // Only berry bushes take to the taiga's podzol.
+                if (IsOpenGrass(x, ground, podzol, podzol))
+                {
+                    if (WorldGen.genRand.NextFloat() < TaigaBushChance)
+                        WorldGen.PlaceTile(x, ground - 1, bush, mute: true, style: WorldGen.genRand.Next(BushStyles));
+
+                    continue;
+                }
 
                 if (!IsOpenGrass(x, ground, grass, snowGrass))
                     continue;
@@ -1807,6 +1918,18 @@ public class IngressRealm : SubworldRealm
                     WorldGen.PlaceTile(x, ground - 1, plant, mute: true, style: WorldGen.genRand.Next(PlantStyles));
                 }
             }
+        }
+
+        /// <summary> A foreground bush on three columns of flat grass from <paramref name="x"/>, with room over them. </summary>
+        private static bool TryPlaceForegroundBush(int x, int ground, ushort grass, ushort snowGrass, ushort podzol)
+        {
+            for (int column = x; column < x + ForegroundBushTile.Width; column++)
+            {
+                if (!(IsOpenGrass(column, ground, grass, snowGrass) || IsOpenGrass(column, ground, podzol, podzol)) || Main.tile[column, ground - ForegroundBushTile.Height].HasTile)
+                    return false;
+            }
+
+            return WorldGen.PlaceTile(x + 1, ground - 1, ModContent.TileType<ForegroundBushTile>(), mute: true, style: WorldGen.genRand.Next(ForegroundBushTile.Styles));
         }
 
         /// <summary> Flat highland or snowy grass at (<paramref name="x"/>, <paramref name="y"/>) with an empty, dry tile above it. </summary>

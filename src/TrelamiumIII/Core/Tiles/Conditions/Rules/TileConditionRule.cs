@@ -4,8 +4,8 @@ using System.Linq;
 namespace TrelamiumIII.Core.Tiles.Conditions.Rules;
 
 /// <summary>
-///     Lays a condition on the world wherever, and whenever, it belongs: frost across the snow biome,
-///     rain soaking the surface, stains where liquid sits.
+///     Lays a condition on the world wherever, and whenever, it belongs: frost in a blizzard, stains
+///     where liquid sits.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -21,10 +21,10 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Rules;
 ///         different tiles.
 ///     </para>
 ///     <para>
-///         Conditions stay transient. A rule that should look permanent, like frost that is simply
-///         part of the snow biome, keeps what is in view topped up with <see cref="Maintain{T}" />;
-///         what it leaves behind expires and is laid again on the way back. That is what lets it pass
-///         for world generation without a byte of save data or a budget the size of the world.
+///         Conditions stay transient. A rule that should hold for as long as something lasts, like
+///         frost through a blizzard, keeps what is in view topped up with <see cref="Maintain{T}" />;
+///         what it leaves behind expires and is laid again on the way back. That is what lets it cover
+///         the world without a byte of save data or a budget the size of the world.
 ///     </para>
 /// </remarks>
 public abstract class TileConditionRule
@@ -75,10 +75,6 @@ public abstract class TileConditionRule
 
     protected static bool IsSolid(int i, int j)
         => WorldGen.InWorld(i, j) && WorldGen.SolidTile(i, j);
-
-    /// <summary>Whether the tile is solid with open air -- not solid, not liquid -- on at least one side.</summary>
-    protected static bool IsExposed(int i, int j)
-        => IsSolid(i, j) && (IsAir(i - 1, j) || IsAir(i + 1, j) || IsAir(i, j - 1) || IsAir(i, j + 1));
 
     /// <summary>Whether the tile is solid with open air directly above it.</summary>
     protected static bool IsTopSurface(int i, int j)

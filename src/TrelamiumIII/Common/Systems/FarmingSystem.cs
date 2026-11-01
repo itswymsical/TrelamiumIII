@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria.Enums;
 using TrelamiumIII.Content.Items.FarmingOverhaul.Seedbeds;
+using TrelamiumIII.Core.Tiles;
 
 namespace TrelamiumIII.Common.Systems;
 
@@ -211,7 +212,12 @@ public class FarmingSystem : GlobalTile
         var herb = Framing.GetTileSafely(i, j);
         var tileBelow = Framing.GetTileSafely(i, j + 1);
 
-        if (!herb.HasTile || !IsHerbTile(herb.TileType))
+        if (!herb.HasTile)
+            return false;
+
+        var customHerb = TileLoader.GetTile(herb.TileType) as CustomHerb;
+
+        if (customHerb == null && !IsHerbTile(herb.TileType))
             return false;
 
         if (!tileBelow.HasTile || !SeedBedTypes.TryGetValue(tileBelow.TileType, out var seedBed))
@@ -222,6 +228,9 @@ public class FarmingSystem : GlobalTile
 
         if (!WorldGen.genRand.NextBool(seedBed.GrowthChance * chanceMultiplier))
             return false;
+
+        if (customHerb != null)
+            return customHerb.TryAdvance(i, j);
 
         short frame = herb.TileFrameX;
 

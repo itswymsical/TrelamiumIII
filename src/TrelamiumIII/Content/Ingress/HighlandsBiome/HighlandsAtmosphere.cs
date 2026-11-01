@@ -2,7 +2,6 @@ using ReLogic.Content;
 using Terraria.GameContent;
 using Terraria.Graphics.Effects;
 using TrelamiumIII.Common.Subworlds.Realms;
-using TrelamiumIII.Core;
 using TrelamiumIII.Core.Graphics.ScreenEffects;
 
 namespace TrelamiumIII.Content.Ingress.HighlandsBiome;
@@ -114,21 +113,39 @@ public sealed class HighlandsAtmosphere : ModSystem
     /// <summary> 0 to 1, how far the highlands' look is in. </summary>
     public static float Presence { get; private set; }
 
+    private static HighlandsBackdrop? backdrop;
+
     public override void Load()
     {
-        if (!Main.dedServ)
-            SkyManager.Instance[HighlandsSky.Key] = new HighlandsSky();
+        if (Main.dedServ)
+            return;
+
+        SkyManager.Instance[HighlandsSky.Key] = new HighlandsSky();
+        Overlays.Scene[HighlandsBackdrop.Key] = backdrop = new HighlandsBackdrop();
+    }
+
+    public override void Unload()
+    {
+        backdrop?.Free();
+        backdrop = null;
     }
 
     public override void OnWorldUnload() => Presence = 0f;
 
     public override void PostUpdateEverything()
     {
-        if (Main.dedServ)
+        if (Main.dedServ || backdrop is null)
             return;
 
         float target = Main.LocalPlayer.InModBiome<HighlandBiome>() ? 1f : 0f;
         Presence = Presence < target ? MathF.Min(Presence + FadeRate, target) : MathF.Max(Presence - FadeRate, target);
+
+        bool showing = backdrop.Mode is OverlayMode.FadeIn or OverlayMode.Active;
+
+        if (Presence > 0f && !showing)
+            Overlays.Scene.Activate(HighlandsBackdrop.Key);
+        else if (Presence <= 0f && showing)
+            Overlays.Scene.Deactivate(HighlandsBackdrop.Key);
     }
 
     public override void ModifySunLightColor(ref Color tileColor, ref Color backgroundColor)
@@ -217,51 +234,116 @@ public sealed class HighlandsSky : CustomSky
 }
 
 /// <summary>
-/// Draws <c>HighlandsFog.fx</c>, a faint haze over whatever the light reaches, while <see cref="HighlandsAtmosphere.Presence"/>
-/// is up, coloured from <see cref="HighlandsPalette.Now"/>. The mist is particles; see <see cref="HighlandsWeather"/>.
+/// The highlands' distance: a gradient of haze and blur over the sky and surface background layers, thickest at the horizon
+/// and thinning up the sky, building with the hour's mist and the rain. Drawn between the landscape and the world, so walls,
+/// tiles and everything standing on them are drawn crisp over it and the haze never goes under a tile.
 /// </summary>
-internal sealed class HighlandsFogFilter : ScreenFilterSystem<HighlandsFogFilter, Assets.Shaders.HighlandsFog.Parameters>
+internal sealed class HighlandsBackdrop() : Overlay(EffectPriority.VeryLow, RenderLayers.Landscape)
 {
-    /// <summary> World pixels per second the haze drifts with no wind, and per unit of vanilla's wind speed. </summary>
-    private const float CalmDrift = 6f;
+    public const string Key = "TrelamiumIII:HighlandsBackdrop";
 
-    private const float WindDrift = 50f;
+    private const float HazePerFog = 2f;
+    private const float HazePerMist = 0.85f;
+    private const float HazeMax = 0.62f;
+    private const float BlurPerMist = 14f;
+    private const float BlurMax = 10f;
 
-    private Vector2 drift;
+    /// <summary> How much thicker full rain makes the mist's share of the haze and blur. </summary>
+    private const float RainBoost = 0.5f;
 
-    protected override Asset<Effect> Shader => Assets.Shaders.HighlandsFog.Asset;
+    /// <summary> Screen heights above the horizon over which the haze and blur thin to nothing. </summary>
+    private const float HorizonFalloff = 0.9f;
 
-    protected override EffectPriority Priority => EffectPriority.Medium;
+    /// <summary> Rows over which they fade out approaching the bottom of the surface layer. </summary>
+    private const float SurfaceFadeRows = 20f;
 
-    protected override void Tick()
+    private RenderTarget2D? copy;
+
+    public override bool IsVisible() => HighlandsAtmosphere.Presence > 0f;
+
+    public override void Activate(Vector2 position, params object[] args) => Mode = OverlayMode.FadeIn;
+
+    public override void Deactivate(params object[] args) => Mode = OverlayMode.FadeOut;
+
+    public override void Update(GameTime gameTime) { }
+
+    public override void Draw(SpriteBatch spriteBatch)
     {
-        RampTo(HighlandsAtmosphere.Presence, 1);
+        GraphicsDevice device = Main.instance.GraphicsDevice;
+        RenderTargetBinding[] bound = device.GetRenderTargets();
 
-        float speed = CalmDrift + Main.windSpeedCurrent * WindDrift;
-        drift.X = (drift.X - speed / 60f) % 65536f;
-    }
+        // Straight to the backbuffer there is nothing to read back; HighlandsCaptureFilter is what keeps that from happening.
+        if (bound.Length == 0 || bound[0].RenderTarget is not RenderTarget2D frame || Assets.Shaders.HighlandsBackdrop.Asset is not { IsLoaded: true, Value: { } effect })
+            return;
 
-    protected override bool Push(Assets.Shaders.HighlandsFog.Parameters parameters)
-    {
-        Asset<Texture2D> noiseAsset = Assets.Textures.Noise.Milky_2.Asset;
-
-        if (!noiseAsset.IsLoaded)
-            return false;
-
-        HighlandsPalette palette = HighlandsPalette.Now;
-        Texture2D noise = noiseAsset.Value;
-
-        parameters.uFogColor = palette.Fog.ToVector3();
-        parameters.uFogDensity = palette.FogDensity;
-        parameters.uDrift = drift;
-
-        parameters.uNoiseTex = noise;
-        parameters.NoiseSampler = new HlslSampler2D
+        if (copy is null || copy.IsDisposed || copy.Width != frame.Width || copy.Height != frame.Height)
         {
-            Texture = noise,
-            Sampler = SamplerState.LinearWrap
-        };
+            copy?.Dispose();
+            copy = new RenderTarget2D(device, frame.Width, frame.Height, false, frame.Format, DepthFormat.None);
+        }
 
-        return true;
+        Apply(effect, frame);
+        spriteBatch.End();
+
+        device.SetRenderTarget(copy);
+        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone);
+        effect.CurrentTechnique.Passes[0].Apply();
+        spriteBatch.Draw(frame, Vector2.Zero, Color.White);
+        spriteBatch.End();
+
+        // The frame's target discards what it held on rebinding, so all of it is written back.
+        device.SetRenderTarget(frame);
+        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone);
+        spriteBatch.Draw(copy, Vector2.Zero, Color.White);
+        spriteBatch.End();
+
+        // Back as the overlay manager began it, since it ends the batch after the last overlay.
+        spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.Transform);
     }
+
+    public void Free()
+    {
+        RenderTarget2D? target = copy;
+        copy = null;
+
+        if (target is not null)
+            Main.QueueMainThreadAction(target.Dispose);
+    }
+
+    private static void Apply(Effect effect, RenderTarget2D frame)
+    {
+        HighlandsPalette palette = HighlandsPalette.Now;
+        float presence = HighlandsAtmosphere.Presence;
+        float rain = Main.raining ? Main.maxRaining : 0f;
+        float mist = palette.MistDensity * (1f + rain * RainBoost);
+        float zoom = Main.GameViewMatrix.Zoom.Y;
+
+        effect.Parameters["uTexel"]?.SetValue(new Vector2(1f / frame.Width, 1f / frame.Height));
+        effect.Parameters["uHorizon"]?.SetValue(ScreenRow(IngressRealm.BaseSurfaceY, zoom));
+        effect.Parameters["uFalloff"]?.SetValue(HorizonFalloff);
+        effect.Parameters["uSurface"]?.SetValue(ScreenRow((float)Main.worldSurface, zoom));
+        effect.Parameters["uSurfaceFade"]?.SetValue(SurfaceFadeRows * 16f * zoom / Main.screenHeight);
+        effect.Parameters["uHazeColor"]?.SetValue(palette.Fog.ToVector3());
+        effect.Parameters["uHaze"]?.SetValue(MathF.Min(palette.FogDensity * HazePerFog + mist * HazePerMist, HazeMax) * presence);
+        effect.Parameters["uBlur"]?.SetValue(MathF.Min(mist * BlurPerMist, BlurMax) * presence);
+    }
+
+    /// <summary> Where world row <paramref name="tileY"/> falls on screen, in uv; the view zooms about the middle of the screen. </summary>
+    private static float ScreenRow(float tileY, float zoom)
+        => ((tileY * 16f - Main.screenPosition.Y - Main.screenHeight * 0.5f) * zoom + Main.screenHeight * 0.5f) / Main.screenHeight;
+}
+
+/// <summary>
+/// Leaves the frame as it is. An active scene filter is what makes vanilla render the frame into a target rather than straight
+/// to the backbuffer, and <see cref="HighlandsBackdrop"/> needs a target it can read back.
+/// </summary>
+internal sealed class HighlandsCaptureFilter : ScreenFilterSystem<HighlandsCaptureFilter, Assets.Shaders.HighlandsCapture.Parameters>
+{
+    protected override Asset<Effect> Shader => Assets.Shaders.HighlandsCapture.Asset;
+
+    protected override EffectPriority Priority => EffectPriority.VeryLow;
+
+    protected override void Tick() => RampTo(HighlandsAtmosphere.Presence, 1);
+
+    protected override bool Push(Assets.Shaders.HighlandsCapture.Parameters parameters) => true;
 }

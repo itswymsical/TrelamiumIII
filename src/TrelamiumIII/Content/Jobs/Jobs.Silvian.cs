@@ -8,6 +8,7 @@ using TrelamiumIII.Content.NPCs.WorldNPCs.Silvian;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Events;
 using TrelamiumIII.Core.Jobs;
+using TrelamiumIII.Core.Tiles;
 
 namespace TrelamiumIII.Content.Jobs;
 
@@ -113,13 +114,22 @@ public sealed class PlantInSeedBedTask(string key, int count, bool favouredSoilO
 {
     public override bool Matches(GameEvent evt)
     {
-        if (evt.Type != GameEventType.TilePlace || evt.TileType != TileID.ImmatureHerbs || evt.TileX is not { } i || evt.TileY is not { } j)
+        if (evt.Type != GameEventType.TilePlace || evt.TileType is not { } type || evt.TileX is not { } i || evt.TileY is not { } j)
+            return false;
+
+        bool customHerb = TileLoader.GetTile(type) is CustomHerb;
+
+        if (type != TileID.ImmatureHerbs && !customHerb)
             return false;
 
         Tile below = Framing.GetTileSafely(i, j + 1);
 
         if (!below.HasTile || !FarmingSystem.SeedBedTypes.TryGetValue(below.TileType, out SeedBedTile? bed))
             return false;
+
+        // PreferredHerbs only lists vanilla herbs, so no soil favours a custom one yet.
+        if (customHerb)
+            return !favouredSoilOnly;
 
         // Herb tiles store their style in frameX, 18 px per herb, in HerbType order.
         var herb = (HerbType)(Framing.GetTileSafely(i, j).TileFrameX / 18);

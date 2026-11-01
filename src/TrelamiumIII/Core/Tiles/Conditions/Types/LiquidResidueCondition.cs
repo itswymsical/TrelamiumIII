@@ -4,7 +4,7 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
 ///     A stain where liquid sits against the terrain, in that liquid's colour: the bed of a pool, the
-///     bank of a river, ground soaked through by rain. Dries out once the liquid has gone.
+///     bank of a river. Dries out once the liquid has gone.
 /// </summary>
 /// <remarks>
 ///     The palette is grey and the tint is the whole colour, so any liquid -- vanilla, a modded one,

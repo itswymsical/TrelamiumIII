@@ -16,7 +16,7 @@ public class SpruceSapling : SaplingTile
     public override void PreAddObjectData() => TileObjectData.newTile.AnchorValidTiles = [
         ModContent.TileType<HighlandsGrass>(), ModContent.TileType<SnowHighlandsGrass>(),
         ModContent.TileType<CorruptHighlandsGrass>(), ModContent.TileType<CrimsonHighlandsGrass>(),
-        ModContent.TileType<HallowHighlandsGrass>()
+        ModContent.TileType<HallowHighlandsGrass>(), ModContent.TileType<PodzolGrass>()
         ];
 }
 
@@ -28,7 +28,8 @@ public class SpruceTree : CustomTree
         ModContent.TileType<HighlandsGrass>(),
         ModContent.TileType<CorruptHighlandsGrass>(),
         ModContent.TileType<CrimsonHighlandsGrass>(),
-        ModContent.TileType<HallowHighlandsGrass>()
+        ModContent.TileType<HallowHighlandsGrass>(),
+        ModContent.TileType<PodzolGrass>()
     ];
 
     // Trunk frame indices into the table built below; each group holds three variants.

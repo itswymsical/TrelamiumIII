@@ -12,7 +12,7 @@ namespace TrelamiumIII.Content.Ingress.HighlandsBiome;
 public abstract class HighlandLeafTile : ModTile
 {
     /// <summary> Tiles across one clump of <see cref="Shade"/>. </summary>
-    private const int ClumpSize = 5;
+    protected virtual int ClumpSize => 5;
 
     public override string Texture => $"Terraria/Images/Tiles_{TileID.LeafBlock}";
 
@@ -53,7 +53,10 @@ public class SpruceLeafTile : HighlandLeafTile
 {
     protected override Color MapColor => new(36, 82, 70);
 
-    protected override Color Shade(float roll) => Color.Lerp(new Color(92, 150, 140), new Color(120, 176, 150), roll);
+    /// <summary> Small clumps with a wide range, so the needles read as fine, dark-and-light texture rather than flat masses. </summary>
+    protected override int ClumpSize => 2;
+
+    protected override Color Shade(float roll) => Color.Lerp(new Color(62, 116, 118), new Color(132, 192, 158), roll);
 }
 
 public class BirchLeafTile : HighlandLeafTile

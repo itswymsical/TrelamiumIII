@@ -3,9 +3,8 @@ using ReLogic.Content;
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
-///     Frost the world grows by itself: rime on the snow biome, ice blown onto the surface by a
-///     blizzard. Slippery underfoot and nothing more; <see cref="CryonicResidueCondition" /> is the
-///     chemical kind.
+///     Frost the weather lays: ice blown onto the surface by a blizzard, sleet freezing on the peaks.
+///     Slippery underfoot and nothing more; <see cref="CryonicResidueCondition" /> is the chemical kind.
 /// </summary>
 /// <remarks>Laid by the rules in <c>EnvironmentRules</c>, never synced.</remarks>
 public sealed class FrostCondition : TileCondition

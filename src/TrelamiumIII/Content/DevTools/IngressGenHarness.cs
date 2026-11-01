@@ -10,6 +10,7 @@ using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Content.Ingress.HighlandsBiome;
 using TrelamiumIII.Content.Ingress.HighlandsBiome.BirchFurniture;
 using TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
+using static TrelamiumIII.Content.DevTools.IngressScan;
 
 namespace TrelamiumIII.Content.DevTools;
 
@@ -33,11 +34,9 @@ public sealed class IngressGenHarness : ModSystem
     private const int CanyonCropHalfWidth = 130;
     private const int CanyonCropBelowRockLayer = 70;
 
-    /// <summary> Columns either side of the centre the canopy tree and its grove can occupy, kept out of the peak search. </summary>
-    private const int SiteHalfWidth = 220;
     private const int TreeCropHalfWidth = 45;
     private const int TreeCropAbove = 120;
-    private const int TreeCropBelow = 30;
+    private const int TreeCropBelow = 50;
     private const int PeakCropHalfWidth = 160;
     private const int PeakCropHeight = 260;
     private const int TreesCropped = 3;
@@ -142,10 +141,7 @@ public sealed class IngressGenHarness : ModSystem
             WorldGen.gen = false;
         }
 
-        int[] ground = new int[Main.maxTilesX];
-
-        for (int x = 0; x < Main.maxTilesX; x++)
-            ground[x] = GroundRow(x);
+        int[] ground = Ground();
 
         Describe(report, ground);
         Render(output, seed, ground, report);
@@ -184,6 +180,9 @@ public sealed class IngressGenHarness : ModSystem
             ("BirchLeaves", ModContent.TileType<BirchLeafTile>()),
             ("SpruceTree", ModContent.TileType<SpruceTree>()),
             ("Vanilla tree tiles (birch)", TileID.Trees),
+            ("PodzolGrass", ModContent.TileType<PodzolGrass>()),
+            ("GrayTerracotta", ModContent.TileType<GrayTerracottaTile>()),
+            ("Foreground bush tiles", ModContent.TileType<ForegroundBushTile>()),
             ("CorruptHighlandsGrass", ModContent.TileType<CorruptHighlandsGrass>()),
             ("CrimsonHighlandsGrass", ModContent.TileType<CrimsonHighlandsGrass>()),
             ("Ebonstone", TileID.Ebonstone),
@@ -296,7 +295,7 @@ public sealed class IngressGenHarness : ModSystem
     {
         string Name(string part) => Path.Combine(output, $"ingress_{seed}_{part}.png");
 
-        WritePng(Name("overview"), Main.maxTilesX / OverviewScale, Main.maxTilesY / OverviewScale, (px, py) => TileColor(px * OverviewScale, py * OverviewScale));
+        PngWriter.Write(Name("overview"), Main.maxTilesX / OverviewScale, Main.maxTilesY / OverviewScale, (px, py) => TileColor(px * OverviewScale, py * OverviewScale));
 
         int stripTop = int.MaxValue;
 
@@ -306,7 +305,7 @@ public sealed class IngressGenHarness : ModSystem
         stripTop = Math.Max(stripTop - SurfaceMarginAbove, 0);
         int stripBottom = Math.Min((int)Main.worldSurface + SurfaceMarginBelow, Main.maxTilesY - 1);
 
-        WritePng(Name("surface"), Main.maxTilesX / SurfaceScale, (stripBottom - stripTop) / SurfaceScale,
+        PngWriter.Write(Name("surface"), Main.maxTilesX / SurfaceScale, (stripBottom - stripTop) / SurfaceScale,
             (px, py) => TileColor(px * SurfaceScale, stripTop + py * SurfaceScale));
 
         var crops = new List<(string Label, Rectangle Area)>();
@@ -328,18 +327,20 @@ public sealed class IngressGenHarness : ModSystem
             crops.Add(($"canyon{++canyon}", new Rectangle(center - CanyonCropHalfWidth, rim - 30, CanyonCropHalfWidth * 2, foot - rim + 30)));
         }
 
-        int corrupt = ModContent.TileType<CorruptHighlandsGrass>();
-        int crimsonGrass = ModContent.TileType<CrimsonHighlandsGrass>();
-
-        foreach ((int left, int right) in Spans(x => Main.tile[x, ground[x]].TileType == corrupt || Main.tile[x, ground[x]].TileType == crimsonGrass, 20))
+        if (BlightSpans(ground, 60) is [var blight, ..])
         {
-            if (right - left < 60)
-                continue;
+            int rim = Min(ground, Math.Max(blight.Left - 40, 10), Math.Min(blight.Right + 40, Main.maxTilesX - 11));
+            report.AppendLine($"blight {blight.Left}-{blight.Right} ({blight.Right - blight.Left + 1} wide)");
+            crops.Add(("blight", new Rectangle(blight.Left - 40, rim - 40, blight.Right - blight.Left + 80, (int)Main.worldSurface + 130 - rim)));
+        }
 
-            int rim = Min(ground, Math.Max(left - 40, 10), Math.Min(right + 40, Main.maxTilesX - 11));
-            report.AppendLine($"blight {left}-{right} ({right - left + 1} wide)");
-            crops.Add(("blight", new Rectangle(left - 40, rim - 40, right - left + 80, (int)Main.worldSurface + 130 - rim)));
-            break;
+        int taigas = 0;
+
+        foreach ((int left, int right) in TaigaSpans(ground, 100))
+        {
+            int rim = Min(ground, Math.Max(left - 20, 10), Math.Min(right + 20, Main.maxTilesX - 11));
+            report.AppendLine($"taiga {left}-{right} ({right - left + 1} wide)");
+            crops.Add(($"taiga{++taigas}", new Rectangle(left - 20, rim - 20, right - left + 40, IngressRealm.BaseSurfaceY + 30 - rim)));
         }
 
         int tree = 0;
@@ -376,7 +377,7 @@ public sealed class IngressGenHarness : ModSystem
                 continue;
 
             report.AppendLine($"  {label,-8} x {clamped.X}-{clamped.Right}, y {clamped.Y}-{clamped.Bottom}");
-            WritePng(Name(label), clamped.Width * CropZoom, clamped.Height * CropZoom, (px, py) => TileColor(clamped.X + px / CropZoom, clamped.Y + py / CropZoom));
+            PngWriter.Write(Name(label), clamped.Width * CropZoom, clamped.Height * CropZoom, (px, py) => TileColor(clamped.X + px / CropZoom, clamped.Y + py / CropZoom));
         }
     }
 
@@ -410,6 +411,8 @@ public sealed class IngressGenHarness : ModSystem
             return new Color(52, 54, 64);
         if (type == ModContent.TileType<SlateTile>())
             return new Color(118, 122, 120);
+        if (type == ModContent.TileType<PodzolGrass>())
+            return new Color(150, 110, 50);
         if (type == ModContent.TileType<GravelTile>())
             return new Color(206, 196, 170);
         if (type == ModContent.TileType<SpruceWoodTile>())
@@ -452,67 +455,6 @@ public sealed class IngressGenHarness : ModSystem
         return new Color(90 + (int)(h & 0x7F), 90 + (int)((h >> 8) & 0x7F), 90 + (int)((h >> 16) & 0x7F));
     }
 
-    private static int GroundRow(int x)
-    {
-        for (int y = 10; y < Main.maxTilesY - 10; y++)
-        {
-            Tile tile = Main.tile[x, y];
-
-            if (tile.HasTile && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType])
-                return y;
-        }
-
-        return Main.maxTilesY - 10;
-    }
-
-    private static bool SurfaceWater(int x, int groundRow)
-    {
-        Tile above = Main.tile[x, groundRow - 1];
-        return groundRow < Main.worldSurface + 20 && !above.HasTile && above.LiquidAmount > 0 && above.LiquidType == LiquidID.Water;
-    }
-
-    private static int WaterLevel(int left, int right, int[] ground)
-    {
-        int x = (left + right) / 2;
-
-        for (int y = ground[x] - 1; y > 10; y--)
-        {
-            if (Main.tile[x, y].LiquidAmount == 0)
-                return y + 1;
-        }
-
-        return ground[x];
-    }
-
-    /// <summary> Runs of columns matching <paramref name="match"/>, merging runs fewer than <paramref name="gap"/> columns apart. </summary>
-    private static List<(int Left, int Right)> Spans(Func<int, bool> match, int gap)
-    {
-        var spans = new List<(int Left, int Right)>();
-        int start = -1;
-        int last = -1;
-
-        for (int x = 10; x < Main.maxTilesX - 10; x++)
-        {
-            if (!match(x))
-                continue;
-
-            if (start < 0 || x - last > gap)
-            {
-                if (start >= 0)
-                    spans.Add((start, last));
-
-                start = x;
-            }
-
-            last = x;
-        }
-
-        if (start >= 0)
-            spans.Add((start, last));
-
-        return spans;
-    }
-
     /// <summary> Sapling tiles standing anywhere right now, by type, so the report shows which pass left them. </summary>
     private static string SaplingNote()
     {
@@ -540,25 +482,6 @@ public sealed class IngressGenHarness : ModSystem
         return note.ToString();
     }
 
-    private static List<(int Left, int Right)> LeafSpans()
-    {
-        int spruce = ModContent.TileType<SpruceLeafTile>();
-        int birch = ModContent.TileType<BirchLeafTile>();
-
-        return Spans(x =>
-        {
-            for (int y = 10; y < Main.worldSurface; y++)
-            {
-                Tile tile = Main.tile[x, y];
-
-                if (tile.HasTile && (tile.TileType == spruce || tile.TileType == birch))
-                    return true;
-            }
-
-            return false;
-        }, 4);
-    }
-
     private static string LeafSpecies(int left, int right)
     {
         int spruce = 0;
@@ -583,111 +506,4 @@ public sealed class IngressGenHarness : ModSystem
         return spruce >= birch ? $"spruce ({spruce} leaves)" : $"birch ({birch} leaves)";
     }
 
-    /// <summary> Columns empty both just above and well below the bottom of the surface layer: only a canyon cuts through there. </summary>
-    private static List<(int Left, int Right)> CanyonSpans()
-    {
-        int above = (int)Main.worldSurface - 5;
-        int below = (int)Main.worldSurface + 15;
-
-        return Spans(x => !Main.tile[x, above].HasTile && !Main.tile[x, below].HasTile, 4).FindAll(span => span.Right - span.Left >= 5);
-    }
-
-    /// <summary> Column of the highest ground outside the canopy tree's site. </summary>
-    private static int Peak(int[] ground)
-    {
-        int peak = 10;
-
-        for (int x = 10; x < Main.maxTilesX - 10; x++)
-        {
-            if (Math.Abs(x - Main.maxTilesX / 2) > SiteHalfWidth && ground[x] < ground[peak])
-                peak = x;
-        }
-
-        return peak;
-    }
-
-    private static int Min(int[] values, int from, int to)
-    {
-        int min = int.MaxValue;
-
-        for (int i = from; i <= to; i++)
-            min = Math.Min(min, values[i]);
-
-        return min;
-    }
-
-    private static void WritePng(string path, int width, int height, Func<int, int, Color> pixel)
-    {
-        if (width <= 0 || height <= 0)
-            return;
-
-        int stride = width * 3 + 1;
-        byte[] raw = new byte[stride * height];
-
-        for (int py = 0; py < height; py++)
-        {
-            for (int px = 0; px < width; px++)
-            {
-                Color color = pixel(px, py);
-                int i = py * stride + 1 + px * 3;
-                raw[i] = color.R;
-                raw[i + 1] = color.G;
-                raw[i + 2] = color.B;
-            }
-        }
-
-        using var compressed = new MemoryStream();
-
-        using (var zlib = new ZLibStream(compressed, CompressionLevel.Fastest, leaveOpen: true))
-            zlib.Write(raw);
-
-        byte[] header = new byte[13];
-        WriteBigEndian(header, 0, width);
-        WriteBigEndian(header, 4, height);
-        header[8] = 8;
-        header[9] = 2;
-
-        using FileStream file = File.Create(path);
-        file.Write([137, 80, 78, 71, 13, 10, 26, 10]);
-        WriteChunk(file, "IHDR", header);
-        WriteChunk(file, "IDAT", compressed.ToArray());
-        WriteChunk(file, "IEND", []);
-    }
-
-    private static void WriteChunk(Stream stream, string type, byte[] data)
-    {
-        byte[] length = new byte[4];
-        WriteBigEndian(length, 0, data.Length);
-        stream.Write(length);
-
-        byte[] typeBytes = Encoding.ASCII.GetBytes(type);
-        stream.Write(typeBytes);
-        stream.Write(data);
-
-        uint crc = Crc32(Crc32(0xFFFFFFFFu, typeBytes), data) ^ 0xFFFFFFFFu;
-        byte[] crcBytes = new byte[4];
-        WriteBigEndian(crcBytes, 0, (int)crc);
-        stream.Write(crcBytes);
-    }
-
-    private static void WriteBigEndian(byte[] buffer, int offset, int value)
-    {
-        buffer[offset] = (byte)(value >> 24);
-        buffer[offset + 1] = (byte)(value >> 16);
-        buffer[offset + 2] = (byte)(value >> 8);
-        buffer[offset + 3] = (byte)value;
-    }
-
-    private static uint Crc32(uint crc, byte[] data)
-    {
-        foreach (byte b in data)
-        {
-            crc ^= b;
-
-            for (int k = 0; k < 8; k++)
-                crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
-        }
-
-        return crc;
-    }
 }

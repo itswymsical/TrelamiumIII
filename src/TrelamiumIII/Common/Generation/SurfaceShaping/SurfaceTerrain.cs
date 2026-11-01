@@ -75,8 +75,8 @@ public readonly record struct SurfaceLake(int Center, int Radius, int Level, int
 public sealed class SurfaceTerrain
 {
     private const float WarpFrequency = 0.011f;
-    private const float RidgeFrequency = 0.011f;
-    private const float RidgeSharpness = 1.9f;
+    private const float RidgeFrequency = 0.008f;
+    private const float RidgeSharpness = 1.4f;
     private const float BandWobbleFrequency = 0.045f;
     private const float BandWobbleRows = 5f;
     private const int BandThickness = 3;
@@ -234,10 +234,11 @@ public sealed class SurfaceTerrain
 
     /// <summary>
     /// Index into the strata materials for the tile at (<paramref name="x"/>, <paramref name="y"/>) under a surface at
-    /// <paramref name="top"/>, or -1 outside the lake shores. Bands run horizontally and wobble with the noise, so the
-    /// layers show up the banks like cut strata.
+    /// <paramref name="top"/>, or -1 outside the shores. Bands run horizontally and wobble with the noise, so the layers
+    /// show up the banks like cut strata. <paramref name="bowl"/> says the shore is a bowl lake's rather than a river
+    /// channel's, for a caller that lines the small pools with one material.
     /// </summary>
-    public int ShoreBand(int x, int y, int top)
+    public int ShoreBand(int x, int y, int top, out bool bowl)
     {
         foreach (SurfaceLake lake in lakes)
         {
@@ -252,10 +253,12 @@ public sealed class SurfaceTerrain
             if (y - top >= depth)
                 continue;
 
+            bowl = !lake.Channel;
             int row = y + (int)(bands.GetNoise(x, y * 4f) * BandWobbleRows);
             return BandPattern[Math.Abs(row / BandThickness) % BandPattern.Length];
         }
 
+        bowl = false;
         return -1;
     }
 
