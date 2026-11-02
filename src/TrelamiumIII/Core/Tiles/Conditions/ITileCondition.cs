@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -74,6 +75,18 @@ public interface ITileCondition
     void OnNPCContact(ref TileConditionInstance instance, NPC npc);
 
     void OnProjectileContact(ref TileConditionInstance instance, Projectile projectile);
+
+    /// <summary>
+    ///     What this mark counts as to <see cref="ConditionReaction" />s right now, or
+    ///     <see cref="TileElement.None" /> to stay out of them.
+    /// </summary>
+    TileElement ElementsOf(in TileConditionInstance instance);
+
+    /// <summary>How much of its element this mark holds, 0..1: what thresholds and contests read. A mark at zero sits reactions out.</summary>
+    float PotencyOf(in TileConditionInstance instance);
+
+    /// <summary>A reaction took <paramref name="share" /> of what this mark has left, 0..1.</summary>
+    void Diminish(ref TileConditionInstance instance, float share);
 
     TileConditionRenderMode RenderMode { get; }
 

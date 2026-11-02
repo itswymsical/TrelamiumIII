@@ -1,3 +1,5 @@
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
+
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
@@ -40,6 +42,9 @@ public sealed class SlimedCondition : FilmCondition
     public override int FadeInTicks => 6;
 
     public override int FadeOutTicks => 14;
+
+    /// <summary>Gel burns. See <see cref="Combustion" />.</summary>
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElement.Flammable;
 
     public override void UpdateTile(ref TileConditionInstance instance)
     {

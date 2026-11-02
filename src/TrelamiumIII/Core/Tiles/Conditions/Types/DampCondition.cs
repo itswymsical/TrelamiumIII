@@ -1,13 +1,22 @@
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
+
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
 /// <summary>
 ///     Ground dampened by rain: every drop that splashes on a tile darkens it a little more, up to a
-///     limit, and it dries off once the drops stop landing. Looks and nothing more.
+///     limit, and it dries off once the drops stop landing. Looks and nothing more, until it's soaked through.
 /// </summary>
 /// <remarks>
-///     Laid by vanilla's rain particles rather than by a rule. Those exist only on a client and land
-///     differently on each, which is fine for as long as this stays cosmetic: a contact effect would
-///     need it to move to a <see cref="Rules.TileConditionRule" />.
+///     <para>
+///         Laid by vanilla's rain particles rather than by a rule. Those exist only on a client and land
+///         differently on each, which is fine for as long as this stays cosmetic: a contact effect would
+///         need it to move to a <see cref="Rules.TileConditionRule" />.
+///     </para>
+///     <para>
+///         The one exception is soaked ground, which puts fires out. It takes a downpour to get there, and
+///         a server has no rain particles, so a fire doused this way in multiplayer is only out on that
+///         client until the server's own burns down.
+///     </para>
 /// </remarks>
 public sealed class DampCondition : FilmCondition
 {
@@ -33,6 +42,14 @@ public sealed class DampCondition : FilmCondition
     public override int FadeInTicks => 20;
 
     public override int FadeOutTicks => 60;
+
+    /// <summary>Soaked through, which is short of <see cref="SOAKED" /> because the tile is always drying a little between drops.</summary>
+    private const float SOAKED_THROUGH = 0.4f;
+
+    public override TileElement ElementsOf(in TileConditionInstance instance)
+        => instance.Strength >= SOAKED_THROUGH ? TileElement.Water : TileElement.None;
+
+    public override float PotencyOf(in TileConditionInstance instance) => MathF.Min(instance.Strength / SOAKED, 1f);
 
     public override void Load()
     {

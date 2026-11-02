@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -69,8 +70,8 @@ public sealed class BurnedCondition : TileCondition
         // rest of its life to the char and stops costing anything but a draw.
         if (instance.Level <= SPENT_HEAT)
         {
-            if (profile.ConsumesTiles)
-                Consume(ref instance);
+            if (profile.ConsumesTiles && !fuelled)
+                Consume(ref instance, profile);
 
             return;
         }
@@ -100,20 +101,43 @@ public sealed class BurnedCondition : TileCondition
         if (TileConditionSystem.Has<BurnedCondition>(x, y))
             return;
 
+        if (profile.SpreadsAlongFuel && !TileConditionSystem.HasElement(x, y, TileElement.Flammable))
+            return;
+
         Ignite(x, y, profile, instance.Intensity * profile.SpreadFalloff, instance.Owner);
     }
 
-    private static void Consume(ref TileConditionInstance instance)
+    /// <summary>
+    ///     The fire has burned out: it takes the tile if it can, and either way it is over. A tile that stands up to it
+    ///     just keeps the char.
+    /// </summary>
+    private static void Consume(ref TileConditionInstance instance, BurnProfile profile)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient || !IsFlammable(instance.Tile.TileType))
-            return;
+        if (profile.ConsumesAnyTile || IsFlammable(instance.Tile.TileType))
+            TryDestroyTile(ref instance);
 
-        WorldGen.KillTile(instance.X, instance.Y, noItem: true);
+        instance.Variant = BurnProfile.Doused.Id;
+    }
 
-        if (Main.netMode == NetmodeID.Server)
-            NetMessage.SendTileSquare(-1, instance.X, instance.Y, 1);
+    /// <summary>Puts the fire out. Its char stays to fade, and being out it no longer takes the tile.</summary>
+    private static void Douse(ref TileConditionInstance instance)
+    {
+        instance.Level = 0f;
+        instance.Stage = (byte)BurnStage.BurntOut;
+        instance.Variant = BurnProfile.Doused.Id;
+    }
 
-        instance.Life = 0f;
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElement.Heat;
+
+    public override float PotencyOf(in TileConditionInstance instance) => instance.Level;
+
+    public override void Diminish(ref TileConditionInstance instance, float share)
+    {
+        instance.Level *= 1f - share;
+        instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
+
+        if (instance.Level <= SPENT_HEAT)
+            Douse(ref instance);
     }
 
     private static bool IsFlammable(ushort type) => type
@@ -220,25 +244,11 @@ public sealed class BurnedCondition : TileCondition
         instance.Level = MathF.Max(instance.Level - share * 0.25f, 0f);
         instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
 
+        if (instance.Level <= SPENT_HEAT)
+            Douse(ref instance);
+
         if (!Main.dedServ)
-            Steam(instance.WorldCenter, 1);
-    }
-
-    private static void Steam(Vector2 position, int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            Dust steam = Dust.NewDustPerfect(
-                position + Main.rand.NextVector2Circular(7f, 7f),
-                DustID.Cloud,
-                new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-1.4f, -0.6f)),
-                120,
-                Color.White,
-                Main.rand.NextFloat(0.7f, 1.2f)
-            );
-
-            steam.noGravity = true;
-        }
+            ReactionEffects.Steam(instance.WorldCenter, 1);
     }
 
     /// <summary>Lights one tile under a named set of rules.</summary>

@@ -1,214 +1,243 @@
 ﻿using ReLogic.Content;
 using TrelamiumIII.Content.Buffs;
-using TrelamiumIII.Utilities.Extensions;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
+/// <summary>
+///     Acid eating into the terrain: a bubbling film that pits what it sits on, breaks through anything an explosion could
+///     break, and drips onto whatever is underneath. What it can't break it only scars.
+/// </summary>
+/// <remarks>
+///     <para>
+///         <see cref="TileConditionInstance.Level" /> is how far the tile has been eaten, 0..1. It climbs while the film is
+///         wet, at a rate set by intensity, so the middle of a splash breaks through while its thin rim dries first and
+///         only leaves a scar. <see cref="TileConditionInstance.Stage" /> records that the tile has had its chance to break.
+///     </para>
+///     <para>
+///         Water doesn't wash it off, in keeping with the acid liquids, which dissolve water. It keeps the film wet.
+///     </para>
+/// </remarks>
 public sealed class AcidCondition : TileCondition
 {
     private const float QUENCH_PER_PROBE = 16f;
-    private const float SPENT_HEAT = 0.02f;
 
-    private const float DISSOLVE_FRACTION = 0.25f;
+    /// <summary>Ticks for a full-strength film to eat through a tile.</summary>
+    private const float EATING_TICKS = 5f * 60f;
 
-    private const float FIRE_FADE_HEAT = 0.15f;
+    /// <summary>Share of its life left when the film has dried to a scar: it stops eating and stops hurting.</summary>
+    private const float DRY_FRACTION = 0.3f;
 
-    private const float MAX_CHAR = 0.82f;
+    /// <summary>Share of its life left when the scar starts to fade.</summary>
+    private const float SCAR_FADE_FRACTION = 0.2f;
 
-    public override float Duration => BurnProfile.Standard.Duration;
+    /// <summary>Strength kept by what drips through a broken tile onto the one below.</summary>
+    private const float DRIP_FALLOFF = 0.82f;
+
+    /// <summary>Below this strength a drip has nothing left to eat with, so a splash bores a shaft rather than a hole through the world.</summary>
+    private const float WEAKEST_DRIP = 0.55f;
+
+    /// <summary>Film below this doesn't hurt what touches it.</summary>
+    private const float HARMFUL_FILM = 0.15f;
+
+    private const byte STAGE_EATING = 0;
+
+    private const byte STAGE_STOOD_UP_TO_IT = 1;
+
+    public override float Duration => 14f * 60f;
 
     public override int MaxTiles => 1200;
 
-    public override Asset<Effect>? Shader => Assets.Shaders.TileBurnMask.Asset;
+    public override TileConditionRenderMode RenderMode => TileConditionRenderMode.Canvas;
 
-    private Asset<Texture2D>? noiseTexture;
+    public override Asset<Effect>? Shader => Assets.Shaders.TileAcidMask.Asset;
+
+    public override int FadeInTicks => 6;
+
+    public override int FadeOutTicks => 30;
+
+    private Asset<Texture2D>? flowTexture;
+
+    private Asset<Texture2D>? cellTexture;
 
     public override void Load()
     {
         if (Main.dedServ)
             return;
 
-        noiseTexture = Assets.Textures.Noise.Melt_03.Asset;
+        flowTexture = Assets.Textures.Noise.Melt_03.Asset;
+        cellTexture = Assets.Textures.Noise.VoronoiNoise.Asset;
     }
 
-    public override void Unload() => noiseTexture = null;
-    public override void OnApplied(ref TileConditionInstance instance)
+    public override void Unload()
     {
-        BurnProfile profile = BurnProfile.Get(instance.Variant);
-
-        instance.Level = MathF.Max(instance.Level, profile.Ignition * instance.Intensity);
-        instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
+        flowTexture = null;
+        cellTexture = null;
     }
+
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElement.Corrosive;
 
     public override void UpdateTile(ref TileConditionInstance instance)
     {
-        BurnProfile profile = BurnProfile.Get(instance.Variant);
+        float film = Film(in instance);
 
-        bool fuelled = instance.Fade > 1f - profile.FuelFraction;
-
-        // Intensity caps the fire as well as starting it, so the thin rim of a scorch smoulders and
-        // never catches while its centre rages.
-        float ceiling = profile.Peak * instance.Intensity;
-
-        float delta = fuelled ? profile.HeatGain : -profile.HeatDecay;
-
-        instance.Level = MathHelper.Clamp(instance.Level + delta, 0f, ceiling);
-
-        var stage = BurnProfile.StageOf(instance.Level);
-
-        instance.Stage = (byte)stage;
-
-        if (stage >= BurnStage.Burning && profile.SpreadChance > 0f)
-            Spread(in instance, profile);
-
-        // A fire whose heat is gone has nothing left to do but finish blackening, so it hands the
-        // rest of its life to the char and stops costing anything but a draw.
-        if (instance.Level <= SPENT_HEAT)
-        {
-            if (profile.ConsumesTiles)
-                Consume(ref instance);
-
+        if (film <= 0f)
             return;
-        }
+
+        instance.Level = MathF.Min(instance.Level + instance.Intensity / EATING_TICKS, 1f);
+
+        if (instance.Level >= 1f && instance.Stage == STAGE_EATING)
+            BreakThrough(ref instance);
 
         if (Main.dedServ || !OnScreen(in instance))
             return;
 
-        Embers(in instance, stage);
+        Fizz(in instance, film);
     }
 
-    private static void Spread(in TileConditionInstance instance, BurnProfile profile)
+    /// <summary>The tile has been eaten through. If it breaks, the acid carries on into what's below it; if it stands up to it, it stays pitted until the acid dries.</summary>
+    private static void BreakThrough(ref TileConditionInstance instance)
     {
-        if (!Main.rand.NextBool() || Main.rand.NextFloat() > profile.SpreadChance * instance.Level)
+        instance.Stage = STAGE_STOOD_UP_TO_IT;
+
+        if (!TryDestroyTile(ref instance))
             return;
 
-        (int dx, int dy) = Main.rand.Next(4) switch
+        float drip = instance.Intensity * DRIP_FALLOFF;
+
+        // Synced, unlike a splash: only the machine that broke the tile knows it happened on this tick.
+        if (drip >= WEAKEST_DRIP)
+            Corrode(instance.X, instance.Y + 1, drip, instance.Owner, sync: true);
+    }
+
+    private static void Fizz(in TileConditionInstance instance, float film)
+    {
+        Lighting.AddLight(instance.WorldCenter, 0.1f * film, 0.26f * film, 0.03f * film);
+
+        if (Main.rand.NextBool((int)MathHelper.Lerp(150f, 34f, film)))
         {
-            0 => (-1, 0),
-            1 => (1, 0),
-            2 => (0, -1),
-            _ => (0, 1),
-        };
+            Dust bubble = Dust.NewDustPerfect(
+                instance.WorldPosition + new Vector2(Main.rand.NextFloat(16f), Main.rand.NextFloat(-2f, 6f)),
+                DustID.BubbleBurst_Green,
+                new Vector2(Main.rand.NextFloat(-0.2f, 0.2f), Main.rand.NextFloat(-0.9f, -0.2f)),
+                80,
+                default,
+                Main.rand.NextFloat(0.6f, 1f)
+            );
 
-        int x = instance.X + dx;
-        int y = instance.Y + dy;
+            bubble.noGravity = true;
+        }
 
-        if (TileConditionSystem.Has<BurnedCondition>(x, y))
-            return;
+        if (Main.rand.NextBool((int)MathHelper.Lerp(500f, 140f, instance.Level)))
+            Fume(instance.WorldCenter + new Vector2(0f, -6f));
 
-        Corrode(x, y, profile, instance.Intensity * profile.SpreadFalloff, instance.Owner);
+        // Underneath an overhang it runs off in drops, which fall the way a drop does.
+        if (Main.rand.NextBool(120) && !WorldGen.SolidTile(instance.X, instance.Y + 1))
+        {
+            Dust.NewDustPerfect(
+                new Vector2(instance.WorldPosition.X + Main.rand.NextFloat(16f), instance.WorldPosition.Y + 16f),
+                DustID.t_Slime,
+                new Vector2(0f, 0.5f),
+                90,
+                new Color(170, 255, 70),
+                Main.rand.NextFloat(0.6f, 0.9f)
+            );
+        }
     }
 
-    private static void Consume(ref TileConditionInstance instance)
+    private static void Fume(Vector2 position)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient)
-            return;
-
-        WorldGen.KillTile(instance.X, instance.Y, noItem: true);
-
-        if (Main.netMode == NetmodeID.Server)
-            NetMessage.SendTileSquare(-1, instance.X, instance.Y, 1);
-
-        instance.Life = 0f;
-    }
-
-    private static void Embers(in TileConditionInstance instance, BurnStage stage)
-    {
-        float heat = instance.Level;
-
-        Lighting.AddLight(instance.WorldCenter, 0.42f * heat, 0.17f * heat, 0.03f * heat);
-
-        if (!Main.rand.NextBool((int)MathHelper.Lerp(340f, 60f, heat)))
-            return;
-
-        Dust ember = Dust.NewDustPerfect(
-            instance.WorldPosition + new Vector2(Main.rand.NextFloat(16f), Main.rand.NextFloat(16f)),
-            // Fire throws sparks; something merely smouldering throws ash, which is the visible
-            // difference between a tile that is alight and one that is only still warm.
-            stage >= BurnStage.Burning ? DustID.Torch : DustID.Ash,
-            new Vector2(Main.rand.NextFloat(-0.25f, 0.25f), Main.rand.NextFloat(-1.4f, -0.4f)),
-            0,
-            default,
-            Main.rand.NextFloat(0.7f, 1.3f) * MathHelper.Lerp(0.5f, 1.2f, heat)
+        Dust fume = Dust.NewDustPerfect(
+            position + Main.rand.NextVector2Circular(7f, 3f),
+            DustID.Smoke,
+            new Vector2(Main.rand.NextFloat(-0.25f, 0.25f), Main.rand.NextFloat(-1.1f, -0.4f)),
+            170,
+            new Color(170, 210, 90),
+            Main.rand.NextFloat(0.7f, 1.2f)
         );
 
-        ember.noGravity = true;
+        fume.noGravity = true;
     }
 
-    /// <summary>Heat as an average, char and flame as amounts scaled by the mark's coverage.</summary>
+    /// <summary>Eaten and film as amounts scaled by the mark's coverage, so neither one draws past the edge of it.</summary>
     public override TileCanvasSample EncodeCanvas(in TileConditionInstance instance)
     {
-        float coverage = Coverage(in instance);
-        float fire = MathHelper.Clamp(instance.Level / FIRE_FADE_HEAT, 0f, 1f);
+        float coverage = instance.Intensity * MathHelper.Clamp(instance.Fade / SCAR_FADE_FRACTION, 0f, 1f);
 
-        return new TileCanvasSample(coverage, new Vector3(instance.Level, coverage * CharProgress(in instance) * MAX_CHAR, coverage * fire));
+        return new TileCanvasSample(coverage, new Vector3(coverage * instance.Level, instance.Intensity * Film(in instance), 0f));
     }
 
-    private static float Coverage(in TileConditionInstance instance)
-        => instance.Intensity * MathHelper.Clamp(instance.Fade / DISSOLVE_FRACTION, 0f, 1f);
-
-    /// <summary>Counted from the first ignition, so re-lighting a tile does not clean its char off.</summary>
-    private static float CharProgress(in TileConditionInstance instance)
-        => MathHelper.Clamp(instance.TotalAge / 60f * BurnProfile.Get(instance.Variant).CharRate, 0f, 1f);
+    /// <summary>How wet the film still is, 1 until it starts to dry and 0 once it's only a scar.</summary>
+    private static float Film(in TileConditionInstance instance)
+        => MathHelper.Clamp((instance.Fade - DRY_FRACTION) / (1f - DRY_FRACTION) * 3f, 0f, 1f);
 
     public override void ApplyShaderParameters(Effect effect)
     {
-        if (noiseTexture is { Value: { } noise })
-            effect.Parameters["uNoiseTex"]?.SetValue(noise);
+        if (flowTexture is { Value: { } flow })
+            effect.Parameters["uFlowTex"]?.SetValue(flow);
 
-        effect.Parameters["FireThreshold"]?.SetValue(0.4f);
-        effect.Parameters["FireNoiseScale"]?.SetValue(0.09f);
-        effect.Parameters["FireNoiseStrength"]?.SetValue(0.8f);
-        effect.Parameters["FireDrift"]?.SetValue(new Vector2(0.012f, 0.06f));
-        effect.Parameters["FireEdgeWidth"]?.SetValue(0.22f);
-        effect.Parameters["FireBodyAlpha"]?.SetValue(0.86f);
-        effect.Parameters["FireEdgeAlpha"]?.SetValue(0.95f);
+        if (cellTexture is { Value: { } cells })
+            effect.Parameters["uCellTex"]?.SetValue(cells);
 
-        effect.Parameters["EmberColor"]?.SetValue(new Vector3(0.15f, 0.49f, 0.00f));
-        effect.Parameters["CoolColor"]?.SetValue(new Vector3(0.00f, 1.00f, 0.25f));
-        effect.Parameters["HotColor"]?.SetValue(new Vector3(0.50f, 1.00f, 0.00f));
-        effect.Parameters["FlashColor"]?.SetValue(new Vector3(0.87f, 1.00f, 0.51f));
+        effect.Parameters["SurfaceLip"]?.SetValue(2f);
 
-        effect.Parameters["CharColor"]?.SetValue(new Vector3(0.196f, 0.267f, 0.075f));
-        effect.Parameters["CharAlpha"]?.SetValue(0.85f);
-        effect.Parameters["CharThreshold"]?.SetValue(0.05f);
-        effect.Parameters["CharSoftness"]?.SetValue(0.6f);
-        effect.Parameters["CharNoiseScale"]?.SetValue(0.2f);
-        effect.Parameters["CharNoiseStrength"]?.SetValue(0.6f);
-        effect.Parameters["CharBands"]?.SetValue(5f);
+        effect.Parameters["ScarColor"]?.SetValue(new Vector3(0.20f, 0.24f, 0.07f));
+        effect.Parameters["ScarAlpha"]?.SetValue(0.62f);
+        effect.Parameters["ScarThreshold"]?.SetValue(0.12f);
+        effect.Parameters["ScarSoftness"]?.SetValue(0.5f);
+        effect.Parameters["ScarBands"]?.SetValue(4f);
+
+        effect.Parameters["PitScale"]?.SetValue(0.14f);
+        effect.Parameters["PitDistort"]?.SetValue(0.05f);
+        effect.Parameters["PitReach"]?.SetValue(0.62f);
+        effect.Parameters["PitFloor"]?.SetValue(0.1f);
+        effect.Parameters["PitColor"]?.SetValue(new Vector3(0.025f, 0.05f, 0.02f));
+        effect.Parameters["PitAlpha"]?.SetValue(0.96f);
+        effect.Parameters["EatingEdge"]?.SetValue(0.035f);
+        effect.Parameters["EatingColor"]?.SetValue(new Vector3(0.86f, 1f, 0.26f));
+        effect.Parameters["EatingGlow"]?.SetValue(0.55f);
+
+        effect.Parameters["FilmThreshold"]?.SetValue(0.2f);
+        effect.Parameters["FilmDepth"]?.SetValue(0.55f);
+        effect.Parameters["FlowScale"]?.SetValue(0.09f);
+        effect.Parameters["FlowStrength"]?.SetValue(0.36f);
+        effect.Parameters["FlowDrift"]?.SetValue(new Vector2(0.002f, -0.022f));
+        effect.Parameters["FilmBands"]?.SetValue(4f);
+        effect.Parameters["FilmAlpha"]?.SetValue(0.84f);
+
+        effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.14f, 0.36f, 0.05f));
+        effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.38f, 0.74f, 0.08f));
+        effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.68f, 0.98f, 0.20f));
+        effect.Parameters["SurfaceColor"]?.SetValue(new Vector3(0.90f, 1f, 0.48f));
+        effect.Parameters["SurfaceAlpha"]?.SetValue(0.92f);
+
+        effect.Parameters["BubbleScale"]?.SetValue(0.2f);
+        effect.Parameters["BubbleSpeed"]?.SetValue(0.55f);
+        effect.Parameters["BubbleSize"]?.SetValue(0.2f);
+        effect.Parameters["BubbleColor"]?.SetValue(new Vector3(0.94f, 1f, 0.62f));
+        effect.Parameters["BubbleAlpha"]?.SetValue(0.9f);
+
+        effect.Parameters["DripLength"]?.SetValue(9f);
     }
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {
-        if (instance.Level < 0.22f)
+        float film = instance.Intensity * Film(in instance);
+
+        if (film < HARMFUL_FILM || !FirstContact(player))
             return;
 
-        player.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(60f, 180f, instance.Level));
+        player.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(60f, 180f, film));
     }
 
     public override void OnNPCContact(ref TileConditionInstance instance, NPC npc)
     {
-        if (instance.Level < 0.22f)
+        float film = instance.Intensity * Film(in instance);
+
+        if (film < HARMFUL_FILM || npc.friendly || npc.noTileCollide || !FirstContact(npc))
             return;
 
-        npc.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(80f, 220f, instance.Level));
-    }
-
-    private static void Smoke(Vector2 position, int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            Dust steam = Dust.NewDustPerfect(
-                position + Main.rand.NextVector2Circular(7f, 7f),
-                DustID.Cloud,
-                new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-1.4f, -0.6f)),
-                120,
-                Color.DarkGray,
-                Main.rand.NextFloat(0.7f, 1.2f)
-            );
-
-            steam.noGravity = true;
-        }
+        npc.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(80f, 220f, film));
     }
 
     public override void OnLiquidContact(ref TileConditionInstance instance, int liquidType, int amount)
@@ -216,46 +245,21 @@ public sealed class AcidCondition : TileCondition
         if (liquidType == LiquidID.Water)
         {
             instance.Life = instance.MaxLife;
-            instance.Level = MathF.Min(instance.Level + 0.1f, 1f);
 
             return;
         }
 
-        float share = amount / 255f;
+        instance.Life -= QUENCH_PER_PROBE * (amount / 255f);
 
-        instance.Life -= QUENCH_PER_PROBE * share;
-        instance.Level = MathF.Max(instance.Level - share * 0.25f, 0f);
-        instance.Stage = (byte)BurnProfile.StageOf(instance.Level);
-
-        if (!Main.dedServ)
-            Smoke(instance.WorldCenter, 1);
+        if (!Main.dedServ && OnScreen(in instance))
+            Fume(instance.WorldCenter);
     }
 
-    public static bool Corrode(int i, int j, BurnProfile profile, float intensity = 1f, int owner = TileConditionInstance.NoOwner)
-        => TileConditionSystem.Apply<AcidCondition>(i, j, intensity, profile.Duration, owner, sync: false, variant: profile.Id);
-    
-    public static void Melt(Vector2 center, float radius, float intensity = 1f, BurnProfile? profile = null)
-    {
-        BurnProfile rules = profile ?? BurnProfile.Standard;
+    /// <summary>Lays acid on one tile.</summary>
+    public static bool Corrode(int i, int j, float intensity = 1f, int owner = TileConditionInstance.NoOwner, bool sync = false)
+        => TileConditionSystem.Apply<AcidCondition>(i, j, intensity, owner: owner, sync: sync);
 
-        int reach = (int)MathF.Ceiling(radius / 16f);
-        int centerX = (int)(center.X / 16f);
-        int centerY = (int)(center.Y / 16f);
-
-        for (int x = centerX - reach; x <= centerX + reach; x++)
-        {
-            for (int y = centerY - reach; y <= centerY + reach; y++)
-            {
-                float distance = Vector2.Distance(new Vector2(x * 16f + 8f, y * 16f + 8f), center);
-
-                if (distance > radius)
-                    continue;
-
-                float falloff = 1f - distance / MathF.Max(radius, 1f);
-
-                Corrode(x, y, rules, intensity * MathHelper.Lerp(0.4f, 1f, falloff));
-            }
-        }
-    }
-
+    /// <summary>Splashes acid over everything solid within <paramref name="radius" /> pixels, thinning toward the edge.</summary>
+    public static void Splash(Vector2 center, float radius, float intensity = 1f, int owner = TileConditionInstance.NoOwner)
+        => TileConditionSystem.ApplyCircle<AcidCondition>(center, radius, intensity, owner: owner);
 }

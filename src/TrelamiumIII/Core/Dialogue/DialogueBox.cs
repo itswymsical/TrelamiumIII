@@ -595,6 +595,14 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
             return;
         }
 
+        // A press landing on the frame the last glyph appeared, or during a pause after it, is still
+        // before the answers are up. Going on from here would end the conversation unanswered.
+        if (current!.HasChoices)
+        {
+            awaitingChoice = true;
+            return;
+        }
+
         if (pending.Count > 0)
             NextLine();
         else

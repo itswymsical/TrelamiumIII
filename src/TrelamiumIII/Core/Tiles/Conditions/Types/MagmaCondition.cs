@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -54,6 +55,13 @@ public sealed class MagmaCondition : FilmCondition
 
     public override void OnApplied(ref TileConditionInstance instance)
         => instance.Level = MathF.Max(instance.Level, instance.Intensity);
+
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElement.Heat;
+
+    public override float PotencyOf(in TileConditionInstance instance) => instance.Level;
+
+    /// <summary>Only the heat goes. The crust stays to wash away slowly, as it does under real water.</summary>
+    public override void Diminish(ref TileConditionInstance instance, float share) => instance.Level *= 1f - share;
 
     public override void UpdateTile(ref TileConditionInstance instance)
     {
