@@ -2206,4 +2206,5 @@ Subworlds: {
 
 	CanopyTreeLab.DisplayName: Canopy Tree Lab
 	StructureLab.DisplayName: Structure Lab
+	VfxLab.DisplayName: VFX Lab
 }

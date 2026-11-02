@@ -13,7 +13,8 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 /// </remarks>
 public sealed class LiquidResidueCondition : FilmCondition
 {
-    protected override TileFilmLook Look { get; } = new()
+    /// <summary>The coat of anything wet, re-dyed by whatever tint it's laid with. Rain wears it too; see <see cref="DampCondition" />.</summary>
+    internal static readonly TileFilmLook WetLook = new()
     {
         Threshold = 0.18f,
         NoiseScale = 0.05f,
@@ -33,6 +34,8 @@ public sealed class LiquidResidueCondition : FilmCondition
         TintStrength = 1f,
         TintWash = 0.75f,
     };
+
+    protected override TileFilmLook Look => WetLook;
 
     public override float Duration => 20f * 60f;
 

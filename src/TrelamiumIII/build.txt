@@ -6,5 +6,5 @@ includeSource = true
 hideCode = true
 hideResources = false
 
-buildIgnore = *.ttf
+buildIgnore = *.ttf, *.vfx.json
 modReferences = ModLiquidLib, SubworldLibrary

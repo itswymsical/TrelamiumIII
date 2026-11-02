@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "name": "IceMist",
+  "surface": "Field",
+  "stages": [
+    { "id": "flow", "type": "FlowAdvect", "Strength": 0.2 },
+    {
+      "id": "noise",
+      "type": "NoiseLayer",
+      "Noise": "LiquidNoise",
+      "Scale": 1.4,
+      "Strength": 0.18,
+      "Drift": [0.05, 0.015],
+      "Stretch": [1, 1]
+    },
+    { "id": "cut", "type": "Threshold", "Level": 0.14 },
+    { "id": "shade", "type": "DepthShade", "Range": 1, "Bands": 8 },
+    {
+      "id": "palette",
+      "type": "Palette",
+      "Shadow": [0.36, 0.52, 0.68],
+      "Body": [0.62, 0.8, 0.92],
+      "Core": [0.88, 0.97, 1],
+      "BodyAlpha": 0.8,
+      "AlphaFloor": 0.75
+    },
+    { "id": "light", "type": "LightFloor", "Floor": [0.22, 0.22, 0.22] },
+    { "id": "rim", "type": "Rim", "Outline": [0.85, 0.96, 1], "OutlineAlpha": 0.85 }
+  ]
+}
