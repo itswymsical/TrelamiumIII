@@ -16,6 +16,10 @@ internal readonly record struct HighlandsPalette(Color SkyTop, Color SkyHorizon,
     private const float OvercastFog = 0.08f;
     private const float OvercastMist = 0.2f;
     private const float OvercastGrey = 0.55f;
+
+    /// <summary> How far full cloud dims the sky and haze colours, to sit with the dimmer ground under them; mist is lit by the world, so it dims by itself. </summary>
+    private const float OvercastDim = 0.3f;
+
     private static readonly Vector3 OvercastLight = new(0.86f, 0.89f, 0.93f);
 
     /// <summary> Palettes at hours of the clock, in order and wrapping past midnight. </summary>
@@ -62,13 +66,14 @@ internal readonly record struct HighlandsPalette(Color SkyTop, Color SkyHorizon,
             return clear;
 
         float grey = overcast * OvercastGrey;
+        float dim = 1f - overcast * OvercastDim;
 
         return clear with
         {
-            SkyTop = Desaturate(clear.SkyTop, grey),
-            SkyHorizon = Desaturate(clear.SkyHorizon, grey),
-            Haze = Desaturate(clear.Haze, grey),
-            Fog = Desaturate(clear.Fog, grey),
+            SkyTop = Dim(Desaturate(clear.SkyTop, grey), dim),
+            SkyHorizon = Dim(Desaturate(clear.SkyHorizon, grey), dim),
+            Haze = Dim(Desaturate(clear.Haze, grey), dim),
+            Fog = Dim(Desaturate(clear.Fog, grey), dim),
             Mist = Desaturate(clear.Mist, grey),
             Light = Vector3.Lerp(clear.Light, OvercastLight, overcast),
             FogDensity = clear.FogDensity + OvercastFog * overcast,
@@ -81,6 +86,8 @@ internal readonly record struct HighlandsPalette(Color SkyTop, Color SkyHorizon,
         byte luma = (byte)(color.R * 0.299f + color.G * 0.587f + color.B * 0.114f);
         return Color.Lerp(color, new Color(luma, luma, luma), amount);
     }
+
+    private static Color Dim(Color color, float amount) => new(color.ToVector3() * amount);
 
     private static HighlandsPalette Lerp(HighlandsPalette a, HighlandsPalette b, float t)
     {
@@ -109,6 +116,11 @@ public sealed class HighlandsAtmosphere : ModSystem
 
     /// <summary> How far the sky's colour leans toward the palette's horizon; the rest keeps vanilla's, which carries its day and night brightness. </summary>
     private const float BackgroundBlend = 0.5f;
+
+    /// <summary> What vanilla takes off the sun per unit of cloud, and what the highlands' overcast takes instead: a storm here is grey and hazy, not a black silhouette against the haze. </summary>
+    private const float VanillaCloudDim = 0.9f;
+
+    private const float CloudDim = 0.55f;
 
     /// <summary> 0 to 1, how far the highlands' look is in. </summary>
     public static float Presence { get; private set; }
@@ -154,6 +166,12 @@ public sealed class HighlandsAtmosphere : ModSystem
             return;
 
         HighlandsPalette palette = HighlandsPalette.Now;
+
+        float cloud = Main.cloudAlpha * Main.atmo;
+        float lift = MathHelper.Lerp(1f, (1f - cloud * CloudDim) / (1f - cloud * VanillaCloudDim), Presence);
+
+        tileColor = new Color(tileColor.ToVector3() * lift);
+        backgroundColor = new Color(backgroundColor.ToVector3() * lift);
 
         tileColor = Color.Lerp(tileColor, new Color(tileColor.ToVector3() * palette.Light), Presence);
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Terraria.Utilities;
 using TrelamiumIII.Common.Generation.Utils;
 using TrelamiumIII.Content.Ingress.HighlandsBiome;
@@ -29,12 +30,17 @@ public sealed class HighlandLivingTree
     private const float CanopyCrowding = 0.03f;
 
     private const int FlareRows = 11;
-    private const float FlareColumns = 5f;
 
-    /// <summary> Rows the trunk's foot runs on into the ground, deeper than the ground can dip under it. </summary>
-    private const int FootRows = 8;
+    /// <summary> Columns the buttress spreads over: a range on the far side from the door, and little on the door's side, where it has to be cut through. </summary>
+    private const float FlareColumnsMin = 3.5f;
 
-    /// <summary> Rows a trunk edge holds each one-column step for. </summary>
+    private const float FlareColumnsMax = 6f;
+    private const float DoorFlareColumns = 2f;
+
+    /// <summary> Rows the trunk's foot runs on into the ground, deeper than the ground can dip under it, drawing in to the shaft as it goes. </summary>
+    private const int FootRows = 12;
+
+    /// <summary> Rows a trunk edge holds each one-column step for above the buttress; within it the edge may step every row, to keep its curve. </summary>
     private const int MinStepRows = 2;
 
     /// <summary> Below one the trunk slims quickly from its base, leaving the height of it thin enough for the foliage to read. </summary>
@@ -62,7 +68,12 @@ public sealed class HighlandLivingTree
     private const float RootSurfacePull = 0.12f;
 
     /// <summary> Steps of a surface root per row it sinks below the ground, so it dives away from the trunk. </summary>
-    private const int RootSinkSteps = 9;
+    private const int RootSinkSteps = 5;
+
+    /// <summary> Steps a root may show at the surface; past that it keeps <see cref="RootCoverRows"/> of soil over it, so the grass runs on over it rather than a wooden ramp running down the hillside. </summary>
+    private const int RootExposedSteps = 9;
+
+    private const int RootCoverRows = 2;
 
     /// <summary> Rows of error the surface steering responds to at most, so a neighbouring tree's canopy can't yank a root upward. </summary>
     private const float RootSurfaceMaxRows = 4f;
@@ -76,6 +87,9 @@ public sealed class HighlandLivingTree
     private const int WallThickness = 2;
     private const int PlatformSpacing = 5;
     private const int DoorRows = 3;
+
+    /// <summary> Columns of soil banked against the trunk that the doorway will dig on through. </summary>
+    private const int DoorClearance = 6;
 
     private const int RoomDepth = 30;
     private const int RoomHeight = 6;
@@ -101,6 +115,14 @@ public sealed class HighlandLivingTree
     private const float BoughDroopLow = 7f;
     private const float BoughDroopHigh = 2f;
 
+    /// <summary> Above one a bough holds its thickness well along its length and draws in toward the tip, rather than thinning to a long string; below one, a short bough tapers from the start, rather than coming out a square block. </summary>
+    private const float BoughTaperPower = 1.5f;
+
+    private const float ShortBoughTaperPower = 0.7f;
+
+    /// <summary> Columns of reach by which a bough tapers at the full <see cref="BoughTaperPower"/>. </summary>
+    private const float FullTaperReach = 14f;
+
     /// <summary> Fraction of a main bough's reach, thickness and droop that the smaller one between it and the next takes. </summary>
     private const float SubBoughScale = 0.55f;
 
@@ -113,6 +135,14 @@ public sealed class HighlandLivingTree
     private const int FringePeriod = 3;
     private const int SpireRows = 4;
 
+    /// <summary> Rows down over the trunk's top that the core of leaves reaches, and how wide it is by then. </summary>
+    private const int CoreOverlapRows = 6;
+
+    private const float CoreHalfWidth = 2f;
+
+    /// <summary> Largest pocket of air closed in by foliage that gets filled. </summary>
+    private const int PocketMaxTiles = 12;
+
     private const int BirchHeightMin = 60;
     private const int BirchHeightMax = 82;
     private const int BirchBaseMin = 4;
@@ -122,11 +152,17 @@ public sealed class HighlandLivingTree
     private const float BirchCrownStart = 0.62f;
     private const int CrownHalfWidthMin = 11;
     private const int CrownHalfWidthMax = 15;
-    private const int CrownClustersMin = 16;
-    private const int CrownClustersMax = 22;
-    private const float CrownClusterRadiusMin = 4f;
-    private const float CrownClusterRadiusMax = 7f;
-    private const float ClusterWobble = 0.14f;
+    private const int CrownClustersMin = 20;
+    private const int CrownClustersMax = 28;
+    private const float CrownClusterRadiusMin = 3f;
+    private const float CrownClusterRadiusMax = 6f;
+
+    /// <summary> Fraction of the crown's radii its solid core fills, and the range of them that the lobes round its edge sit at. </summary>
+    private const float CrownCoreFraction = 0.6f;
+
+    private const float CrownLobeFractionMin = 0.6f;
+    private const float CrownLobeFractionMax = 1f;
+    private const float ClusterWobble = 0.2f;
     private const float ClusterLobes = 3f;
     private const int BranchesMin = 4;
     private const int BranchesMax = 6;
@@ -149,6 +185,12 @@ public sealed class HighlandLivingTree
 
     /// <summary> Rows above the ground the hollow reaches; foliage above it can lie across the trunk. </summary>
     private int hollowRows;
+
+    /// <summary> The side the doorway opens on, -1 or 1. </summary>
+    private int door;
+
+    private float flareLeft;
+    private float flareRight;
 
     private int left = int.MaxValue;
     private int top = int.MaxValue;
@@ -198,7 +240,7 @@ public sealed class HighlandLivingTree
 
     private bool Fits()
     {
-        int flare = baseHalfWidth + (int)FlareColumns + 1;
+        int flare = baseHalfWidth + (int)FlareColumnsMax + 1;
 
         if (!WorldGen.InWorld(ground.X - crownReach, ground.Y - height - SpireRows, WorldMargin) || !WorldGen.InWorld(ground.X + crownReach, ground.Y + RoomDepth + RoomShell, WorldMargin))
             return false;
@@ -230,6 +272,7 @@ public sealed class HighlandLivingTree
 
     private Rectangle Build()
     {
+        ChooseDoor();
         BuildTrunk();
         hollowRows = FindHollowRows();
         BuildRoots();
@@ -239,21 +282,36 @@ public sealed class HighlandLivingTree
         else
             BuildBirchCrown();
 
-        int door = random.NextBool() ? 1 : -1;
+        TidyCanopy();
+
         int roomFloor = ground.Y + RoomDepth;
 
         BuildRoom(roomFloor, out int roomRadius);
-        HollowTrunk(roomFloor - RoomHeight, door);
+        HollowTrunk(roomFloor - RoomHeight);
         PlaceChest(roomFloor, -door * roomRadius / 2);
 
         return new Rectangle(left, top, right - left + 1, bottom - top + 1);
     }
 
+    /// <summary> The door faces the lower ground, so it opens onto the slope and not into it. The buttress is uneven, big on the far side and small by the door, so a tall one isn't left overhanging the way in. </summary>
+    private void ChooseDoor()
+    {
+        int reach = baseHalfWidth + (int)DoorFlareColumns + 2;
+        int leftRow = GroundRow(ground.X - reach);
+        int rightRow = GroundRow(ground.X + reach);
+
+        door = leftRow == rightRow ? (random.NextBool() ? 1 : -1) : leftRow > rightRow ? -1 : 1;
+
+        float far = random.NextFloat(FlareColumnsMin, FlareColumnsMax);
+        flareLeft = door < 0 ? DoorFlareColumns : far;
+        flareRight = door > 0 ? DoorFlareColumns : far;
+    }
+
     /// <summary> Column of the trunk's centre <paramref name="rowsUp"/> rows above the ground; birch bows along a sine. </summary>
     private float CenterAt(int rowsUp) => ground.X + lean * MathF.Sin(Math.Max(rowsUp, 0) / (float)height * MathHelper.Pi * 0.75f);
 
-    /// <summary> Trunk half-width <paramref name="rowsUp"/> rows above the ground, tapering up, with the root flare at its foot when <paramref name="flared"/>. </summary>
-    private float HalfWidthAt(int rowsUp, bool flared = true)
+    /// <summary> Trunk half-width <paramref name="rowsUp"/> rows above the ground, tapering up. </summary>
+    private float HalfWidthAt(int rowsUp)
     {
         float t = Math.Max(rowsUp, 0) / (float)height;
         float half = MathHelper.Lerp(baseHalfWidth, topHalfWidth, MathF.Pow(t, TaperPower));
@@ -262,19 +320,21 @@ public sealed class HighlandLivingTree
         if (t > TipTaperFrom)
             half = MathHelper.Lerp(half, TipHalfWidth, (t - TipTaperFrom) / (1f - TipTaperFrom));
 
-        if (flared && rowsUp < FlareRows)
-        {
-            float f = 1f - Math.Max(rowsUp, 0) / (float)FlareRows;
-            half += f * f * FlareColumns;
-        }
-
         return half;
     }
 
+    /// <summary> Columns the buttress adds on <paramref name="side"/>: sweeping out to the ground on a concave curve, then drawing back in under it, so the foot runs down to the shaft instead of ending in a flat block. </summary>
+    private float FlareAt(int rowsUp, int side)
+    {
+        float f = rowsUp >= 0 ? 1f - rowsUp / (float)FlareRows : 1f + rowsUp / (float)FootRows;
+
+        return f > 0f ? f * f * (side < 0 ? flareLeft : flareRight) : 0f;
+    }
+
     /// <summary>
-    /// Builds the trunk from the foot up. Each edge follows the taper and lean but only ever steps one column at a time and
-    /// holds every step for <see cref="MinStepRows"/> rows, so the bark climbs in clean steps instead of jagging back and
-    /// forth as the rounding flips.
+    /// Builds the trunk from the foot up. Each edge follows the taper and lean but only ever steps one column at a time and,
+    /// above the buttress, holds every step for <see cref="MinStepRows"/> rows, so the bark climbs in clean steps instead of
+    /// jagging back and forth as the rounding flips.
     /// </summary>
     private void BuildTrunk()
     {
@@ -287,8 +347,9 @@ public sealed class HighlandLivingTree
         {
             float center = CenterAt(rowsUp);
             float half = HalfWidthAt(rowsUp);
-            int wantLeft = (int)MathF.Round(center - half);
-            int wantRight = (int)MathF.Round(center + half);
+            int wantLeft = (int)MathF.Round(center - half - FlareAt(rowsUp, -1));
+            int wantRight = (int)MathF.Round(center + half + FlareAt(rowsUp, 1));
+            int hold = rowsUp < FlareRows ? 1 : MinStepRows;
 
             if (rowsUp == -FootRows)
             {
@@ -297,13 +358,13 @@ public sealed class HighlandLivingTree
             }
             else
             {
-                if (++leftHeld >= MinStepRows && wantLeft != left)
+                if (++leftHeld >= hold && wantLeft != left)
                 {
                     left += Math.Sign(wantLeft - left);
                     leftHeld = 0;
                 }
 
-                if (++rightHeld >= MinStepRows && wantRight != right)
+                if (++rightHeld >= hold && wantRight != right)
                 {
                     right += Math.Sign(wantRight - right);
                     rightHeld = 0;
@@ -338,14 +399,14 @@ public sealed class HighlandLivingTree
     {
         (int trunkLeft, int trunkRight) = edges[Math.Clamp(rowsUp + FootRows, 0, edges.Length - 1)];
         int center = (trunkLeft + trunkRight) / 2;
-        int inner = Math.Max(1, (int)(HalfWidthAt(rowsUp, flared: false) - WallThickness + 0.5f));
+        int inner = Math.Max(1, (int)(HalfWidthAt(rowsUp) - WallThickness + 0.5f));
 
         return (Math.Max(center - inner, trunkLeft + WallThickness), Math.Min(center + inner, trunkRight - WallThickness));
     }
 
     /// <summary>
-    /// Fans out from under the flare on both sides: shallow roots creep along just under the surface and sink away from the
-    /// trunk, deeper ones dive. Each tapers to a point along a smooth curve and only ever replaces soil, so none hangs in the air.
+    /// Fans out from under the buttress on both sides: shallow roots leave along the surface and soon sink under it, deeper
+    /// ones dive. Each tapers to a point along a smooth curve and only ever replaces soil, so none hangs in the air.
     /// </summary>
     private void BuildRoots()
     {
@@ -376,12 +437,16 @@ public sealed class HighlandLivingTree
         {
             float radius = MathHelper.Lerp(RootRadius, RootTipRadius, MathF.Pow(step / (float)length, 0.7f));
 
-            PlaceRootDisc(position, radius);
+            PlaceRootDisc(position, radius, step < RootExposedSteps ? 0 : RootCoverRows);
 
             direction.Y += RootDroop * (0.5f + fan) + curve;
 
             if (surfaceHugging && WorldGen.InWorld((int)position.X, (int)position.Y, WorldMargin))
                 direction.Y += Math.Clamp(GroundRow((int)position.X) + step / RootSinkSteps - position.Y, -RootSurfaceMaxRows, RootSurfaceMaxRows) * RootSurfacePull;
+
+            // Once under the surface it only goes down, or a hill rising over it would curl its tip back up.
+            if (step >= RootExposedSteps)
+                direction.Y = MathF.Max(direction.Y, 0f);
 
             direction.Normalize();
 
@@ -393,14 +458,19 @@ public sealed class HighlandLivingTree
         }
     }
 
-    /// <summary> Wood in a disc wherever there is already soil or rock, so a root follows the ground and never bridges open air. </summary>
-    private void PlaceRootDisc(Vector2 center, float radius)
+    /// <summary> Wood in a disc wherever there is already soil or rock at least <paramref name="cover"/> rows under the surface, so a root follows the ground and never bridges open air. </summary>
+    private void PlaceRootDisc(Vector2 center, float radius, int cover)
     {
         int reach = (int)MathF.Ceiling(radius);
 
         for (int x = (int)MathF.Round(center.X) - reach; x <= (int)MathF.Round(center.X) + reach; x++)
         {
-            for (int y = (int)MathF.Round(center.Y) - reach; y <= (int)MathF.Round(center.Y) + reach; y++)
+            if (!WorldGen.InWorld(x, WorldMargin, WorldMargin))
+                continue;
+
+            int firstRow = cover > 0 ? GroundRow(x) + cover : 0;
+
+            for (int y = Math.Max((int)MathF.Round(center.Y) - reach, firstRow); y <= (int)MathF.Round(center.Y) + reach; y++)
             {
                 if (Vector2.DistanceSquared(new Vector2(x, y), center) <= radius * radius + 0.25f && WorldGen.InWorld(x, y, WorldMargin)
                     && SurfaceSites.IsGround(Main.tile[x, y]) && Main.tile[x, y].TileType != leaves)
@@ -424,7 +494,7 @@ public sealed class HighlandLivingTree
             float u = (start - y) / (float)(start - crown);
 
             // Measured from the bark, so the upper tiers still stand clear of the trunk.
-            int reach = (int)(HalfWidthAt(ground.Y - y, flared: false) + MathHelper.Lerp(reachMax, SpruceReachTop, MathF.Pow(u, 0.85f))) + random.Next(-1, 2);
+            int reach = (int)(HalfWidthAt(ground.Y - y) + MathHelper.Lerp(reachMax, SpruceReachTop, MathF.Pow(u, 0.85f))) + random.Next(-1, 2);
             float thickness = MathHelper.Lerp(BoughThicknessLow, BoughThicknessHigh, u);
             float droop = MathHelper.Lerp(BoughDroopLow, BoughDroopHigh, u);
             int center = (int)MathF.Round(CenterAt(ground.Y - y));
@@ -444,31 +514,103 @@ public sealed class HighlandLivingTree
             y -= spacing;
         }
 
-        int tip = (int)MathF.Round(CenterAt(height));
+        // A core of leaves from over the trunk's top up to the spire, widening as it comes down, so the top tiers stay joined to the tree and the trunk's end never shows.
+        int spire = crown - SpireRows;
+        int coreBottom = ground.Y - TrunkRows + CoreOverlapRows;
 
-        for (int row = crown - SpireRows; row <= crown + 1; row++)
+        for (int row = spire; row <= coreBottom; row++)
         {
-            int half = row < crown - 1 ? 0 : 1;
+            int half = (int)MathF.Round(CoreHalfWidth * (row - spire) / (coreBottom - spire));
+            int column = (int)MathF.Round(CenterAt(ground.Y - row));
 
             for (int dx = -half; dx <= half; dx++)
-                PlaceFoliage(tip + dx, row);
+                PlaceFoliage(column + dx, row);
         }
     }
 
-    /// <summary> One bough each way from the trunk: thick where it leaves and sweeping down to a point, its underside fringed with hanging needles. </summary>
+    /// <summary> Clears up where the foliage overlaps, above the buttress: pockets of air it has closed in are filled, and scraps of wood left between leaves become leaves. </summary>
+    private void TidyCanopy()
+    {
+        int trunkFree = ground.Y - hollowRows - FoliageClearance;
+
+        for (int y = top; y <= ground.Y - FlareRows; y++)
+        {
+            for (int x = left; x <= right; x++)
+            {
+                Tile tile = Main.tile[x, y];
+
+                if (!tile.HasTile)
+                {
+                    if (IsLeaves(x, y - 1))
+                        FillPocket(x, y);
+                }
+                else if (y < trunkFree && tile.TileType == wood && IsWoodScrap(x, y))
+                {
+                    Place(x, y, leaves);
+                }
+            }
+        }
+    }
+
+    private bool IsLeaves(int x, int y) => Main.tile[x, y].HasTile && Main.tile[x, y].TileType == leaves;
+
+    private bool IsWood(int x, int y) => Main.tile[x, y].HasTile && Main.tile[x, y].TileType == wood;
+
+    /// <summary> A single row of wood between leaves, or a tile of it joined to no other. </summary>
+    private bool IsWoodScrap(int x, int y)
+        => (IsLeaves(x, y - 1) && IsLeaves(x, y + 1)) || !(IsWood(x, y - 1) || IsWood(x, y + 1) || IsWood(x - 1, y) || IsWood(x + 1, y));
+
+    /// <summary> Leaves through the air around (<paramref name="x"/>, <paramref name="y"/>), if it's closed in and no bigger than <see cref="PocketMaxTiles"/>. The hollow has walls, so it's never taken for one. </summary>
+    private void FillPocket(int x, int y)
+    {
+        var cells = new List<Point> { new(x, y) };
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            foreach (Point step in (ReadOnlySpan<Point>)[new(0, -1), new(0, 1), new(-1, 0), new(1, 0)])
+            {
+                var next = new Point(cells[i].X + step.X, cells[i].Y + step.Y);
+                Tile tile = Main.tile[next.X, next.Y];
+
+                if (tile.HasTile || cells.Contains(next))
+                    continue;
+
+                if (tile.WallType != WallID.None || cells.Count == PocketMaxTiles)
+                    return;
+
+                cells.Add(next);
+            }
+        }
+
+        foreach (Point cell in cells)
+            Place(cell.X, cell.Y, leaves);
+    }
+
+    /// <summary> One bough each way from the trunk, thick where it leaves and sweeping down to a point, its underside fringed with hanging needles. </summary>
     private void PlaceBough(int center, int y, int leftReach, int rightReach, float thickness, float droop)
     {
+        PlaceBoughSide(center, y, -1, leftReach, thickness, droop);
+        PlaceBoughSide(center, y, 1, rightReach, thickness, droop);
+    }
+
+    private void PlaceBoughSide(int center, int y, int side, int reach, float thickness, float droop)
+    {
+        int previous = y;
         int phase = random.Next(FringePeriod);
+        float taper = MathHelper.Lerp(ShortBoughTaperPower, BoughTaperPower, Math.Min(reach / FullTaperReach, 1f));
 
-        for (int dx = -leftReach; dx <= rightReach; dx++)
+        for (int dx = 0; dx <= reach; dx++)
         {
-            float a = Math.Abs(dx) / (float)Math.Max(dx < 0 ? leftReach : rightReach, 1);
+            float a = dx / (float)Math.Max(reach, 1);
             int underside = y + (int)(a * a * droop);
-            int rows = Math.Max((int)MathF.Round(MathHelper.Lerp(thickness, 1f, a)), 1);
-            int fringe = a > FringeFrom && (Math.Abs(dx) + phase) % FringePeriod == 0 ? 1 : 0;
+            int rows = Math.Max((int)MathF.Round(MathHelper.Lerp(thickness, 1f, MathF.Pow(a, taper))), 1);
+            int fringe = a > FringeFrom && (dx + phase) % FringePeriod == 0 ? 1 : 0;
 
-            for (int row = underside - rows + 1; row <= underside + fringe; row++)
-                PlaceFoliage(center + dx, row);
+            // Up to the last column's underside at the least, so a steep tip steps down still joined to it instead of breaking off.
+            for (int row = Math.Min(underside - rows + 1, previous); row <= underside + fringe; row++)
+                PlaceFoliage(center + side * dx, row);
+
+            previous = underside;
         }
     }
 
@@ -484,7 +626,7 @@ public sealed class HighlandLivingTree
         for (int i = 0; i < branches; i++, side = -side)
         {
             int rowsUp = (int)MathHelper.Lerp(height * 0.45f, height * 0.85f, i / (float)Math.Max(branches - 1, 1)) + random.Next(-2, 3);
-            var position = new Vector2(CenterAt(rowsUp) + side * (HalfWidthAt(rowsUp, flared: false) + 0.5f), ground.Y - rowsUp);
+            var position = new Vector2(CenterAt(rowsUp) + side * (HalfWidthAt(rowsUp) + 0.5f), ground.Y - rowsUp);
             float angle = random.NextFloat(0.35f, 0.8f);
             var direction = new Vector2(side * MathF.Cos(angle), -MathF.Sin(angle));
             int length = random.Next(BranchLengthMin, BranchLengthMax + 1);
@@ -502,10 +644,28 @@ public sealed class HighlandLivingTree
         var radii = new Vector2(crownHalfWidth, (crownBottom - crown) * 0.5f + 2f);
         int clusters = random.Next(CrownClustersMin, CrownClustersMax + 1);
 
+        PlaceEllipse(center, radii * CrownCoreFraction);
+
+        // Lobes all round the core's edge, so the outline comes out a run of small bumps and not a few big flat-sided blobs.
         for (int i = 0; i < clusters; i++)
-            PlaceCluster(center + random.NextVector2Circular(radii.X, radii.Y) * 0.8f, random.NextFloat(CrownClusterRadiusMin, CrownClusterRadiusMax));
+        {
+            Vector2 edge = (i / (float)clusters * MathHelper.TwoPi + random.NextFloat(-0.2f, 0.2f)).ToRotationVector2();
+            PlaceCluster(center + edge * radii * random.NextFloat(CrownLobeFractionMin, CrownLobeFractionMax), random.NextFloat(CrownClusterRadiusMin, CrownClusterRadiusMax));
+        }
 
         PlaceCluster(new Vector2(CenterAt(height), crown + 2), 4f);
+    }
+
+    private void PlaceEllipse(Vector2 center, Vector2 radii)
+    {
+        for (int x = (int)(center.X - radii.X); x <= (int)(center.X + radii.X); x++)
+        {
+            for (int y = (int)(center.Y - radii.Y); y <= (int)(center.Y + radii.Y); y++)
+            {
+                if (((new Vector2(x, y) - center) / radii).LengthSquared() < 1f)
+                    PlaceFoliage(x, y);
+            }
+        }
     }
 
     /// <summary> A rounded room in the roots, shelled in wood, with a flat wooden floor at <paramref name="floor"/>. </summary>
@@ -535,9 +695,9 @@ public sealed class HighlandLivingTree
 
     /// <summary>
     /// Clears the trunk's core from <see cref="hollowRows"/> up down to <paramref name="roomTop"/>, walls it, lays platforms
-    /// across it, and opens a doorway at the ground on the <paramref name="door"/> side.
+    /// across it, and opens a doorway at the ground on the <see cref="door"/> side.
     /// </summary>
-    private void HollowTrunk(int roomTop, int door)
+    private void HollowTrunk(int roomTop)
     {
         int hollowTop = ground.Y - hollowRows;
 
@@ -572,11 +732,16 @@ public sealed class HighlandLivingTree
         {
             (int trunkLeft, int trunkRight) = edges[rowsUp + FootRows];
             (int from, int to) = ShaftAt(rowsUp);
-            int doorFrom = door > 0 ? to + 1 : trunkLeft - 1;
-            int doorTo = door > 0 ? trunkRight + 1 : from - 1;
+            int y = ground.Y - rowsUp;
 
-            for (int x = doorFrom; x <= doorTo; x++)
-                Main.tile[x, ground.Y - rowsUp].ClearTile();
+            // Walled like the shaft, so it reads as a passage into the tree rather than a hole through it.
+            for (int x = door > 0 ? to + 1 : trunkLeft; x <= (door > 0 ? trunkRight : from - 1); x++)
+                Hollow(x, y);
+
+            int outside = door > 0 ? trunkRight + 1 : trunkLeft - 1;
+
+            for (int n = 0; n < DoorClearance && Main.tile[outside, y].HasTile; n++, outside += door)
+                Main.tile[outside, y].ClearTile();
         }
     }
 

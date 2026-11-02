@@ -99,6 +99,10 @@ if (-not (Test-Path $world)) {
     }
 }
 
+# SubworldLibrary keeps a generated realm in a folder beside the main world and reloads it on entry, which would show the
+# build that generated it rather than the one under test. Backups is tModLoader's own folder.
+Get-ChildItem $worlds -Directory | Where-Object Name -ne 'Backups' | Remove-Item -Recurse -Force
+
 $outputPath = (New-Item -ItemType Directory -Force $Output).FullName
 Get-ChildItem $outputPath -Filter 'client_*' | Remove-Item -Force
 

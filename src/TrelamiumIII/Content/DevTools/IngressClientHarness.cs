@@ -6,6 +6,7 @@ using SubworldLibrary;
 using Terraria.IO;
 using TrelamiumIII.Common.Subworlds.Realms;
 using TrelamiumIII.Content.Ingress.HighlandsBiome;
+using TrelamiumIII.Core.Graphics;
 using static TrelamiumIII.Content.DevTools.IngressScan;
 
 namespace TrelamiumIII.Content.DevTools;
@@ -31,6 +32,20 @@ public sealed class IngressClientHarness : ModSystem
     private const double Dusk = 50000;
     private const double Midnight = 16200;
 
+    private const float LightRain = 0.4f;
+    private const float HeavyRain = 0.9f;
+
+    /// <summary> Rows from the ground to centre a living tree's three shots on: its crown, its trunk and its foot, overlapping. </summary>
+    private const int TreeCrownRows = -75;
+
+    private const int TreeTrunkRows = -30;
+    private const int TreeFootRows = 18;
+
+    /// <summary> Narrower runs of leaves than this are a stray bough, not a whole tree. </summary>
+    private const int TreeMinWidth = 20;
+
+    private const int FloodlightSpacing = 8;
+
     private static string? output;
     private static readonly Queue<Shot> shots = new();
     private static readonly StringBuilder log = new();
@@ -49,7 +64,8 @@ public sealed class IngressClientHarness : ModSystem
     }
 
     /// <param name="Tile"> Where the camera is held: the player stands with its feet on this tile's top. </param>
-    private sealed record Shot(string Name, Point Tile, bool Day, double Time, float Rain);
+    /// <param name="Floodlit"> Lights the area around the camera, to show the form of what's underground. </param>
+    private sealed record Shot(string Name, Point Tile, bool Day, double Time, float Rain, bool Floodlit = false);
 
     public override void PostSetupContent()
     {
@@ -144,6 +160,9 @@ public sealed class IngressClientHarness : ModSystem
 
                 Hold(player, current.Tile);
 
+                if (current.Floodlit)
+                    Floodlight(current.Tile);
+
                 if (++timer == HoldTicks)
                     captureRequested = true;
 
@@ -161,11 +180,12 @@ public sealed class IngressClientHarness : ModSystem
         shots.Enqueue(new Shot("spawn_dawn", spawn, true, Dawn, 0f));
         shots.Enqueue(new Shot("spawn_dusk", spawn, true, Dusk, 0f));
         shots.Enqueue(new Shot("spawn_night", spawn, false, Midnight, 0f));
-        shots.Enqueue(new Shot("spawn_rain_morning", spawn, true, Dawn + 1800, 0.9f));
+        shots.Enqueue(new Shot("spawn_rain_morning", spawn, true, Dawn + 1800, HeavyRain));
+        shots.Enqueue(new Shot("spawn_rain_noon", spawn, true, Noon, LightRain));
 
         int peak = Peak(ground);
         shots.Enqueue(new Shot("peak_noon", new Point(peak, ground[peak]), true, Noon, 0f));
-        shots.Enqueue(new Shot("peak_rain", new Point(peak, ground[peak]), true, Noon, 0.9f));
+        shots.Enqueue(new Shot("peak_rain", new Point(peak, ground[peak]), true, Noon, HeavyRain));
 
         if (CanyonSpans() is [var canyon, ..])
         {
@@ -179,11 +199,8 @@ public sealed class IngressClientHarness : ModSystem
             shots.Enqueue(new Shot("blight", new Point(x, ground[x]), true, Noon, 0f));
         }
 
-        if (LeafSpans() is [var tree, ..])
-        {
-            int x = tree.Left - 6;
-            shots.Enqueue(new Shot("living_tree", new Point(x, ground[x]), true, Noon, 0f));
-        }
+        PlanTreeShots<SpruceLeafTile>("spruce", ground);
+        PlanTreeShots<BirchLeafTile>("birch", ground);
 
         if (TaigaSpans(ground, 100) is [var taiga, ..])
         {
@@ -201,6 +218,65 @@ public sealed class IngressClientHarness : ModSystem
 
         foreach (Shot shot in shots)
             log.AppendLine($"planned {shot.Name} at ({shot.Tile.X}, {shot.Tile.Y})");
+
+        LogSurfaceTiles(ground);
+    }
+
+    /// <summary> The first whole living tree of a kind, framed from the middle of its canopy: crown, trunk, then its foot and root room lit up. </summary>
+    private static void PlanTreeShots<TLeaf>(string kind, int[] ground) where TLeaf : ModTile
+    {
+        foreach ((int left, int right) in LeafSpans())
+        {
+            int x = (left + right) / 2;
+
+            if (right - left < TreeMinWidth || !HasLeaf(x, ModContent.TileType<TLeaf>()))
+                continue;
+
+            // Leaves read as ground, so its own column can't say where the ground is; the columns just past the canopy can.
+            int floor = (ground[left - 3] + ground[right + 3]) / 2;
+
+            shots.Enqueue(new Shot($"tree_{kind}_crown", new Point(x, floor + TreeCrownRows), true, Noon, 0f));
+            shots.Enqueue(new Shot($"tree_{kind}_trunk", new Point(x, floor + TreeTrunkRows), true, Noon, 0f));
+            shots.Enqueue(new Shot($"tree_{kind}_foot", new Point(x, floor + TreeFootRows), true, Noon, 0f, Floodlit: true));
+            return;
+        }
+    }
+
+    private static bool HasLeaf(int x, int type)
+    {
+        for (int y = 10; y < Main.worldSurface; y++)
+        {
+            if (Main.tile[x, y] is { HasTile: true } tile && tile.TileType == type)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary> What stands on the surface and what's still drawn with a placeholder sprite, to put names to anything odd in the shots. </summary>
+    private static void LogSurfaceTiles(int[] ground)
+    {
+        var counts = new SortedDictionary<string, int>();
+
+        for (int x = 10; x < Main.maxTilesX - 10; x++)
+        {
+            Tile above = Main.tile[x, ground[x] - 1];
+
+            if (!above.HasTile)
+                continue;
+
+            string name = TileLoader.GetTile(above.TileType)?.Name ?? $"vanilla {above.TileType}";
+            counts[name] = counts.GetValueOrDefault(name) + 1;
+        }
+
+        foreach ((string name, int count) in counts)
+            log.AppendLine($"surface {name}: {count}");
+
+        foreach (PlaceholderTextures.Entry entry in PlaceholderTextures.Missing)
+        {
+            if (entry.Kind == "Tile")
+                log.AppendLine($"placeholder tile {entry.Name}");
+        }
     }
 
     /// <summary> Pins the player standing on the tile and keeps the camera on it. </summary>
@@ -209,6 +285,15 @@ public sealed class IngressClientHarness : ModSystem
         player.position = new Vector2(tile.X * 16 + 8 - player.width / 2f, tile.Y * 16 - player.height);
         player.velocity = Vector2.Zero;
         player.fallStart = (int)(player.position.Y / 16f);
+    }
+
+    private static void Floodlight(Point center)
+    {
+        for (int x = center.X - Main.screenWidth / 32; x <= center.X + Main.screenWidth / 32; x += FloodlightSpacing)
+        {
+            for (int y = center.Y - Main.screenHeight / 32; y <= center.Y + Main.screenHeight / 32; y += FloodlightSpacing)
+                Lighting.AddLight(x, y, 1f, 1f, 1f);
+        }
     }
 
     private static void SetRain(float strength)

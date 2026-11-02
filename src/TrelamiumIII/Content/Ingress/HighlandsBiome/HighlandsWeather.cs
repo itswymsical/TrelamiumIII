@@ -57,7 +57,7 @@ public sealed class AlpineFrostRule : TileConditionRule
     {
         float cover = AlpineWeather.Gust * AlpineWeather.Altitude(j);
 
-        if (cover <= 0f || Hash(i, j, salt: 11) >= cover || !IsTopSurface(i, j) || !IsSkyExposed(i, j))
+        if (cover <= 0f || Hash(i, j, salt: 11) >= cover || HighlandLeafTile.IsLeaf(tile) || !IsTopSurface(i, j) || !IsSkyExposed(i, j))
             return;
 
         Maintain<FrostCondition>(i, j, MathHelper.Lerp(0.5f, 1f, cover), LingerTicks);
@@ -75,10 +75,25 @@ public sealed class HighlandsWeather : ModSystem
     // Vanilla's graveyard works the same area and gives each floor tile one chance in 120 a tick at full fog.
     private const int MistAreaWidth = 120;
     private const int MistAreaHeight = 40;
-    private const float MistChancePerDensity = 1f / 200f;
+    private const float MistChancePerDensity = 1f / 1200f;
+
+    /// <summary> Nodes in a bank of mist, and the columns between them: close enough that they merge into one body along the ground. </summary>
+    private const int BankNodesMin = 4;
+
+    private const int BankNodesMax = 7;
+    private const int BankSpacingMin = 2;
+    private const int BankSpacingMax = 3;
+
+    /// <summary> Rows a bank will follow the ground up or down between one node and the next; past that it stops at the drop. </summary>
+    private const int BankFollowRows = 3;
+
     private const float MistRadiusMin = 30f;
     private const float MistRadiusMax = 56f;
     private const int MistBelowSurfaceRows = 5;
+
+    /// <summary> Rows over a floor that have to be clear for mist to rise off it, which leaves out caves and hollow trunks. </summary>
+    private const int MistOpenRows = 12;
+
     private const float RainMistBoost = 1f;
     private const int MistLifeMin = 420;
     private const int MistLifeMax = 600;
@@ -200,11 +215,10 @@ public sealed class HighlandsWeather : ModSystem
             for (int y = top; y < bottom; y++)
             {
                 // The roll comes first: it rejects nearly every tile before any tile is read.
-                if (Main.rand.NextFloat() >= chance || !IsFloor(x, y))
+                if (Main.rand.NextFloat() >= chance || !IsMistFloor(x, y))
                     continue;
 
-                FieldSystem.GetLayer<HighlandsMistField>()?.SpawnNode(new Vector2(x * 16 + 8, y * 16 - 8 - Main.rand.NextFloat(16f)), new Vector2(MistWind, 0f),
-                    radius: Main.rand.NextFloat(MistRadiusMin, MistRadiusMax), life: Main.rand.Next(MistLifeMin, MistLifeMax + 1));
+                RaiseBank(x, y);
             }
         }
 
@@ -219,6 +233,47 @@ public sealed class HighlandsWeather : ModSystem
             if (IsFloor(x, y) && IsLedge(x, y))
                 BlowDrift(new Vector2(x * 16 + 8, y * 16 - 8));
         }
+    }
+
+    /// <summary> A low bank of mist centred on a floor tile, its nodes laid along the ground so they fuse into one body rather than standing as separate puffs. </summary>
+    private static void RaiseBank(int x, int y)
+    {
+        if (FieldSystem.GetLayer<HighlandsMistField>() is not { } mist)
+            return;
+
+        int nodes = Main.rand.Next(BankNodesMin, BankNodesMax + 1);
+        int column = x - nodes * (BankSpacingMin + BankSpacingMax) / 4;
+        int row = y;
+
+        for (; nodes > 0; nodes--, column += Main.rand.Next(BankSpacingMin, BankSpacingMax + 1))
+        {
+            if (FollowGround(column, ref row))
+            {
+                mist.SpawnNode(new Vector2(column * 16 + 8, row * 16 - 8 - Main.rand.NextFloat(16f)), new Vector2(MistWind, 0f),
+                    radius: Main.rand.NextFloat(MistRadiusMin, MistRadiusMax), life: Main.rand.Next(MistLifeMin, MistLifeMax + 1));
+            }
+        }
+    }
+
+    /// <summary> Moves <paramref name="row"/> to the floor of <paramref name="column"/> nearest to it, if there is one within <see cref="BankFollowRows"/>. </summary>
+    private static bool FollowGround(int column, ref int row)
+    {
+        for (int offset = 0; offset <= BankFollowRows; offset++)
+        {
+            if (IsMistFloor(column, row + offset))
+            {
+                row += offset;
+                return true;
+            }
+
+            if (IsMistFloor(column, row - offset))
+            {
+                row -= offset;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary> A string of thin mist leaving a ledge along the wind, each puff a little further on, as vanilla's airborne clouds do. </summary>
@@ -313,14 +368,32 @@ public sealed class HighlandsWeather : ModSystem
     /// <summary> Whole spawns this tick for a rate of <paramref name="rate"/> a tick, the fraction rolled. </summary>
     private static int Rate(float rate) => (int)rate + (Main.rand.NextFloat() < rate - (int)rate ? 1 : 0);
 
-    /// <summary> Flat solid ground with open air over it, as vanilla's graveyard asks of a tile before fog rises off it. </summary>
+    /// <summary> Flat solid ground with dry, open air over it, as vanilla's graveyard asks of a tile before fog rises off it. </summary>
     private static bool IsFloor(int x, int y)
     {
         if (!WorldGen.InWorld(x, y, 10))
             return false;
 
         Tile tile = Main.tile[x, y];
-        return tile.HasTile && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType] && tile.Slope == SlopeType.Solid && !tile.IsHalfBlock && !WorldGen.SolidTile(x, y - 1);
+        return tile.HasTile && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType] && tile.Slope == SlopeType.Solid && !tile.IsHalfBlock
+            && !WorldGen.SolidTile(x, y - 1) && Main.tile[x, y - 1].LiquidAmount == 0;
+    }
+
+    /// <summary> A floor out in the open that isn't a bough: it gathers on the ground under the trees, not in caves or up in the crowns. </summary>
+    private static bool IsMistFloor(int x, int y)
+    {
+        if (!IsFloor(x, y) || HighlandLeafTile.IsLeaf(Main.tile[x, y]))
+            return false;
+
+        for (int row = y - 1; row >= Math.Max(y - MistOpenRows, 10); row--)
+        {
+            Tile tile = Main.tile[x, row];
+
+            if (tile.WallType != WallID.None || (WorldGen.SolidTile(x, row) && !HighlandLeafTile.IsLeaf(tile)))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary> Ground whose downwind neighbour drops away, so mist leaving it blows out over the drop. </summary>
@@ -378,7 +451,8 @@ public sealed class SleetParticle : Particle
     {
         Point hit = (Position + oldVelocity.SafeNormalize(Vector2.UnitY) * 8f).ToTileCoordinates();
 
-        if (WorldGen.InWorld(hit.X, hit.Y, 10) && WorldGen.SolidTile(hit.X, hit.Y))
+        // The film reads as a pale block over the needles, so a living tree's crown stays clear of it.
+        if (WorldGen.InWorld(hit.X, hit.Y, 10) && WorldGen.SolidTile(hit.X, hit.Y) && !HighlandLeafTile.IsLeaf(Main.tile[hit.X, hit.Y]))
             TileConditionSystem.Apply<FrostCondition>(hit.X, hit.Y, Main.rand.NextFloat(FreezeMin, FreezeMax), FreezeTicks, sync: false);
 
         Kill();

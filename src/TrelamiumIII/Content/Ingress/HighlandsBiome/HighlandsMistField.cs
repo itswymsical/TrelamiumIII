@@ -37,6 +37,11 @@ public sealed class HighlandsMistField : FieldLayer
     /// </summary>
     private const float LightGain = 2.2f;
 
+    /// <summary> Fractions of a node's life it spends gathering at the start and thinning away at the end; full strength in between. </summary>
+    private const float GatherFraction = 0.25f;
+
+    private const float ThinFraction = 0.4f;
+
     // The threshold has to stay above half the noise strength: the erosion subtracts up to that much, and below it the shader
     // would draw mist out of the noise alone wherever there are no nodes at all.
     private static readonly GasLook BaseLook = new()
@@ -98,6 +103,15 @@ public sealed class HighlandsMistField : FieldLayer
     {
         GatherMovers();
         base.Update();
+    }
+
+    /// <summary> Gathers in and thins out at either end of its life, where the usual weight starts at full and falls away at once: fog doesn't pop in, and it holds its body long enough to merge with its neighbours. </summary>
+    protected override float NodeWeight(in FieldNode node)
+    {
+        float gather = MathHelper.Clamp((1f - node.Alpha) / GatherFraction, 0f, 1f);
+        float thin = MathHelper.Clamp(node.Alpha / ThinFraction, 0f, 1f);
+
+        return MathHelper.SmoothStep(0f, 1f, gather) * MathHelper.SmoothStep(0f, 1f, thin);
     }
 
     /// <summary> The usual stamp, with the brightness channel amplified; it holds weight times brightness, so capping it at the weight caps brightness at one. </summary>

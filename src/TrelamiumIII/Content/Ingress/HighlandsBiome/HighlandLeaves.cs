@@ -7,14 +7,21 @@ namespace TrelamiumIII.Content.Ingress.HighlandsBiome;
 
 /// <summary>
 /// Leaf blocks of the highland living trees. Both borrow vanilla's leaf block and tint it per tile, until they have their
-/// own sprites; the tint drifts with a coarse hash so the canopy reads as clumps instead of one flat colour.
+/// own sprites; the tint drifts with a coarse hash so the canopy reads as clumps instead of one flat colour. Sunlight passes
+/// through them, since blocking it leaves the middle of a crown pitch black, and each leaf darkens under the ones over it
+/// instead, which gives every bough a lit top and a shaded underside.
 /// </summary>
 public abstract class HighlandLeafTile : ModTile
 {
+    private const float ShadePerRow = 0.1f;
+    private const int ShadedRows = 4;
+
     /// <summary> Tiles across one clump of <see cref="Shade"/>. </summary>
     protected virtual int ClumpSize => 5;
 
     public override string Texture => $"Terraria/Images/Tiles_{TileID.LeafBlock}";
+
+    public static bool IsLeaf(Tile tile) => tile.HasTile && TileLoader.GetTile(tile.TileType) is HighlandLeafTile;
 
     protected abstract Color MapColor { get; }
 
@@ -24,7 +31,7 @@ public abstract class HighlandLeafTile : ModTile
     public override void SetStaticDefaults()
     {
         Main.tileSolid[Type] = true;
-        Main.tileBlockLight[Type] = true;
+        Main.tileBlockLight[Type] = false;
         Main.tileMerge[Type][TileID.LeafBlock] = true;
 
         this.Merge(ModContent.TileType<SpruceWoodTile>(), ModContent.TileType<BirchWoodTile>(), TileID.LivingWood);
@@ -38,8 +45,18 @@ public abstract class HighlandLeafTile : ModTile
         AddMapEntry(MapColor);
     }
 
+    /// <summary> tModLoader turns this on for every solid tile once the static defaults have run. </summary>
+    public override void PostSetDefaults() => Main.tileNoSunLight[Type] = false;
+
     public override void DrawEffects(int i, int j, SpriteBatch spriteBatch, ref TileDrawInfo drawData)
-        => drawData.colorTint = Shade(Hash(i / ClumpSize, j / ClumpSize));
+    {
+        int covered = 0;
+
+        while (covered < ShadedRows && Main.tile[i, j - covered - 1] is { HasTile: true } above && above.TileType == Type)
+            covered++;
+
+        drawData.colorTint = new Color(Shade(Hash(i / ClumpSize, j / ClumpSize)).ToVector3() * (1f - covered * ShadePerRow));
+    }
 
     private static float Hash(int x, int y)
     {
@@ -63,7 +80,10 @@ public class BirchLeafTile : HighlandLeafTile
 {
     protected override Color MapColor => new(118, 160, 70);
 
+    /// <summary> Clumps a little smaller and further apart in shade, so a big crown doesn't read as one flat mass. </summary>
+    protected override int ClumpSize => 4;
+
     protected override Color Shade(float roll) => roll < 0.8f
-        ? Color.Lerp(new Color(210, 255, 170), new Color(240, 255, 200), roll / 0.8f)
+        ? Color.Lerp(new Color(165, 215, 130), new Color(240, 255, 200), roll / 0.8f)
         : new Color(255, 230, 150);
 }
