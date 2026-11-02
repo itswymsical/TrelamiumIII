@@ -41,29 +41,15 @@ public static class StructureEditor
 
     #region Files
     /// <summary><c>Assets/Structures</c> of the source tree, or a folder in the save directory when it cannot be found.</summary>
-    public static string Folder => SourceRoot() is { } root
+    public static string Folder => DeveloperConfig.SourceRoot() is { } root
         ? Path.Combine(root, "Assets", "Structures")
         : Path.Combine(Main.SavePath, "TrelamiumIII", "Structures");
 
-    public static bool SavesToSource => SourceRoot() is not null;
+    public static bool SavesToSource => DeveloperConfig.SourceRoot() is not null;
 
     public static string PathOf(string name) => Path.Combine(Folder, name + StructureFile.Extension);
 
     private static string AutosavePath(string name) => Path.Combine(Main.SavePath, "TrelamiumIII", "Structures", "Autosave", name + StructureFile.Extension);
-
-    /// <summary>The configured source tree, else the one under ModSources that holds <c>build.txt</c>.</summary>
-    private static string? SourceRoot()
-    {
-        DeveloperConfig config = DeveloperConfig.Instance;
-
-        if (config.HasSourceDirectory && Directory.Exists(config.SourceDirectory))
-            return config.SourceDirectory;
-
-        string sources = Path.Combine(Main.SavePath, "ModSources", "TrelamiumIII");
-        string[] candidates = [Path.Combine(sources, "src", "TrelamiumIII"), sources];
-
-        return candidates.FirstOrDefault(path => File.Exists(Path.Combine(path, "build.txt")));
-    }
 
     /// <summary>The named structure from <see cref="Folder" />, converting a <c>.shstruct</c> when there is no <c>.tstruct</c>.</summary>
     /// <param name="warnings">Content a conversion could not carry over.</param>

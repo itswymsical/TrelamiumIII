@@ -871,7 +871,7 @@ public abstract class FieldLayer
     /// <summary>Composites the field target to the screen through the layer's shader.</summary>
     public void CompositeToScreen()
     {
-        if (target is null || shader is null || nodes.Count == 0)
+        if (target is null || shader?.Value is null || nodes.Count == 0)
             return;
 
         if (!target.IsReady || target.GetTarget() is not { } field)

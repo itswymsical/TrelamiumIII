@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Regression cover for the parts of the VFX Lab that carry no game state: the stage format, recipes, the shader generator and
+       the compile queue. Kept outside src/ so the tModLoader SDK never compiles it into the .tmod.
+
+       Only the game-free files are listed. Adding one that touches XNA or Terraria will break this project, which is the
+       intended signal.
+
+       Run it with dotnet run from this folder.
+       After a deliberate change to generated output, pass the update-golden flag and read the diff. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TrelamiumIII.Tools.VfxLabTests</RootNamespace>
+    <AssemblyName>VfxLabTests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\StageDefinition.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\StageParser.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\StageLibrary.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\ShaderGenerator.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\ShaderCompiler.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\ShaderBuildQueue.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Generation\ShaderViews.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Recipes\RecipeEdit.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Recipes\VfxRecipe.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Recipes\RecipeFile.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Bench\BenchExport.cs" />
+  </ItemGroup>
+
+</Project>

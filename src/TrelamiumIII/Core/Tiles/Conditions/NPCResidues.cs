@@ -65,6 +65,10 @@ public sealed class NPCResidues : GlobalNPC
     {
         RegisterAIStyle(NPCAIStyleID.Slime, NPCResidue.Of<SlimedCondition>() with { Tint = SlimeTint });
 
+        // Critters that happen to hop with the slime AI. They have no gel to leave.
+        Exclude(NPCID.Grasshopper);
+        Exclude(NPCID.GoldGrasshopper);
+
         Register(NPCID.LavaSlime, NPCResidue.Of<MagmaCondition>() with
         {
             LandingIntensity = 0.75f,

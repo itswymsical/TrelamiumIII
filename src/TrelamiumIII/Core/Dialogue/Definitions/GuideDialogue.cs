@@ -21,6 +21,41 @@ class GuideDialogue : ModDialogue
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
             .Register();
 
+        Dialogue.Define("Guide.HomeForager_Greeting")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1f, [new Pause(14), new Pause(48), new Pause(36), new Pause(20)])
+            .Choice("Guide.HomeForager_Name")
+            .Choice("Guide.HomeForager_Skip")
+            .Choice("Guide.HomeForager_LandOfLight")
+            .Register();
+
+
+        Dialogue.Define("Guide.HomeForager_Name")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f)
+            .Choice("Guide.HomeForager_Corruption")
+            .Choice("Guide.HomeForager_Corruption")
+            .Register();
+
+        Dialogue.Define("Guide.HomeForager_Skip")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f)
+            .Choice("Guide.HomeForager_Corruption")
+            .Choice("Guide.HomeForager_Corruption")
+            .Register();
+
+        Dialogue.Define("Guide.HomeForager_LandOfLight")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Choice("Guide.HomeForager_Corruption")
+            .Choice("Guide.HomeForager_Corruption")
+            .Register();
+
+        Dialogue.Define("Guide.HomeForager_Corruption")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .OnComplete(JobTrackerHint.Begin)
+            .Register();
+
         // What the room was missing, one per failed housing check. See HousingIssue.
         Dialogue.Define("Guide.HomeForager_NeedsDoor")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
@@ -103,14 +138,6 @@ class GuideDialogue : ModDialogue
         Dialogue.Define("Guide.HomeForager_CheckIn")
             .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16), new Pause(24)])
-            .Register();
-
-        // Ends on the Guide pointing the player at their job tracker, which the hint then shows them.
-        Dialogue.Define("Guide.HomeForager_Greeting")
-            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
-            .Line(Speaker, emote: 0, speed: 1f, [new Pause(14), new Pause(48), new Pause(36), new Pause(20)])
-            .OnComplete(JobTrackerHint.Begin)
             .Register();
     }
 }

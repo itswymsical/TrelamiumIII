@@ -19,22 +19,11 @@ public sealed class DampCondition : FilmCondition
 
     private const float SOAKED = 0.5f;
 
-    protected override TileFilmLook Look { get; } = new()
+    /// <summary>The same coat a pool leaves on its banks, in water's colour. Only its cut is lower, so a single drop still shows as a dab, and its erosion with it, so the noise can't draw anything on a dry tile.</summary>
+    protected override TileFilmLook Look { get; } = LiquidResidueCondition.WetLook with
     {
         Threshold = 0.1f,
-        NoiseScale = 0.2f,
         NoiseStrength = 0.16f,
-        Bands = 3f,
-        ShadowColor = new Vector3(0.16f, 0.2f, 0.28f),
-        BodyColor = new Vector3(0.12f, 0.15f, 0.22f),
-        CoreColor = new Vector3(0.09f, 0.11f, 0.18f),
-        BodyAlpha = 0.42f,
-        BodyAlphaFloor = 0.55f,
-        // The thin band's own colour and alpha: a damp patch has no edge to outline.
-        OutlineColor = new Vector3(0.16f, 0.2f, 0.28f),
-        OutlineAlpha = 0.23f,
-        HighlightColor = new Vector3(0.62f, 0.74f, 0.9f),
-        HighlightAlpha = 0.22f,
     };
 
     public override float Duration => 30f * 60f;
@@ -71,7 +60,7 @@ public sealed class DampCondition : FilmCondition
 
         float wetness = TileConditionSystem.TryGet<DampCondition>(hit.X, hit.Y, out TileConditionInstance existing) ? existing.Strength : 0f;
 
-        TileConditionSystem.Apply<DampCondition>(hit.X, hit.Y, MathHelper.Clamp(wetness + PER_DROP, FIRST_DROP, SOAKED), sync: false);
+        TileConditionSystem.Apply<DampCondition>(hit.X, hit.Y, MathHelper.Clamp(wetness + PER_DROP, FIRST_DROP, SOAKED), sync: false, tint: LiquidResidueCondition.TintOf(hit.X, hit.Y, LiquidID.Water));
     }
 
     /// <summary>The solid tile under a drop's 2x2 box, by the test vanilla ended it with. Drops ended by water or the screen's edge have none.</summary>

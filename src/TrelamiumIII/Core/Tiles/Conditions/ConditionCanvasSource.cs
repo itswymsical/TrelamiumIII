@@ -6,6 +6,8 @@ namespace TrelamiumIII.Core.Tiles.Conditions;
 /// <summary>A tile condition's batch as a canvas source: every instance is one sample, weighted by its fade-in.</summary>
 internal sealed class ConditionCanvasSource(ITileCondition condition, Dictionary<Point, TileConditionInstance> tiles) : ITileCanvasSource
 {
+    public ITileCondition Condition => condition;
+
     public int CanvasPixelScale => condition.CanvasPixelScale;
 
     public int FadeOutTicks => condition.FadeOutTicks;

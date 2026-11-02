@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Terraria.ModLoader.Config;
 
@@ -23,4 +25,18 @@ public sealed class DeveloperConfig : ModConfig
     /// <summary>Whether authoring exports also land in the source tree.</summary>
     [JsonIgnore]
     public bool HasSourceDirectory => !string.IsNullOrWhiteSpace(SourceDirectory);
+
+    /// <summary>The configured source tree, else the one under ModSources that holds <c>build.txt</c>.</summary>
+    public static string? SourceRoot()
+    {
+        DeveloperConfig config = Instance;
+
+        if (config.HasSourceDirectory && Directory.Exists(config.SourceDirectory))
+            return config.SourceDirectory;
+
+        string sources = Path.Combine(Main.SavePath, "ModSources", "TrelamiumIII");
+        string[] candidates = [Path.Combine(sources, "src", "TrelamiumIII"), sources];
+
+        return candidates.FirstOrDefault(path => File.Exists(Path.Combine(path, "build.txt")));
+    }
 }

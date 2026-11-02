@@ -6,7 +6,7 @@ DialogueLibrary: {
 			Line1.Text: Hey,[] [speakerName:player]!
 
 			Line2: {
-				Text: Welcome to the land of the living Light[] -- or what most would call Terraria.
+				Text: Welcome to the land of the living Light,[] or what most would call Terraria.
 				Choice1.Text: How do you know my name?
 				Choice2.Text: Land of Light?
 				Choice3.Text: How do I skip this?
@@ -14,16 +14,39 @@ DialogueLibrary: {
 		}
 
 		HomeForager_Name: {
-			Line1.Text: It's in the script.[] In any case, In any case,[] Terraria hasn't been so bright as of late.
-			Line2.Text: Anyone with a an arm and a leg would've ran by now.
+			Line1.Text: Wild guess![] In any case, Terraria hasn't been so bright as of late.
+
+			Line2: {
+				Text: Anyone with a an arm and a leg would've ran by now.
+				Choice1.Text: What's the corruption?
+				Choice2.Text: ...
+			}
 		}
 
 		HomeForager_Skip: {
 			Line1.Text: No clue what you are talking about![] In any case,[] Terraria hasn't been so bright as of late.
-			Line2.Text: Anyone with a an arm and a leg would've ran by now.
+
+			Line2: {
+				Text: Anyone with a an arm and a leg would've ran by now.
+				Choice1.Text: What's the corruption?
+				Choice2.Text: ...
+			}
 		}
 
 		HomeForager_LandOfLight: {
+			Line1.Text: The land of living Light is the true name of Terraria.[] It was once a place of great beauty,[] but the corruption has spread and the land has become dark and dangerous.
+
+			Line2: {
+				Text: Anyone with a an arm and a leg would've ran by now.
+				Choice1.Text: What's the corruption?
+				Choice2.Text: ...
+			}
+		}
+
+		HomeForager_Corruption: {
+			Line1.Text: The corruption is a dark and dangerous force that has spread across the land.[] It corrupts everything it touches, turning it into a twisted and evil version of itself.
+			Line2.Text: And it doesn't stop there.[] The corruption can also create corrupt creatures that will attack anyone who comes near.
+			Line3.Text: That's why we need to build houses for the townspeople.[] They need a safe place to live, away from the corruption.
 		}
 
 		HomeForager_Occupied.Line1.Text: Sorry, [speakerName:player]![] It looks like that housing is already occupied.[] Maybe try another one.
