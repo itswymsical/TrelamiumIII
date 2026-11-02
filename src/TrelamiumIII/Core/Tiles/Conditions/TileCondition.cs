@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ReLogic.Content;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -72,6 +73,12 @@ public abstract class TileCondition : ITileCondition
 
     public virtual void OnProjectileContact(ref TileConditionInstance instance, Projectile projectile) { }
 
+    public virtual TileElement ElementsOf(in TileConditionInstance instance) => TileElement.None;
+
+    public virtual float PotencyOf(in TileConditionInstance instance) => instance.Strength;
+
+    public virtual void Diminish(ref TileConditionInstance instance, float share) => instance.Life *= 1f - share;
+
     public virtual TileConditionRenderMode RenderMode => TileConditionRenderMode.None;
 
     public virtual BlendState BlendState => BlendState.AlphaBlend;
@@ -87,6 +94,32 @@ public abstract class TileCondition : ITileCondition
     public virtual TileCanvasSample EncodeCanvas(in TileConditionInstance instance) => new(instance.Strength);
 
     public virtual void ApplyShaderParameters(Effect effect) { }
+
+    /// <summary>
+    ///     Breaks the tile under this mark, the way an explosion would, if an explosion could. Ends the mark if it does.
+    /// </summary>
+    /// <remarks>
+    ///     Clients leave it to the server, which sends the result. Call this when the tile is really going, not to ask
+    ///     whether it could: a tile's own <c>CanExplode</c> may change the tile as it answers, as modded grass does.
+    /// </remarks>
+    /// <returns>Whether the tile is gone.</returns>
+    protected static bool TryDestroyTile(ref TileConditionInstance instance)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient || !instance.Tile.HasTile)
+            return false;
+
+        if (!Main.projectile[0].CanExplodeTile(instance.X, instance.Y) || !WorldGen.CanKillTile(instance.X, instance.Y))
+            return false;
+
+        WorldGen.KillTile(instance.X, instance.Y, noItem: true);
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendTileSquare(-1, instance.X, instance.Y, 1);
+
+        instance.Life = 0f;
+
+        return true;
+    }
 
     /// <summary>Whether the tile is close enough to the camera to be worth spending anything on.</summary>
     /// <remarks>

@@ -40,6 +40,15 @@ public struct TileConditionInstance
 
     public int Owner;
 
+    /// <summary>
+    ///     When this mark first landed, in one order shared by every condition. Survives re-application.
+    /// </summary>
+    /// <remarks>
+    ///     Sorting a tile's marks by this is what makes the oldest of them its parent. See
+    ///     <see cref="Reactions.ConditionReaction" />.
+    /// </remarks>
+    public long Arrival;
+
     /// <summary>The chemical release that left this mark, or null. Never synced: received applications carry none.</summary>
     public ChemicalPayload? Payload;
 

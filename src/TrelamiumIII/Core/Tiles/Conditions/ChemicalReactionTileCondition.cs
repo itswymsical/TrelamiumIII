@@ -1,6 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -34,6 +35,8 @@ public abstract class ChemicalReactionTileCondition : FilmCondition, IChemicalSo
     public virtual ClingBehaviour? ClingBehaviour => Element.ClingBehaviour;
 
     public virtual void OnChemicalReaction(in ChemicalReactionEvent e) { }
+
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElements.Of(ChemicalType);
 
     protected virtual int ContactBuff => Element.ContactBuff;
 

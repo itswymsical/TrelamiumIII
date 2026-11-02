@@ -17,7 +17,7 @@ DialogueLibrary: {
 			Line1.Text: Wild guess![] In any case, Terraria hasn't been so bright as of late.
 
 			Line2: {
-				Text: Anyone with a an arm and a leg would've ran by now.
+				Text: Anyone with an arm and a leg would've ran by now.
 				Choice1.Text: What's the corruption?
 				Choice2.Text: ...
 			}
@@ -27,7 +27,7 @@ DialogueLibrary: {
 			Line1.Text: No clue what you are talking about![] In any case,[] Terraria hasn't been so bright as of late.
 
 			Line2: {
-				Text: Anyone with a an arm and a leg would've ran by now.
+				Text: Anyone with an arm and a leg would've ran by now.
 				Choice1.Text: What's the corruption?
 				Choice2.Text: ...
 			}
@@ -37,7 +37,7 @@ DialogueLibrary: {
 			Line1.Text: The land of living Light is the true name of Terraria.[] It was once a place of great beauty,[] but the corruption has spread and the land has become dark and dangerous.
 
 			Line2: {
-				Text: Anyone with a an arm and a leg would've ran by now.
+				Text: Anyone with an arm and a leg would've ran by now.
 				Choice1.Text: What's the corruption?
 				Choice2.Text: ...
 			}

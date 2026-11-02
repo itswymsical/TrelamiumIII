@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MonoMod.Cil;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions;
 
@@ -76,6 +77,9 @@ public sealed class TileConditionSystem : ModSystem
     private static bool dispatching;
 
     private static bool loaded;
+
+    /// <summary>The last <see cref="TileConditionInstance.Arrival" /> handed out.</summary>
+    private static long lastArrival;
 
     /// <summary>Whether the composite was spliced into the solid tile pass. See <see cref="SpliceComposite" />.</summary>
     private static bool compositeSpliced;
@@ -185,8 +189,84 @@ public sealed class TileConditionSystem : ModSystem
         return Remove(state, new Point(i, j));
     }
 
+    /// <inheritdoc cref="Remove{T}" />
+    public static bool Remove(ITileCondition condition, int i, int j)
+    {
+        if (!byType.TryGetValue(condition.GetType(), out ConditionState? state))
+            return false;
+
+        if (dispatching)
+        {
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, TileConditionInstance.NoOwner, false, 0, null, null));
+            return true;
+        }
+
+        return Remove(state, new Point(i, j));
+    }
+
     public static bool Has<T>(int i, int j) where T : class, ITileCondition
         => byType.TryGetValue(typeof(T), out ConditionState? state) && state.Tiles.ContainsKey(new Point(i, j));
+
+    /// <summary>Whether any mark on the tile counts as <paramref name="element" /> right now.</summary>
+    public static bool HasElement(int i, int j, TileElement element)
+    {
+        var position = new Point(i, j);
+
+        foreach (ConditionState state in states)
+        {
+            if (state.Tiles.TryGetValue(position, out TileConditionInstance instance) && (state.Condition.ElementsOf(in instance) & element) != 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Takes <paramref name="share" /> of what a mark has left. See <see cref="ITileCondition.Diminish" />. Not for use from inside a condition's hook.</summary>
+    public static void Diminish(ITileCondition condition, int i, int j, float share)
+    {
+        if (!byType.TryGetValue(condition.GetType(), out ConditionState? state))
+            return;
+
+        ref TileConditionInstance instance = ref CollectionsMarshal.GetValueRefOrNullRef(state.Tiles, new Point(i, j));
+
+        if (!Unsafe.IsNullRef(ref instance))
+            condition.Diminish(ref instance, MathHelper.Clamp(share, 0f, 1f));
+    }
+
+    /// <summary>
+    ///     Moves a mark up to <paramref name="arrival" /> in the tile's order, for one that is the same stuff in a new form:
+    ///     water that was frost a moment ago was there as long as the frost was. Never moves a mark later than it is.
+    /// </summary>
+    public static void TakePlace<T>(int i, int j, long arrival) where T : class, ITileCondition
+    {
+        if (!byType.TryGetValue(typeof(T), out ConditionState? state))
+            return;
+
+        ref TileConditionInstance instance = ref CollectionsMarshal.GetValueRefOrNullRef(state.Tiles, new Point(i, j));
+
+        if (!Unsafe.IsNullRef(ref instance))
+            instance.Arrival = Math.Min(instance.Arrival, arrival);
+    }
+
+    /// <summary>Fills <paramref name="into" /> with the marks on the tile that have an element and any of it left, oldest first.</summary>
+    internal static void CollectReactants(Point tile, List<TileReactant> into)
+    {
+        into.Clear();
+
+        foreach (ConditionState state in states)
+        {
+            if (!state.Tiles.TryGetValue(tile, out TileConditionInstance instance))
+                continue;
+
+            TileElement elements = state.Condition.ElementsOf(in instance);
+            float potency = state.Condition.PotencyOf(in instance);
+
+            if (elements != TileElement.None && potency > 0f)
+                into.Add(new TileReactant(state.Condition, instance, elements, potency));
+        }
+
+        into.Sort(static (a, b) => a.Instance.Arrival.CompareTo(b.Instance.Arrival));
+    }
 
     public static bool TryGet<T>(int i, int j, out TileConditionInstance instance) where T : class, ITileCondition
     {
@@ -210,6 +290,7 @@ public sealed class TileConditionSystem : ModSystem
         }
 
         pending.Clear();
+        ConditionReactionSystem.Clear();
     }
 
     public override void OnModLoad()
@@ -330,6 +411,8 @@ public sealed class TileConditionSystem : ModSystem
 
         DrainPending();
 
+        ConditionReactionSystem.Resolve();
+
         // After the drain, so a tile marked again this tick takes over from its own fading sample.
         foreach (ConditionState state in states)
             state.Canvas?.Update();
@@ -393,10 +476,14 @@ public sealed class TileConditionSystem : ModSystem
             Level = exists ? existing.Level : 0f,
             Stage = exists ? existing.Stage : (byte)0,
             TotalAge = exists ? existing.TotalAge : 0,
+            Arrival = exists ? existing.Arrival : ++lastArrival,
         };
 
         state.Condition.OnApplied(ref instance);
         state.Tiles[position] = instance;
+
+        if (state.Condition.ElementsOf(in instance) != TileElement.None)
+            ConditionReactionSystem.Touch(position);
 
         if (!exists)
         {

@@ -1,4 +1,5 @@
 using ReLogic.Content;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -9,9 +10,6 @@ namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 /// <remarks>Laid by the rules in <c>EnvironmentRules</c>, never synced.</remarks>
 public sealed class FrostCondition : TileCondition
 {
-    /// <summary>One tick in this many, per tile, looks for heat that would melt it.</summary>
-    private const int HEAT_PROBE_MASK = 15;
-
     private static readonly Vector3 EdgeColor = new(0.82f, 0.95f, 1f);
 
     public override float Duration => 25f * 60f;
@@ -35,14 +33,8 @@ public sealed class FrostCondition : TileCondition
     public override void ApplyShaderParameters(Effect effect)
         => FrostFilm.Apply(effect, EdgeColor, threshold: 0.24f, bodyAlpha: 0.6f);
 
-    public override void UpdateTile(ref TileConditionInstance instance)
-    {
-        if (((instance.Age + instance.X * 5 + instance.Y * 11) & HEAT_PROBE_MASK) != 0)
-            return;
-
-        if (TileConditionSystem.Has<BurnedCondition>(instance.X, instance.Y) || TileConditionSystem.Has<MagmaCondition>(instance.X, instance.Y))
-            instance.Life = 0f;
-    }
+    /// <summary>Heat melts it. See <see cref="Melt" />.</summary>
+    public override TileElement ElementsOf(in TileConditionInstance instance) => TileElement.Cold;
 
     public override void OnPlayerContact(ref TileConditionInstance instance, Player player)
     {

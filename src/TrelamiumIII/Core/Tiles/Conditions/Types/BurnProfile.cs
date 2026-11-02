@@ -50,7 +50,13 @@ public sealed record BurnProfile
 
     public float SpreadFalloff { get; init; } = 0.7f;
 
+    /// <summary>Only spreads onto tiles carrying something flammable, so it runs along a trail rather than across bare rock.</summary>
+    public bool SpreadsAlongFuel { get; init; }
+
     public bool ConsumesTiles { get; init; }
+
+    /// <summary>Whether <see cref="ConsumesTiles" /> takes anything an explosion could break, not just what burns.</summary>
+    public bool ConsumesAnyTile { get; init; }
 
     public float Duration { get; init; } = 13f * 60f;
 
@@ -94,6 +100,29 @@ public sealed record BurnProfile
         SpreadChance = 0.010f,
         ConsumesTiles = true,
         Duration = 16f * 60f,
+    });
+
+    /// <summary>Gel that caught: runs along the gel beside it, and eats through the tile under it once it burns out.</summary>
+    public static readonly BurnProfile Combustion = Register(new BurnProfile
+    {
+        Ignition = 0.7f,
+        HeatGain = 0.018f,
+        HeatDecay = 0.005f,
+        FuelFraction = 0.6f,
+        CharRate = 0.16f,
+        SpreadChance = 0.3f,
+        SpreadsAlongFuel = true,
+        ConsumesTiles = true,
+        ConsumesAnyTile = true,
+        Duration = 10f * 60f,
+    });
+
+    /// <summary>A fire that's out: no heat left and none to come, only its char fading. See <see cref="BurnedCondition" />.</summary>
+    public static readonly BurnProfile Doused = Register(new BurnProfile
+    {
+        Ignition = 0f,
+        Peak = 0f,
+        FuelFraction = 0f,
     });
 
     private static BurnProfile Register(BurnProfile profile)

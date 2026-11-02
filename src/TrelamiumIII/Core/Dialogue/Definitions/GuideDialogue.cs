@@ -23,36 +23,38 @@ class GuideDialogue : ModDialogue
 
         Dialogue.Define("Guide.HomeForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
-            .Line(Speaker, emote: 0, speed: 1f, [new Pause(14), new Pause(48), new Pause(36), new Pause(20)])
-            .Choice("Guide.HomeForager_Name")
-            .Choice("Guide.HomeForager_Skip")
-            .Choice("Guide.HomeForager_LandOfLight")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+                .Choice("Guide.HomeForager_Name")
+                .Choice("Guide.HomeForager_LandOfLight")
+                .Choice("Guide.HomeForager_Skip")
             .Register();
-
 
         Dialogue.Define("Guide.HomeForager_Name")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.1f)
-            .Choice("Guide.HomeForager_Corruption")
-            .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Corruption")
             .Register();
 
         Dialogue.Define("Guide.HomeForager_Skip")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
             .Line(Speaker, emote: 0, speed: 1.1f)
-            .Choice("Guide.HomeForager_Corruption")
-            .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Corruption")
             .Register();
 
         Dialogue.Define("Guide.HomeForager_LandOfLight")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
-            .Choice("Guide.HomeForager_Corruption")
-            .Choice("Guide.HomeForager_Corruption")
+            .Line(Speaker, emote: 0, speed: 1.1f)
+                .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Corruption")
             .Register();
 
+        // Every branch ends here, so this is where the job tracker gets pointed out.
         Dialogue.Define("Guide.HomeForager_Corruption")
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .OnComplete(JobTrackerHint.Begin)
             .Register();
 

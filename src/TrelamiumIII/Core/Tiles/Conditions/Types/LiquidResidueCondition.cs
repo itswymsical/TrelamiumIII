@@ -1,4 +1,5 @@
 using TrelamiumIII.Core.Liquids;
+using TrelamiumIII.Core.Tiles.Conditions.Reactions;
 
 namespace TrelamiumIII.Core.Tiles.Conditions.Types;
 
@@ -45,6 +46,10 @@ public sealed class LiquidResidueCondition : FilmCondition
 
     public override int FadeOutTicks => 60;
 
+    /// <summary>Water soaks; anything else is only a stain. <see cref="TileConditionInstance.Variant" /> holds which liquid left it.</summary>
+    public override TileElement ElementsOf(in TileConditionInstance instance)
+        => instance.Variant == LiquidID.Water ? TileElement.Water : TileElement.None;
+
     /// <summary>Still in contact, so still wet: drying starts over.</summary>
     public override void OnLiquidContact(ref TileConditionInstance instance, int liquidType, int amount)
         => instance.Life = instance.MaxLife;
@@ -78,6 +83,10 @@ public sealed class LiquidResidueCondition : FilmCondition
     {
         Tile liquid = Main.tile[liquidX, liquidY];
 
-        return TileConditionSystem.Apply<LiquidResidueCondition>(i, j, intensity, sync: false, tint: TintOf(liquidX, liquidY, liquid.LiquidType));
+        return TileConditionSystem.Apply<LiquidResidueCondition>(i, j, intensity, sync: false, variant: (byte)liquid.LiquidType, tint: TintOf(liquidX, liquidY, liquid.LiquidType));
     }
+
+    /// <summary>Leaves (<paramref name="i" />, <paramref name="j" />) soaked with water, whether or not any is touching it.</summary>
+    public static bool Soak(int i, int j, float intensity = 1f)
+        => TileConditionSystem.Apply<LiquidResidueCondition>(i, j, intensity, sync: false, variant: (byte)LiquidID.Water, tint: TintOf(i, j, LiquidID.Water));
 }

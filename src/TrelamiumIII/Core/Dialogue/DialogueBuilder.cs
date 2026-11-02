@@ -47,6 +47,9 @@ public static class DialogueBuilder
                 dialogueLines.Add(lineData);
         }
 
+        if (GetOptionalValue($"DialogueLibrary.{sequence.Key}.Line{sequence.Lines.Count + 1}.Text", null) != null)
+            Warn($"Dialogue '{sequence.Key}': the localization has more lines than the {sequence.Lines.Count} defined in code - the rest won't play.");
+
         return dialogueLines;
     }
 
@@ -54,7 +57,12 @@ public static class DialogueBuilder
     {
         string baseKey = $"DialogueLibrary.{dialogueKey}.Line{lineNumber}";
 
-        var (text, anchors) = ProcessText(GetOptionalValue($"{baseKey}.Text", string.Empty));
+        string raw = GetOptionalValue($"{baseKey}.Text", string.Empty);
+
+        if (raw.Length == 0)
+            Warn($"Dialogue '{dialogueKey}.Line{lineNumber}': no text in the localization - it will play as an empty box.");
+
+        var (text, anchors) = ProcessText(raw);
         var modifiers = BindAffects(anchors, spec.Affects, dialogueKey, lineNumber);
 
         var choices = BuildChoices(baseKey, spec.Choices);
@@ -86,7 +94,10 @@ public static class DialogueBuilder
         {
             string raw = GetOptionalValue($"{baseKey}.Choice{i + 1}.Text", null);
             if (raw == null)
+            {
+                Warn($"Dialogue '{baseKey}': choice {i + 1} has no text in the localization - it won't be offered.");
                 continue;
+            }
 
             choices.Add(new ChoiceData
             {
@@ -97,8 +108,13 @@ public static class DialogueBuilder
             });
         }
 
+        if (GetOptionalValue($"{baseKey}.Choice{specs.Count + 1}.Text", null) != null)
+            Warn($"Dialogue '{baseKey}': the localization has more choices than the {specs.Count} defined on this line in code - the rest won't be offered.");
+
         return choices;
     }
+
+    private static void Warn(string message) => TrelamiumIII.Instance?.Logger?.Warn(message);
 
     /// <summary>
     /// Processes raw text with bracketed anchors. For example, "Hello [speakerName:Merchant]!" becomes "Hello Bob!" if the merchant's name is Bob.
