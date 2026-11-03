@@ -649,9 +649,9 @@ public sealed class VfxLabUI : ModSystem
             fields.Add(new InspectorField { Id = "emitter", Label = "Release", Kind = FieldKind.Header, Tip = "How the Emit and Spray tools let this field out" });
             fields.AddRange(SlotInspector.EmitterRows(LabTools.BenchEmitter, static () => { }));
         }
-        else if (target is ConditionTarget)
+        else if (target is ResidueTarget)
         {
-            fields.Add(new InspectorField { Id = "brush", Label = "Brush", Kind = FieldKind.Header, Tip = "How the Brush tool paints this condition" });
+            fields.Add(new InspectorField { Id = "brush", Label = "Brush", Kind = FieldKind.Header, Tip = "How the Brush tool paints this residue" });
             fields.Add(new InspectorField
             {
                 Id = "brush/radius",
@@ -798,14 +798,14 @@ public sealed class VfxLabUI : ModSystem
         [
             (LabTool.Emit, "Emit", "Click to place a source. Drag one to move it, right-click to remove it"),
             (LabTool.Spray, "Spray", "Hold to release at the pointer"),
-            (LabTool.Brush, "Brush", "Hold to paint the selected tile condition"),
+            (LabTool.Brush, "Brush", "Hold to paint the selected residue"),
         ])
         {
             if (Gui.Button($"tool:{label}", Next(48), label, LabTools.Tool == tool, tip))
                 LabTools.Tool = LabTools.Tool == tool ? LabTool.None : tool;
         }
 
-        if (Gui.Button("clearall", Next(62), "Clear all", tip: "Remove every cloud, source and tile condition in the world"))
+        if (Gui.Button("clearall", Next(62), "Clear all", tip: "Remove every cloud, source and residue in the world"))
             LabTools.ClearAll();
 
         Gap();

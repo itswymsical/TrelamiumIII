@@ -4,9 +4,9 @@ using TrelamiumIII.Common.Subworlds.Realms;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
 using TrelamiumIII.Core.Graphics.Particles;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Rules;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Rules;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.Ingress.HighlandsBiome;
 
@@ -44,7 +44,7 @@ internal static class AlpineWeather
 }
 
 /// <summary> Gusts blow ice onto the sky-facing tops of the peaks, from the most exposed tiles outward, and it melts off between them. </summary>
-public sealed class AlpineFrostRule : TileConditionRule
+public sealed class AlpineFrostRule : ResidueRule
 {
     /// <summary> How long a frosted tile keeps its ice once the gust that laid it has passed. </summary>
     private const float LingerTicks = 10f * 60f;
@@ -60,7 +60,7 @@ public sealed class AlpineFrostRule : TileConditionRule
         if (cover <= 0f || Hash(i, j, salt: 11) >= cover || HighlandLeafTile.IsLeaf(tile) || !IsTopSurface(i, j) || !IsSkyExposed(i, j))
             return;
 
-        Maintain<FrostCondition>(i, j, MathHelper.Lerp(0.5f, 1f, cover), LingerTicks);
+        Maintain<FrostResidue>(i, j, MathHelper.Lerp(0.5f, 1f, cover), LingerTicks);
     }
 }
 
@@ -453,7 +453,7 @@ public sealed class SleetParticle : Particle
 
         // The film reads as a pale block over the needles, so a living tree's crown stays clear of it.
         if (WorldGen.InWorld(hit.X, hit.Y, 10) && WorldGen.SolidTile(hit.X, hit.Y) && !HighlandLeafTile.IsLeaf(Main.tile[hit.X, hit.Y]))
-            TileConditionSystem.Apply<FrostCondition>(hit.X, hit.Y, Main.rand.NextFloat(FreezeMin, FreezeMax), FreezeTicks, sync: false);
+            ResidueSystem.Apply<FrostResidue>(hit.X, hit.Y, Main.rand.NextFloat(FreezeMin, FreezeMax), FreezeTicks, sync: false);
 
         Kill();
     }

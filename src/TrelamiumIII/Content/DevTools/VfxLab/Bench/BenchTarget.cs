@@ -4,7 +4,7 @@ using System.Reflection;
 using ReLogic.Content;
 using TrelamiumIII.Content.DevTools.VfxLab.Generation;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.Bench;
 
@@ -208,33 +208,33 @@ internal sealed class FieldTarget(FieldLayer layer) : BenchTarget
         => LookProperty.GetValue(layer) is GasLook ? BenchExport.GasLook(values) : BenchExport.Parameters(values);
 }
 
-/// <summary> One tile condition with a canvas, however many others share its effect. </summary>
-internal sealed class ConditionTarget(ITileCondition condition) : BenchTarget
+/// <summary> One residue with a canvas, however many others share its effect. </summary>
+internal sealed class ResidueTarget(IResidue residue) : BenchTarget
 {
     private const float TestRadius = 96f;
 
-    public ITileCondition Condition => condition;
+    public IResidue Residue => residue;
 
-    public override string Name => condition.Name;
+    public override string Name => residue.Name;
 
     public override BenchGroup Group => BenchGroup.Tiles;
 
-    public override Effect? Effect => condition.Shader?.Value;
+    public override Effect? Effect => residue.Shader?.Value;
 
-    public override object Scope => condition;
+    public override object Scope => residue;
 
     public override string TestLabel => "Test patch";
 
-    public override string ClearTip => "Remove every tile condition in the world";
+    public override string ClearTip => "Remove every residue in the world";
 
-    public override void Test() => TileConditionSystem.ApplyCircle(condition, Main.LocalPlayer.Bottom + new Vector2(0f, 8f), TestRadius, duration: 60f * 60f);
+    public override void Test() => ResidueSystem.ApplyCircle(residue, Main.LocalPlayer.Bottom + new Vector2(0f, 8f), TestRadius, duration: 60f * 60f);
 
-    public override void ClearTest() => TileConditionSystem.ClearAll();
+    public override void ClearTest() => ResidueSystem.ClearAll();
 
-    public override void Seed(Effect effect) => condition.ApplyShaderParameters(effect);
+    public override void Seed(Effect effect) => residue.ApplyShaderParameters(effect);
 
     protected override string Export(IEnumerable<ExportValue> values)
-        => condition is FilmCondition ? BenchExport.FilmLook(values) : BenchExport.Parameters(values);
+        => residue is FilmResidue ? BenchExport.FilmLook(values) : BenchExport.Parameters(values);
 }
 
 /// <summary> A shader by itself, for every draw of it anywhere. What reaches screen filters, trails and sprite shaders. </summary>

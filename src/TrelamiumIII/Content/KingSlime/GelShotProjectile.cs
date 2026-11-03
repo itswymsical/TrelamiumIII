@@ -3,7 +3,7 @@ using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.KingSlime;
 
@@ -104,7 +104,7 @@ public abstract class GelShotProjectile : ModProjectile
     private void Burst(Vector2 outward, bool coatTerrain)
     {
         if (coatTerrain)
-            SlimedCondition.Splatter(Projectile.Center, SPLATTER_RADIUS, intensity: 0.9f, owner: NodeOwner);
+            SlimedResidue.Splatter(Projectile.Center, SPLATTER_RADIUS, intensity: 0.9f, owner: NodeOwner);
 
         if (FieldSystem.GetLayer<GelField>() is not { } layer)
             return;

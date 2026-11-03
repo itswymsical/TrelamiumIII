@@ -1,6 +1,6 @@
 ﻿using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.Liquids;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 using TrelamiumIII.Core.Tiles.Seals;
 using System.IO;
 using TrelamiumIII.Core.ExperientialSystem;
@@ -17,7 +17,7 @@ partial class TrelamiumIII
     internal enum MessageType : byte
     {
         LiquidMergeExplosion,
-        TileCondition,
+        Residue,
         GrantExperience,
         SkillSet,
         JobberClaim,
@@ -45,8 +45,8 @@ partial class TrelamiumIII
                 int y = reader.ReadInt32();
                 OilLiquids.ExplosionEffect(x, y);
                 break;
-            case MessageType.TileCondition:
-                TileConditionSystem.ReceiveApply(reader, whoAmI);
+            case MessageType.Residue:
+                ResidueSystem.ReceiveApply(reader, whoAmI);
                 break;
             case MessageType.GrantExperience:
                 ReceiveExperientialGrant(reader);

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas;
@@ -32,7 +32,7 @@ public abstract class ChemicalGasField : GasField, IChemicalSource
     /// <summary>
     /// The residue this layer leaves on tiles it pools on, or null for a layer that leaves nothing.
     /// </summary>
-    protected virtual ChemicalReactionTileCondition? Residue => null;
+    protected virtual ChemicalResidue? Residue => null;
 
     protected override bool UsesTileField => Residue is not null;
 

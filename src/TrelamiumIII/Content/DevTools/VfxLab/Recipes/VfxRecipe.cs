@@ -196,10 +196,10 @@ internal sealed class RecipeLinks
     public IDictionary<string, JToken> Extra { get; set; } = new Dictionary<string, JToken>();
 }
 
-/// <summary> The tile condition a field leaves where it pools. </summary>
+/// <summary> The residue a field leaves where it pools. </summary>
 internal sealed class RecipeDeposit
 {
-    /// <summary> The condition's name, or another recipe's once those can be residues. </summary>
+    /// <summary> The residue's name, or another recipe's once those can be residues. </summary>
     [JsonProperty("residue", Order = 0)]
     public string Residue { get; set; } = string.Empty;
 

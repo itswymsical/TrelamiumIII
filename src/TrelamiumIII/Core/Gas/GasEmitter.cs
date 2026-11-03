@@ -134,7 +134,7 @@ public struct GasEmitter
     /// </summary>
     /// <remarks>
     ///     Carried but never read by <see cref="GasField" />, in the same spirit as
-    ///     <c>TileConditionInstance.Stage</c>: the field has no opinion about what an arm is, and a
+    ///     <c>ResidueInstance.Stage</c>: the field has no opinion about what an arm is, and a
     ///     layer that does can branch on this inside its own hooks.
     /// </remarks>
     public byte Variant;

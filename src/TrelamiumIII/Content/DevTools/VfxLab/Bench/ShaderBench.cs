@@ -5,7 +5,7 @@ using System.Reflection;
 using ReLogic.Content;
 using TrelamiumIII.Content.DevTools.VfxLab.UI;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.Bench;
 
@@ -32,7 +32,7 @@ internal static class ShaderBench
     private static readonly HashSet<string> FrameTextures = new(StringComparer.Ordinal) { "uAttrTex", "uMaskTex", "uCanvasLight" };
 
     private static readonly List<BenchTarget> targets = [];
-    /// <summary> The frame each effect, layer and condition was last drawn on. </summary>
+    /// <summary> The frame each effect, layer and residue was last drawn on. </summary>
     private static readonly Dictionary<object, ulong> lastDrawn = [];
 
     private static readonly List<(string Name, Asset<Texture2D> Asset)> noise = [];
@@ -65,8 +65,8 @@ internal static class ShaderBench
         foreach (FieldLayer layer in FieldSystem.Layers.Where(static layer => layer is not LabFieldSlot).OrderBy(static layer => layer.GetType().Name, StringComparer.Ordinal))
             targets.Add(new FieldTarget(layer));
 
-        foreach (ITileCondition condition in TileConditionSystem.All.Where(static condition => condition.Shader is not null).OrderBy(static condition => condition.Name, StringComparer.Ordinal))
-            targets.Add(new ConditionTarget(condition));
+        foreach (IResidue residue in ResidueSystem.All.Where(static residue => residue.Shader is not null).OrderBy(static residue => residue.Name, StringComparer.Ordinal))
+            targets.Add(new ResidueTarget(residue));
 
         List<string> files = mod.GetFileNames() ?? [];
 
@@ -87,7 +87,7 @@ internal static class ShaderBench
 
         MonoModHooks.Add(typeof(EffectPass).GetMethod(nameof(EffectPass.Apply), BindingFlags.Instance | BindingFlags.Public)!, OnPassApply);
         MonoModHooks.Add(typeof(FieldLayer).GetMethod(nameof(FieldLayer.CompositeToScreen), BindingFlags.Instance | BindingFlags.Public)!, OnFieldComposite);
-        MonoModHooks.Add(typeof(ConditionCanvasSource).GetMethod(nameof(ConditionCanvasSource.ApplyShaderParameters), BindingFlags.Instance | BindingFlags.Public)!, OnConditionParameters);
+        MonoModHooks.Add(typeof(ResidueCanvasSource).GetMethod(nameof(ResidueCanvasSource.ApplyShaderParameters), BindingFlags.Instance | BindingFlags.Public)!, OnResidueParameters);
     }
 
     /// <summary> Whether a compiled effect holds vertex shader bytecode, which starts with its version token: vs_2_0 or vs_3_0. </summary>
@@ -127,14 +127,14 @@ internal static class ShaderBench
         scope = null;
     }
 
-    private static void OnConditionParameters(Action<ConditionCanvasSource, Effect> orig, ConditionCanvasSource self, Effect effect)
+    private static void OnResidueParameters(Action<ResidueCanvasSource, Effect> orig, ResidueCanvasSource self, Effect effect)
     {
         orig(self, effect);
 
         // Its canvas applies the pass straight after this, and that one pass is all this scope is for.
-        scope = self.Condition;
+        scope = self.Residue;
         scopeIsOneShot = true;
-        lastDrawn[self.Condition] = frame;
+        lastDrawn[self.Residue] = frame;
     }
 
     private static void OnPassApply(Action<EffectPass> orig, EffectPass self)

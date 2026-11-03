@@ -1,7 +1,7 @@
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Core.Graphics.Vfx;
 
@@ -39,7 +39,7 @@ internal sealed class VfxFieldSpec
 
     public FieldModule[] Modules { get; set; } = [];
 
-    /// <summary> The condition this field leaves on tiles it pools on, or null to leave nothing. A type, as fields can load before conditions do. </summary>
+    /// <summary> The residue this field leaves on tiles it pools on, or null to leave nothing. A type, as fields can load before residues do. </summary>
     public Type? Residue { get; set; }
 
     public float ResidueThreshold { get; set; } = 0.9f;
@@ -121,8 +121,8 @@ internal abstract class ModularField : GasField
     /// <summary> The same strength a chemical field's residue lingers at. </summary>
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
-        if (Spec.Residue is { } type && TileConditionSystem.Get(type) is { } residue)
-            TileConditionSystem.Apply(residue, tileX, tileY, MathHelper.Clamp(density / MathF.Max(TileFieldThreshold, 0.01f) * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
+        if (Spec.Residue is { } type && ResidueSystem.Get(type) is { } residue)
+            ResidueSystem.Apply(residue, tileX, tileY, MathHelper.Clamp(density / MathF.Max(TileFieldThreshold, 0.01f) * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
     }
 
     protected override void ApplyShaderParameters(Effect effect) => Spec.Material?.Apply(effect);

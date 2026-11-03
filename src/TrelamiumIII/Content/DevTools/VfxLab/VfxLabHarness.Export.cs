@@ -13,8 +13,8 @@ using TrelamiumIII.Content.DevTools.VfxLab.UI;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Vfx;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab;
 
@@ -63,7 +63,7 @@ public sealed partial class VfxLabHarness
         RecipeEdit.AddStage(recipe, "DomainWarp").Set("Amount", 0.15f).Set("Octaves", 3).Set("Noise", "Milky_1").Set("Drift", 0.02f, 0.01f);
         recipe.Modules.Add(new RecipeModule { Type = "WindForce" }.Set("Pull", 0.03f));
         recipe.Modules.Add(new RecipeModule { Type = "CurlFlow" }.Set("Strength", 0.2f));
-        recipe.Links.Deposit = new RecipeDeposit { Residue = "SlimedCondition", Threshold = 0.3f, Interval = 5 };
+        recipe.Links.Deposit = new RecipeDeposit { Residue = "SlimedResidue", Threshold = 0.3f, Interval = 5 };
         recipe.Emitter.Radius = 36f;
 
         return recipe;
@@ -242,7 +242,7 @@ public sealed partial class VfxLabHarness
         foreach (bool step in OpenExport()) yield return step;
         Check("a real field's recipe exports too", ExportRows() == "New,New,New,New,New", ExportRows() + " " + ExportProblems());
         foreach (bool step in Click("export:write")) yield return step;
-        Check("as a liquid with its residue", File.ReadAllText(At($"Content/Vfx/{LiquidField}.Vfx.g.cs")) is var text && text.Contains("GasTypeID.Liquid") && text.Contains("typeof(MuddiedCondition)"));
+        Check("as a liquid with its residue", File.ReadAllText(At($"Content/Vfx/{LiquidField}.Vfx.g.cs")) is var text && text.Contains("GasTypeID.Liquid") && text.Contains("typeof(MuddiedResidue)"));
 
         // What the generated asset references have to cope with, which only the rebuild can prove: a lowercase name, and a texture that isn't noise.
         VfxRecipe odd = RecipeEdit.NewField(OddField);
@@ -405,8 +405,8 @@ public sealed partial class VfxLabHarness
         {
             for (int y = below.Y - 10; y < below.Y + 30; y++)
             {
-                slimed += TileConditionSystem.TryGet<SlimedCondition>(x, y, out _) ? 1 : 0;
-                muddied += TileConditionSystem.TryGet<MuddiedCondition>(x, y, out _) ? 1 : 0;
+                slimed += ResidueSystem.TryGet<SlimedResidue>(x, y, out _) ? 1 : 0;
+                muddied += ResidueSystem.TryGet<MuddiedResidue>(x, y, out _) ? 1 : 0;
             }
         }
 
@@ -415,7 +415,7 @@ public sealed partial class VfxLabHarness
 
         probe.ClearNodes();
         liquid.ClearNodes();
-        TileConditionSystem.ClearAll();
+        ResidueSystem.ClearAll();
 
         Check("all that with the lab unused", !VfxLabUI.Open && LabSession.Slots.Count == 0);
     }

@@ -1,7 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
@@ -76,7 +76,7 @@ public class GelField : ChemicalGasField
     {
         float intensity = MathHelper.Clamp(density / Math.Max(TileFieldThreshold, 0.01f) * 0.5f, 0.3f, 1f);
 
-        TileConditionSystem.Apply<SlimedCondition>(tileX, tileY, intensity, owner: owner, sync: false);
+        ResidueSystem.Apply<SlimedResidue>(tileX, tileY, intensity, owner: owner, sync: false);
     }
 
     protected override int ContactBuff => BuffID.Slow;

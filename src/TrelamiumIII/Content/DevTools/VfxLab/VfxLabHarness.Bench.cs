@@ -138,28 +138,28 @@ public sealed partial class VfxLabHarness
         ((FieldTarget)ShaderBench.Targets.First(static target => target.Name == Neighbour)).ClearTest();
         Check("Clear removes the test cloud", !ShaderBench.IsDrawing(selected) || !selected.HasContent);
 
-        // A tile condition, through the same inspector.
+        // A residue, through the same inspector.
         foreach (bool step in Click("tab1")) yield return step;
         waitTicks = 2;
         yield return true;
-        BenchTarget slime = ShaderBench.Targets.First(static target => target.Name == "SlimedCondition");
-        foreach (bool step in Click("row:SlimedCondition")) yield return step;
-        Check("a tile condition can be selected", ShaderBench.Selected == slime);
+        BenchTarget slime = ShaderBench.Targets.First(static target => target.Name == "SlimedResidue");
+        foreach (bool step in Click("row:SlimedResidue")) yield return step;
+        Check("a residue can be selected", ShaderBench.Selected == slime);
         foreach (bool step in Click("test")) yield return step;
         waitTicks = ScreenSettleTicks;
         yield return true;
-        foreach (bool step in Drag("SlimedCondition/Threshold#0", 40)) yield return step;
+        foreach (bool step in Drag("SlimedResidue/Threshold#0", 40)) yield return step;
         waitTicks = ScreenSettleTicks;
         yield return true;
         foreach (bool step in Capture("bench_condition")) yield return step;
-        Check("a condition's value can be overridden", slime.Overrides.ContainsKey("Threshold"));
-        Check("a condition shows as drawing", ShaderBench.IsDrawing(slime));
-        Check("and one sharing its shader doesn't", !ShaderBench.IsDrawing(ShaderBench.Targets.First(static target => target.Name == "MuddiedCondition")));
+        Check("a residue's value can be overridden", slime.Overrides.ContainsKey("Threshold"));
+        Check("a residue shows as drawing", ShaderBench.IsDrawing(slime));
+        Check("and one sharing its shader doesn't", !ShaderBench.IsDrawing(ShaderBench.Targets.First(static target => target.Name == "MuddiedResidue")));
 
         // Typing into a field, then the row going away while it's focused, mustn't leave the keyboard held.
-        foreach (bool step in Click("SlimedCondition/Bands#0")) yield return step;
+        foreach (bool step in Click("SlimedResidue/Bands#0")) yield return step;
         Check("clicking a number starts typing", VfxLabUI.Gui.IsEditing);
-        VfxLabUI.Select(ShaderBench.Targets.First(static target => target.Name == "MuddiedCondition"));
+        VfxLabUI.Select(ShaderBench.Targets.First(static target => target.Name == "MuddiedResidue"));
         waitTicks = 2;
         yield return true;
         Check("changing target lets go of the keyboard", !VfxLabUI.Gui.IsEditing);

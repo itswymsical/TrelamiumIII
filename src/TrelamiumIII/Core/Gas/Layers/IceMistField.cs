@@ -1,7 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics.Fields;
 
@@ -85,7 +85,7 @@ public class IceMistField : ChemicalGasField
     }
 
     /// <summary>Mist that settles leaves a rime on the surface.</summary>
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CryonicResidueCondition>();
+    protected override ChemicalResidue? Residue => ResidueSystem.Get<CryonicResidue>();
 
     /// <summary>
     /// Lower than thermite's: mist is thin, and a frost that only forms under a dense cloud would

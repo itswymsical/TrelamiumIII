@@ -49,7 +49,7 @@ public class ZoomHandler : ModSystem
     /// </summary>
     /// <remarks>
     ///     Vanilla only writes the frame's zoom after <c>CheckMonoliths</c> has run, so every
-    ///     render target built there -- fields, tile condition canvases, shockwaves -- was drawn with
+    ///     render target built there -- fields, residue canvases, shockwaves -- was drawn with
     ///     last frame's zoom and then composited with this frame's. While the zoom eases the two
     ///     differ by several texels a frame, and the targets jitter.
     ///     <see cref="ModifyTransformMatrix" /> then writes the same value again, so nothing later in
