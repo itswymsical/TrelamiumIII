@@ -8,14 +8,13 @@ namespace TrelamiumIII.Core.Residues.Types;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Laid by vanilla's rain particles rather than by a rule. Those exist only on a client and land
-///         differently on each, which is fine for as long as this stays cosmetic: a contact effect would
-///         need it to move to a <see cref="Rules.ResidueRule" />.
+///         On a client, laid by vanilla's rain particles as they land, which are different on each. A server has no particles, so
+///         <see cref="Rules.RainRule" /> works out the same thing from the weather. None of this is shared, which is fine because
+///         until a tile is soaked through it's only a look.
 ///     </para>
 ///     <para>
-///         The one exception is soaked ground, which puts fires out. It takes a downpour to get there, and
-///         only a server runs reactions in multiplayer and it has no rain particles, so rain doesn't put fires
-///         out there. A rule laying this from the weather would fix that.
+///         Soaked ground puts fires out, and only a server runs reactions, so its own wet ground is the one that counts. What
+///         comes of that reaches clients like any other.
 ///     </para>
 /// </remarks>
 public sealed class DampResidue : FilmResidue
@@ -25,6 +24,9 @@ public sealed class DampResidue : FilmResidue
 
     /// <summary>Small next to how fast the tile dries, so a drizzle levels off well short of <see cref="SOAKED" />.</summary>
     private const float PER_DROP = 0.02f;
+
+    /// <summary>Drops each surface tile catches per tick at full rain, as measured from vanilla's particles. They scale evenly with <see cref="Main.cloudAlpha" />.</summary>
+    private const float DROPS_PER_TICK = 0.09f;
 
     private const float SOAKED = 0.5f;
 
@@ -75,9 +77,17 @@ public sealed class DampResidue : FilmResidue
         if (!falling || self.active || Main.gameMenu || Main.remixWorld || !LandedOn(self.position, out Point hit))
             return;
 
-        float wetness = ResidueSystem.TryGet<DampResidue>(hit.X, hit.Y, out ResidueInstance existing) ? existing.Strength : 0f;
+        Wet(hit.X, hit.Y, PER_DROP);
+    }
 
-        ResidueSystem.Apply<DampResidue>(hit.X, hit.Y, MathHelper.Clamp(wetness + PER_DROP, FIRST_DROP, SOAKED), origin: ResidueOrigin.Local, tint: LiquidResidue.TintOf(hit.X, hit.Y, LiquidID.Water));
+    /// <summary>What falls on a tile over <paramref name="ticks" /> of the current rain, for a machine with no particles to do it.</summary>
+    public static void RainOn(int i, int j, int ticks) => Wet(i, j, PER_DROP * DROPS_PER_TICK * Main.cloudAlpha * ticks);
+
+    private static void Wet(int i, int j, float added)
+    {
+        float wetness = ResidueSystem.TryGet<DampResidue>(i, j, out ResidueInstance existing) ? existing.Strength : 0f;
+
+        ResidueSystem.Apply<DampResidue>(i, j, MathHelper.Clamp(wetness + added, FIRST_DROP, SOAKED), origin: ResidueOrigin.Local, tint: LiquidResidue.TintOf(i, j, LiquidID.Water));
     }
 
     /// <summary>The solid tile under a drop's 2x2 box, by the test vanilla ended it with. Drops ended by water or the screen's edge have none.</summary>

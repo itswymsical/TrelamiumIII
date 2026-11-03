@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Core.Residues.Rules;
@@ -28,6 +29,39 @@ public sealed class BlizzardRule : ResidueRule
     }
 
     private static bool IsSnow(ushort type) => type is TileID.SnowBlock or TileID.SnowBrick;
+}
+
+/// <summary>
+///     Rain on a server, which has no rain particles to wet the ground with and is the only machine that runs reactions. Clients
+///     get their damp from the particles themselves, in single player too, so this only runs on a server.
+/// </summary>
+public sealed class RainRule : ResidueRule
+{
+    /// <summary>Two players can see the same tile, and it should only get rained on once.</summary>
+    private readonly HashSet<Point> visited = [];
+
+    private uint visitedOn;
+
+    public override int SweepTicks => 10;
+
+    /// <summary>Where vanilla's particles fall: not in a blizzard, underground or in a remix world, where rain goes through the terrain.</summary>
+    public override bool IsActive(Player player)
+        => Main.netMode == NetmodeID.Server && Main.raining && !Main.remixWorld && !player.ZoneSnow && (player.ZoneOverworldHeight || player.ZoneSkyHeight);
+
+    public override void Visit(int i, int j, Tile tile)
+    {
+        if (!IsTopSurface(i, j) || !IsSkyExposed(i, j))
+            return;
+
+        if (visitedOn != Main.GameUpdateCount)
+        {
+            visitedOn = Main.GameUpdateCount;
+            visited.Clear();
+        }
+
+        if (visited.Add(new Point(i, j)))
+            DampResidue.RainOn(i, j, SweepTicks);
+    }
 }
 
 /// <summary>
