@@ -7,6 +7,9 @@ public static class ChemicalTuning
 {
     public const float MaxConcentration = 100f;
 
+    /// <summary>How far up a body an affliction shows with no concentration behind it. It climbs to the top at <see cref="MaxConcentration" />.</summary>
+    public const float AfflictionCoverage = 0.4f;
+
     /// <summary>Ticks a contact exposure blocks further contact exposures of the same element on one NPC.</summary>
     public const int ContactInterval = 10;
 

@@ -40,6 +40,11 @@ public sealed class AcidResidue : Residue
     /// <summary>Film below this doesn't hurt what touches it.</summary>
     private const float HARMFUL_FILM = 0.15f;
 
+    /// <summary>The furthest it eats into a body, as a share of a tile eaten through.</summary>
+    private const float BODY_MOST_EATEN = 0.3f;
+
+    private const int BODY_BUBBLE_ODDS = 12;
+
     private const byte STAGE_EATING = 0;
 
     private const byte STAGE_STOOD_UP_TO_IT = 1;
@@ -217,6 +222,53 @@ public sealed class AcidResidue : Residue
         effect.Parameters["BubbleAlpha"]?.SetValue(0.9f);
 
         effect.Parameters["DripLength"]?.SetValue(9f);
+    }
+
+    /// <summary>A wet film that slowly pits what it's on, stopping short of eating it through.</summary>
+    public override TileCanvasSample EncodeBody(float rise, int age)
+    {
+        var instance = new ResidueInstance
+        {
+            Life = 1f,
+            MaxLife = 1f,
+            Intensity = MathHelper.Clamp(rise * 3f, 0f, 1f),
+            Level = MathF.Min(age / EATING_TICKS, BODY_MOST_EATEN),
+        };
+
+        return EncodeCanvas(in instance);
+    }
+
+    public override void ApplyBodyParameters(Effect effect, float gravDir, float height)
+    {
+        ApplyShaderParameters(effect);
+
+        float detail = BodyDetail(height);
+
+        effect.Parameters["FlowScale"]?.SetValue(0.35f * detail);
+        effect.Parameters["PitScale"]?.SetValue(0.28f * detail);
+        effect.Parameters["BubbleScale"]?.SetValue(0.4f * detail);
+        effect.Parameters["DripLength"]?.SetValue(5f);
+    }
+
+    public override void UpdateBody(Entity body, float fill)
+    {
+        if (Main.dedServ)
+            return;
+
+        Lighting.AddLight(body.Center, 0.1f * fill, 0.26f * fill, 0.03f * fill);
+
+        if (!Main.rand.NextBool(BODY_BUBBLE_ODDS))
+            return;
+
+        Dust bubble = Dust.NewDustPerfect(
+            body.Bottom - new Vector2(Main.rand.NextFloat(-body.width * 0.5f, body.width * 0.5f), Main.rand.NextFloat(body.height * fill)),
+            DustID.BubbleBurst_Green,
+            body.velocity * 0.4f + new Vector2(Main.rand.NextFloat(-0.2f, 0.2f), Main.rand.NextFloat(-0.9f, -0.2f)),
+            80,
+            default,
+            Main.rand.NextFloat(0.6f, 1f));
+
+        bubble.noGravity = true;
     }
 
     public override void OnPlayerContact(ref ResidueInstance instance, Player player)

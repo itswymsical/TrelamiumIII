@@ -1,50 +1,70 @@
 using System.Collections.Generic;
-using ReLogic.Content;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Residues.Types;
+using TrelamiumIII.Core.NPCs.Actors;
 
 namespace TrelamiumIII.Core.Residues.Bodies;
 
 /// <summary>
-///     Draws a residue on a player with the shader it wears on the ground: the player's silhouette takes the place of the
-///     terrain mask, and a small grid of body cells takes the place of tiles.
+///     Draws residues on players and NPCs with the shaders they wear on the ground: a body's silhouette takes the place of
+///     the terrain mask, and a small grid of cells takes the place of tiles.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Each body gets a slot in atlases shared by all of them, rather than targets of its own. A canvas is two half-float
-///         targets, which is fine per residue and too much per slime in a swarm, and a slot where one screen-wide silhouette
-///         would do keeps overlapping bodies from bleeding into each other.
+///         Bodies share atlases rather than having targets of their own. A canvas is two half-float targets, which is fine
+///         per residue and too much per slime in a swarm, and a slot where one screen-wide silhouette would do keeps
+///         overlapping bodies from bleeding into each other. When the atlases are full, the bodies left over go uncoated.
 ///     </para>
 ///     <para>
-///         To the shader, "world" here is body space: pixels from the top-left of the slot. That pins its noise and shading
-///         grid to the body, so they don't swim across it as it walks.
+///         A body is drawn into its slot three ways. A player goes through the player renderer, and so does any NPC with a
+///         <see cref="TerrarianModel" />, off its backing player. Anything else goes through vanilla's own NPC draw.
 ///     </para>
 ///     <para>
-///         The fire is hardcoded for now, see <see cref="BodyFireTest" />. Only the local player can have it, and it does
-///         nothing but draw.
+///         To the shader, "world" here is body space: pixels from the top-left of the slot, offset per body. That pins its
+///         noise and shading grid to the body, so they don't swim across it as it walks, and keeps two zombies from burning
+///         in step.
 ///     </para>
 /// </remarks>
 internal sealed class BodyCanvas : ModSystem
 {
-    private const int SLOT_SIZE = 256;
+    /// <summary>Pixels the mask atlases hold, and that the canvas atlases cover.</summary>
+    private const int ATLAS_SIZE = 1024;
 
-    private const int SLOTS_PER_SIDE = 4;
+    /// <summary>Divisor on the canvas atlases. Shaders decide per 2 pixels, so this gives each decision a texel of its own.</summary>
+    private const int CANVAS_SCALE = 2;
 
-    private const int ATLAS_SIZE = SLOT_SIZE * SLOTS_PER_SIDE;
+    /// <summary>Slot sizes round up to this, so a slot starts on the shading grid and a body's size doesn't flicker with its frames.</summary>
+    private const int SLOT_ROUNDING = 16;
 
-    private const int MAX_BODIES = SLOTS_PER_SIDE * SLOTS_PER_SIDE;
+    private const int MIN_SLOT = 96;
 
-    /// <summary>Body pixels per cell. Tiles are 16, far too coarse for a body three tiles tall.</summary>
-    private const int CELL_SIZE = 6;
+    /// <summary>Anything bigger is cut off at this.</summary>
+    private const int MAX_SLOT = 512;
 
-    /// <summary>Cells each side of the body's centre. Past any player sprite: the silhouette is what cuts it.</summary>
-    private const int CELL_REACH = 8;
+    private const int PLAYER_SLOT = 192;
+
+    private const int MOUNTED_SLOT = 320;
+
+    /// <summary>The height of a standing player's sprite, which runs past its hitbox.</summary>
+    private const int PLAYER_HEIGHT = 52;
+
+    /// <summary>Cells to a body's height, within limits. Tiles are 16 pixels, far too coarse for something three tiles tall.</summary>
+    private const int CELLS_TALL = 9;
+
+    private const int MIN_CELL = 4;
+
+    private const int MAX_CELL = 16;
 
     /// <summary>Kernel half-width, in cells.</summary>
     private const float KERNEL_RADIUS = 1.5f;
+
+    /// <summary>Times each copy of a silhouette is summed into a mask, which lifts translucent bodies like slimes past the shaders' cut.</summary>
+    private const int MASK_LAYERS = 3;
+
+    /// <summary>A body more see-through than this is hidden, and a coat would give it away.</summary>
+    private const int MAX_ALPHA = 250;
 
     private const int IDLE_TICKS_BEFORE_RELEASE = 300;
 
@@ -53,21 +73,6 @@ internal sealed class BodyCanvas : ModSystem
     ///     (dust, the held item, its projectile), and only a positive one hides the skin and hair.
     /// </summary>
     private const float CAPTURE_SHADOW = -0.001f;
-
-    /// <summary>
-    ///     Where the mask is copied to, in whole sprite pixels, so flames stand a little proud of the outline and more so
-    ///     upward. Never down, where they'd sit on the ground under the feet.
-    /// </summary>
-    private static readonly Point[] MaskReach =
-    [
-        new(0, 0),
-        new(-2, 0),
-        new(2, 0),
-        new(0, -2),
-        new(-2, -2),
-        new(2, -2),
-        new(0, -4),
-    ];
 
     /// <summary>Plain additive, as <see cref="TileCanvas" /> stamps: the targets hold straight sums.</summary>
     private static readonly BlendState Accumulate = new()
@@ -86,11 +91,57 @@ internal sealed class BodyCanvas : ModSystem
         ScissorTestEnable = true,
     };
 
-    /// <param name="Anchor">Where the middle of its slot lands on the screen, before zoom. Whole pixels, like the sprite's own.</param>
-    private readonly record struct Body(Player Player, Rectangle Slot, Point Anchor);
+    /// <param name="Slot">Its silhouette, in the silhouette atlas.</param>
+    /// <param name="Anchor">Where the middle of its slot lands on the screen, before zoom. Whole pixels, so a slot lays exactly over its sprite.</param>
+    /// <param name="Height">Pixels from the top of the sprite to its feet.</param>
+    /// <param name="FirstCoat">Where its coats start in <see cref="placed" />.</param>
+    private readonly record struct Body(Entity Entity, Rectangle Slot, Point Anchor, int Height, float GravDir, int FirstCoat, int CoatCount);
+
+    /// <param name="Slot">Its mask and canvas, in those atlases' shared pixels.</param>
+    private readonly record struct PlacedCoat(BodyCoat Coat, Rectangle Slot);
+
+    /// <summary>Lays square slots into an atlas in rows, first come first served.</summary>
+    private struct Shelves
+    {
+        private int x;
+
+        private int y;
+
+        private int rowHeight;
+
+        public void Reset() => x = y = rowHeight = 0;
+
+        public bool TryPlace(int size, out Rectangle slot)
+        {
+            if (x + size > ATLAS_SIZE)
+            {
+                x = 0;
+                y += rowHeight;
+                rowHeight = 0;
+            }
+
+            slot = new Rectangle(x, y, size, size);
+
+            if (y + size > ATLAS_SIZE)
+                return false;
+
+            x += size;
+            rowHeight = Math.Max(rowHeight, size);
+
+            return true;
+        }
+    }
 
     /// <summary>Who has a slot this frame.</summary>
     private static readonly List<Body> bodies = [];
+
+    private static readonly List<PlacedCoat> placed = [];
+
+    private static readonly List<BodyCoat> found = [];
+
+    private static Shelves silhouetteShelves;
+
+    private static Shelves coatShelves;
 
     private static RenderTarget2D? silhouette;
 
@@ -100,6 +151,9 @@ internal sealed class BodyCanvas : ModSystem
 
     private static RenderTarget2D? light;
 
+    /// <summary>What <see cref="Main.GameViewMatrix" /> is during a capture: no zoom and no flip, for draws that restart their batch with it.</summary>
+    private static SpriteViewMatrix? captureView;
+
     private static FieldStampVertex[] vertices = [];
 
     private static int[] indices = [];
@@ -107,6 +161,9 @@ internal sealed class BodyCanvas : ModSystem
     private static int vertexCount;
 
     private static int idleTicks;
+
+    /// <summary>A capture runs the NPC draw hook below, which must not composite onto what's being captured.</summary>
+    private static bool capturing;
 
     public override void OnModLoad()
     {
@@ -122,23 +179,36 @@ internal sealed class BodyCanvas : ModSystem
         On_LegacyPlayerRenderer.DrawPlayerFull += static (orig, self, camera, player) =>
         {
             orig(self, camera, player);
-            CompositeOver(player);
+
+            if (FindBody(player, out Body body))
+                CompositeCoats(in body);
+        };
+
+        On_Main.DrawNPCDirect += static (orig, self, spriteBatch, npc, behindTiles, screenPos) =>
+        {
+            orig(self, spriteBatch, npc, behindTiles, screenPos);
+
+            if (capturing || !FindBody(npc, out Body body))
+                return;
+
+            // In the middle of vanilla's batch, which has to be put back as the pass opened it.
+            spriteBatch.End();
+            CompositeCoats(in body);
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
         };
     }
 
     public override void OnModUnload()
     {
         bodies.Clear();
+        placed.Clear();
+        captureView = null;
         Free();
     }
 
-    public override void ClearWorld() => BodyFireTest.Stop();
-
     public override void PostUpdateEverything()
     {
-        BodyFireTest.Update();
-
-        if (BodyFireTest.IsBurning || silhouette is null)
+        if (bodies.Count > 0 || silhouette is null)
         {
             idleTicks = 0;
             return;
@@ -161,18 +231,71 @@ internal sealed class BodyCanvas : ModSystem
         idleTicks = 0;
     }
 
+    private static bool FindBody(Entity entity, out Body found)
+    {
+        foreach (Body body in bodies)
+        {
+            if (body.Entity == entity)
+            {
+                found = body;
+                return true;
+            }
+        }
+
+        found = default;
+        return false;
+    }
+
     /// <summary>Call from <c>Main.CheckMonoliths</c>, before the scene draws, like the tile canvases.</summary>
     private static void Build()
     {
         bodies.Clear();
+        placed.Clear();
 
-        if (Main.gameMenu || !BodyFireTest.IsBurning)
+        if (Main.gameMenu)
             return;
 
-        Player player = Main.LocalPlayer;
+        silhouetteShelves.Reset();
+        coatShelves.Reset();
 
-        if (player.active && !player.dead && !player.ghost && !player.invis && !player.ShouldNotDraw && !player.stoned)
-            bodies.Add(new Body(player, SlotAt(bodies.Count), AnchorOf(player)));
+        for (int i = 0; i < Main.maxPlayers; i++)
+        {
+            Player player = Main.player[i];
+
+            if (player.active && !player.dead && !player.ghost && !player.invis && !player.stoned && !player.ShouldNotDraw)
+                TryAddBody(player, player.mount.Active ? MOUNTED_SLOT : PLAYER_SLOT, PLAYER_HEIGHT, player.gravDir, player.Center + new Vector2(0f, player.gfxOffY), player.GetModPlayer<BodyCoatPlayer>().Coats);
+        }
+
+        for (int i = 0; i < Main.maxNPCs; i++)
+        {
+            NPC npc = Main.npc[i];
+
+            if (!npc.active || npc.type <= NPCID.None || npc.hide || npc.alpha > MAX_ALPHA)
+                continue;
+
+            BodyCoats coats = npc.GetGlobalNPC<BodyCoatNPC>().Coats;
+
+            if (!coats.IsCoated)
+                continue;
+
+            Vector2 middle = npc.Center + npc.netOffset + new Vector2(0f, npc.gfxOffY);
+
+            if (TerrarianModel.Of(npc) is not null)
+            {
+                TryAddBody(npc, PLAYER_SLOT, PLAYER_HEIGHT, 1f, middle, coats);
+                continue;
+            }
+
+            // The frame is what's really drawn. The hitbox covers NPCs with a custom draw and no frame set.
+            float spriteWidth = npc.frame.Width * npc.scale;
+            float spriteHeight = npc.frame.Height * npc.scale;
+            float widest = MathF.Max(MathF.Max(npc.width, npc.height), MathF.Max(spriteWidth, spriteHeight));
+
+            // Half as much again, as the widest it can be once rotated, plus room for a sprite hung off-centre.
+            int size = Math.Clamp((int)(widest * 1.5f) + 32, MIN_SLOT, MAX_SLOT);
+
+            TryAddBody(npc, size, (int)MathF.Max(npc.height, spriteHeight), 1f, middle, coats);
+        }
 
         if (bodies.Count == 0)
             return;
@@ -183,12 +306,13 @@ internal sealed class BodyCanvas : ModSystem
         {
             EnsureTargets(device);
             CaptureSilhouettes(device);
-            SpreadMask(device);
+            SpreadMasks(device);
             StampCells(device);
         }
         catch (Exception exception)
         {
             bodies.Clear();
+            placed.Clear();
             ResidueSystem.ReportFailure(exception);
         }
         finally
@@ -197,15 +321,36 @@ internal sealed class BodyCanvas : ModSystem
         }
     }
 
-    private static Rectangle SlotAt(int index)
-        => new(index % SLOTS_PER_SIDE * SLOT_SIZE, index / SLOTS_PER_SIDE * SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
-
-    /// <summary>Follows the sprite: <c>gfxOffY</c> is how a player eases up a step, and the draw adds it to the position.</summary>
-    private static Point AnchorOf(Player player)
+    private static void TryAddBody(Entity entity, int size, int height, float gravDir, Vector2 worldMiddle, BodyCoats coats)
     {
-        Vector2 onScreen = player.Center + new Vector2(0f, player.gfxOffY) - Main.screenPosition;
+        if (!coats.IsCoated)
+            return;
 
-        return new Point((int)MathF.Floor(onScreen.X), (int)MathF.Floor(onScreen.Y));
+        size = (size + SLOT_ROUNDING - 1) / SLOT_ROUNDING * SLOT_ROUNDING;
+
+        Vector2 onScreen = worldMiddle - Main.screenPosition;
+
+        // The unzoomed viewport, a superset of the zoomed one at every zoom Terraria allows.
+        if (onScreen.X < -size || onScreen.Y < -size || onScreen.X > Main.screenWidth + size || onScreen.Y > Main.screenHeight + size)
+            return;
+
+        found.Clear();
+        coats.Collect(found);
+
+        if (found.Count == 0 || !silhouetteShelves.TryPlace(size, out Rectangle slot))
+            return;
+
+        int firstCoat = placed.Count;
+
+        foreach (BodyCoat coat in found)
+        {
+            if (coatShelves.TryPlace(size, out Rectangle coatSlot))
+                placed.Add(new PlacedCoat(coat, coatSlot));
+        }
+
+        var anchor = new Point((int)MathF.Floor(onScreen.X), (int)MathF.Floor(onScreen.Y));
+
+        bodies.Add(new Body(entity, slot, anchor, Math.Max(height, 16), gravDir, firstCoat, placed.Count - firstCoat));
     }
 
     private static void EnsureTargets(GraphicsDevice device)
@@ -214,8 +359,8 @@ internal sealed class BodyCanvas : ModSystem
         EnsureMaskTarget(ref mask, device);
 
         // Half-float: eight-bit targets clamp the sums flat wherever kernels overlap.
-        FieldSurface.Ensure(ref canvas, device, ATLAS_SIZE, ATLAS_SIZE);
-        FieldSurface.Ensure(ref light, device, ATLAS_SIZE, ATLAS_SIZE);
+        FieldSurface.Ensure(ref canvas, device, ATLAS_SIZE / CANVAS_SCALE, ATLAS_SIZE / CANVAS_SCALE);
+        FieldSurface.Ensure(ref light, device, ATLAS_SIZE / CANVAS_SCALE, ATLAS_SIZE / CANVAS_SCALE);
     }
 
     private static void EnsureMaskTarget(ref RenderTarget2D? target, GraphicsDevice device)
@@ -230,41 +375,107 @@ internal sealed class BodyCanvas : ModSystem
     ///     Draws each body into its slot the way the game is about to draw it on the screen, moved by whole pixels and with no
     ///     zoom, so the composite can lay a slot exactly over the real sprite.
     /// </summary>
+    /// <remarks>
+    ///     Moves the screen rather than the batch's matrix, because some draws restart the batch with their own, which comes
+    ///     from <see cref="Main.GameViewMatrix" />. Everything they read that way lands in the slot too.
+    /// </remarks>
     private static void CaptureSilhouettes(GraphicsDevice device)
     {
-        SpriteBatch spriteBatch = Main.spriteBatch;
-
         device.SetRenderTarget(silhouette);
         device.Clear(Color.Transparent);
 
-        foreach (Body body in bodies)
+        Vector2 screen = Main.screenPosition;
+        SpriteViewMatrix view = Main.GameViewMatrix;
+
+        Main.GameViewMatrix = captureView ??= new SpriteViewMatrix(device);
+        capturing = true;
+
+        try
         {
-            Player player = body.Player;
-            Point middle = body.Slot.Center;
-            Matrix toSlot = Matrix.CreateTranslation(middle.X - body.Anchor.X, middle.Y - body.Anchor.Y, 0f);
-
-            // The sprite blinks while immune. The fire on it shouldn't, as whatever lit it is likely what's hitting it.
-            int immuneAlpha = player.immuneAlpha;
-            player.immuneAlpha = 0;
-
-            device.ScissorRectangle = body.Slot;
-            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, ClippedToSlot, null, toSlot);
-
-            try
+            foreach (Body body in bodies)
             {
-                Vector2 position = player.position + new Vector2(0f, player.gfxOffY);
+                Point middle = body.Slot.Center;
 
-                Main.PlayerRenderer.DrawPlayer(Main.Camera, player, position, player.fullRotation, player.fullRotationOrigin, CAPTURE_SHADOW);
+                Main.screenPosition = screen + new Vector2(body.Anchor.X - middle.X, body.Anchor.Y - middle.Y);
+                device.ScissorRectangle = body.Slot;
+
+                switch (body.Entity)
+                {
+                    case Player player:
+                        CapturePlayer(player);
+                        break;
+
+                    case NPC npc:
+                        CaptureNPC(npc);
+                        break;
+                }
             }
-            finally
-            {
-                spriteBatch.End();
-                player.immuneAlpha = immuneAlpha;
-            }
+        }
+        finally
+        {
+            capturing = false;
+            Main.screenPosition = screen;
+            Main.GameViewMatrix = view;
         }
     }
 
-    private static void SpreadMask(GraphicsDevice device)
+    private static void BeginCapture(SpriteSortMode mode)
+        => Main.spriteBatch.Begin(mode, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, ClippedToSlot, null, Main.GameViewMatrix.TransformationMatrix);
+
+    private static void CapturePlayer(Player player)
+    {
+        // The sprite blinks while immune. A coat shouldn't, as whatever laid it is likely what's hitting it.
+        int immuneAlpha = player.immuneAlpha;
+        player.immuneAlpha = 0;
+
+        BeginCapture(SpriteSortMode.Immediate);
+
+        try
+        {
+            Vector2 position = player.position + new Vector2(0f, player.gfxOffY);
+
+            Main.PlayerRenderer.DrawPlayer(Main.Camera, player, position, player.fullRotation, player.fullRotationOrigin, CAPTURE_SHADOW);
+        }
+        finally
+        {
+            Main.spriteBatch.End();
+            player.immuneAlpha = immuneAlpha;
+        }
+    }
+
+    private static void CaptureNPC(NPC npc)
+    {
+        TerrarianModel? model = TerrarianModel.Of(npc);
+        int alpha = npc.alpha;
+
+        // The pass adds this around every NPC it draws, and so does this. Alpha only hides the body from itself.
+        npc.position += npc.netOffset;
+        npc.alpha = 0;
+
+        BeginCapture(model is null ? SpriteSortMode.Deferred : SpriteSortMode.Immediate);
+
+        try
+        {
+            if (model is not null)
+            {
+                model.DrawInto(CAPTURE_SHADOW);
+            }
+            else
+            {
+                Main.instance.DrawNPCCheckAlt(npc);
+                Main.instance.DrawNPCDirect(Main.spriteBatch, npc, npc.behindTiles, Main.screenPosition);
+            }
+        }
+        finally
+        {
+            Main.spriteBatch.End();
+            npc.alpha = alpha;
+            npc.position -= npc.netOffset;
+        }
+    }
+
+    /// <summary>Copies each coat its body's silhouette, spread as far as that residue reaches.</summary>
+    private static void SpreadMasks(GraphicsDevice device)
     {
         SpriteBatch spriteBatch = Main.spriteBatch;
 
@@ -273,13 +484,21 @@ internal sealed class BodyCanvas : ModSystem
 
         foreach (Body body in bodies)
         {
-            device.ScissorRectangle = body.Slot;
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, ClippedToSlot);
+            for (int i = body.FirstCoat; i < body.FirstCoat + body.CoatCount; i++)
+            {
+                PlacedCoat coat = placed[i];
 
-            foreach (Point offset in MaskReach)
-                spriteBatch.Draw(silhouette, new Vector2(body.Slot.X + offset.X, body.Slot.Y + offset.Y * body.Player.gravDir), body.Slot, Color.White);
+                device.ScissorRectangle = coat.Slot;
+                spriteBatch.Begin(SpriteSortMode.Deferred, Accumulate, SamplerState.PointClamp, DepthStencilState.None, ClippedToSlot);
 
-            spriteBatch.End();
+                foreach (Point offset in coat.Coat.Residue.BodyReach)
+                {
+                    for (int layer = 0; layer < MASK_LAYERS; layer++)
+                        spriteBatch.Draw(silhouette, new Vector2(coat.Slot.X + offset.X, coat.Slot.Y + offset.Y * body.GravDir), body.Slot, Color.White);
+                }
+
+                spriteBatch.End();
+            }
         }
     }
 
@@ -291,7 +510,10 @@ internal sealed class BodyCanvas : ModSystem
         vertexCount = 0;
 
         foreach (Body body in bodies)
-            WriteCells(in body);
+        {
+            for (int i = body.FirstCoat; i < body.FirstCoat + body.CoatCount; i++)
+                WriteCells(in body, placed[i]);
+        }
 
         device.SetRenderTargets(canvas, light);
         device.Clear(Color.Transparent);
@@ -312,60 +534,56 @@ internal sealed class BodyCanvas : ModSystem
         }
     }
 
-    private static void WriteCells(in Body body)
+    /// <summary>
+    ///     Fills the body from the feet up, as far as the coat's fill says. Every cell of the slot's width is stamped, because
+    ///     the silhouette is what shapes it from side to side.
+    /// </summary>
+    private static void WriteCells(in Body body, PlacedCoat placedCoat)
     {
-        if (ResidueSystem.Get<BurnedResidue>() is not { } burn)
-            return;
+        BodyCoat coat = placedCoat.Coat;
+        int cell = Math.Clamp(body.Height / CELLS_TALL, MIN_CELL, MAX_CELL);
+        int reach = placedCoat.Slot.Width / 2 / cell;
 
         Vector2 worldMiddle = body.Anchor.ToVector2() + Main.screenPosition;
-        Vector2 slotMiddle = body.Slot.Center.ToVector2();
+        Vector2 slotMiddle = placedCoat.Slot.Center.ToVector2();
 
-        for (int x = -CELL_REACH; x < CELL_REACH; x++)
+        for (int x = -reach; x < reach; x++)
         {
-            for (int y = -CELL_REACH; y < CELL_REACH; y++)
+            for (int y = -reach; y < reach; y++)
             {
-                var offset = new Vector2((x + 0.5f) * CELL_SIZE, (y + 0.5f) * CELL_SIZE);
+                var offset = new Vector2((x + 0.5f) * cell, (y + 0.5f) * cell);
 
-                // Measured from its feet, wherever gravity has put them.
-                Vector2 fromCentre = offset * new Vector2(1f, body.Player.gravDir);
+                // 0 at the top of the sprite and 1 at its feet, wherever gravity has put them.
+                float height = (offset.Y * body.GravDir + body.Height * 0.5f) / body.Height;
+                float rise = (height - (1f - coat.Fill)) / coat.Fill;
 
-                if (BodyFireTest.CoverageAt(fromCentre) is not (> 0f and var coverage))
+                if (rise <= 0f)
                     continue;
-
-                // The ground's own encoding, so the shader reads the same channels off it.
-                var instance = new ResidueInstance
-                {
-                    Life = 1f,
-                    MaxLife = 1f,
-                    Intensity = coverage,
-                    Level = BodyFireTest.HeatAt(fromCentre),
-                    Variant = BurnProfile.Standard.Id,
-                };
 
                 Vector2 world = worldMiddle + offset;
                 Color lit = Lighting.GetColor((int)(world.X / 16f), (int)(world.Y / 16f));
 
-                WriteQuad(slotMiddle + offset, burn.EncodeCanvas(in instance), lit);
+                WriteQuad(slotMiddle + offset, cell, coat.Residue.EncodeBody(MathF.Min(rise, 1f), coat.Age), lit);
             }
         }
     }
 
-    private static void WriteQuad(Vector2 centre, TileCanvasSample sample, Color lit)
+    private static void WriteQuad(Vector2 centre, int cell, TileCanvasSample sample, Color lit)
     {
         EnsureCapacity(vertexCount / 4 + 1);
 
         var field = new Color(sample.Coverage, sample.Data.X, sample.Data.Y, sample.Data.Z);
         var weighted = new Color(1f, lit.R / 255f, lit.G / 255f, lit.B / 255f);
 
-        vertices[vertexCount++] = Corner(centre, -1f, -1f, field, weighted);
-        vertices[vertexCount++] = Corner(centre, 1f, -1f, field, weighted);
-        vertices[vertexCount++] = Corner(centre, 1f, 1f, field, weighted);
-        vertices[vertexCount++] = Corner(centre, -1f, 1f, field, weighted);
+        vertices[vertexCount++] = Corner(centre, cell, -1f, -1f, field, weighted);
+        vertices[vertexCount++] = Corner(centre, cell, 1f, -1f, field, weighted);
+        vertices[vertexCount++] = Corner(centre, cell, 1f, 1f, field, weighted);
+        vertices[vertexCount++] = Corner(centre, cell, -1f, 1f, field, weighted);
     }
 
-    private static FieldStampVertex Corner(Vector2 centre, float x, float y, Color field, Color weighted) => new()
+    private static FieldStampVertex Corner(Vector2 centre, int cell, float x, float y, Color field, Color weighted) => new()
     {
-        Position = new Vector3(centre.X + x * KERNEL_RADIUS * CELL_SIZE, centre.Y + y * KERNEL_RADIUS * CELL_SIZE, 0f),
+        Position = new Vector3(centre.X + x * KERNEL_RADIUS * cell, centre.Y + y * KERNEL_RADIUS * cell, 0f),
         Field = field,
         Attributes = weighted,
         TextureCoordinate = new Vector2(x * KERNEL_RADIUS, y * KERNEL_RADIUS),
@@ -398,60 +616,58 @@ internal sealed class BodyCanvas : ModSystem
         }
     }
 
-    private static void CompositeOver(Player player)
+    /// <summary>Draws a body's coats over its sprite, oldest first. Runs with no batch open.</summary>
+    private static void CompositeCoats(in Body body)
     {
-        foreach (Body body in bodies)
+        try
         {
-            if (body.Player != player)
-                continue;
-
-            try
-            {
-                Composite(in body);
-            }
-            catch (Exception exception)
-            {
-                ResidueSystem.ReportFailure(exception);
-            }
-
-            return;
+            for (int i = body.FirstCoat; i < body.FirstCoat + body.CoatCount; i++)
+                Composite(in body, placed[i]);
+        }
+        catch (Exception exception)
+        {
+            ResidueSystem.ReportFailure(exception);
         }
     }
 
-    /// <summary>Draws a body's slot over its sprite. Runs after the player's own batch has ended.</summary>
-    private static void Composite(in Body body)
+    private static void Composite(in Body body, PlacedCoat placedCoat)
     {
-        if (mask is null || canvas is null || light is null
-            || ResidueSystem.Get<BurnedResidue>() is not { } burn
-            || burn.Shader is not { Value: { } effect })
+        IResidue residue = placedCoat.Coat.Residue;
+
+        if (mask is null || canvas is null || light is null || residue.Shader is not { Value: { } effect })
             return;
 
-        var slotOrigin = new Vector2(body.Slot.X, body.Slot.Y);
-        Matrix bodyToAtlas = Matrix.CreateTranslation(slotOrigin.X, slotOrigin.Y, 0f);
+        Rectangle slot = placedCoat.Slot;
+
+        // Even, so the shading grid stays on the same pixels.
+        var noise = new Vector2(body.Entity.whoAmI * 58 % 512, body.Entity.whoAmI * 34 % 512);
+        var slotOrigin = new Vector2(slot.X, slot.Y);
+        Matrix bodyToAtlas = Matrix.CreateTranslation(slotOrigin.X - noise.X, slotOrigin.Y - noise.Y, 0f);
 
         effect.Parameters["Time"]?.SetValue((float)Main.timeForVisualEffects / 60f);
         effect.Parameters["CanvasScreenSize"]?.SetValue(new Vector2(ATLAS_SIZE));
         effect.Parameters["WorldToScreen"]?.SetValue(bodyToAtlas);
         effect.Parameters["ScreenToWorld"]?.SetValue(Matrix.Invert(bodyToAtlas));
-        effect.Parameters["MaskOrigin"]?.SetValue(-slotOrigin);
+        effect.Parameters["MaskOrigin"]?.SetValue(noise - slotOrigin);
         effect.Parameters["MaskTexel"]?.SetValue(new Vector2(1f / ATLAS_SIZE));
         effect.Parameters["CellSize"]?.SetValue(2f);
+        effect.Parameters["SurfaceLip"]?.SetValue(0f);
         effect.Parameters["uCanvasLight"]?.SetValue(light);
         effect.Parameters["uMaskTex"]?.SetValue(mask);
 
-        burn.ApplyShaderParameters(effect);
-        BodyFireTest.ApplyLook(effect, body.Player);
+        residue.ApplyBodyParameters(effect, body.GravDir, body.Height);
 
-        var destination = new Rectangle(body.Anchor.X - SLOT_SIZE / 2, body.Anchor.Y - SLOT_SIZE / 2, SLOT_SIZE, SLOT_SIZE);
+        var destination = new Rectangle(body.Anchor.X - slot.Width / 2, body.Anchor.Y - slot.Height / 2, slot.Width, slot.Height);
+        var source = new Rectangle(slot.X / CANVAS_SCALE, slot.Y / CANVAS_SCALE, slot.Width / CANVAS_SCALE, slot.Height / CANVAS_SCALE);
         SpriteBatch spriteBatch = Main.spriteBatch;
 
-        // The same matrix the player was just drawn under, which carries the zoom and any flip for reversed gravity.
-        spriteBatch.Begin(SpriteSortMode.Immediate, burn.BlendState, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+        // The same matrix the body was just drawn under, which carries the zoom and any flip for reversed gravity.
+        spriteBatch.Begin(SpriteSortMode.Immediate, residue.BlendState, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
         try
         {
             effect.CurrentTechnique.Passes[0].Apply();
-            spriteBatch.Draw(canvas, destination, body.Slot, Color.White);
+            spriteBatch.Draw(canvas, destination, source, Color.White);
         }
         finally
         {

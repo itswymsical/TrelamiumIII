@@ -116,4 +116,21 @@ public interface IResidue
 
     /// <summary>Sets the look parameters, after the canvas has set the frame ones.</summary>
     void ApplyShaderParameters(Effect effect);
+
+    /// <summary>Where a body's silhouette is copied for this residue's mask, in pixels with up negative: how far it stands proud of the outline.</summary>
+    Point[] BodyReach { get; }
+
+    /// <summary>One cell's sample on a body's canvas. See <see cref="Bodies.BodyCanvas" />.</summary>
+    /// <param name="rise">How far the cell is from the top edge of the coat, 0, to the feet, 1.</param>
+    /// <param name="age">Ticks the coat has been on.</param>
+    TileCanvasSample EncodeBody(float rise, int age);
+
+    /// <summary>Sets the look parameters for a body, which is far smaller than what the ground's are scaled for.</summary>
+    /// <param name="gravDir">-1 for a body with its feet on the ceiling, whose up is the other way.</param>
+    /// <param name="height">Its sprite's height in pixels, for look details that shouldn't shrink to static on something large.</param>
+    void ApplyBodyParameters(Effect effect, float gravDir, float height);
+
+    /// <summary>Runs every tick this residue is on a body, for its light and particles.</summary>
+    /// <param name="fill">How far up the body it reaches, 0..1.</param>
+    void UpdateBody(Entity body, float fill);
 }

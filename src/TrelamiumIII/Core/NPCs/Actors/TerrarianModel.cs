@@ -144,6 +144,21 @@ public sealed class TerrarianModel
             Main.GameViewMatrix.TransformationMatrix);
     }
 
+    /// <summary>
+    /// Draws the backing player into a batch the caller has open, for a capture rather than the screen. Unlike
+    /// <see cref="Draw"/> it leaves the batch alone, and <paramref name="shadow"/> lets the caller decide what comes along:
+    /// see <see cref="Residues.Bodies.BodyCanvas"/>.
+    /// </summary>
+    public void DrawInto(float shadow)
+    {
+        Puppet.SyncTransform();
+
+        Main.PlayerRenderer.DrawPlayer(
+            Main.Camera, Player, Player.position,
+            Player.fullRotation, Player.fullRotationOrigin,
+            shadow, scale: 1f);
+    }
+
     /// <summary>Hitbox and swing overlays while <see cref="PuppetDebug.ShowHitboxes"/> is on. World space, batch active.</summary>
     public void DrawDebug(SpriteBatch spriteBatch)
     {
