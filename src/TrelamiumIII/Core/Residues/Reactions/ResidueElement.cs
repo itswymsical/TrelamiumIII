@@ -23,6 +23,9 @@ public enum ResidueElement : byte
     Cold = 1 << 3,
 
     Corrosive = 1 << 4,
+
+    /// <summary>Crude oil, and anything else that blows when heat reaches it.</summary>
+    Volatile = 1 << 5,
 }
 
 public static class ResidueElements

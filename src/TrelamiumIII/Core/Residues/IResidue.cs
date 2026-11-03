@@ -120,10 +120,24 @@ public interface IResidue
     /// <summary>Where a body's silhouette is copied for this residue's mask, in pixels with up negative: how far it stands proud of the outline.</summary>
     Point[] BodyReach { get; }
 
+    /// <summary>How this residue moves over a body. See <see cref="Bodies.BodyGrid" />.</summary>
+    Bodies.BodyFlow BodyFlow { get; }
+
+    /// <summary>What comes off it while it's on a body, or null for nothing.</summary>
+    Bodies.BodyShed? BodyShed { get; }
+
+    /// <summary>
+    ///     What rubs off this mark onto a body touching it, or null for nothing. It need not be this residue, as magma leaves
+    ///     a body burning rather than coated in magma.
+    /// </summary>
+    /// <param name="amount">What each tick of touching it adds to the cells it touches, 0..1.</param>
+    IResidue? BodyPickup(in ResidueInstance instance, out float amount);
+
     /// <summary>One cell's sample on a body's canvas. See <see cref="Bodies.BodyCanvas" />.</summary>
-    /// <param name="rise">How far the cell is from the top edge of the coat, 0, to the feet, 1.</param>
+    /// <param name="amount">How much of it this cell has, 0..1.</param>
     /// <param name="age">Ticks the coat has been on.</param>
-    TileCanvasSample EncodeBody(float rise, int age);
+    /// <param name="tint">The coat's own colour, or transparent for the palette as authored.</param>
+    TileCanvasSample EncodeBody(float amount, int age, Color tint);
 
     /// <summary>Sets the look parameters for a body, which is far smaller than what the ground's are scaled for.</summary>
     /// <param name="gravDir">-1 for a body with its feet on the ceiling, whose up is the other way.</param>

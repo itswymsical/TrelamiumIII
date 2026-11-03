@@ -56,7 +56,7 @@ public abstract class ResidueRule
         if (ResidueSystem.TryGet<T>(i, j, out ResidueInstance existing) && existing.Fade > 0.5f)
             return true;
 
-        return ResidueSystem.Apply<T>(i, j, intensity, duration, sync: false, variant: variant, tint: tint);
+        return ResidueSystem.Apply<T>(i, j, intensity, duration, origin: ResidueOrigin.Local, variant: variant, tint: tint);
     }
 
     /// <summary>

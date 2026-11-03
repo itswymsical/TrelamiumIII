@@ -46,6 +46,18 @@ public sealed class LiquidResidue : FilmResidue
 
     public override int FadeOutTicks => 60;
 
+    /// <summary>Runs straight off.</summary>
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0f, Fall: 0.12f, Creep: 0.03f, Sag: 0.07f, Decay: 0.005f, Reach: 0.3f);
+
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.3f, Radius: 3.5f, Life: 24f, Launch: new Vector2(0f, 0.3f), Scatter: 0.2f, Pull: new Vector2(0f, 0.16f), Drag: 0.99f, Cling: 0.2f);
+
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Strength * 0.04f;
+
+        return instance.Variant == LiquidID.Water ? this : null;
+    }
+
     /// <summary>Water soaks; anything else is only a stain. <see cref="ResidueInstance.Variant" /> holds which liquid left it.</summary>
     public override ResidueElement ElementsOf(in ResidueInstance instance)
         => instance.Variant == LiquidID.Water ? ResidueElement.Water : ResidueElement.None;
@@ -83,10 +95,10 @@ public sealed class LiquidResidue : FilmResidue
     {
         Tile liquid = Main.tile[liquidX, liquidY];
 
-        return ResidueSystem.Apply<LiquidResidue>(i, j, intensity, sync: false, variant: (byte)liquid.LiquidType, tint: TintOf(liquidX, liquidY, liquid.LiquidType));
+        return ResidueSystem.Apply<LiquidResidue>(i, j, intensity, origin: ResidueOrigin.Local, variant: (byte)liquid.LiquidType, tint: TintOf(liquidX, liquidY, liquid.LiquidType));
     }
 
     /// <summary>Leaves (<paramref name="i" />, <paramref name="j" />) soaked with water, whether or not any is touching it.</summary>
     public static bool Soak(int i, int j, float intensity = 1f)
-        => ResidueSystem.Apply<LiquidResidue>(i, j, intensity, sync: false, variant: (byte)LiquidID.Water, tint: TintOf(i, j, LiquidID.Water));
+        => ResidueSystem.Apply<LiquidResidue>(i, j, intensity, origin: ResidueOrigin.Shared, variant: (byte)LiquidID.Water, tint: TintOf(i, j, LiquidID.Water));
 }

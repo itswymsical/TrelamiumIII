@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria.DataStructures;
 using TrelamiumIII.Core.Gas;
+using TrelamiumIII.Core.Residues.Bodies;
 
 namespace TrelamiumIII.Common.ChemicalClass;
 
@@ -22,6 +23,12 @@ public sealed class ChemicalScope
 /// <remarks>Built where the projectile spawns, so other clients see null; only the owner's machine applies it anyway.</remarks>
 public sealed class ChemicalPayload
 {
+    /// <summary>The share of a body's height a hit lands on, around where it landed.</summary>
+    private const float HIT_RADIUS = 0.3f;
+
+    /// <summary>What the middle of that gets, 0..1.</summary>
+    private const float HIT_AMOUNT = 0.9f;
+
     public IChemicalSource Source { get; }
 
     /// <summary>The releasing player's index, or -1.</summary>
@@ -155,6 +162,9 @@ public sealed class ChemicalPayload
     {
         if (!Apply(target, ExposureKind.Hit, 1f, medium) || IsDerived)
             return;
+
+        if (BodyResidues.Of(Source.ChemicalType) is { } residue)
+            BodyCoatNet.Splash(target, residue, delivery?.Center ?? target.Center, HIT_RADIUS, HIT_AMOUNT);
 
         foreach (ChemicalModifier modifier in Modifiers)
             modifier.OnHit(target, this, medium);

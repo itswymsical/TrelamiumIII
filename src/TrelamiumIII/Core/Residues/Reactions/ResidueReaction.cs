@@ -27,9 +27,8 @@ public readonly record struct ReactionPair(Point Tile, ResidueReactant First, Re
 ///         contest: a soaked tile is harder to light than a burning one is to soak.
 ///     </para>
 ///     <para>
-///         Nothing is synced. Every machine runs the same reactions on the marks it has, the same way each lays its own
-///         residue, so only a change to the world itself needs an authority: break tiles and move liquid with
-///         <see cref="NetmodeID.MultiplayerClient" /> left out.
+///         Only a server or a single player runs these, and whatever they lay, spend or weaken goes out to clients from
+///         there. A reaction can change the world directly as long as it syncs that itself, as breaking tiles does.
 ///     </para>
 /// </remarks>
 public abstract class ResidueReaction

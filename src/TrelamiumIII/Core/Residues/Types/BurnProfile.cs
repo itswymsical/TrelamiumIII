@@ -117,6 +117,17 @@ public sealed record BurnProfile
         Duration = 10f * 60f,
     });
 
+    /// <summary>Crude that caught: at full heat straight away and soon over. <see cref="Reactions.Fuses" /> runs it along the oil and sets it off.</summary>
+    public static readonly BurnProfile Fuse = Register(new BurnProfile
+    {
+        Ignition = 0.95f,
+        HeatGain = 0.04f,
+        HeatDecay = 0.02f,
+        FuelFraction = 0.6f,
+        CharRate = 0.3f,
+        Duration = 4f * 60f,
+    });
+
     /// <summary>A fire that's out: no heat left and none to come, only its char fading. See <see cref="BurnedResidue" />.</summary>
     public static readonly BurnProfile Doused = Register(new BurnProfile
     {

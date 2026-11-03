@@ -81,7 +81,8 @@ public sealed class MudField : ChemicalGasField
 
         float intensity = MathHelper.Clamp(density / Math.Max(TileFieldThreshold, 0.01f) * 0.5f, 0.3f, 1f);
 
-        ResidueSystem.Apply<MuddiedResidue>(tileX, tileY, intensity, owner: owner, sync: false);
+        if (ChemicalPayload.IsAuthority(owner))
+            ResidueSystem.Apply<MuddiedResidue>(tileX, tileY, intensity, owner: owner);
     }
     //protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     //{

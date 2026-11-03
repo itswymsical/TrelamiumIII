@@ -41,8 +41,8 @@ public sealed record NPCTrail(Type Residue)
 ///         assigned by <c>SetStaticDefaults</c>, so register those from there or later.
 ///     </para>
 ///     <para>
-///         Nothing is synced. Landing and dying are simulated on every machine already, so each
-///         lays its own marks.
+///         Landing and dying are simulated on every machine, so the marks are
+///         <see cref="ResidueOrigin.Shared" />: the server's call lays them for everyone.
 ///     </para>
 /// </remarks>
 public sealed class NPCTrails : GlobalNPC

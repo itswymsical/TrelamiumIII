@@ -227,7 +227,7 @@ internal sealed class ResidueTarget(IResidue residue) : BenchTarget
 
     public override string ClearTip => "Remove every residue in the world";
 
-    public override void Test() => ResidueSystem.ApplyCircle(residue, Main.LocalPlayer.Bottom + new Vector2(0f, 8f), TestRadius, duration: 60f * 60f);
+    public override void Test() => ResidueSystem.ApplyCircle(residue, Main.LocalPlayer.Bottom + new Vector2(0f, 8f), TestRadius, duration: 60f * 60f, origin: ResidueOrigin.Owned);
 
     public override void ClearTest() => ResidueSystem.ClearAll();
 

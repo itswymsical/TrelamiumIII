@@ -1,4 +1,6 @@
 using Terraria.Audio;
+using TrelamiumIII.Core.Gas.Layers;
+using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Core.Residues.Reactions;
@@ -31,6 +33,40 @@ public sealed class Combustion : ResidueReaction
         int owner = pair.Second.Instance.Owner != ResidueInstance.NoOwner ? pair.Second.Instance.Owner : pair.First.Instance.Owner;
 
         BurnedResidue.Ignite(pair.Tile.X, pair.Tile.Y, BurnProfile.Combustion, MathHelper.Clamp(pair.First.Potency, MIN_FIRE, 1f), owner);
+
+        ReactionEffects.Flare(pair.Tile);
+
+        return true;
+    }
+}
+
+/// <summary>
+///     Crude goes up when heat reaches it, whichever got there first: the oil is spent into a fire that runs along any oil next
+///     to it, and the tile blows a moment later. See <see cref="Fuses" />.
+/// </summary>
+public sealed class Detonation : ResidueReaction
+{
+    /// <summary>Heat that sets it off. Below this it waits.</summary>
+    private const float IGNITION_HEAT = 0.1f;
+
+    /// <summary>Weakest fire it starts, for the same reason gel has one. See <see cref="Combustion" />.</summary>
+    private const float MIN_FIRE = 0.75f;
+
+    public override ResidueElement First => ResidueElement.Volatile;
+
+    public override ResidueElement Second => ResidueElement.Heat;
+
+    public override bool React(in ReactionPair pair)
+    {
+        if (pair.Second.Potency < IGNITION_HEAT)
+            return false;
+
+        Spend(in pair, pair.First);
+
+        int owner = pair.Second.Instance.Owner != ResidueInstance.NoOwner ? pair.Second.Instance.Owner : pair.First.Instance.Owner;
+
+        BurnedResidue.Ignite(pair.Tile.X, pair.Tile.Y, BurnProfile.Fuse, MathHelper.Clamp(pair.First.Potency, MIN_FIRE, 1f), owner);
+        Fuses.Light(pair.Tile, pair.First.Potency, owner, breaksTile: pair.First.Instance.Variant != CrudeOilResidue.SEEPED);
 
         ReactionEffects.Flare(pair.Tile);
 
@@ -109,9 +145,33 @@ public sealed class Melt : ResidueReaction
     }
 }
 
+/// <summary>What a server tells clients to show, as reactions only run there.</summary>
+internal enum ReactionEffect : byte
+{
+    Hiss,
+    Flare,
+    Blast,
+}
+
 /// <summary>What reactions look and sound like, and the one thing they do to the world's liquid.</summary>
 internal static class ReactionEffects
 {
+    public static void Play(ReactionEffect effect, Point tile)
+    {
+        switch (effect)
+        {
+            case ReactionEffect.Hiss:
+                Hiss(tile);
+                break;
+            case ReactionEffect.Flare:
+                Flare(tile);
+                break;
+            case ReactionEffect.Blast:
+                Blast(tile);
+                break;
+        }
+    }
+
     /// <summary>Ticks between hisses, or painting a patch would stack one per tile.</summary>
     private const uint SOUND_GAP = 18;
 
@@ -119,10 +179,24 @@ internal static class ReactionEffects
 
     private const int FLARE_SPARKS = 6;
 
+    /// <summary>Ticks between blast sounds, shorter than for a hiss, and kept apart from it so the hiss of a fuse can't drown them out.</summary>
+    private const uint BLAST_SOUND_GAP = 10;
+
+    private const int BLAST_FLAMES = 16;
+
+    private const int BLAST_SMOKE = 14;
+
+    private const int BLAST_SPARKS = 10;
+
     private static uint lastSound;
+
+    private static uint lastBlastSound;
 
     public static void Hiss(Point tile)
     {
+        if (ResidueSystem.ShareEffect(ReactionEffect.Hiss, tile))
+            return;
+
         Vector2 center = tile.ToWorldCoordinates();
 
         if (!Visible(center))
@@ -134,6 +208,9 @@ internal static class ReactionEffects
 
     public static void Flare(Point tile)
     {
+        if (ResidueSystem.ShareEffect(ReactionEffect.Flare, tile))
+            return;
+
         Vector2 center = tile.ToWorldCoordinates();
 
         if (!Visible(center))
@@ -154,6 +231,50 @@ internal static class ReactionEffects
         }
 
         PlayOnce(SoundID.Item20, center);
+    }
+
+    public static void Blast(Point tile)
+    {
+        if (ResidueSystem.ShareEffect(ReactionEffect.Blast, tile))
+            return;
+
+        Vector2 center = tile.ToWorldCoordinates();
+
+        if (!Visible(center))
+            return;
+
+        // The fire's own field, with no owner, so it's only for show and lays nothing where it lands.
+        if (FieldSystem.GetLayer<ThermiteFlaskField>() is { } fire)
+        {
+            for (int i = 0; i < BLAST_FLAMES; i++)
+            {
+                Vector2 velocity = Main.rand.NextVector2Circular(5.5f, 5.5f) - Vector2.UnitY * 1.6f;
+
+                fire.SpawnClingNode(center + velocity * 2f, velocity, Main.rand.NextFloat(10f, 18f), Main.rand.NextFloat(18f, 32f));
+            }
+        }
+
+        for (int i = 0; i < BLAST_SMOKE; i++)
+        {
+            Dust smoke = Dust.NewDustPerfect(center + Main.rand.NextVector2Circular(10f, 10f), DustID.Smoke, Main.rand.NextVector2Circular(2.6f, 2.6f) - Vector2.UnitY, 100, default, Main.rand.NextFloat(1.1f, 1.8f));
+
+            smoke.noGravity = true;
+        }
+
+        for (int i = 0; i < BLAST_SPARKS; i++)
+        {
+            Dust spark = Dust.NewDustPerfect(center + Main.rand.NextVector2Circular(8f, 8f), DustID.Torch, Main.rand.NextVector2Circular(5f, 5f) - Vector2.UnitY * 2f, 0, default, Main.rand.NextFloat(1.2f, 2f));
+
+            spark.noGravity = true;
+        }
+
+        Lighting.AddLight(center, 1.4f, 0.75f, 0.2f);
+
+        if (Main.GameUpdateCount - lastBlastSound < BLAST_SOUND_GAP)
+            return;
+
+        lastBlastSound = Main.GameUpdateCount;
+        SoundEngine.PlaySound(SoundID.Item14, center);
     }
 
     public static void Steam(Vector2 position, int count)

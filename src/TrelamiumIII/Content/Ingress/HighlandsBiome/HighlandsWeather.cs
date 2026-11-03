@@ -453,7 +453,7 @@ public sealed class SleetParticle : Particle
 
         // The film reads as a pale block over the needles, so a living tree's crown stays clear of it.
         if (WorldGen.InWorld(hit.X, hit.Y, 10) && WorldGen.SolidTile(hit.X, hit.Y) && !HighlandLeafTile.IsLeaf(Main.tile[hit.X, hit.Y]))
-            ResidueSystem.Apply<FrostResidue>(hit.X, hit.Y, Main.rand.NextFloat(FreezeMin, FreezeMax), FreezeTicks, sync: false);
+            ResidueSystem.Apply<FrostResidue>(hit.X, hit.Y, Main.rand.NextFloat(FreezeMin, FreezeMax), FreezeTicks, origin: ResidueOrigin.Local);
 
         Kill();
     }

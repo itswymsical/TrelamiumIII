@@ -45,6 +45,8 @@ public sealed class AcidResidue : Residue
 
     private const int BODY_BUBBLE_ODDS = 12;
 
+    private const float BODY_PICKUP = 0.1f;
+
     private const byte STAGE_EATING = 0;
 
     private const byte STAGE_STOOD_UP_TO_IT = 1;
@@ -112,7 +114,7 @@ public sealed class AcidResidue : Residue
 
         // Synced, unlike a splash: only the machine that broke the tile knows it happened on this tick.
         if (drip >= WEAKEST_DRIP)
-            Corrode(instance.X, instance.Y + 1, drip, instance.Owner, sync: true);
+            Corrode(instance.X, instance.Y + 1, drip, instance.Owner);
     }
 
     private static void Fizz(in ResidueInstance instance, float film)
@@ -224,14 +226,26 @@ public sealed class AcidResidue : Residue
         effect.Parameters["DripLength"]?.SetValue(9f);
     }
 
+    /// <summary>Runs down, and goes on running after it's spread.</summary>
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0f, Fall: 0.05f, Creep: 0.02f, Sag: 0.03f, Decay: 0.003f, Reach: 0.25f);
+
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.08f, Radius: 4.5f, Life: 34f, Launch: new Vector2(0f, 0.1f), Scatter: 0.1f, Pull: new Vector2(0f, 0.09f), Drag: 0.99f, Cling: 0.2f);
+
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Intensity * Film(in instance) * BODY_PICKUP;
+
+        return amount > 0f ? this : null;
+    }
+
     /// <summary>A wet film that slowly pits what it's on, stopping short of eating it through.</summary>
-    public override TileCanvasSample EncodeBody(float rise, int age)
+    public override TileCanvasSample EncodeBody(float amount, int age, Color tint)
     {
         var instance = new ResidueInstance
         {
             Life = 1f,
             MaxLife = 1f,
-            Intensity = MathHelper.Clamp(rise * 3f, 0f, 1f),
+            Intensity = MathHelper.Clamp(amount * 3f, 0f, 1f),
             Level = MathF.Min(age / EATING_TICKS, BODY_MOST_EATEN),
         };
 
@@ -288,7 +302,7 @@ public sealed class AcidResidue : Residue
         if (film < HARMFUL_FILM || npc.friendly || npc.noTileCollide || !FirstContact(npc))
             return;
 
-        npc.AddBuff(ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(80f, 220f, film));
+        ContactDebuff(npc, ModContent.BuffType<AcidDebuff>(), (int)MathHelper.Lerp(80f, 220f, film));
     }
 
     public override void OnLiquidContact(ref ResidueInstance instance, int liquidType, int amount)
@@ -307,8 +321,8 @@ public sealed class AcidResidue : Residue
     }
 
     /// <summary>Lays acid on one tile.</summary>
-    public static bool Corrode(int i, int j, float intensity = 1f, int owner = ResidueInstance.NoOwner, bool sync = false)
-        => ResidueSystem.Apply<AcidResidue>(i, j, intensity, owner: owner, sync: sync);
+    public static bool Corrode(int i, int j, float intensity = 1f, int owner = ResidueInstance.NoOwner)
+        => ResidueSystem.Apply<AcidResidue>(i, j, intensity, owner: owner, origin: ResidueOrigin.Shared);
 
     /// <summary>Splashes acid over everything solid within <paramref name="radius" /> pixels, thinning toward the edge.</summary>
     public static void Splash(Vector2 center, float radius, float intensity = 1f, int owner = ResidueInstance.NoOwner)

@@ -5,9 +5,36 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MonoMod.Cil;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Core.Residues.Bodies;
 using TrelamiumIII.Core.Residues.Reactions;
 
 namespace TrelamiumIII.Core.Residues;
+
+/// <summary>Where a call to lay a mark comes from, which decides who is in charge of the mark.</summary>
+/// <remarks>
+///     Marks have stats and collision and affect anything that touches them, so a server is in charge of all but
+///     <see cref="Local" /> ones: it runs their reactions and spreading, and clients take its word for what's on the ground.
+/// </remarks>
+public enum ResidueOrigin : byte
+{
+    /// <summary>
+    ///     Only this machine knows it happened: a player's wand, a hit only its owner's client runs, gas whose owner decides
+    ///     where it pools. A client lays it at once and tells the server, which takes it from there.
+    /// </summary>
+    Owned,
+
+    /// <summary>
+    ///     Every machine runs the code that asked: a projectile landing, an NPC's AI, a reaction. Only a server's call counts,
+    ///     and a client's does nothing, because it's about to hear the result.
+    /// </summary>
+    Shared,
+
+    /// <summary>
+    ///     Each machine lays its own and nothing is sent: a rule deciding from world state, which lands the same everywhere,
+    ///     or a weather particle that only exists on one client.
+    /// </summary>
+    Local,
+}
 
 /// <summary>
 ///     Owns every <see cref="IResidue" />, the batch of tiles each one is laid on, and the
@@ -18,6 +45,11 @@ namespace TrelamiumIII.Core.Residues;
 ///         Storage is one flat dictionary per residue rather than a chunk tree: contact testing is
 ///         an O(1) coordinate lookup, and drawing walks the batch once and culls, which a chunk index
 ///         would only help past the <see cref="IResidue.MaxTiles" /> ceiling.
+///     </para>
+///     <para>
+///         In multiplayer every machine still ticks the marks it has, which keeps them moving between packets and costs
+///         nothing to send, but only a server decides what's new or gone. Changes go out in one batch per residue at the end
+///         of the tick. See <see cref="ResidueOrigin" />.
 ///     </para>
 /// </remarks>
 public sealed class ResidueSystem : ModSystem
@@ -52,6 +84,12 @@ public sealed class ResidueSystem : ModSystem
         public ResidueCanvasSource? CanvasSource;
 
         public int NextSerial;
+
+        /// <summary>Marks to tell the other machines about at the end of the tick.</summary>
+        public readonly HashSet<Point> Changed = [];
+
+        /// <summary>Marks a server has to tell the clients are gone at the end of the tick.</summary>
+        public readonly HashSet<Point> Gone = [];
     }
 
     /// <summary>Canvases drawn from other sources, composited over every residue's.</summary>
@@ -63,7 +101,7 @@ public sealed class ResidueSystem : ModSystem
         Remove,
     }
 
-    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, bool Sync, byte Variant, ChemicalPayload? Payload, Color? Tint);
+    private readonly record struct PendingOp(PendingKind Kind, int Id, int X, int Y, float Intensity, float Duration, int Owner, ResidueOrigin Origin, byte Variant, ChemicalPayload? Payload, Color? Tint);
 
     private static readonly List<ResidueState> states = [];
 
@@ -92,6 +130,12 @@ public sealed class ResidueSystem : ModSystem
     public static IResidue? Get(Type type)
         => byType.TryGetValue(type, out ResidueState? state) ? state.Residue : null;
 
+    /// <summary>Where <paramref name="residue" /> falls in wire order, the same on every machine.</summary>
+    internal static int IdOf(IResidue residue) => byType[residue.GetType()].Id;
+
+    /// <summary>The residue at <paramref name="id" /> in wire order, or null for one that isn't there.</summary>
+    internal static IResidue? ById(int id) => id >= 0 && id < states.Count ? states[id].Residue : null;
+
     /// <summary>Every registered residue, in wire order. For tooling that enumerates them.</summary>
     public static IEnumerable<IResidue> All => states.Select(static state => state.Residue);
 
@@ -105,10 +149,7 @@ public sealed class ResidueSystem : ModSystem
     ///     Residues that treat their author differently from everyone else read it back off the
     ///     instance.
     /// </param>
-    /// <param name="sync">
-    ///     Whether to tell the other clients. Leave true for anything a player did; the packet
-    ///     handler passes false so a received application is not bounced back out again.
-    /// </param>
+    /// <param name="origin">Where this call comes from, which decides who is in charge of the mark. See <see cref="ResidueOrigin" />.</param>
     /// <param name="variant">
     ///     Which flavour of the residue to apply, for one that has more than one set of rules.
     ///     Meaningless to a residue that does not read
@@ -123,12 +164,12 @@ public sealed class ResidueSystem : ModSystem
     ///     Whether the application was accepted. A deferred one returns true on the promise, since
     ///     the residue has not been asked yet.
     /// </returns>
-    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = ResidueInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null) where T : class, IResidue
-        => byType.TryGetValue(typeof(T), out ResidueState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload, tint);
+    public static bool Apply<T>(int i, int j, float intensity = 1f, float duration = -1f, int owner = ResidueInstance.NoOwner, ResidueOrigin origin = ResidueOrigin.Owned, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null) where T : class, IResidue
+        => byType.TryGetValue(typeof(T), out ResidueState? state) && Apply(state, i, j, intensity, duration, owner, origin, variant, payload, tint);
 
     /// <inheritdoc cref="Apply{T}" />
-    public static bool Apply(IResidue residue, int i, int j, float intensity = 1f, float duration = -1f, int owner = ResidueInstance.NoOwner, bool sync = true, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null)
-        => byType.TryGetValue(residue.GetType(), out ResidueState? state) && Apply(state, i, j, intensity, duration, owner, sync, variant, payload, tint);
+    public static bool Apply(IResidue residue, int i, int j, float intensity = 1f, float duration = -1f, int owner = ResidueInstance.NoOwner, ResidueOrigin origin = ResidueOrigin.Owned, byte variant = 0, ChemicalPayload? payload = null, Color? tint = null)
+        => byType.TryGetValue(residue.GetType(), out ResidueState? state) && Apply(state, i, j, intensity, duration, owner, origin, variant, payload, tint);
 
     /// <summary>
     ///     Lays <typeparamref name="T" /> on every tile within <paramref name="radius" /> pixels of
@@ -136,20 +177,19 @@ public sealed class ResidueSystem : ModSystem
     ///     <paramref name="edge" /> times that at the rim.
     /// </summary>
     /// <remarks>
-    ///     Not synced unless asked. An area is nearly always laid by something every machine already
-    ///     simulates -- a projectile bursting, an NPC landing -- and a packet per tile to say so
-    ///     again is a lot of packets.
+    ///     <see cref="ResidueOrigin.Shared" /> unless asked, as an area is nearly always laid by something every machine
+    ///     simulates: a projectile bursting, an NPC landing.
     /// </remarks>
     /// <param name="edge">Intensity at the rim as a fraction of the centre's, 0..1.</param>
     /// <returns>Tiles that took it.</returns>
-    public static int ApplyCircle<T>(Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = ResidueInstance.NoOwner, bool sync = false, byte variant = 0, Color? tint = null) where T : class, IResidue
-        => byType.TryGetValue(typeof(T), out ResidueState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, sync, variant, tint) : 0;
+    public static int ApplyCircle<T>(Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = ResidueInstance.NoOwner, ResidueOrigin origin = ResidueOrigin.Shared, byte variant = 0, Color? tint = null) where T : class, IResidue
+        => byType.TryGetValue(typeof(T), out ResidueState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, origin, variant, tint) : 0;
 
     /// <inheritdoc cref="ApplyCircle{T}" />
-    public static int ApplyCircle(IResidue residue, Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = ResidueInstance.NoOwner, bool sync = false, byte variant = 0, Color? tint = null)
-        => byType.TryGetValue(residue.GetType(), out ResidueState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, sync, variant, tint) : 0;
+    public static int ApplyCircle(IResidue residue, Vector2 center, float radius, float intensity = 1f, float edge = 0.45f, float duration = -1f, int owner = ResidueInstance.NoOwner, ResidueOrigin origin = ResidueOrigin.Shared, byte variant = 0, Color? tint = null)
+        => byType.TryGetValue(residue.GetType(), out ResidueState? state) ? ApplyCircle(state, center, radius, intensity, edge, duration, owner, origin, variant, tint) : 0;
 
-    private static int ApplyCircle(ResidueState state, Vector2 center, float radius, float intensity, float edge, float duration, int owner, bool sync, byte variant, Color? tint)
+    private static int ApplyCircle(ResidueState state, Vector2 center, float radius, float intensity, float edge, float duration, int owner, ResidueOrigin origin, byte variant, Color? tint)
     {
         int reach = (int)MathF.Ceiling(radius / 16f);
         int centerX = (int)(center.X / 16f);
@@ -167,7 +207,7 @@ public sealed class ResidueSystem : ModSystem
 
                 float falloff = 1f - distance / MathF.Max(radius, 1f);
 
-                if (Apply(state, x, y, intensity * MathHelper.Lerp(edge, 1f, falloff), duration, owner, sync, variant, null, tint))
+                if (Apply(state, x, y, intensity * MathHelper.Lerp(edge, 1f, falloff), duration, owner, origin, variant, null, tint))
                     applied++;
             }
         }
@@ -182,7 +222,7 @@ public sealed class ResidueSystem : ModSystem
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, ResidueInstance.NoOwner, false, 0, null, null));
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, ResidueInstance.NoOwner, ResidueOrigin.Shared, 0, null, null));
             return true;
         }
 
@@ -197,7 +237,7 @@ public sealed class ResidueSystem : ModSystem
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, ResidueInstance.NoOwner, false, 0, null, null));
+            pending.Add(new PendingOp(PendingKind.Remove, state.Id, i, j, 0f, 0f, ResidueInstance.NoOwner, ResidueOrigin.Shared, 0, null, null));
             return true;
         }
 
@@ -229,8 +269,16 @@ public sealed class ResidueSystem : ModSystem
 
         ref ResidueInstance instance = ref CollectionsMarshal.GetValueRefOrNullRef(state.Tiles, new Point(i, j));
 
-        if (!Unsafe.IsNullRef(ref instance))
-            residue.Diminish(ref instance, MathHelper.Clamp(share, 0f, 1f));
+        if (Unsafe.IsNullRef(ref instance))
+            return;
+
+        residue.Diminish(ref instance, MathHelper.Clamp(share, 0f, 1f));
+
+        if (Main.netMode == NetmodeID.Server)
+        {
+            instance.SharedAt = Main.GameUpdateCount;
+            state.Changed.Add(new Point(i, j));
+        }
     }
 
     /// <summary>
@@ -291,6 +339,7 @@ public sealed class ResidueSystem : ModSystem
 
         pending.Clear();
         ResidueReactionSystem.Clear();
+        Fuses.Clear();
     }
 
     public override void OnModLoad()
@@ -411,7 +460,14 @@ public sealed class ResidueSystem : ModSystem
 
         DrainPending();
 
-        ResidueReactionSystem.Resolve();
+        // Reactions change the world for everyone, so the server runs them and says what came of it.
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            ResidueReactionSystem.Resolve();
+            Fuses.Update();
+        }
+
+        FlushNetwork();
 
         // After the drain, so a tile marked again this tick takes over from its own fading sample.
         foreach (ResidueState state in states)
@@ -433,14 +489,18 @@ public sealed class ResidueSystem : ModSystem
         return canvas;
     }
 
-    private static bool Apply(ResidueState state, int i, int j, float intensity, float duration, int owner, bool sync, byte variant, ChemicalPayload? payload, Color? tint)
+    private static bool Apply(ResidueState state, int i, int j, float intensity, float duration, int owner, ResidueOrigin origin, byte variant, ChemicalPayload? payload, Color? tint)
     {
+        // The server is running this same code, and will say what came of it.
+        if (origin == ResidueOrigin.Shared && Main.netMode == NetmodeID.MultiplayerClient)
+            return false;
+
         if (!WorldGen.InWorld(i, j, 1))
             return false;
 
         if (dispatching)
         {
-            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, sync, variant, payload, tint));
+            pending.Add(new PendingOp(PendingKind.Apply, state.Id, i, j, intensity, duration, owner, origin, variant, payload, tint));
             return true;
         }
 
@@ -477,12 +537,24 @@ public sealed class ResidueSystem : ModSystem
             Stage = exists ? existing.Stage : (byte)0,
             TotalAge = exists ? existing.TotalAge : 0,
             Arrival = exists ? existing.Arrival : ++lastArrival,
+
+            IsShared = origin != ResidueOrigin.Local || (exists && existing.IsShared),
+            SharedAt = exists ? existing.SharedAt : 0,
         };
 
         state.Residue.OnApplied(ref instance);
+
+        // A tile refreshed over and over only says so now and then, and a mark that's new or has changed kind goes out right away.
+        if (origin != ResidueOrigin.Local && Main.netMode != NetmodeID.SinglePlayer && (!exists || existing.Variant != variant || Main.GameUpdateCount - instance.SharedAt >= RESHARE_TICKS))
+        {
+            instance.SharedAt = Main.GameUpdateCount;
+            state.Changed.Add(position);
+            state.Gone.Remove(position);
+        }
+
         state.Tiles[position] = instance;
 
-        if (state.Residue.ElementsOf(in instance) != ResidueElement.None)
+        if (Main.netMode != NetmodeID.MultiplayerClient && state.Residue.ElementsOf(in instance) != ResidueElement.None)
             ResidueReactionSystem.Touch(position);
 
         if (!exists)
@@ -491,13 +563,11 @@ public sealed class ResidueSystem : ModSystem
             TrimToBudget(state);
         }
 
-        if (sync && Main.netMode != NetmodeID.SinglePlayer)
-            SendApply(state, i, j, instance.Intensity, life, instance.Owner, instance.Variant, instance.Tint);
-
         return true;
     }
 
-    private static bool Remove(ResidueState state, Point position)
+    /// <param name="announce">Whether a server tells the clients even about a mark each machine lays for itself.</param>
+    private static bool Remove(ResidueState state, Point position, bool announce = true)
     {
         if (!state.Tiles.Remove(position, out ResidueInstance instance))
             return false;
@@ -505,6 +575,12 @@ public sealed class ResidueSystem : ModSystem
         if (state.Canvas is { } canvas)
             state.CanvasSource?.OnRemoved(canvas, in instance);
         state.Residue.OnExpired(in instance);
+
+        if (Main.netMode == NetmodeID.Server && (announce || instance.IsShared))
+        {
+            state.Gone.Add(position);
+            state.Changed.Remove(position);
+        }
 
         return true;
     }
@@ -521,7 +597,7 @@ public sealed class ResidueSystem : ModSystem
             // A stale entry: the tile it named has since expired, and anything sitting there now is
             // a different application that has its own place in the queue.
             if (state.Tiles.TryGetValue(position, out ResidueInstance instance) && instance.Serial == serial)
-                Remove(state, position);
+                Remove(state, position, announce: false);
         }
     }
 
@@ -553,7 +629,7 @@ public sealed class ResidueSystem : ModSystem
         }
 
         foreach (Point position in state.Finished)
-            Remove(state, position);
+            Remove(state, position, announce: false);
     }
 
     /// <summary>
@@ -601,13 +677,12 @@ public sealed class ResidueSystem : ModSystem
         if (total == 0)
             return;
 
-        for (int i = 0; i < Main.maxPlayers; i++)
-        {
-            Player player = Main.player[i];
+        // Only its own machine says what touches a player. Debuffs and movement are its client's to decide, and the rest
+        // hear about them from vanilla. A server has no player of its own, and this is an empty slot there.
+        Player local = Main.LocalPlayer;
 
-            if (player.active && !player.dead)
-                SweepEntity(player);
-        }
+        if (local.active && !local.dead)
+            SweepEntity(local);
 
         for (int i = 0; i < Main.maxNPCs; i++)
         {
@@ -666,6 +741,9 @@ public sealed class ResidueSystem : ModSystem
                             state.Residue.OnProjectileContact(ref instance, projectile);
                             break;
                     }
+
+                    if (!Main.dedServ && entity is not Projectile && state.Residue.BodyPickup(in instance, out float amount) is { } picked)
+                        BodyCoatNet.TouchTile(entity, picked, position, amount, instance.Tint);
                 }
             }
         }
@@ -685,7 +763,7 @@ public sealed class ResidueSystem : ModSystem
             ResidueState state = states[op.Id];
 
             if (op.Kind == PendingKind.Apply)
-                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Sync, op.Variant, op.Payload, op.Tint);
+                Apply(state, op.X, op.Y, op.Intensity, op.Duration, op.Owner, op.Origin, op.Variant, op.Payload, op.Tint);
             else
                 Remove(state, new Point(op.X, op.Y));
         }
@@ -782,45 +860,262 @@ public sealed class ResidueSystem : ModSystem
     /// </summary>
     private const byte NO_OWNER_BYTE = 255;
 
-    private static void SendApply(ResidueState state, int i, int j, float intensity, float duration, int owner, byte variant, Color tint, int ignoreClient = -1)
+    /// <summary>Ticks before refreshing a mark is worth saying again. Anything else that changes it goes out at once.</summary>
+    private const uint RESHARE_TICKS = 45;
+
+    /// <summary>Keeps a packet well under the size a ModPacket can be.</summary>
+    private const int MAX_PER_PACKET = 2000;
+
+    private enum ResiduePacket : byte
+    {
+        Marks,
+        Removals,
+        Effects,
+        Snapshot,
+    }
+
+    private static readonly List<ResidueInstance> outgoing = [];
+
+    private static readonly List<(ReactionEffect Effect, Point Tile)> outgoingEffects = [];
+
+    private static ModPacket BeginPacket(ResiduePacket kind)
     {
         ModPacket packet = ModContent.GetInstance<TrelamiumIII>().GetPacket();
 
         packet.Write((byte)TrelamiumIII.MessageType.Residue);
-        packet.Write((byte)state.Id);
-        packet.Write((short)i);
-        packet.Write((short)j);
-        packet.Write((byte)(MathHelper.Clamp(intensity, 0f, 1f) * 255f));
-        packet.Write((ushort)Math.Clamp(duration, 0f, ushort.MaxValue));
-        packet.Write(owner is >= 0 and < NO_OWNER_BYTE ? (byte)owner : NO_OWNER_BYTE);
-        packet.Write(variant);
-        packet.Write(tint.PackedValue);
-        packet.Send(-1, ignoreClient);
+        packet.Write((byte)kind);
+
+        return packet;
     }
 
-    internal static void ReceiveApply(BinaryReader reader, int whoAmI)
+    /// <summary>Sends this tick's changes: a client's to the server, and a server's to every client.</summary>
+    private static void FlushNetwork()
     {
-        int id = reader.ReadByte();
-        int i = reader.ReadInt16();
-        int j = reader.ReadInt16();
-        float intensity = reader.ReadByte() / 255f;
-        float duration = reader.ReadUInt16();
-        byte ownerByte = reader.ReadByte();
-        byte variant = reader.ReadByte();
-        var tint = new Color { PackedValue = reader.ReadUInt32() };
-
-        if (id < 0 || id >= states.Count)
+        if (Main.netMode == NetmodeID.SinglePlayer)
             return;
 
-        int owner = ownerByte == NO_OWNER_BYTE ? ResidueInstance.NoOwner : ownerByte;
+        foreach (ResidueState state in states)
+        {
+            if (state.Changed.Count > 0)
+            {
+                SendMarks(state, state.Changed, -1);
+                state.Changed.Clear();
+            }
 
-        ResidueState state = states[id];
+            if (state.Gone.Count > 0)
+            {
+                SendRemovals(state);
+                state.Gone.Clear();
+            }
+        }
 
-        Apply(state, i, j, intensity, duration <= 0f ? -1f : duration, owner, sync: false, variant, payload: null, tint.A > 0 ? tint : null);
+        if (outgoingEffects.Count == 0)
+            return;
 
-        // The server is the only one that has heard this, so it is the only one that can tell the
-        // rest, minus the client it came from, which already has it.
-        if (Main.netMode == NetmodeID.Server)
-            SendApply(state, i, j, intensity, duration, owner, variant, tint, ignoreClient: whoAmI);
+        ModPacket packet = BeginPacket(ResiduePacket.Effects);
+
+        packet.Write((ushort)outgoingEffects.Count);
+
+        foreach ((ReactionEffect effect, Point tile) in outgoingEffects)
+        {
+            packet.Write((byte)effect);
+            packet.Write((short)tile.X);
+            packet.Write((short)tile.Y);
+        }
+
+        packet.Send();
+        outgoingEffects.Clear();
     }
+
+    private static void SendMarks(ResidueState state, IEnumerable<Point> positions, int toClient)
+    {
+        outgoing.Clear();
+
+        foreach (Point position in positions)
+        {
+            if (state.Tiles.TryGetValue(position, out ResidueInstance instance))
+                outgoing.Add(instance);
+        }
+
+        for (int start = 0; start < outgoing.Count; start += MAX_PER_PACKET)
+        {
+            int count = Math.Min(MAX_PER_PACKET, outgoing.Count - start);
+            ModPacket packet = BeginPacket(ResiduePacket.Marks);
+
+            packet.Write((byte)state.Id);
+            packet.Write((ushort)count);
+
+            for (int n = start; n < start + count; n++)
+            {
+                ResidueInstance instance = outgoing[n];
+
+                packet.Write((short)instance.X);
+                packet.Write((short)instance.Y);
+                packet.Write((byte)(MathHelper.Clamp(instance.Intensity, 0f, 1f) * 255f));
+                packet.Write((ushort)Math.Clamp(instance.Life, 0f, ushort.MaxValue));
+                packet.Write((ushort)Math.Clamp(instance.MaxLife, 0f, ushort.MaxValue));
+                packet.Write(instance.Owner is >= 0 and < NO_OWNER_BYTE ? (byte)instance.Owner : NO_OWNER_BYTE);
+                packet.Write(instance.Variant);
+                packet.Write((byte)(MathHelper.Clamp(instance.Level, 0f, 1f) * 255f));
+                packet.Write(instance.Stage);
+                packet.Write(instance.Tint.PackedValue);
+            }
+
+            packet.Send(toClient);
+        }
+    }
+
+    private static void SendRemovals(ResidueState state)
+    {
+        int left = state.Gone.Count;
+
+        using HashSet<Point>.Enumerator gone = state.Gone.GetEnumerator();
+
+        while (left > 0)
+        {
+            int count = Math.Min(MAX_PER_PACKET, left);
+            ModPacket packet = BeginPacket(ResiduePacket.Removals);
+
+            packet.Write((byte)state.Id);
+            packet.Write((ushort)count);
+
+            for (int n = 0; n < count && gone.MoveNext(); n++)
+            {
+                packet.Write((short)gone.Current.X);
+                packet.Write((short)gone.Current.Y);
+            }
+
+            packet.Send();
+            left -= count;
+        }
+    }
+
+    /// <summary>Tells the clients a reaction just happened, on a server, and returns true. Elsewhere the caller plays it.</summary>
+    internal static bool ShareEffect(ReactionEffect effect, Point tile)
+    {
+        if (Main.netMode != NetmodeID.Server)
+            return false;
+
+        outgoingEffects.Add((effect, tile));
+
+        return true;
+    }
+
+    /// <summary>A client just entering a world asks for what's already on the ground.</summary>
+    internal static void RequestSnapshot()
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+            BeginPacket(ResiduePacket.Snapshot).Send();
+    }
+
+    internal static void Receive(BinaryReader reader, int whoAmI)
+    {
+        var kind = (ResiduePacket)reader.ReadByte();
+
+        switch (kind)
+        {
+            case ResiduePacket.Snapshot:
+                foreach (ResidueState snapshot in states)
+                    SendMarks(snapshot, snapshot.Tiles.Where(static pair => pair.Value.IsShared).Select(static pair => pair.Key), whoAmI);
+
+                return;
+
+            case ResiduePacket.Effects:
+                for (int n = reader.ReadUInt16(); n > 0; n--)
+                {
+                    var effect = (ReactionEffect)reader.ReadByte();
+                    int x = reader.ReadInt16();
+                    int y = reader.ReadInt16();
+
+                    ReactionEffects.Play(effect, new Point(x, y));
+                }
+
+                return;
+        }
+
+        int id = reader.ReadByte();
+        int count = reader.ReadUInt16();
+        ResidueState? state = id < states.Count ? states[id] : null;
+
+        for (int n = 0; n < count; n++)
+        {
+            int i = reader.ReadInt16();
+            int j = reader.ReadInt16();
+
+            if (kind == ResiduePacket.Removals)
+            {
+                if (state is not null)
+                    Remove(state, new Point(i, j), announce: false);
+
+                continue;
+            }
+
+            float intensity = reader.ReadByte() / 255f;
+            float life = reader.ReadUInt16();
+            float maxLife = reader.ReadUInt16();
+            byte ownerByte = reader.ReadByte();
+            byte variant = reader.ReadByte();
+            float level = reader.ReadByte() / 255f;
+            byte stage = reader.ReadByte();
+            var tint = new Color { PackedValue = reader.ReadUInt32() };
+
+            if (state is null)
+                continue;
+
+            if (Main.netMode == NetmodeID.Server)
+            {
+                // A client only ever asks for its own marks, and the server takes it from here. What the mark does on
+                // the way in is the server's to work out, so only what the client can't know comes across.
+                Apply(state, i, j, intensity, life <= 0f ? -1f : life, ownerByte == NO_OWNER_BYTE ? ResidueInstance.NoOwner : whoAmI, ResidueOrigin.Owned, variant, null, tint.A > 0 ? tint : null);
+            }
+            else
+            {
+                ReceiveMark(state, new Point(i, j), intensity, life, maxLife, ownerByte == NO_OWNER_BYTE ? ResidueInstance.NoOwner : ownerByte, variant, level, stage, tint);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Takes the server's word for a mark. Its hooks already ran on the server, so <see cref="IResidue.OnApplied" /> doesn't
+    ///     run again here. What only this machine has stays as it was: the payload behind a mark its owner laid.
+    /// </summary>
+    private static void ReceiveMark(ResidueState state, Point position, float intensity, float life, float maxLife, int owner, byte variant, float level, byte stage, Color tint)
+    {
+        if (!WorldGen.InWorld(position.X, position.Y, 1))
+            return;
+
+        ref ResidueInstance instance = ref CollectionsMarshal.GetValueRefOrAddDefault(state.Tiles, position, out bool exists);
+
+        if (!exists)
+        {
+            instance.X = position.X;
+            instance.Y = position.Y;
+            instance.Serial = ++state.NextSerial;
+            instance.Arrival = ++lastArrival;
+        }
+
+        instance.Intensity = intensity;
+        instance.Life = life;
+        instance.MaxLife = maxLife;
+        instance.Owner = owner;
+        instance.Variant = variant;
+        instance.Level = level;
+        instance.Stage = stage;
+        instance.Tint = tint;
+        instance.IsShared = true;
+
+        int serial = instance.Serial;
+
+        if (exists)
+            return;
+
+        state.Order.Enqueue((position, serial));
+        TrimToBudget(state);
+    }
+}
+
+/// <summary>Asks for the marks already on the ground when a client joins a world.</summary>
+internal sealed class ResidueSnapshotPlayer : ModPlayer
+{
+    public override void OnEnterWorld() => ResidueSystem.RequestSnapshot();
 }

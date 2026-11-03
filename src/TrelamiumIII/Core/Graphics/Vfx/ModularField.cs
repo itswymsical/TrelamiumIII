@@ -121,8 +121,8 @@ internal abstract class ModularField : GasField
     /// <summary> The same strength a chemical field's residue lingers at. </summary>
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
-        if (Spec.Residue is { } type && ResidueSystem.Get(type) is { } residue)
-            ResidueSystem.Apply(residue, tileX, tileY, MathHelper.Clamp(density / MathF.Max(TileFieldThreshold, 0.01f) * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
+        if (ChemicalPayload.IsAuthority(owner) && Spec.Residue is { } type && ResidueSystem.Get(type) is { } residue)
+            ResidueSystem.Apply(residue, tileX, tileY, MathHelper.Clamp(density / MathF.Max(TileFieldThreshold, 0.01f) * 0.55f, 0.25f, 1f), owner: owner, origin: ResidueOrigin.Owned, payload: payload);
     }
 
     protected override void ApplyShaderParameters(Effect effect) => Spec.Material?.Apply(effect);

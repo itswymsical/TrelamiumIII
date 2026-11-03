@@ -6,7 +6,7 @@ DialogueLibrary: {
 			Line1.Text: Hey,[] [speakerName:player]!
 
 			Line2: {
-				Text: Welcome to the land of the living Light,[] or what most would call Terraria.
+				Text: Welcome to the land of Light,[] or rather,[] what most would call Terraria.
 				Choice1.Text: How do you know my name?
 				Choice2.Text: Land of Light?
 				Choice3.Text: How do I skip this?

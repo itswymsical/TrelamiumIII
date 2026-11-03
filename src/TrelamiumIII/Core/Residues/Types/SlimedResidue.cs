@@ -46,6 +46,19 @@ public sealed class SlimedResidue : FilmResidue
     /// <summary>Gel burns. See <see cref="Combustion" />.</summary>
     public override ResidueElement ElementsOf(in ResidueInstance instance) => ResidueElement.Flammable;
 
+    /// <summary>Thick. It runs down slowly and leaves most of itself on the way.</summary>
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0f, Fall: 0.04f, Creep: 0.02f, Sag: 0.025f, Decay: 0.002f, Reach: 0.3f);
+
+    /// <summary>Drips off in slow, fat drops.</summary>
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.08f, Radius: 5.5f, Life: 40f, Launch: new Vector2(0f, 0.05f), Scatter: 0.08f, Pull: new Vector2(0f, 0.07f), Drag: 0.98f, Cling: 0.15f);
+
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Strength * 0.06f;
+
+        return this;
+    }
+
     public override void UpdateTile(ref ResidueInstance instance)
     {
         if (Main.dedServ || !OnScreen(in instance))
@@ -102,7 +115,7 @@ public sealed class SlimedResidue : FilmResidue
         if (liquidType == LiquidID.Lava)
         {
             instance.Life = 0f;
-            ResidueSystem.Apply<BurnedResidue>(instance.X, instance.Y, 0.9f, sync: false);
+            ResidueSystem.Apply<BurnedResidue>(instance.X, instance.Y, 0.9f, origin: ResidueOrigin.Shared);
             //Projectile.NewProjectile(new EntitySource_Misc("Chemical Reaction"),
             //instance.WorldPosition, Vector2.Zero, ProjectileID.InfernoHostileBlast, 10, 4);
             return;

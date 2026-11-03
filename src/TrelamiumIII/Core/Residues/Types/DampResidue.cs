@@ -14,8 +14,8 @@ namespace TrelamiumIII.Core.Residues.Types;
 ///     </para>
 ///     <para>
 ///         The one exception is soaked ground, which puts fires out. It takes a downpour to get there, and
-///         a server has no rain particles, so a fire doused this way in multiplayer is only out on that
-///         client until the server's own burns down.
+///         only a server runs reactions in multiplayer and it has no rain particles, so rain doesn't put fires
+///         out there. A rule laying this from the weather would fix that.
 ///     </para>
 /// </remarks>
 public sealed class DampResidue : FilmResidue
@@ -77,7 +77,7 @@ public sealed class DampResidue : FilmResidue
 
         float wetness = ResidueSystem.TryGet<DampResidue>(hit.X, hit.Y, out ResidueInstance existing) ? existing.Strength : 0f;
 
-        ResidueSystem.Apply<DampResidue>(hit.X, hit.Y, MathHelper.Clamp(wetness + PER_DROP, FIRST_DROP, SOAKED), sync: false, tint: LiquidResidue.TintOf(hit.X, hit.Y, LiquidID.Water));
+        ResidueSystem.Apply<DampResidue>(hit.X, hit.Y, MathHelper.Clamp(wetness + PER_DROP, FIRST_DROP, SOAKED), origin: ResidueOrigin.Local, tint: LiquidResidue.TintOf(hit.X, hit.Y, LiquidID.Water));
     }
 
     /// <summary>The solid tile under a drop's 2x2 box, by the test vanilla ended it with. Drops ended by water or the screen's edge have none.</summary>
