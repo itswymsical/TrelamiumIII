@@ -46,6 +46,7 @@ float CellSize;             // world px per shading decision; 2 is one tile art 
 
 float FireThreshold;        // eroded fire amount at which flame shows
 float FireNoiseScale;       // FBM cycles per tile
+float FireStretch;          // how much taller flames are than wide; 1 for round
 float FireNoiseStrength;
 float2 FireDrift;           // FBM scroll, uv/sec; positive y licks upward
 float FireEdgeWidth;        // fire amount past FireThreshold from rim to body
@@ -132,7 +133,7 @@ float4 BurnPass(float2 uv : TEXCOORD0) : COLOR0
     soot = ceil(soot * CharBands) / max(CharBands, 1.0);
     float sootAlpha = soot * CharAlpha;
 
-    float flicker = Fbm(tiles * FireNoiseScale + FireDrift * Time);
+    float flicker = Fbm(tiles * float2(FireNoiseScale, FireNoiseScale / FireStretch) + FireDrift * Time);
     float f = canvas.a - FireNoiseStrength * (flicker - 0.5);
     float depth = saturate((f - FireThreshold) / max(FireEdgeWidth, 0.001));
 

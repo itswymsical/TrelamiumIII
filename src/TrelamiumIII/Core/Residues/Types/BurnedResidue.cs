@@ -192,6 +192,7 @@ public sealed class BurnedResidue : Residue
 
         effect.Parameters["FireThreshold"]?.SetValue(0.4f);
         effect.Parameters["FireNoiseScale"]?.SetValue(0.09f);
+        effect.Parameters["FireStretch"]?.SetValue(1f);
         effect.Parameters["FireNoiseStrength"]?.SetValue(0.8f);
         effect.Parameters["FireDrift"]?.SetValue(new Vector2(0.012f, 0.06f));
         effect.Parameters["FireEdgeWidth"]?.SetValue(0.22f);

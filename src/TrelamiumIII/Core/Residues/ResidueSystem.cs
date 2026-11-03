@@ -700,7 +700,7 @@ public sealed class ResidueSystem : ModSystem
     ///     Logs a canvas failure once. Vanilla routes exceptions from this part of the frame to
     ///     <c>TimeLogger.DrawException</c>, which drops them, and skips the NPCs drawn after it.
     /// </summary>
-    private static void ReportFailure(Exception exception)
+    internal static void ReportFailure(Exception exception)
     {
         if (reportedFailure)
             return;
