@@ -13,6 +13,7 @@ using TrelamiumIII.Content.DevTools.VfxLab.Generation;
 using TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 using TrelamiumIII.Content.DevTools.VfxLab.Room;
 using TrelamiumIII.Core.Graphics.Fields;
+using TrelamiumIII.Core.Graphics.Vfx;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.UI;
 
@@ -43,6 +44,7 @@ public sealed class VfxLabUI : ModSystem
 
     private static readonly Inspector inspector = new();
     private static readonly SlotInspector slotInspector = new(inspector);
+    private static readonly ExportPanel exportPanel = new();
 
     private static LabInput lastInput;
     private static Rectangle listPanel;
@@ -80,6 +82,8 @@ public sealed class VfxLabUI : ModSystem
 
     internal static ShaderHotReload? HotReload => hotReload;
 
+    internal static ExportPanel Export => exportPanel;
+
     internal static Rectangle PopupArea => inspector.PopupArea;
 
     internal static bool PopupOpen => inspector.PopupOpen;
@@ -94,7 +98,7 @@ public sealed class VfxLabUI : ModSystem
         {
             Point mouse = ScriptedFrames is null ? LabInput.Read(lastInput).Mouse : lastInput.Mouse;
 
-            return listPanel.Contains(mouse) || inspectorPanel.Contains(mouse) || statusBar.Contains(mouse) || (inspector.PopupOpen && inspector.PopupArea.Contains(mouse));
+            return exportPanel.IsOpen || listPanel.Contains(mouse) || inspectorPanel.Contains(mouse) || statusBar.Contains(mouse) || (inspector.PopupOpen && inspector.PopupArea.Contains(mouse));
         }
     }
 
@@ -105,6 +109,7 @@ public sealed class VfxLabUI : ModSystem
             Open = false;
             Gui.CancelEdit();
             inspector.ClosePopups();
+            exportPanel.Close();
             return;
         }
 
@@ -143,6 +148,7 @@ public sealed class VfxLabUI : ModSystem
         builtTarget = null;
         builtEffect = null;
         builtSlot = null;
+        exportPanel.Close();
         Open = false;
     }
 
@@ -259,8 +265,8 @@ public sealed class VfxLabUI : ModSystem
             Gui.Fill(new Rectangle(0, 0, screen.X, screen.Y), Color.Black * LabRooms.Fade);
         }
 
-        // A popup only keeps the mouse while it's over the popup, so going from one colour to the next is one click.
-        Gui.Enabled = !(inspector.PopupOpen && inspector.PopupArea.Contains(input.Mouse));
+        // A popup only keeps the mouse while it's over the popup, so going from one colour to the next is one click. An export's review keeps it wherever it is.
+        Gui.Enabled = !exportPanel.IsOpen && !(inspector.PopupOpen && inspector.PopupArea.Contains(input.Mouse));
 
         LabTools.Frame(Gui, overPanels);
 
@@ -270,6 +276,7 @@ public sealed class VfxLabUI : ModSystem
 
         Gui.Enabled = true;
         inspector.DrawPopups(Gui);
+        exportPanel.Draw(Gui, Notify);
 
         Gui.End();
 
@@ -280,7 +287,7 @@ public sealed class VfxLabUI : ModSystem
                 slot.Commit();
         }
 
-        if (LabSession.Selected is { } selected && !Gui.IsEditing)
+        if (LabSession.Selected is { } selected && !Gui.IsEditing && !exportPanel.IsOpen)
         {
             if (input.UndoPressed)
                 selected.Undo();
@@ -480,8 +487,8 @@ public sealed class VfxLabUI : ModSystem
 
         y += ButtonHeight + 3;
 
-        int width = (inner - 2 * 4) / 5;
-        string[] labels = ["Save", "Load", "Undo", "Redo", "Empty"];
+        int width = (inner - 2 * 5) / 6;
+        string[] labels = ["Save", "Export", "Load", "Undo", "Redo", "Empty"];
 
         for (int i = 0; i < labels.Length; i++)
         {
@@ -496,15 +503,19 @@ public sealed class VfxLabUI : ModSystem
                     SaveRecipe(recipe);
                     break;
                 case 1:
-                    OpenLoadList(slot, area);
+                    inspector.ClosePopups();
+                    exportPanel.Open(recipe, LabSession.Library, ModContent.GetInstance<VfxLabUI>().Mod);
                     break;
                 case 2:
-                    slot.Undo();
+                    OpenLoadList(slot, area);
                     break;
                 case 3:
-                    slot.Redo();
+                    slot.Undo();
                     break;
                 case 4:
+                    slot.Redo();
+                    break;
+                case 5:
                     slot.Empty();
                     break;
             }
@@ -596,6 +607,16 @@ public sealed class VfxLabUI : ModSystem
         {
             if (Gui.Button("open", new Rectangle(x, y, inner, ButtonHeight), "Open as a draft, to change its physics", tip: "Copies its look, physics and residue into one of your slots"))
                 OpenLayer(layer);
+
+            y += ButtonHeight + 3;
+        }
+        else if (target is FieldTarget { Layer: ModularField and not LabFieldSlot } && File.Exists(RecipeFile.PathOf(LabFiles.RecipeFolder, target.Name)))
+        {
+            if (Gui.Button("openrecipe", new Rectangle(x, y, inner, ButtonHeight), "Open its recipe", tip: "This was exported from the lab, so change it there and export it again"))
+            {
+                if (LabSession.FreeSlot() is { } free)
+                    LoadSaved(free, target.Name);
+            }
 
             y += ButtonHeight + 3;
         }

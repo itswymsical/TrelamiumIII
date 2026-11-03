@@ -59,7 +59,8 @@ internal static class PanelStyle
     /// ghost and border, or the row below would be sampled into the bottom of it.</summary>
     public const int CHOICE_PITCH = 64;
 
-    public const int CHOICE_SURFACE_WIDTH = 288;
+    /// <summary>The response atlas's width, in texels. A label wider than this, less the slot's margins, is cut off.</summary>
+    public const int CHOICE_SURFACE_WIDTH = 384;
 
     public const int BORDER = 3;
 

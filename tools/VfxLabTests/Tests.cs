@@ -1,4 +1,5 @@
 using TrelamiumIII.Content.DevTools.VfxLab.Bench;
+using TrelamiumIII.Content.DevTools.VfxLab.Export;
 using TrelamiumIII.Content.DevTools.VfxLab.Generation;
 using TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 
@@ -659,6 +660,279 @@ else
     ShaderCompileResult broken = Compile("#line 10 \"Lab/Stages/Warp.stage.fxh\"\nfloat4 LabPass(float2 uv : TEXCOORD0) : COLOR0 { return nope; }\ntechnique L { pass P0 { PixelShader = compile ps_3_0 LabPass(); } }\n");
     True("a broken shader has no code", broken.Code is null);
     True("its error names the stage file", broken.Log.Contains("Lab/Stages/Warp.stage.fxh(10"), broken.Log);
+}
+
+// ---- exporting ----
+
+ExportCatalog exportCatalog = new()
+{
+    Modules = new Dictionary<string, ModuleSchema>
+    {
+        ["WindForce"] = new("TrelamiumIII.Core.Graphics.Vfx.Modules", [("Pull", 0.02f), ("Scale", 1f)]),
+        ["CurlFlow"] = new("TrelamiumIII.Core.Graphics.Vfx.Modules", [("Strength", 0.4f)]),
+    },
+    Conditions = new Dictionary<string, (string, string)> { ["SlimedCondition"] = ("TrelamiumIII.Core.Tiles.Conditions.Types", "SlimedCondition") },
+    TakenNames = new HashSet<string> { "MudField" },
+};
+
+VfxRecipe ExportRecipe()
+{
+    VfxRecipe recipe = RecipeFile.Parse(RecipeFile.Serialize(iceMist));
+
+    recipe.Name = "IceExport";
+    recipe.Physics.Kind = RecipePhysics.Liquid;
+    recipe.Physics.Density = 0.36f;
+    recipe.Physics.MaxNodes = 250;
+    recipe.Physics.TemperatureMax = 1500f;
+    recipe.Modules.Add(new RecipeModule { Type = "WindForce" }.Set("Pull", 0.05f));
+    recipe.Links.Deposit = new RecipeDeposit { Residue = "SlimedCondition", Threshold = 0.3f, Interval = 7 };
+    recipe.Emitter.Radius = 40f;
+
+    return recipe;
+}
+
+Section("the exported class");
+VfxRecipe exportRecipe = ExportRecipe();
+GeneratedShader exportShader = ShaderGenerator.Generate(exportRecipe, library);
+string exportClass = FieldExporter.ContentClass(exportRecipe, exportShader.Uniforms, "TrelamiumIII.Content.Vfx", exportCatalog);
+
+True("is a modular field", exportClass.Contains("internal sealed partial class IceExport : ModularField"));
+True("is in the namespace it was given", exportClass.Contains("namespace TrelamiumIII.Content.Vfx;"));
+True("says where it came from", exportClass.Contains("from Assets/Vfx/Recipes/IceExport.vfx.json"));
+True("draws with its own shader", exportClass.Contains("Shader => Assets.Shaders.Vfx.IceExport.Asset;"));
+True("carries the kind by name", exportClass.Contains("Kind = GasField.GasTypeID.Liquid,"));
+True("carries physics", exportClass.Contains("Density = 0.36f,") && exportClass.Contains("MaxNodes = 250,"));
+True("carries the temperature range", exportClass.Contains("TemperatureRange = new Vector2(0f, 1500f),"));
+True("carries a float", exportClass.Contains(".Set(\"cut_Level\", 0.14f)"));
+True("carries a pair", exportClass.Contains(".Set(\"noise_Drift\", new Vector2(0.05f, 0.015f))"));
+True("carries a colour", exportClass.Contains(".Set(\"palette_Body\", new Vector3(0.62f, 0.8f, 0.92f))"));
+True("asks for its noise only when it draws", exportClass.Contains(".Set(\"noise_NoiseTex\", static () => Assets.Textures.Noise.LiquidNoise.Asset)"));
+True("every uniform is set", exportShader.Uniforms.All(uniform => exportClass.Contains($".Set(\"{uniform.Name}\", ")));
+True("a tuned setting is what was tuned", exportClass.Contains("new WindForce { Pull = 0.05f, Scale = 1f },"));
+True("and an untouched one is pinned to today's default", exportClass.Contains("Scale = 1f"));
+True("modules bring their namespace", exportClass.Contains("using TrelamiumIII.Core.Graphics.Vfx.Modules;"));
+True("the residue is a type", exportClass.Contains("Residue = typeof(SlimedCondition),"));
+True("with its numbers", exportClass.Contains("ResidueThreshold = 0.3f,") && exportClass.Contains("ResidueInterval = 7,"));
+True("and its namespace", exportClass.Contains("using TrelamiumIII.Core.Tiles.Conditions.Types;"));
+Check("generating it twice comes out the same", FieldExporter.ContentClass(exportRecipe, exportShader.Uniforms, "TrelamiumIII.Content.Vfx", exportCatalog), exportClass);
+
+// Every number in the file has to read back as exactly the float it was.
+foreach (UniformValue uniform in exportShader.Uniforms.Where(static uniform => uniform.Kind == ParamKind.Float))
+{
+    int start = exportClass.IndexOf($".Set(\"{uniform.Name}\", ", StringComparison.Ordinal) + uniform.Name.Length + 9;
+    string literal = exportClass[start..exportClass.IndexOf("f)", start, StringComparison.Ordinal)];
+
+    Check($"{uniform.Name} survives as a literal", float.Parse(literal, System.Globalization.CultureInfo.InvariantCulture), uniform.Values[0]);
+}
+
+Section("a field with less in it");
+VfxRecipe plainRecipe = ExportRecipe();
+plainRecipe.Modules.Clear();
+plainRecipe.Links.Deposit = null;
+string plainClass = FieldExporter.ContentClass(plainRecipe, ShaderGenerator.Generate(plainRecipe, library).Uniforms, "TrelamiumIII.Content.Vfx", exportCatalog);
+True("no modules, no modules line", !plainClass.Contains("Modules"));
+True("no residue, no residue lines", !plainClass.Contains("Residue"));
+True("and no using it doesn't need", !plainClass.Contains("Conditions.Types") && !plainClass.Contains("Vfx.Modules"));
+
+Section("textures");
+
+string NoiseLine(string texture)
+{
+    VfxRecipe recipe = Stack(Stage("noise", "NoiseLayer").Set("Noise", texture));
+    string text = FieldExporter.ContentClass(recipe, ShaderGenerator.Generate(recipe, library).Uniforms, "N", exportCatalog);
+
+    return text.Split('\n').First(static line => line.Contains("noise_NoiseTex")).Trim();
+}
+
+Check("a noise texture, by name", NoiseLine("Milky_2"), ".Set(\"noise_NoiseTex\", static () => Assets.Textures.Noise.Milky_2.Asset),");
+Check("another of the mod's, by its key", NoiseLine("TrelamiumIII/Assets/Textures/VFX/Star"), ".Set(\"noise_NoiseTex\", static () => Assets.Textures.VFX.Star.Asset),");
+Check("a file name that can't be an identifier", NoiseLine("TrelamiumIII/Assets/Textures/VFX/Star-2"), ".Set(\"noise_NoiseTex\", static () => ModContent.Request<Texture2D>(\"TrelamiumIII/Assets/Textures/VFX/Star-2\")),");
+Check("somebody else's", NoiseLine("Terraria/Images/Misc/Perlin"), ".Set(\"noise_NoiseTex\", static () => ModContent.Request<Texture2D>(\"Terraria/Images/Misc/Perlin\")),");
+
+Section("what stops an export");
+
+List<GenerationProblem> ProblemsFor(VfxRecipe recipe, ExportCatalog? catalog = null)
+    => FieldExporter.Check(recipe, ShaderGenerator.Generate(recipe, library), catalog ?? exportCatalog).ToList();
+
+Check("a good recipe has no problems", string.Join("; ", ProblemsFor(exportRecipe)), "");
+
+VfxRecipe Named(string name)
+{
+    VfxRecipe recipe = ExportRecipe();
+    recipe.Name = name;
+
+    return recipe;
+}
+
+True("a class the mod already has", ProblemsFor(Named("MudField")).Single().IsError);
+True("a keyword", ProblemsFor(Named("event")).Single().IsError);
+True("a name the class itself reads", ProblemsFor(Named("Assets")).Single().IsError);
+True("the shaders' own folder", ProblemsFor(Named("Vfx")).Single().IsError);
+True("lowercase is otherwise fine", ProblemsFor(Named("bloodWisp")).Count == 0);
+
+VfxRecipe missingTexture = Stack(Stage("noise", "NoiseLayer").Set("Noise", "Nope"));
+GenerationProblem noTexture = ProblemsFor(missingTexture, new ExportCatalog { HasTexture = static key => !key.EndsWith("Nope") }).Single();
+True("a texture that isn't there is an error", noTexture.IsError && noTexture.Message.Contains("Nope"), noTexture.ToString());
+
+VfxRecipe strayModule = ExportRecipe();
+strayModule.Modules.Add(new RecipeModule { Type = "Gone" });
+GenerationProblem noModule = ProblemsFor(strayModule).Single();
+True("a module this build lacks only warns, as the preview drops it too", !noModule.IsError && noModule.Where == "Gone", noModule.ToString());
+True("and it's left out of the class", !FieldExporter.ContentClass(strayModule, exportShader.Uniforms, "N", exportCatalog).Contains("Gone"));
+
+VfxRecipe straySetting = ExportRecipe();
+straySetting.Modules[0].Set("Nope", 1f);
+True("a setting a module lacks only warns", ProblemsFor(straySetting).Single() is { IsError: false } stray && stray.Message.Contains("Nope"));
+True("and it's left out too", !FieldExporter.ContentClass(straySetting, exportShader.Uniforms, "N", exportCatalog).Contains("Nope"));
+
+VfxRecipe strayResidue = ExportRecipe();
+strayResidue.Links.Deposit!.Residue = "Gone";
+True("a residue that's gone only warns", ProblemsFor(strayResidue).Single() is { IsError: false });
+True("and leaves nothing, as the preview does", !FieldExporter.ContentClass(strayResidue, exportShader.Uniforms, "N", exportCatalog).Contains("Residue"));
+
+Section("the hand-written half");
+string handHalf = FieldExporter.HandWrittenHalf(exportRecipe, "TrelamiumIII.Content.Vfx");
+True("is the other half of the class", handHalf.Contains("internal sealed partial class IceExport"));
+True("doesn't repeat its base class", !handHalf.Contains("ModularField"));
+True("is in the same namespace", handHalf.Contains("namespace TrelamiumIII.Content.Vfx;"));
+True("keeps how it was released", handHalf.Contains("SpawnNode(position, angle.ToRotationVector2() * 1.5f, 40f, 180f);"), handHalf);
+True("has one line ending throughout", !handHalf.Contains('\r'));
+True("a set temperature comes along", FieldExporter.HandWrittenHalf(new VfxRecipe { Name = "Hot", Emitter = new RecipeEmitter { Temperature = 300f } }, "N").Contains(", temperature: 300f);"));
+
+Section("the export stamp");
+string stamped = ExportStamp.Stamp("line one\nline two\n");
+True("a stamped file is intact", ExportStamp.IsIntact(stamped));
+True("with other line endings too", ExportStamp.IsIntact(stamped.Replace("\n", "\r\n")));
+True("with a byte order mark too", ExportStamp.IsIntact("\uFEFF" + stamped));
+True("an edit shows", !ExportStamp.IsIntact(stamped + "// mine\n"));
+True("a file that was never stamped isn't intact", !ExportStamp.IsIntact("line one\nline two\n"));
+True("nor is an empty one", !ExportStamp.IsIntact(string.Empty));
+Check("stamping is the same whichever line endings it's given", ExportStamp.Stamp("a\r\nb\r\n"), ExportStamp.Stamp("a\nb\n"));
+
+Section("the folder");
+Check("a plain folder", ExportPlan.FolderProblem("Content/Vfx"), null);
+Check("the other slash, and stray ones", ExportPlan.CleanFolder(" \\Content\\Vfx/ "), "Content/Vfx");
+True("not above the mod", ExportPlan.FolderProblem("../Outside") is not null);
+True("not elsewhere on disk", ExportPlan.FolderProblem("C:/Outside") is not null);
+True("not empty", ExportPlan.FolderProblem("") is not null);
+True("not a name no namespace can have", ExportPlan.FolderProblem("Content/My Fields") is not null);
+
+string exportRoot = Path.Combine(scratch, "export");
+Directory.CreateDirectory(exportRoot);
+Check("the namespace follows the folder", ExportPlan.NamespaceOf(exportRoot, "Content/Vfx", "IceExport"), "TrelamiumIII.Content.Vfx");
+Check("nothing exported yet", ExportPlan.FindExisting(exportRoot, "IceExport"), null);
+
+Section("reviewing and writing");
+byte[] fakeCode = [1, 2, 3, 4];
+
+List<ExportFile> FilesFor(VfxRecipe recipe, byte[]? code = null)
+{
+    GeneratedShader shader = ShaderGenerator.Generate(recipe, library);
+
+    return ExportPlan.Files(recipe, shader, ExportStamp.Stamp(shader.Source!), code ?? fakeCode, "Content/Vfx", "TrelamiumIII.Content.Vfx", exportCatalog);
+}
+
+string Statuses(VfxRecipe recipe, byte[]? code = null) => string.Join(",", ExportPlan.Review(exportRoot, FilesFor(recipe, code)).Select(static row => row.Status));
+string Exported(string path) => Path.Combine(exportRoot, path);
+
+Check("five files, in the order they get written",
+    string.Join(" ", FilesFor(exportRecipe).Select(static file => file.RelativePath)),
+    "Assets/Vfx/Recipes/IceExport.vfx.json Assets/Shaders/Vfx/IceExport.fx Assets/Shaders/Vfx/IceExport.fxc Content/Vfx/IceExport.Vfx.g.cs Content/Vfx/IceExport.cs");
+Check("all new at first", Statuses(exportRecipe), "New,New,New,New,New");
+Check("writing writes all five", ExportPlan.Write(exportRoot, ExportPlan.Review(exportRoot, FilesFor(exportRecipe))), 5);
+True("the class is stamped", ExportStamp.IsIntact(File.ReadAllText(Exported("Content/Vfx/IceExport.Vfx.g.cs"))));
+True("so is the shader", ExportStamp.IsIntact(File.ReadAllText(Exported("Assets/Shaders/Vfx/IceExport.fx"))));
+Check("the recipe reads back", RecipeFile.Serialize(RecipeFile.Load(Exported("Assets/Vfx/Recipes"), "IceExport")), RecipeFile.Serialize(exportRecipe));
+Check("again, nothing to do", Statuses(exportRecipe), "Same,Same,Same,Same,Kept");
+Check("so nothing is written", ExportPlan.Write(exportRoot, ExportPlan.Review(exportRoot, FilesFor(exportRecipe))), 0);
+Check("the export can be found again", ExportPlan.FindExisting(exportRoot, "IceExport"), "Content/Vfx");
+
+// Git hands files back with whatever line endings it likes.
+string classPath = Exported("Content/Vfx/IceExport.Vfx.g.cs");
+string asWritten = File.ReadAllText(classPath);
+File.WriteAllText(classPath, asWritten.Replace("\n", "\r\n"));
+Check("other line endings aren't a change", Statuses(exportRecipe), "Same,Same,Same,Same,Kept");
+File.WriteAllText(classPath, asWritten);
+
+VfxRecipe exportRetuned = ExportRecipe();
+exportRetuned.Stages.First(static stage => stage.Id == "cut").Set("Level", 0.5f);
+Check("a exportRetuned value leaves the shader alone", Statuses(exportRetuned), "Changed,Same,Same,Changed,Kept");
+
+VfxRecipe restacked = ExportRecipe();
+RecipeEdit.AddStage(restacked, "DomainWarp");
+Check("a new stage changes the shader", Statuses(restacked, [9, 9]), "Changed,Changed,Changed,Changed,Kept");
+
+File.AppendAllText(classPath, "// by hand\n");
+Check("a hand edit to the class shows", Statuses(exportRetuned), "Changed,Same,Same,Edited,Kept");
+File.WriteAllText(classPath, asWritten);
+
+string shaderPath = Exported("Assets/Shaders/Vfx/IceExport.fx");
+string shaderAsWritten = File.ReadAllText(shaderPath);
+File.AppendAllText(shaderPath, "// by hand\n");
+Check("so does one to the shader", Statuses(exportRecipe), "Same,Edited,Same,Same,Kept");
+File.WriteAllText(shaderPath, shaderAsWritten);
+
+string handPath = Exported("Content/Vfx/IceExport.cs");
+File.AppendAllText(handPath, "// mine\n");
+Check("a hand-written half is left out of it", Statuses(exportRecipe), "Same,Same,Same,Same,Kept");
+ExportPlan.Write(exportRoot, ExportPlan.Review(exportRoot, FilesFor(exportRetuned)));
+True("and survives another export", File.ReadAllText(handPath).EndsWith("// mine\n"));
+True("while the class moved on", File.ReadAllText(classPath).Contains(".Set(\"cut_Level\", 0.5f)"));
+
+byte[] stale = File.ReadAllBytes(Exported("Assets/Shaders/Vfx/IceExport.fxc"));
+DateTime shaderTime = File.GetLastWriteTimeUtc(shaderPath);
+Thread.Sleep(20);
+ExportPlan.Write(exportRoot, ExportPlan.Review(exportRoot, FilesFor(ExportRecipe())));
+Check("what didn't change isn't touched", File.GetLastWriteTimeUtc(shaderPath), shaderTime);
+True("compiled bytes are compared as bytes", Statuses(ExportRecipe(), [.. stale, 5]) == "Same,Same,Changed,Same,Kept", Statuses(ExportRecipe(), [.. stale, 5]));
+
+Check("capitalisation that doesn't match stops it", Statuses(Named("iceexport")).Contains("Misspelled"), true);
+True("and writes nothing", ExportPlan.Review(exportRoot, FilesFor(Named("iceexport"))).Where(static row => row.Status == ExportStatus.Misspelled).All(static row => !row.WillWrite));
+
+Section("moving exported files");
+Directory.CreateDirectory(Exported("Content/Moved"));
+File.Move(classPath, Exported("Content/Moved/IceExport.Vfx.g.cs"));
+File.Move(handPath, Exported("Content/Moved/IceExport.cs"));
+Check("the export is found where it went", ExportPlan.FindExisting(exportRoot, "IceExport"), "Content/Moved");
+Check("its hand-written half decides the namespace, so the two stay one class", ExportPlan.NamespaceOf(exportRoot, "Content/Moved", "IceExport"), "TrelamiumIII.Content.Vfx");
+
+Directory.CreateDirectory(Exported("obj/Debug"));
+Directory.Delete(Exported("Content/Moved"), true);
+File.WriteAllText(Exported("obj/Debug/IceExport.Vfx.g.cs"), string.Empty);
+Check("a build's copy doesn't count", ExportPlan.FindExisting(exportRoot, "IceExport"), null);
+
+Section("golden class");
+string goldenClassPath = Path.Combine(tests, "Golden", "IceExport.Vfx.g.cs.txt");
+
+if (updateGolden)
+{
+    File.WriteAllText(goldenClassPath, exportClass);
+    Console.WriteLine("  (golden updated)");
+}
+
+Check("the class matches the golden file", exportClass, File.Exists(goldenClassPath) ? File.ReadAllText(goldenClassPath).Replace("\r\n", "\n") : "(no golden file)");
+
+if (ShaderCompiler.FxcPath is not null)
+{
+    Section("exported shaders through fxc");
+    string exportCache = Path.Combine(scratch, "export-fxc");
+    string plainSource = ShaderGenerator.Generate(exportRecipe, library).Source!;
+    string stampedSource = ExportStamp.Stamp(plainSource);
+
+    ShaderCompileResult plainCompile = ShaderCompiler.CompileAsync(plainSource, exportCache).GetAwaiter().GetResult();
+    ShaderCompileResult stampedCompile = ShaderCompiler.CompileAsync(stampedSource, exportCache).GetAwaiter().GetResult();
+
+    True("the stamp doesn't reach the compiled shader", stampedCompile.Code is not null && stampedCompile.Code.SequenceEqual(plainCompile.Code!), stampedCompile.Log);
+
+    // The cache names a source by its hash and the build by the recipe. The file's name mustn't matter, or the next build would rewrite the export.
+    string shaderFolder = Path.Combine(scratch, "export-named");
+    Directory.CreateDirectory(shaderFolder);
+    string namedShader = Path.Combine(shaderFolder, "IceExport.fx");
+    File.WriteAllText(namedShader, stampedSource);
+
+    ShaderCompileResult named = ShaderCompiler.CompileFileAsync(namedShader, exportCache).GetAwaiter().GetResult();
+
+    True("compiling under its real name gives the same bytes", named.Code is not null && named.Code.SequenceEqual(stampedCompile.Code!), named.Log);
 }
 
 Directory.Delete(scratch, true);

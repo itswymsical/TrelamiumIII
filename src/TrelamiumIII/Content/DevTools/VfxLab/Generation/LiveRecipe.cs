@@ -14,9 +14,6 @@ internal static class LabFiles
 {
     private const string ShadersFolder = "Assets/Shaders/";
 
-    /// <summary> Noise textures are named in recipes by file. Any other texture is named by its full key. </summary>
-    private const string NoiseFolder = "TrelamiumIII/Assets/Textures/Noise/";
-
     public static string ShaderCache => Path.Combine(Main.SavePath, "TrelamiumIII", "VfxLab", "Cache");
 
     /// <summary> In the source tree where there is one, so saved recipes are part of the project. </summary>
@@ -39,8 +36,6 @@ internal static class LabFiles
     public static StageLibrary LoadBuiltLibrary(Mod mod) => StageLibrary.From(mod.GetFileNames()
         .Where(static path => path.StartsWith(ShadersFolder + StageLibrary.Folder + "/", StringComparison.Ordinal))
         .Select(path => (path[ShadersFolder.Length..], Encoding.UTF8.GetString(mod.GetFileBytes(path)))));
-
-    public static string TextureKey(string texture) => texture.Contains('/') ? texture : NoiseFolder + texture;
 
     /// <summary> The name a recipe uses for a texture asset, or its whole key if it's not a noise texture. </summary>
     public static string TextureName(string key)
@@ -118,7 +113,7 @@ internal sealed class LiveRecipe
                     break;
                 case ParamKind.Noise when uniform.Texture is { } texture:
                     // Off the main thread nothing here runs, and a lab that has to wait a frame for a texture would show it popping in.
-                    material.Set(uniform.Name, ModContent.Request<Texture2D>(LabFiles.TextureKey(texture), AssetRequestMode.ImmediateLoad));
+                    material.Set(uniform.Name, ModContent.Request<Texture2D>(RecipeFile.TextureKey(texture), AssetRequestMode.ImmediateLoad));
                     break;
             }
         }

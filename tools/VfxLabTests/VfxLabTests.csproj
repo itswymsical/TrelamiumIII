@@ -34,6 +34,8 @@
     <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Recipes\VfxRecipe.cs" />
     <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Recipes\RecipeFile.cs" />
     <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Bench\BenchExport.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Export\FieldExporter.cs" />
+    <Compile Include="..\..\src\TrelamiumIII\Content\DevTools\VfxLab\Export\ExportPlan.cs" />
   </ItemGroup>
 
 </Project>

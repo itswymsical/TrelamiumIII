@@ -110,7 +110,7 @@ public sealed record BurnProfile
         HeatDecay = 0.005f,
         FuelFraction = 0.6f,
         CharRate = 0.16f,
-        SpreadChance = 0.3f,
+        SpreadChance = 0.45f,
         SpreadsAlongFuel = true,
         ConsumesTiles = true,
         ConsumesAnyTile = true,

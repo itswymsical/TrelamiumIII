@@ -101,18 +101,4 @@ DialogueLibrary: {
 			Line2.Text: Empty rooms this morning,[] neighbours by the end of the week.[] Here, take this.[] Come and find me when you want more work.
 		}
 	}
-
-	Merchant: {
-		GoldMine_Greeting: {
-		}
-
-		GoldMine_SurplusOre: {
-		}
-
-		GoldMine_SurplusFurniture: {
-		}
-
-		GoldMine_Complete: {
-		}
-	}
 }

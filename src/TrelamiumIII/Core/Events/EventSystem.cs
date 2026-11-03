@@ -21,8 +21,8 @@ public class EventSystem : ModSystem
 
     /// <summary>
     /// What a job is, without building one. Answering "what is job 2 called" used to mean running a
-    /// whole <see cref="Job"/> constructor -- task lists, reward lists, and in GoldMine's case a sum
-    /// over its pools -- and then throwing the instance away.
+    /// whole <see cref="Job"/> constructor -- task lists, reward lists -- and then throwing the
+    /// instance away.
     /// </summary>
     private static readonly Dictionary<int, JobInfo> JobMetadata = [];
 
