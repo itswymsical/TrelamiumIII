@@ -72,4 +72,16 @@ public abstract class FilmResidue : Residue
 
         Look.Apply(effect);
     }
+
+    /// <summary>The ground's noise is too broad to see on something three tiles tall, and a coat that thin needs its edge broken up more.</summary>
+    public override void ApplyBodyParameters(Effect effect, float gravDir, float height)
+    {
+        ApplyShaderParameters(effect);
+
+        effect.Parameters["NoiseScale"]?.SetValue(0.45f * BodyDetail(height));
+        effect.Parameters["NoiseStrength"]?.SetValue(MathF.Max(Look.NoiseStrength, 0.5f));
+
+        // Thin enough to still see what's wearing it.
+        effect.Parameters["BodyAlpha"]?.SetValue(Look.BodyAlpha * 0.8f);
+    }
 }

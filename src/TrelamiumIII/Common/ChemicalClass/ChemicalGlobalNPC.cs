@@ -115,6 +115,30 @@ public class ChemicalGlobalNPC : GlobalNPC
 
     public bool IsClinging(ChemicalDamageType type) => clings[(int)type].IsActive;
 
+    /// <summary>False when no chemistry is on the NPC at all, which spares asking about each element.</summary>
+    public bool HasChemistry => anyActive;
+
+    /// <summary>
+    ///     How far up the NPC's body <paramref name="type" /> should show, 0..1. An affliction climbs with its concentration
+    ///     and sinks away in its last second, and a cling covers the whole body while it holds.
+    /// </summary>
+    public float CoverageOf(ChemicalDamageType type)
+    {
+        ref readonly AfflictionState state = ref afflictions[(int)type];
+        ref readonly ClingState cling = ref clings[(int)type];
+
+        float coverage = cling.IsActive ? cling.Fade : 0f;
+
+        if (state.IsActive)
+        {
+            float afflicted = MathHelper.Lerp(ChemicalTuning.AfflictionCoverage, 1f, state.Concentration / ChemicalTuning.MaxConcentration);
+
+            coverage = MathF.Max(coverage, afflicted * MathHelper.Clamp(state.TicksRemaining / 60f, 0f, 1f));
+        }
+
+        return coverage;
+    }
+
     /// <summary>How many elements other than <paramref name="except" /> are afflicting the NPC.</summary>
     public int AfflictionsBesides(ChemicalDamageType except)
     {

@@ -95,6 +95,33 @@ public abstract class Residue : IResidue
 
     public virtual void ApplyShaderParameters(Effect effect) { }
 
+    private const float BODY_DETAIL_HEIGHT = 52f;
+
+    private static readonly Point[] SilhouetteOnly = [Point.Zero];
+
+    public virtual Point[] BodyReach => SilhouetteOnly;
+
+    /// <summary>The ground's own encoding, so a shader reads the same channels off a body. Thickens fast from the coat's top edge.</summary>
+    public virtual TileCanvasSample EncodeBody(float rise, int age)
+    {
+        var instance = new ResidueInstance
+        {
+            Life = 1f,
+            MaxLife = 1f,
+            Intensity = MathHelper.Clamp(rise * 3f, 0f, 1f),
+            TotalAge = age,
+        };
+
+        return EncodeCanvas(in instance);
+    }
+
+    public virtual void ApplyBodyParameters(Effect effect, float gravDir, float height) => ApplyShaderParameters(effect);
+
+    /// <summary>What to scale a noise's cycles per tile by, so that a body three tiles tall keeps its detail and a boss gets it broader rather than finer.</summary>
+    protected static float BodyDetail(float height) => MathHelper.Clamp(BODY_DETAIL_HEIGHT / height, 0.3f, 1f);
+
+    public virtual void UpdateBody(Entity body, float fill) { }
+
     /// <summary>
     ///     Breaks the tile under this mark, the way an explosion would, if an explosion could. Ends the mark if it does.
     /// </summary>

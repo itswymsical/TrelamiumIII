@@ -52,6 +52,17 @@ public sealed class CryonicResidue : ChemicalResidue
 
     public override void ApplyShaderParameters(Effect effect) => FrostFilm.Apply(effect, EdgeColor, Threshold);
 
+    /// <summary>The ground's cells and veins are broader than a body is tall.</summary>
+    public override void ApplyBodyParameters(Effect effect, float gravDir, float height)
+    {
+        ApplyShaderParameters(effect);
+
+        float detail = BodyDetail(height);
+
+        effect.Parameters["CellScale"]?.SetValue(0.8f * detail);
+        effect.Parameters["VeinScale"]?.SetValue(0.7f * detail);
+    }
+
     protected override float LingerRadius => 6f;
 
     protected override int LingerInterval => 24;

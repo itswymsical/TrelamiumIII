@@ -15,6 +15,13 @@ public sealed class BurnedResidue : Residue
 
     private const float MAX_CHAR = 0.82f;
 
+    /// <summary>What's left at a coat's top edge on a body, of the fuel and heat it has at the feet.</summary>
+    private const float BODY_TOP_FUEL = 0.2f;
+
+    private const float BODY_TOP_HEAT = 0.4f;
+
+    private const int BODY_EMBER_ODDS = 5;
+
     public override float Duration => BurnProfile.Standard.Duration;
 
     public override int MaxTiles => 1200;
@@ -211,6 +218,82 @@ public sealed class BurnedResidue : Residue
         effect.Parameters["CharNoiseScale"]?.SetValue(0.2f);
         effect.Parameters["CharNoiseStrength"]?.SetValue(0.6f);
         effect.Parameters["CharBands"]?.SetValue(5f);
+    }
+
+    /// <summary>Flames stand a little proud of the outline and more so upward. Never down, where they'd sit on the ground under the feet.</summary>
+    private static readonly Point[] FlameReach =
+    [
+        new(0, 0),
+        new(-2, 0),
+        new(2, 0),
+        new(0, -2),
+        new(-2, -2),
+        new(2, -2),
+        new(0, -4),
+    ];
+
+    public override Point[] BodyReach => FlameReach;
+
+    /// <summary>Solid and yellow at the feet, breaking up into thin red tongues at the top. No char: at this size soot only reads as noise.</summary>
+    public override TileCanvasSample EncodeBody(float rise, int age)
+    {
+        var instance = new ResidueInstance
+        {
+            Life = 1f,
+            MaxLife = 1f,
+            Intensity = MathHelper.Lerp(BODY_TOP_FUEL, 1f, rise),
+            Level = MathHelper.Lerp(BODY_TOP_HEAT, 1f, rise),
+        };
+
+        return EncodeCanvas(in instance);
+    }
+
+    /// <summary>
+    ///     The ground's look is scaled for fire many tiles wide, so a body's flames are finer, taller and faster. Strength and
+    ///     threshold are both high so that fuel decides where fire shows: this noise runs dark, and with less the whole shape
+    ///     fills in up to a flat line where the stamps end.
+    /// </summary>
+    public override void ApplyBodyParameters(Effect effect, float gravDir, float height)
+    {
+        ApplyShaderParameters(effect);
+
+        float detail = BodyDetail(height);
+
+        effect.Parameters["FireThreshold"]?.SetValue(1.9f);
+        effect.Parameters["FireNoiseScale"]?.SetValue(0.55f * detail);
+        effect.Parameters["FireStretch"]?.SetValue(3f);
+        effect.Parameters["FireNoiseStrength"]?.SetValue(5f);
+        effect.Parameters["FireDrift"]?.SetValue(new Vector2(0.02f, 0.7f * detail * gravDir));
+        effect.Parameters["FireEdgeWidth"]?.SetValue(0.5f);
+        effect.Parameters["FireBodyAlpha"]?.SetValue(0.92f);
+        effect.Parameters["FireEdgeAlpha"]?.SetValue(1f);
+    }
+
+    public override void UpdateBody(Entity body, float fill)
+    {
+        if (Main.dedServ)
+            return;
+
+        float gravDir = body is Player player ? player.gravDir : 1f;
+        Vector2 feet = gravDir < 0f ? body.Top : body.Bottom;
+        float height = body.height * fill;
+        Vector2 flames = feet - new Vector2(0f, height * 0.5f * gravDir);
+        float heat = MathHelper.Clamp(fill * 2f, 0f, 1f);
+
+        Lighting.AddLight(flames, 0.42f * heat, 0.17f * heat, 0.03f * heat);
+
+        if (!Main.rand.NextBool(BODY_EMBER_ODDS))
+            return;
+
+        Dust ember = Dust.NewDustPerfect(
+            feet + new Vector2(Main.rand.NextFloat(-body.width * 0.5f, body.width * 0.5f), -Main.rand.NextFloat(height) * gravDir),
+            DustID.Torch,
+            body.velocity * 0.4f + new Vector2(Main.rand.NextFloat(-0.25f, 0.25f), Main.rand.NextFloat(-1.8f, -0.6f) * gravDir),
+            0,
+            default,
+            Main.rand.NextFloat(0.8f, 1.3f));
+
+        ember.noGravity = true;
     }
 
     public override void OnPlayerContact(ref ResidueInstance instance, Player player)
