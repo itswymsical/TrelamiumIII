@@ -67,6 +67,7 @@ public sealed class NPCTrails : GlobalNPC
 
         // Critters that happen to hop with the slime AI. They have no gel to leave.
         Exclude(NPCID.Grasshopper);
+        Exclude(NPCID.HoppinJack);
         Exclude(NPCID.GoldGrasshopper);
 
         Register(NPCID.LavaSlime, NPCTrail.Of<MagmaResidue>() with
