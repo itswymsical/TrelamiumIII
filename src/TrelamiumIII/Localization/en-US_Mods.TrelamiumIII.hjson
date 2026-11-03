@@ -1504,6 +1504,7 @@ Projectiles: {
 	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
 	StalagMagMKIIProj.DisplayName: StalagMag-MK II
 	GelBallProjectile.DisplayName: Gel Ball
+	ResidueBlast.DisplayName: Blast
 	CrustaceanClobbererProjectile.DisplayName: Crustacean Clobberer
 	ObsidianKhopeshProjectile.DisplayName: Obsidian Khopesh
 	CopperTippedArrowProjectile.DisplayName: Copper Tipped Arrow

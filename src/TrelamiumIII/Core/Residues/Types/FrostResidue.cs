@@ -36,6 +36,14 @@ public sealed class FrostResidue : Residue
     /// <summary>Heat melts it. See <see cref="Melt" />.</summary>
     public override ResidueElement ElementsOf(in ResidueInstance instance) => ResidueElement.Cold;
 
+    /// <summary>Frost is frost once it's on a body.</summary>
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Strength * 0.04f;
+
+        return ResidueSystem.Get<CryonicResidue>();
+    }
+
     public override void OnPlayerContact(ref ResidueInstance instance, Player player)
     {
         if (!FirstContact(player))

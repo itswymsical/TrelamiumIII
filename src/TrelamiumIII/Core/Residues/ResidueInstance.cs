@@ -92,6 +92,12 @@ public struct ResidueInstance
     /// </summary>
     internal int Serial;
 
+    /// <summary>Whether the machines keep this mark in step, rather than each laying its own. See <see cref="ResidueOrigin" />.</summary>
+    internal bool IsShared;
+
+    /// <summary>The tick this mark last went out over the network.</summary>
+    internal uint SharedAt;
+
     /// <summary>anything not player-made.</summary>
     public const int NoOwner = -1;
 

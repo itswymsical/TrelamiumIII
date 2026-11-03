@@ -32,6 +32,7 @@ partial class TrelamiumIII
         AlmanacDiscovery,
         VillagerTrade,
         BlueprintMoveIn,
+        BodyCoat,
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -46,7 +47,7 @@ partial class TrelamiumIII
                 OilLiquids.ExplosionEffect(x, y);
                 break;
             case MessageType.Residue:
-                ResidueSystem.ReceiveApply(reader, whoAmI);
+                ResidueSystem.Receive(reader, whoAmI);
                 break;
             case MessageType.GrantExperience:
                 ReceiveExperientialGrant(reader);
@@ -85,6 +86,9 @@ partial class TrelamiumIII
                 break;
             case MessageType.BlueprintMoveIn:
                 Core.Jobs.Blueprints.BlueprintHousing.Receive(reader);
+                break;
+            case MessageType.BodyCoat:
+                Core.Residues.Bodies.BodyCoatNet.Receive(reader, whoAmI);
                 break;
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);

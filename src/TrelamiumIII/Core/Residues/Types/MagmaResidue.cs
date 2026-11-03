@@ -58,6 +58,14 @@ public sealed class MagmaResidue : FilmResidue
 
     public override ResidueElement ElementsOf(in ResidueInstance instance) => ResidueElement.Heat;
 
+    /// <summary>Sets what touches it alight, rather than coating it.</summary>
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Level * 0.12f;
+
+        return instance.Level < BURNING_HEAT ? null : ResidueSystem.Get<BurnedResidue>();
+    }
+
     public override float PotencyOf(in ResidueInstance instance) => instance.Level;
 
     /// <summary>Only the heat goes. The crust stays to wash away slowly, as it does under real water.</summary>
@@ -105,7 +113,7 @@ public sealed class MagmaResidue : FilmResidue
         if (instance.Level < BURNING_HEAT || npc.lavaImmune || npc.noTileCollide || !FirstContact(npc))
             return;
 
-        npc.AddBuff(BuffID.OnFire, (int)MathHelper.Lerp(90f, 240f, instance.Level));
+        ContactDebuff(npc, BuffID.OnFire, (int)MathHelper.Lerp(90f, 240f, instance.Level));
     }
 
     public override void OnLiquidContact(ref ResidueInstance instance, int liquidType, int amount)

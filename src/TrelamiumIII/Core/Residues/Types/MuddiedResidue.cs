@@ -31,6 +31,18 @@ public sealed class MuddiedResidue : FilmResidue
 
     public override float Duration => 10f * 60f;
 
+    /// <summary>Hardly runs at all. It stays about where it hit.</summary>
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0f, Fall: 0.03f, Creep: 0.02f, Sag: 0.006f, Decay: 0.0015f, Reach: 0.25f);
+
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.03f, Radius: 5f, Life: 32f, Launch: new Vector2(0f, 0.05f), Pull: new Vector2(0f, 0.09f), Scatter: 0.05f, Drag: 0.98f, Cling: 0.1f);
+
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Strength * 0.06f;
+
+        return this;
+    }
+
     public override int MaxTiles => 900;
 
     public override int FadeInTicks => 6;

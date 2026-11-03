@@ -1,4 +1,6 @@
+using ModLiquidLib.ModLoader;
 using ReLogic.Content;
+using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.Residues.Reactions;
 
 namespace TrelamiumIII.Core.Residues.Types;
@@ -15,12 +17,14 @@ public sealed class BurnedResidue : Residue
 
     private const float MAX_CHAR = 0.82f;
 
-    /// <summary>What's left at a coat's top edge on a body, of the fuel and heat it has at the feet.</summary>
+    /// <summary>What a cell with hardly any has, of the fuel and heat of a cell with all it can hold.</summary>
     private const float BODY_TOP_FUEL = 0.2f;
 
     private const float BODY_TOP_HEAT = 0.4f;
 
     private const int BODY_EMBER_ODDS = 5;
+
+    private const float BODY_PICKUP = 0.12f;
 
     public override float Duration => BurnProfile.Standard.Duration;
 
@@ -70,7 +74,7 @@ public sealed class BurnedResidue : Residue
 
         instance.Stage = (byte)stage;
 
-        if (stage >= BurnStage.Burning && profile.SpreadChance > 0f)
+        if (stage >= BurnStage.Burning && profile.SpreadChance > 0f && Main.netMode != NetmodeID.MultiplayerClient)
             Spread(in instance, profile);
 
         // A fire whose heat is gone has nothing left to do but finish blackening, so it hands the
@@ -108,7 +112,7 @@ public sealed class BurnedResidue : Residue
         if (ResidueSystem.Has<BurnedResidue>(x, y))
             return;
 
-        if (profile.SpreadsAlongFuel && !ResidueSystem.HasElement(x, y, ResidueElement.Flammable))
+        if (profile.SpreadsAlongFuel && !ResidueSystem.HasElement(x, y, ResidueElement.Flammable | ResidueElement.Volatile))
             return;
 
         Ignite(x, y, profile, instance.Intensity * profile.SpreadFalloff, instance.Owner);
@@ -234,15 +238,29 @@ public sealed class BurnedResidue : Residue
 
     public override Point[] BodyReach => FlameReach;
 
-    /// <summary>Solid and yellow at the feet, breaking up into thin red tongues at the top. No char: at this size soot only reads as noise.</summary>
-    public override TileCanvasSample EncodeBody(float rise, int age)
+    /// <summary>Climbs fast, and spreads sideways as it goes.</summary>
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0.07f, Fall: 0.01f, Creep: 0.03f, Decay: 0.012f, Reach: 0.4f);
+
+    /// <summary>Tongues that lift off, get blown about and fall behind a body on the run.</summary>
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.5f, Radius: 7f, Life: 34f, Launch: new Vector2(0f, -0.9f), Scatter: 0.45f, Pull: new Vector2(0f, -0.03f), Drag: 0.985f, Wind: 0.015f, Cling: 0.45f);
+
+    /// <summary>Only what's hot enough to catch, the same as for the debuff.</summary>
+    public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = instance.Level * BODY_PICKUP;
+
+        return instance.Level < 0.22f ? null : this;
+    }
+
+    /// <summary>Solid and yellow where there's plenty, breaking up into thin red tongues where it's only just caught. No char: at this size soot only reads as noise.</summary>
+    public override TileCanvasSample EncodeBody(float amount, int age, Color tint)
     {
         var instance = new ResidueInstance
         {
             Life = 1f,
             MaxLife = 1f,
-            Intensity = MathHelper.Lerp(BODY_TOP_FUEL, 1f, rise),
-            Level = MathHelper.Lerp(BODY_TOP_HEAT, 1f, rise),
+            Intensity = MathHelper.Lerp(BODY_TOP_FUEL, 1f, amount),
+            Level = MathHelper.Lerp(BODY_TOP_HEAT, 1f, amount),
         };
 
         return EncodeCanvas(in instance);
@@ -309,7 +327,7 @@ public sealed class BurnedResidue : Residue
         if (npc.friendly || instance.Level < 0.22f)
             return;
 
-        npc.AddBuff(BuffID.OnFire, (int)MathHelper.Lerp(80f, 220f, instance.Level));
+        ContactDebuff(npc, BuffID.OnFire, (int)MathHelper.Lerp(80f, 220f, instance.Level));
     }
 
     public override void OnLiquidContact(ref ResidueInstance instance, int liquidType, int amount)
@@ -321,6 +339,10 @@ public sealed class BurnedResidue : Residue
 
             return;
         }
+
+        // Oil feeds a fire rather than putting it out.
+        if (liquidType == LiquidLoader.LiquidType<OilLiquids>())
+            return;
 
         float share = amount / 255f;
 
@@ -338,7 +360,7 @@ public sealed class BurnedResidue : Residue
     /// <summary>Lights one tile under a named set of rules.</summary>
     /// <param name="profile">Which kind of fire this is. See <see cref="BurnProfile" />.</param>
     public static bool Ignite(int i, int j, BurnProfile profile, float intensity = 1f, int owner = ResidueInstance.NoOwner)
-        => ResidueSystem.Apply<BurnedResidue>(i, j, intensity, profile.Duration, owner, sync: false, variant: profile.Id);
+        => ResidueSystem.Apply<BurnedResidue>(i, j, intensity, profile.Duration, owner, ResidueOrigin.Shared, variant: profile.Id);
 
     public static void Scorch(Vector2 center, float radius, float intensity = 1f, BurnProfile? profile = null)
     {

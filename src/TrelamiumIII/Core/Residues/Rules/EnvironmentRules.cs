@@ -46,6 +46,13 @@ public sealed class LiquidContactRule : ResidueRule
         if (!Wettest(i, j, out Point liquid, out int amount))
             return;
 
+        if (CrudeOilResidue.SeepsFrom(liquid.X, liquid.Y))
+        {
+            CrudeOilResidue.Seep(i, j, MathHelper.Lerp(0.5f, 1f, amount / 255f));
+
+            return;
+        }
+
         if (ResidueSystem.TryGet<LiquidResidue>(i, j, out ResidueInstance existing) && existing.Fade > 0.5f)
             return;
 

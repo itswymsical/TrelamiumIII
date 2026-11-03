@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Terraria.GameContent;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using TrelamiumIII.Core.Graphics;
@@ -38,27 +39,14 @@ internal sealed class BodyCanvas : ModSystem
     /// <summary>Slot sizes round up to this, so a slot starts on the shading grid and a body's size doesn't flicker with its frames.</summary>
     private const int SLOT_ROUNDING = 16;
 
-    private const int MIN_SLOT = 96;
-
-    /// <summary>Anything bigger is cut off at this.</summary>
-    private const int MAX_SLOT = 512;
-
-    private const int PLAYER_SLOT = 192;
-
-    private const int MOUNTED_SLOT = 320;
-
-    /// <summary>The height of a standing player's sprite, which runs past its hitbox.</summary>
-    private const int PLAYER_HEIGHT = 52;
-
-    /// <summary>Cells to a body's height, within limits. Tiles are 16 pixels, far too coarse for something three tiles tall.</summary>
-    private const int CELLS_TALL = 9;
-
-    private const int MIN_CELL = 4;
-
-    private const int MAX_CELL = 16;
-
     /// <summary>Kernel half-width, in cells.</summary>
     private const float KERNEL_RADIUS = 1.5f;
+
+    /// <summary>Cells stamped past each edge of the grid.</summary>
+    private const int CELL_RING = 1;
+
+    /// <summary>Less of a residue than this isn't worth a stamp.</summary>
+    private const float FAINTEST_CELL = 0.01f;
 
     /// <summary>Times each copy of a silhouette is summed into a mask, which lifts translucent bodies like slimes past the shaders' cut.</summary>
     private const int MASK_LAYERS = 3;
@@ -93,9 +81,8 @@ internal sealed class BodyCanvas : ModSystem
 
     /// <param name="Slot">Its silhouette, in the silhouette atlas.</param>
     /// <param name="Anchor">Where the middle of its slot lands on the screen, before zoom. Whole pixels, so a slot lays exactly over its sprite.</param>
-    /// <param name="Height">Pixels from the top of the sprite to its feet.</param>
     /// <param name="FirstCoat">Where its coats start in <see cref="placed" />.</param>
-    private readonly record struct Body(Entity Entity, Rectangle Slot, Point Anchor, int Height, float GravDir, int FirstCoat, int CoatCount);
+    private readonly record struct Body(Entity Entity, BodyBox Box, Rectangle Slot, Point Anchor, int FirstCoat, int CoatCount);
 
     /// <param name="Slot">Its mask and canvas, in those atlases' shared pixels.</param>
     private readonly record struct PlacedCoat(BodyCoat Coat, Rectangle Slot);
@@ -136,8 +123,6 @@ internal sealed class BodyCanvas : ModSystem
     private static readonly List<Body> bodies = [];
 
     private static readonly List<PlacedCoat> placed = [];
-
-    private static readonly List<BodyCoat> found = [];
 
     private static Shelves silhouetteShelves;
 
@@ -263,7 +248,7 @@ internal sealed class BodyCanvas : ModSystem
             Player player = Main.player[i];
 
             if (player.active && !player.dead && !player.ghost && !player.invis && !player.stoned && !player.ShouldNotDraw)
-                TryAddBody(player, player.mount.Active ? MOUNTED_SLOT : PLAYER_SLOT, PLAYER_HEIGHT, player.gravDir, player.Center + new Vector2(0f, player.gfxOffY), player.GetModPlayer<BodyCoatPlayer>().Coats);
+                TryAddBody(player, player.GetModPlayer<BodyCoatPlayer>().Coats);
         }
 
         for (int i = 0; i < Main.maxNPCs; i++)
@@ -273,28 +258,7 @@ internal sealed class BodyCanvas : ModSystem
             if (!npc.active || npc.type <= NPCID.None || npc.hide || npc.alpha > MAX_ALPHA)
                 continue;
 
-            BodyCoats coats = npc.GetGlobalNPC<BodyCoatNPC>().Coats;
-
-            if (!coats.IsCoated)
-                continue;
-
-            Vector2 middle = npc.Center + npc.netOffset + new Vector2(0f, npc.gfxOffY);
-
-            if (TerrarianModel.Of(npc) is not null)
-            {
-                TryAddBody(npc, PLAYER_SLOT, PLAYER_HEIGHT, 1f, middle, coats);
-                continue;
-            }
-
-            // The frame is what's really drawn. The hitbox covers NPCs with a custom draw and no frame set.
-            float spriteWidth = npc.frame.Width * npc.scale;
-            float spriteHeight = npc.frame.Height * npc.scale;
-            float widest = MathF.Max(MathF.Max(npc.width, npc.height), MathF.Max(spriteWidth, spriteHeight));
-
-            // Half as much again, as the widest it can be once rotated, plus room for a sprite hung off-centre.
-            int size = Math.Clamp((int)(widest * 1.5f) + 32, MIN_SLOT, MAX_SLOT);
-
-            TryAddBody(npc, size, (int)MathF.Max(npc.height, spriteHeight), 1f, middle, coats);
+            TryAddBody(npc, npc.GetGlobalNPC<BodyCoatNPC>().Coats);
         }
 
         if (bodies.Count == 0)
@@ -321,28 +285,26 @@ internal sealed class BodyCanvas : ModSystem
         }
     }
 
-    private static void TryAddBody(Entity entity, int size, int height, float gravDir, Vector2 worldMiddle, BodyCoats coats)
+    private static void TryAddBody(Entity entity, BodyCoats coats)
     {
         if (!coats.IsCoated)
             return;
 
-        size = (size + SLOT_ROUNDING - 1) / SLOT_ROUNDING * SLOT_ROUNDING;
+        BodyBox box = BodyBox.Of(entity);
+        int size = (box.Slot + SLOT_ROUNDING - 1) / SLOT_ROUNDING * SLOT_ROUNDING;
 
-        Vector2 onScreen = worldMiddle - Main.screenPosition;
+        Vector2 onScreen = box.Middle - Main.screenPosition;
 
         // The unzoomed viewport, a superset of the zoomed one at every zoom Terraria allows.
         if (onScreen.X < -size || onScreen.Y < -size || onScreen.X > Main.screenWidth + size || onScreen.Y > Main.screenHeight + size)
             return;
 
-        found.Clear();
-        coats.Collect(found);
-
-        if (found.Count == 0 || !silhouetteShelves.TryPlace(size, out Rectangle slot))
+        if (!silhouetteShelves.TryPlace(size, out Rectangle slot))
             return;
 
         int firstCoat = placed.Count;
 
-        foreach (BodyCoat coat in found)
+        foreach (BodyCoat coat in coats.All)
         {
             if (coatShelves.TryPlace(size, out Rectangle coatSlot))
                 placed.Add(new PlacedCoat(coat, coatSlot));
@@ -350,7 +312,7 @@ internal sealed class BodyCanvas : ModSystem
 
         var anchor = new Point((int)MathF.Floor(onScreen.X), (int)MathF.Floor(onScreen.Y));
 
-        bodies.Add(new Body(entity, slot, anchor, Math.Max(height, 16), gravDir, firstCoat, placed.Count - firstCoat));
+        bodies.Add(new Body(entity, box, slot, anchor, firstCoat, placed.Count - firstCoat));
     }
 
     private static void EnsureTargets(GraphicsDevice device)
@@ -494,7 +456,16 @@ internal sealed class BodyCanvas : ModSystem
                 foreach (Point offset in coat.Coat.Residue.BodyReach)
                 {
                     for (int layer = 0; layer < MASK_LAYERS; layer++)
-                        spriteBatch.Draw(silhouette, new Vector2(coat.Slot.X + offset.X, coat.Slot.Y + offset.Y * body.GravDir), body.Slot, Color.White);
+                        spriteBatch.Draw(silhouette, new Vector2(coat.Slot.X + offset.X, coat.Slot.Y + offset.Y * body.Box.GravDir), body.Slot, Color.White);
+                }
+
+                // What's come off it has no silhouette to be cut by. A square will do, as the canvas fades out well inside it.
+                foreach (BodyNode node in coat.Coat.Nodes)
+                {
+                    Point middle = coat.Slot.Center;
+                    int reach = (int)node.RadiusNow + 1;
+
+                    spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(middle.X + (int)node.Offset.X - reach, middle.Y + (int)node.Offset.Y - reach, reach * 2, reach * 2), Color.White);
                 }
 
                 spriteBatch.End();
@@ -535,40 +506,52 @@ internal sealed class BodyCanvas : ModSystem
     }
 
     /// <summary>
-    ///     Fills the body from the feet up, as far as the coat's fill says. Every cell of the slot's width is stamped, because
-    ///     the silhouette is what shapes it from side to side.
+    ///     Stamps a coat's grid over its body, with a ring past the edge carrying what's at the edge, so that coverage holds up
+    ///     across anything the sprite has outside its box and the silhouette is what cuts it.
     /// </summary>
     private static void WriteCells(in Body body, PlacedCoat placedCoat)
     {
         BodyCoat coat = placedCoat.Coat;
-        int cell = Math.Clamp(body.Height / CELLS_TALL, MIN_CELL, MAX_CELL);
-        int reach = placedCoat.Slot.Width / 2 / cell;
+        BodyGrid grid = coat.Grid;
+        BodyBox box = body.Box;
+        var cell = new Vector2(box.Width / (float)BodyGrid.COLUMNS, box.Height / (float)BodyGrid.ROWS);
 
         Vector2 worldMiddle = body.Anchor.ToVector2() + Main.screenPosition;
         Vector2 slotMiddle = placedCoat.Slot.Center.ToVector2();
 
-        for (int x = -reach; x < reach; x++)
+        for (int y = -CELL_RING; y < BodyGrid.ROWS + CELL_RING; y++)
         {
-            for (int y = -reach; y < reach; y++)
+            for (int x = -CELL_RING; x < BodyGrid.COLUMNS + CELL_RING; x++)
             {
-                var offset = new Vector2((x + 0.5f) * cell, (y + 0.5f) * cell);
+                float amount = grid.At(x, y);
 
-                // 0 at the top of the sprite and 1 at its feet, wherever gravity has put them.
-                float height = (offset.Y * body.GravDir + body.Height * 0.5f) / body.Height;
-                float rise = (height - (1f - coat.Fill)) / coat.Fill;
-
-                if (rise <= 0f)
+                if (amount < FAINTEST_CELL)
                     continue;
+
+                var offset = new Vector2((x + 0.5f) * cell.X - box.Width * 0.5f, (y + 0.5f) * cell.Y - box.Height * 0.5f);
+
+                offset *= new Vector2(box.Direction < 0 ? -1f : 1f, box.GravDir);
 
                 Vector2 world = worldMiddle + offset;
                 Color lit = Lighting.GetColor((int)(world.X / 16f), (int)(world.Y / 16f));
 
-                WriteQuad(slotMiddle + offset, cell, coat.Residue.EncodeBody(MathF.Min(rise, 1f), coat.Age), lit);
+                WriteQuad(slotMiddle + offset, cell, coat.Residue.EncodeBody(amount, coat.Age, coat.Tint), lit);
             }
+        }
+
+        foreach (BodyNode node in coat.Nodes)
+        {
+            Vector2 world = worldMiddle + node.Offset;
+            Color lit = Lighting.GetColor((int)(world.X / 16f), (int)(world.Y / 16f));
+            TileCanvasSample sample = coat.Residue.EncodeBody(node.Amount * node.Fade, coat.Age, coat.Tint);
+            var size = new Vector2(node.RadiusNow / KERNEL_RADIUS);
+
+            WriteQuad(slotMiddle + node.Offset, size, sample, lit);
+            WriteQuad(slotMiddle + node.Offset, size, sample, lit);
         }
     }
 
-    private static void WriteQuad(Vector2 centre, int cell, TileCanvasSample sample, Color lit)
+    private static void WriteQuad(Vector2 centre, Vector2 cell, TileCanvasSample sample, Color lit)
     {
         EnsureCapacity(vertexCount / 4 + 1);
 
@@ -581,9 +564,9 @@ internal sealed class BodyCanvas : ModSystem
         vertices[vertexCount++] = Corner(centre, cell, -1f, 1f, field, weighted);
     }
 
-    private static FieldStampVertex Corner(Vector2 centre, int cell, float x, float y, Color field, Color weighted) => new()
+    private static FieldStampVertex Corner(Vector2 centre, Vector2 cell, float x, float y, Color field, Color weighted) => new()
     {
-        Position = new Vector3(centre.X + x * KERNEL_RADIUS * cell, centre.Y + y * KERNEL_RADIUS * cell, 0f),
+        Position = new Vector3(centre.X + x * KERNEL_RADIUS * cell.X, centre.Y + y * KERNEL_RADIUS * cell.Y, 0f),
         Field = field,
         Attributes = weighted,
         TextureCoordinate = new Vector2(x * KERNEL_RADIUS, y * KERNEL_RADIUS),
@@ -655,7 +638,7 @@ internal sealed class BodyCanvas : ModSystem
         effect.Parameters["uCanvasLight"]?.SetValue(light);
         effect.Parameters["uMaskTex"]?.SetValue(mask);
 
-        residue.ApplyBodyParameters(effect, body.GravDir, body.Height);
+        residue.ApplyBodyParameters(effect, body.Box.GravDir, body.Box.Height);
 
         var destination = new Rectangle(body.Anchor.X - slot.Width / 2, body.Anchor.Y - slot.Height / 2, slot.Width, slot.Height);
         var source = new Rectangle(slot.X / CANVAS_SCALE, slot.Y / CANVAS_SCALE, slot.Width / CANVAS_SCALE, slot.Height / CANVAS_SCALE);

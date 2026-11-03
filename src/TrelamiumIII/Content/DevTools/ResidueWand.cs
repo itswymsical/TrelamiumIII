@@ -59,7 +59,7 @@ public class ResidueWand : ModItem
         IResidue residue = residues[selected % residues.Length];
         Color? tint = Main.keyState.IsKeyDown(Keys.LeftShift) ? Main.hslToRgb(Main.rand.NextFloat(), 0.8f, 0.55f) : null;
 
-        ResidueSystem.ApplyCircle(residue, Main.MouseWorld, BRUSH_RADIUS, sync: true, tint: tint);
+        ResidueSystem.ApplyCircle(residue, Main.MouseWorld, BRUSH_RADIUS, origin: ResidueOrigin.Owned, tint: tint);
 
         return true;
     }

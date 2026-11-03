@@ -110,8 +110,15 @@ public abstract class ChemicalResidue : FilmResidue, IChemicalSource
     /// </param>
     /// <param name="owner">The player whose gas pooled here, or -1.</param>
     /// <param name="payload">The chemical release whose gas pooled here, or null.</param>
+    /// <remarks>
+    ///     Every machine simulates gas, each a little differently, so whichever owns the release says where it pooled, the
+    ///     same one that deals its damage.
+    /// </remarks>
     public void Linger(int i, int j, float coverage, int owner = ResidueInstance.NoOwner, ChemicalPayload? payload = null)
-        => ResidueSystem.Apply(this, i, j, MathHelper.Clamp(coverage * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
+    {
+        if (ChemicalPayload.IsAuthority(owner))
+            ResidueSystem.Apply(this, i, j, MathHelper.Clamp(coverage * 0.55f, 0.25f, 1f), owner: owner, payload: payload);
+    }
 
     public override void UpdateTile(ref ResidueInstance instance)
     {
@@ -179,7 +186,7 @@ public abstract class ChemicalResidue : FilmResidue, IChemicalSource
 
         // The gas a residue exhales is what clings from it are made of.
         if (ChemicalPayload.Contact(npc, this, instance.Payload, instance.Owner, LingerLayer as ChemicalGasField, instance.Strength) && ContactBuff >= 0)
-            npc.AddBuff(ContactBuff, ContactBuffTicks);
+            ContactDebuff(npc, ContactBuff, ContactBuffTicks);
     }
 
     public override void OnPlayerContact(ref ResidueInstance instance, Player player)

@@ -35,6 +35,18 @@ public abstract class Residue : IResidue
     /// </remarks>
     protected bool FirstContact(Entity entity) => touchedThisTick.Add(entity);
 
+    /// <summary>
+    ///     Gives an NPC a debuff from standing in this. Every machine runs contacts, and in multiplayer every
+    ///     <see cref="NPC.AddBuff" /> is packets to everyone, so each only asks once what it knows of has run below half.
+    /// </summary>
+    protected static void ContactDebuff(NPC npc, int buffType, int ticks)
+    {
+        if (Main.netMode != NetmodeID.SinglePlayer && npc.FindBuffIndex(buffType) is >= 0 and var index && npc.buffTime[index] > ticks / 2)
+            return;
+
+        npc.AddBuff(buffType, ticks);
+    }
+
     /// <summary>Forgets this tick's contacts. Called by the system before <see cref="UpdateGlobal" />.</summary>
     internal void ResetContacts() => touchedThisTick.Clear();
 
@@ -101,15 +113,28 @@ public abstract class Residue : IResidue
 
     public virtual Point[] BodyReach => SilhouetteOnly;
 
-    /// <summary>The ground's own encoding, so a shader reads the same channels off a body. Thickens fast from the coat's top edge.</summary>
-    public virtual TileCanvasSample EncodeBody(float rise, int age)
+    public virtual Bodies.BodyFlow BodyFlow => new();
+
+    public virtual Bodies.BodyShed? BodyShed => null;
+
+    /// <summary>Nothing by default: most of what rubs off is worth saying so.</summary>
+    public virtual IResidue? BodyPickup(in ResidueInstance instance, out float amount)
+    {
+        amount = 0f;
+
+        return null;
+    }
+
+    /// <summary>The ground's own encoding, so a shader reads the same channels off a body. Thickens fast.</summary>
+    public virtual TileCanvasSample EncodeBody(float amount, int age, Color tint)
     {
         var instance = new ResidueInstance
         {
             Life = 1f,
             MaxLife = 1f,
-            Intensity = MathHelper.Clamp(rise * 3f, 0f, 1f),
+            Intensity = MathHelper.Clamp(amount * 3f, 0f, 1f),
             TotalAge = age,
+            Tint = tint,
         };
 
         return EncodeCanvas(in instance);
@@ -132,18 +157,27 @@ public abstract class Residue : IResidue
     /// <returns>Whether the tile is gone.</returns>
     protected static bool TryDestroyTile(ref ResidueInstance instance)
     {
-        if (Main.netMode == NetmodeID.MultiplayerClient || !instance.Tile.HasTile)
+        if (!TryBreakTile(instance.X, instance.Y))
             return false;
-
-        if (!Main.projectile[0].CanExplodeTile(instance.X, instance.Y) || !WorldGen.CanKillTile(instance.X, instance.Y))
-            return false;
-
-        WorldGen.KillTile(instance.X, instance.Y, noItem: true);
-
-        if (Main.netMode == NetmodeID.Server)
-            NetMessage.SendTileSquare(-1, instance.X, instance.Y, 1);
 
         instance.Life = 0f;
+
+        return true;
+    }
+
+    /// <inheritdoc cref="TryDestroyTile" />
+    internal static bool TryBreakTile(int x, int y)
+    {
+        if (Main.netMode == NetmodeID.MultiplayerClient || !Framing.GetTileSafely(x, y).HasTile)
+            return false;
+
+        if (!Main.projectile[0].CanExplodeTile(x, y) || !WorldGen.CanKillTile(x, y))
+            return false;
+
+        WorldGen.KillTile(x, y, noItem: true);
+
+        if (Main.netMode == NetmodeID.Server)
+            NetMessage.SendTileSquare(-1, x, y, 1);
 
         return true;
     }

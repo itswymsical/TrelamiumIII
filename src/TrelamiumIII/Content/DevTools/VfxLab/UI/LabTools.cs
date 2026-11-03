@@ -112,7 +112,7 @@ internal static class LabTools
         if (painting && ShaderBench.Selected is ResidueTarget target && ++brushTimer >= BrushInterval)
         {
             brushTimer = 0;
-            ResidueSystem.ApplyCircle(target.Residue, pointer, BrushRadius, duration: 60f * 60f);
+            ResidueSystem.ApplyCircle(target.Residue, pointer, BrushRadius, duration: 60f * 60f, origin: ResidueOrigin.Owned);
         }
     }
 
