@@ -68,7 +68,6 @@ float ScarBands;
 float PitScale;             // pit cells per tile
 float PitDistort;           // how far the streaks drag the pits out of round
 float PitReach;             // cell value a fully eaten tile has opened up to
-float PitFloor;             // cell value below which no pit opens, however deep the cell
 float3 PitColor;
 float PitAlpha;
 float EatingEdge;           // cell value past a pit's edge still being eaten
@@ -219,7 +218,7 @@ float4 AcidPass(float2 uv : TEXCOORD0) : COLOR0
 
     // The pits, which go through everything above. They open from the deepest cells outward, and stay world-locked so
     // a hole keeps its place as it grows.
-    float opened = PitFloor + canvas.g * PitReach;
+    float opened = canvas.g * PitReach;
 
     if (canvas.g >= 0.02 && cells < opened)
     {

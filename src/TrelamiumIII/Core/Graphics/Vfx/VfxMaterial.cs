@@ -9,7 +9,7 @@ namespace TrelamiumIII.Core.Graphics.Vfx;
 /// </summary>
 internal sealed class VfxMaterial
 {
-    private readonly record struct Entry(string Name, int Size, Vector3 Value, Asset<Texture2D>? Texture);
+    private readonly record struct Entry(string Name, int Size, Vector3 Value, Func<Asset<Texture2D>>? Texture);
 
     private readonly List<Entry> entries = [];
 
@@ -31,7 +31,10 @@ internal sealed class VfxMaterial
         return this;
     }
 
-    public VfxMaterial Set(string name, Asset<Texture2D> texture)
+    public VfxMaterial Set(string name, Asset<Texture2D> texture) => Set(name, () => texture);
+
+    /// <summary> Asked for each time it draws, so a field exported with this requests nothing until there's a screen to draw on. </summary>
+    public VfxMaterial Set(string name, Func<Asset<Texture2D>> texture)
     {
         entries.Add(new Entry(name, 0, Vector3.Zero, texture));
         return this;
@@ -57,7 +60,7 @@ internal sealed class VfxMaterial
                     break;
                 default:
                     // A sampler can't take a null texture, and the asset is null until it loads.
-                    if (entry.Texture is { Value: { } texture })
+                    if (entry.Texture?.Invoke() is { Value: { } texture })
                         parameter.SetValue(texture);
 
                     break;

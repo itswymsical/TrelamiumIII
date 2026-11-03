@@ -189,8 +189,7 @@ public sealed class AcidCondition : TileCondition
 
         effect.Parameters["PitScale"]?.SetValue(0.14f);
         effect.Parameters["PitDistort"]?.SetValue(0.05f);
-        effect.Parameters["PitReach"]?.SetValue(0.62f);
-        effect.Parameters["PitFloor"]?.SetValue(0.1f);
+        effect.Parameters["PitReach"]?.SetValue(0.7f);
         effect.Parameters["PitColor"]?.SetValue(new Vector3(0.025f, 0.05f, 0.02f));
         effect.Parameters["PitAlpha"]?.SetValue(0.96f);
         effect.Parameters["EatingEdge"]?.SetValue(0.035f);

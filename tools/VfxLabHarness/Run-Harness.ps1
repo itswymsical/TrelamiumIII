@@ -12,11 +12,12 @@
 .PARAMETER Script
     parity holds generated shaders to the ones they replace. spike proves live shader swapping works, and measures it. bench
     drives the Bench's panels with scripted input. lab walks through the lab realm: rooms, designing a field, its physics, residue,
-    undo, save and load.
+    undo, save and load. export drives an export's review and writes two fields. exported runs those fields once the copy has been
+    rebuilt; Run-ExportRoundTrip.ps1 does all of that in order.
 
 .PARAMETER ShaderSource
-    For bench and lab: a copy of src/TrelamiumIII whose files they may edit, to test hot reload, and save recipes into. Never point this
-    at your real source.
+    For bench, lab, export and exported: a copy of src/TrelamiumIII whose files they may edit, to test hot reload, save recipes into and
+    export to. Never point this at your real source.
 
 .PARAMETER Tmod
     The built mod to test. Defaults to the one in your Mods folder.
@@ -28,7 +29,7 @@
     ./Run-Harness.ps1 -Script parity -Driver OpenGL
 #>
 param(
-    [ValidateSet('parity', 'spike', 'bench', 'lab')]
+    [ValidateSet('parity', 'spike', 'bench', 'lab', 'export', 'exported')]
     [string]$Script = 'parity',
     [string]$ShaderSource = '',
     [string]$Tmod = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'My Games\Terraria\tModLoader\Mods\TrelamiumIII.tmod'),

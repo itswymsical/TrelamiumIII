@@ -45,6 +45,9 @@ public sealed partial class VfxLabHarness : ModSystem
     /// <summary> Otherwise it's always dry, to keep captures comparable. </summary>
     private static bool rainHeld;
 
+    /// <summary> For a script that compares screenshots first and drives the panels after. </summary>
+    private static bool showPanels;
+
     private static string? captureName;
     private static Color[]? capturedPixels;
     private static Vector3 capturedMean;
@@ -98,7 +101,7 @@ public sealed partial class VfxLabHarness : ModSystem
         player.immune = true;
         player.immuneTime = Math.Max(player.immuneTime, 2);
         player.statLife = player.statLifeMax2;
-        Main.hideUI = scriptName is not ("bench" or "lab");
+        Main.hideUI = !showPanels && scriptName is not ("bench" or "lab" or "export");
         Main.dayTime = true;
         Main.time = 27000;
         Main.raining = rainHeld;
@@ -119,6 +122,8 @@ public sealed partial class VfxLabHarness : ModSystem
                 "parity" => ParityScript(),
                 "bench" => BenchScript(),
                 "lab" => LabScript(),
+                "export" => ExportScript(),
+                "exported" => ExportedScript(),
                 _ => SpikeScript(),
             }).GetEnumerator();
 

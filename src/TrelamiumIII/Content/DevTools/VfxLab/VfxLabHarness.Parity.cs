@@ -159,13 +159,7 @@ public sealed partial class VfxLabHarness
 
         Color[] Draw(GeneratedShader shader)
         {
-            FieldLayer.ApplyScreenParameters(made, new Vector2(2f));
-            made.Parameters["Time"]?.SetValue(12.34f);
-            made.Parameters["Aspect"]?.SetValue(ParityWidth / (float)ParityHeight);
-            made.Parameters["Zoom"]?.SetValue(Vector2.One);
-            made.Parameters["WorldOffset"]?.SetValue(new Vector2(3.3f, 1.7f));
-            made.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / ParityWidth, 1f / ParityHeight));
-            made.Parameters["uAttrTex"]?.SetValue(attributeTexture);
+            ParityFrame(made, attributeTexture, 12.34f, Vector2.One, new Vector2(3.3f, 1.7f));
             LiveRecipe.BuildMaterial(shader).Apply(made);
 
             return Render(device, target, fieldTexture, made);
@@ -369,23 +363,12 @@ public sealed partial class VfxLabHarness
         // Two frames of everything the host takes from outside, so a uniform that only agrees by luck gets caught.
         foreach ((float time, Vector2 zoom, Vector2 offset) in new[] { (12.34f, Vector2.One, new Vector2(3.3f, 1.7f)), (87.5f, new Vector2(1.3f), new Vector2(-0.4f, 9.2f)) })
         {
-            void Frame(Effect effect)
-            {
-                FieldLayer.ApplyScreenParameters(effect, new Vector2(2f));
-                effect.Parameters["Time"]?.SetValue(time);
-                effect.Parameters["Aspect"]?.SetValue(ParityWidth / (float)ParityHeight);
-                effect.Parameters["Zoom"]?.SetValue(zoom);
-                effect.Parameters["WorldOffset"]?.SetValue(offset);
-                effect.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / ParityWidth, 1f / ParityHeight));
-                effect.Parameters["uAttrTex"]?.SetValue(attributeTexture);
-            }
-
-            Frame(real);
+            ParityFrame(real, attributeTexture, time, zoom, offset);
             look.Apply(real);
             real.Parameters["WorldLight"]?.SetValue(floor);
             Color[] expected = Render(device, target, fieldTexture, real);
 
-            Frame(made);
+            ParityFrame(made, attributeTexture, time, zoom, offset);
             material.Apply(made);
             Color[] actual = Render(device, target, fieldTexture, made);
 
@@ -411,6 +394,18 @@ public sealed partial class VfxLabHarness
         Log($"{(same ? "PASS" : "FAIL")}: {name}: worst channel difference {worst}/255, {over} pixels over {ParityTolerance}, {drawn} drawn pixels across both frames, noise {generated.Uniforms.First(static uniform => uniform.Kind == ParamKind.Noise).Texture}");
 
         return same;
+    }
+
+    /// <summary> Everything a shader takes from its host, set the same way for whichever shaders are being compared. </summary>
+    private static void ParityFrame(Effect effect, Texture2D attributes, float time, Vector2 zoom, Vector2 offset)
+    {
+        FieldLayer.ApplyScreenParameters(effect, new Vector2(2f));
+        effect.Parameters["Time"]?.SetValue(time);
+        effect.Parameters["Aspect"]?.SetValue(ParityWidth / (float)ParityHeight);
+        effect.Parameters["Zoom"]?.SetValue(zoom);
+        effect.Parameters["WorldOffset"]?.SetValue(offset);
+        effect.Parameters["FieldTexel"]?.SetValue(new Vector2(1f / ParityWidth, 1f / ParityHeight));
+        effect.Parameters["uAttrTex"]?.SetValue(attributes);
     }
 
     private static Color[] Render(GraphicsDevice device, RenderTarget2D target, Texture2D field, Effect effect)

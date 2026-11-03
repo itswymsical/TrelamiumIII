@@ -13,6 +13,9 @@ internal static class RecipeFile
 {
     public const string Extension = ".vfx.json";
 
+    /// <summary> Noise textures are named in recipes by file. Any other texture is named by its full key. </summary>
+    private const string NoiseFolder = "TrelamiumIII/Assets/Textures/Noise/";
+
     /// <summary> A number per line makes a colour take five lines and every diff harder to read. </summary>
     private static readonly Regex NumberArray = new(@"\[\r?\n\s+(-?[\d.eE+-]+(?:,\r?\n\s+-?[\d.eE+-]+)*)\r?\n\s+\]", RegexOptions.Compiled);
 
@@ -49,6 +52,8 @@ internal static class RecipeFile
     }
 
     public static string PathOf(string folder, string name) => Path.Combine(folder, name + Extension);
+
+    public static string TextureKey(string texture) => texture.Contains('/') ? texture : NoiseFolder + texture;
 
     public static void Save(string folder, VfxRecipe recipe)
     {

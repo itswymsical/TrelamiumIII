@@ -132,8 +132,9 @@ internal sealed class ShaderHotReload : IDisposable
             Report("Stage library changed.", false);
         }
 
+        // By its path under the shaders folder, as that's its asset's name, and an exported shader is a folder down.
         foreach (string shader in shaders.Where(File.Exists))
-            compiling.Add((Path.GetFileNameWithoutExtension(shader), ShaderCompiler.CompileFileAsync(shader, LabFiles.ShaderCache)));
+            compiling.Add((Path.ChangeExtension(Path.GetRelativePath(root, shader), null).Replace('\\', '/'), ShaderCompiler.CompileFileAsync(shader, LabFiles.ShaderCache)));
     }
 
     /// <summary> The shaders whose source names this header. </summary>

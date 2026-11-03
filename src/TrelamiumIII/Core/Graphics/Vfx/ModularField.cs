@@ -39,8 +39,8 @@ internal sealed class VfxFieldSpec
 
     public FieldModule[] Modules { get; set; } = [];
 
-    /// <summary> What this field leaves on tiles it pools on, or null to leave nothing. </summary>
-    public ITileCondition? Residue { get; set; }
+    /// <summary> The condition this field leaves on tiles it pools on, or null to leave nothing. A type, as fields can load before conditions do. </summary>
+    public Type? Residue { get; set; }
 
     public float ResidueThreshold { get; set; } = 0.9f;
 
@@ -121,7 +121,7 @@ internal abstract class ModularField : GasField
     /// <summary> The same strength a chemical field's residue lingers at. </summary>
     protected override void OnTileField(int tileX, int tileY, Tile tile, float density, int owner, ChemicalPayload? payload)
     {
-        if (Spec.Residue is { } residue)
+        if (Spec.Residue is { } type && TileConditionSystem.Get(type) is { } residue)
             TileConditionSystem.Apply(residue, tileX, tileY, MathHelper.Clamp(density / MathF.Max(TileFieldThreshold, 0.01f) * 0.55f, 0.25f, 1f), owner: owner, sync: false, payload: payload);
     }
 

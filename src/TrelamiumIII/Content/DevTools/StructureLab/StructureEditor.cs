@@ -21,6 +21,8 @@ public static class StructureEditor
     /// <summary>Tiles between the bottom of the canvas and where the player arrives.</summary>
     private const int ArrivalGap = 4;
 
+    private static readonly EnumerationOptions AnyCapitalisation = new() { MatchCasing = MatchCasing.CaseInsensitive };
+
     public static int MaxWidth => StructureLabRealm.WorldWidth - 2 * Margin;
 
     public static int MaxHeight => StructureLabRealm.WorldHeight - 2 * Margin;
@@ -47,7 +49,17 @@ public static class StructureEditor
 
     public static bool SavesToSource => DeveloperConfig.SourceRoot() is not null;
 
-    public static string PathOf(string name) => Path.Combine(Folder, name + StructureFile.Extension);
+    /// <summary>
+    ///     Where <paramref name="name" /> lives: the file already there if one differs only by capitalisation. Overwriting it
+    ///     through another spelling would rename it, and a job only finds a packed structure by its exact name.
+    /// </summary>
+    public static string PathOf(string name)
+    {
+        string file = name + StructureFile.Extension;
+        string? existing = Directory.Exists(Folder) ? Directory.EnumerateFiles(Folder, file, AnyCapitalisation).FirstOrDefault() : null;
+
+        return existing ?? Path.Combine(Folder, file);
+    }
 
     private static string AutosavePath(string name) => Path.Combine(Main.SavePath, "TrelamiumIII", "Structures", "Autosave", name + StructureFile.Extension);
 
@@ -74,11 +86,10 @@ public static class StructureEditor
     {
         RequireCanvas();
 
-        name ??= DocumentName!;
-        string path = PathOf(name);
+        string path = PathOf(name ?? DocumentName!);
 
         StructureFile.Write(StructureWorld.Capture(Canvas), path);
-        DocumentName = name;
+        DocumentName = Path.GetFileNameWithoutExtension(path);
 
         return path;
     }
@@ -88,6 +99,8 @@ public static class StructureEditor
     /// <summary>Puts <paramref name="data" /> on the canvas, entering the lab first when needed.</summary>
     public static void Open(string name, StructureData data)
     {
+        name = Path.GetFileNameWithoutExtension(PathOf(name));
+
         if (data.Width > MaxWidth || data.Height > MaxHeight)
             throw new ArgumentException($"The lab holds structures up to {MaxWidth}x{MaxHeight}; this one is {data.Width}x{data.Height}.");
 

@@ -189,7 +189,7 @@ internal sealed class LabSlot(string letter, LabFieldSlot layer, StageLibrary li
 
         RecipeDeposit? deposit = recipe.Links.Deposit;
 
-        spec.Residue = deposit is null ? null : TileConditionSystem.All.FirstOrDefault(condition => condition.Name == deposit.Residue);
+        spec.Residue = deposit is null ? null : TileConditionSystem.All.FirstOrDefault(condition => condition.Name == deposit.Residue)?.GetType();
         spec.ResidueThreshold = deposit?.Threshold ?? 0.9f;
         spec.ResidueInterval = deposit?.Interval ?? 5;
     }

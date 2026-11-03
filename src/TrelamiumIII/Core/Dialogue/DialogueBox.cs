@@ -919,6 +919,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         // a set of answers to the same question.
         Point room = PanelStyle.MaxChoiceContent();
 
+        if (widest + CHOICE_PAD_X * 2 > room.X)
+            TrelamiumIII.Instance?.Logger?.Warn($"Dialogue '{DialogueKey}': a choice is {widest} texels wide, more than a slot's {room.X - CHOICE_PAD_X * 2} - it will be cut off.");
+
         return new Point(
             Math.Min((int)MathF.Ceiling(widest) + CHOICE_PAD_X * 2, room.X),
             Math.Min((int)MathF.Ceiling(Font.LineSpacing * CHOICE_SCALE) + CHOICE_PAD_Y * 2, room.Y));

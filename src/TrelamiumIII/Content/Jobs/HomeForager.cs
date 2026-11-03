@@ -20,8 +20,9 @@ namespace TrelamiumIII.Content.Jobs;
 ///         moves into his, and the Merchant arrives for his.
 ///     </para>
 ///     <para>
-///         The materials are only held, not handed in, since they're what the houses are built from. Both houses read
-///         placeholder structures until the real ones are captured over <c>GuideHouse</c> and <c>MerchantHouse</c>.
+///         The materials are only held, not handed in, since they're what the houses are built from. The houses are
+///         <c>Assets/Structures/guidehome</c> and <c>MerchantHouse</c>; a structure's name here has to match its file's
+///         capitalisation exactly.
 ///     </para>
 /// </remarks>
 public sealed class HomeForager : Job
@@ -46,7 +47,7 @@ public sealed class HomeForager : Job
     /// <summary>Kept so <see cref="OnEvent"/> can ask which rooms have already counted.</summary>
     private readonly ValidHousingTask housingTask;
 
-    public HomeForager() : this(Plans("GuideHouse"), Plans("MerchantHouse")) { }
+    public HomeForager() : this(Plans("guidehome"), Plans("MerchantHouse")) { }
 
     /// <param name="guideHouse">Shared by its staking and building stages, so the site is staked once.</param>
     /// <param name="merchantHouse">Likewise.</param>
@@ -56,7 +57,7 @@ public sealed class HomeForager : Job
         [
             [
                 new GatherItemTask("HomeForager.Tasks.Set0.obj0", ItemID.Wood, 100, consume: false),
-                new GatherItemTask("HomeForager.Tasks.Set0.obj1", ItemID.ClayBlock, 20, consume: false),
+                new GatherItemTask("HomeForager.Tasks.Set0.obj1", ItemID.StoneBlock, 30, consume: false),
                 new GatherItemTask("HomeForager.Tasks.Set0.obj2", ItemID.Furnace, consume: false),
                 new GatherItemTask("HomeForager.Tasks.Set0.obj3", ItemID.WoodenHammer, consume: false)
             ],

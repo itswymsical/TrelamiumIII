@@ -984,6 +984,36 @@ Items: {
 		Tooltip: ""
 	}
 
+	CopperBullet: {
+		DisplayName: Copper Bullet
+		Tooltip: Merchant's notes: "Flies."
+	}
+
+	CopperBoomerang: {
+		DisplayName: Copper Boomerang
+		Tooltip: Merchant's notes: "Comes back. Is that good?"
+	}
+
+	CopperTorch: {
+		DisplayName: Copper Torch
+		Tooltip: Merchant's notes: "Burns green. Nobody asked for green."
+	}
+
+	CopperRope: {
+		DisplayName: Copper Rope
+		Tooltip: Merchant's notes: "Hums in a storm. No conceivable use."
+	}
+
+	CopperHealingPotion: {
+		DisplayName: Copper Healing Potion
+		Tooltip: Merchant's notes: "Tastes like licking a handrail."
+	}
+
+	CopperBunny: {
+		DisplayName: Copper Bunny
+		Tooltip: Merchant's notes: "One copper. On a good day."
+	}
+
 	CopperTippedArrow: {
 		DisplayName: Copper Tipped Arrow
 		Tooltip: Deals increased knockback
@@ -2074,6 +2104,7 @@ Conditions: {
 	# {0}: the liquid condition's display name.
 	NearLiquid: Near {0}
 	RainingForBottles: In the Rain
+	CopperTrial: Once the Merchant asks for it
 	InGlowingMushroomBiome: When killed in the glowing mushroom biome
 }
 
