@@ -11,8 +11,8 @@ using TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 using TrelamiumIII.Content.DevTools.VfxLab.Room;
 using TrelamiumIII.Content.DevTools.VfxLab.UI;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab;
 
@@ -105,7 +105,7 @@ public sealed partial class VfxLabHarness
 
         foreach (NPC sample in ContentSamples.NpcsByNetId.Values)
         {
-            if (sample.aiStyle == NPCAIStyleID.Slime && (NPCID.Sets.CountsAsCritter[sample.type] || sample.catchItem > 0) && NPCResidues.For(sample) is not null)
+            if (sample.aiStyle == NPCAIStyleID.Slime && (NPCID.Sets.CountsAsCritter[sample.type] || sample.catchItem > 0) && NPCTrails.For(sample) is not null)
                 critters.Add(sample.TypeName);
         }
 
@@ -113,7 +113,7 @@ public sealed partial class VfxLabHarness
 
         var slime = new NPC();
         slime.SetDefaults(NPCID.BlueSlime);
-        Check("slimes still do", NPCResidues.For(slime) is not null);
+        Check("slimes still do", NPCTrails.For(slime) is not null);
     }
 
     /// <summary> Rain coats the ground in the liquid residue's palette now. The value doesn't say how it looks, so this leaves a picture to judge. </summary>
@@ -135,7 +135,7 @@ public sealed partial class VfxLabHarness
         {
             for (int y = below.Y - 10; y < below.Y + 10; y++)
             {
-                if (TileConditionSystem.TryGet<DampCondition>(x, y, out _))
+                if (ResidueSystem.TryGet<DampResidue>(x, y, out _))
                     wet++;
             }
         }
@@ -255,8 +255,8 @@ public sealed partial class VfxLabHarness
         // What it leaves behind: heavy enough now to reach the floor.
         foreach (bool step in Reveal("residue/pick")) yield return step;
         foreach (bool step in Click("residue/pick")) yield return step;
-        foreach (bool step in Click("list:SlimedCondition")) yield return step;
-        Check("a residue can be chosen", layer.Spec.Residue?.Name == "SlimedCondition", layer.Spec.Residue?.Name ?? "none");
+        foreach (bool step in Click("list:SlimedResidue")) yield return step;
+        Check("a residue can be chosen", layer.Spec.Residue?.Name == "SlimedResidue", layer.Spec.Residue?.Name ?? "none");
 
         foreach (bool step in Reveal("residue/threshold#0")) yield return step;
         foreach (bool step in Type("residue/threshold#0", "0.3")) yield return step;
@@ -270,7 +270,7 @@ public sealed partial class VfxLabHarness
         {
             for (int y = room.Bottom - 2; y < room.Bottom + 2; y++)
             {
-                if (TileConditionSystem.TryGet<SlimedCondition>(x, y, out _))
+                if (ResidueSystem.TryGet<SlimedResidue>(x, y, out _))
                     marked++;
             }
         }
@@ -362,7 +362,7 @@ public sealed partial class VfxLabHarness
 
         Log($"MudField came across: {slot.Recipe.Physics.Kind}, density {slot.Recipe.Physics.Density}, viscosity {slot.Recipe.Physics.Viscosity}, gravity {slot.Recipe.Physics.Gravity}, residue {slot.Recipe.Links.Deposit?.Residue ?? "none"}");
         Check("with its physics", slot.Recipe.Physics.Kind == RecipePhysics.Liquid);
-        Check("and its residue", slot.Recipe.Links.Deposit?.Residue == "MuddiedCondition");
+        Check("and its residue", slot.Recipe.Links.Deposit?.Residue == "MuddiedResidue");
         Check("and it builds", slot.Live.Status == ShaderBuildStatus.Compiled, slot.Live.Log);
 
         foreach (bool step in Click("tool:Spray")) yield return step;
@@ -460,7 +460,7 @@ public sealed partial class VfxLabHarness
         yield return true;
         foreach (bool step in Capture("lab_tiles_room")) yield return step;
 
-        foreach (bool step in Click("row:MuddiedCondition")) yield return step;
+        foreach (bool step in Click("row:MuddiedResidue")) yield return step;
         foreach (bool step in Click("tool:Brush")) yield return step;
 
         Rectangle room = LabRooms.AreaOf(LabRoom.Tiles);
@@ -473,7 +473,7 @@ public sealed partial class VfxLabHarness
 
         foreach (bool step in Scripted(new LabInput { Mouse = at, LeftReleased = true }, new LabInput { Mouse = at })) yield return step;
 
-        Check("the Brush paints the condition", TileConditionSystem.TryGet<MuddiedCondition>(room.X + 34, room.Bottom, out _));
+        Check("the Brush paints the residue", ResidueSystem.TryGet<MuddiedResidue>(room.X + 34, room.Bottom, out _));
         waitTicks = 20;
         yield return true;
         foreach (bool step in Capture("lab_tiles_brushed")) yield return step;

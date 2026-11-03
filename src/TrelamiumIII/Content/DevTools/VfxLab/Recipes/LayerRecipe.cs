@@ -4,8 +4,8 @@ using ReLogic.Content;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 
@@ -21,8 +21,8 @@ internal static class LayerRecipe
     /// <summary> Fields that lay their residue in their own code, where there's no property to read it from. </summary>
     private static readonly Dictionary<Type, Type> ResiduesInCode = new()
     {
-        [typeof(MudField)] = typeof(MuddiedCondition),
-        [typeof(GelField)] = typeof(SlimedCondition),
+        [typeof(MudField)] = typeof(MuddiedResidue),
+        [typeof(GelField)] = typeof(SlimedResidue),
     };
 
     private static readonly PropertyInfo Look = typeof(FieldLayer).GetProperty("Look", Flags)!;
@@ -68,7 +68,7 @@ internal static class LayerRecipe
             _ => RecipePhysics.Gas,
         };
 
-        string? residue = layer is ChemicalGasField && Residue.GetValue(layer) is ITileCondition declared
+        string? residue = layer is ChemicalGasField && Residue.GetValue(layer) is IResidue declared
             ? declared.Name
             : ResiduesInCode.GetValueOrDefault(layer.GetType())?.Name;
 

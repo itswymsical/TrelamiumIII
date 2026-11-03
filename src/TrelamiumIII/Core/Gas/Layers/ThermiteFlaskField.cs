@@ -1,8 +1,8 @@
 using ReLogic.Content;
 using Terraria.Audio;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Utilities;
 using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Core.Graphics.Fields;
@@ -343,7 +343,7 @@ public class ThermiteFlaskField : ChemicalGasField
     };
 
     /// <summary>Thermite left on a floor keeps burning as a thermal residue.</summary>
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<ThermalResidueCondition>();
+    protected override ChemicalResidue? Residue => ResidueSystem.Get<ThermalResidue>();
 
     /// <summary>Just over one node's worth, so only thermite that has actually settled works on terrain.</summary>
     protected override float TileFieldThreshold => 1.15f;

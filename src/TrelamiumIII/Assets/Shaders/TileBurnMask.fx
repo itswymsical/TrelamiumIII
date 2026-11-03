@@ -1,4 +1,4 @@
-// Fire and char read off the burn condition's canvas, clipped to the terrain.
+// Fire and char read off the burn residue's canvas, clipped to the terrain.
 // Canvas channels: r mark coverage, g heat (divide by weight), b char amount, a fire amount.
 
 sampler2D CanvasSampler : register(s0);     // weighted sums, see above

@@ -17,8 +17,8 @@ internal sealed class ExportCatalog
 {
     public IReadOnlyDictionary<string, ModuleSchema> Modules { get; init; } = new Dictionary<string, ModuleSchema>();
 
-    /// <summary> Every tile condition, by the name recipes use for it. </summary>
-    public IReadOnlyDictionary<string, (string Namespace, string Type)> Conditions { get; init; } = new Dictionary<string, (string, string)>();
+    /// <summary> Every residue, by the name recipes use for it. </summary>
+    public IReadOnlyDictionary<string, (string Namespace, string Type)> Residues { get; init; } = new Dictionary<string, (string, string)>();
 
     /// <summary> Classes the mod already has. A field exported earlier isn't one of these, or it could never be exported again. </summary>
     public IReadOnlySet<string> TakenNames { get; init; } = new HashSet<string>();
@@ -78,8 +78,8 @@ internal static class FieldExporter
                 yield return new GenerationProblem(module.Type, $"it has no setting called '{setting}', so that's ignored.", false);
         }
 
-        if (recipe.Links.Deposit is { } deposit && !catalog.Conditions.ContainsKey(deposit.Residue))
-            yield return new GenerationProblem(deposit.Residue, "there's no tile condition with that name, so it leaves nothing, as it does in the preview.", false);
+        if (recipe.Links.Deposit is { } deposit && !catalog.Residues.ContainsKey(deposit.Residue))
+            yield return new GenerationProblem(deposit.Residue, "there's no residue with that name, so it leaves nothing, as it does in the preview.", false);
     }
 
     public static string ContentClass(VfxRecipe recipe, IReadOnlyList<UniformValue> uniforms, string namespaceName, ExportCatalog catalog)
@@ -108,10 +108,10 @@ internal static class FieldExporter
         AppendMaterial(spec, uniforms);
         AppendModules(spec, recipe, catalog, usings);
 
-        if (recipe.Links.Deposit is { } deposit && catalog.Conditions.TryGetValue(deposit.Residue, out (string Namespace, string Type) condition))
+        if (recipe.Links.Deposit is { } deposit && catalog.Residues.TryGetValue(deposit.Residue, out (string Namespace, string Type) residue))
         {
-            usings.Add(condition.Namespace);
-            Line($"Residue = typeof({condition.Type}),");
+            usings.Add(residue.Namespace);
+            Line($"Residue = typeof({residue.Type}),");
             Line($"ResidueThreshold = {Number(deposit.Threshold)},");
             Line($"ResidueInterval = {deposit.Interval.ToString(CultureInfo.InvariantCulture)},");
         }

@@ -179,7 +179,7 @@ internal static class LabRooms
         Block(area.X + 88, area.Y, 3, area.Height - 20, TileID.GrayBrick);
     }
 
-    /// <summary> A strip of every common surface, with ledges and steps, so a condition can be judged on what it'll really land on and from every side. </summary>
+    /// <summary> A strip of every common surface, with ledges and steps, so a residue can be judged on what it'll really land on and from every side. </summary>
     private static void BuildTilesRoom(Rectangle area)
     {
         Hollow(area);
@@ -220,7 +220,7 @@ internal static class LabRooms
         for (int step = 0; step < 4; step++)
             Block(area.Right - 4 - step * 2, floor - step - 1, 4 + step * 2, 1, TileID.GrayBrick);
 
-        // A shallow pool for what a condition does at the waterline.
+        // A shallow pool for what a residue does at the waterline.
         Pool(area.X + 40, floor, 8, 3, LiquidID.Water);
     }
 

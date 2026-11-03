@@ -1,6 +1,6 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 using TrelamiumIII.Core.Graphics.Fields;
 
 namespace TrelamiumIII.Core.Gas.Layers;
@@ -36,7 +36,7 @@ public class BloodField : ChemicalGasField
     /// <summary>
     ///     Leaves nothing on the terrain it lands on.
     /// </summary>
-    protected override ChemicalReactionTileCondition? Residue => null;
+    protected override ChemicalResidue? Residue => null;
 
     protected override GasLook Look { get; } = new()
     {

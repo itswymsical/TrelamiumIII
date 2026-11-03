@@ -1,8 +1,8 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Common.DamageMeter;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Fields;
@@ -32,7 +32,7 @@ public class VilesporeField : ChemicalGasField
     public override int ReactionChance => 2;
     public override int ReactionDamage => 4;
 
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<NecroticResidueCondition>();
+    protected override ChemicalResidue? Residue => ResidueSystem.Get<NecroticResidue>();
 
     protected override GasLook Look { get; } = new()
     {

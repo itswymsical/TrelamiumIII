@@ -1,5 +1,5 @@
 using ReLogic.Content;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Core.Tiles.Seals;
 

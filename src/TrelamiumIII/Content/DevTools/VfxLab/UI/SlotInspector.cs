@@ -6,7 +6,7 @@ using TrelamiumIII.Content.DevTools.VfxLab.Bench;
 using TrelamiumIII.Content.DevTools.VfxLab.Generation;
 using TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 using TrelamiumIII.Core.Graphics.Vfx;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.UI;
 
@@ -340,7 +340,7 @@ internal sealed class SlotInspector(Inspector inspector)
             Kind = FieldKind.Buttons,
             Buttons =
             [
-                new InspectorButton("residue/pick", recipe.Links.Deposit?.Residue ?? "Nothing. Choose a tile condition", () =>
+                new InspectorButton("residue/pick", recipe.Links.Deposit?.Residue ?? "Nothing. Choose a residue", () =>
                 {
                     List<(string Label, Action Pick)> items =
                     [
@@ -351,12 +351,12 @@ internal sealed class SlotInspector(Inspector inspector)
                         }),
                     ];
 
-                    foreach (ITileCondition condition in TileConditionSystem.All.OrderBy(static condition => condition.Name, StringComparer.Ordinal))
+                    foreach (IResidue residue in ResidueSystem.All.OrderBy(static residue => residue.Name, StringComparer.Ordinal))
                     {
-                        items.Add((condition.Name, () =>
+                        items.Add((residue.Name, () =>
                         {
                             recipe.Links.Deposit ??= new RecipeDeposit();
-                            recipe.Links.Deposit.Residue = condition.Name;
+                            recipe.Links.Deposit.Residue = residue.Name;
                             slot.Changed(true);
                         }));
                     }

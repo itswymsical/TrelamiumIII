@@ -9,7 +9,7 @@ using TrelamiumIII.Content.DevTools.VfxLab.UI;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Graphics.Vfx;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab;
 
@@ -189,7 +189,7 @@ internal sealed class LabSlot(string letter, LabFieldSlot layer, StageLibrary li
 
         RecipeDeposit? deposit = recipe.Links.Deposit;
 
-        spec.Residue = deposit is null ? null : TileConditionSystem.All.FirstOrDefault(condition => condition.Name == deposit.Residue)?.GetType();
+        spec.Residue = deposit is null ? null : ResidueSystem.All.FirstOrDefault(residue => residue.Name == deposit.Residue)?.GetType();
         spec.ResidueThreshold = deposit?.Threshold ?? 0.9f;
         spec.ResidueInterval = deposit?.Interval ?? 5;
     }

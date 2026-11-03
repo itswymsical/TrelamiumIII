@@ -502,7 +502,7 @@ full.Physics.Kind = RecipePhysics.Liquid;
 full.Physics.Drag = 0.9f;
 full.Physics.MaxNodes = 123;
 full.Modules.Add(new RecipeModule { Type = "WindForce" }.Set("Pull", 0.03f));
-full.Links.Deposit = new RecipeDeposit { Residue = "SlimedCondition", Threshold = 0.7f, Interval = 8 };
+full.Links.Deposit = new RecipeDeposit { Residue = "SlimedResidue", Threshold = 0.7f, Interval = 8 };
 full.Emitter.Rate = 30f;
 string fullText = RecipeFile.Serialize(full);
 VfxRecipe fullBack = RecipeFile.Parse(fullText);
@@ -512,7 +512,7 @@ Check("max nodes", fullBack.Physics.MaxNodes, 123);
 Check("module type", fullBack.Modules[0].Type, "WindForce");
 Check("module value", fullBack.Modules[0].Get("Pull", 0f), 0.03f);
 Check("a module's missing value falls back", fullBack.Modules[0].Get("Nope", 7f), 7f);
-Check("residue", fullBack.Links.Deposit?.Residue, "SlimedCondition");
+Check("residue", fullBack.Links.Deposit?.Residue, "SlimedResidue");
 Check("threshold", fullBack.Links.Deposit?.Threshold, 0.7f);
 Check("interval", fullBack.Links.Deposit?.Interval, 8);
 Check("emitter", fullBack.Emitter.Rate, 30f);
@@ -579,7 +579,7 @@ Check("a film look's names match its uniforms",
     BenchExport.FilmLook([new ExportValue("NoiseDrift", [0f, 1f], null), new ExportValue("BodyColor", [1f, 1f, 1f], null)]),
     "Look with\n{\n    NoiseDrift = new Vector2(0f, 1f),\n    BodyColor = new Vector3(1f, 1f, 1f),\n}");
 
-Check("a film's noise lives on its condition",
+Check("a film's noise lives on its residue",
     BenchExport.FilmLook([new ExportValue("Bands", [4f], null), new ExportValue("uNoiseTex", null, "Melt_01")]),
     "Look with\n{\n    Bands = 4f,\n}\n\nprotected override Asset<Texture2D> NoiseTexture => Assets.Textures.Noise.Melt_01.Asset;");
 
@@ -601,7 +601,7 @@ else
 
     ShaderCompileResult Compile(string text) => ShaderCompiler.CompileAsync(text, cache).GetAwaiter().GetResult();
 
-    foreach (string shader in new[] { "GasFbm", "TileConditionMask", "HighlandsCapture" })
+    foreach (string shader in new[] { "GasFbm", "ResidueFilmMask", "HighlandsCapture" })
     {
         byte[] committed = File.ReadAllBytes(Path.Combine(shaders, $"{shader}.fxc"));
         ShaderCompileResult compiled = Compile(File.ReadAllText(Path.Combine(shaders, $"{shader}.fx")));
@@ -671,7 +671,7 @@ ExportCatalog exportCatalog = new()
         ["WindForce"] = new("TrelamiumIII.Core.Graphics.Vfx.Modules", [("Pull", 0.02f), ("Scale", 1f)]),
         ["CurlFlow"] = new("TrelamiumIII.Core.Graphics.Vfx.Modules", [("Strength", 0.4f)]),
     },
-    Conditions = new Dictionary<string, (string, string)> { ["SlimedCondition"] = ("TrelamiumIII.Core.Tiles.Conditions.Types", "SlimedCondition") },
+    Residues = new Dictionary<string, (string, string)> { ["SlimedResidue"] = ("TrelamiumIII.Core.Residues.Types", "SlimedResidue") },
     TakenNames = new HashSet<string> { "MudField" },
 };
 
@@ -685,7 +685,7 @@ VfxRecipe ExportRecipe()
     recipe.Physics.MaxNodes = 250;
     recipe.Physics.TemperatureMax = 1500f;
     recipe.Modules.Add(new RecipeModule { Type = "WindForce" }.Set("Pull", 0.05f));
-    recipe.Links.Deposit = new RecipeDeposit { Residue = "SlimedCondition", Threshold = 0.3f, Interval = 7 };
+    recipe.Links.Deposit = new RecipeDeposit { Residue = "SlimedResidue", Threshold = 0.3f, Interval = 7 };
     recipe.Emitter.Radius = 40f;
 
     return recipe;
@@ -711,9 +711,9 @@ True("every uniform is set", exportShader.Uniforms.All(uniform => exportClass.Co
 True("a tuned setting is what was tuned", exportClass.Contains("new WindForce { Pull = 0.05f, Scale = 1f },"));
 True("and an untouched one is pinned to today's default", exportClass.Contains("Scale = 1f"));
 True("modules bring their namespace", exportClass.Contains("using TrelamiumIII.Core.Graphics.Vfx.Modules;"));
-True("the residue is a type", exportClass.Contains("Residue = typeof(SlimedCondition),"));
+True("the residue is a type", exportClass.Contains("Residue = typeof(SlimedResidue),"));
 True("with its numbers", exportClass.Contains("ResidueThreshold = 0.3f,") && exportClass.Contains("ResidueInterval = 7,"));
-True("and its namespace", exportClass.Contains("using TrelamiumIII.Core.Tiles.Conditions.Types;"));
+True("and its namespace", exportClass.Contains("using TrelamiumIII.Core.Residues.Types;"));
 Check("generating it twice comes out the same", FieldExporter.ContentClass(exportRecipe, exportShader.Uniforms, "TrelamiumIII.Content.Vfx", exportCatalog), exportClass);
 
 // Every number in the file has to read back as exactly the float it was.
@@ -732,7 +732,7 @@ plainRecipe.Links.Deposit = null;
 string plainClass = FieldExporter.ContentClass(plainRecipe, ShaderGenerator.Generate(plainRecipe, library).Uniforms, "TrelamiumIII.Content.Vfx", exportCatalog);
 True("no modules, no modules line", !plainClass.Contains("Modules"));
 True("no residue, no residue lines", !plainClass.Contains("Residue"));
-True("and no using it doesn't need", !plainClass.Contains("Conditions.Types") && !plainClass.Contains("Vfx.Modules"));
+True("and no using it doesn't need", !plainClass.Contains("Residues.Types") && !plainClass.Contains("Vfx.Modules"));
 
 Section("textures");
 

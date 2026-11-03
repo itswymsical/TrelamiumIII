@@ -1,4 +1,4 @@
-// Acid eating into the terrain, read off the acid condition's canvas and clipped to the terrain.
+// Acid eating into the terrain, read off the acid residue's canvas and clipped to the terrain.
 // Canvas channels: r mark coverage, g eaten amount, b film amount; weighted sums.
 //
 // Bottom to top: the scar it leaves, the wet film, then the pits, which bite through both and are

@@ -1,4 +1,4 @@
-// Frost read off a tile condition's canvas: translucent ice with crystal veins, a bright freezing
+// Frost read off a residue's canvas: translucent ice with crystal veins, a bright freezing
 // front at its edge, rime standing proud of the terrain, and sparkle.
 // Canvas channels: r coverage, g crystal growth (divide by weight).
 

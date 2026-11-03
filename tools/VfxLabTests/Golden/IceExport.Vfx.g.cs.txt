@@ -4,7 +4,7 @@ using ReLogic.Content;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Graphics.Vfx;
 using TrelamiumIII.Core.Graphics.Vfx.Modules;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Content.Vfx;
 
@@ -57,7 +57,7 @@ internal sealed partial class IceExport : ModularField
         [
             new WindForce { Pull = 0.05f, Scale = 1f },
         ],
-        Residue = typeof(SlimedCondition),
+        Residue = typeof(SlimedResidue),
         ResidueThreshold = 0.3f,
         ResidueInterval = 7,
     };

@@ -3,7 +3,7 @@ using System.Linq;
 using TrelamiumIII.Content.DevTools.VfxLab.Bench;
 using TrelamiumIII.Content.DevTools.VfxLab.Recipes;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.UI;
 
@@ -17,7 +17,7 @@ internal enum LabTool
     /// <summary> Hold to release at the pointer. </summary>
     Spray,
 
-    /// <summary> Hold to paint a tile condition. </summary>
+    /// <summary> Hold to paint a residue. </summary>
     Brush,
 }
 
@@ -109,10 +109,10 @@ internal static class LabTools
             }
         }
 
-        if (painting && ShaderBench.Selected is ConditionTarget target && ++brushTimer >= BrushInterval)
+        if (painting && ShaderBench.Selected is ResidueTarget target && ++brushTimer >= BrushInterval)
         {
             brushTimer = 0;
-            TileConditionSystem.ApplyCircle(target.Condition, pointer, BrushRadius, duration: 60f * 60f);
+            ResidueSystem.ApplyCircle(target.Residue, pointer, BrushRadius, duration: 60f * 60f);
         }
     }
 
@@ -125,7 +125,7 @@ internal static class LabTools
         foreach (FieldLayer layer in FieldSystem.Layers)
             layer.ClearNodes();
 
-        TileConditionSystem.ClearAll();
+        ResidueSystem.ClearAll();
     }
 
     public static void RemoveEmittersOf(FieldLayer layer)
@@ -183,7 +183,7 @@ internal static class LabTools
                 spraying |= input.LeftPressed && Source is not null;
                 break;
             case LabTool.Brush:
-                painting |= input.LeftPressed && ShaderBench.Selected is ConditionTarget;
+                painting |= input.LeftPressed && ShaderBench.Selected is ResidueTarget;
                 break;
         }
     }

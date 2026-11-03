@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Core.Tiles.Seals;
 

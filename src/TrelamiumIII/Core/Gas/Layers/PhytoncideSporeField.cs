@@ -1,7 +1,7 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using Terraria.Audio;
 using TrelamiumIII.Core.Graphics.Fields;
@@ -33,7 +33,7 @@ public class PhytoncideSporeField : ChemicalGasField
     public override int ReactionDamage => 4;
 
     /// <summary>Spores that settle leave a caustic film on the surface.</summary>
-    protected override ChemicalReactionTileCondition? Residue => TileConditionSystem.Get<CausticResidueCondition>();
+    protected override ChemicalResidue? Residue => ResidueSystem.Get<CausticResidue>();
 
     protected override GasLook Look { get; } = new()
     {

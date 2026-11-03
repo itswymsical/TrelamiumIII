@@ -40,7 +40,7 @@ internal static class BenchExport
         ["WorldLight"] = "WorldLight",
     };
 
-    /// <summary> <c>TileFilmLook.Apply</c> read backwards. Its properties are named after the uniforms, all but the drift. </summary>
+    /// <summary> <c>FilmLook.Apply</c> read backwards. Its properties are named after the uniforms, all but the drift. </summary>
     private static readonly Dictionary<string, string> FilmLookNames = new(StringComparer.Ordinal)
     {
         ["Threshold"] = "Threshold",
@@ -68,7 +68,7 @@ internal static class BenchExport
     /// <summary> <c>Look with { ... }</c> for a <c>GasLook</c>. </summary>
     public static string GasLook(IEnumerable<ExportValue> values) => With(values, GasLookNames, static texture => $"Noise = static () => Assets.Textures.Noise.{texture}.Asset,");
 
-    /// <summary> <c>Look with { ... }</c> for a <c>TileFilmLook</c>. A film's noise lives on the condition, not its look. </summary>
+    /// <summary> <c>Look with { ... }</c> for a <c>FilmLook</c>. A film's noise lives on the residue, not its look. </summary>
     public static string FilmLook(IEnumerable<ExportValue> values)
     {
         List<ExportValue> all = values.ToList();

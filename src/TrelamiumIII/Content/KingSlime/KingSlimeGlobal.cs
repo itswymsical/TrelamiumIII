@@ -11,7 +11,7 @@ using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues.Types;
 using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.KingSlime;
@@ -2240,7 +2240,7 @@ public class KingSlimeRework : GlobalNPC
                             {
                                 var adjacentTile = Framing.GetTileSafely(tileX + offsetX, tileY);
                                 if (adjacentTile.HasTile && Main.tileSolid[adjacentTile.TileType])
-                                    SlimedCondition.Splatter(new Vector2(tileX + offsetX, tileY), npc.width / npc.scale);
+                                    SlimedResidue.Splatter(new Vector2(tileX + offsetX, tileY), npc.width / npc.scale);
                             }
                         }
                     }

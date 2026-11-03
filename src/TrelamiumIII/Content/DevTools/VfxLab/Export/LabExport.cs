@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using TrelamiumIII.Common.Configs;
 using TrelamiumIII.Core.Graphics.Vfx;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.Export;
 
@@ -26,19 +26,19 @@ internal static class LabExport
             modules[type.Name] = new ModuleSchema(type.Namespace!, ModuleCatalog.Settings(type).Select(field => (field.Name, (float)field.GetValue(sample)!)).ToList());
         }
 
-        Dictionary<string, (string, string)> conditions = [];
+        Dictionary<string, (string, string)> residues = [];
 
-        foreach (ITileCondition condition in TileConditionSystem.All)
+        foreach (IResidue residue in ResidueSystem.All)
         {
-            Type type = condition.GetType();
+            Type type = residue.GetType();
 
-            conditions.TryAdd(condition.Name, (type.Namespace!, type.FullName![(type.Namespace!.Length + 1)..].Replace('+', '.')));
+            residues.TryAdd(residue.Name, (type.Namespace!, type.FullName![(type.Namespace!.Length + 1)..].Replace('+', '.')));
         }
 
         return new ExportCatalog
         {
             Modules = modules,
-            Conditions = conditions,
+            Residues = residues,
             TakenNames = mod.Code.GetTypes().Where(static type => !type.IsNested && !IsExport(type)).Select(static type => type.Name).ToHashSet(StringComparer.Ordinal),
             HasTexture = static key => ModContent.HasAsset(key),
         };

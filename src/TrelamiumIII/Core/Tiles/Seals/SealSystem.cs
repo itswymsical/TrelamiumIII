@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Terraria.ModLoader.IO;
-using TrelamiumIII.Core.Tiles.Conditions;
+using TrelamiumIII.Core.Residues;
 
 namespace TrelamiumIII.Core.Tiles.Seals;
 
@@ -42,7 +42,7 @@ public sealed class SealSystem : ModSystem
     public override void PostSetupContent()
     {
         for (int k = 1; k < types.Count; k++)
-            TileConditionSystem.AddOverlay(new SealCanvasSource(types[k]));
+            ResidueSystem.AddOverlay(new SealCanvasSource(types[k]));
     }
 
     public override void Unload()

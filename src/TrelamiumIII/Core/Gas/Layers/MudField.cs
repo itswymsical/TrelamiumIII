@@ -1,12 +1,12 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Graphics.Fields;
-using TrelamiumIII.Core.Tiles.Conditions;
-using TrelamiumIII.Core.Tiles.Conditions.Types;
+using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Types;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
-/// <summary>Wet mud: a heavy liquid that slumps and pools, coating what it settles on in <see cref="MuddiedCondition" />.</summary>
+/// <summary>Wet mud: a heavy liquid that slumps and pools, coating what it settles on in <see cref="MuddiedResidue" />.</summary>
 public sealed class MudField : ChemicalGasField
 {
     public override ChemicalDamageType ChemicalType => ChemicalDamageType.Solute;
@@ -81,7 +81,7 @@ public sealed class MudField : ChemicalGasField
 
         float intensity = MathHelper.Clamp(density / Math.Max(TileFieldThreshold, 0.01f) * 0.5f, 0.3f, 1f);
 
-        TileConditionSystem.Apply<MuddiedCondition>(tileX, tileY, intensity, owner: owner, sync: false);
+        ResidueSystem.Apply<MuddiedResidue>(tileX, tileY, intensity, owner: owner, sync: false);
     }
     //protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     //{
