@@ -98,10 +98,10 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     private const float ANCHOR_GAP = 34f;
 
     /// <summary>A docked box undocks once the speaker is within this many tiles.</summary>
-    private const float UNDOCK_TILES = 20f;
+    private const float UNDOCK_TILES = 4f;
 
     /// <summary>A hanging box docks once the speaker is past this many tiles. Must exceed <see cref="UNDOCK_TILES" />.</summary>
-    private const float DOCK_TILES = 30f;
+    private const float DOCK_TILES = 6f;
 
     /// <summary>Screen pixels a docked box's speaker has to be inside the screen edge before it undocks.</summary>
     private const float UNDOCK_INSET = 48f;

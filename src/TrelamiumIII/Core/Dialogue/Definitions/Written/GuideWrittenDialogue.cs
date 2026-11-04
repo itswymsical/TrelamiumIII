@@ -22,35 +22,37 @@ sealed class GuideWrittenDialogue : ModSystem
 
         Dialogue.Define("Guide.HomeForager_Greeting")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(10)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
                 .Choice("Guide.HomeForager_Name")
-                .Choice("Guide.HomeForager_LandOfLight")
-                .Choice("Guide.HomeForager_Skip")
+                .Choice("Guide.HomeForager_Question")
             .Register();
 
         Dialogue.Define("Guide.HomeForager_Name")
-            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
-            .Line(Speaker, emote: 0, speed: 1.1f)
-                .Choice("Guide.HomeForager_Corruption")
-                .Choice("Guide.HomeForager_Corruption")
-            .Register();
-
-        Dialogue.Define("Guide.HomeForager_Skip")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
             .Line(Speaker, emote: 0, speed: 1.1f)
-                .Choice("Guide.HomeForager_Corruption")
-                .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Question")
+                .Choice("Guide.HomeForager_Question")
             .Register();
 
-        Dialogue.Define("Guide.HomeForager_LandOfLight")
+        Dialogue.Define("Guide.HomeForager_Question")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(16), new Pause(20)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
-            .Line(Speaker, emote: 0, speed: 1.1f)
-                .Choice("Guide.HomeForager_Corruption")
-                .Choice("Guide.HomeForager_Corruption")
+                .Choice("Guide.HomeForager_Assailants")
+                .Choice("Guide.HomeForager_Assailants_Quiet")
             .Register();
 
-        Dialogue.Define("Guide.HomeForager_Corruption")
+        Dialogue.Define("Guide.HomeForager_Assailants_Quiet")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .OnComplete(JobTrackerHint.Begin)
+            .Register();
+
+        Dialogue.Define("Guide.HomeForager_Assailants")
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
             .OnComplete(JobTrackerHint.Begin)
@@ -135,6 +137,22 @@ sealed class GuideWrittenDialogue : ModSystem
         Dialogue.Define("Guide.HomeForager_CheckIn")
             .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16), new Pause(24)])
+            .Register();
+
+        Dialogue.Define("Guide.EyeKilled")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(30), new Pause(16), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
+                .Choice("Guide.EyeKilled_Banter")
+                .Choice("Guide.EyeKilled_Banter")
+            .Register();
+
+        Dialogue.Define("Guide.EyeKilled_Banter")
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18), new Pause(20)])
             .Register();
     }
 }

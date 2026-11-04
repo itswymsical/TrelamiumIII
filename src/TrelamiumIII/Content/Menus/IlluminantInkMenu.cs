@@ -21,7 +21,7 @@ public sealed class IlluminantInkMenu : ModMenu, IMenuButtonPalette
 
     public bool AdditiveHover => true;
 
-    public override int Music => Assets.Music.IlluminantInkiness.Slot;
+    public override int Music => Assets.Music.Iniki.IlluminantInkiness.Slot;
 
     public override string DisplayName => "Illuminant Ink";
 

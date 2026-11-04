@@ -18,20 +18,20 @@ public class HighlandBiome : ModBiome
         if (Main.dayTime)
         {
             if (Main._shouldUseWindyDayMusic)
-                return Assets.Music.HighlandsWindy.Slot;
+                return Assets.Music.Ingress.HighlandsWindy.Slot;
 
             if (Main.IsItStorming)
-                return Assets.Music.HighlandsThunderstorm.Slot;
+                return Assets.Music.Ingress.HighlandsThunderstorm.Slot;
 
             if (Main.raining)
-                return Assets.Music.HighlandsRain.Slot;
+                return Assets.Music.Ingress.HighlandsRain.Slot;
 
-            return Assets.Music.HighlandsDay.Slot;
+            return Assets.Music.Ingress.HighlandsDay.Slot;
         }
 
         bool rollAltTrack = (Main.time / 32400f) % 2 >= 1f;
 
-        return rollAltTrack ? Assets.Music.HighlandsNightAlt.Slot : Assets.Music.HighlandsNight.Slot;
+        return rollAltTrack ? Assets.Music.Ingress.HighlandsNightAlt.Slot : Assets.Music.Ingress.HighlandsNight.Slot;
 
     }
 
@@ -69,7 +69,7 @@ public class HighlandBiome : ModBiome
 // the underground
 public class IngressGardenBiome : ModBiome
 {
-    public override int Music => Assets.Music.HighlandsDay.Slot; // placeholder
+    public override int Music => Assets.Music.Ingress.HighlandsDay.Slot; // placeholder
     public override SceneEffectPriority Priority => SceneEffectPriority.BiomeLow;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
@@ -88,7 +88,7 @@ public class IngressGardenBiome : ModBiome
 
 public class IngressTempleBiome : ModBiome
 {
-    public override int Music => Assets.Music.LigneousTemple.Slot;
+    public override int Music => Assets.Music.Ingress.LigneousTemple.Slot;
     public override SceneEffectPriority Priority => SceneEffectPriority.Environment;
     //public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<TaigaBackgroundStyle>();
     //public override string BestiaryIcon => "Reverie/Assets/Textures/Bestiary/TaigaIcon";
@@ -107,7 +107,7 @@ public class IngressTempleBiome : ModBiome
 
 public class ReverieBiome : ModBiome
 {
-    public override int Music => Assets.Music.ReverieLibrary.Slot;
+    public override int Music => Assets.Music.Ingress.ReverieLibrary.Slot;
     public override SceneEffectPriority Priority => SceneEffectPriority.Environment;
     public override Color? BackgroundColor => new Color(88, 150, 112);
     public override bool IsBiomeActive(Player player)

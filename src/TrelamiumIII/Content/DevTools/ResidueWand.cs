@@ -11,6 +11,8 @@ namespace TrelamiumIII.Content.DevTools;
 [LegacyName("TileConditionWand")]
 public class ResidueWand : ModItem
 {
+    public override string Texture => "Terraria/Images/Item_" + ItemID.LeafWand;
+
     private const float BRUSH_RADIUS = 24f;
 
     private static int selected;

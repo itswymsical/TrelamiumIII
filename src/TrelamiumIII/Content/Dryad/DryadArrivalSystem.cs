@@ -42,11 +42,11 @@ public enum DryadArrivalStage : byte
 /// </remarks>
 public sealed class DryadArrivalSystem : ModSystem, ISharedWorldData
 {
-    public const string BriefingKey = "DryadArrival.Briefing";
+    public const string BriefingKey = "Guide.EyeKilled";
 
-    public const string GreetingKey = "DryadArrival.Greeting";
+    public const string GreetingKey = "Dryad.Greeting";
 
-    public const string ReturnToTownKey = "DryadArrival.ReturnToTown";
+    public const string ReturnToTownKey = "Dryad.ReturnToTown";
 
     private const string StageKey = "stage";
 

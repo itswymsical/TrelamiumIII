@@ -15,7 +15,7 @@ public class LiquidWand : ModItem
 
     private readonly record struct Mode(int Type, string? Condition, string Label);
 
-    public override string Texture => Assets.Textures.PlaceholderItem.KEY;
+    public override string Texture => "Terraria/Images/Item_" + ItemID.LeafWand;
 
     public override void SetDefaults()
     {

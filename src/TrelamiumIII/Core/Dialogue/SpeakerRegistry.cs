@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Terraria.GameContent;
 using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Dialogue;
@@ -52,7 +53,7 @@ public static class SpeakerRegistry
             FrameCount = 7,
             Font = TrelamiumFonts.AndikaBold,
             Color = new(100, 150, 200),
-            Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Guide.Speech.Asset]),
+            Voice = new VoiceProfile(VoiceMode.Single, SoundID.MenuTick),
         });
 
         Register(new SpeakerProfile
@@ -135,7 +136,7 @@ public static class SpeakerRegistry
         {
             Id = "Dryad",
             FrameCount = 1,
-            Font = TrelamiumFonts.PaprikaFont,
+            Font = TrelamiumFonts.AndikaBold,
             Color = new(122, 190, 112),
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Dryad.Speech.Asset]),
         });

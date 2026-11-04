@@ -89,7 +89,7 @@ public abstract partial class WorldNPC
     /// <summary>Whether strolls may lead through closed doors, asked before each one.</summary>
     protected virtual bool CanUseDoors => false;
 
-    protected virtual float WalkSpeed => 1f;
+    protected virtual float WalkSpeed => 1.7f;
 
     /// <summary>
     /// One in this many idle ticks starts a chat with an NPC nearby; rock-paper-scissors is six times rarer and greeting a

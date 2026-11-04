@@ -39,14 +39,14 @@ internal static class WardenMusic
             new MusicLayer
             {
                 Name = MAIN,
-                Slot = Assets.Music.WoodenWarden.Slot,
+                Slot = Assets.Music.Ingress.WoodenWarden.Slot,
                 StartsOn = true,
             },
 
             new MusicLayer
             {
                 Name = DEATH_FILL,
-                Slot = Assets.Music.WoodenWarden_DeathFill.Slot,
+                Slot = Assets.Music.Ingress.WoodenWarden_DeathFill.Slot,
                 Kind = MusicLayerKind.Cue,
                 Seconds = FILL_SECONDS,
             },

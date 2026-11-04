@@ -11,7 +11,6 @@ using TrelamiumIII.Core.Audio;
 using TrelamiumIII.Core.Graphics.Cinematics.BossIntros;
 using TrelamiumIII.Core.Graphics.Cinematics.Camera;
 using TrelamiumIII.Core.Graphics.Fields.Layers;
-using TrelamiumIII.Core.Graphics.ScreenEffects;
 using TrelamiumIII.Core.Graphics.Shockwaves;
 using TrelamiumIII.Core.NPCs;
 using static TrelamiumIII.Utilities.EaseFunction;
@@ -24,7 +23,6 @@ public sealed class FungoreBoss : ModNPC
     public enum FungoreState
     {
         Idle = 0,
-
         Emerge,
         Walk,
         Punch,

@@ -1167,12 +1167,12 @@ Items: {
 	# Placeholder job items (docs/act-one.md). Text is provisional.
 	BandageRoll: {
 		DisplayName: Bandage Roll
-		Tooltip: "'Clean, for now'"
+		Tooltip: "'Clean for now.'"
 	}
 
 	AntisepticTincture: {
 		DisplayName: Antiseptic Tincture
-		Tooltip: "'Stings. That's how you know it's working!'"
+		Tooltip: "'Stings, that's how you know it's working.'"
 	}
 
 	SutureKit: {
@@ -1575,6 +1575,8 @@ NPCs: {
 		DisplayName: Glowing Sporadic Slime
 		Bestiary: A slime that has soaked up the glowing mushroom biome's spores. The mothers split into glowing young when popped, and every one of them carries samples a mycologist would want.
 	}
+
+	EosforosBoss.DisplayName: Eosforos Boss
 }
 
 Buffs: {

@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using ReLogic.Graphics;
+using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -28,7 +29,7 @@ public sealed class SpeakerProfile : ISpeakerProfile
     ///   Held rather than requested by path: a baked font is assembled once at load and there is
     ///   nothing to look up per line, unlike the portrait below.
     /// </remarks>
-    public DynamicSpriteFont Font { get; init; }
+    public DynamicSpriteFont Font { get; init; } = TrelamiumFonts.AndikaBold;
 
     private Asset<Texture2D> portrait;
     public Asset<Texture2D> Portrait =>

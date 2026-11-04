@@ -13,6 +13,7 @@ namespace TrelamiumIII.Content.Items.Quest;
 /// </remarks>
 public class GuidesPlans : ModItem
 {
+    public override string Texture => "Terraria/Images/Item_" + ItemID.ThePlan;
     public override void SetDefaults()
     {
         Item.width = 26;

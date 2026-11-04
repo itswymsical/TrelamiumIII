@@ -1,62 +1,4 @@
 DialogueLibrary: {
-	Example: {
-		Inflection: {
-			Line1.Text: Wait a second... [Yo]u! did this![] Didn['t] you?
-			Line2.Text: Don't [look] at me like that.[] I'm [perfectly] fine.
-			Line3.Text: Hear that [climb]? And the way this one [sinks]?
-		}
-	}
-
-	Sonder: {
-		SonderGreeting: {
-			Line1.Text: Greetings, [speakerName:player]. [] I am Sonder,[] a mere wanderer of the world.[] I have traveled far and wide, and I have many stories to tell.
-			Line2.Text: If you wish to hear them,
-			Line3.Text: you must first answer a question.
-
-			Line4: {
-				Text: Have you experienced...[] the feeling of sonder?
-				Choice1.Text: No, I have not.
-				Choice2.Text: I am experiencing it now.
-				Choice3.Text: I have felt it many times.
-				Choice4.Text: ...
-			}
-		}
-
-		SonderChoice_1: {
-			Line1.Text: Sonder is the realization that each random passerby is living a life as vivid and complex as your own.
-			Line2.Text: They have their own ambitions, friends, routines, worries, and inherited craziness.
-			Line3.Text: They are not simply background characters in your story;[] They are the main character of their own story.
-		}
-
-		SonderChoice_2.Line1.Text: Ah, yes. I suppose that is true.[] Perchance in more ways than one.
-		SonderChoice_3.Line1.Text: Indeed.[] It is a rare and beautiful thing to feel sonder, and I am glad you have experienced it.
-		SonderChoice_4.Line1.Text: I see.[] Well, I hope you will have the opportunity to experience it in the future.
-	}
-
-	Sophie: {
-		Greeting: {
-			Line1: {
-				Text: Oh,[] hey there![] Didn't notice you sneak by.[] Anything I can do for ya?
-				Choice1.Text: Nah, nothin' in particular.
-				Choice2.Text: I'm a bit lost.
-				Choice3.Text: Nope, I just like staring.
-			}
-		}
-
-		GreetingAnswer1.Line1.Text: ah[]...[]well the name's Sophie.
-		GreetingAnswer2.Line1.Text: Lost?[]I think you're joking.
-		GreetingAnswer3.Line1.Text: Alright kid,[] get lost already.
-	}
-
-	NerdySlime: {
-		Greeting.Line1.Text: Hello, [speakerName:player]! [] I have a task for you!
-
-		Job1: {
-			Line1.Text: "[glorb gorbblpoo popo loopgorlb]"
-			Line2.Text: '''"Satisfactory, fleshling.[] My graditutes in this reward."'''
-		}
-	}
-
 	Merchant: {
 		CopperStandard_Greeting: {
 			Line1.Text: Everybody's out there breakin' their backs for gold.[] Gold,[] gold,[] gold.[] Know what they're diggin' right past to get to it?
@@ -136,13 +78,6 @@ DialogueLibrary: {
 			Line2.Text: Take this.[] Some fella traded it in right before he left town in a hurry.[] It shoots rocks.[] Just regular rocks,[] right up off the floor.
 			Line3.Text: ...[] Rocks.[] Everywhere you look,[] and nobody's makin' a dime off 'em.[] Huh.
 			Line4.Text: Anyway,[] the bunny stays.[] His name's Penny.
-		}
-	}
-
-	Kraken: {
-		Greeting: {
-			Line1.Text: Huh?[] Hello there.
-			Line2.Text: Didn't notice ya standing there.[] It's a bit creepy...
 		}
 	}
 }

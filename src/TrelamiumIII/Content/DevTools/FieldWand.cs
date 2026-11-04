@@ -6,7 +6,7 @@ namespace TrelamiumIII.Content.DevTools;
 
 public class FieldWand : ModItem
 {
-    public override string Texture => Assets.Textures.PlaceholderItem.KEY;
+    public override string Texture => "Terraria/Images/Item_" + ItemID.LeafWand;
 
     private const int SPRAY_COUNT = 3;
 

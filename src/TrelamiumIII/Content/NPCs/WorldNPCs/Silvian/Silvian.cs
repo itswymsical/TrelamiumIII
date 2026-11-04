@@ -40,15 +40,6 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
         NPC.DeathSound = SoundID.PlayerKilled;
     }
 
-    public override float SpawnChance(NPCSpawnInfo spawnInfo)
-    {
-        if (NPC.AnyNPCs(Type))
-            return 0f;
-
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest &&
-            !spawnInfo.Player.ZoneCorrupt && !spawnInfo.Player.ZoneCrimson && !spawnInfo.Player.ZoneHallow ? 0.15f : 0f;
-    }
-
     /// <summary>Paces his house and garden, or 12 tiles around his anchor without one.</summary>
     protected override int WanderRadius => Home?.Area.Width ?? 12;
 

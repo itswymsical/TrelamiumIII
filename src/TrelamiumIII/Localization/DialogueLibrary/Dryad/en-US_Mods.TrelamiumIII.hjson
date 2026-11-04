@@ -1,11 +1,80 @@
 DialogueLibrary: {
 	Dryad: {
-		# Placeholder text. Each [] is a pause anchor and must match the Pause count in DryadDialogue.
-		# On taking her job. The rift opens by the world spawn once this ends.
 		CrossingOver_Greeting: {
 			Line1.Text: Then let's not keep Ingress waiting.[] The way through will stay open for as long as you need it,[] and there's one just like it on the other side to bring you home.
 			Line2.Text: Find your way through Ingress,[] past whatever guards it,[] and into the Library of Reverie.
 			Line3.Text: Now,[] look to where you first came into this world.
+		}
+
+		Greeting: {
+			Line1.Text: Forgive the entrance![] Crossing over is never gentle...
+			Line2.Text: You are the one [speakerName:Guide] told me about,[] [speakerName:player], [yes?]
+
+			Line3: {
+				Text: I felt the seal of Apathos break the moment it was loosened.[] Even from Ingress, you can feel it's darkness echoing.
+				Choice1.Text: What's Apathos?
+				Choice2.Text: What's Ingress?
+			}
+		}
+
+		ReturnToTown.Line1.Text: Where did you wander off to?[] She'll be arriving any moment now,[] and I'd rather you were in town to meet her.
+
+		CrossingOver_Apathos: {
+			Line1.Text: Where do I begin?
+			Line2.Text: Apathos is a form of Magick,[] which is a sorcery of it's own...
+			Line3.Text: It was manifested back in the Primordial Age,[] when beings started [playing] with an [ancient dark spirit][...]
+			Line4.Text: It's known as Iniki,[] It's archaic name is [Trelamium].
+
+			Line5: {
+				Text: I try best [not] to speak those words.[] In any case,[] you'll need to develop proper Qualia in Ingress before facing off against it.
+				Choice1.Text: I understand.
+				Choice2.Text: What's Ingress?
+			}
+		}
+
+		CrossingOver_Ingress: {
+			Line1.Text: Ingress, yes![] It's a domain within Sylvanwalde, the world in which I come from.
+			Line2.Text: In my land,[] there are other Druids, Ents, Elves, and more.
+			Line3.Text: It is quite the beautiful place,[] If I may indulge.
+			Line4.Text: Hehe,[] you definitely are indulging...
+			Line5.Text: In any case,[] Ingress is where all souls must go to harness their inner Qualia.
+
+			Line6: {
+				Text: That which is something you, [speakerName:player],[] the Hero needs to harness in order to stop Apathos.
+				Choice1.Text: I understand.
+				Choice2.Text: What's Apathos?
+			}
+		}
+
+		CrossingOver_Lecture: {
+			Line1.Text: "[speakerName:player],[] this isn't something can't be fought with a staff and sword[], at least not the way you might suspect."
+			Line2.Text: But it can be mitigated,[] that is the Art I can teach you.
+			Line3.Text: Give me a time to settle in my quarters.[] Approach me thereafter,[] and we will begin.
+		}
+
+		CrossingOver_Apathos_Initial: {
+			Line1.Text: Where do I begin?
+			Line2.Text: Apathos is a form of Magick,[] which is a sorcery of it's own...
+			Line3.Text: It was manifested back in the Primordial Age,[] when beings started [playing] with an [ancient dark spirit][...]
+			Line4.Text: It's known as Iniki,[] It's archaic name is [Trelamium].
+
+			Line5: {
+				Text: I try best [not] to speak those words.[] In any case,[] you'll need to develop proper Qualia in Ingress before facing off against it.
+				Choice1.Text: What's Ingress?
+			}
+		}
+
+		CrossingOver_Ingress_Initial: {
+			Line1.Text: Ingress, yes![] It's a domain within Sylvanwalde, the world in which I come from.
+			Line2.Text: In my land,[] there are other Druids, Ents, Elves, and more.
+			Line3.Text: It is quite the beautiful place,[] If I may indulge.
+			Line4.Text: Hehe,[] you definitely are indulging...
+			Line5.Text: In any case,[] Ingress is where all souls must go to harness their inner Qualia.
+
+			Line6: {
+				Text: That which is something you, [speakerName:player],[] the Hero needs to harness in order to stop Apathos.
+				Choice1.Text: What's Apathos?
+			}
 		}
 	}
 }

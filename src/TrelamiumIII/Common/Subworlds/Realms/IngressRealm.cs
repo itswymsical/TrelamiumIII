@@ -126,7 +126,7 @@ public class IngressRealm : SubworldRealm
     public override bool NormalUpdates => true;
     public override bool NoPlayerSaving => false;
 
-    public override int LoadingMusic => Assets.Music.IlluminantInkiness.Slot;
+    public override int LoadingMusic => Assets.Music.Iniki.IlluminantInkiness.Slot;
     public override DynamicSpriteFont TipFont => base.TipFont;
     public override Color LoadingAccent => new(140, 220, 110);
     public static int GroundY => (int)(Main.maxTilesY * 0.52f);

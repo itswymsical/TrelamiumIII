@@ -6,47 +6,20 @@ DialogueLibrary: {
 			Line1.Text: Hey,[] [speakerName:player]!
 
 			Line2: {
-				Text: Welcome to the land of Light,[] or rather,[] what most would call Terraria.
+				Text: Welcome to Terraria,[] the best Realm out there!
 				Choice1.Text: How do you know my name?
-				Choice2.Text: Land of Light?
-				Choice3.Text: How do I skip this?
+				Choice2.Text: What?
 			}
 		}
 
 		HomeForager_Name: {
-			Line1.Text: Wild guess![] In any case, Terraria hasn't been so bright as of late.
+			Line1.Text: Wild guess.[] In any case,[] I'd be lying if I didn't say Terraria has been dimmer as of late.
 
 			Line2: {
 				Text: Anyone with an arm and a leg would've ran by now.
-				Choice1.Text: What's the corruption?
+				Choice1.Text: How So?
 				Choice2.Text: ...
 			}
-		}
-
-		HomeForager_Skip: {
-			Line1.Text: No clue what you are talking about![] In any case,[] Terraria hasn't been so bright as of late.
-
-			Line2: {
-				Text: Anyone with an arm and a leg would've ran by now.
-				Choice1.Text: What's the corruption?
-				Choice2.Text: ...
-			}
-		}
-
-		HomeForager_LandOfLight: {
-			Line1.Text: The land of living Light is the true name of Terraria.[] It was once a place of great beauty,[] but the corruption has spread and the land has become dark and dangerous.
-
-			Line2: {
-				Text: Anyone with an arm and a leg would've ran by now.
-				Choice1.Text: What's the corruption?
-				Choice2.Text: ...
-			}
-		}
-
-		HomeForager_Corruption: {
-			Line1.Text: The corruption is a dark and dangerous force that has spread across the land.[] It corrupts everything it touches, turning it into a twisted and evil version of itself.
-			Line2.Text: And it doesn't stop there.[] The corruption can also create corrupt creatures that will attack anyone who comes near.
-			Line3.Text: That's why we need to build houses for the townspeople.[] They need a safe place to live, away from the corruption.
 		}
 
 		HomeForager_Occupied.Line1.Text: Sorry, [speakerName:player]![] It looks like that housing is already occupied.[] Maybe try another one.
@@ -99,6 +72,50 @@ DialogueLibrary: {
 		HomeForager_CheckIn: {
 			Line1.Text: There you are.[] Have a look around while you're standing still.
 			Line2.Text: Empty rooms this morning,[] neighbours by the end of the week.[] Here, take this.[] Come and find me when you want more work.
+		}
+
+		HomeForager_Question: {
+			Line1.Text: Most people have hit the stacks and fled somewhere else![] That's mainly due to the Assailants around the Evil.[] All they do is terrify.
+
+			Line2: {
+				Text: But you see,[] A forest this empty is never a good thing.[] I was wondering if you'd be interested in foraging a few homes?
+				Choice1.Text: Assailants?
+				Choice2.Text: ...
+			}
+		}
+
+		EyeKilled: {
+			Line1.Text: ...Did you see that?![] The way that portal pulled the Eye apart!
+			Line2.Text: There's...[]
+			Line3.Text: She's gonna rub this in my face...[]...[][speakerName:player],[] there are some dark dangerous forces out here that are trying to crawl their way back into Terraria.
+			Line4.Text: The one we are currently dealing with,[] is Apothos.
+			Line5.Text: It's an ancient form of Magick,[] used by the darkest of entities...
+
+			Line6: {
+				Text: It nullifies anything it gets a hold of --[] and with the Eye dead, it's trying to find it's way back into the world.
+				Choice1.Text: U Serious?
+				Choice2.Text: ...
+			}
+		}
+
+		EyeKilled_Banter: {
+			Line1.Text: Don't look at me like that![] I'm not going to have you to face off alone.
+			Line2.Text: In fact, I know someone in this expertise.[] She's a friend of mine, from another world entirely.[] I think you two will have familiar vibe.
+		}
+
+		HomeForager_Assailants_Quiet: {
+			Line1.Text: You're awfully unentertained...[] Well--
+			Line2.Text: The Evil is a dark and dangerous land,[] one that corrupts everything it touches,[] turning it into a twisted version of itself.
+			Line3.Text: Assailants are the fools that post up there and threaten to slay people.[] Someone really oughta teach them a lesson!
+			Line4.Text: And it doesn't stop there.[] The Assailants have been pillaging people and destroying their homes!
+			Line5.Text: That's why we need to build houses for the fellas like us out there.[] They need a safe place to live, away from those Tragedies.
+		}
+
+		HomeForager_Assailants: {
+			Line1.Text: The Evil is a dark and dangerous land,[] one that corrupts everything it touches,[] turning it into a twisted version of itself.
+			Line2.Text: Assailants are the fools that post up there and threaten to slay people.[] Someone really oughta teach them a lesson!
+			Line3.Text: And it doesn't stop there.[] The Assailants have been pillaging people and destroying their homes!
+			Line4.Text: That's why we need to build houses for the fellas like us out there.[] They need a safe place to live, away from those Tragedies.
 		}
 	}
 }

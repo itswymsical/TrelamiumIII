@@ -1,0 +1,92 @@
+{
+  "format": 1,
+  "name": "PurplePlasma",
+  "surface": "Field",
+  "stages": [
+    {
+      "id": "flow",
+      "type": "FlowAdvect",
+      "Strength": 0.08
+    },
+    {
+      "id": "noise",
+      "type": "NoiseLayer",
+      "Noise": "LiquidNoise",
+      "Scale": 0.75,
+      "Strength": 0.04,
+      "Drift": [0.0, -0.08],
+      "Stretch": [1.0, 0.45]
+    },
+    {
+      "id": "cut",
+      "type": "Threshold",
+      "Level": 0.12
+    },
+    {
+      "id": "shade",
+      "type": "DepthShade",
+      "Range": 1.0,
+      "Bands": 8.0
+    },
+    {
+      "id": "palette",
+      "type": "Palette",
+      "Shadow": [0.72, 0.08, 0.08],
+      "Body": [0.55, 0.07, 0.03],
+      "Core": [0.34, 0.05, 0.02],
+      "HotShadow": [0.0, 0.0, 0.0],
+      "HotBody": [0.0, 0.0, 0.0],
+      "HotCore": [0.0, 0.0, 0.0],
+      "TemperatureBlend": 0.0,
+      "BodyAlpha": 0.94,
+      "AlphaFloor": 0.8
+    },
+    {
+      "id": "light",
+      "type": "LightFloor",
+      "Floor": [0.18, 0.18, 0.18]
+    },
+    {
+      "id": "rim",
+      "type": "Rim",
+      "Outline": [0.76, 0.01, 0.02],
+      "OutlineAlpha": 0.8,
+      "HotOutline": [0.0, 0.0, 0.0],
+      "Highlight": [0.95, 0.3, 0.25],
+      "HighlightAlpha": 0.9,
+      "HotHighlight": [0.0, 0.0, 0.0]
+    }
+  ],
+  "physics": {
+    "kind": "Plasma",
+    "density": 1.2,
+    "viscosity": 1.0,
+    "buoyancy": 0.5,
+    "gravity": 0.0,
+    "drag": 0.9956,
+    "lifeDecay": 6.247129,
+    "enclosedPenalty": 0.5047847,
+    "temperature": 20.0,
+    "temperatureMin": 0.0,
+    "temperatureMax": 1200.0,
+    "maxNodes": 900,
+    "flowReference": 6.0,
+    "stampStretch": 0.60287076
+  },
+  "modules": [
+    {
+      "type": "WindForce",
+      "Pull": 0.12139535,
+      "Scale": 1.372093
+    }
+  ],
+  "emitter": {
+    "rate": 63.530434,
+    "radius": 82.40579,
+    "life": 79.6186,
+    "speed": 2.4250693,
+    "angle": -93.34884,
+    "spread": 35.88372,
+    "temperature": -1.0
+  }
+}
