@@ -45,7 +45,7 @@ public class ResidueWand : ModItem
         if (Main.dedServ || player.whoAmI != Main.myPlayer)
             return null;
 
-        IResidue[] residues = ResidueSystem.All.ToArray();
+        IResidue[] residues = [.. ResidueSystem.All];
 
         if (residues.Length == 0)
             return null;

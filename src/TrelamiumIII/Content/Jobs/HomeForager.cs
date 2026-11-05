@@ -47,7 +47,7 @@ public sealed class HomeForager : Job
     /// <summary>Kept so <see cref="OnEvent"/> can ask which rooms have already counted.</summary>
     private readonly ValidHousingTask housingTask;
 
-    public HomeForager() : this(Plans("guidehome"), Plans("MerchantHouse")) { }
+    public HomeForager() : this(Plans("GuideHome"), Plans("MerchantHome")) { }
 
     /// <param name="guideHouse">Shared by its staking and building stages, so the site is staked once.</param>
     /// <param name="merchantHouse">Likewise.</param>

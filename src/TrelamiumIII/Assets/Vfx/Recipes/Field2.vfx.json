@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "name": "Field2",
+  "surface": "Field",
+  "stages": [
+    {
+      "id": "noise",
+      "type": "NoiseLayer",
+      "Noise": "Fractal_01",
+      "Drift": [-0.74245286, -0.09],
+      "Strength": -0.28465116,
+      "Scale": 2.095302,
+      "Stretch": [1.0, 1.7825471],
+      "Pivot": 0.644186,
+      "Octaves": 6,
+      "ShadeShare": 1.0
+    },
+    {
+      "id": "cut",
+      "type": "Threshold",
+      "Level": 0.0
+    },
+    {
+      "id": "shade",
+      "type": "DepthShade",
+      "Range": 1.4825116,
+      "Bands": 23.32093
+    },
+    {
+      "id": "palette",
+      "type": "Palette",
+      "Shadow": [0.18, 0.32, 0.36],
+      "Body": [0.35, 0.62, 0.66],
+      "Core": [0.72, 0.92, 0.9]
+    },
+    {
+      "id": "light",
+      "type": "LightFloor"
+    },
+    {
+      "id": "rim",
+      "type": "Rim",
+      "Outline": [0.72, 0.92, 0.9]
+    }
+  ],
+  "physics": {
+    "kind": "Gas",
+    "density": 0.41279072,
+    "viscosity": 0.33604652,
+    "buoyancy": 0.07593023,
+    "gravity": 0.10488372,
+    "drag": 0.984,
+    "lifeDecay": 0.6651162,
+    "enclosedPenalty": 2.0,
+    "temperature": 24.44,
+    "temperatureMin": -0.0156000005,
+    "temperatureMax": 1466.4,
+    "maxNodes": 409,
+    "flowReference": 6.7418604,
+    "stampStretch": 0.0
+  },
+  "emitter": {
+    "rate": 49.95349,
+    "radius": 76.29767,
+    "life": 553.64185,
+    "speed": 4.1046515,
+    "angle": -123.48838,
+    "spread": 73.558136,
+    "temperature": -1.0
+  }
+}

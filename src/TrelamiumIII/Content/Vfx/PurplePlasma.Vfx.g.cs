@@ -37,9 +37,9 @@ internal sealed partial class PurplePlasma : ModularField
             .Set("cut_Level", 0.12f)
             .Set("shade_Range", 1f)
             .Set("shade_Bands", 8f)
-            .Set("palette_Shadow", new Vector3(0.72f, 0.08f, 0.08f))
-            .Set("palette_Body", new Vector3(0.55f, 0.07f, 0.03f))
-            .Set("palette_Core", new Vector3(0.34f, 0.05f, 0.02f))
+            .Set("palette_Shadow", new Vector3(1.00f, 0.50f, 1.00f))
+            .Set("palette_Body", new Vector3(0.50f, 0.00f, 1.00f))
+            .Set("palette_Core", new Vector3(0.18f, 0.02f, 0.29f))
             .Set("palette_HotShadow", new Vector3(0f, 0f, 0f))
             .Set("palette_HotBody", new Vector3(0f, 0f, 0f))
             .Set("palette_HotCore", new Vector3(0f, 0f, 0f))
@@ -50,7 +50,7 @@ internal sealed partial class PurplePlasma : ModularField
             .Set("rim_Outline", new Vector3(0.76f, 0.01f, 0.02f))
             .Set("rim_OutlineAlpha", 0.8f)
             .Set("rim_HotOutline", new Vector3(0f, 0f, 0f))
-            .Set("rim_Highlight", new Vector3(0.95f, 0.3f, 0.25f))
+            .Set("rim_Highlight", new Vector3(0.92f, 0.82f, 1.00f))
             .Set("rim_HighlightAlpha", 0.9f)
             .Set("rim_HotHighlight", new Vector3(0f, 0f, 0f)),
         Modules =
