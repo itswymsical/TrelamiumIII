@@ -19,7 +19,7 @@ public abstract class InternalLiquid : ModLiquid
 
     public InternalLiquidSet InternalLiquidSet { get; }
 
-    public IReadOnlyList<InternalLiquidType> InternalLiquids => InternalLiquidSet.Conditions;
+    public IReadOnlyList<InternalLiquidType> InternalLiquids => InternalLiquidSet.InternalLiquids;
 
     public InternalLiquidType Default => InternalLiquidSet.Default;
 

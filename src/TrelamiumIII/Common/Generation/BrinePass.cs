@@ -90,7 +90,7 @@ public class BrinePass : GenPass
 
         while (pending.TryPop(out Point point))
         {
-            Main.tile[point.X, point.Y].LiquidCondition() = brine;
+            Main.tile[point.X, point.Y].InternalLiquid() = brine;
 
             foreach (Point next in (ReadOnlySpan<Point>)[new(point.X - 1, point.Y), new(point.X + 1, point.Y), new(point.X, point.Y - 1), new(point.X, point.Y + 1)])
             {
@@ -188,7 +188,7 @@ public class BrinePass : GenPass
         foreach (Point next in (ReadOnlySpan<Point>)[new(x - 1, y), new(x + 1, y), new(x, y - 1), new(x, y + 1)])
         {
             Tile tile = Main.tile[next.X, next.Y];
-            if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Water && tile.LiquidCondition() == brine)
+            if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Water && tile.InternalLiquid() == brine)
                 return true;
         }
 

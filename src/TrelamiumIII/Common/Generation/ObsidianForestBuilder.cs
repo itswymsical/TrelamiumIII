@@ -441,7 +441,7 @@ public static class ObsidianForestBuilder
                     Tile tile = Main.tile[x, y];
                     tile.LiquidType = acid;
                     tile.LiquidAmount = byte.MaxValue;
-                    tile.LiquidCondition() = 0;
+                    tile.InternalLiquid() = 0;
                 }
             }
         }

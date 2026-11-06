@@ -59,7 +59,7 @@ public class LiquidWand : ModItem
         if (WorldGen.SolidTile(tile.X, tile.Y))
             return false;
 
-        LiquidConditionSystem.Place(tile.X, tile.Y, selected.Type, selected.Condition, byte.MaxValue);
+        LiquidInternalSystem.Place(tile.X, tile.Y, selected.Type, selected.Condition, byte.MaxValue);
         return true;
     }
 
@@ -70,7 +70,7 @@ public class LiquidWand : ModItem
         // Water and lava have condition sets, so their conditions stand in for the plain liquids.
         foreach (InternalLiquidSet liquid in InternalLiquidSet.All)
         {
-            foreach (InternalLiquidType condition in liquid.Conditions.Where(condition => condition is not BrewCondition))
+            foreach (InternalLiquidType condition in liquid.InternalLiquids.Where(condition => condition is not BrewCondition))
                 modes.Add(new Mode(liquid.LiquidType, condition.Name, $"{liquid.Name} / {condition.DisplayName}"));
         }
 

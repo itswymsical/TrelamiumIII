@@ -11,10 +11,10 @@ using Terraria.ModLoader.IO;
 namespace TrelamiumIII.Core.Liquids;
 
 /// <summary>
-///     Keeps <see cref="LiquidConditionData" /> with the liquid: carries it along <see cref="Liquid.Update" /> flow,
+///     Keeps <see cref="InternalLiquidData" /> with the liquid: carries it along <see cref="Liquid.Update" /> flow,
 ///     mixes it by volume, tints the normal liquid draw, saves it with the world and syncs it to clients.
 /// </summary>
-public sealed class LiquidConditionSystem : ModSystem
+public sealed class LiquidInternalSystem : ModSystem
 {
     /// <summary>Cells one <see cref="Liquid.Update" /> can move liquid between: three either side and the one below.</summary>
     private static readonly Point[] FlowCells = [new(-3, 0), new(-2, 0), new(-1, 0), new(0, 0), new(1, 0), new(2, 0), new(3, 0), new(0, 1)];
@@ -65,7 +65,7 @@ public sealed class LiquidConditionSystem : ModSystem
     /// <summary>Sets a tile's condition, queuing it for clients when it changes.</summary>
     public static void Set(int i, int j, byte index)
     {
-        ref byte current = ref Main.tile[i, j].LiquidCondition();
+        ref byte current = ref Main.tile[i, j].InternalLiquid();
         if (current == index)
             return;
 
@@ -79,7 +79,7 @@ public sealed class LiquidConditionSystem : ModSystem
     ///     Fills (i, j) with <paramref name="amount" /> of a liquid in the named condition. From a client this asks the
     ///     server, which resolves the name so runtime conditions keep the server's index.
     /// </summary>
-    public static void Place(int i, int j, int liquidType, string? condition, byte amount)
+    public static void Place(int i, int j, int liquidType, string? internalType, byte amount)
     {
         if (!WorldGen.InWorld(i, j, 1))
             return;
@@ -90,7 +90,7 @@ public sealed class LiquidConditionSystem : ModSystem
             packet.Write((ushort)i);
             packet.Write((ushort)j);
             packet.Write((byte)liquidType);
-            packet.Write(condition ?? "");
+            packet.Write(internalType ?? "");
             packet.Write(amount);
             packet.Send();
             return;
@@ -101,7 +101,7 @@ public sealed class LiquidConditionSystem : ModSystem
         tile.LiquidAmount = amount;
 
         if (InternalLiquidSet.ByType(liquidType) is { } liquid)
-            Set(i, j, string.IsNullOrEmpty(condition) ? (byte)0 : liquid.Resolve(condition)?.Index ?? 0);
+            Set(i, j, string.IsNullOrEmpty(internalType) ? (byte)0 : liquid.Resolve(internalType)?.Index ?? 0);
 
         WorldGen.SquareTileFrame(i, j);
         Liquid.AddWater(i, j);
@@ -113,30 +113,30 @@ public sealed class LiquidConditionSystem : ModSystem
     internal static ModPacket NewPacket(PacketKind kind)
     {
         ModPacket packet = TrelamiumIII.Instance.GetPacket();
-        packet.Write((byte)TrelamiumIII.MessageType.LiquidConditions);
+        packet.Write((byte)TrelamiumIII.MessageType.InternalLiquids);
         packet.Write((byte)kind);
         return packet;
     }
 
     /// <summary>Server side: tells clients where a runtime condition sits, before any tile uses it.</summary>
-    internal static void OnDynamicAdded(InternalLiquidType condition)
+    internal static void OnDynamicAdded(InternalLiquidType internalType)
     {
         if (Main.netMode == NetmodeID.Server)
-            SendPalette([condition], -1);
+            SendPalette([internalType], -1);
     }
 
-    private static void SendPalette(IEnumerable<InternalLiquidType> conditions, int toClient)
+    private static void SendPalette(IEnumerable<InternalLiquidType> internalTypes, int toClient)
     {
-        foreach (InternalLiquidType[] chunk in conditions.Chunk(256))
+        foreach (InternalLiquidType[] chunk in internalTypes.Chunk(256))
         {
             ModPacket packet = NewPacket(PacketKind.Palette);
             packet.Write((ushort)chunk.Length);
 
-            foreach (InternalLiquidType condition in chunk)
+            foreach (InternalLiquidType internalType in chunk)
             {
-                packet.Write((byte)condition.Liquid.LiquidType);
-                packet.Write(condition.Index);
-                packet.Write(condition.Name);
+                packet.Write((byte)internalType.Liquid.LiquidType);
+                packet.Write(internalType.Index);
+                packet.Write(internalType.Name);
             }
 
             packet.Send(toClient);
@@ -169,7 +169,7 @@ public sealed class LiquidConditionSystem : ModSystem
         for (int k = 0; k < FlowCells.Length; k++)
         {
             Tile tile = Main.tile[x + FlowCells[k].X, y + FlowCells[k].Y];
-            before[k] = new FlowCell(tile.LiquidType == liquid.LiquidType ? tile.LiquidAmount : (byte)0, tile.LiquidCondition());
+            before[k] = new FlowCell(tile.LiquidType == liquid.LiquidType ? tile.LiquidAmount : (byte)0, tile.InternalLiquid());
         }
 
         orig(self);
@@ -209,7 +209,7 @@ public sealed class LiquidConditionSystem : ModSystem
             int gained = after[k] - before[k].Amount;
 
             if (after[k] == 0 && before[k].Amount > 0)
-                Main.tile[i, j].LiquidCondition() = 0;
+                Main.tile[i, j].InternalLiquid() = 0;
             else if (gained > 0 && before[k].Amount == 0)
                 Set(i, j, incoming);
             else if (gained > 0 && gained * 2 >= before[k].Amount)
@@ -275,16 +275,16 @@ public sealed class LiquidConditionSystem : ModSystem
             for (int y = 0; y < Main.maxTilesY; y++)
             {
                 Tile tile = Main.tile[x, y];
-                byte condition = tile.LiquidCondition();
+                byte internalType = tile.InternalLiquid();
 
-                if (condition == 0 || tile.LiquidAmount == 0 || InternalLiquidSet.ByType(tile.LiquidType) is null)
+                if (internalType == 0 || tile.LiquidAmount == 0 || InternalLiquidSet.ByType(tile.LiquidType) is null)
                     continue;
 
                 int type = tile.LiquidType;
                 int index = x * Main.maxTilesY + y;
 
                 (positions[type] ??= []).Add(index - last[type]);
-                (values[type] ??= []).Add(condition);
+                (values[type] ??= []).Add(internalType);
                 last[type] = index;
             }
         }
@@ -299,7 +299,7 @@ public sealed class LiquidConditionSystem : ModSystem
             bases.Add(new TagCompound
             {
                 ["liquid"] = liquid.FullName,
-                ["names"] = liquid.Conditions.Select(condition => condition.Name).ToList(),
+                ["names"] = liquid.InternalLiquids.Select(internalType => internalType.Name).ToList(),
                 ["positions"] = deltas.ToArray(),
                 ["values"] = values[liquid.LiquidType].ToArray(),
             });
@@ -333,7 +333,7 @@ public sealed class LiquidConditionSystem : ModSystem
                     break;
 
                 byte condition = conditions[k] < remap.Length ? remap[conditions[k]] : (byte)0;
-                Main.tile[index / Main.maxTilesY, index % Main.maxTilesY].LiquidCondition() = condition;
+                Main.tile[index / Main.maxTilesY, index % Main.maxTilesY].InternalLiquid() = condition;
             }
         }
     }
@@ -435,7 +435,7 @@ public sealed class LiquidConditionSystem : ModSystem
             byte condition = reader.ReadByte();
 
             if (WorldGen.InWorld(i, j))
-                Main.tile[i, j].LiquidCondition() = condition;
+                Main.tile[i, j].InternalLiquid() = condition;
         }
     }
 
@@ -460,7 +460,7 @@ public sealed class LiquidConditionSystem : ModSystem
             for (int y = 0; y < Main.maxTilesY; y++)
             {
                 Tile tile = Main.tile[x, y];
-                if (tile.LiquidCondition() != 0 && tile.LiquidAmount > 0 && InternalLiquidSet.ByType(tile.LiquidType) is not null)
+                if (tile.InternalLiquid() != 0 && tile.LiquidAmount > 0 && InternalLiquidSet.ByType(tile.LiquidType) is not null)
                     yield return new Point(x, y);
             }
         }
@@ -477,7 +477,7 @@ public sealed class LiquidConditionSystem : ModSystem
             {
                 packet.Write((ushort)tile.X);
                 packet.Write((ushort)tile.Y);
-                packet.Write(Main.tile[tile.X, tile.Y].LiquidCondition());
+                packet.Write(Main.tile[tile.X, tile.Y].InternalLiquid());
             }
 
             packet.Send(toClient);
@@ -487,10 +487,10 @@ public sealed class LiquidConditionSystem : ModSystem
     #endregion
 }
 
-/// <summary>Requests the world's liquid conditions when this client's player enters.</summary>
-public sealed class LiquidConditionPlayer : ModPlayer
+/// <summary>Requests the world's liquid internal types when this client's player enters.</summary>
+public sealed class InternalLiquidPlayer : ModPlayer
 {
-    public override void OnEnterWorld() => LiquidConditionSystem.RequestAll();
+    public override void OnEnterWorld() => LiquidInternalSystem.RequestAll();
 }
 
 /// <summary>Runs <see cref="InternalLiquidSet.TryReact" /> from each tile's random update against the liquid beside it.</summary>

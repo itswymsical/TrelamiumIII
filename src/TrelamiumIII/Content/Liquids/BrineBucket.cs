@@ -55,7 +55,7 @@ public class BrineBucketItem : ModItem
         Tile tile = Main.tile[x, y];
         byte before = tile.LiquidAmount;
         bool brine = sItem.type == ItemID.EmptyBucket && before > 0 && tile.LiquidType == LiquidID.Water
-            && tile.LiquidCondition() == WaterLiquids.Instance.Brine.Index;
+            && tile.InternalLiquid() == WaterLiquids.Instance.Brine.Index;
 
         int[] buckets = LiquidID_TLmod.Sets.CreateLiquidBucketItem;
         int waterBucket = buckets[LiquidID.Water];
@@ -73,6 +73,6 @@ public class BrineBucketItem : ModItem
         }
 
         if (tile.LiquidAmount > before && InternalLiquidSet.ByType(tile.LiquidType) is not null)
-            LiquidConditionSystem.Set(x, y, 0);
+            LiquidInternalSystem.Set(x, y, 0);
     }
 }

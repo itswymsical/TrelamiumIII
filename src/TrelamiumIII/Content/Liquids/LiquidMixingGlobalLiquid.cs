@@ -93,7 +93,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
         if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || InternalLiquidSet.ByType(pocketedType) is not { } pocketed)
             return;
 
-        InternalLiquidType condition = pocketed.Get(tile.LiquidCondition());
+        InternalLiquidType condition = pocketed.Get(tile.InternalLiquid());
         byte hostCondition = 0;
 
         foreach (Point offset in Neighbours)
@@ -101,14 +101,14 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
             Tile next = Main.tile[i + offset.X, j + offset.Y];
             if (next.LiquidAmount > 0 && next.LiquidType == hostType)
             {
-                hostCondition = next.LiquidCondition();
+                hostCondition = next.InternalLiquid();
                 break;
             }
         }
 
         int volume = tile.LiquidAmount;
         tile.LiquidType = hostType;
-        LiquidConditionSystem.Set(i, j, hostCondition);
+        LiquidInternalSystem.Set(i, j, hostCondition);
         SubmergedLiquidSystem.Submerge(condition, new Vector2(i * 16 + 8, j * 16 + 8), volume);
 
         Liquid.AddWater(i, j);
@@ -125,7 +125,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
 
         int spent = (int)MathF.Ceiling(alkali.LiquidAmount * AcidSpentPerUnit);
         alkali.LiquidType = LiquidID.Water;
-        LiquidConditionSystem.Set(x, y, WaterLiquids.Instance.Brine.Index);
+        LiquidInternalSystem.Set(x, y, WaterLiquids.Instance.Brine.Index);
         acid.LiquidAmount = (byte)Math.Max(acid.LiquidAmount - spent, 0);
 
         Liquid.AddWater(x, y);
@@ -137,7 +137,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
             NetMessage.sendWater(acidX, acidY);
         }
 
-        LiquidConditionSystem.Fizz(x, y);
+        LiquidInternalSystem.Fizz(x, y);
     }
 
     /// <summary>Empties the water or honey at (x, y), spending acid at (acidX, acidY) in proportion.</summary>
@@ -159,6 +159,6 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
             NetMessage.sendWater(acidX, acidY);
         }
 
-        LiquidConditionSystem.Fizz(x, y);
+        LiquidInternalSystem.Fizz(x, y);
     }
 }

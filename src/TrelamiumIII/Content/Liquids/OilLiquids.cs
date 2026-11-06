@@ -14,7 +14,7 @@ public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
 
-    private const int PitchFlowInterval = 4;
+    private const int PitchFlowInterval = 2;
 
     /// <summary>Crude's surface, which pitch shares.</summary>
     public LiquidSurface Surface { get; } = new("Oil")
@@ -88,10 +88,10 @@ public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
         base.SetStaticDefaults();
 
         LiquidRenderer.WATERFALL_LENGTH[Type] = 3;
-        LiquidRenderer.DEFAULT_OPACITY[Type] = 0.95f;
-        SlopeOpacity = 0.9f;
-        LiquidRenderer.VISCOSITY_MASK[Type] = 200;
-        FallDelay = 3;
+        LiquidRenderer.DEFAULT_OPACITY[Type] = 1f;
+        SlopeOpacity = 1f;
+        LiquidRenderer.VISCOSITY_MASK[Type] = 222;
+        FallDelay = 5;
         SplashDustType = ModContent.DustType<OilLiquidSplash>();
 
         SplashSound = SoundID.Splash with { Pitch = -.98f };

@@ -139,7 +139,7 @@ public class SurfaceBrinePass : GenPass
                     continue;
 
                 foreach (Point point in body)
-                    Main.tile[point.X, point.Y].LiquidCondition() = brine;
+                    Main.tile[point.X, point.Y].InternalLiquid() = brine;
             }
         }
     }
@@ -350,7 +350,7 @@ public class SurfaceBrinePass : GenPass
             Tile tile = Main.tile[cell.X, cell.Y];
             tile.LiquidType = LiquidID.Water;
             tile.LiquidAmount = byte.MaxValue;
-            tile.LiquidCondition() = brine;
+            tile.InternalLiquid() = brine;
         }
     }
 

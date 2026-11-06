@@ -26,7 +26,7 @@ partial class TrelamiumIII
         DryadArrivalStart,
         IngressRiftRequest,
         SilvianEncounter,
-        LiquidConditions,
+        InternalLiquids,
         Seals,
         SharedWorldData,
         AlmanacDiscovery,
@@ -66,8 +66,8 @@ partial class TrelamiumIII
             case MessageType.IngressRiftRequest:
                 IngressRift.Receive(whoAmI);
                 break;
-            case MessageType.LiquidConditions:
-                LiquidConditionSystem.Receive(reader, whoAmI);
+            case MessageType.InternalLiquids:
+                LiquidInternalSystem.Receive(reader, whoAmI);
                 break;
             case MessageType.SilvianEncounter:
                 SilvianEncounter.Receive(reader, whoAmI);

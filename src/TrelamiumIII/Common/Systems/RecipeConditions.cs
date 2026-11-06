@@ -30,7 +30,7 @@ public sealed class RecipeConditions : ModSystem
                     continue;
 
                 Tile tile = Main.tile[x, y];
-                if (tile.LiquidAmount > 200 && tile.LiquidType == OilLiquids.Instance.Type && tile.LiquidCondition() == condition.Index)
+                if (tile.LiquidAmount > 200 && tile.LiquidType == OilLiquids.Instance.Type && tile.InternalLiquid() == condition.Index)
                     return true;
             }
         }

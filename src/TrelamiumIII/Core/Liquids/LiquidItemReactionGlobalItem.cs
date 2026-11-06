@@ -66,7 +66,7 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
         if (liquidTile.LiquidAmount == 0 || SurfaceY(tile.Y, liquidTile.LiquidAmount) > item.Center.Y || InternalLiquidSet.ByType(liquidTile.LiquidType) is not { } liquid)
             return null;
 
-        InternalLiquidType condition = liquid.Get(liquidTile.LiquidCondition());
+        InternalLiquidType condition = liquid.Get(liquidTile.InternalLiquid());
 
         if (liquid.ItemReactionFor(condition, item.type) is not { } reaction || item.stack < reaction.Amount)
             return null;
@@ -99,7 +99,7 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
         if (reaction.Product > ItemID.None)
             SpawnProduct(center, reaction);
 
-        LiquidConditionSystem.Fizz(tile.X, tile.Y);
+        LiquidInternalSystem.Fizz(tile.X, tile.Y);
     }
 
     private static void SpawnProduct(Vector2 position, ItemReaction reaction)

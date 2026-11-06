@@ -65,7 +65,7 @@ public static class LiquidUtils
         // Sets the condition too, which a plain write would leave at whatever the tile last held.
         if (InternalLiquidSet.ByType(liquidType) is not null)
         {
-            LiquidConditionSystem.Place(Player.tileTargetX, Player.tileTargetY, liquidType, condition, byte.MaxValue);
+            LiquidInternalSystem.Place(Player.tileTargetX, Player.tileTargetY, liquidType, condition, byte.MaxValue);
             player.ApplyItemTime(item);
             return true;
         }

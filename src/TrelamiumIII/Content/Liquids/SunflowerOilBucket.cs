@@ -52,7 +52,7 @@ public class SunflowerOilBucket : ModItem
         Tile tile = Main.tile[x, y];
         byte before = tile.LiquidAmount;
         bool brine = sItem.type == ItemID.EmptyBucket && before > 0 && tile.LiquidType == LiquidLoader.LiquidType<OilLiquids>()
-            && tile.LiquidCondition() == OilLiquids.Instance.Sunflower.Index;
+            && tile.InternalLiquid() == OilLiquids.Instance.Sunflower.Index;
 
         int[] buckets = LiquidID_TLmod.Sets.CreateLiquidBucketItem;
         int waterBucket = buckets[LiquidLoader.LiquidType<OilLiquids>()];
@@ -70,6 +70,6 @@ public class SunflowerOilBucket : ModItem
         }
 
         if (tile.LiquidAmount > before && InternalLiquidSet.ByType(tile.LiquidType) is not null)
-            LiquidConditionSystem.Set(x, y, 0);
+            LiquidInternalSystem.Set(x, y, 0);
     }
 }

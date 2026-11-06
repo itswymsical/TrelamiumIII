@@ -146,7 +146,7 @@ public sealed class AcidResidue : Residue
                 DustID.t_Slime,
                 new Vector2(0f, 0.5f),
                 90,
-                new Color(170, 255, 70),
+                new Color(174, 250, 141),
                 Main.rand.NextFloat(0.6f, 0.9f)
             );
         }
@@ -198,9 +198,9 @@ public sealed class AcidResidue : Residue
         effect.Parameters["PitDistort"]?.SetValue(0.05f);
         effect.Parameters["PitReach"]?.SetValue(0.7f);
         effect.Parameters["PitColor"]?.SetValue(new Vector3(0.025f, 0.05f, 0.02f));
-        effect.Parameters["PitAlpha"]?.SetValue(0.96f);
+        effect.Parameters["PitAlpha"]?.SetValue(0.46f);
         effect.Parameters["EatingEdge"]?.SetValue(0.035f);
-        effect.Parameters["EatingColor"]?.SetValue(new Vector3(0.86f, 1f, 0.26f));
+        effect.Parameters["EatingColor"]?.SetValue(new Vector3(0.65f, 0.84f, 0.02f));
         effect.Parameters["EatingGlow"]?.SetValue(0.55f);
 
         effect.Parameters["FilmThreshold"]?.SetValue(0.2f);
@@ -209,27 +209,28 @@ public sealed class AcidResidue : Residue
         effect.Parameters["FlowStrength"]?.SetValue(0.36f);
         effect.Parameters["FlowDrift"]?.SetValue(new Vector2(0.002f, -0.022f));
         effect.Parameters["FilmBands"]?.SetValue(4f);
-        effect.Parameters["FilmAlpha"]?.SetValue(0.84f);
+        effect.Parameters["FilmAlpha"]?.SetValue(0.33f);
 
         effect.Parameters["ShadowColor"]?.SetValue(new Vector3(0.14f, 0.36f, 0.05f));
         effect.Parameters["BodyColor"]?.SetValue(new Vector3(0.38f, 0.74f, 0.08f));
         effect.Parameters["CoreColor"]?.SetValue(new Vector3(0.68f, 0.98f, 0.20f));
         effect.Parameters["SurfaceColor"]?.SetValue(new Vector3(0.90f, 1f, 0.48f));
-        effect.Parameters["SurfaceAlpha"]?.SetValue(0.92f);
+        effect.Parameters["SurfaceAlpha"]?.SetValue(0.42f);
 
         effect.Parameters["BubbleScale"]?.SetValue(0.2f);
         effect.Parameters["BubbleSpeed"]?.SetValue(0.55f);
         effect.Parameters["BubbleSize"]?.SetValue(0.2f);
         effect.Parameters["BubbleColor"]?.SetValue(new Vector3(0.94f, 1f, 0.62f));
-        effect.Parameters["BubbleAlpha"]?.SetValue(0.9f);
+        effect.Parameters["BubbleAlpha"]?.SetValue(0.5f);
 
         effect.Parameters["DripLength"]?.SetValue(9f);
     }
 
     /// <summary>Runs down, and goes on running after it's spread.</summary>
-    public override Bodies.BodyFlow BodyFlow => new(Rise: 0f, Fall: 0.05f, Creep: 0.02f, Sag: 0.03f, Decay: 0.003f, Reach: 0.25f);
+    public override Bodies.BodyFlow BodyFlow => new(Rise: 0.015f, Fall: 0.015f, Creep: 0.015f, Decay: 0.0012f, Reach: 0.75f);
 
-    public override Bodies.BodyShed? BodyShed => new(Rate: 0.08f, Radius: 4.5f, Life: 34f, Launch: new Vector2(0f, 0.1f), Scatter: 0.1f, Pull: new Vector2(0f, 0.09f), Drag: 0.99f, Cling: 0.2f);
+    /// <summary>Flakes that come away and drift down.</summary>
+    public override Bodies.BodyShed? BodyShed => new(Rate: 0.06f, Radius: 4f, Life: 44f, Launch: new Vector2(0f, 0.05f), Scatter: 0.25f, Pull: new Vector2(0f, 0.015f), Drag: 0.985f, Wind: 0.01f, Cling: 0.3f);
 
     public override IResidue? BodyPickup(in ResidueInstance instance, out float amount)
     {

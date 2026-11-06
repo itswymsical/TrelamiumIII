@@ -55,7 +55,7 @@ public abstract class InternalLiquidSet
 
     public abstract string Name { get; }
 
-    public IReadOnlyList<InternalLiquidType> Conditions => conditions;
+    public IReadOnlyList<InternalLiquidType> InternalLiquids => conditions;
 
     public InternalLiquidType Default => conditions[0];
 
@@ -162,7 +162,7 @@ public abstract class InternalLiquidSet
             return null;
 
         AddCondition(created);
-        LiquidConditionSystem.OnDynamicAdded(created);
+        LiquidInternalSystem.OnDynamicAdded(created);
         return created;
     }
 
@@ -241,7 +241,7 @@ public abstract class InternalLiquidSet
                     continue;
 
                 Tile tile = Main.tile[x, y];
-                if (tile.LiquidAmount > 200 && tile.LiquidType == type && tile.LiquidCondition() == condition.Index)
+                if (tile.LiquidAmount > 200 && tile.LiquidType == type && tile.InternalLiquid() == condition.Index)
                     return true;
             }
         }
@@ -256,12 +256,12 @@ public abstract class InternalLiquidSet
     public InternalLiquidType InternalLiqAt(int i, int j)
     {
         if (Holds(i, j))
-            return Get(Main.tile[i, j].LiquidCondition());
+            return Get(Main.tile[i, j].InternalLiquid());
 
         foreach (Point next in (ReadOnlySpan<Point>)[new(i, j - 1), new(i - 1, j), new(i + 1, j), new(i, j + 1)])
         {
             if (WorldGen.InWorld(next.X, next.Y) && Holds(next.X, next.Y))
-                return Get(Main.tile[next.X, next.Y].LiquidCondition());
+                return Get(Main.tile[next.X, next.Y].InternalLiquid());
         }
 
         return Default;
@@ -293,7 +293,7 @@ public abstract class InternalLiquidSet
     {
         Tile liquidTile = Main.tile[i, j];
         Tile solid = Main.tile[tileX, tileY];
-        InternalLiquidType current = Get(liquidTile.LiquidCondition());
+        InternalLiquidType current = Get(liquidTile.InternalLiquid());
 
         foreach (TileReaction reaction in reactions)
         {
@@ -339,7 +339,7 @@ public abstract class InternalLiquidSet
 
         while (pending.TryDequeue(out Point point) && converted < ReactionSpread)
         {
-            LiquidConditionSystem.Set(point.X, point.Y, to);
+            LiquidInternalSystem.Set(point.X, point.Y, to);
             converted++;
 
             foreach (Point next in (ReadOnlySpan<Point>)[new(point.X - 1, point.Y), new(point.X + 1, point.Y), new(point.X, point.Y - 1), new(point.X, point.Y + 1)])
@@ -348,7 +348,7 @@ public abstract class InternalLiquidSet
                     continue;
 
                 Tile tile = Main.tile[next.X, next.Y];
-                if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidType && tile.LiquidCondition() == from)
+                if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidType && tile.InternalLiquid() == from)
                     pending.Enqueue(next);
             }
         }
@@ -424,7 +424,7 @@ public abstract class InternalLiquidSet
                 if (tile.LiquidType == LiquidType && tile.LiquidAmount > bestAmount)
                 {
                     bestAmount = tile.LiquidAmount;
-                    best = tile.LiquidCondition();
+                    best = tile.InternalLiquid();
                 }
             }
         }

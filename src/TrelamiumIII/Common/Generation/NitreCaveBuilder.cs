@@ -404,7 +404,7 @@ public static class NitreCaveBuilder
                     Tile tile = Main.tile[x, y];
                     tile.LiquidType = acid;
                     tile.LiquidAmount = byte.MaxValue;
-                    tile.LiquidCondition() = aquaFortis;
+                    tile.InternalLiquid() = aquaFortis;
                 }
             }
         }

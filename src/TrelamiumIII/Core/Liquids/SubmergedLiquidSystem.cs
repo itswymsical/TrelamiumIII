@@ -103,7 +103,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
             return;
         }
 
-        ModPacket packet = LiquidConditionSystem.NewPacket(LiquidConditionSystem.PacketKind.Extract);
+        ModPacket packet = LiquidInternalSystem.NewPacket(LiquidInternalSystem.PacketKind.Extract);
         packet.Write((byte)pocket.Liquid.LiquidType);
         packet.Write(pocket.Condition);
         packet.WriteVector2(pocket.Position);
@@ -219,11 +219,11 @@ public sealed class SubmergedLiquidSystem : ModSystem
             if (placed <= 0)
                 continue;
 
-            byte index = own ? pocket.Liquid.Mix(tile.LiquidCondition(), condition.Index) : condition.Index;
+            byte index = own ? pocket.Liquid.Mix(tile.InternalLiquid(), condition.Index) : condition.Index;
 
             tile.LiquidType = pocket.Liquid.LiquidType;
             tile.LiquidAmount += (byte)placed;
-            LiquidConditionSystem.Set(point.X, point.Y, index);
+            LiquidInternalSystem.Set(point.X, point.Y, index);
             Liquid.AddWater(point.X, point.Y);
 
             if (Main.netMode == NetmodeID.Server)
@@ -271,7 +271,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
     internal static void SendPockets(int toClient)
     {
-        ModPacket packet = LiquidConditionSystem.NewPacket(LiquidConditionSystem.PacketKind.Pockets);
+        ModPacket packet = LiquidInternalSystem.NewPacket(LiquidInternalSystem.PacketKind.Pockets);
         packet.Write((ushort)pockets.Count);
 
         foreach (SubmergedPocket pocket in pockets)

@@ -399,7 +399,7 @@ public static class LiquidDepositBuilder
 
                 tile.LiquidType = liquidType;
                 tile.LiquidAmount = 255;
-                tile.LiquidCondition() = condition;
+                tile.InternalLiquid() = condition;
             }
         }
     }
