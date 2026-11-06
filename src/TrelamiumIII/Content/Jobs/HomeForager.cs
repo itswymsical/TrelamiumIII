@@ -110,8 +110,8 @@ public sealed class HomeForager : Job
     {
         Context.Play("Guide.HomeForager_Greeting", zoomIn: true);
 
-        //if (Context.IsLocal)
-        //    MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
+        if (Context.IsLocal)
+            MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
     }
 
     public override void OnJobComplete(bool giveRewards = true)
@@ -121,8 +121,8 @@ public sealed class HomeForager : Job
         if (Context.IsLocal)
             Context.Revoke(ModContent.ItemType<GuidesPlans>());
 
-        //if (Context.IsLocal)
-        //    MusicDirector.Stop(1.5f);
+        if (Context.IsLocal)
+            MusicDirector.Stop(1.5f);
     }
 
     public override void OnSetAdvanced(int previousSet, int newSet)

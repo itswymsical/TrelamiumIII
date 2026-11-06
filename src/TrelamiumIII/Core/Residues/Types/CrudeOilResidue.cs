@@ -105,7 +105,7 @@ public sealed class CrudeOilResidue : FilmResidue
 
     /// <summary>Whether the liquid at a cell leaves this behind rather than only a stain. Sunflower oil is food.</summary>
     public static bool SeepsFrom(int x, int y)
-        => Main.tile[x, y].LiquidType == LiquidLoader.LiquidType<OilLiquids>() && OilLiquids.Instance.ConditionAt(x, y) != OilLiquids.Instance.Sunflower;
+        => Main.tile[x, y].LiquidType == LiquidLoader.LiquidType<OilLiquids>() && OilLiquids.Instance.InternalLiqAt(x, y) != OilLiquids.Instance.Sunflower;
 
     /// <summary>
     ///     Keeps a tile beside a pool coated, as a <see cref="ResidueRule" /> does, so each machine lays its own. Nothing seeps

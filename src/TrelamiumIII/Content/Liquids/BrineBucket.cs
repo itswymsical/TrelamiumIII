@@ -72,7 +72,7 @@ public class BrineBucketItem : ModItem
             buckets[LiquidID.Water] = waterBucket;
         }
 
-        if (tile.LiquidAmount > before && LiquidConditionSet.ByType(tile.LiquidType) is not null)
+        if (tile.LiquidAmount > before && InternalLiquidSet.ByType(tile.LiquidType) is not null)
             LiquidConditionSystem.Set(x, y, 0);
     }
 }

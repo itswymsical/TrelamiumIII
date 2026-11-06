@@ -10,7 +10,7 @@ DialogueLibrary: {
 		CopperStandard_Tin.Line1.Text: Whoa,[] whoa.[] That's tin,[] friend.[] I know they look alike.[] That's what tin wants you to think.
 
 		CopperStandard_Set1: {
-			Line1.Text: Now that's a fine pile of rocks![] Nobody's gonna pay for rocks,[] though.[] Trust me,[] I've tried.
+			Line1.Text: Now that's a fine pile of rocks![] Nobody's gonna pay for rocks, though.[] Trust me,[] I've tried.
 			Line2.Text: Get it in a furnace and bring me the bars.[] Bars are a product.
 		}
 

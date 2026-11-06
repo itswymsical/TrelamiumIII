@@ -63,10 +63,10 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
 
         Tile liquidTile = Main.tile[tile.X, tile.Y];
 
-        if (liquidTile.LiquidAmount == 0 || SurfaceY(tile.Y, liquidTile.LiquidAmount) > item.Center.Y || LiquidConditionSet.ByType(liquidTile.LiquidType) is not { } liquid)
+        if (liquidTile.LiquidAmount == 0 || SurfaceY(tile.Y, liquidTile.LiquidAmount) > item.Center.Y || InternalLiquidSet.ByType(liquidTile.LiquidType) is not { } liquid)
             return null;
 
-        LiquidCondition condition = liquid.Get(liquidTile.LiquidCondition());
+        InternalLiquidType condition = liquid.Get(liquidTile.LiquidCondition());
 
         if (liquid.ItemReactionFor(condition, item.type) is not { } reaction || item.stack < reaction.Amount)
             return null;
@@ -76,7 +76,7 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
 
     private static void Step(Item item, Contact contact)
     {
-        (LiquidConditionSet liquid, LiquidCondition condition, ItemReaction reaction, Point tile) = contact;
+        (InternalLiquidSet liquid, InternalLiquidType condition, ItemReaction reaction, Point tile) = contact;
 
         if (reaction.Spent > 0 && !liquid.TrySpend(tile.X, tile.Y, reaction.Spent))
             return;
@@ -129,7 +129,7 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
             y++;
 
         Tile tile = Main.tile[x, y];
-        if (tile.LiquidAmount == 0 || LiquidConditionSet.ByType(tile.LiquidType) is not { } liquid || !liquid.Floats(item.type))
+        if (tile.LiquidAmount == 0 || InternalLiquidSet.ByType(tile.LiquidType) is not { } liquid || !liquid.Floats(item.type))
             return false;
 
         int top = y;
@@ -143,12 +143,12 @@ public sealed class LiquidItemReactionGlobalItem : GlobalItem
     /// <summary>World Y of the liquid surface in row <paramref name="j" /> when it holds <paramref name="amount" />.</summary>
     private static float SurfaceY(int j, byte amount) => j * 16f + (byte.MaxValue - amount) / 255f * 16f;
 
-    private static void Bubble(Item item, LiquidCondition condition)
+    private static void Bubble(Item item, InternalLiquidType condition)
     {
         Dust dust = Dust.NewDustDirect(item.position, item.width, item.height, DustID.Smoke, 0f, -1f, 150, condition.Tint, 0.8f);
         dust.velocity = new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), -Main.rand.NextFloat(0.5f, 1.5f));
         dust.noGravity = true;
     }
 
-    private readonly record struct Contact(LiquidConditionSet Liquid, LiquidCondition Condition, ItemReaction Reaction, Point Tile);
+    private readonly record struct Contact(InternalLiquidSet Liquid, InternalLiquidType Condition, ItemReaction Reaction, Point Tile);
 }

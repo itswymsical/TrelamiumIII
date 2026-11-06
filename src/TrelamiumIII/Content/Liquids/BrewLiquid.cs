@@ -11,17 +11,17 @@ namespace TrelamiumIII.Content.Liquids;
 ///     time the world needs it. Different brews flowing together follow <see cref="AddMix(int, int, int)" />, and turn
 ///     muddled when no recipe covers them; meeting any other liquid they submerge in it instead of merging.
 /// </summary>
-public sealed class BrewLiquid : ConditionalLiquid
+public sealed class BrewLiquid : InternalLiquid
 {
     /// <summary>How long a brew's effect lingers after leaving it.</summary>
     private const int ContactBuffTicks = 120;
 
     private static readonly Dictionary<(int, int), int> recipes = [];
 
-    public LiquidCondition Muddled { get; private set; } = null!;
+    public InternalLiquidType Muddled { get; private set; } = null!;
 
-    protected override void DefineConditions()
-        => Muddled = AddCondition(new LiquidCondition("Muddled") { Tint = new Color(168, 132, 120) });
+    protected override void DefineLiquidTypes()
+        => Muddled = AddInternalLiquid(new InternalLiquidType("Muddled") { Tint = new Color(168, 132, 120) });
 
     public override void SetStaticDefaults()
     {
@@ -71,9 +71,9 @@ public sealed class BrewLiquid : ConditionalLiquid
     }
 
     /// <summary>The condition for a drinkable item, created on the server or in singleplayer if new.</summary>
-    public LiquidCondition? ForItem(int itemType) => IsBrew(itemType) ? Resolve(ItemKey(itemType)) : null;
+    public InternalLiquidType? ForItem(int itemType) => IsBrew(itemType) ? Resolve(ItemKey(itemType)) : null;
 
-    protected override LiquidCondition? CreateDynamic(string name)
+    protected override InternalLiquidType? CreateDynamic(string name)
     {
         int itemType = ItemFromKey(name);
         return IsBrew(itemType) ? new BrewCondition(name, itemType) : null;
@@ -91,9 +91,9 @@ public sealed class BrewLiquid : ConditionalLiquid
         return Muddled.Index;
     }
 
-    public override int BottledItem(LiquidCondition condition) => condition is BrewCondition brew ? brew.ItemType : ItemID.None;
+    public override int BottledItem(InternalLiquidType condition) => condition is BrewCondition brew ? brew.ItemType : ItemID.None;
 
-    protected override void OnPlayerContact(Player player, LiquidCondition condition)
+    protected override void OnPlayerContact(Player player, InternalLiquidType condition)
     {
         if (player.whoAmI != Main.myPlayer || condition is not BrewCondition brew)
             return;
@@ -112,7 +112,7 @@ public sealed class BrewLiquid : ConditionalLiquid
 }
 
 /// <summary>A brew named after the potion it was made from.</summary>
-public sealed class BrewCondition(string name, int itemType) : LiquidCondition(name)
+public sealed class BrewCondition(string name, int itemType) : InternalLiquidType(name)
 {
     private Color? tint;
 

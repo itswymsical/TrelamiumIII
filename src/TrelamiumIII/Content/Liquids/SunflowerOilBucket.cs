@@ -69,7 +69,7 @@ public class SunflowerOilBucket : ModItem
             buckets[LiquidLoader.LiquidType<OilLiquids>()] = waterBucket;
         }
 
-        if (tile.LiquidAmount > before && LiquidConditionSet.ByType(tile.LiquidType) is not null)
+        if (tile.LiquidAmount > before && InternalLiquidSet.ByType(tile.LiquidType) is not null)
             LiquidConditionSystem.Set(x, y, 0);
     }
 }

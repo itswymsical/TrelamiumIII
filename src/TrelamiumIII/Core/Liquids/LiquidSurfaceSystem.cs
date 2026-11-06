@@ -21,7 +21,7 @@ public sealed record LiquidSurface(string Technique)
 }
 
 /// <summary>
-///     A ModLiquid, or the <see cref="LiquidConditionSet" /> of a vanilla liquid, with an animated surface drawn over it
+///     A ModLiquid, or the <see cref="InternalLiquidSet" /> of a vanilla liquid, with an animated surface drawn over it
 ///     by <see cref="LiquidSurfaceSystem" />.
 /// </summary>
 public interface ILiquidSurface
@@ -35,11 +35,11 @@ public interface ILiquidSurface
     bool HasSurface(int i, int j) => true;
 }
 /// <summary>
-///     For a liquid whose conditions each carry their own surface, usually <see cref="LiquidCondition.Surface" />.
+///     For a liquid whose internal types each carry their own surface, usually <see cref="InternalLiquidType.Surface" />.
 ///     <see cref="ILiquidSurface.Surface" /> is then the fallback for conditions without one. Use
-///     <see cref="ILiquidSurface" /> alone when every condition shares one surface.
+///     <see cref="ILiquidSurface" /> alone when every internal type shares one surface.
 /// </summary>
-public interface IConditionalLiquidSurface : ILiquidSurface
+public interface IInternalLiquidSurface : ILiquidSurface
 {
     /// <summary>The surface drawn at (i, j), or null for none.</summary>
     LiquidSurface? SurfaceAt(int i, int j);
@@ -85,7 +85,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
         surfaces = new ILiquidSurface?[LiquidLoader.LiquidCount];
 
         for (int type = 0; type < surfaces.Length; type++)
-            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface ?? LiquidConditionSet.ByType(type) as ILiquidSurface;
+            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface ?? InternalLiquidSet.ByType(type) as ILiquidSurface;
     }
 
     public override void Unload()
@@ -117,7 +117,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
         if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } owner || !owner.HasSurface(i, j))
             return;
 
-        LiquidSurface? surface = owner is IConditionalLiquidSurface conditional ? conditional.SurfaceAt(i, j) : owner.Surface;
+        LiquidSurface? surface = owner is IInternalLiquidSurface conditional ? conditional.SurfaceAt(i, j) : owner.Surface;
         if (surface is null || !collected.Add(new Point(i, j)))
             return;
 

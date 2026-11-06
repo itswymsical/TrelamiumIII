@@ -90,10 +90,10 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
     {
         Tile tile = Main.tile[i, j];
 
-        if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || LiquidConditionSet.ByType(pocketedType) is not { } pocketed)
+        if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || InternalLiquidSet.ByType(pocketedType) is not { } pocketed)
             return;
 
-        LiquidCondition condition = pocketed.Get(tile.LiquidCondition());
+        InternalLiquidType condition = pocketed.Get(tile.LiquidCondition());
         byte hostCondition = 0;
 
         foreach (Point offset in Neighbours)

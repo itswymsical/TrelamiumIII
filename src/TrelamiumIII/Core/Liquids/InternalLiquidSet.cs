@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace TrelamiumIII.Core.Liquids;
 
 /// <summary>
-///     The <see cref="LiquidCondition" />s tiles of one liquid type can carry, with their flow mixes and tile reactions.
-///     A <see cref="ConditionalLiquid" /> owns one for its own type; a vanilla type gets one from a subclass.
+///     The <see cref="InternalLiquidType" />s tiles of one liquid type can carry, with their flow mixes and tile reactions.
+///     A <see cref="InternalLiquid" /> owns one for its own type; a vanilla type gets one from a subclass.
 /// </summary>
-public abstract class LiquidConditionSet
+public abstract class InternalLiquidSet
 {
     /// <summary><see cref="LiquidData.LiquidType" /> is packed in 6 bits.</summary>
     private const int MaxLiquidTypes = 64;
@@ -20,19 +20,19 @@ public abstract class LiquidConditionSet
     /// <summary>Tiles of a body searched for liquid an item reaction spends.</summary>
     private const int SpendSearch = 256;
 
-    private static readonly LiquidConditionSet?[] byType = new LiquidConditionSet?[MaxLiquidTypes];
+    private static readonly InternalLiquidSet?[] byType = new InternalLiquidSet?[MaxLiquidTypes];
 
-    private static readonly List<LiquidConditionSet> all = [];
+    private static readonly List<InternalLiquidSet> all = [];
 
-    public static IReadOnlyList<LiquidConditionSet> All => all;
+    public static IReadOnlyList<InternalLiquidSet> All => all;
 
-    public static LiquidConditionSet? ByType(int type) => (uint)type < MaxLiquidTypes ? byType[type] : null;
+    public static InternalLiquidSet? ByType(int type) => (uint)type < MaxLiquidTypes ? byType[type] : null;
 
-    public static LiquidConditionSet? ByName(string fullName) => all.Find(set => set.FullName == fullName);
+    public static InternalLiquidSet? ByName(string fullName) => all.Find(set => set.FullName == fullName);
 
-    private readonly List<LiquidCondition> conditions = [];
+    private readonly List<InternalLiquidType> conditions = [];
 
-    private readonly Dictionary<string, LiquidCondition> byName = [];
+    private readonly Dictionary<string, InternalLiquidType> byName = [];
 
     private readonly Dictionary<(byte Receiver, byte Donor), byte> mixes = [];
 
@@ -42,7 +42,7 @@ public abstract class LiquidConditionSet
 
     private readonly HashSet<int> floating = [];
 
-    private readonly Dictionary<LiquidCondition, int> bottled = [];
+    private readonly Dictionary<InternalLiquidType, int> bottled = [];
 
     /// <summary>Conditions added before <see cref="Register" />. Those past it are created at runtime and cleared with the world.</summary>
     private int staticCount;
@@ -55,16 +55,16 @@ public abstract class LiquidConditionSet
 
     public abstract string Name { get; }
 
-    public IReadOnlyList<LiquidCondition> Conditions => conditions;
+    public IReadOnlyList<InternalLiquidType> Conditions => conditions;
 
-    public LiquidCondition Default => conditions[0];
+    public InternalLiquidType Default => conditions[0];
 
     internal int StaticCount => staticCount;
 
-    public virtual string ConditionDisplayName(LiquidCondition condition) => condition.Name;
+    public virtual string ConditionDisplayName(InternalLiquidType condition) => condition.Name;
 
     /// <summary>Waterfall style for <paramref name="condition" /> on a vanilla type, or null for the type's own.</summary>
-    public virtual int? WaterfallStyle(LiquidCondition condition) => null;
+    public virtual int? WaterfallStyle(InternalLiquidType condition) => null;
 
     /// <summary>Makes this the set <see cref="ByType" /> returns for <see cref="LiquidType" />, after its static conditions are added.</summary>
     protected internal void Register()
@@ -80,7 +80,7 @@ public abstract class LiquidConditionSet
         all.Clear();
     }
 
-    protected internal LiquidCondition AddCondition(LiquidCondition condition)
+    protected internal InternalLiquidType AddCondition(InternalLiquidType condition)
     {
         if (conditions.Count > byte.MaxValue)
             throw new InvalidOperationException($"{Name} has more than 256 conditions.");
@@ -93,7 +93,7 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>Liquid of <paramref name="donor" /> flowing into <paramref name="receiver" /> makes <paramref name="result" />, both ways round.</summary>
-    protected internal void AddMix(LiquidCondition receiver, LiquidCondition donor, LiquidCondition result)
+    protected internal void AddMix(InternalLiquidType receiver, InternalLiquidType donor, InternalLiquidType result)
     {
         mixes[(receiver.Index, donor.Index)] = result.Index;
         mixes[(donor.Index, receiver.Index)] = result.Index;
@@ -103,19 +103,19 @@ public abstract class LiquidConditionSet
     ///     Liquid in <paramref name="from" /> (any condition when null) beside one of <paramref name="tiles" /> turns into
     ///     <paramref name="to" />, from the contact point outward. The tile is untouched.
     /// </summary>
-    protected internal void AddReaction(LiquidCondition? from, LiquidCondition to, params int[] tiles)
+    protected internal void AddReaction(InternalLiquidType? from, InternalLiquidType to, params int[] tiles)
         => AddReaction(from, to, type => Array.IndexOf(tiles, type) >= 0);
 
-    /// <inheritdoc cref="AddReaction(LiquidCondition?, LiquidCondition, int[])" />
+    /// <inheritdoc cref="AddReaction(InternalLiquidType?, InternalLiquidType, int[])" />
     /// <remarks>Takes a predicate so modded tile types are read after they load.</remarks>
-    protected internal void AddReaction(LiquidCondition? from, LiquidCondition to, Predicate<int> tiles)
+    protected internal void AddReaction(InternalLiquidType? from, InternalLiquidType to, Predicate<int> tiles)
         => reactions.Add(new TileReaction(from, to, tiles, TileOutcome.Keep, 0));
 
     /// <summary>
     ///     Liquid in <paramref name="from" /> (any condition when null) dissolves tiles matching <paramref name="tiles" />,
     ///     or turns them into <paramref name="becomes" /> when given. The liquid is unchanged.
     /// </summary>
-    protected internal void AddCorrosion(LiquidCondition? from, Predicate<int> tiles, ushort? becomes = null)
+    protected internal void AddCorrosion(InternalLiquidType? from, Predicate<int> tiles, ushort? becomes = null)
         => reactions.Add(new TileReaction(from, null, tiles, becomes is null ? TileOutcome.Dissolve : TileOutcome.Convert, becomes ?? 0));
 
     /// <summary>Adds what a dropped stack does in this liquid. Products may be modded items, so add these once item types are assigned.</summary>
@@ -128,7 +128,7 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>The first item reaction for <paramref name="itemType" /> in <paramref name="condition" />, or null.</summary>
-    public ItemReaction? ItemReactionFor(LiquidCondition condition, int itemType)
+    public ItemReaction? ItemReactionFor(InternalLiquidType condition, int itemType)
     {
         foreach (ItemReaction reaction in itemReactions)
         {
@@ -142,18 +142,18 @@ public abstract class LiquidConditionSet
     /// <summary>Whether <paramref name="itemType" /> floats at this liquid's surface, as every item reaction product does.</summary>
     public bool Floats(int itemType) => floating.Contains(itemType);
 
-    public LiquidCondition Get(byte index) => index < conditions.Count ? conditions[index] : Default;
+    public InternalLiquidType Get(byte index) => index < conditions.Count ? conditions[index] : Default;
 
-    public LiquidCondition? Find(string name) => byName.GetValueOrDefault(name);
+    public InternalLiquidType? Find(string name) => byName.GetValueOrDefault(name);
 
     /// <summary>A condition this set can create on demand from its name, or null. Not yet added to the set.</summary>
-    protected internal virtual LiquidCondition? CreateDynamic(string name) => null;
+    protected internal virtual InternalLiquidType? CreateDynamic(string name) => null;
 
     /// <summary>
     ///     The condition saved or synced under <paramref name="name" />, creating it on demand. Clients never create
     ///     one this way; they receive the server's through <see cref="ReceiveDynamic" /> so indices agree.
     /// </summary>
-    public LiquidCondition? Resolve(string name)
+    public InternalLiquidType? Resolve(string name)
     {
         if (Find(name) is { } existing)
             return existing;
@@ -167,7 +167,7 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>The condition named <paramref name="name" /> for reading its look and effects only, without adding it.</summary>
-    public LiquidCondition? Describe(string name)
+    public InternalLiquidType? Describe(string name)
     {
         if (Find(name) is { } existing)
             return existing;
@@ -186,7 +186,7 @@ public abstract class LiquidConditionSet
             return;
 
         while (conditions.Count < index)
-            AddCondition(new LiquidCondition("_" + conditions.Count));
+            AddCondition(new InternalLiquidType("_" + conditions.Count));
 
         if (index == conditions.Count)
         {
@@ -211,23 +211,23 @@ public abstract class LiquidConditionSet
         }
     }
 
-    internal IEnumerable<LiquidCondition> DynamicConditions()
+    internal IEnumerable<InternalLiquidType> DynamicConditions()
     {
         for (int i = staticCount; i < conditions.Count; i++)
             yield return conditions[i];
     }
 
     /// <summary>The item a bottle draws from liquid in <paramref name="condition" />, or 0 for none.</summary>
-    public virtual int BottledItem(LiquidCondition condition) => BottledItemByTable(condition);
+    public virtual int BottledItem(InternalLiquidType condition) => BottledItemByTable(condition);
 
     /// <summary>The item set for <paramref name="condition" /> with <see cref="SetBottledItem" />, or 0.</summary>
-    public int BottledItemByTable(LiquidCondition condition) => bottled.GetValueOrDefault(condition);
+    public int BottledItemByTable(InternalLiquidType condition) => bottled.GetValueOrDefault(condition);
 
     /// <summary>Makes <paramref name="itemType" /> what a bottle draws from <paramref name="condition" />, as each solvent does for its liquid.</summary>
-    public void SetBottledItem(LiquidCondition condition, int itemType) => bottled[condition] = itemType;
+    public void SetBottledItem(InternalLiquidType condition, int itemType) => bottled[condition] = itemType;
 
     /// <summary>Whether a near-full tile in <paramref name="condition" /> is in the area vanilla checks for adjacent water.</summary>
-    public static bool IsNear(Player player, LiquidCondition condition)
+    public static bool IsNear(Player player, InternalLiquidType condition)
     {
         int centerX = (int)((player.position.X + player.width * 0.5f) / 16f);
         int feetY = (int)((player.position.Y + player.height) / 16f);
@@ -253,7 +253,7 @@ public abstract class LiquidConditionSet
     ///     The condition at (i, j), or of the neighbour it shows through when the tile holds none of this type, as half
     ///     blocks and slopes do.
     /// </summary>
-    public LiquidCondition ConditionAt(int i, int j)
+    public InternalLiquidType InternalLiqAt(int i, int j)
     {
         if (Holds(i, j))
             return Get(Main.tile[i, j].LiquidCondition());
@@ -293,7 +293,7 @@ public abstract class LiquidConditionSet
     {
         Tile liquidTile = Main.tile[i, j];
         Tile solid = Main.tile[tileX, tileY];
-        LiquidCondition current = Get(liquidTile.LiquidCondition());
+        InternalLiquidType current = Get(liquidTile.LiquidCondition());
 
         foreach (TileReaction reaction in reactions)
         {
@@ -406,7 +406,7 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>The condition holding the most liquid inside <paramref name="area" />, in world pixels.</summary>
-    public LiquidCondition ConditionIn(Rectangle area)
+    public InternalLiquidType InternalLiqIn(Rectangle area)
     {
         int left = Math.Max(area.Left / 16, 0);
         int right = Math.Min(area.Right / 16, Main.maxTilesX - 1);
@@ -433,16 +433,16 @@ public abstract class LiquidConditionSet
     }
 
     /// <summary>Contact effect on a player in this liquid, given the condition around them.</summary>
-    protected internal virtual void OnPlayerContact(Player player, LiquidCondition condition) { }
+    protected internal virtual void OnPlayerContact(Player player, InternalLiquidType condition) { }
 
     /// <summary>Contact effect on an NPC in this liquid, given the condition around them.</summary>
-    protected internal virtual void OnNPCContact(NPC npc, LiquidCondition condition) { }
+    protected internal virtual void OnNPCContact(NPC npc, InternalLiquidType condition) { }
 
     /// <summary>Contact with <paramref name="condition" />, such as from a submerged pocket of it.</summary>
-    public void ApplyContact(Player player, LiquidCondition condition) => OnPlayerContact(player, condition);
+    public void ApplyContact(Player player, InternalLiquidType condition) => OnPlayerContact(player, condition);
 
-    /// <inheritdoc cref="ApplyContact(Player, LiquidCondition)" />
-    public void ApplyContact(NPC npc, LiquidCondition condition) => OnNPCContact(npc, condition);
+    /// <inheritdoc cref="ApplyContact(Player, InternalLiquidType)" />
+    public void ApplyContact(NPC npc, InternalLiquidType condition) => OnNPCContact(npc, condition);
 
     private enum TileOutcome
     {
@@ -451,5 +451,5 @@ public abstract class LiquidConditionSet
         Convert,
     }
 
-    private sealed record TileReaction(LiquidCondition? From, LiquidCondition? To, Predicate<int> Matches, TileOutcome Outcome, ushort Becomes);
+    private sealed record TileReaction(InternalLiquidType? From, InternalLiquidType? To, Predicate<int> Matches, TileOutcome Outcome, ushort Becomes);
 }

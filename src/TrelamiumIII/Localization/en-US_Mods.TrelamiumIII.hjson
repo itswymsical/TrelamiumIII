@@ -506,7 +506,6 @@ Items: {
 			'''
 			A living record of every alchemy recipe you have brewed.
 			Filter by mode or drop an ingredient in the search slot to find recipes that use it.
-			Right-click in the UI close.
 			'''
 	}
 
@@ -1522,6 +1521,7 @@ Projectiles: {
 	ThrownTool.DisplayName: Thrown Tool
 	ArcticFlaskProjectile.DisplayName: Arctic Flask
 	SoilClodProjectile.DisplayName: Soil Clod
+	PeatBallProjectile.DisplayName: Peat Ball Projectile
 }
 
 NPCs: {

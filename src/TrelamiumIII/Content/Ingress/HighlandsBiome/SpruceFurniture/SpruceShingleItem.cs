@@ -1,7 +1,10 @@
-﻿namespace TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
+﻿using TrelamiumIII.Core;
+
+namespace TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
 
 public class SpruceShingles : ModItem
 {
+    public override string Texture => AssetReferences.Content.Ingress.HighlandsBiome.SpruceFurniture.SpruceShinglesItem.KEY;
     public override void SetDefaults()
     {
         base.SetDefaults();

@@ -10,7 +10,7 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Oil base: crude by default. Pitch is crude's heavy residue, slower to flow and harder to wade; sunflower oil is
 ///     pressed, not drilled. Each carries its own surface. Every oil explodes on meeting lava.
 /// </summary>
-public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
+public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
 
@@ -25,15 +25,15 @@ public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
         Speed = 0.7f,
     };
 
-    public LiquidSurface? SurfaceAt(int i, int j) => ConditionAt(i, j).Surface ?? Surface;
+    public LiquidSurface? SurfaceAt(int i, int j) => InternalLiqAt(i, j).Surface ?? Surface;
 
-    public Color SurfaceTint(int i, int j) => ConditionAt(i, j).SurfaceTint;
+    public Color SurfaceTint(int i, int j) => InternalLiqAt(i, j).SurfaceTint;
 
-    public LiquidCondition Crude { get; private set; } = null!;
+    public InternalLiquidType Crude { get; private set; } = null!;
 
-    public LiquidCondition Pitch { get; private set; } = null!;
+    public InternalLiquidType Pitch { get; private set; } = null!;
 
-    public LiquidCondition Sunflower { get; private set; } = null!;
+    public InternalLiquidType Sunflower { get; private set; } = null!;
 
     public override void Load()
     {
@@ -48,17 +48,17 @@ public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
     }
 
     /// <remarks>The grayscale BaseLiquid set: crude's tint matches the old dark crude sheet, and pitch darkens it further.</remarks>
-    protected override void DefineConditions()
+    protected override void DefineLiquidTypes()
     {
-        Crude = AddCondition(new LiquidCondition("Crude") { Tint = new Color(72, 72, 74) });
+        Crude = AddInternalLiquid(new InternalLiquidType("Crude") { Tint = new Color(72, 72, 74) });
 
-        Pitch = AddCondition(new LiquidCondition("Pitch")
+        Pitch = AddInternalLiquid(new InternalLiquidType("Pitch")
         {
             Tint = new Color(22, 13, 23),
             Strength = 0.88f,
         });
 
-        Sunflower = AddCondition(new LiquidCondition("Sunflower")
+        Sunflower = AddInternalLiquid(new InternalLiquidType("Sunflower")
         {
             Tint = new Color(252, 228, 137),
             Surface = new LiquidSurface("Ripple")
@@ -101,13 +101,13 @@ public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
 
     public override bool UpdateLiquid(int i, int j, Liquid liquid)
     {
-        if (Liquid.quickSettle || WorldGen.gen || ConditionAt(i, j) != Pitch)
+        if (Liquid.quickSettle || WorldGen.gen || InternalLiqAt(i, j) != Pitch)
             return true;
 
         return (Main.GameUpdateCount + (uint)(i * 7 + j * 13)) % PitchFlowInterval == 0;
     }
 
-    protected override void OnPlayerContact(Player player, LiquidCondition condition)
+    protected override void OnPlayerContact(Player player, InternalLiquidType condition)
     {
         if (condition == Crude)
         {
