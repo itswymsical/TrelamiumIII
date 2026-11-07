@@ -74,7 +74,8 @@ public sealed class BotanyBasics : Job
         ],
         rewards:
         [
-            new JobReward(ItemID.SilverCoin, 50),
+            new JobReward(ItemID.HerbBag),
+            new JobReward(ItemID.GoldCoin, 1),
             new JobReward("TrelamiumIII/MagnoliaSeedsItem", 5)
         ],
         providerNPC: ModContent.NPCType<Silvian>())

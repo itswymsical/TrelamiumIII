@@ -17,7 +17,7 @@ sealed class GuideWrittenDialogue : ModSystem
     public override void OnModLoad()
     {
         Dialogue.Define("Guide.HomeForager")
-            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(20))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), Inflection.Emphasis()])
             .Register();
 
         Dialogue.Define("Guide.HomeForager_Greeting")
@@ -35,8 +35,8 @@ sealed class GuideWrittenDialogue : ModSystem
             .Register();
 
         Dialogue.Define("Guide.HomeForager_Question")
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(16), new Pause(20)])
-            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(20), new Pause(16), new Pause(18)])
                 .Choice("Guide.HomeForager_Assailants")
                 .Choice("Guide.HomeForager_Assailants_Quiet")
             .Register();
@@ -109,6 +109,7 @@ sealed class GuideWrittenDialogue : ModSystem
         Dialogue.Define("Guide.HomeForager_Set1")
             .Line(Speaker, emote: 0, speed: 1.2f, new Pause(20))
             .Line(Speaker, emote: 0, speed: 1.2f, [new Pause(20), new Pause(16)])
+            .Line(Speaker, emote: 0, speed: 1.2f, new Pause(16))
             .Register();
 
         Dialogue.Define("Guide.HomeForager_Set2")

@@ -1,5 +1,7 @@
+using ReLogic.Graphics;
 using System;
 using Terraria.Audio;
+using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Dialogue;
 
@@ -72,6 +74,7 @@ public sealed class DialogueRenderContext
     public int GlyphIndex { get; private set; }
     public Vector2 Offset { get; set; }
     public Color Color { get; set; }
+    public float Scale { get; set; } = 1f;
 
     /// <summary>This glyph's place in the span of the affect being run.</summary>
     public SpanCursor Span { get; private set; }
@@ -82,6 +85,7 @@ public sealed class DialogueRenderContext
         Span = new SpanCursor(glyphIndex, glyphIndex, glyphIndex + 1);
         Offset = Vector2.Zero;
         Color = baseColor;
+        Scale = 1f;
     }
 
     internal void BeginSpan(int start, int end) => Span = new SpanCursor(GlyphIndex, start, end);
@@ -129,6 +133,20 @@ public sealed class Shake(float intensity = 2f) : DialogueAffect
             (float)(Math.Cos(time * 1.3f + i * 0.9f) * intensity * 0.8f + Math.Sin(time * 2.1f + i * 0.7f) * intensity * 0.4f));
     }
 }
+
+public sealed class Colorize(Color color) : DialogueAffect
+{
+    public override void OnDraw(DialogueRenderContext render) => render.Color = color;
+}
+/// <summary>
+/// does not work yet. needs proper implementation.
+/// </summary>
+/// <param name="scale"></param>
+public sealed class DialogueScale(float scale = 1f) : DialogueAffect
+{
+    public override void OnDraw(DialogueRenderContext render) => render.Scale = scale;
+}
+
 
 /// <summary>Sine-wave the covered glyphs up and down (replaces &lt;sine&gt;).</summary>
 public sealed class Wave(float intensity = 2f) : DialogueAffect

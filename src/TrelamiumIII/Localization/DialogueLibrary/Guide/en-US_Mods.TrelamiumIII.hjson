@@ -1,6 +1,6 @@
 DialogueLibrary: {
 	Guide: {
-		HomeForager.Line1.Text: Hey, [speakerName:player]! [] I have a task for you!
+		HomeForager.Line1.Text: Hey, [speakerName:player]! [] [I have a task for you!]
 
 		HomeForager_Greeting: {
 			Line1.Text: Hey,[] [speakerName:player]!
@@ -13,7 +13,7 @@ DialogueLibrary: {
 		}
 
 		HomeForager_Name: {
-			Line1.Text: Wild guess.[] In any case,[] I'd be lying if I didn't say Terraria has been dimmer as of late.
+			Line1.Text: Wild guess.[] In any case,[] I'd be lying if I didn't say Terraria has been dim as of late...
 
 			Line2: {
 				Text: Anyone with an arm and a leg would've ran by now.
@@ -42,6 +42,7 @@ DialogueLibrary: {
 		HomeForager_Set1: {
 			Line1.Text: Look at all that![] That's plenty to build with.
 			Line2.Text: Here, take my plans.[] Find a good patch of ground near here and lay them out,[] and we'll start with my house.
+			Line3.Text: Take this builder potion too,[] I have a feeling it'll make things easier.
 		}
 
 		# His house staked.
@@ -75,10 +76,10 @@ DialogueLibrary: {
 		}
 
 		HomeForager_Question: {
-			Line1.Text: Most people have hit the stacks and fled somewhere else![] That's mainly due to the Assailants around the Evil.[] All they do is terrify.
+			Line1.Text: Most Terrarians have hit the stacks and fled abroad![] That's due to the Assailants around the Evil.
 
 			Line2: {
-				Text: But you see,[] A forest this empty is never a good thing.[] I was wondering if you'd be interested in foraging a few homes?
+				Text: But y'see,[] A forest this empty is never a good thing.[] I was wondering if you'd be interested in a job?[] Perhaps foraging a few homes?
 				Choice1.Text: Assailants?
 				Choice2.Text: ...
 			}

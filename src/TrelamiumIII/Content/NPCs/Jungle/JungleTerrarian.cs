@@ -166,7 +166,16 @@ public class JungleTerrarian : Villager
     ];
 
     protected override List<StockEntry> GetStockPool() =>
-    [
+    [        
+        
+        new(() => AddInvItem(ItemID.Elderberry, 5),
+            Trade().For(ItemID.Topaz, 1)
+                            .Grants(ItemID.Elderberry)),
+
+        new(() => AddInvItem(ItemID.Mango, 5),
+            Trade().For(ItemID.Amethyst, 1)
+                            .Grants(ItemID.Mango)),
+
         new(() => AddInvItem(ItemID.BambooBlock, 250),
             Trade().For(ItemID.TinOre, 2).Grants(ItemID.BambooBlock, 12)),
 

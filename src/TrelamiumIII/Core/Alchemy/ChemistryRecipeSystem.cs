@@ -198,6 +198,12 @@ public partial class ChemistryRecipeSystem : ModSystem
     {
         #region Recovery
         AlchemyCore.Result(ItemID.LesserHealingPotion)
+            .From(SolventID.AquaVitae,
+                new BrewRecipe(ItemID.Mushroom, ItemID.Gel) { Potency = 2 },
+                new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2), ItemID.Gel) { Potency = 3 })
+            .From(SolventID.AquaHarmonia,
+                new BrewRecipe(ItemID.Mushroom, ItemID.Gel) { Potency = 2 },
+                new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2), ItemID.Gel) { Potency = 3 })
             .From(ItemID.Bottle,
                 new BrewRecipe(ItemID.Mushroom, ItemID.Gel) { Potency = 1 },
                 new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2), ItemID.Gel) { Potency = 2 })
@@ -289,7 +295,9 @@ public partial class ChemistryRecipeSystem : ModSystem
             .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Daybloom, ItemID.FallenStar) { Potency = 2 }));
 
         AlchemyCore.Result(ItemID.RegenerationPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 2 }))
+            .From(SolventID.AquaVitae, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 3 }))
+            .From(SolventID.AquaHarmonia, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 2 }))
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Mushroom, ItemID.Daybloom) { Potency = 1 }))
             .Augment(ComponentMatcher.Of(ItemID.Gel, 2)).Amplify(+15)
             .Augment(ComponentMatcher.Of(ItemID.DaybloomSeeds, 5)).Amplify(+35)
             .Augment(ComponentMatcher.Of(ItemID.PinkGel, 2)).Heal(+25);
@@ -326,16 +334,20 @@ public partial class ChemistryRecipeSystem : ModSystem
 
         #region Detection and vision
         AlchemyCore.Result(ItemID.BiomeSightPotion)
+            .From(SolventID.AquaSpecularis,
+                KeyAndAnyTwoHerbs(ComponentMatcher.Of(ItemID.GrassSeeds, 5), ItemID.Fireblossom, ItemID.Blinkroot, ItemID.Moonglow, potency: 2))
             .From(ItemID.BottledWater,
                 KeyAndAnyTwoHerbs(ComponentMatcher.Of(ItemID.GrassSeeds, 5), ItemID.Fireblossom, ItemID.Blinkroot, ItemID.Moonglow));
 
         AlchemyCore.Result(ItemID.TrapsightPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ComponentMatcher.Of(ItemID.Cobweb, 5)) { Potency = 2 }));
+            .From(SolventID.AquaSpecularis, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ComponentMatcher.Of(ItemID.Cobweb, 5)) { Potency = 2 }))
+            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Shiverthorn, ComponentMatcher.Of(ItemID.Cobweb, 5)) { Potency = 1 }));
 
         AlchemyCore.Result(ItemID.HunterPotion)
             .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot, ItemID.SharkFin) { Potency = 2 }));
 
         AlchemyCore.Result(ItemID.NightOwlPotion)
+            .From(SolventID.AquaSpecularis, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 3 }))
             .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.Blinkroot) { Potency = 2 }));
 
         AlchemyCore.Result(ItemID.ShinePotion)
@@ -551,11 +563,11 @@ public partial class ChemistryRecipeSystem : ModSystem
     /// A four-ingredient vanilla recipe on three slots: <paramref name="key" /> with each pair of <paramref name="a" />,
     /// <paramref name="b" /> and <paramref name="c" />, at potency 2 with seed variants.
     /// </summary>
-    private static BrewRecipe[] KeyAndAnyTwoHerbs(ComponentMatcher key, int a, int b, int c) =>
+    private static BrewRecipe[] KeyAndAnyTwoHerbs(ComponentMatcher key, int a, int b, int c, int potency = 1) =>
     [
-        .. HerbsOrSeeds(new BrewRecipe(key, a, b) { Potency = 2 }),
-        .. HerbsOrSeeds(new BrewRecipe(key, a, c) { Potency = 2 }),
-        .. HerbsOrSeeds(new BrewRecipe(key, b, c) { Potency = 2 }),
+        .. HerbsOrSeeds(new BrewRecipe(key, a, b) { Potency = potency }),
+        .. HerbsOrSeeds(new BrewRecipe(key, a, c) { Potency = potency }),
+        .. HerbsOrSeeds(new BrewRecipe(key, b, c) { Potency = potency }),
     ];
 
     /// <summary>One variant per pair of <paramref name="a" />, <paramref name="b" /> and <paramref name="c" />, each at <paramref name="potency" />.</summary>

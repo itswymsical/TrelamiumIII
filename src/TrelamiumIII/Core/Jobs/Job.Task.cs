@@ -130,6 +130,9 @@ public sealed class PickupItemTask(string key, int itemType, int count = 1) : Jo
 {
     public override bool Matches(GameEvent evt)
         => evt.Type == GameEventType.ItemPickup && evt.ItemType == itemType;
+    public int ItemType { get; set; } = itemType;
+    public override string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}")
+    .Format(Lang.GetItemNameValue(ItemType), RequiredCount);
 }
 
 /// <summary>Craft <paramref name="count"/> of <paramref name="itemType"/>.</summary>
@@ -137,6 +140,9 @@ public sealed class CraftItemTask(string key, int itemType, int count = 1) : Job
 {
     public override bool Matches(GameEvent evt)
         => evt.Type == GameEventType.ItemCraft && evt.ItemType == itemType;
+    public int ItemType { get; set; } = itemType;
+    public override string Description => TrelamiumIII.Instance.GetLocalization($"Jobs.{DescriptionKey}")
+    .Format(Lang.GetItemNameValue(ItemType), RequiredCount);
 }
 
 /// <summary>Kill <paramref name="count"/> of <paramref name="npcType"/>.</summary>

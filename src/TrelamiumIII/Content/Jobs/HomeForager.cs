@@ -41,30 +41,29 @@ public sealed class HomeForager : Job
     /// <summary>The Guide is a talker, so he gets a shorter leash than the default.</summary>
     protected override int SpeechCooldown => 180;
 
-    private readonly Blueprint guideHouse;
-    private readonly Blueprint merchantHouse;
+    private readonly Blueprint housing1;
+    private readonly Blueprint housing2;
 
     /// <summary>Kept so <see cref="OnEvent"/> can ask which rooms have already counted.</summary>
     private readonly ValidHousingTask housingTask;
 
-    public HomeForager() : this(Plans("GuideHome"), Plans("MerchantHome")) { }
+    public HomeForager() : this(Plans("HomeForagerHousing"), Plans("HomeForagerHousing")) { }
 
-    /// <param name="guideHouse">Shared by its staking and building stages, so the site is staked once.</param>
-    /// <param name="merchantHouse">Likewise.</param>
-    private HomeForager(Blueprint guideHouse, Blueprint merchantHouse) : base(
+
+    private HomeForager(Blueprint housing1, Blueprint housing2) : base(
         JobID.HomeForager, "HomeForager.Name", "HomeForager.Description",
         taskList:
         [
             [
-                new GatherItemTask("HomeForager.Tasks.Set0.obj0", ItemID.Wood, 100, consume: false),
-                new GatherItemTask("HomeForager.Tasks.Set0.obj1", ItemID.StoneBlock, 30, consume: false),
-                new GatherItemTask("HomeForager.Tasks.Set0.obj2", ItemID.Furnace, consume: false),
-                new GatherItemTask("HomeForager.Tasks.Set0.obj3", ItemID.WoodenHammer, consume: false)
+                new PickupItemTask("HomeForager.Tasks.Set0.obj0", ItemID.Wood, 100),
+                new PickupItemTask("HomeForager.Tasks.Set0.obj1", ItemID.StoneBlock, 30),
+                new CraftItemTask("HomeForager.Tasks.Set0.obj2", ItemID.Furnace),
+                new CraftItemTask("HomeForager.Tasks.Set0.obj3", ItemID.WoodenHammer)
             ],
-            [new StakeBlueprintTask("HomeForager.Tasks.Set1.obj0", guideHouse)],
-            Build(guideHouse, "Set2"),
-            [new StakeBlueprintTask("HomeForager.Tasks.Set3.obj0", merchantHouse)],
-            Build(merchantHouse, "Set4"),
+            [new StakeBlueprintTask("HomeForager.Tasks.Set1.obj0", housing1)],
+            Build(housing1, "Set2"),
+            [new StakeBlueprintTask("HomeForager.Tasks.Set3.obj0", housing2)],
+            Build(housing2, "Set4"),
             [new ValidHousingTask("HomeForager.Tasks.Set5.obj0")],
             [new TalkToNPCTask("HomeForager.Tasks.Set6.obj0", NPCID.Guide)]
         ],
@@ -75,8 +74,8 @@ public sealed class HomeForager : Job
         ],
         providerNPC: NPCID.Guide)
     {
-        this.guideHouse = guideHouse;
-        this.merchantHouse = merchantHouse;
+        this.housing1 = housing1;
+        this.housing2 = housing2;
 
         // The planned houses pass a housing check too; a house of their own means one that isn't.
         housingTask = ((ValidHousingTask)TaskList[OwnHouseSet].Task[0]).Excluding(IsPlanned);
@@ -93,7 +92,7 @@ public sealed class HomeForager : Job
     ];
 
     /// <summary>Whether <paramref name="room"/> is inside either house built from the Guide's plans.</summary>
-    private bool IsPlanned(Point room) => Covers(guideHouse, room) || Covers(merchantHouse, room);
+    private bool IsPlanned(Point room) => Covers(housing1, room) || Covers(housing2, room);
 
     private static bool Covers(Blueprint house, Point room) => house.Site is { } site && house.AreaAt(site).Contains(room);
 
@@ -110,8 +109,8 @@ public sealed class HomeForager : Job
     {
         Context.Play("Guide.HomeForager_Greeting", zoomIn: true);
 
-        if (Context.IsLocal)
-            MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
+        //if (Context.IsLocal)
+        //    MusicDirector.Play(HomeForagerMusic.Create(), fadeIn: 0.35f);
     }
 
     public override void OnJobComplete(bool giveRewards = true)
@@ -121,8 +120,8 @@ public sealed class HomeForager : Job
         if (Context.IsLocal)
             Context.Revoke(ModContent.ItemType<GuidesPlans>());
 
-        if (Context.IsLocal)
-            MusicDirector.Stop(1.5f);
+        //if (Context.IsLocal)
+        //    MusicDirector.Stop(1.5f);
     }
 
     public override void OnSetAdvanced(int previousSet, int newSet)
@@ -131,9 +130,9 @@ public sealed class HomeForager : Job
         {
             // A finished house gets its tenant before the Guide says anything about it.
             if (previousSet == GuideHouseSet)
-                BlueprintHousing.MoveIn(NPCID.Guide, guideHouse);
+                BlueprintHousing.MoveIn(NPCID.Guide, housing1);
             else if (previousSet == MerchantHouseSet)
-                BlueprintHousing.MoveIn(NPCID.Merchant, merchantHouse);
+                BlueprintHousing.MoveIn(NPCID.Merchant, housing2);
 
             if (newSet is GuideSiteSet or MerchantSiteSet)
                 HandOverPlans();
@@ -149,6 +148,9 @@ public sealed class HomeForager : Job
 
         if (!Context.Player.HasItem(plans))
             Context.Grant(plans);
+
+        if (!Context.Player.HasItem(ItemID.BuilderPotion))
+            Context.Grant(ItemID.BuilderPotion);
     }
 
     /// <summary>

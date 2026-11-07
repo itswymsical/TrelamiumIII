@@ -135,8 +135,14 @@ public class TundraTerrarian : Villager
 
     protected override List<StockEntry> GetStockPool() =>
     [
-        new(() => AddInvItem(ItemID.TungstenShortsword),
-            Trade().For(ItemID.Campfire).Grants(ItemID.TungstenShortsword)),
+
+        new(() => AddInvItem(ItemID.Cherry, 5),
+            Trade().For(ItemID.Topaz, 1)
+                            .Grants(ItemID.Cherry)),
+
+        new(() => AddInvItem(ItemID.Plum, 5),
+            Trade().For(ItemID.Amethyst, 1)
+                            .Grants(ItemID.Plum)),
 
         new(() => AddInvItem(ItemID.BorealWood, 250),
             Trade().For(ItemID.Wood, 10).Grants(ItemID.BorealWood, 10)),

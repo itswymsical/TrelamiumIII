@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using TrelamiumIII.Core.NPCs;
 using TrelamiumIII.Content.Alchemy.Solutions;
+using TrelamiumIII.Content.Alchemy.Reagents;
+using TrelamiumIII.Content.Items.Rusted;
 
 namespace TrelamiumIII.Content.NPCs.Forest;
 
@@ -138,24 +140,27 @@ public class ForestTerrarian : Villager
 
     public override float SpawnChance(NPCSpawnInfo spawnInfo)
     {
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.045f : 0f;
+        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.014f : 0f;
     }
 
     protected override List<Action> SetWorldInventory() =>
     [
         () => AddInvItem(ItemID.Wood, Main.rand.Next(10, 20)),
-        () => AddInvItem(ItemID.StoneBlock, Main.rand.Next(10, 15)),
-        () => AddInvItem(ItemID.CopperOre, Main.rand.Next(2, 9)),
-        () => AddInvItem(ItemID.TinOre, Main.rand.Next(3, 9)),
+        () => AddInvItem(ItemID.DirtBlock, Main.rand.Next(8, 15)),
+        () => AddInvItem(ItemID.WoodPlatform, Main.rand.Next(8, 18)),
+        () => AddInvItem(ItemID.CopperCoin, Main.rand.Next(3, 9)),
     ];
 
     protected override List<StockEntry> GetStockPool() =>
     [
-        new(() => AddInvItem(ItemID.TinBroadsword),
-        Trade().For(ItemID.Wood, 22).Grants(ItemID.TinBroadsword)),
+        new(() => AddInvItem(ItemID.Bottle, 30),
+        Trade().For(ItemID.Wood, 6).Grants(ItemID.Bottle, 2)),
 
-        new(() => AddInvItem(ItemID.IronBar, 5),
-            Trade().For(ItemID.StoneBlock, 5).Grants(ItemID.IronBar)),
+        new(() => AddInvItem(ItemID.Wood, 425),
+            Trade().For(ModContent.ItemType<RustedNugget>(), 3).Grants(ItemID.Wood, 15)),
+
+        new(() => AddInvItem(ItemID.WoodPlatform, 150),
+            Trade().For(ItemID.StoneBlock, 2).Grants(ItemID.WoodPlatform, 8)),
 
         new(() => AddInvItem(ItemID.HerbBag, 3),
         Trade().For(ItemID.Rope, 30).Grants(ItemID.HerbBag)),
@@ -166,34 +171,41 @@ public class ForestTerrarian : Villager
         new(() => AddInvItem(ItemID.MiningPotion, Main.rand.Next(3, 4)),
             Trade().For(ItemID.CopperBar, 5).Grants(ItemID.MiningPotion)),
 
-        new(() => AddInvItem(ItemID.LesserHealingPotion, Main.rand.Next(6, 10)),
-            Trade().ForCoins(Item.buyPrice(silver: 50)).Grants(ItemID.LesserHealingPotion, 2)),
+        new(() => AddInvItem(ItemID.IronPickaxe, 3),
+            Trade().ForCoins(Item.buyPrice(silver: 99)).Grants(ItemID.IronPickaxe)),
 
         new(() => AddInvItem(ItemID.SilverWatch),
-            Trade().For(ItemID.IronOre, 20).Grants(ItemID.SilverWatch)),
+            Trade().For(ItemID.Chain, 10).Grants(ItemID.SilverWatch)),
 
-        new(() => AddInvItem(ItemID.Silk, 10),
-            Trade().ForCoins(Item.buyPrice(copper: 80))
+        new(() => AddInvItem(ItemID.Silk, 20),
+            Trade().ForCoins(Item.buyPrice(silver: 2))
                             .Grants(ItemID.Silk)),
 
+        new(() => AddInvItem(ItemID.Torch, 200),
+            Trade().For(ItemID.Rope, 8).Grants(ItemID.Torch, 7)),
+
         new(() => AddInvItem(SolventID.AquaSpecularis, 5),
-            Trade().For(ItemID.Bass, 3)
+            Trade().For(ItemID.Bass, 2)
                             .Grants(SolventID.AquaSpecularis)),
 
-        new(() => AddInvItem(ItemID.BottledWater, 12),
+        new(() => AddInvItem(ItemID.BottledWater, 20),
             Trade().For(ItemID.Daybloom, 2)
-                            .Grants(ItemID.BottledWater, 4)),
+                            .Grants(ItemID.BottledWater, 3)),
 
-        new(() => AddInvItem(ItemID.BottledWater, 12),
+        new(() => AddInvItem(ItemID.BottledWater, 20),
             Trade().For(ItemID.Waterleaf, 2)
                             .Grants(ItemID.BottledWater, 4)),
 
-        new(() => AddInvItem(SolventID.AquaFortunae, 5),
-            Trade().For(ItemID.Topaz, 2)
-                            .Grants(SolventID.AquaFortunae)),
+        new(() => AddInvItem(ItemID.Apple, 5),
+            Trade().For(ItemID.Topaz, 1)
+                            .Grants(ItemID.Apple)),
 
-        new(() => AddInvItem(SolventID.AquaVitae, 5),
-            Trade().For(ItemID.Sunflower, 3)
-                            .Grants(SolventID.AquaVitae)),
+        new(() => AddInvItem(ItemID.Banana, 5),
+            Trade().For(ItemID.Amethyst, 1)
+                            .Grants(ItemID.Banana)),
+
+        new(() => AddInvItem(ItemID.Bass, 20),
+            Trade().For(ItemID.Torch, 2)
+                            .Grants(ItemID.Bass)),
     ];
 }
