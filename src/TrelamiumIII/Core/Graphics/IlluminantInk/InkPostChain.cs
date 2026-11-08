@@ -64,9 +64,10 @@ internal sealed class InkPostChain
         Pass(spriteBatch, device, targets, lens);
 
         var blurParameters = blur.Parameters;
-        blurParameters.uCenter = center;
+        blurParameters.uCenter = center * new Vector2(0.801f, 
+            -0.33f + (float)Math.Sin(IlluminantInkScene.time * .333f) * .333f);
         blurParameters.uAspect = aspect;
-        blurParameters.uStrength = InkStyle.BlurStrength;
+        blurParameters.uStrength = 0.893f;
         blurParameters.uSpin = InkStyle.BlurSpin;
         blurParameters.uFalloff = InkStyle.BlurFalloff;
         blurParameters.uMix = InkStyle.BlurMix * frame.Fade;

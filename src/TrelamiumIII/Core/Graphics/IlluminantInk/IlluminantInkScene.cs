@@ -1,5 +1,6 @@
 using Terraria.GameContent;
 using TrelamiumIII.Content.Menus;
+using static Terraria.GameContent.Animations.IL_Actions.Sprites;
 
 namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 
@@ -42,8 +43,8 @@ internal static class IlluminantInkScene
         new SingularityLayer()
     );
 
-    private static float time;
-    private static float fade;
+    public static float time;
+    public static float fade;
 
     public static void Load()
     {
@@ -142,11 +143,19 @@ internal static class IlluminantInkScene
             Main.Rasterizer
         );
 
+        /// <summary>
+        /// the logo is rendered in <see cref="SingularityLayer"/> 
+        /// </summary>
+
+        FloatingLogo.SetLayout(logoCenter, logoScale); 
+
         spriteBatch.Draw(
             Assets.Textures.VFX.Vignette.Asset.Value,
             new Rectangle(0, 0, width, height),
             Color.White * (InkStyle.VignetteStrength * fade)
         );
+
+        //DrawLogo(spriteBatch, logoCenter, logoScale);
 
         spriteBatch.End();
 
@@ -165,40 +174,6 @@ internal static class IlluminantInkScene
             Main.UIScaleMatrix
         );
 
-        if (logo is not null)
-            DrawLogo(spriteBatch, logo, logoCenter, logoScale, logoRotation);
-    }
-
-    /// <summary>Lays a scrim under the logo so it survives a bright filament passing behind it.</summary>
-    private static void DrawLogo(SpriteBatch spriteBatch, Texture2D logo, Vector2 center, float scale, float rotation)
-    {
-        var scrimTexture = Assets.Textures.VFX.Glow.Asset.Value;
-
-        var spread = logo.Width * scale * InkStyle.LogoScrimSpread / scrimTexture.Width;
-
-        spriteBatch.Draw(
-            scrimTexture,
-            center,
-            null,
-            Color.Black * (InkStyle.LogoScrim * fade),
-            0f,
-            scrimTexture.Size() * 0.5f,
-            new Vector2(spread, spread * (logo.Height / (float)logo.Width) * 1.6f),
-            SpriteEffects.None,
-            0f
-        );
-
-        spriteBatch.Draw(
-            logo,
-            center,
-            null,
-            Color.White * fade,
-            rotation,
-            logo.Size() * 0.5f,
-            scale,
-            SpriteEffects.None,
-            0f
-        );
     }
 
     private static InkFrame BuildFrame()
@@ -230,6 +205,8 @@ internal static class IlluminantInkScene
 
         time = 0f;
         fade = 0f;
+        FloatingLogo.Reset();
+
     }
 
     /// <summary>

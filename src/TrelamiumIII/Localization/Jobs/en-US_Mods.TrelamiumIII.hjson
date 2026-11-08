@@ -131,7 +131,7 @@ Jobs: {
 
 	HomeForager: {
 		Name: Home Forager
-		Description: '''"This place is empty... you look strong."'''
+		Description: '''"This place is empty... you look strong!"'''
 
 		Tasks: {
 			// GatherItemTask: {0} = item name, {1} = amount.

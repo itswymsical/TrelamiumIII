@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using static Terraria.GameContent.Animations.IL_Actions.Sprites;
 
 namespace TrelamiumIII.Core.Graphics.IlluminantInk;
 
@@ -80,6 +81,14 @@ internal sealed class SingularityLayer : IInkLayer
     {
     }
 
+    public void DrawLogo(SpriteBatch spriteBatch)
+    {
+        var tint = Color.Lerp(Color.White, new Color(237, 231, 237), 0.5f);
+        var halo = (new Color(251, 251, 255) * 0.111f) with { A = 100 };
+
+        FloatingLogo.Draw(spriteBatch, (float)(Main.timeForVisualEffects / 33.333333333f), tint, halo, 0f);
+    }
+
     public void DrawLight(SpriteBatch spriteBatch, in InkFrame frame)
     {
         var glowTexture = Assets.Textures.VFX.Glow.Asset.Value;
@@ -91,6 +100,7 @@ internal sealed class SingularityLayer : IInkLayer
         var trailOrigin = trailTexture.Size() * 0.5f;
 
         var horizonPixels = InkStyle.Horizon * frame.UnitToPixels;
+        DrawLogo(spriteBatch);
 
         // Halo: the glow the ring throws onto the surrounding dust. Wide and weak, mostly
         // there to give the bloom pass something to bite on around the hole.
@@ -105,7 +115,6 @@ internal sealed class SingularityLayer : IInkLayer
             SpriteEffects.None,
             0f
         );
-
         // Ring flare, breathing slowly and counter-rotating against the disc so the two
         // don't beat against each other at a fixed period.
         var pulse = 0.82f + 0.18f * MathF.Sin(frame.Time * 0.7f);

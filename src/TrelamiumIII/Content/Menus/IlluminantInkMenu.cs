@@ -17,18 +17,16 @@ public sealed class IlluminantInkMenu : ModMenu, IMenuButtonPalette
     /// <summary>Ghost white pushed toward violet, added over the ink.</summary>
     public Color ButtonHover => new(236, 226, 255);
 
-    public Color ButtonGlow => new Color(150, 105, 255) * 0.6f;
+    public Color ButtonGlow => new Color(225, 213, 255) * 0.2f;
 
     public bool AdditiveHover => true;
 
-    public override int Music => Assets.Music.Iniki.IlluminantInkiness.Slot;
+    public override int Music => Assets.Music.Iniki.Krystallos_EvenMyDemons.Slot;
 
-    public override string DisplayName => "Illuminant Ink";
+    public override string DisplayName => "Iniki Illuminans";
 
-    public override Asset<Texture2D> Logo => Assets.Textures.ModLogo.Asset;
+    public override Asset<Texture2D> Logo => Assets.Textures.Logo.TrelamiumLogo.Asset;
 
-    // The scene owns the whole sky. A sun or moon crossing it would sit outside the render
-    // target and miss every post pass, so both are suppressed.
     public override Asset<Texture2D>? SunTexture => null;
 
     public override Asset<Texture2D>? MoonTexture => null;

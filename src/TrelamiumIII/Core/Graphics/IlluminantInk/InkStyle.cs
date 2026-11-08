@@ -335,6 +335,8 @@ internal static class InkStyle
     public static readonly Vector3 MoteBodyColor = new(0.044f, 0.046f, 0.056f);
 
     public static readonly Vector3 MoteCoreColor = new(0.13f, 0.135f, 0.155f);
+    public static readonly Vector3 TextHighlightColor = new(0.953f, 0.910f, 1.000f);
+
 
     /// <summary>The meniscus: the rim the shader paints along its own cut.</summary>
     /// <remarks>
@@ -359,7 +361,7 @@ internal static class InkStyle
     public const float LensSwirl = 0.16f;
     public const float LensMix = 0.60f;
 
-    public const float BlurStrength = 0.055f;
+    public const float BlurStrength = 0.8f;
     public const float BlurSpin = 0.020f;
     public const float BlurFalloff = 1.7f;
     public const float BlurMix = 0.55f;
@@ -374,7 +376,7 @@ internal static class InkStyle
 
     public const float LogoScale = 0.54f;
 
-    public const float LogoOffsetY = 12f;
+    public const float LogoOffsetY = 24f;
 
     /// <summary>
     ///     Alpha of the soft dark scrim laid behind the logo.
