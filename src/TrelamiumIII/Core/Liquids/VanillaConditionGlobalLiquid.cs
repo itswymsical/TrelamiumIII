@@ -5,7 +5,7 @@ using Terraria.Graphics;
 namespace TrelamiumIII.Core.Liquids;
 
 /// <summary>
-///     For vanilla liquids with a <see cref="InternalLiquidSet" />, the per-condition slope and retro tint, light,
+///     For vanilla liquids with a <see cref="InternalLiquidSet" />, the per-internal liquid slope and retro tint, light,
 ///     waterfall and contact effects that <see cref="InternalLiquid" /> gives its own type.
 /// </summary>
 public sealed class VanillaConditionGlobalLiquid : GlobalLiquid

@@ -92,7 +92,7 @@ public readonly record struct JobberRequest(JobberRequestKind Kind, int ItemType
 /// </summary>
 public static class JobberRequests
 {
-    public const int BasePayment = 900;
+    public const int BasePayment = 1000;
 
     private readonly record struct Entry(int ItemType, int Min, int Max, int PayEach, Func<bool>? Condition = null)
     {
@@ -134,14 +134,14 @@ public static class JobberRequests
 
         [JobberRequestKind.Wood] =
         [
-            new(ItemID.Wood, 40, 80, 3),
-            new(ItemID.BorealWood, 30, 60, 4),
-            new(ItemID.RichMahogany, 30, 60, 4),
-            new(ItemID.PalmWood, 30, 60, 4),
-            new(ItemID.AshWood, 25, 50, 6),
-            new(ItemID.Ebonwood, 25, 50, 6, () => !WorldGen.crimson),
-            new(ItemID.Shadewood, 25, 50, 6, () => WorldGen.crimson),
-            new(ItemID.Pearlwood, 25, 50, 12, Hardmode),
+            new(ItemID.Wood, 40, 80, 10),
+            new(ItemID.BorealWood, 30, 60, 10),
+            new(ItemID.RichMahogany, 30, 60, 10),
+            new(ItemID.PalmWood, 30, 60, 10),
+            new(ItemID.AshWood, 25, 50, 20),
+            new(ItemID.Ebonwood, 25, 50, 20, () => !WorldGen.crimson),
+            new(ItemID.Shadewood, 25, 50, 20, () => WorldGen.crimson),
+            new(ItemID.Pearlwood, 25, 50, 100, Hardmode),
         ],
 
         [JobberRequestKind.Gem] =
