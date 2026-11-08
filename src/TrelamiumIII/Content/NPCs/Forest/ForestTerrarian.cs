@@ -139,9 +139,8 @@ public class ForestTerrarian : Villager
     }
 
     public override float SpawnChance(NPCSpawnInfo spawnInfo)
-    {
-        return spawnInfo.Player.ZoneOverworldHeight && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.014f : 0f;
-    }
+        => spawnInfo.Player.ShoppingZone_Forest && Main.dayTime && spawnInfo.Player.ZoneForest ? 0.014f : 0f; // spawn only in a town
+    
 
     protected override List<Action> SetWorldInventory() =>
     [

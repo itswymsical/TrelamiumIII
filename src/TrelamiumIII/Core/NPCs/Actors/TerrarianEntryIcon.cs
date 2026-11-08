@@ -23,7 +23,7 @@ namespace TrelamiumIII.Core.NPCs.Actors;
 /// </summary>
 public sealed class TerrarianEntryIcon(int npcType) : IEntryIcon
 {
-    private const float DefaultWalkSpeed = 1.5f;
+    private const float DefaultWalkSpeed = 1.25f;
 
     /// <summary>Gap between the icon box's bottom edge and the figure's feet, matching vanilla.</summary>
     private const float FootInset = 8f;
