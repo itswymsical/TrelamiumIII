@@ -2,7 +2,7 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
-public abstract class ModLoreBook : ILoadable
+public abstract class ModBook : ILoadable
 {
     /// <summary>Registry key and localization scope (<c>LoreLibrary.{Key}</c>). No spaces: <c>/lorebook</c> reads one word.</summary>
     public abstract string Key { get; }

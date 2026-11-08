@@ -3,7 +3,7 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
-public sealed class EProclamationBook : ModLoreBook
+public sealed class EProclamationBook : ModBook
 {
     public override string Key => "Misc.EProclamation";
 

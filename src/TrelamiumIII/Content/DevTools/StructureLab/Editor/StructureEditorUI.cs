@@ -275,7 +275,7 @@ internal sealed class StructureEditorUI : UIState
         int y = screen.Y + Margin;
 
         toolbar = new Rectangle(x - 5, y - 5, ToolSize + 10, height + 10);
-        AuthoringSkin.DrawPanel(spriteBatch, toolbar, AuthoringSkin.Panel * 0.95f);
+        VFXLabUIAssets.DrawPanel(spriteBatch, toolbar, VFXLabUIAssets.Panel * 0.95f);
 
         foreach (EditorTool tool in tools)
         {
@@ -305,22 +305,22 @@ internal sealed class StructureEditorUI : UIState
 
         y += ToolSize + ToolGap + GroupGap;
 
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.BackArrow, false, StructureEditorMode.Undo,
+        IconButton(spriteBatch, ref y, x, VFXLabUIAssets.BackArrow, false, StructureEditorMode.Undo,
             StructureEditorMode.CurveInProgress ? "Remove the curve's last node (Ctrl+Z)" : "Undo (Ctrl+Z)",
             StructureEditorMode.History.CanUndo || StructureEditorMode.CurveInProgress);
 
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.ForwardArrow, false, StructureEditorMode.Redo, "Redo (Ctrl+Y)",
+        IconButton(spriteBatch, ref y, x, VFXLabUIAssets.ForwardArrow, false, StructureEditorMode.Redo, "Redo (Ctrl+Y)",
             StructureEditorMode.History.CanRedo && !StructureEditorMode.CurveInProgress);
 
         IconButton(spriteBatch, ref y, x, TextureAssets.Tile[ModContent.TileType<StructureVoidTile>()].Value, false,
             StructureEditorMode.VoidOutside, "Void outside: mark every empty cell joined to the canvas edge as void", iconSource: new Rectangle(0, 0, 16, 16));
 
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.Save, false, StructureEditorMode.Save, "Save to Assets/Structures (Ctrl+S)");
+        IconButton(spriteBatch, ref y, x, VFXLabUIAssets.Save, false, StructureEditorMode.Save, "Save to Assets/Structures (Ctrl+S)");
 
         var build = new Rectangle(x, y, ToolSize, ToolSize);
         bool hover = build.Contains(Cursor);
 
-        AuthoringSkin.DrawButton(spriteBatch, build, hover);
+        VFXLabUIAssets.DrawButton(spriteBatch, build, hover);
         DrawItem(spriteBatch, ItemID.CopperPickaxe, build);
         Register(build, hover, StructureEditorMode.RequestExit, null, "Build with vanilla tools (~ or Esc)");
     }
@@ -331,7 +331,7 @@ internal sealed class StructureEditorUI : UIState
         var area = new Rectangle(x, y, ToolSize, ToolSize);
         bool hover = enabled && area.Contains(Cursor);
 
-        AuthoringSkin.DrawButton(spriteBatch, area, hover, active);
+        VFXLabUIAssets.DrawButton(spriteBatch, area, hover, active);
 
         Rectangle source = iconSource ?? icon.Bounds;
         int scale = Math.Max(1, (ToolSize - 4) / Math.Max(source.Width, source.Height));
@@ -459,7 +459,7 @@ internal sealed class StructureEditorUI : UIState
         bool focused = focus == field;
         bool hover = area.Contains(Cursor);
 
-        AuthoringSkin.DrawPanel(spriteBatch, area, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
+        VFXLabUIAssets.DrawPanel(spriteBatch, area, (focused ? VFXLabUIAssets.ButtonIdle : VFXLabUIAssets.Inset) * (hover ? 1.1f : 1f));
 
         bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
         bool showTyped = focused || typed.Length > 0;
@@ -490,7 +490,7 @@ internal sealed class StructureEditorUI : UIState
                 bool hover = area.Contains(Cursor);
                 bool chosen = anchor == cell;
 
-                spriteBatch.Draw(pixel, area, chosen ? AuthoringSkin.Selection : hover ? AuthoringSkin.ButtonHover : AuthoringSkin.ButtonIdle);
+                spriteBatch.Draw(pixel, area, chosen ? VFXLabUIAssets.Selection : hover ? VFXLabUIAssets.ButtonHover : VFXLabUIAssets.ButtonIdle);
                 Register(area, hover, () => anchor = cell, null, "Anchor: the part of the canvas a typed size keeps in place");
             }
         }
@@ -499,7 +499,7 @@ internal sealed class StructureEditorUI : UIState
     private void OpenOptions(SpriteBatch spriteBatch, int x, int y, int width)
     {
         options = new Rectangle(x - 5, y - 5, width + 10, ToolSize + 10);
-        AuthoringSkin.DrawPanel(spriteBatch, options, AuthoringSkin.Panel * 0.95f);
+        VFXLabUIAssets.DrawPanel(spriteBatch, options, VFXLabUIAssets.Panel * 0.95f);
     }
     #endregion
 
@@ -507,7 +507,7 @@ internal sealed class StructureEditorUI : UIState
     private void DrawPalette(SpriteBatch spriteBatch, Rectangle screen)
     {
         panel = new Rectangle(screen.Right - Margin - PanelWidth, screen.Y + Margin, PanelWidth, status.Y - Margin - screen.Y - Margin);
-        AuthoringSkin.DrawPanel(spriteBatch, panel, AuthoringSkin.Panel * 0.95f);
+        VFXLabUIAssets.DrawPanel(spriteBatch, panel, VFXLabUIAssets.Panel * 0.95f);
 
         int x = panel.X + Padding;
         int width = panel.Width - Padding * 2;
@@ -559,13 +559,13 @@ internal sealed class StructureEditorUI : UIState
         var main = new Rectangle(x, y, 44, 44);
         var back = new Rectangle(x + 30, y + 22, 30, 30);
 
-        AuthoringSkin.DrawButton(spriteBatch, back, false);
+        VFXLabUIAssets.DrawButton(spriteBatch, back, false);
         DrawSwatch(spriteBatch, secondary, back);
         Ring(spriteBatch, back, SecondaryRing);
 
-        AuthoringSkin.DrawButton(spriteBatch, main, false);
+        VFXLabUIAssets.DrawButton(spriteBatch, main, false);
         DrawSwatch(spriteBatch, primary, main);
-        Ring(spriteBatch, main, AuthoringSkin.Selection);
+        Ring(spriteBatch, main, VFXLabUIAssets.Selection);
 
         Text(spriteBatch, $"L  {Fit(primary.Name, width - 110)}", new Vector2(x + 68, y + 4), Color.White);
         Text(spriteBatch, $"R  {Fit(secondary.Name, width - 110)}", new Vector2(x + 68, y + 28), SecondaryRing);
@@ -636,7 +636,7 @@ internal sealed class StructureEditorUI : UIState
         bool hover = searchBox.Contains(Cursor);
         bool focused = focus == TextField.Search;
 
-        AuthoringSkin.DrawPanel(spriteBatch, searchBox, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
+        VFXLabUIAssets.DrawPanel(spriteBatch, searchBox, (focused ? VFXLabUIAssets.ButtonIdle : VFXLabUIAssets.Inset) * (hover ? 1.1f : 1f));
 
         bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
         string shown = search.Length > 0 || focused ? search + (caret ? "|" : string.Empty) : "Search...";
@@ -689,11 +689,11 @@ internal sealed class StructureEditorUI : UIState
             var slot = new Rectangle(grid.X + i * SlotSize, y, SlotSize - 2, SlotSize - 2);
             bool hover = slot.Contains(Cursor);
 
-            AuthoringSkin.DrawButton(spriteBatch, slot, hover);
+            VFXLabUIAssets.DrawButton(spriteBatch, slot, hover);
             DrawSwatch(spriteBatch, entry, slot);
 
             if (entry.Swatch == StructureEditorMode.Primary)
-                Ring(spriteBatch, slot, AuthoringSkin.Selection);
+                Ring(spriteBatch, slot, VFXLabUIAssets.Selection);
             else if (entry.Swatch == StructureEditorMode.Secondary)
                 Ring(spriteBatch, slot, SecondaryRing);
 
@@ -753,7 +753,7 @@ internal sealed class StructureEditorUI : UIState
     #region Status
     private void DrawStatus(SpriteBatch spriteBatch)
     {
-        AuthoringSkin.DrawPanel(spriteBatch, status, AuthoringSkin.Inset * 0.95f);
+        VFXLabUIAssets.DrawPanel(spriteBatch, status, VFXLabUIAssets.Inset * 0.95f);
 
         Rectangle canvas = StructureEditor.Canvas;
         Point cell = StructureEditorMode.HoverCell;
@@ -811,7 +811,7 @@ internal sealed class StructureEditorUI : UIState
         int x = Math.Min(cursor.X + 18, screen.Right - width - 4);
         int y = Math.Min(cursor.Y + 20, screen.Bottom - height - 4);
 
-        AuthoringSkin.DrawPanel(spriteBatch, new Rectangle(x, y, width, height), AuthoringSkin.Inset);
+        VFXLabUIAssets.DrawPanel(spriteBatch, new Rectangle(x, y, width, height), VFXLabUIAssets.Inset);
         Text(spriteBatch, tooltip, new Vector2(x + 9, y + 5), Color.White);
     }
     #endregion
@@ -822,7 +822,7 @@ internal sealed class StructureEditorUI : UIState
     {
         bool hover = area.Contains(Cursor);
 
-        AuthoringSkin.DrawButton(spriteBatch, area, hover, active);
+        VFXLabUIAssets.DrawButton(spriteBatch, area, hover, active);
 
         DynamicSpriteFont font = FontAssets.MouseText.Value;
         Vector2 size = font.MeasureString(label) * scale;
@@ -838,7 +838,7 @@ internal sealed class StructureEditorUI : UIState
     {
         bool hover = enabled && area.Contains(Cursor);
 
-        AuthoringSkin.DrawButton(spriteBatch, area, hover, active);
+        VFXLabUIAssets.DrawButton(spriteBatch, area, hover, active);
         DrawMask(spriteBatch, mask, area, fill, enabled ? 1f : 0.35f);
 
         if (enabled)

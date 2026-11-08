@@ -16,7 +16,7 @@ public enum LibraryCategory
 }
 
 /// <summary>
-/// A book Edith can lend. <paramref name="LoreKey"/> is the <see cref="ModLoreBook"/> it opens; placeholder entries borrow
+/// A book Edith can lend. <paramref name="LoreKey"/> is the <see cref="ModBook"/> it opens; placeholder entries borrow
 /// an existing one. The cover is a mod texture path or, when <paramref name="CoverItem"/> is set, a vanilla item's art.
 /// </summary>
 public sealed record LibraryBook(string Id, LibraryCategory Category, string LoreKey, string? CoverPath = null, int CoverItem = 0)
@@ -24,7 +24,7 @@ public sealed record LibraryBook(string Id, LibraryCategory Category, string Lor
     /// <summary> The catalog's title when it has one, otherwise the lore book's own. </summary>
     public string Title => Language.Exists(Key("Title"))
         ? Language.GetTextValue(Key("Title"))
-        : LoreBookRegistry.Get(LoreKey)?.Title ?? Id;
+        : BookRegistry.Get(LoreKey)?.Title ?? Id;
 
     public string Blurb => Language.GetTextValue(Key("Blurb"));
 

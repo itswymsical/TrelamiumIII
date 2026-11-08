@@ -12,7 +12,7 @@ public class RealmCommands : ModCommand
 
     public override string Usage => "/realm [ingress|reverie|treelab] [instant]";
 
-    public override string Description => "teleports you the realm, folk.";
+    public override string Description => "transports you a subworld realm.";
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {

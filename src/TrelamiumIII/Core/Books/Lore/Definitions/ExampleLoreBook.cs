@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Books.Text;
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
 /// <summary>Template lore book: structure and presentation here, words in <c>Localization/LoreLibrary</c>.</summary>
-public sealed class ExampleLoreBook : ModLoreBook
+public sealed class ExampleLoreBook : ModBook
 {
     public override string Key => "Example.FirstAccount";
 

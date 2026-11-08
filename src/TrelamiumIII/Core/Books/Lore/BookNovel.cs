@@ -6,10 +6,10 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
-/// <summary>Entry point for defining a lore book.</summary>
+/// <summary>Entry point for defining a book.</summary>
 public static class BookNovel
 {
-    /// <summary>Starts a definition; finish with <see cref="BookBuilder.Register" />. See <c>ExampleLoreBook</c> for usage.</summary>
+    /// <summary>Starts a definition; finish with <see cref="BookBuilder.Register" />. See <c>ExampleBook</c> for usage.</summary>
     public static BookBuilder Define(string key) => new(key);
 }
 
@@ -389,7 +389,7 @@ public sealed class BookBuilder(string key)
             Chapters = chapters,
         };
 
-        LoreBookRegistry.Add(definition);
+        BookRegistry.Add(definition);
 
         return definition;
     }

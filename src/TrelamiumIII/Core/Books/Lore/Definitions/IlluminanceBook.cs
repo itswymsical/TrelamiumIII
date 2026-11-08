@@ -19,7 +19,7 @@ internal static class IlluminanceSeries
 /// <summary>
 ///     Laine L.'s <em>Illuminance</em>, a scholar's memoir: the shape a long book takes, one Chapter call plus prose per chapter.
 /// </summary>
-public sealed class IlluminanceBook : ModLoreBook
+public sealed class IlluminanceBook : ModBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceI";
 
@@ -68,7 +68,7 @@ public sealed class IlluminanceBook : ModLoreBook
     }
 }
 
-public sealed class IlluminanceBook2 : ModLoreBook
+public sealed class IlluminanceBook2 : ModBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceII";
 

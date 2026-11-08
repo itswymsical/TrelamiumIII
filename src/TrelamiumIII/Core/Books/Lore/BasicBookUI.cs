@@ -78,7 +78,7 @@ public sealed class BasicBookUI : BookUI
         if (Current is not null)
             return;
 
-        BookDefinition? definition = LoreBookRegistry.Get(key);
+        BookDefinition? definition = BookRegistry.Get(key);
 
         if (definition is null)
         {
@@ -375,7 +375,7 @@ public sealed class BasicBookUI : BookUI
 
     protected override void OnLinkActivated(string target)
     {
-        if (!LoreBookRegistry.Has(target) || target == Key)
+        if (!BookRegistry.Has(target) || target == Key)
             return;
 
         // The book has to finish closing before the next one can claim the slot, so the jump is

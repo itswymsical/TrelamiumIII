@@ -10,7 +10,7 @@ public sealed class GrantExpCommand : ModCommand
 
     public override string Usage => "/exp <amount>";
 
-    public override string Description => "Grants Exp to yourself, bypassing the source allowance.";
+    public override string Description => "Grants Exp to yourself.";
 
     public override void Action(CommandCaller caller, string input, string[] args)
     {

@@ -4,10 +4,7 @@ using Terraria.ID;
 
 namespace TrelamiumIII.Core.Books.Authoring;
 
-/// <summary>
-///     The desk's chrome: Bestiary slot plates (one nine-slice texture, unlike the generic panel pair) and the vanilla toolbar icons.
-/// </summary>
-public static class AuthoringSkin
+public static class VFXLabUIAssets
 {
     public static readonly Color Panel = new(48, 58, 104);
 

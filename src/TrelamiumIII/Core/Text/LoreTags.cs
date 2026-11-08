@@ -88,7 +88,7 @@ public sealed class LoreLinkTagHandler : ITagHandler
     TextSnippet ITagHandler.Parse(string text, Color baseColor, string options)
     {
         string key = text.Trim();
-        BookDefinition? book = LoreBookRegistry.Get(key);
+        BookDefinition? book = BookRegistry.Get(key);
 
         // An unresolved reference reads as ordinary text rather than as a broken tag, so a book that
         // has not been written yet does not litter finished pages.

@@ -92,7 +92,7 @@ public readonly record struct JobberRequest(JobberRequestKind Kind, int ItemType
 /// </summary>
 public static class JobberRequests
 {
-    public const int BasePayment = 500;
+    public const int BasePayment = 900;
 
     private readonly record struct Entry(int ItemType, int Min, int Max, int PayEach, Func<bool>? Condition = null)
     {
@@ -114,22 +114,22 @@ public static class JobberRequests
     {
         [JobberRequestKind.Ore] =
         [
-            new(ItemID.CopperOre, 20, 35, 10),
-            new(ItemID.TinOre, 20, 35, 10),
-            new(ItemID.IronOre, 15, 30, 20),
-            new(ItemID.LeadOre, 15, 30, 20),
-            new(ItemID.SilverOre, 12, 25, 30),
-            new(ItemID.TungstenOre, 12, 25, 30),
-            new(ItemID.GoldOre, 10, 20, 45),
-            new(ItemID.PlatinumOre, 10, 20, 45),
-            new(ItemID.DemoniteOre, 10, 20, 60, () => NPC.downedBoss1),
-            new(ItemID.CrimtaneOre, 10, 20, 60, () => NPC.downedBoss1),
-            new(ItemID.CobaltOre, 10, 20, 150, Hardmode),
-            new(ItemID.PalladiumOre, 10, 20, 150, Hardmode),
-            new(ItemID.MythrilOre, 8, 16, 220, Hardmode),
-            new(ItemID.OrichalcumOre, 8, 16, 220, Hardmode),
-            new(ItemID.AdamantiteOre, 6, 12, 300, Hardmode),
-            new(ItemID.TitaniumOre, 6, 12, 300, Hardmode),
+            new(ItemID.CopperOre, 20, 35, 30),
+            new(ItemID.TinOre, 20, 35, 30),
+            new(ItemID.IronOre, 15, 30, 50),
+            new(ItemID.LeadOre, 15, 30, 50),
+            new(ItemID.SilverOre, 12, 25, 60),
+            new(ItemID.TungstenOre, 12, 25, 70),
+            new(ItemID.GoldOre, 10, 20, 90),
+            new(ItemID.PlatinumOre, 10, 20, 95),
+            new(ItemID.DemoniteOre, 10, 20, 105, () => NPC.downedBoss1),
+            new(ItemID.CrimtaneOre, 10, 20, 105, () => NPC.downedBoss1),
+            new(ItemID.CobaltOre, 10, 20, 250, Hardmode),
+            new(ItemID.PalladiumOre, 10, 20, 250, Hardmode),
+            new(ItemID.MythrilOre, 8, 16, 320, Hardmode),
+            new(ItemID.OrichalcumOre, 8, 16, 320, Hardmode),
+            new(ItemID.AdamantiteOre, 6, 12, 400, Hardmode),
+            new(ItemID.TitaniumOre, 6, 12, 420, Hardmode),
         ],
 
         [JobberRequestKind.Wood] =
@@ -146,12 +146,12 @@ public static class JobberRequests
 
         [JobberRequestKind.Gem] =
         [
-            new(ItemID.Amethyst, 4, 8, 800),
-            new(ItemID.Topaz, 4, 8, 1000),
-            new(ItemID.Sapphire, 3, 6, 1300),
-            new(ItemID.Emerald, 3, 6, 1500),
-            new(ItemID.Ruby, 2, 5, 2000),
-            new(ItemID.Amber, 2, 5, 2000),
+            new(ItemID.Amethyst, 4, 8, 1300),
+            new(ItemID.Topaz, 4, 8, 1500),
+            new(ItemID.Sapphire, 3, 6, 1800),
+            new(ItemID.Emerald, 3, 6, 1900),
+            new(ItemID.Ruby, 2, 5, 2200),
+            new(ItemID.Amber, 2, 5, 2400),
             new(ItemID.Diamond, 2, 4, 3000),
         ],
 
@@ -173,17 +173,17 @@ public static class JobberRequests
         // Totals land on round coin amounts once BasePayment is added.
         [JobberRequestKind.Accessory] =
         [
-            new(ItemID.Aglet, 1, 1, 4_500),
-            new(ItemID.Shackle, 1, 1, 4_500),
+            new(ItemID.Aglet, 1, 1, 9_500),
+            new(ItemID.Shackle, 1, 1, 9_500),
             new(ItemID.ClimbingClaws, 1, 1, 9_500),
             new(ItemID.Radar, 1, 1, 9_500),
             new(ItemID.BandofRegeneration, 1, 1, 14_500),
-            new(ItemID.HermesBoots, 1, 1, 19_500),
-            new(ItemID.FlurryBoots, 1, 1, 19_500),
-            new(ItemID.SailfishBoots, 1, 1, 19_500),
-            new(ItemID.CloudinaBottle, 1, 1, 19_500),
-            new(ItemID.AnkletoftheWind, 1, 1, 24_500),
-            new(ItemID.LuckyHorseshoe, 1, 1, 24_500),
+            new(ItemID.HermesBoots, 1, 1, 22_500),
+            new(ItemID.FlurryBoots, 1, 1, 22_500),
+            new(ItemID.SailfishBoots, 1, 1, 22_500),
+            new(ItemID.CloudinaBottle, 1, 1, 22_500),
+            new(ItemID.AnkletoftheWind, 1, 1, 33_500),
+            new(ItemID.LuckyHorseshoe, 1, 1, 45_500),
         ],
     };
 

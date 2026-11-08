@@ -36,7 +36,7 @@ public sealed partial class TrelamiumIII : Mod
 
     public override void Unload()
     {
-        LoreBookRegistry.Unload();
+        BookRegistry.Unload();
         DialogueRegistry.Unload();
         SpeakerRegistry.Unload();
         TrelamiumFonts.Unload();

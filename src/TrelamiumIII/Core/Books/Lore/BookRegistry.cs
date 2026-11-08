@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace TrelamiumIII.Core.Books.Lore;
 
-/// <summary>Every lore book by id, filled automatically as <see cref="ModLoreBook" />s autoload.</summary>
-public static class LoreBookRegistry
+/// <summary>Every lore book by id, filled automatically as <see cref="ModBook" />s autoload.</summary>
+public static class BookRegistry
 {
     private static readonly Dictionary<string, BookDefinition> books = new(StringComparer.OrdinalIgnoreCase);
 

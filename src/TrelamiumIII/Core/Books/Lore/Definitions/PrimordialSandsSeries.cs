@@ -3,7 +3,7 @@ using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Books.Lore.Definitions;
 
-public sealed class PrimordialSandsBook1: ModLoreBook
+public sealed class PrimordialSandsBook1: ModBook
 {
     public override string Key => "PrimordialSands1";
 

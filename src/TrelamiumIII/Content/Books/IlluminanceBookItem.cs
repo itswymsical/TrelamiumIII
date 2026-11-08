@@ -1,6 +1,6 @@
 ﻿using TrelamiumIII.Core.Books.Lore;
 
-namespace TrelamiumIII.Content.Lore;
+namespace TrelamiumIII.Content.Books;
 
 public class IlluminanceBookItem : ModItem
 {

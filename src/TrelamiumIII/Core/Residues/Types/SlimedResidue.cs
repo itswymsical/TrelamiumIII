@@ -91,7 +91,7 @@ public sealed class SlimedResidue : FilmResidue
 
     public override void OnNPCContact(ref ResidueInstance instance, NPC npc)
     {
-        if (npc.noTileCollide || !FirstContact(npc))
+        if (npc.noTileCollide || !FirstContact(npc) || npc.aiStyle == NPCAIStyleID.Slime)
             return;
 
         npc.velocity.X *= MathHelper.Lerp(1f, NPC_DRAG, instance.Strength);
