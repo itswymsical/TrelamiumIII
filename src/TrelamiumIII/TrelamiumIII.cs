@@ -1,5 +1,5 @@
 using Terraria.Localization;
-using TrelamiumIII.Core.Books.Lore;
+using TrelamiumIII.Core.Books;
 using TrelamiumIII.Core.Dialogue;
 using TrelamiumIII.Core.Graphics;
 using TrelamiumIII.Core.Text;

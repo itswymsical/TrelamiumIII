@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using ReLogic.Graphics;
 using Terraria.UI.Chat;
-using TrelamiumIII.Core.Books.Authoring;
 using TrelamiumIII.Core.Books.Text;
+using TrelamiumIII.Utilities.Authoring;
 
 namespace TrelamiumIII.Core.Text;
 

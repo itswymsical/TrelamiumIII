@@ -1,6 +1,6 @@
 using TrelamiumIII.Core.Books.Text;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 public abstract class ModBook : ILoadable
 {

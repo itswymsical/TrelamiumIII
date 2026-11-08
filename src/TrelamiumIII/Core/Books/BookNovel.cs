@@ -4,7 +4,7 @@ using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Layout.Blocks;
 using TrelamiumIII.Core.Books.Text;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 /// <summary>Entry point for defining a book.</summary>
 public static class BookNovel

@@ -1,4 +1,4 @@
-namespace TrelamiumIII.Core.Books.Authoring;
+namespace TrelamiumIII.Utilities.Authoring;
 
 /// <summary>Line alignment, mirroring <c>TextAlign</c> without depending on the render layer.</summary>
 public enum AuthoredAlign

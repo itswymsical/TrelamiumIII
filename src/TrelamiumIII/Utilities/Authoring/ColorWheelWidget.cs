@@ -1,6 +1,6 @@
 using Terraria.GameContent;
 
-namespace TrelamiumIII.Core.Books.Authoring;
+namespace TrelamiumIII.Utilities.Authoring;
 
 /// <summary>
 ///     HSV picker: a saturation/value box plus hue strip, so white and black are one click away. Driven by UI mouse events.

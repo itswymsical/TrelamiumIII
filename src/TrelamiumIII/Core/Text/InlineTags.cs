@@ -2,7 +2,6 @@ using System.Collections;
 using System.Globalization;
 using System.Reflection;
 using Terraria.GameContent;
-using Terraria.Localization;
 using Terraria.UI.Chat;
 using TrelamiumIII.Common.ChemicalClass;
 
@@ -78,7 +77,7 @@ public sealed class InlineTagSystem : ModSystem
     internal const string SPACE_TAG = "ttspace";
 
     /// <summary>The authoring tool's character-formatting run. See <see cref="FormatTagHandler" />.</summary>
-    internal const string FORMAT_TAG = Books.Authoring.FormatCodec.TAG;
+    internal const string FORMAT_TAG = Utilities.Authoring.FormatCodec.TAG;
 
     private static readonly string[] Tags =
     [

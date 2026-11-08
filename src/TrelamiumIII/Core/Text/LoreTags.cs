@@ -2,7 +2,7 @@ using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.Localization;
 using Terraria.UI.Chat;
-using TrelamiumIII.Core.Books.Lore;
+using TrelamiumIII.Core.Books;
 using TrelamiumIII.Core.Books.Text;
 
 namespace TrelamiumIII.Core.Text;

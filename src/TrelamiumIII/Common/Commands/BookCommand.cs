@@ -1,6 +1,6 @@
 using System.Linq;
 using Terraria.ModLoader;
-using TrelamiumIII.Core.Books.Lore;
+using TrelamiumIII.Core.Books;
 
 namespace TrelamiumIII.Common.Commands;
 

@@ -6,8 +6,8 @@ using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.UI;
-using TrelamiumIII.Core.Books.Authoring;
 using TrelamiumIII.Core.Structures;
+using TrelamiumIII.Utilities.Authoring;
 
 namespace TrelamiumIII.Content.DevTools.StructureLab.Editor;
 

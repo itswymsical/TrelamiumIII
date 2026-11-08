@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using Terraria.ModLoader.IO;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 /// <summary>
 ///     Per-player, per-book bookmarks saved with the player, as flat <c>book=page,page</c> strings since TagCompound lacks dictionaries.

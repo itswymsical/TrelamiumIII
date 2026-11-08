@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TrelamiumIII.Core.Books.Authoring;
+namespace TrelamiumIII.Utilities.Authoring;
 
 /// <summary>Casings the change-case control cycles through.</summary>
 public enum TextCase

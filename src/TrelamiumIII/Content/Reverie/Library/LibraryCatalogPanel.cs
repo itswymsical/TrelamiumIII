@@ -12,15 +12,10 @@ using TrelamiumIII.Core.UI.World;
 
 namespace TrelamiumIII.Content.Reverie.Library;
 
-/// <summary>
-/// One category of Reverie's shelves as a plane standing over Edith, in the job board's white on black: covers in a
-/// grid down the left, the highlighted book's title and blurb on the right, and checkout along the bottom.
-/// </summary>
 internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 {
     #region Tuning
 
-    /// <summary> Screen pixels per texel; the job board's, so the two read alike. </summary>
     private const float PIXEL = 1.15f;
 
     private const int SURFACE_W = 560;
@@ -135,7 +130,7 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
     protected override void DrawChrome(SpriteBatch spriteBatch, Rectangle bounds, float opacity) { }
 
-    private static DynamicSpriteFont Body => ProjectedFonts.Body;
+    private static DynamicSpriteFont PanelBody => ProjectedFonts.Body;
 
     private static DynamicSpriteFont Title => ProjectedFonts.Title;
 
@@ -207,7 +202,7 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
         }
 
         titleLines = ProjectedText.Clamp(Title, ProjectedText.Wrap(Title, book.Title, DetailWidth), TITLE_LINES, DetailWidth);
-        blurbLines = ProjectedText.Wrap(Body, book.Blurb, DetailWidth);
+        blurbLines = ProjectedText.Wrap(PanelBody, book.Blurb, DetailWidth);
     }
 
     private void CheckOut()
@@ -419,7 +414,7 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
         painter.Text(Title, LibraryCatalog.CategoryName(category), new Vector2(content.X, content.Y), ProjectedChrome.Accent);
 
         string loans = Text("Loans", Loans.Loans.Count, LibraryPlayer.MaxLoans);
-        painter.Text(Body, loans, new Vector2(content.Right - ProjectedText.Width(Body, loans), content.Y + 1), ProjectedChrome.Dim);
+        painter.Text(PanelBody, loans, new Vector2(content.Right - ProjectedText.Width(PanelBody, loans), content.Y + 1), ProjectedChrome.Dim);
     }
 
     /// <summary>
@@ -506,19 +501,19 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
         string status = onLoan ? Text("CheckedOut") : Text("Available");
         int statusY = gridTop + Math.Max(titleLines.Count, 1) * titleHeight;
 
-        painter.Text(Body, status, new Vector2(detailX, statusY), onLoan ? ProjectedChrome.Accent : ProjectedChrome.Dim);
+        painter.Text(PanelBody, status, new Vector2(detailX, statusY), onLoan ? ProjectedChrome.Accent : ProjectedChrome.Dim);
 
-        List<string> lines = ProjectedText.Clamp(Body, blurbLines, maxBlurbLines, DetailWidth);
+        List<string> lines = ProjectedText.Clamp(PanelBody, blurbLines, maxBlurbLines, DetailWidth);
 
         for (int i = 0; i < lines.Count; i++)
-            painter.Text(Body, lines[i], new Vector2(detailX, blurbTop + i * LineH), PanelStyle.Text);
+            painter.Text(PanelBody, lines[i], new Vector2(detailX, blurbTop + i * LineH), PanelStyle.Text);
     }
 
     private void PaintEmpty(ProjectedPainter painter)
     {
         string empty = Text("Empty");
 
-        painter.Text(Body, empty, new Vector2(detailX, gridTop), ProjectedChrome.Dim);
+        painter.Text(PanelBody, empty, new Vector2(detailX, gridTop), ProjectedChrome.Dim);
     }
 
     private void PaintButtons(ProjectedPainter painter)
@@ -541,9 +536,9 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
     private static void PaintLabel(ProjectedPainter painter, Rectangle rect, string label, Color color)
     {
-        float width = ProjectedText.Width(Body, label);
+        float width = ProjectedText.Width(PanelBody, label);
 
-        painter.Text(Body, label, new Vector2(rect.X + (rect.Width - width) * 0.5f, rect.Y + BOX_PAD_Y), color);
+        painter.Text(PanelBody, label, new Vector2(rect.X + (rect.Width - width) * 0.5f, rect.Y + BOX_PAD_Y), color);
     }
 
     #endregion

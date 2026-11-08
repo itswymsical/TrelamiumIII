@@ -8,7 +8,7 @@ using TrelamiumIII.Core.Books.Layout.Blocks;
 using TrelamiumIII.Core.Books.Text;
 using TrelamiumIII.Core.UI.AlchemyAlmanac;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 /// <summary>
 ///     A lore book on screen. Content is flowed once on open, in the current language; the cover faces page one, then two pages per spread.

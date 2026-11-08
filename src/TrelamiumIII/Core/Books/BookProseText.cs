@@ -1,6 +1,6 @@
 using Terraria.Localization;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 /// <summary>
 ///     Resolves prose from <c>LoreLibrary.{book}.{name}</c> when a book opens. Keys are named, so reordering blocks can't shuffle translations.

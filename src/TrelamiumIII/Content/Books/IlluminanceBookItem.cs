@@ -1,4 +1,4 @@
-﻿using TrelamiumIII.Core.Books.Lore;
+﻿using TrelamiumIII.Core.Books;
 
 namespace TrelamiumIII.Content.Books;
 

@@ -3,7 +3,7 @@ using System.Linq;
 using Terraria.GameContent;
 using Terraria.Localization;
 using TrelamiumIII.Core;
-using TrelamiumIII.Core.Books.Lore;
+using TrelamiumIII.Core.Books;
 
 namespace TrelamiumIII.Content.Reverie.Library;
 
@@ -51,29 +51,29 @@ public static class LibraryCatalog
     /// <summary> The example lore book, which placeholder entries open. </summary>
     public const string PlaceholderKey = "Example.FirstAccount";
 
-    private const string Lore = $"{nameof(TrelamiumIII)}/Content/Lore/";
+    private const string Lore = $"{nameof(TrelamiumIII)}/Content/Books/";
     private const string IlluminanceCover = Lore + "IlluminanceBookItem";
-    private const string ArchaicCover = Lore + "ArchaicBook1";
-    private const string AlmanacCover = AssetReferences.Content.Alchemy.AlchemyBookItem.KEY;
+    private const string ArchaicCover = Lore + AssetReferences.Content.Alchemy.AlchemyBookItem.KEY;
+    private const string AlmanacCover = ArchaicCover;
 
     public static readonly IReadOnlyList<LibraryBook> Books =
     [
         new("IlluminanceI", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceI", IlluminanceCover),
-        new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover),
-        new("RootAndReason", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.Book),
-        new("QuietSeasons", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.SpellTome),
-        new("WeightOfLight", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.MagnetSphere),
+        //new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover),
+        //new("RootAndReason", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.Book),
+        //new("QuietSeasons", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.SpellTome),
+        //new("WeightOfLight", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.MagnetSphere),
 
-        new("AnniesDiary", LibraryCategory.History, "Misc.Diary", ArchaicCover),
-        new("PrimordialSands", LibraryCategory.History, "PrimordialSands1", CoverItem: ItemID.RazorbladeTyphoon),
-        new("TreatiseOnSalts", LibraryCategory.History, PlaceholderKey, AlmanacCover),
-        new("AnnalsOfTheDeep", LibraryCategory.History, PlaceholderKey, CoverItem: ItemID.DemonScythe),
+        //new("AnniesDiary", LibraryCategory.History, "Misc.Diary", ArchaicCover),
+        //new("PrimordialSands", LibraryCategory.History, "PrimordialSands1", CoverItem: ItemID.RazorbladeTyphoon),
+        //new("TreatiseOnSalts", LibraryCategory.History, PlaceholderKey, AlmanacCover),
+        //new("AnnalsOfTheDeep", LibraryCategory.History, PlaceholderKey, CoverItem: ItemID.DemonScythe),
 
-        new("EmancipationProclamation", LibraryCategory.Fiction, "Misc.EProclamation", ArchaicCover),
-        new("FirstAccount", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.Book),
-        new("DrownedLantern", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.WaterBolt),
-        new("GlassOrchard", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.CrystalStorm),
-        new("CandleForTheMoth", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.CursedFlames)
+        //new("EmancipationProclamation", LibraryCategory.Fiction, "Misc.EProclamation", ArchaicCover),
+        //new("FirstAccount", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.Book),
+        //new("DrownedLantern", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.WaterBolt),
+        //new("GlassOrchard", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.CrystalStorm),
+        //new("CandleForTheMoth", LibraryCategory.Fiction, PlaceholderKey, CoverItem: ItemID.CursedFlames)
     ];
 
     public static LibraryBook? Get(string? id) => Books.FirstOrDefault(book => book.Id == id);

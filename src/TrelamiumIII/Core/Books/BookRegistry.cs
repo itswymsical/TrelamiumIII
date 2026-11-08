@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TrelamiumIII.Core.Books.Lore;
+namespace TrelamiumIII.Core.Books;
 
 /// <summary>Every lore book by id, filled automatically as <see cref="ModBook" />s autoload.</summary>
 public static class BookRegistry

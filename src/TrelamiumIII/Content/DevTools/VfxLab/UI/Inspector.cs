@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using ReLogic.Content;
-using TrelamiumIII.Core.Books.Authoring;
+using TrelamiumIII.Utilities.Authoring;
 
 namespace TrelamiumIII.Content.DevTools.VfxLab.UI;
 
