@@ -145,6 +145,13 @@ public partial class ChemistryRecipeSystem : ModSystem
         AlchemyCore.Result(ModContent.ItemType<TwistedFungus>())
             .From(SolventID.AquaPestis, new BrewRecipe(SoluteID.Sulfur, ItemID.VileMushroom) { ReturnsBottle = true });
 
+        AlchemyCore.Result(SoluteID.Niter)
+            .From(SolventID.AquaFortis, new BrewRecipe(SoluteID.RockSalt, SoluteID.Potash) 
+            { 
+                OutputStack = 3, 
+                ReturnsBottle = true 
+            });
+
         #endregion
 
         #region Alkalis

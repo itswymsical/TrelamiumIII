@@ -50,7 +50,7 @@ public sealed class SolventID : ICustomAutoload
 
     public static int AquaSpecularis { get; private set; }
 
-    public static int AquaFortis { get; private set; }
+    public static int AquaFortis => ModContent.ItemType<AquaFortis>();
 
     public static int AquaFortunae { get; private set; }
 
@@ -140,7 +140,6 @@ public sealed class SolventID : ICustomAutoload
         AquaHarmonia = AddTonic(mod, "HarmoniousTonic", PrincipleType.Harmony);
         AquaVitae = AddTonic(mod, "VitalTonic", PrincipleType.Vital);
         AquaSpecularis = AddTonic(mod, "SpecularTonic", PrincipleType.Specular);
-        AquaFortis = AddTonic(mod, "MartialTonic", PrincipleType.Martial);
         AquaFortunae = AddTonic(mod, "FortunateTonic", PrincipleType.Fortune);
         AquaVivida = AddTonic(mod, "BriskTonic", PrincipleType.Brisk);
         AquaPestis = AddTonic(mod, "BaneTonic", PrincipleType.Bane);

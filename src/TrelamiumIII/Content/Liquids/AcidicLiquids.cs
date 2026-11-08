@@ -24,6 +24,8 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
 
     public Color SurfaceTint(int i, int j) => InternalLiqAt(i, j).Tint;
 
+    public static Condition NearNitricAcid => Instance.AquaFortis.Near;
+
     public InternalLiquidType Acid { get; private set; } = null!;
 
     public InternalLiquidType OilOfVitriol { get; private set; } = null!;
