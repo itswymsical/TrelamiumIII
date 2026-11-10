@@ -17,7 +17,7 @@ public sealed class RecipeConditions : ModSystem
         RainingForBottles = new Condition(Mod.GetLocalization("Conditions.RainingForBottles", () => "In the Rain"), () => Main.LocalPlayer.ZoneRain && Main.raining);
     }
 
-    public static bool IsNear(Player player, InternalLiquidType condition)
+    public static bool IsNear(Player player, InternalLiquid condition)
     {
         int centerX = (int)((player.position.X + player.width * 0.5f) / 16f);
         int feetY = (int)((player.position.Y + player.height) / 16f);

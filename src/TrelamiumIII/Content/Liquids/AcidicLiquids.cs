@@ -14,7 +14,7 @@ namespace TrelamiumIII.Content.Liquids;
 ///     <see cref="LiquidMixingGlobalLiquid" />). Dropped gold ore dissolves into aqua regia as gold solution, one
 ///     potency at a time.
 /// </summary>
-public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
+public sealed class AcidicLiquids : CustomLiquid, ILiquidSurface
 {
     /// <summary>Gold ore one potency step dissolves; every step, 150 ore in all, makes a fully potent solution.</summary>
     private const int GoldOrePerPotency = 30;
@@ -26,22 +26,22 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
 
     public static Condition NearNitricAcid => Instance.AquaFortis.Near;
 
-    public InternalLiquidType Acid { get; private set; } = null!;
+    public InternalLiquid Acid { get; private set; } = null!;
 
-    public InternalLiquidType OilOfVitriol { get; private set; } = null!;
+    public InternalLiquid OilOfVitriol { get; private set; } = null!;
 
-    public InternalLiquidType BlueVitriol { get; private set; } = null!;
+    public InternalLiquid BlueVitriol { get; private set; } = null!;
 
-    public InternalLiquidType GreenVitriol { get; private set; } = null!;
+    public InternalLiquid GreenVitriol { get; private set; } = null!;
 
-    public InternalLiquidType SpiritOfSalt { get; private set; } = null!;
+    public InternalLiquid SpiritOfSalt { get; private set; } = null!;
 
-    public InternalLiquidType AquaFortis { get; private set; } = null!;
+    public InternalLiquid AquaFortis { get; private set; } = null!;
 
-    public InternalLiquidType AquaRegia { get; private set; } = null!;
+    public InternalLiquid AquaRegia { get; private set; } = null!;
 
     /// <summary>Aqua regia holding dissolved gold, by potency: index 0 is potency 1.</summary>
-    public InternalLiquidType[] GoldSolution { get; } = new InternalLiquidType[SolutePotency.MAX];
+    public InternalLiquid[] GoldSolution { get; } = new InternalLiquid[SolutePotency.MAX];
     public static AcidicLiquids Instance { get; private set; } = null!;
     public override void Load()
     {
@@ -56,19 +56,19 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
 
     protected override void DefineLiquidTypes()
     {
-        Acid = AddInternalLiquid(new InternalLiquidType("Acid") { Tint = new Color(170, 255, 70), Light = ElementProfile.Caustic.EmittedLight, Strength = 0.5f });
-        OilOfVitriol = AddInternalLiquid(new InternalLiquidType("OilOfVitriol") { Tint = new Color(255, 225, 140), Strength = 0.75f });
-        BlueVitriol = AddInternalLiquid(new InternalLiquidType("BlueVitriol") { Tint = new Color(70, 160, 255), Strength = 0.35f });
-        GreenVitriol = AddInternalLiquid(new InternalLiquidType("GreenVitriol") { Tint = new Color(120, 235, 160), Strength = 0.35f });
-        SpiritOfSalt = AddInternalLiquid(new InternalLiquidType("SpiritOfSalt") { Tint = new Color(235, 250, 190), Strength = 0.7f });
-        AquaFortis = AddInternalLiquid(new InternalLiquidType("AquaFortis") { Tint = new Color(255, 221, 149), Strength = 0.85f });
-        AquaRegia = AddInternalLiquid(new InternalLiquidType("AquaRegia") { Tint = new Color(255, 130, 50), Strength = 1f });
+        Acid = AddInternalLiquid(new InternalLiquid("Acid") { Tint = new Color(170, 255, 70), Light = ElementProfile.Caustic.EmittedLight, Strength = 0.5f });
+        OilOfVitriol = AddInternalLiquid(new InternalLiquid("OilOfVitriol") { Tint = new Color(255, 225, 140), Strength = 0.75f });
+        BlueVitriol = AddInternalLiquid(new InternalLiquid("BlueVitriol") { Tint = new Color(70, 160, 255), Strength = 0.35f });
+        GreenVitriol = AddInternalLiquid(new InternalLiquid("GreenVitriol") { Tint = new Color(120, 235, 160), Strength = 0.35f });
+        SpiritOfSalt = AddInternalLiquid(new InternalLiquid("SpiritOfSalt") { Tint = new Color(235, 250, 190), Strength = 0.7f });
+        AquaFortis = AddInternalLiquid(new InternalLiquid("AquaFortis") { Tint = new Color(255, 221, 149), Strength = 0.85f });
+        AquaRegia = AddInternalLiquid(new InternalLiquid("AquaRegia") { Tint = new Color(255, 130, 50), Strength = 1f });
 
         for (int level = 0; level < GoldSolution.Length; level++)
         {
             float potency = (level + 1f) / GoldSolution.Length;
 
-            GoldSolution[level] = AddInternalLiquid(new InternalLiquidType($"GoldSolution{level + 1}")
+            GoldSolution[level] = AddInternalLiquid(new InternalLiquid($"GoldSolution{level + 1}")
             {
                 Tint = Color.Lerp(AquaRegia.Tint, new Color(255, 215, 70), potency),
                 Light = new Vector3(0.45f, 0.35f, 0.08f) * potency,
@@ -89,9 +89,9 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
 
     protected override void DefineItemReactions()
     {
-        InternalLiquidType from = AquaRegia;
+        InternalLiquid from = AquaRegia;
 
-        foreach (InternalLiquidType level in GoldSolution)
+        foreach (InternalLiquid level in GoldSolution)
         {
             AddItemReaction(from, new ItemReaction(ItemID.GoldOre)
             {
@@ -122,7 +122,7 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
 
     public override int LiquidMerge(int i, int j, int otherLiquid) => otherLiquid == LiquidID.Lava ? TileID.Obsidian : TileID.Stone;
 
-    protected override void OnPlayerContact(Player player, InternalLiquidType condition)
+    protected override void OnPlayerContact(Player player, InternalLiquid condition)
     {
         if (player.whoAmI != Main.myPlayer)
             return;
@@ -136,7 +136,7 @@ public sealed class AcidicLiquids : InternalLiquid, ILiquidSurface
             player.AddBuff(BuffID.Ichor, ticks);
     }
 
-    protected override void OnNPCContact(NPC npc, InternalLiquidType condition)
+    protected override void OnNPCContact(NPC npc, InternalLiquid condition)
     {
         int ticks = (int)(60 + 120 * condition.Strength);
 

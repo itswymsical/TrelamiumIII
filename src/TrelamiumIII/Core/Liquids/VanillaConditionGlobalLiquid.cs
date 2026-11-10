@@ -5,17 +5,17 @@ using Terraria.Graphics;
 namespace TrelamiumIII.Core.Liquids;
 
 /// <summary>
-///     For vanilla liquids with a <see cref="InternalLiquidSet" />, the per-internal liquid slope and retro tint, light,
-///     waterfall and contact effects that <see cref="InternalLiquid" /> gives its own type.
+///     For vanilla liquids with a <see cref="CustomLiquidSet" />, the per-internal liquid slope and retro tint, light,
+///     waterfall and contact effects that <see cref="CustomLiquid" /> gives its own type.
 /// </summary>
 public sealed class VanillaConditionGlobalLiquid : GlobalLiquid
 {
-    private static InternalLiquidSet? Hosted(int type) => type < LiquidID.Count ? InternalLiquidSet.ByType(type) : null;
+    private static CustomLiquidSet? Hosted(int type) => type < LiquidID.Count ? CustomLiquidSet.ByType(type) : null;
 
     public override bool PreSlopeDraw(int i, int j, int type, bool behindBlocks, ref Vector2 drawPosition, ref Rectangle liquidSize, ref VertexColors colors)
     {
         if (Hosted(type) is { } set)
-            InternalLiquid.Tint(ref colors, set.InternalLiqAt(i, j).Tint);
+            CustomLiquid.Tint(ref colors, set.InternalLiqAt(i, j).Tint);
 
         return true;
     }
@@ -23,7 +23,7 @@ public sealed class VanillaConditionGlobalLiquid : GlobalLiquid
     public override void RetroDrawEffects(int i, int j, int type, SpriteBatch spriteBatch, ref RetroLiquidDrawInfo drawData, float liquidAmountModified, int liquidGFXQuality)
     {
         if (Hosted(type) is { } set)
-            drawData.liquidColor = InternalLiquid.Multiply(drawData.liquidColor, set.InternalLiqAt(i, j).Tint);
+            drawData.liquidColor = CustomLiquid.Multiply(drawData.liquidColor, set.InternalLiqAt(i, j).Tint);
     }
 
     public override void ModifyLight(int i, int j, int type, ref float r, ref float g, ref float b)

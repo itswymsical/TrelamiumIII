@@ -58,7 +58,7 @@ public sealed class LiquidInternalSystem : ModSystem
     {
         dirty.Clear();
 
-        foreach (InternalLiquidSet liquid in InternalLiquidSet.All)
+        foreach (CustomLiquidSet liquid in CustomLiquidSet.All)
             liquid.ClearDynamic();
     }
 
@@ -100,7 +100,7 @@ public sealed class LiquidInternalSystem : ModSystem
         tile.LiquidType = liquidType;
         tile.LiquidAmount = amount;
 
-        if (InternalLiquidSet.ByType(liquidType) is { } liquid)
+        if (CustomLiquidSet.ByType(liquidType) is { } liquid)
             Set(i, j, string.IsNullOrEmpty(internalType) ? (byte)0 : liquid.Resolve(internalType)?.Index ?? 0);
 
         WorldGen.SquareTileFrame(i, j);
@@ -119,20 +119,20 @@ public sealed class LiquidInternalSystem : ModSystem
     }
 
     /// <summary>Server side: tells clients where a runtime condition sits, before any tile uses it.</summary>
-    internal static void OnDynamicAdded(InternalLiquidType internalType)
+    internal static void OnDynamicAdded(InternalLiquid internalType)
     {
         if (Main.netMode == NetmodeID.Server)
             SendPalette([internalType], -1);
     }
 
-    private static void SendPalette(IEnumerable<InternalLiquidType> internalTypes, int toClient)
+    private static void SendPalette(IEnumerable<InternalLiquid> internalTypes, int toClient)
     {
-        foreach (InternalLiquidType[] chunk in internalTypes.Chunk(256))
+        foreach (InternalLiquid[] chunk in internalTypes.Chunk(256))
         {
             ModPacket packet = NewPacket(PacketKind.Palette);
             packet.Write((ushort)chunk.Length);
 
-            foreach (InternalLiquidType internalType in chunk)
+            foreach (InternalLiquid internalType in chunk)
             {
                 packet.Write((byte)internalType.Liquid.LiquidType);
                 packet.Write(internalType.Index);
@@ -157,7 +157,7 @@ public sealed class LiquidInternalSystem : ModSystem
         }
 
         Tile source = Main.tile[x, y];
-        InternalLiquidSet? liquid = source.LiquidAmount > 0 ? InternalLiquidSet.ByType(source.LiquidType) : null;
+        CustomLiquidSet? liquid = source.LiquidAmount > 0 ? CustomLiquidSet.ByType(source.LiquidType) : null;
 
         if (liquid is null)
         {
@@ -181,7 +181,7 @@ public sealed class LiquidInternalSystem : ModSystem
     ///     The cell that lost the most liquid is the donor. A cell that was empty takes the donor's condition; one that
     ///     gained at least half its own volume mixes with it. Resting pools exchange nothing, so they never mix.
     /// </summary>
-    private static void Resolve(InternalLiquidSet liquid, int x, int y, ReadOnlySpan<FlowCell> before)
+    private static void Resolve(CustomLiquidSet liquid, int x, int y, ReadOnlySpan<FlowCell> before)
     {
         Span<byte> after = stackalloc byte[FlowCells.Length];
         int donor = SourceCell;
@@ -253,8 +253,8 @@ public sealed class LiquidInternalSystem : ModSystem
 
     private static void TintVertices(ref VertexColors vertices, int i, int j, byte type)
     {
-        if (InternalLiquidSet.ByType(type) is { } liquid)
-            InternalLiquid.Tint(ref vertices, liquid.InternalLiqAt(i, j).Tint);
+        if (CustomLiquidSet.ByType(type) is { } liquid)
+            CustomLiquid.Tint(ref vertices, liquid.InternalLiqAt(i, j).Tint);
     }
 
     #endregion
@@ -263,7 +263,7 @@ public sealed class LiquidInternalSystem : ModSystem
 
     public override void SaveWorldData(TagCompound tag)
     {
-        if (InternalLiquidSet.All.Count == 0)
+        if (CustomLiquidSet.All.Count == 0)
             return;
 
         var positions = new List<int>[LiquidLoader.LiquidCount];
@@ -277,7 +277,7 @@ public sealed class LiquidInternalSystem : ModSystem
                 Tile tile = Main.tile[x, y];
                 byte internalType = tile.InternalLiquid();
 
-                if (internalType == 0 || tile.LiquidAmount == 0 || InternalLiquidSet.ByType(tile.LiquidType) is null)
+                if (internalType == 0 || tile.LiquidAmount == 0 || CustomLiquidSet.ByType(tile.LiquidType) is null)
                     continue;
 
                 int type = tile.LiquidType;
@@ -291,7 +291,7 @@ public sealed class LiquidInternalSystem : ModSystem
 
         var bases = new List<TagCompound>();
 
-        foreach (InternalLiquidSet liquid in InternalLiquidSet.All)
+        foreach (CustomLiquidSet liquid in CustomLiquidSet.All)
         {
             if (positions[liquid.LiquidType] is not { } deltas)
                 continue;
@@ -318,7 +318,7 @@ public sealed class LiquidInternalSystem : ModSystem
 
         foreach (TagCompound saved in bases)
         {
-            if (InternalLiquidSet.ByName(saved.GetString("liquid")) is not { } liquid)
+            if (CustomLiquidSet.ByName(saved.GetString("liquid")) is not { } liquid)
                 continue;
 
             byte[] remap = saved.GetList<string>("names").Select(name => liquid.Resolve(name)?.Index ?? 0).ToArray();
@@ -363,7 +363,7 @@ public sealed class LiquidInternalSystem : ModSystem
         switch ((PacketKind)reader.ReadByte())
         {
             case PacketKind.Request when Main.netMode == NetmodeID.Server:
-                SendPalette(InternalLiquidSet.All.SelectMany(liquid => liquid.DynamicConditions()), whoAmI);
+                SendPalette(CustomLiquidSet.All.SelectMany(liquid => liquid.DynamicLiquids()), whoAmI);
                 SendEntries(MarkedTiles(), whoAmI);
                 SubmergedLiquidSystem.SendPockets(whoAmI);
                 break;
@@ -445,7 +445,7 @@ public sealed class LiquidInternalSystem : ModSystem
 
         for (int k = 0; k < count; k++)
         {
-            InternalLiquidSet? liquid = InternalLiquidSet.ByType(reader.ReadByte());
+            CustomLiquidSet? liquid = CustomLiquidSet.ByType(reader.ReadByte());
             byte index = reader.ReadByte();
             string name = reader.ReadString();
 
@@ -460,7 +460,7 @@ public sealed class LiquidInternalSystem : ModSystem
             for (int y = 0; y < Main.maxTilesY; y++)
             {
                 Tile tile = Main.tile[x, y];
-                if (tile.InternalLiquid() != 0 && tile.LiquidAmount > 0 && InternalLiquidSet.ByType(tile.LiquidType) is not null)
+                if (tile.InternalLiquid() != 0 && tile.LiquidAmount > 0 && CustomLiquidSet.ByType(tile.LiquidType) is not null)
                     yield return new Point(x, y);
             }
         }
@@ -493,12 +493,12 @@ public sealed class InternalLiquidPlayer : ModPlayer
     public override void OnEnterWorld() => LiquidInternalSystem.RequestAll();
 }
 
-/// <summary>Runs <see cref="InternalLiquidSet.TryReact" /> from each tile's random update against the liquid beside it.</summary>
+/// <summary>Runs <see cref="CustomLiquidSet.TryReact" /> from each tile's random update against the liquid beside it.</summary>
 public sealed class LiquidReactionGlobalTile : GlobalTile
 {
     public override void RandomUpdate(int i, int j, int type)
     {
-        if (InternalLiquidSet.All.Count == 0 || !WorldGen.InWorld(i, j, 2))
+        if (CustomLiquidSet.All.Count == 0 || !WorldGen.InWorld(i, j, 2))
             return;
 
         TryNeighbour(i, j, i, j - 1);
@@ -510,7 +510,7 @@ public sealed class LiquidReactionGlobalTile : GlobalTile
     private static void TryNeighbour(int tileX, int tileY, int i, int j)
     {
         Tile tile = Main.tile[i, j];
-        if (tile.LiquidAmount > 0 && InternalLiquidSet.ByType(tile.LiquidType) is { } liquid)
+        if (tile.LiquidAmount > 0 && CustomLiquidSet.ByType(tile.LiquidType) is { } liquid)
             liquid.TryReact(i, j, tileX, tileY);
     }
 }

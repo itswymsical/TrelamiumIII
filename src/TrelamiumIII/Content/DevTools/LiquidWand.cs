@@ -13,7 +13,7 @@ public class LiquidWand : ModItem
 {
     private static int mode;
 
-    private readonly record struct Mode(int Type, string? Condition, string Label);
+    private readonly record struct Mode(int Type, string? liquid, string Label);
 
     public override string Texture => "Terraria/Images/Item_" + ItemID.LeafWand;
 
@@ -59,7 +59,7 @@ public class LiquidWand : ModItem
         if (WorldGen.SolidTile(tile.X, tile.Y))
             return false;
 
-        LiquidInternalSystem.Place(tile.X, tile.Y, selected.Type, selected.Condition, byte.MaxValue);
+        LiquidInternalSystem.Place(tile.X, tile.Y, selected.Type, selected.liquid, byte.MaxValue);
         return true;
     }
 
@@ -68,16 +68,16 @@ public class LiquidWand : ModItem
         List<Mode> modes = [];
 
         // Water and lava have condition sets, so their conditions stand in for the plain liquids.
-        foreach (InternalLiquidSet liquid in InternalLiquidSet.All)
+        foreach (CustomLiquidSet liquidSet in CustomLiquidSet.All)
         {
-            foreach (InternalLiquidType condition in liquid.InternalLiquids.Where(condition => condition is not BrewCondition))
-                modes.Add(new Mode(liquid.LiquidType, condition.Name, $"{liquid.Name} / {condition.DisplayName}"));
+            foreach (InternalLiquid liquid in liquidSet.InternalLiquids.Where(l => l is not BrewLiquid))
+                modes.Add(new Mode(liquidSet.LiquidType, liquid.Name, $"{liquidSet.Name} / {liquid.DisplayName}"));
         }
 
         modes.Add(new Mode(LiquidID.Honey, null, "Honey"));
 
-        if (player.inventory.FirstOrDefault(item => !item.IsAir && BrewLiquid.IsBrew(item.type)) is { } potion)
-            modes.Add(new Mode(ModContent.GetInstance<BrewLiquid>().Type, BrewLiquid.ItemKey(potion.type), $"Brew of {potion.Name}"));
+        if (player.inventory.FirstOrDefault(item => !item.IsAir && MuddledBrewLiquid.IsBrew(item.type)) is { } potion)
+            modes.Add(new Mode(ModContent.GetInstance<MuddledBrewLiquid>().Type, MuddledBrewLiquid.ItemKey(potion.type), $"Brew of {potion.Name}"));
 
         return modes;
     }

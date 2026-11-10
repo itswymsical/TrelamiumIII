@@ -2115,7 +2115,7 @@ Liquids: {
 	OilLiquids: {
 		MapEntry: Oil
 
-		Conditions: {
+		Liquids: {
 			Crude: Crude Oil
 			Pitch: Pitch
 			Sunflower: Sunflower Oil
@@ -2123,18 +2123,20 @@ Liquids: {
 	}
 
 	Water: {
-		Conditions: {
+		Liquids: {
 			Fresh: Fresh Water
 			Brine: Brine
 		}
+
+		Conditions.Brine: Brine
 	}
 
-	Lava.Conditions.Molten: Lava
+	Lava.Liquids.Molten: Lava
 
 	AlkalineLiquids: {
 		MapEntry: Alkali
 
-		Conditions: {
+		Liquids: {
 			Lye: Lye
 			Limewater: Limewater
 			SpiritOfHartshorn: Spirit of Hartshorn
@@ -2143,13 +2145,13 @@ Liquids: {
 
 	SolventLiquid: {
 		MapEntry: Solvent
-		Conditions.Mixed: Mixed Solvent
+		Liquids.Mixed: Mixed Solvent
 	}
 
 	AcidicLiquids: {
 		MapEntry: Acid
 
-		Conditions: {
+		Liquids: {
 			Acid: Acid
 			OilOfVitriol: Oil of Vitriol
 			BlueVitriol: Blue Vitriol
@@ -2167,8 +2169,10 @@ Liquids: {
 
 	BrewLiquid: {
 		MapEntry: Brew
-		Conditions.Muddled: Muddled Brew
+		Liquids.Muddled: Muddled Brew
 	}
+
+	MuddledBrewLiquid.MapEntry: Muddled Brew Liquid
 }
 
 Conditions: {

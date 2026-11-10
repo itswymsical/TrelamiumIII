@@ -24,6 +24,7 @@ public readonly record struct LiquidPalette(Color Shadow, Color Body, Color High
 
     /// <summary>Vanilla Bottled Water.</summary>
     public static LiquidPalette Water { get; } = new(new Color(9, 61, 191), new Color(51, 107, 249), new Color(147, 177, 253));
+    public static LiquidPalette Oil { get; } = new(new Color(29, 31, 39), new Color(52, 64, 90), new Color(193, 188, 211));
 
     /// <summary>
     ///     A palette around <paramref name="body" />, such as a principle's colour: the shadow is the same hue darker and more

@@ -10,7 +10,7 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Oil base: crude by default. Pitch is crude's heavy residue, slower to flow and harder to wade; sunflower oil is
 ///     pressed, not drilled. Each carries its own surface. Every oil explodes on meeting lava.
 /// </summary>
-public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
+public sealed class OilLiquids : CustomLiquid, IInternalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
 
@@ -29,11 +29,11 @@ public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
 
     public Color SurfaceTint(int i, int j) => InternalLiqAt(i, j).SurfaceTint;
 
-    public InternalLiquidType Crude { get; private set; } = null!;
+    public InternalLiquid Crude { get; private set; } = null!;
 
-    public InternalLiquidType Pitch { get; private set; } = null!;
+    public InternalLiquid Pitch { get; private set; } = null!;
 
-    public InternalLiquidType Sunflower { get; private set; } = null!;
+    public InternalLiquid Sunflower { get; private set; } = null!;
 
     public override void Load()
     {
@@ -50,15 +50,15 @@ public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
     /// <remarks>The grayscale BaseLiquid set: crude's tint matches the old dark crude sheet, and pitch darkens it further.</remarks>
     protected override void DefineLiquidTypes()
     {
-        Crude = AddInternalLiquid(new InternalLiquidType("Crude") { Tint = new Color(72, 72, 74) });
+        Crude = AddInternalLiquid(new InternalLiquid("Crude") { Tint = new Color(72, 72, 74) });
 
-        Pitch = AddInternalLiquid(new InternalLiquidType("Pitch")
+        Pitch = AddInternalLiquid(new InternalLiquid("Pitch")
         {
             Tint = new Color(22, 13, 23),
             Strength = 0.88f,
         });
 
-        Sunflower = AddInternalLiquid(new InternalLiquidType("Sunflower")
+        Sunflower = AddInternalLiquid(new InternalLiquid("Sunflower")
         {
             Tint = new Color(252, 228, 137),
             Surface = new LiquidSurface("Ripple")
@@ -107,7 +107,7 @@ public sealed class OilLiquids : InternalLiquid, IInternalLiquidSurface
         return (Main.GameUpdateCount + (uint)(i * 7 + j * 13)) % PitchFlowInterval == 0;
     }
 
-    protected override void OnPlayerContact(Player player, InternalLiquidType condition)
+    protected override void OnPlayerContact(Player player, InternalLiquid condition)
     {
         if (condition == Crude)
         {

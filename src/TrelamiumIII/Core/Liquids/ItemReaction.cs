@@ -8,8 +8,8 @@ public sealed class ItemReaction(Predicate<int> items)
 {
     public ItemReaction(params int[] items) : this(type => Array.IndexOf(items, type) >= 0) { }
 
-    /// <summary>The condition the stack must be in; any when null.</summary>
-    public InternalLiquidType? From { get; init; }
+    /// <summary>The internal liquid the stack must be in; any when null.</summary>
+    public InternalLiquid? From { get; init; }
 
     /// <summary>Items consumed per step. A smaller stack does not react.</summary>
     public int Amount { get; init; } = 1;
@@ -20,8 +20,8 @@ public sealed class ItemReaction(Predicate<int> items)
     /// <summary>Liquid units used per step, taken from the surface of the body. No step runs if the body holds less.</summary>
     public int Spent { get; init; }
 
-    /// <summary>Condition the liquid around the stack turns into, from the stack outward.</summary>
-    public InternalLiquidType? Becomes { get; init; }
+    /// <summary>Internal liquid the liquid around the stack turns into, from the stack outward.</summary>
+    public InternalLiquid? Becomes { get; init; }
 
     /// <summary>Item made per step. Products float at the surface of the liquid that made them.</summary>
     public int Product { get; init; }

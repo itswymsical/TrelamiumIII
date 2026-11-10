@@ -23,7 +23,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
         int acid = LiquidLoader.LiquidType<AcidicLiquids>();
         int alkali = LiquidLoader.LiquidType<AlkalineLiquids>();
 
-        foreach (int pocketed in (ReadOnlySpan<int>)[LiquidLoader.LiquidType<BrewLiquid>(), LiquidLoader.LiquidType<SolventLiquid>()])
+        foreach (int pocketed in (ReadOnlySpan<int>)[LiquidLoader.LiquidType<MuddledBrewLiquid>(), LiquidLoader.LiquidType<SolventLiquid>()])
         {
             if (type != pocketed && otherLiquid != pocketed)
                 continue;
@@ -90,26 +90,26 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
     {
         Tile tile = Main.tile[i, j];
 
-        if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || InternalLiquidSet.ByType(pocketedType) is not { } pocketed)
+        if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || CustomLiquidSet.ByType(pocketedType) is not { } pocketed)
             return;
 
-        InternalLiquidType condition = pocketed.Get(tile.InternalLiquid());
-        byte hostCondition = 0;
+        InternalLiquid liquid = pocketed.Get(tile.InternalLiquid());
+        byte hostLiquid = 0;
 
         foreach (Point offset in Neighbours)
         {
             Tile next = Main.tile[i + offset.X, j + offset.Y];
             if (next.LiquidAmount > 0 && next.LiquidType == hostType)
             {
-                hostCondition = next.InternalLiquid();
+                hostLiquid = next.InternalLiquid();
                 break;
             }
         }
 
         int volume = tile.LiquidAmount;
         tile.LiquidType = hostType;
-        LiquidInternalSystem.Set(i, j, hostCondition);
-        SubmergedLiquidSystem.Submerge(condition, new Vector2(i * 16 + 8, j * 16 + 8), volume);
+        LiquidInternalSystem.Set(i, j, hostLiquid);
+        SubmergedLiquidSystem.Submerge(liquid, new Vector2(i * 16 + 8, j * 16 + 8), volume);
 
         Liquid.AddWater(i, j);
 

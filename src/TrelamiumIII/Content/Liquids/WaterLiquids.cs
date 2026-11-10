@@ -8,16 +8,16 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Conditions on vanilla water: fresh by default, or brine. Brine tiles stay <see cref="LiquidID.Water" />, so
 ///     vanilla and other mods treat them as water (fishing, spawns, sponges, buckets).
 /// </summary>
-public sealed class WaterLiquids : InternalLiquidSet, ILoadable, IInternalLiquidSurface
+public sealed class WaterLiquids : CustomLiquidSet, ILoadable, IInternalLiquidSurface
 {
     public static WaterLiquids Instance { get; private set; } = null!;
 
     /// <summary>Recipe condition: standing beside brine, the way vanilla checks for water.</summary>
     public static Condition NearBrine => Instance.Brine.Near;
 
-    public InternalLiquidType Fresh { get; private set; } = null!;
+    public InternalLiquid Fresh { get; private set; } = null!;
 
-    public InternalLiquidType Brine { get; private set; } = null!;
+    public InternalLiquid Brine { get; private set; } = null!;
 
     public override int LiquidType => LiquidID.Water;
 
@@ -32,10 +32,10 @@ public sealed class WaterLiquids : InternalLiquidSet, ILoadable, IInternalLiquid
 
     public void Load(Mod mod)
     {
-        Fresh = AddCondition(new InternalLiquidType("Fresh"));
+        Fresh = AddLiquid(new InternalLiquid("Fresh"));
 
         // Thin salt strands drifting through brine.
-        Brine = AddCondition(new InternalLiquidType("Brine")
+        Brine = AddLiquid(new InternalLiquid("Brine")
         {
             Tint = new Color(222, 208, 235),
             Surface = new LiquidSurface("Brine")
@@ -56,11 +56,11 @@ public sealed class WaterLiquids : InternalLiquidSet, ILoadable, IInternalLiquid
         Instance = null!;
     }
 
-    public override string ConditionDisplayName(InternalLiquidType condition)
+    public override string LiquidDisplayName(InternalLiquid condition)
         => Language.GetOrRegister(TrelamiumIII.Instance.GetLocalizationKey($"Liquids.Water.Conditions.{condition.Name}"), () => condition.Name).Value;
 
     /// <remarks>Waterfall styles only load on clients.</remarks>
-    public override int? WaterfallStyle(InternalLiquidType condition) => condition == Brine ? ModContent.GetInstance<BrineLiquidfall>()?.Slot : null;
+    public override int? WaterfallStyle(InternalLiquid condition) => condition == Brine ? ModContent.GetInstance<BrineLiquidfall>()?.Slot : null;
 }
 
 public class BrineLiquidfall : ModWaterfallStyle

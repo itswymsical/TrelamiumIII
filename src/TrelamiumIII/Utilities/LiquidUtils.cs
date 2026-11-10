@@ -21,7 +21,7 @@ public static class LiquidUtils
     public static bool PlaceLiquid(Player player, Item item, int liquidType) => PlaceLiquid(player, item, liquidType, condition: null);
 
     /// <inheritdoc cref="PlaceLiquid(Player, Item, int)" />
-    /// <param name="condition">For a liquid with a <see cref="InternalLiquidSet" />, the condition to place; null for its default.</param>
+    /// <param name="condition">For a liquid with a <see cref="CustomLiquidSet" />, the condition to place; null for its default.</param>
     public static bool PlaceLiquid(Player player, Item item, int liquidType, string? condition)
     {
         // Make sure the player hasn't just dropped an item recently
@@ -63,7 +63,7 @@ public static class LiquidUtils
         SoundEngine.PlaySound(SoundID.SplashWeak, player.position);
 
         // Sets the condition too, which a plain write would leave at whatever the tile last held.
-        if (InternalLiquidSet.ByType(liquidType) is not null)
+        if (CustomLiquidSet.ByType(liquidType) is not null)
         {
             LiquidInternalSystem.Place(Player.tileTargetX, Player.tileTargetY, liquidType, condition, byte.MaxValue);
             player.ApplyItemTime(item);

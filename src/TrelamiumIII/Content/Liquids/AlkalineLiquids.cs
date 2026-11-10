@@ -7,15 +7,15 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Alkali base: lye by default, turned milky by marble or pungent by bone. Alkalis meeting acid neutralise into
 ///     brine (see <see cref="LiquidMixingGlobalLiquid" />).
 /// </summary>
-public sealed class AlkalineLiquids : InternalLiquid
+public sealed class AlkalineLiquids : CustomLiquid
 {
     public static AlkalineLiquids Instance { get; private set; } = null!;
 
-    public InternalLiquidType Lye { get; private set; } = null!;
+    public InternalLiquid Lye { get; private set; } = null!;
 
-    public InternalLiquidType Limewater { get; private set; } = null!;
+    public InternalLiquid Limewater { get; private set; } = null!;
 
-    public InternalLiquidType SpiritOfHartshorn { get; private set; } = null!;
+    public InternalLiquid SpiritOfHartshorn { get; private set; } = null!;
 
     public override void Load()
     {
@@ -31,9 +31,9 @@ public sealed class AlkalineLiquids : InternalLiquid
 
     protected override void DefineLiquidTypes()
     {
-        Lye = AddInternalLiquid(new InternalLiquidType("Lye") { Tint = new Color(205, 195, 255), Strength = 0.6f });
-        Limewater = AddInternalLiquid(new InternalLiquidType("Limewater") { Tint = new Color(240, 242, 228), Strength = 0.3f });
-        SpiritOfHartshorn = AddInternalLiquid(new InternalLiquidType("SpiritOfHartshorn") { Tint = new Color(200, 255, 230), Strength = 0.45f });
+        Lye = AddInternalLiquid(new InternalLiquid("Lye") { Tint = new Color(205, 195, 255), Strength = 0.6f });
+        Limewater = AddInternalLiquid(new InternalLiquid("Limewater") { Tint = new Color(240, 242, 228), Strength = 0.3f });
+        SpiritOfHartshorn = AddInternalLiquid(new InternalLiquid("SpiritOfHartshorn") { Tint = new Color(200, 255, 230), Strength = 0.45f });
 
         AddReaction(Lye, Limewater, TileID.Marble);
         AddReaction(Lye, SpiritOfHartshorn, TileID.BoneBlock);
@@ -53,13 +53,13 @@ public sealed class AlkalineLiquids : InternalLiquid
 
     public override int LiquidMerge(int i, int j, int otherLiquid) => otherLiquid == LiquidID.Lava ? TileID.Obsidian : TileID.Stone;
 
-    protected override void OnPlayerContact(Player player, InternalLiquidType condition)
+    protected override void OnPlayerContact(Player player, InternalLiquid condition)
     {
         if (player.whoAmI == Main.myPlayer)
             player.AddBuff(BuffID.Poisoned, (int)(30 + 90 * condition.Strength));
     }
 
-    protected override void OnNPCContact(NPC npc, InternalLiquidType condition)
+    protected override void OnNPCContact(NPC npc, InternalLiquid condition)
     {
         if (!npc.dontTakeDamage && !npc.immortal)
             npc.AddBuff(BuffID.Poisoned, (int)(30 + 90 * condition.Strength));

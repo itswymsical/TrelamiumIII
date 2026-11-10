@@ -21,7 +21,7 @@ public sealed record LiquidSurface(string Technique)
 }
 
 /// <summary>
-///     A ModLiquid, or the <see cref="InternalLiquidSet" /> of a vanilla liquid, with an animated surface drawn over it
+///     A ModLiquid, or the <see cref="CustomLiquidSet" /> of a vanilla liquid, with an animated surface drawn over it
 ///     by <see cref="LiquidSurfaceSystem" />.
 /// </summary>
 public interface ILiquidSurface
@@ -35,7 +35,7 @@ public interface ILiquidSurface
     bool HasSurface(int i, int j) => true;
 }
 /// <summary>
-///     For a liquid whose internal types each carry their own surface, usually <see cref="InternalLiquidType.Surface" />.
+///     For a liquid whose internal types each carry their own surface, usually <see cref="InternalLiquid.Surface" />.
 ///     <see cref="ILiquidSurface.Surface" /> is then the fallback for conditions without one. Use
 ///     <see cref="ILiquidSurface" /> alone when every internal type shares one surface.
 /// </summary>
@@ -85,7 +85,7 @@ public sealed class LiquidSurfaceSystem : ModSystem
         surfaces = new ILiquidSurface?[LiquidLoader.LiquidCount];
 
         for (int type = 0; type < surfaces.Length; type++)
-            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface ?? InternalLiquidSet.ByType(type) as ILiquidSurface;
+            surfaces[type] = LiquidLoader.GetLiquid(type) as ILiquidSurface ?? CustomLiquidSet.ByType(type) as ILiquidSurface;
     }
 
     public override void Unload()

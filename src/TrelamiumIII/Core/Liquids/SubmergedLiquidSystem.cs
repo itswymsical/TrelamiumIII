@@ -13,14 +13,14 @@ public sealed class SubmergedPocket
     /// <summary>Liquid units; a full tile holds 255.</summary>
     public int Volume;
 
-    public InternalLiquidSet Liquid = null!;
+    public CustomLiquidSet Liquid = null!;
 
     /// <summary>Kept by name so runtime conditions survive saving and syncing without agreeing on an index.</summary>
     public string Condition = "";
 
     public float Radius => SubmergedLiquidSystem.Radius(Volume);
 
-    public InternalLiquidType? Describe() => Liquid.Describe(Condition);
+    public InternalLiquid? Describe() => Liquid.Describe(Condition);
 }
 
 /// <summary>
@@ -53,7 +53,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
     }
 
     /// <summary>Holds <paramref name="volume" /> of <paramref name="condition" /> at <paramref name="position" />, joining a pocket of it nearby.</summary>
-    public static void Submerge(InternalLiquidType condition, Vector2 position, int volume)
+    public static void Submerge(InternalLiquid condition, Vector2 position, int volume)
     {
         if (Main.netMode == NetmodeID.MultiplayerClient || volume <= 0)
             return;
@@ -256,7 +256,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
         foreach (TagCompound entry in saved)
         {
-            if (InternalLiquidSet.ByName(entry.GetString("liquid")) is not { } liquid)
+            if (CustomLiquidSet.ByName(entry.GetString("liquid")) is not { } liquid)
                 continue;
 
             pockets.Add(new SubmergedPocket
@@ -292,7 +292,7 @@ public sealed class SubmergedLiquidSystem : ModSystem
 
         for (int k = 0; k < count; k++)
         {
-            InternalLiquidSet? liquid = InternalLiquidSet.ByType(reader.ReadByte());
+            CustomLiquidSet? liquid = CustomLiquidSet.ByType(reader.ReadByte());
             string condition = reader.ReadString();
             Vector2 position = reader.ReadVector2();
             int volume = reader.ReadInt32();

@@ -77,7 +77,7 @@ public sealed class LiquidResidue : FilmResidue
     /// </remarks>
     public static Color TintOf(int i, int j, int liquidType)
     {
-        if (InternalLiquidSet.ByType(liquidType) is { } set && set.InternalLiqAt(i, j).Tint is var tint && tint != Color.White)
+        if (CustomLiquidSet.ByType(liquidType) is { } set && set.InternalLiqAt(i, j).Tint is var tint && tint != Color.White)
             return tint;
 
         return liquidType switch
