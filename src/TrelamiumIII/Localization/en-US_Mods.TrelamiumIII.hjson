@@ -724,11 +724,7 @@ Items: {
 
 	CrudeOilBucketItem: {
 		DisplayName: Crude Oil Bucket
-		Tooltip:
-			'''
-			Contains a small amount of crude oil
-			Can be poured out
-			'''
+		Tooltip: ""
 	}
 
 	MagnoliaSolutionItem: {
@@ -1378,11 +1374,7 @@ Items: {
 
 	SunflowerOilBucket: {
 		DisplayName: Sunflower Oil Bucket
-		Tooltip:
-			'''
-			Contains a small amount of sunflower oil
-			Can be poured out
-			'''
+		Tooltip: ""
 	}
 
 	SunflowerOilBottleItem: {
@@ -1427,6 +1419,56 @@ Items: {
 
 	AcidBucket: {
 		DisplayName: Acid Bucket
+		Tooltip: ""
+	}
+
+	AquaFortisBucket: {
+		DisplayName: Aqua Fortis Bucket
+		Tooltip: ""
+	}
+
+	AquaRegiaBucket: {
+		DisplayName: Aqua Regia Bucket
+		Tooltip: ""
+	}
+
+	BlueVitriolBucket: {
+		DisplayName: Blue Vitriol Bucket
+		Tooltip: ""
+	}
+
+	GreenVitriolBucket: {
+		DisplayName: Green Vitriol Bucket
+		Tooltip: ""
+	}
+
+	LimewaterBucket: {
+		DisplayName: Limewater Bucket
+		Tooltip: ""
+	}
+
+	LyeBucket: {
+		DisplayName: Lye Bucket
+		Tooltip: ""
+	}
+
+	OilOfVitriolBucket: {
+		DisplayName: Oil Of Vitriol Bucket
+		Tooltip: ""
+	}
+
+	PitchBucket: {
+		DisplayName: Pitch Bucket
+		Tooltip: ""
+	}
+
+	SpiritOfHartshornBucket: {
+		DisplayName: Spirit Of Hartshorn Bucket
+		Tooltip: ""
+	}
+
+	SpiritOfSaltBucket: {
+		DisplayName: Spirit Of Salt Bucket
 		Tooltip: ""
 	}
 }

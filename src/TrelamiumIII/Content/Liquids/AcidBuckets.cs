@@ -55,6 +55,5 @@ public class OilOfVitriolBucket : BucketItem
 {
     public override InternalLiquid Liquid => AcidicLiquids.Instance;
     public override InternalLiquidType LiquidSet => Liquid.Get(AcidicLiquids.Instance.OilOfVitriol.Index);
-
     public override string Texture => AssetReferences.Content.Liquids.z_templateBucket.KEY;
 }
