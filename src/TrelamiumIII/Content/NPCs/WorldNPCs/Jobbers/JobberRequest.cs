@@ -97,12 +97,12 @@ public static class JobberRequests
     /// <summary>
     /// Defines an entry in the jobber request pool.
     /// </summary>
-    /// <param name="itemIDs">The type of item to request.</param>
+    /// <param name="itemID">The type of item to request.</param>
     /// <param name="min">The minimum quantity to request.</param>
     /// <param name="max">The maximum quantity to request.</param>
     /// <param name="value">coin value per item</param>
     /// <param name="Condition">A function that determines if the entry is available.</param>
-    private readonly record struct Entry(int min, int max, int value, Func<bool>? Condition = null, params int[] itemIDs)
+    private readonly record struct Entry(int itemID, int min, int max, int value, Func<bool>? Condition = null)
     {
         public bool IsAvailable => Condition?.Invoke() ?? true;
     }
@@ -123,90 +123,90 @@ public static class JobberRequests
     {
         [JobberRequestKind.MaterialItem] =
         [
-            new(itemIDs: ItemID.CopperOre, min: 20, max: 35, value: 30),
-            new(itemIDs: ItemID.TinOre, min: 20, max: 35, value: 30),
-            new(itemIDs: ItemID.IronOre, min: 15, max: 30, value: 50),
-            new(itemIDs: ItemID.LeadOre, min: 15, max: 30, value: 50),
-            new(itemIDs: ItemID.SilverOre, min: 12, max: 25, value: 60),
-            new(itemIDs: ItemID.TungstenOre, min: 12, max: 25, value: 70),
-            new(itemIDs: ItemID.GoldOre, min: 10, max: 20, value: 90),
-            new(itemIDs: ItemID.PlatinumOre, min: 10, max: 20, value: 95),
+            new(itemID: ItemID.CopperOre, min: 20, max: 35, value: 30),
+            new(itemID: ItemID.TinOre, min: 20, max: 35, value: 30),
+            new(itemID: ItemID.IronOre, min: 15, max: 30, value: 50),
+            new(itemID: ItemID.LeadOre, min: 15, max: 30, value: 50),
+            new(itemID: ItemID.SilverOre, min: 12, max: 25, value: 60),
+            new(itemID: ItemID.TungstenOre, min: 12, max: 25, value: 70),
+            new(itemID: ItemID.GoldOre, min: 10, max: 20, value: 90),
+            new(itemID: ItemID.PlatinumOre, min: 10, max: 20, value: 95),
 
-            new(itemIDs: SoluteID.Sulfur, min: 6, max: 20, value: 80),
-            new(itemIDs: SoluteID.Cinnabar, min: 6, max: 20, value: 100),
-            new(itemIDs: SoluteID.PureSalt, min: 7, max: 14, value: 50),
-            new(itemIDs: SoluteID.Potash, min: 4, max: 10, value: 5),
-            new(itemIDs: SoluteID.Niter, min: 6, max: 13, value: 20),
+            new(itemID: SoluteID.Sulfur, min: 6, max: 20, value: 80),
+            new(itemID: SoluteID.Cinnabar, min: 6, max: 20, value: 100),
+            new(itemID: SoluteID.PureSalt, min: 7, max: 14, value: 50),
+            new(itemID: SoluteID.Potash, min: 4, max: 10, value: 5),
+            new(itemID: SoluteID.Niter, min: 6, max: 13, value: 20),
 
-            new(min: 10, max: 20, value: 105, () => NPC.downedBoss1, itemIDs: ItemID.DemoniteOre),
-            new(min: 10, max: 20, value: 105, () => NPC.downedBoss1, itemIDs: ItemID.CrimtaneOre),
+            new(itemID: ItemID.DemoniteOre, min: 10, max: 20, value: 105, () => NPC.downedBoss1),
+            new(itemID: ItemID.CrimtaneOre, min: 10, max: 20, value: 105, () => NPC.downedBoss1),
 
-            new(min: 10, max: 20, value: 250, Hardmode, itemIDs: ItemID.CobaltOre),
-            new(min: 10, max: 20, value: 250, Hardmode, itemIDs: ItemID.PalladiumOre),
-            new(min: 8, max: 16, value: 320, Hardmode, itemIDs: ItemID.MythrilOre),
-            new(min: 8, max: 16, value: 320, Hardmode, itemIDs: ItemID.OrichalcumOre),
-            new(min: 6, max: 12, value: 400, Hardmode, itemIDs: ItemID.AdamantiteOre),
-            new(min: 6, max: 12, value: 420, Hardmode, itemIDs: ItemID.TitaniumOre),
+            new(itemID: ItemID.CobaltOre, min: 10, max: 20, value: 250, Hardmode),
+            new(itemID: ItemID.PalladiumOre, min: 10, max: 20, value: 250, Hardmode),
+            new(itemID: ItemID.MythrilOre, min: 8, max: 16, value: 320, Hardmode),
+            new(itemID: ItemID.OrichalcumOre, min: 8, max: 16, value: 320, Hardmode),
+            new(itemID: ItemID.AdamantiteOre, min: 6, max: 12, value: 400, Hardmode),
+            new(itemID: ItemID.TitaniumOre, min: 6, max: 12, value: 420, Hardmode),
         ],
 
         [JobberRequestKind.ResourceItems] =
         [
-            new(min: 40, max: 80, value: 10, itemIDs: [ItemID.Wood]),
-            new(itemIDs: ItemID.ClayBlock, min: 30, max: 60, value: 6),
+            new(itemID: ItemID.Wood, min: 40, max: 80, value: 10),
+            new(itemID: ItemID.ClayBlock, min: 30, max: 60, value: 6),
 
-            new(itemIDs: ItemID.SlushBlock, min: 30, max: 60, value: 2),
-            new(itemIDs: ItemID.SiltBlock, min: 65, max: 110, value: 2),
+            new(itemID: ItemID.SlushBlock, min: 30, max: 60, value: 2),
+            new(itemID: ItemID.SiltBlock, min: 65, max: 110, value: 2),
 
-            new(itemIDs: ItemID.Rope, min: 45, max: 95, value: 8),
-            new(itemIDs: ItemID.VineRope, min: 45, max: 110, value: 3),
-            new(itemIDs: [ItemID.Seashell, ItemID.Starfish, ItemID.Coral], min: 3, max: 12, value: 55),
+            new(itemID: ItemID.Rope, min: 45, max: 95, value: 8),
+            new(itemID: ItemID.VineRope, min: 45, max: 110, value: 3),
+            new(itemID: ItemID.Seashell, min: 3, max: 12, value: 55),
 
-            new(min: 25, max: 50, value: 20, () => !WorldGen.crimson, itemIDs: ItemID.EbonstoneBlock),
-            new(min: 25, max: 50, value: 20, () => WorldGen.crimson, itemIDs: ItemID.CrimstoneBlock),
-            new(min: 25, max: 50, value: 100, Hardmode, itemIDs: ItemID.PearlstoneBlock),
+            new(itemID: ItemID.EbonstoneBlock, min: 25, max: 50, value: 20, () => !WorldGen.crimson),
+            new(itemID: ItemID.CrimstoneBlock, min: 25, max: 50, value: 20, () => WorldGen.crimson),
+            new(itemID: ItemID.PearlstoneBlock, min: 25, max: 50, value: 100, Hardmode),
         ],
 
         [JobberRequestKind.Gem] =
         [
-            new(itemIDs: ItemID.Amethyst, min: 4, max: 8, value: 1300),
-            new(itemIDs: ItemID.Topaz, min: 4, max: 8, value: 1500),
-            new(itemIDs: ItemID.Sapphire, min: 3, max: 6, value: 1800),
-            new(itemIDs: ItemID.Emerald, min: 3, max: 6, value: 1900),
-            new(itemIDs: ItemID.Ruby, min: 2, max: 5, value: 2200),
-            new(itemIDs: ItemID.Amber, min: 2, max: 5, value: 2400),
-            new(itemIDs: ItemID.Diamond, min: 2, max: 4, value: 3000),
-            new(min: 9, max: 18, value: 5000, Hardmode, itemIDs: ItemID.CrystalShard),
+            new(itemID: ItemID.Amethyst, min: 4, max: 8, value: 1300),
+            new(itemID: ItemID.Topaz, min: 4, max: 8, value: 1500),
+            new(itemID: ItemID.Sapphire, min: 3, max: 6, value: 1800),
+            new(itemID: ItemID.Emerald, min: 3, max: 6, value: 1900),
+            new(itemID: ItemID.Ruby, min: 2, max: 5, value: 2200),
+            new(itemID: ItemID.Amber, min: 2, max: 5, value: 2400),
+            new(itemID: ItemID.Diamond, min: 2, max: 4, value: 3000),
+            new(itemID: ItemID.CrystalShard, min: 9, max: 18, value: 5000, Hardmode),
         ],
 
         [JobberRequestKind.Block] =
         [
-            new(itemIDs: ItemID.StoneBlock, min: 50, max: 100, value: 10),
-            new(itemIDs: ItemID.SandBlock, min: 40, max: 80, value: 5),
-            new(itemIDs: ItemID.MudBlock, min: 40, max: 80, value: 5),
-            new(itemIDs: ItemID.SnowBlock, min: 40, max: 80, value: 5),
-            new(itemIDs: ItemID.ClayBlock, min: 30, max: 60, value: 3),
-            new(itemIDs: ItemID.IceBlock, min: 30, max: 60, value: 3),
-            new(itemIDs: ItemID.Marble, min: 30, max: 60, value: 4),
-            new(itemIDs: ItemID.Granite, min: 30, max: 60, value: 4),
-            new(itemIDs: ItemID.SiltBlock, min: 20, max: 40, value: 5),
-            new(itemIDs: ItemID.Glass, min: 20, max: 40, value: 5),
-            new(itemIDs: ItemID.Obsidian, min: 15, max: 30, value: 10),
+            new(itemID: ItemID.StoneBlock, min: 50, max: 100, value: 10),
+            new(itemID: ItemID.SandBlock, min: 40, max: 80, value: 5),
+            new(itemID: ItemID.MudBlock, min: 40, max: 80, value: 5),
+            new(itemID: ItemID.SnowBlock, min: 40, max: 80, value: 5),
+            new(itemID: ItemID.ClayBlock, min: 30, max: 60, value: 3),
+            new(itemID: ItemID.IceBlock, min: 30, max: 60, value: 3),
+            new(itemID: ItemID.Marble, min: 30, max: 60, value: 4),
+            new(itemID: ItemID.Granite, min: 30, max: 60, value: 4),
+            new(itemID: ItemID.SiltBlock, min: 20, max: 40, value: 5),
+            new(itemID: ItemID.Glass, min: 20, max: 40, value: 5),
+            new(itemID: ItemID.Obsidian, min: 15, max: 30, value: 10),
         ],
 
         // Totals land on round coin amounts once BasePayment is added.
         [JobberRequestKind.Accessory] =
         [
-            new(itemIDs: ItemID.Aglet, min: 1, max: 1, value: 9_500),
-            new(itemIDs: ItemID.Shackle, min: 1, max: 1, value: 9_500),
-            new(itemIDs: ItemID.ClimbingClaws, min: 1, max: 1, value: 9_500),
-            new(itemIDs: ItemID.Radar, min: 1, max: 1, value: 9_500),
-            new(itemIDs: ItemID.BandofRegeneration, min: 1, max: 1, value: 14_500),
-            new(itemIDs: ItemID.HermesBoots, min: 1, max: 1, value: 22_500),
-            new(itemIDs: ItemID.FlurryBoots, min: 1, max: 1, value: 22_500),
-            new(itemIDs: ItemID.SailfishBoots, min: 1, max: 1, value: 22_500),
-            new(itemIDs: ItemID.CloudinaBottle, min: 1, max: 1, value: 22_500),
-            new(itemIDs: ItemID.AnkletoftheWind, min: 1, max: 1, value: 33_500),
-            new(itemIDs: ItemID.LuckyHorseshoe, min: 1, max: 1, value: 45_500),
+            new(itemID: ItemID.Aglet, min: 1, max: 1, value: 9_500),
+            new(itemID: ItemID.Shackle, min: 1, max: 1, value: 9_500),
+            new(itemID: ItemID.ClimbingClaws, min: 1, max: 1, value: 9_500),
+            new(itemID: ItemID.Radar, min: 1, max: 1, value: 9_500),
+            new(itemID: ItemID.BandofRegeneration, min: 1, max: 1, value: 14_500),
+            new(itemID: ItemID.HermesBoots, min: 1, max: 1, value: 22_500),
+            new(itemID: ItemID.FlurryBoots, min: 1, max: 1, value: 22_500),
+            new(itemID: ItemID.SailfishBoots, min: 1, max: 1, value: 22_500),
+            new(itemID: ItemID.CloudinaBottle, min: 1, max: 1, value: 22_500),
+            new(itemID: ItemID.AnkletoftheWind, min: 1, max: 1, value: 33_500),
+            new(itemID: ItemID.LuckyHorseshoe, min: 1, max: 1, value: 45_500),
         ],
     };
 
@@ -224,12 +224,6 @@ public static class JobberRequests
         Entry chosen = Main.rand.Next(Pools[picked].Where(entry => entry.IsAvailable).ToArray());
         int count = Main.rand.Next(chosen.min, chosen.max + 1);
 
-        foreach (int itemID in chosen.itemIDs)
-        {
-            if (Main.rand.NextBool(chosen.itemIDs.Length))
-                return new JobberRequest(picked, itemID, count, BasePayment + chosen.value * count);
-        }
-
-        return new JobberRequest(picked, chosen.itemIDs[0], count, BasePayment + chosen.value * count);
+        return new JobberRequest(picked, chosen.itemID, count, BasePayment + chosen.value * count);
     }
 }

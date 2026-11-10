@@ -1,7 +1,8 @@
 using ModLiquidLib.ID;
+using System.Collections.Generic;
+using Terraria.GameContent.Creative;
 using TrelamiumIII.Core.Liquids;
 using TrelamiumIII.Utilities;
-using Terraria.GameContent.Creative;
 
 namespace TrelamiumIII.Content.Liquids;
 
@@ -35,6 +36,12 @@ public class BrineBucketItem : ModItem
     public override void HoldItem(Player player)
     {
         LiquidUtils.PlaceLiquid(player, Item, LiquidID.Water, WaterLiquids.Instance.Brine.Name);
+    }
+
+    public override void ModifyTooltips(List<TooltipLine> tooltips)
+    {
+        var consumable = tooltips.FindIndex(t => t.Name == "Consumable");
+        tooltips.RemoveAt(consumable);
     }
 
     /// <summary>

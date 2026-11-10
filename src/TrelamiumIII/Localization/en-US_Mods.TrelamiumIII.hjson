@@ -11,6 +11,11 @@ SetBonuses: {
 	Frostbark: You become immune to the 'Chilled' debuff and gain resistance towards cold sources.
 }
 
+LiquidTooltips: {
+	LiquidTooltip0: Contains a small amount of
+	LiquidTooltip1: Can be poured out
+}
+
 Rarities: {
 	Ember: It has not finished burning.
 	Relic: Shinyyyy.
@@ -114,7 +119,7 @@ Items: {
 		Tooltip: ""
 	}
 
-	AquaFortisItem: {
+	AquaFortis: {
 		DisplayName: Aqua Fortis
 		Tooltip: ""
 	}
@@ -124,7 +129,7 @@ Items: {
 		Tooltip: ""
 	}
 
-	AquaRegiaItem: {
+	AquaRegia: {
 		DisplayName: Aqua Regia
 		Tooltip: ""
 	}
@@ -710,12 +715,20 @@ Items: {
 
 	BrineBucketItem: {
 		DisplayName: Brine Bucket
-		Tooltip: ""
+		Tooltip:
+			'''
+			Contains a small amount of brine
+			Can be poured out
+			'''
 	}
 
 	CrudeOilBucketItem: {
 		DisplayName: Crude Oil Bucket
-		Tooltip: ""
+		Tooltip:
+			'''
+			Contains a small amount of crude oil
+			Can be poured out
+			'''
 	}
 
 	MagnoliaSolutionItem: {
@@ -1365,7 +1378,11 @@ Items: {
 
 	SunflowerOilBucket: {
 		DisplayName: Sunflower Oil Bucket
-		Tooltip: ""
+		Tooltip:
+			'''
+			Contains a small amount of sunflower oil
+			Can be poured out
+			'''
 	}
 
 	SunflowerOilBottleItem: {
@@ -1400,6 +1417,16 @@ Items: {
 
 	GravelBlock: {
 		DisplayName: Gravel Block
+		Tooltip: ""
+	}
+
+	AquaRegiaItem: {
+		DisplayName: Aqua Regia Item
+		Tooltip: ""
+	}
+
+	AcidBucket: {
+		DisplayName: Acid Bucket
 		Tooltip: ""
 	}
 }
@@ -1522,6 +1549,7 @@ Projectiles: {
 	ArcticFlaskProjectile.DisplayName: Arctic Flask
 	SoilClodProjectile.DisplayName: Soil Clod
 	PeatBallProjectile.DisplayName: Peat Ball Projectile
+	BroadswordProjectile.DisplayName: Broadsword Projectile
 }
 
 NPCs: {

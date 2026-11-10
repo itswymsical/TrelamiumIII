@@ -54,7 +54,7 @@ Jobs: {
 		// {0} = amount, {1} = item name.
 		Requests: {
 			MaterialItem: "'Hey! I'm short on materials. Willing to trade {1} {0}?'"
-			ResourceItems: "'Man... I'm really running low on resources! Could 'ya bring me {0} {1}?'"
+			ResourceItems: "'Man... I'm really running low on resources! Could 'ya bring me {1} {0}?'"
 			Gem: "'I've got a buyer for gems! Find me {0} {1} and I'll cut you in on the deal.'"
 			Block: "'I got a grand plan for an architecture! Could use {0} {1}, maybe a hand too.'"
 			Accessory: "'Geez, I've been after a {1} for ages. Could 'ya spare one?'"

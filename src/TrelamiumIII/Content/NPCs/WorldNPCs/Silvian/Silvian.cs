@@ -27,7 +27,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
     {
         Male = true;
         ClothingStyle = PlayerClothingStyleID.MaleDefault;
-        SkinColor = new Color(205, 135, 126);
+        SkinColor = new Color(210, 140, 98);
         EyeColor = new Color(37, 38, 38);
         PantsColor = new Color(236, 247, 248);
         ShoeColor = new Color(77, 78, 78);
@@ -84,7 +84,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
         // Talked to before the encounter could trigger, so the greeting plays as a small scene of its own.
         if (!silvian.Met)
-            return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
+            return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.Silvian.SilviansTheme.Slot);
 
         if (SilvianAlmanac.IsDue(player))
             return ChatEncounter.Play(SilvianAlmanac.HandoffKey);

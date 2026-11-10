@@ -19,6 +19,19 @@ public sealed class PickaxeBoomerangSkill : Skill
     public override float CostFraction => 0.65f;
 }
 
+public sealed class BroadswordSkill : Skill
+{
+    public const string Id = "skill.rBroadsword";
+
+    public override string ID => Id;
+
+    public override int RequiredThreshold => 6;
+
+    public override SkillGroup Group => SkillGroup.Ballistics;
+
+    public override float CostFraction => 0.65f;
+}
+
 /// <summary>Mines 14% faster.</summary>
 public sealed class MiningSpeedSkill : Skill
 {

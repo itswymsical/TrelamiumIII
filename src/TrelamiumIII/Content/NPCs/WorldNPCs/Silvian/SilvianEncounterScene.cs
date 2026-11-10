@@ -195,7 +195,7 @@ internal sealed class SilvianEncounterScene(NPC silvian)
             SilvianEncounter.GreetingKey,
             zoomIn: true,
             letterbox: true,
-            music: Assets.Music.HomeForagerMusic.Slot,
+            music: Assets.Music.Silvian.SilviansTheme.Slot,
             anchor: DialogueAnchor.OnSpeaker(Silvian));
 
         if (started)
@@ -349,7 +349,7 @@ internal sealed class SilvianEncounterScene(NPC silvian)
             ctx.Face(npc.Center + new Vector2(away * 32f, 0f));
 
             if (Main.netMode != NetmodeID.MultiplayerClient)
-                ctx.Puppet?.BeginUse(ItemID.Sickle, npc.Bottom + new Vector2(away * 28f, -4f));
+                ctx.Puppet?.BeginUse(ItemID.SwiftnessPotion, npc.Bottom + new Vector2(away * 28f, -4f));
         }
 
         protected override void Run(BehaviorContext ctx)
