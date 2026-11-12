@@ -27,7 +27,7 @@ public sealed class LibraryBookItem : ModItem
         Item.useStyle = ItemUseStyleID.HoldUp;
         Item.useTime = Item.useAnimation = 20;
         Item.rare = ItemRarityID.Blue;
-        Item.UseSound = Assets.SFX.PageFlip.Asset;
+        Item.UseSound = Assets.SFX.UI.PageFlip.Asset;
     }
 
     public void SetBook(LibraryBook book)

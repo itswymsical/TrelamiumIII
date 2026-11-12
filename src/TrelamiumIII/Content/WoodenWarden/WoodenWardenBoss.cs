@@ -288,9 +288,9 @@ public sealed class WoodenWardenBoss : ModNPC
     private static readonly SoundStyle ChargeSound = SoundID.Item8 with { Volume = 0.9f, Pitch = -0.6f };
     private static readonly SoundStyle FlareSound = SoundID.Item12 with { Volume = 1f, Pitch = -0.7f };
 
-    private static readonly SoundStyle SlamSound = Assets.SFX.Girthquake_Impact.Asset with { Volume = 1.1f, Pitch = -0.45f };
-    private static readonly SoundStyle ScreamSound = Assets.SFX.NPC.WardenDeath.Asset with { Volume = 1f, PitchVariance = 0.1f };
-    private static readonly SoundStyle BurstSound = Assets.SFX.NPC.WoodenKilled.Asset with { Volume = 1.2f, Pitch = -0.3f };
+    private static readonly SoundStyle SlamSound = Assets.SFX.NPC.Fungore.Girthquake_Impact.Asset with { Volume = 1.1f, Pitch = -0.45f };
+    private static readonly SoundStyle ScreamSound = Assets.SFX.NPC.Warden.WardenDeath.Asset with { Volume = 1f, PitchVariance = 0.1f };
+    private static readonly SoundStyle BurstSound = Assets.SFX.NPC.Warden.WoodenKilled.Asset with { Volume = 1.2f, Pitch = -0.3f };
 
     #endregion
 
@@ -427,7 +427,7 @@ public sealed class WoodenWardenBoss : ModNPC
 
         NPC.value = Item.buyPrice(gold: 4);
 
-        NPC.HitSound = Assets.SFX.NPC.WoodHit2.Asset with
+        NPC.HitSound = Assets.SFX.NPC.Warden.WoodHit2.Asset with
         {
             Volume = 1.4f,
             PitchVariance = 0.2f,

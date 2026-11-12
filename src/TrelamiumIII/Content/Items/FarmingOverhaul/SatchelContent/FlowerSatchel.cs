@@ -378,7 +378,7 @@ internal static class FlowerSatchelTooltipRenderer
 
     private static void DrawLeafParticles(Vector2 basePos, float textWidth)
     {
-        var leafTexture = ModContent.Request<Texture2D>(Assets.Textures.MagnoliaLeaf.KEY).Value;
+        var leafTexture = ModContent.Request<Texture2D>(Assets.Textures.VFX.MagnoliaLeaf.KEY).Value;
         var origin = new Vector2(FRAME_WIDTH / 2f, FRAME_HEIGHT / 2f);
         float time = Main.GlobalTimeWrappedHourly;
 

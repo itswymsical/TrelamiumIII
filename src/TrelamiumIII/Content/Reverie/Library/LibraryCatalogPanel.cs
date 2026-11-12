@@ -148,13 +148,13 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
 
     public override void OnOpened()
     {
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset with { Volume = 0.7f });
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset with { Volume = 0.7f });
         ZoomIn();
     }
 
     protected override void OnCloseRequested()
     {
-        SoundEngine.PlaySound(Assets.SFX.BookClose.Asset with { Volume = 0.6f });
+        SoundEngine.PlaySound(Assets.SFX.UI.BookClose.Asset with { Volume = 0.6f });
         ZoomOut();
     }
 
@@ -210,7 +210,7 @@ internal sealed class LibraryCatalogPanel : WorldPanel, IProjectedPanel
         if (selected is null || !Loans.CheckOut(selected))
             return;
 
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset);
     }
 
     #endregion

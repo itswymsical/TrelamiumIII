@@ -10,7 +10,7 @@ namespace TrelamiumIII.Content.Alchemy.Reagents;
 /// </summary>
 public sealed class SoluteID : ICustomAutoload
 {
-    private static readonly string Placeholder = AssetReferences.Assets.Textures.PlaceholderSolute.KEY;
+    private static readonly string Placeholder = AssetReferences.Assets.Textures.Placeholder.PlaceholderSolute.KEY;
 
     #region Raw minerals
     public static int Sulfur { get; private set; }
@@ -243,7 +243,7 @@ public sealed class SoluteID : ICustomAutoload
     {
         SpiritOfOil = Add(mod, new SoluteItem("SpiritOfOilItem")
         {
-            TexturePath = Assets.Textures.PlaceholderBrew.KEY,
+            TexturePath = Assets.Textures.Placeholder.PlaceholderBrew.KEY,
             Rare = ItemRarityID.Blue,
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 3,

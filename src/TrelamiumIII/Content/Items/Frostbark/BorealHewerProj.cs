@@ -189,7 +189,7 @@ public class BorealHewerProj : ModProjectile, IDrawPrimitive
         if (isReturning)
             return;
 
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with
+        SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset with
         {
             MaxInstances = 1,
             Volume = 0.4f,

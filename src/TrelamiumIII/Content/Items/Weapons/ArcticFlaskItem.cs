@@ -57,7 +57,7 @@ public class ArcticFlaskItem : ModItem
         Vector2 splashDir = Vector2.Lerp(impactDir, -Vector2.UnitY, 0.5f)
                                   .SafeNormalize(-Vector2.UnitY);
 
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset);
+        SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset);
         e.Target.AddBuff(BuffID.Frostburn, 60);
 
         int count = Main.rand.Next(12, 32);
@@ -94,6 +94,6 @@ public class ArcticFlaskProjectile : ChemicalProjectile
     {
         SoundEngine.PlaySound(Assets.SFX.Items.BigFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
         SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f });
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with { Volume = 0.2f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
+        SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset with { Volume = 0.2f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
     }
 }

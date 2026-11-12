@@ -101,6 +101,6 @@ public class PrismaticStarflaskProjectile : ChemicalProjectile
     {
         SoundEngine.PlaySound(Assets.SFX.Items.BigFlask.Asset with { Volume = 0.7f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
         SoundEngine.PlaySound(SoundID.Item107 with { Volume = 0.65f });
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with { Volume = 0.2f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
+        SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset with { Volume = 0.2f, MaxInstances = -1, PitchRange = (-0.15f, 0.15f) });
     }
 }

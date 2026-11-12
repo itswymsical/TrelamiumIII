@@ -359,7 +359,7 @@ public class SaplingMakerProjectile : ModProjectile
 
     public override void OnHitPlayer(Player target, Player.HurtInfo info)
     {
-        SoundEngine.PlaySound(new SoundStyle($"{Assets.SFX.HewerReturn.KEY}")
+        SoundEngine.PlaySound(new SoundStyle($"{Assets.SFX.Items.HewerReturn.KEY}")
         {
             MaxInstances = 1,
             Volume = MathHelper.Lerp(0.4f, 0.7f, ChargeLevel / (float)MAX_CHARGE_LEVEL),

@@ -49,7 +49,7 @@ public sealed class OvergrowthFlaskItem : ModItem
 
     public override string Name => $"{strain.Key}OvergrowthFlaskItem";
 
-    public override string Texture => Assets.Textures.PlaceholderBrew.KEY;
+    public override string Texture => Assets.Textures.Placeholder.PlaceholderBrew.KEY;
 
     public override LocalizedText DisplayName => strain.IsDefault
         ? Mod.GetLocalization("Items.OvergrowthFlask.DisplayName")
@@ -122,7 +122,7 @@ public sealed class OvergrowthFlaskProjectile : ChemicalProjectile
     /// <summary>Pixels of vine one flask grows, before the payload's burst size.</summary>
     private const float VINE_VOLUME = 352f;
 
-    public override string Texture => Assets.Textures.PlaceholderBrew.KEY;
+    public override string Texture => Assets.Textures.Placeholder.PlaceholderBrew.KEY;
 
     protected override GasField? Field => FieldSystem.GetLayer<VineField>();
 

@@ -226,7 +226,7 @@ public class SporeclotSacProj : ModProjectile
         BeginStick(target, impactVelocity);
         RemoveStackProjectiles(target);
 
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.9f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.9f }, Projectile.Center);
         SporeField.Splat(target, Projectile.Center, impactVelocity, STICK_TICKS);
 
         FungalInfectionNPC.AddBuffStack(target, 1, Projectile.owner);
@@ -237,7 +237,7 @@ public class SporeclotSacProj : ModProjectile
         if (dying)
             return false;
 
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_TileImpact.Asset with { Volume = 0.8f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.8f }, Projectile.Center);
         SporeField.TileSplat(Projectile.Center, oldVelocity);
 
         // Straight into terrain, so it comes apart on the spot rather than fading out intact.

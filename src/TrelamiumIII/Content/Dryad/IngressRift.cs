@@ -309,11 +309,11 @@ internal sealed class IngressRift : ModSystem
         switch (age)
         {
             case 0:
-                SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = 0.25f }, center);
+                SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = 0.25f }, center);
                 break;
 
             case SWELL_TICK:
-                SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset with { Volume = 0.45f, Pitch = 0.05f }, center);
+                SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpen.Asset with { Volume = 0.45f, Pitch = 0.05f }, center);
                 break;
 
             case OPEN_TICKS:

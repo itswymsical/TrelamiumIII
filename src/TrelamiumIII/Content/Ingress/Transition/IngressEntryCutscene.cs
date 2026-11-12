@@ -38,7 +38,7 @@ internal sealed class IngressEntryCutscene : RealmEntryCutscene
 
     protected override void OnDepartureStart()
     {
-        SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset with { Volume = 0.55f, Pitch = -0.3f });
+        SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpen.Asset with { Volume = 0.55f, Pitch = -0.3f });
 
         ScreenWobbleSystem.Set(0.2f, 3f, 80);
         ChromaticScreenEffect.Set(0.15f, 3f, 80);
@@ -51,7 +51,7 @@ internal sealed class IngressEntryCutscene : RealmEntryCutscene
         {
             pulling = true;
 
-            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = -0.45f });
+            SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = -0.45f });
 
             RadialBlurEffect.Set(0.3f, falloff: 1.4f, rSpin: 0.2f, worldFocus: Main.LocalPlayer.Center, rampTicks: 120);
             ScreenWobbleSystem.Set(0.5f, 5f, 150);

@@ -170,7 +170,7 @@ public class StalagMagMKIIProj : HeldGunProjectile
         if (Boulder)
             owner.velocity -= direction * BOULDER_SHOVE;
 
-        SoundEngine.PlaySound(Assets.SFX.CannonBoom.Asset with
+        SoundEngine.PlaySound(Assets.SFX.Items.CannonBoom.Asset with
         {
             Volume = Boulder ? 1.1f : 1f,
             Pitch = Boulder ? -0.35f : 0f,

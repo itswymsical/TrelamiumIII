@@ -37,21 +37,21 @@ public static class PlaceholderTextures
         => type.GetProperty("Texture", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!.GetMethod!;
 
     private static string ItemTexture(Func<ModItem, string> orig, ModItem self)
-        => Resolve(self, orig(self), Assets.Textures.PlaceholderItem.KEY);
+        => Resolve(self, orig(self), Assets.Textures.Placeholder.PlaceholderItem.KEY);
 
     private static string NPCTexture(Func<ModNPC, string> orig, ModNPC self)
-        => Resolve(self, orig(self), Assets.Textures.PlaceholderItem.KEY);
+        => Resolve(self, orig(self), Assets.Textures.Placeholder.PlaceholderItem.KEY);
 
     private static string ProjectileTexture(Func<ModProjectile, string> orig, ModProjectile self)
-        => Resolve(self, orig(self), Assets.Textures.PlaceholderItem.KEY);
+        => Resolve(self, orig(self), Assets.Textures.Placeholder.PlaceholderItem.KEY);
 
     private static string TexturedTypeTexture(Func<ModTexturedType, string> orig, ModTexturedType self)
         => Resolve(self, orig(self), self switch
         {
-            ModTile => Assets.Textures.FallbackTile.KEY,
-            ModWall => Assets.Textures.FallbackWall.KEY,
-            ModBuff => Assets.Textures.PlaceholderBuff.KEY,
-            _ => Assets.Textures.PlaceholderItem.KEY
+            ModTile => Assets.Textures.Placeholder.FallbackTile.KEY,
+            ModWall => Assets.Textures.Placeholder.FallbackWall.KEY,
+            ModBuff => Assets.Textures.Placeholder.PlaceholderBuff.KEY,
+            _ => Assets.Textures.Placeholder.PlaceholderItem.KEY
         });
 
     private static string Resolve(ModType self, string path, string placeholder)

@@ -15,7 +15,7 @@ public sealed class SolventID : ICustomAutoload
     private const string DIRECTORY = $"{nameof(TrelamiumIII)}/Content/Alchemy/Solutions/";
 
     /// <summary>Texture for items with no sprite in <see cref="DIRECTORY" />.</summary>
-    private static readonly string Placeholder = Assets.Textures.PlaceholderBrew.KEY;
+    private static readonly string Placeholder = Assets.Textures.Placeholder.PlaceholderBrew.KEY;
 
     #region Base solvents
 

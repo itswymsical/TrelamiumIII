@@ -9,9 +9,9 @@ namespace TrelamiumIII.Core.Alchemy;
 public sealed record BottleTemplate(string Glass, string Liquid)
 {
     /// <summary>The vanilla Bottled Water shape.</summary>
-    public static BottleTemplate Solution { get; } = new(Assets.Textures.SolutionBottle.KEY, Assets.Textures.SolutionBottle_Liquid.KEY);
+    public static BottleTemplate Solution { get; } = new(Assets.Textures.Templates.SolutionBottle.KEY, Assets.Textures.Templates.SolutionBottle_Liquid.KEY);
 
-    public static BottleTemplate Solvent { get; } = new(Assets.Textures.SolventBottle.KEY, Assets.Textures.SolventBottle_Liquid.KEY);
+    public static BottleTemplate Solvent { get; } = new(Assets.Textures.Templates.SolventBottle.KEY, Assets.Textures.Templates.SolventBottle_Liquid.KEY);
 }
 
 /// <summary>

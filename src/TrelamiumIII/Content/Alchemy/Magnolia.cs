@@ -84,7 +84,7 @@ public class MagnoliaItem : ModItem, IAlmanacDefined
                 );
 
                 Main.spriteBatch.Draw(
-                    ModContent.Request<Texture2D>($"{Assets.Textures.MagnoliaLeaf.KEY}").Value,
+                    ModContent.Request<Texture2D>($"{Assets.Textures.VFX.MagnoliaLeaf.KEY}").Value,
                     pos + offset,
                     sourceRect,
                     particleColor * 1.15f,
@@ -176,7 +176,7 @@ public class MagnoliaSeedsItem : ModItem, IAlmanacDefined
                 );
 
                 Main.spriteBatch.Draw(
-                    ModContent.Request<Texture2D>($"{Assets.Textures.MagnoliaLeaf.KEY}").Value,
+                    ModContent.Request<Texture2D>($"{Assets.Textures.VFX.MagnoliaLeaf.KEY}").Value,
                     pos + offset,
                     sourceRect,
                     particleColor * 1.15f,
@@ -278,7 +278,7 @@ public class MagnoliaPowderItem : ModItem, IAlmanacDefined
                 );
 
                 Main.spriteBatch.Draw(
-                    ModContent.Request<Texture2D>($"{Assets.Textures.MagnoliaLeaf.KEY}").Value,
+                    ModContent.Request<Texture2D>($"{Assets.Textures.VFX.MagnoliaLeaf.KEY}").Value,
                     pos + offset,
                     sourceRect,
                     particleColor * 1.15f,

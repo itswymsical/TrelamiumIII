@@ -15,7 +15,7 @@ public class IlluminanceBookItem : ModItem
         Item.useStyle = ItemUseStyleID.HoldUp;
         Item.useTime = Item.useAnimation = 20;
         Item.rare = ItemRarityID.Quest;
-        Item.UseSound = Assets.SFX.PageFlip.Asset;
+        Item.UseSound = Assets.SFX.UI.PageFlip.Asset;
     }
 
     public override bool? UseItem(Player player)

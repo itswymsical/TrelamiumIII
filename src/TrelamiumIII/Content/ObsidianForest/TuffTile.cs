@@ -4,7 +4,7 @@ namespace TrelamiumIII.Content.ObsidianForest;
 
 public class TuffBlock : ModItem
 {
-    public override string Texture => Assets.Textures.FallbackTileItem.KEY;
+    public override string Texture => Assets.Textures.Placeholder.Placeholder.FallbackTileItem.KEY;
 
     public override void SetDefaults() => Item.DefaultToPlaceableTile(ModContent.TileType<TuffTile>());
 }

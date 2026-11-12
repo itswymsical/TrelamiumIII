@@ -23,7 +23,7 @@ internal static class HomeForagerMusic
             new MusicLayer 
             {
                 Name = MAIN,
-                Slot = Assets.Music.HomeForagerMusic.Slot,
+                Slot = Assets.Music.Cinematic.HomeForagerMusic.Slot,
                 StartsOn = true,
         }],
     };

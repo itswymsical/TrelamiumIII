@@ -19,7 +19,7 @@ public class AcornLauncherItem : ModItem
 
         Item.useAmmo = ItemID.Acorn;
         Item.useStyle = ItemUseStyleID.Shoot;
-        Item.UseSound = Assets.SFX.Sling.Asset with
+        Item.UseSound = Assets.SFX.Items.Sling.Asset with
         {
             Volume = 1f,
             PitchVariance = 0.2f,
@@ -164,7 +164,7 @@ public class AcornLauncherProjectile : ModProjectile
 
         Projectile.NewProjectile(Projectile.GetSource_FromThis(), owner.Center, direction * speed, type, damage, knockback, owner.whoAmI);
 
-        SoundEngine.PlaySound(Assets.SFX.Snap.Asset with
+        SoundEngine.PlaySound(Assets.SFX.Items.Snap.Asset with
         {
             Volume = 1f,
             PitchVariance = 0.2f,

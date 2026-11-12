@@ -43,14 +43,14 @@ internal static class FungoreMusic
             new MusicLayer
             {
                 Name = MAIN,
-                Slot = Assets.Music.FungalFracas.Slot,
+                Slot = Assets.Music.Fungore.FungalFracas.Slot,
                 StartsOn = true,
             },
 
             new MusicLayer
             {
                 Name = DEATH_FILL,
-                Slot = Assets.Music.FungalFracas_DeathFill.Slot,
+                Slot = Assets.Music.Fungore.FungalFracas_DeathFill.Slot,
                 Kind = MusicLayerKind.Cue,
                 Seconds = FILL_SECONDS,
             },

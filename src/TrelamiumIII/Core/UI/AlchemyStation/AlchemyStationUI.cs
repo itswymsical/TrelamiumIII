@@ -356,7 +356,7 @@ internal sealed class AlchemyStationUI : AlchemyStationUIBase
         _brewSnapshot = new Item();
 
         SoundEngine.PlaySound(SoundID.ResearchComplete);
-        SoundEngine.PlaySound(Assets.SFX.BrewingComplete.Asset);
+        SoundEngine.PlaySound(Assets.SFX.UI.BrewingComplete.Asset);
     }
 
     /// <summary>Hands every slot's contents back to the player, then resets. The transient station calls this on close.</summary>

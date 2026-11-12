@@ -39,7 +39,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
         EnableLetterbox = true;
         LetterboxHeightPercentage = 0.085f;
         LetterboxAnimationDuration = 75;
-        SetMusic(Assets.Music.Resurgence.Slot);
+        SetMusic(Assets.Music.Cinematic.Resurgence.Slot);
     }
 
     protected override void OnCutsceneStart()
@@ -59,7 +59,7 @@ public sealed class EyeOfCthulhuWakeCutscene : Cutscene
 
         if (now < HOLD_END)
         {
-            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.65f, Pitch = -0.05f});
+            SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.65f, Pitch = -0.05f});
             RadialBlurEffect.Set(0.4f, ticks: 10);
             return;
         }

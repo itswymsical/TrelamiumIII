@@ -318,14 +318,14 @@ public sealed class FungoreBoss : ModNPC
     #region audio
 
     /// <summary>5.5 seconds long, so it's fired once under the whole entrance rather than retriggered.</summary>
-    private static readonly SoundStyle RumbleSound = Assets.SFX.FungoreRumble.Asset with { Volume = 0.95f };
+    private static readonly SoundStyle RumbleSound = Assets.SFX.NPC.Fungore.FungoreRumble.Asset with { Volume = 0.95f };
 
     // TODO: the rest are stand-ins until the real kit exists.
     private static readonly SoundStyle EruptSound = SoundID.Item14 with { Volume = 1f, Pitch = -0.8f };
     private static readonly SoundStyle RoarSound = SoundID.Roar with { Volume = 1.1f, Pitch = -0.55f };
     private static readonly SoundStyle SwingSound = SoundID.Item1 with { Volume = 0.7f, Pitch = -0.6f };
-    private static readonly SoundStyle SlamSound = Assets.SFX.Girthquake_Impact.Asset with { Volume = 1f, Pitch = -0.5f };
-    private static readonly SoundStyle SuperSound = Assets.SFX.Sporeclot_Boom.Asset with { Volume = 1.1f, Pitch = -0.5f };
+    private static readonly SoundStyle SlamSound = Assets.SFX.NPC.Fungore.Girthquake_Impact.Asset with { Volume = 1f, Pitch = -0.5f };
+    private static readonly SoundStyle SuperSound = Assets.SFX.Items.Sporeclot_Boom.Asset with { Volume = 1.1f, Pitch = -0.5f };
 
     #endregion
 

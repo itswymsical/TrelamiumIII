@@ -116,7 +116,7 @@ public sealed class IngressScar : ModSystem
             return;
 
         if (previous == 0f && Reveal > 0f)
-            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.6f, Pitch = 0.5f }, at);
+            SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.6f, Pitch = 0.5f }, at);
 
         if (Opacity <= 0f)
             return;

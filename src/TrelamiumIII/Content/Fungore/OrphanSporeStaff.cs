@@ -743,7 +743,7 @@ public class ShroomsonMinion : ModProjectile
     /// <summary>The moment the cloud stops being a cloud: one puff outward, and a mushroom in hand.</summary>
     private void Resolve()
     {
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.55f, Pitch = 0.7f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.55f, Pitch = 0.7f }, Projectile.Center);
 
         if (Main.dedServ)
             return;
@@ -1357,13 +1357,13 @@ public class ShroomsonMushroom : ModProjectile
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.45f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.7f, Pitch = 0.45f }, Projectile.Center);
         SporeField.Splat(target, Projectile.Center, Projectile.velocity, anchorTicks: 24);
     }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_TileImpact.Asset with { Volume = 0.6f, Pitch = 0.5f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.6f, Pitch = 0.5f }, Projectile.Center);
         SporeField.TileSplat(Projectile.Center, oldVelocity);
 
         return true;

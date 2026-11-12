@@ -498,11 +498,11 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
         switch (Ticks)
         {
             case SEAM:
-                SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = 0.25f }, center);
+                SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.5f, Pitch = 0.25f }, center);
                 break;
 
             case SWELL:
-                SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset with { Volume = 0.45f, Pitch = 0.05f }, center);
+                SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpen.Asset with { Volume = 0.45f, Pitch = 0.05f }, center);
                 ScreenWobbleSystem.Set(0.08f, 3.5f, 100);
                 ZoomHandler.SetZoomAnimation(Main.GameZoomTarget * PUSH_ZOOM, EMERGE - SWELL);
                 break;
@@ -523,7 +523,7 @@ internal sealed class DryadArrivalSequence(Vector2 rift, Vector2 destination)
         // Not a case: it moves up when she arrives before the bar-8 hit.
         if (Ticks == closeStart)
         {
-            SoundEngine.PlaySound(Assets.SFX.RiftOpenAlt.Asset with { Volume = 0.45f, Pitch = -0.5f }, center);
+            SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpenAlt.Asset with { Volume = 0.45f, Pitch = -0.5f }, center);
             DryadRift.Burst(18);
         }
     }

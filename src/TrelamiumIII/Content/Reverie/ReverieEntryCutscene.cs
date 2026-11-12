@@ -28,7 +28,7 @@ internal sealed class ReverieEntryCutscene : RealmEntryCutscene
 
     protected override void OnDepartureStart()
     {
-        SoundEngine.PlaySound(Assets.SFX.RiftOpen.Asset with { Volume = 0.55f, Pitch = 0.35f });
+        SoundEngine.PlaySound(Assets.SFX.Cinematic.RiftOpen.Asset with { Volume = 0.55f, Pitch = 0.35f });
 
         ChromaticScreenEffect.Set(0.12f, 3f, 60);
         ZoomHandler.SetZoomAnimation(Main.GameZoomTarget * CAMERA_PUSH, (int)(COVER_END * 60f));

@@ -337,8 +337,8 @@ public class KingSlimeRework : GlobalNPC
         npc.lavaImmune = true;
         npc.knockBackResist = 0f;
 
-        npc.HitSound = Assets.SFX.KingSlimeHit.Asset with { PitchVariance = 0.3f };
-        npc.DeathSound = Assets.SFX.KingSlimeDeath.Asset with { PitchVariance = 0.2f };
+        npc.HitSound = Assets.SFX.NPC.KingSlime.KingSlimeHit.Asset with { PitchVariance = 0.3f };
+        npc.DeathSound = Assets.SFX.NPC.KingSlime.KingSlimeDeath.Asset with { PitchVariance = 0.2f };
     }
 
     public override void AI(NPC npc)
@@ -787,7 +787,7 @@ public class KingSlimeRework : GlobalNPC
         {
             extraData.deathCuePlayed = true;
 
-            SoundEngine.PlaySound(Assets.SFX.KingSlimeDeath.Asset with
+            SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.KingSlimeDeath.Asset with
             {
                 Volume = 0.8f,
                 PitchVariance = 0.1f
@@ -870,13 +870,13 @@ public class KingSlimeRework : GlobalNPC
                     // The Nerdy Slime comes from vanilla's kill handler, once per world.
                     CameraSystem.shake = 20;
 
-                    SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlam.Asset with
                     {
                         Volume = 1f,
                         Pitch = -0.3f
                     }, npc.Center);
 
-                    SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.KingSlimeRoar.Asset with
                     {
                         Volume = 1f,
                         Pitch = -0.25f
@@ -1005,7 +1005,7 @@ public class KingSlimeRework : GlobalNPC
                 {
                     npc.netUpdate = true;
                     npc.spriteDirection = -Math.Sign(dirToPlayer);
-                    SoundEngine.PlaySound(Assets.SFX.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
 
                     npc.velocity.Y = -14f;
                     npc.velocity.X = 2f * dirToPlayer * GetSpeedMultiplier(npc);
@@ -1071,7 +1071,7 @@ public class KingSlimeRework : GlobalNPC
 
                 if (hitGround || npc.velocity.Y == 0f)
                 {
-                    SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with { PitchVariance = 0.2f }, npc.Center);
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlam.Asset with { PitchVariance = 0.2f }, npc.Center);
                     CameraSystem.shake = 6;
 
                     for (var i = 0; i < 30; i++)
@@ -1184,7 +1184,7 @@ public class KingSlimeRework : GlobalNPC
                 {
                     npc.netUpdate = true;
 
-                    SoundEngine.PlaySound(Assets.SFX.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlamCharge.Asset with { PitchVariance = 0.2f }, npc.Center);
 
                     npc.velocity.Y = BOUNCE_HOUSE_JUMP_HEIGHT;
                     npc.velocity.X = 0f;
@@ -1233,7 +1233,7 @@ public class KingSlimeRework : GlobalNPC
 
                 if (hitGround || npc.velocity.Y == 0f)
                 {
-                    SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with { PitchVariance = 0.2f }, npc.Center);
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlam.Asset with { PitchVariance = 0.2f }, npc.Center);
                     CameraSystem.shake = 8;
 
                     for (var i = 0; i < 25; i++)
@@ -1452,7 +1452,7 @@ public class KingSlimeRework : GlobalNPC
         if (timer == 1)
         {
             CameraSystem.shake = 15;
-            SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with { Volume = 0.5f, }, npc.Center);
+            SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.KingSlimeRoar.Asset with { Volume = 0.5f, }, npc.Center);
 
             for (var i = 0; i < 20; i++)
             {
@@ -1633,8 +1633,8 @@ public class KingSlimeRework : GlobalNPC
         if (Main.dedServ)
             return;
 
-        SoundEngine.PlaySound(Assets.SFX.KingSlimeRoar.Asset with { Volume = 0.9f, Pitch = -0.1f }, npc.Center);
-        SoundEngine.PlaySound(Assets.SFX.SlimeSlam.Asset with { Volume = 0.7f, Pitch = -0.2f }, npc.Bottom);
+        SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.KingSlimeRoar.Asset with { Volume = 0.9f, Pitch = -0.1f }, npc.Center);
+        SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeSlam.Asset with { Volume = 0.7f, Pitch = -0.2f }, npc.Bottom);
 
         var gel = FieldSystem.GetLayer<GelField>();
 
@@ -1869,7 +1869,7 @@ public class KingSlimeRework : GlobalNPC
             {
                 if (!extraData.wasGliding)
                 {
-                    SoundEngine.PlaySound(Assets.SFX.KingSlimeGlide.Asset with { Pitch = -0.1f, Volume = 0.35f }, npc.Center);
+                    SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.KingSlimeGlide.Asset with { Pitch = -0.1f, Volume = 0.35f }, npc.Center);
                 }
 
                 animSpeed = 60f;
@@ -2268,7 +2268,7 @@ public class KingSlimeRework : GlobalNPC
             npc.netUpdate = true;
         }
 
-        SoundEngine.PlaySound(Assets.SFX.SlimeConsume.Asset with
+        SoundEngine.PlaySound(Assets.SFX.NPC.KingSlime.SlimeConsume.Asset with
         {
             PitchVariance = 0.3f,
             MaxInstances = 3

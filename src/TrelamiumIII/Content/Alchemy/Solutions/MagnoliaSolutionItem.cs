@@ -64,7 +64,7 @@ public class MagnoliaSolutionItem : SolventItem
                 );
 
                 Main.spriteBatch.Draw(
-                    ModContent.Request<Texture2D>($"{Assets.Textures.MagnoliaLeaf.KEY}").Value,
+                    ModContent.Request<Texture2D>($"{Assets.Textures.VFX.MagnoliaLeaf.KEY}").Value,
                     pos + offset,
                     sourceRect,
                     particleColor * 1.15f,

@@ -12,15 +12,15 @@ namespace TrelamiumIII.Content.Liquids;
 
 public sealed record BucketTemplate(string Bucket, string Liquid)
 {
-    public static BucketTemplate Standard { get; } = new(Assets.Textures.Bucket_Empty.KEY, Assets.Textures.Bucket_Liquid.KEY);
+    public static BucketTemplate Standard { get; } = new(Assets.Textures.Templates.Bucket_Empty.KEY, Assets.Textures.Templates.Bucket_Liquid.KEY);
     /// <summary>
     /// uses the lava bucket liquid mask.
     /// </summary>
-    public static BucketTemplate Lava { get; } = new(Assets.Textures.Bucket_Empty_Lava.KEY, Assets.Textures.Bucket_Liquid2.KEY);
+    public static BucketTemplate Lava { get; } = new(Assets.Textures.Templates.Bucket_Empty_Lava.KEY, Assets.Textures.Templates.Bucket_Liquid2.KEY);
     /// <summary>
     /// uses the honey bucket liquid mask.
     /// </summary>
-    public static BucketTemplate Honey { get; } = new(Assets.Textures.Bucket_Empty_Honey.KEY, Assets.Textures.Bucket_Liquid3.KEY);
+    public static BucketTemplate Honey { get; } = new(Assets.Textures.Templates.Bucket_Empty_Honey.KEY, Assets.Textures.Templates.Bucket_Liquid3.KEY);
 
 }
 

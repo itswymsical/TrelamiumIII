@@ -148,7 +148,7 @@ public class AdvancedAlchemyStationEntity : ModTileEntity
         if (Main.netMode == NetmodeID.SinglePlayer)
         {
             SoundEngine.PlaySound(SoundID.ResearchComplete);
-            SoundEngine.PlaySound(Assets.SFX.BrewingComplete.Asset);
+            SoundEngine.PlaySound(Assets.SFX.UI.BrewingComplete.Asset);
         }
 
         SyncToClients();

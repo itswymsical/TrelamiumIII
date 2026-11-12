@@ -109,7 +109,7 @@ public static class SpeakerRegistry
         {
             Id = "Permafrost",
             FrameCount = 1,
-            Font = TrelamiumFonts.AndikaBoldItalic,
+            Font = TrelamiumFonts.OldEnglishFive,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Permafrost.Speech.Asset]),
             Color = Color.LightSkyBlue,
         });
@@ -144,7 +144,6 @@ public static class SpeakerRegistry
         Register(new SpeakerProfile
         {
             Id = "Nerdy Slime",
-            TexturePath = Assets.Textures.UI.Dialogue.Portraits.OnePointFourFive.SlimeNerdy.KEY,
             FrameCount = 1,
             Color = new(100, 150, 200),
         });

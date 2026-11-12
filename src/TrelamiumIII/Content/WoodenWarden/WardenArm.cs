@@ -278,11 +278,11 @@ public sealed class WardenArm : ModNPC
     #region audio
 
     private static readonly SoundStyle SwingSound = SoundID.Item1 with { Volume = 0.75f, Pitch = -0.6f };
-    private static readonly SoundStyle ImpactSound = Assets.SFX.NPC.WoodHit2.Asset with { Volume = 1.2f, Pitch = -0.5f };
-    private static readonly SoundStyle GrabSound = Assets.SFX.Snap.Asset with { Volume = 1f, Pitch = -0.3f };
-    private static readonly SoundStyle SlamSound = Assets.SFX.Girthquake_Impact.Asset with { Volume = 0.9f, Pitch = -0.2f };
-    private static readonly SoundStyle ClapSound = Assets.SFX.Girthquake_Impact.Asset with { Volume = 0.8f, Pitch = 0.2f };
-    private static readonly SoundStyle ClackSound = Assets.SFX.NPC.WoodHit2.Asset with { Volume = 1f, Pitch = -0.1f, MaxInstances = 2 };
+    private static readonly SoundStyle ImpactSound = Assets.SFX.NPC.Warden.WoodHit2.Asset with { Volume = 1.2f, Pitch = -0.5f };
+    private static readonly SoundStyle GrabSound = Assets.SFX.Items.Snap.Asset with { Volume = 1f, Pitch = -0.3f };
+    private static readonly SoundStyle SlamSound = Assets.SFX.NPC.Fungore.Girthquake_Impact.Asset with { Volume = 0.9f, Pitch = -0.2f };
+    private static readonly SoundStyle ClapSound = Assets.SFX.NPC.Fungore.Girthquake_Impact.Asset with { Volume = 0.8f, Pitch = 0.2f };
+    private static readonly SoundStyle ClackSound = Assets.SFX.NPC.Warden.WoodHit2.Asset with { Volume = 1f, Pitch = -0.1f, MaxInstances = 2 };
 
     // Stand-ins until the pike has its own sounds.
     private static readonly SoundStyle FormSound = SoundID.Item8 with { Volume = 0.9f, Pitch = -0.4f };
@@ -399,14 +399,14 @@ public sealed class WardenArm : ModNPC
         // Hidden from the ordinary NPC pass; DrawBehind puts it in a draw cache instead.
         NPC.hide = true;
 
-        NPC.HitSound = Assets.SFX.NPC.WoodHit2.Asset with
+        NPC.HitSound = Assets.SFX.NPC.Warden.WoodHit2.Asset with
         {
             Volume = 1.4f,
             PitchVariance = 0.2f,
             MaxInstances = 3,
         };
 
-        NPC.DeathSound = Assets.SFX.NPC.WoodenKilled.Asset with { Volume = 1f };
+        NPC.DeathSound = Assets.SFX.NPC.Warden.WoodenKilled.Asset with { Volume = 1f };
     }
 
     /// <summary>Lives and dies with the boss; <see cref="AI" /> removes it once the boss is gone.</summary>

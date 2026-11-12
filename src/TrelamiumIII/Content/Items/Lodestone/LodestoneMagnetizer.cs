@@ -654,7 +654,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
 
         if (!_hasPlayedStartup)
         {
-            _startupSoundId = SoundEngine.PlaySound(Assets.SFX.OreVacuum_Start.Asset with
+            _startupSoundId = SoundEngine.PlaySound(Assets.SFX.Items.OreVacuum_Start.Asset with
             {
                 Volume = 0.4f,
                 MaxInstances = 1,
@@ -668,7 +668,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
 
         if (_hasPlayedStartup && !_hasStartedLoop && _soundTimer >= startupDurationTicks)
         {
-            _loopSoundId = SoundEngine.PlaySound(Assets.SFX.OreVacuum_Loop.Asset with
+            _loopSoundId = SoundEngine.PlaySound(Assets.SFX.Items.OreVacuum_Loop.Asset with
             {
                 Volume = 0.4f,
                 IsLooped = true,
@@ -695,7 +695,7 @@ public class LodestoneMagnetizerProjectile : ModProjectile, IDrawPrimitive
             if (SoundEngine.TryGetActiveSound(_startupSoundId, out var startupSound))
                 startupSound?.Stop();
 
-            SoundEngine.PlaySound(Assets.SFX.OreVacuum_End.Asset with
+            SoundEngine.PlaySound(Assets.SFX.Items.OreVacuum_End.Asset with
             {
                 Volume = 0.4f,
                 MaxInstances = 1

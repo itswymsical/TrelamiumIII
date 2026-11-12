@@ -117,7 +117,7 @@ public sealed class FungoreSpore : ModProjectile
     {
         FungalInfectionPlayer.Inflict(target, ModContent.BuffType<FungalInfectionSpore>(), INFECTION_TICKS);
 
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.35f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.7f, Pitch = 0.35f }, Projectile.Center);
 
         if (!Main.dedServ)
             SporeField.Cling(target, 0.9f);
@@ -126,7 +126,7 @@ public sealed class FungoreSpore : ModProjectile
     /// <summary>Breaks where it lands and leaves the cloud behind rather than bouncing on.</summary>
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_TileImpact.Asset with { Volume = 0.5f, Pitch = 0.4f }, Projectile.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.5f, Pitch = 0.4f }, Projectile.Center);
 
         if (!Main.dedServ)
             SporeField.TileSplat(Projectile.Center, oldVelocity);

@@ -487,7 +487,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
     {
-        SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with
+        SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset with
         {
             MaxInstances = 1,
             Volume = MathHelper.Lerp(0.4f, 0.7f, ChargeProgress),
@@ -503,7 +503,7 @@ public class FlailstormProj : ModProjectile, IDrawPrimitive
     }
 
     public override void OnHitPlayer(Player target, Player.HurtInfo info)
-        => SoundEngine.PlaySound(Assets.SFX.HewerReturn.Asset with { MaxInstances = 1, Volume = 0.4f, Pitch = -0.9f }, Projectile.Center);
+        => SoundEngine.PlaySound(Assets.SFX.Items.HewerReturn.Asset with { MaxInstances = 1, Volume = 0.4f, Pitch = -0.9f }, Projectile.Center);
 
     public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
     {

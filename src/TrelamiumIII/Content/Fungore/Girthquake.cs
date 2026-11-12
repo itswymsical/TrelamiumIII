@@ -135,7 +135,7 @@ public class GirthquakeProj : ModProjectile
     private static readonly SoundStyle PlantSound = SoundID.Dig with { Volume = 0.7f, Pitch = -0.6f };
     private static readonly SoundStyle RaiseSound = SoundID.Item1 with { Volume = 0.5f, Pitch = -0.85f };
     private static readonly SoundStyle SlamSound = SoundID.DD2_MonkStaffSwing with { Volume = 0.9f, Pitch = -0.5f };
-    private static readonly SoundStyle GroundSound = Assets.SFX.Girthquake_Impact.Asset with { Volume = 1f, Pitch = -0.35f };
+    private static readonly SoundStyle GroundSound = Assets.SFX.NPC.Fungore.Girthquake_Impact.Asset with { Volume = 1f, Pitch = -0.35f };
     private static readonly SoundStyle AirSound = SoundID.Item1 with { Volume = 0.6f, Pitch = -0.7f };
 
     #endregion
@@ -792,7 +792,7 @@ public class GirthquakeProj : ModProjectile
         float reach = (HAMMER_LENGTH + HEAD_REACH) * TotalScale;
 
         Texture2D wide = Assets.Textures.VFX.SwordSwings.Twirl_01.Asset.Value;
-        Texture2D core = Assets.Textures.VFX.SwordSwings.twirl_03.Asset.Value;
+        Texture2D core = Assets.Textures.VFX.SwordSwings.Twirl_03.Asset.Value;
 
         // Additive, and linear rather than point sampled: these are soft 512px gradients, and
         // PointClamp would band them into rings.

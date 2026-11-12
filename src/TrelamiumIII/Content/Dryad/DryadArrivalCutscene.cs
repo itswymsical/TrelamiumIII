@@ -17,7 +17,7 @@ public sealed class DryadArrivalCutscene : Cutscene
 
     public DryadArrivalCutscene()
     {
-        SetMusic(Assets.Music.DryadArrival.Slot);
+        SetMusic(Assets.Music.Cutscenes.DryadArrival.Slot);
     }
 
     protected override void OnCutsceneStart()

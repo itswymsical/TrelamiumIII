@@ -438,7 +438,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         Main.LocalPlayer.GetSource_Misc("AlmanacSearchClear"),
         SearchItem, SearchItem.stack);
 
-        SoundEngine.PlaySound(Assets.SFX.BookClose.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.BookClose.Asset, Main.LocalPlayer.Center);
     }
 
     private void BeginFlip(FlipDir dir)
@@ -481,7 +481,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         pageFlipProgress = 0f;
         state = BookState.Flipping;
 
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset, Main.LocalPlayer.Center);
     }
 
     private void BeginViewSwitchToDetail(int detailItem)
@@ -501,7 +501,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         pageFlipProgress = 0f;
         state = BookState.Flipping;
 
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset, Main.LocalPlayer.Center);
     }
 
     private void BeginViewSwitchToBrowse()
@@ -521,7 +521,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         pageFlipProgress = 0f;
         state = BookState.Flipping;
 
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset, Main.LocalPlayer.Center);
     }
 
     // Category tabs are quick-nav into the chronological read: each jumps to its section start.
@@ -539,7 +539,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         pageFlipProgress = 0f;
         state = BookState.Flipping;
 
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset, Main.LocalPlayer.Center);
     }
 
     private void OnFlipComplete()
@@ -1532,7 +1532,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         next = new SpreadKey(AlmanacCategory.Glossary, ViewMode.Browse, target, 0);
         pageFlipProgress = 0f;
         state = BookState.Flipping;
-        SoundEngine.PlaySound(Assets.SFX.PageFlip.Asset, Main.LocalPlayer.Center);
+        SoundEngine.PlaySound(Assets.SFX.UI.PageFlip.Asset, Main.LocalPlayer.Center);
     }
 
     // Browse reads as one chronological sequence across these sections; tabs jump between them.

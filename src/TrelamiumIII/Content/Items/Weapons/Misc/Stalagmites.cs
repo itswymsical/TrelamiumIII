@@ -25,7 +25,7 @@ public sealed class StalagmiteItem : ModItem, IStalagMagAmmo, ICustomAutoload
 
     public override string Name => $"{stone}Stalagmite";
 
-    public override string Texture => AssetReferences.Assets.Textures.PlaceholderItem.KEY;
+    public override string Texture => AssetReferences.Assets.Textures.Placeholder.PlaceholderItem.KEY;
 
     public StalagMagShot Shot => shot;
 

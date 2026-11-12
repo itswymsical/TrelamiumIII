@@ -211,7 +211,7 @@ public sealed class FungoreSporeSac : ModNPC
 
         Vector2 centre = NPC.Center;
 
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Boom.Asset with { Volume = 0.75f, Pitch = 0.2f }, centre);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_Boom.Asset with { Volume = 0.75f, Pitch = 0.2f }, centre);
 
         // Untargetable once it's gas, so homing weapons and minions don't waste the fight on it.
         NPC.dontTakeDamage = true;
@@ -284,7 +284,7 @@ public sealed class FungoreSporeSac : ModNPC
             return;
         }
 
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Splash.Asset with { Volume = 0.7f, Pitch = 0.5f }, NPC.Center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_TileImpact.Asset with { Volume = 0.7f, Pitch = 0.5f }, NPC.Center);
 
         Debris(NPC.Center, count: 5, force: 3.2f, scale: Growth);
 

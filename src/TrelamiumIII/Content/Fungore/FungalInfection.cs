@@ -283,7 +283,7 @@ public sealed class FungalInfectionNPC : GlobalNPC
         bloomCooldown = BLOOM_COOLDOWN;
 
         SoundEngine.PlaySound(SoundID.Item70 with { Volume = 1.05f, Pitch = -0.35f }, center);
-        SoundEngine.PlaySound(Assets.SFX.Sporeclot_Boom.Asset with { Volume = 0.95f, Pitch = -0.35f }, center);
+        SoundEngine.PlaySound(Assets.SFX.Items.Sporeclot_Boom.Asset with { Volume = 0.95f, Pitch = -0.35f }, center);
 
         if (!Main.dedServ)
         {
