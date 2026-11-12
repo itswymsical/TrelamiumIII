@@ -25,7 +25,7 @@ public class ContortionistsHat : ModItem
 
     public override void UpdateArmorSet(Player player)
     {
-        player.setBonus = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "SetBonuses.Contortionist");
+        player.setBonus = LangHelper.LocalizationValue(TrelamiumIII.Instance, "SetBonuses.Contortionist");
         var chemPlayer = player.GetModPlayer<ChemicalPlayerStats>();
         chemPlayer[ChemicalDamageType.Necrotic].AfflictionRate += 0.22f;
     }

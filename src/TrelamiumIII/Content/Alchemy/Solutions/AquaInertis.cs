@@ -8,7 +8,7 @@ namespace TrelamiumIII.Content.Alchemy.Solutions;
 internal sealed class AquaInertis : BottledLiquidItem
 {
     /// <remarks>Keeps the internal name it had as a <see cref="SolventID" /> table entry.</remarks>
-    public AquaInertis() : base("AquaInteris")
+    public AquaInertis() : base("AquaInertis")
     {
         Rare = ItemRarityID.Gray;
 

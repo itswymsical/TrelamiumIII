@@ -1080,7 +1080,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
     {
         var font = FontAssets.MouseText.Value;
 
-        string title = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Title");
+        string title = LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Title");
         Vector2 size = font.MeasureString(title) * TITLE_SCALE;
         Utils.DrawBorderString(sb, title,
             new Vector2((PAGE_WIDTH - size.X) * 0.5f, PAGE_HEIGHT * 0.16f),
@@ -1096,7 +1096,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         // Discovery stats: brewed recipes, then ingredients revealed in the index.
         int recipeTotal = AlmanacIndex.AllOutputTypes.Count;
         int recipeKnown = AlmanacDiscoverySystem.Count;
-        string recipeStat = $"{recipeKnown} / {recipeTotal} {ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipesDiscovered")}";
+        string recipeStat = $"{recipeKnown} / {recipeTotal} {LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipesDiscovered")}";
         Vector2 statSize = font.MeasureString(recipeStat) * HEADER_SCALE;
         Utils.DrawBorderString(sb, recipeStat,
             new Vector2((PAGE_WIDTH - statSize.X) * 0.5f, PAGE_HEIGHT * 0.34f),
@@ -1106,7 +1106,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         int ingKnown = 0;
         foreach (int t in allIngredients)
             if (AlmanacDiscoverySystem.IsIngredientVisible(t)) ingKnown++;
-        string ingStat = $"{ingKnown} / {allIngredients.Count} {ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.IngredientsDiscovered")}";
+        string ingStat = $"{ingKnown} / {allIngredients.Count} {LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.IngredientsDiscovered")}";
         statSize = font.MeasureString(ingStat) * HEADER_SCALE;
         Utils.DrawBorderString(sb, ingStat,
             new Vector2((PAGE_WIDTH - statSize.X) * 0.5f, PAGE_HEIGHT * 0.395f),
@@ -1115,16 +1115,16 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
         // controls hint
         string[] hints =
         {
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint1"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint1"),
             "",
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint2"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint2"),
             "",
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint3"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint3"),
             "",
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint3A"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint3A"),
             "",
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint4"),
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint5"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint4"),
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Hint5"),
         };
         float y = PAGE_HEIGHT * 0.46f;
         foreach (var line in hints)
@@ -1184,7 +1184,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
 
     /// <summary>Localized under <c>AlmanacUI.{category}Recipes</c>; <c>AlmanacUI.AllRecipes</c> when null.</summary>
     private static string RecipesLabel(BrewCategory? category) =>
-        ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, $"AlmanacUI.{category?.ToString() ?? "All"}Recipes");
+        LangHelper.LocalizationValue(TrelamiumIII.Instance, $"AlmanacUI.{category?.ToString() ?? "All"}Recipes");
 
     private static void DrawIconCell(SpriteBatch sb, Rectangle cell, int itemType, bool unlocked)
     {
@@ -1276,8 +1276,8 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
 
         // Variant count footer
         int count = AlmanacIndex.RecipesProducing(outputType).Count();
-        string footer = count == 1 ? ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipeVariant")
-            : $"{count} {ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipeVariants")}";
+        string footer = count == 1 ? LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipeVariant")
+            : $"{count} {LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.RecipeVariants")}";
         Vector2 fSize = font.MeasureString(footer) * BODY_SCALE;
         Utils.DrawBorderString(sb, footer,
             new Vector2((PAGE_WIDTH - fSize.X) * 0.5f, PAGE_HEIGHT * 0.565f),
@@ -1398,7 +1398,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
             if (uses.Count == 0)
             {
                 DrawWrappedDescription(sb, 
-                    ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.NotDiscovered"), PAGE_HEIGHT * 0.45f);
+                    LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.NotDiscovered"), PAGE_HEIGHT * 0.45f);
                 return;
             }
         }
@@ -2089,8 +2089,8 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
 
         // Header
         var hfont = FontAssets.MouseText.Value;
-        string header = startIndex == 0 ? ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.HeaderRecipes") 
-            : $"{ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.HeaderRecipes")} (cont.)";
+        string header = startIndex == 0 ? LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.HeaderRecipes") 
+            : $"{LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.HeaderRecipes")} (cont.)";
         Vector2 hSize = hfont.MeasureString(header) * HEADER_SCALE;
         Utils.DrawBorderString(sb, header,
             new Vector2((PAGE_WIDTH - hSize.X) * 0.5f, MARGIN_Y - 14f),
@@ -2450,7 +2450,7 @@ public class AlchemyAlmanacUI : IInGameNotification, IBookView, IOpenBook
 
         // Label above the slot
         float labelScale = 0.85f * UI_SCALE;
-        string label = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Search");
+        string label = LangHelper.LocalizationValue(TrelamiumIII.Instance, "AlmanacUI.Search");
         Vector2 labelSize = font.MeasureString(label) * labelScale;
         Utils.DrawBorderString(sb, label,
             new Vector2(_searchSlotBounds.X + (_searchSlotBounds.Width - labelSize.X) * 0.025f,

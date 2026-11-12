@@ -160,7 +160,7 @@ internal sealed class InkMoteLayer : IInkLayer, IDisposable
                 // pole has no lateral direction to reach in, and holding it at full stretch meant
                 // holding it along an angle that flipped every few frames -- which was half of
                 // what the buzzing looked like.
-                mote.Spike = MathHelper.Lerp(mote.Spike, pull * grip, 0.10f);
+                mote.Spike = MathHelper.Lerp(mote.Spike * 0.95f, pull * grip, 0.10f);
 
                 // Angle held rather than recomputed inside the core, where a direction taken from
                 // a near-zero vector is mostly noise.
@@ -269,7 +269,7 @@ internal sealed class InkMoteLayer : IInkLayer, IDisposable
         silhouette ??= Assets.Shaders.InkSilhouette.CreateP0();
 
         var parameters = silhouette.Parameters;
-        var noise = Assets.Textures.Noise.LiquidNoise.Asset.Value;
+        var noise = Assets.Textures.Noise.Milky_3.Asset.Value;
 
         // The wobble field tiles, so it is bound through the shader's own wrap sampler rather than
         // through s0 -- SpriteBatch owns s0, and its clamp would fold the far edge into the near

@@ -9,7 +9,7 @@ public class RockSaltTile : ModTile
 
         Main.tileMerge[TileID.Stone][Type] = true;
         Main.tileMerge[Type][TileID.Stone] = true;
-
+        Main.tileSpelunker[Type] = true;
         Main.tileBlockLight[Type] = true;
 
         DustType = DustID.Marble;

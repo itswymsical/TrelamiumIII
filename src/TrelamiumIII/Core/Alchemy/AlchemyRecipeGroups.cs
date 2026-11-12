@@ -50,7 +50,9 @@ public static class AlchemyRecipeGroups
 
     public static readonly AlchemyComponentGroup Iron = new("Iron");
     public static readonly AlchemyComponentGroup Silver = new("Silver");
-    public static readonly AlchemyComponentGroup Gold = new("Gold");
+    public static readonly AlchemyComponentGroup GoldOre = new("Gold");
+    public static readonly AlchemyComponentGroup AdamantiteOre = new("AdamantiteOre");
+
     public static readonly AlchemyComponentGroup SpecularFishOrMoonglow = new("SpecularFishOrMoonglow");
 
     public static readonly AlchemyComponentGroup AnyEvilOre = new("AnyEvilOre");
@@ -78,7 +80,7 @@ public static class AlchemyRecipeGroups
     // Declared after the groups: static initializers run in textual order.
     private static readonly AlchemyComponentGroup[] All =
     [
-        AnyOre, Critters, Iron, Silver, Gold, SpecularFishOrMoonglow, AnyEvilOre, Mushroom, AnyEvilMushroom,
+        AnyOre, Critters, Iron, Silver, GoldOre, SpecularFishOrMoonglow, AnyEvilOre, Mushroom, AnyEvilMushroom,
         CorruptTiles, BloodTiles, AnyHerb, RottenChunkVertabrae, AnyStandardFish, Dirts, Clays, AnyButterfly,
         AnyBaseBottle, ShiverthornOrWaterleaf, ShiverthornOrSeeds, AnyAcid, AnyAlkali, AnyMineralSalt
     ];
@@ -105,10 +107,11 @@ public static class AlchemyRecipeGroups
         Iron.Add(ItemID.IronOre, ItemID.LeadOre);
 
         Silver.Add(ItemID.SilverOre, ItemID.TungstenOre);
+        AdamantiteOre.Add(ItemID.AdamantiteOre, ItemID.TitaniumOre);
 
         BlackPowderOrRust.Add(ModContent.ItemType<RustedNugget>(), SoluteID.BlackPowder);
 
-        Gold.Add(ItemID.GoldOre, ItemID.PlatinumOre);
+        GoldOre.Add(ItemID.GoldOre, ItemID.PlatinumOre);
 
         Critters.Add(
             ItemID.Bunny, ItemID.Squirrel, ItemID.Mouse, ItemID.Rat, ItemID.Frog, ItemID.Worm, ItemID.Snail);

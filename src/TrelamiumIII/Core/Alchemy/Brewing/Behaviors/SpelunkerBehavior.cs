@@ -1,4 +1,6 @@
 using System;
+using TrelamiumIII.Content.Alchemy.Tiles;
+using TrelamiumIII.Content.Items.Lodestone;
 using TrelamiumIII.Core.Alchemy.Brewing.Behaviors;
 
 namespace TrelamiumIII.Core.Alchemy.Brewing;
@@ -36,16 +38,16 @@ public static class SpelunkerReveal
     // Curated ore ladder: Tier = how deep the ore sits in progression. A gate of N reveals tiers <= N
     // and masks the rest. Tune freely; any ore not listed here is always revealed.
     private static readonly (int TileType, int Tier)[] Ladder =
-    {
-        (TileID.Copper, 1),       (TileID.Tin, 1),
-        (TileID.Iron, 2),         (TileID.Lead, 2),
-        (TileID.Silver, 3),       (TileID.Tungsten, 3),
-        (TileID.Gold, 4),         (TileID.Platinum, 4),
-        (TileID.Demonite, 5),     (TileID.Crimtane, 5),
-        (TileID.Meteorite, 5),    (TileID.Hellstone, 5),
-        (TileID.Cobalt, 6),       (TileID.Palladium, 6),
-        (TileID.Mythril, 6),      (TileID.Orichalcum, 6),
-        (TileID.Adamantite, 7),   (TileID.Titanium, 7),
+    {   
+        (TileID.Copper, 0),       (TileID.Tin, 0),
+        (TileID.Iron, 1),         (TileID.Lead, 1),
+        (TileID.Silver, 2),       (TileID.Tungsten, 2),
+        (TileID.Gold, 2),         (TileID.Platinum, 2),
+        (TileID.Demonite, 2),     (TileID.Crimtane, 2),
+        (TileID.Meteorite, 2),    (TileID.Hellstone, 2),
+        (TileID.Cobalt, 4),       (TileID.Palladium, 4),
+        (TileID.Mythril, 5),      (TileID.Orichalcum, 5),
+        (TileID.Adamantite, 6),   (TileID.Titanium, 6),
         (TileID.Chlorophyte, 7),
     };
 
@@ -78,13 +80,13 @@ public static class SpelunkerReveal
     /// <summary>Tooltip phrase for a gate value.</summary>
     public static string DescribeGate(int maxTier) => maxTier switch
     {
-        >= Uncapped => "Reveals all ores",
-        <= 1 => "Reveals shallow ores (copper/tin)",
-        2 => "Reveals ores down to iron/lead",
-        3 => "Reveals ores down to silver/tungsten",
-        4 => "Reveals ores down to gold/platinum",
-        5 => "Reveals ores down to hellstone",
-        _ => "Reveals ores down to mythril-grade",
+        >= Uncapped => LangHelper.LocalizationValue("PotionBrews.Spelunker.Vanilla"),
+        <= 1 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.MineralTier"),
+        2 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier1"),
+        3 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier2"),
+        4 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier3"),
+        5 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier4"),
+        _ => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier5"),
     };
 }
 

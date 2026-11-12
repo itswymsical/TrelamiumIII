@@ -79,7 +79,7 @@ public class FrostbarkHelm : ModItem
 
     public override void UpdateArmorSet(Player player)
     {
-        player.setBonus = ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "SetBonuses.Frostbark");
+        player.setBonus = LangHelper.LocalizationValue(TrelamiumIII.Instance, "SetBonuses.Frostbark");
         player.resistCold = true;
         player.buffImmune[BuffID.Chilled] = true;
     }

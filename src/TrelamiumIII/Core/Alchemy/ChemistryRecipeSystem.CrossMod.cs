@@ -71,7 +71,7 @@ public partial class ChemistryRecipeSystem
                 new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Blinkroot) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) },
                 new BrewRecipe(gar, ItemID.Waterleaf, ItemID.Moonglow) { Potency = 1, StrengthPercent = 100, DurationTicks = Time(secs: 45) })
             .From(SolventID.AquaVitae,
-                new BrewRecipe(gar, ItemID.Waterleaf, Gold) { Potency = 3, StrengthPercent = 125, DurationTicks = Time(secs: 20) },
+                new BrewRecipe(gar, ItemID.Waterleaf, GoldOre) { Potency = 3, StrengthPercent = 125, DurationTicks = Time(secs: 20) },
                 new BrewRecipe(gar, ItemID.Waterleaf, ItemID.SoulofLight) { Potency = 4, StrengthPercent = 125, DurationTicks = Time(secs: 30) });
     }
 

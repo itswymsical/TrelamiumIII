@@ -1382,8 +1382,8 @@ Items: {
 		Tooltip: ""
 	}
 
-	AquaInteris: {
-		DisplayName: Aqua Interis
+	AquaInertis: {
+		DisplayName: Aqua Inertis
 		Tooltip: Serves as a base solvent for alchemy
 	}
 

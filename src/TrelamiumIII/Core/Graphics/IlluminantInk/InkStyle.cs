@@ -168,7 +168,7 @@ internal static class InkStyle
     /// <summary>Cursor attraction radius in pixels -- the reach of the "magnet".</summary>
     public const float MagnetRadius = 260f;
 
-    public const float MagnetForce = 0.24f;
+    public const float MagnetForce = 0.333f;
 
     /// <summary>
     ///     Radius of the magnet's core, in pixels: inside it the pull fades back out to nothing.
@@ -180,7 +180,7 @@ internal static class InkStyle
     ///     Small, because it sets how tightly a dragged cluster packs -- past roughly 40 the pool
     ///     spreads far enough that <see cref="MoteMergeOverlap" /> stops being reached.
     /// </remarks>
-    public const float MagnetCore = 26f;
+    public const float MagnetCore = 48f;
 
     /// <summary>Per-tick velocity multiplier applied at the very centre of the core.</summary>
     /// <remarks>
@@ -188,7 +188,7 @@ internal static class InkStyle
     ///     through on its arrival momentum; this removes it. Together they over-damp the inner half
     ///     of the core so a mote slides to a stop instead of ringing.
     /// </remarks>
-    public const float MagnetSettle = 0.78f;
+    public const float MagnetSettle = 0.88f;
 
     /// <summary>How far a fully magnetised mote stretches toward the cursor.</summary>
     public const float MoteSpikeStretch = 1.2f;
@@ -197,9 +197,9 @@ internal static class InkStyle
     public const float MoteRadiusMax = 30f;
 
     /// <summary>Outward impulse a click applies, and the radius it reaches.</summary>
-    public const float PulseForce = 7.5f;
+    public const float PulseForce = 13.5f;
 
-    public const float PulseRadius = 340f;
+    public const float PulseRadius = 408f;
 
     /// <summary>Hard ceiling on live motes, however hard the player clicks.</summary>
     public const int MoteBudget = 170;
@@ -224,7 +224,7 @@ internal static class InkStyle
     ///     further would put every piece under <see cref="MoteRadiusMin" /> and the burst would
     ///     read as the mote having simply vanished.
     /// </remarks>
-    public const int MoteBurstPieces = 6;
+    public const int MoteBurstPieces = 12;
 
     /// <summary>Speed the droplets leave at, before the parent's own momentum.</summary>
     /// <remarks>
@@ -330,12 +330,12 @@ internal static class InkStyle
     ///     the motes have to sit on the nebula rather than beside it -- the ends are
     ///     <see cref="InkLow" /> and a step short of <see cref="InkHigh" />.
     /// </remarks>
-    public static readonly Vector3 MoteShadowColor = new(0.014f, 0.015f, 0.019f);
+    public static readonly Vector3 MoteShadowColor = new(0.016f, 0.016f, 0.016f);
 
-    public static readonly Vector3 MoteBodyColor = new(0.044f, 0.046f, 0.056f);
+    public static readonly Vector3 MoteBodyColor = new(0.043f, 0.047f, 0.055f);
 
     public static readonly Vector3 MoteCoreColor = new(0.13f, 0.135f, 0.155f);
-    public static readonly Vector3 TextHighlightColor = new(0.953f, 0.910f, 1.000f);
+    public static readonly Vector3 TextHighlightColor = new(0.941f, 0.890f, 1.000f);
 
 
     /// <summary>The meniscus: the rim the shader paints along its own cut.</summary>
@@ -366,7 +366,7 @@ internal static class InkStyle
     public const float BlurFalloff = 1.7f;
     public const float BlurMix = 0.55f;
 
-    public const float BloomIntensity = 0.55f;
+    public const float BloomIntensity = 0.666f;
     public static readonly Vector3 BloomTint = new(0.80f, 0.84f, 0.92f);
 
     /// <summary>Alpha of the vignette overlay laid over the finished frame.</summary>

@@ -11,7 +11,7 @@ public class CinnabarTile : ModTile
         Main.tileMerge[Type][TileID.Stone] = true;
 
         Main.tileBlockLight[Type] = true;
-
+        Main.tileSpelunker[Type] = true;
         DustType = DustID.GemRuby;
         MineResist = 0.55f;
         MinPick = 45;

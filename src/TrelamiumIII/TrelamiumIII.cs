@@ -46,7 +46,7 @@ public sealed partial class TrelamiumIII : Mod
 /// <summary>
 ///     Provides <see cref="Mod" /> extension methods.
 /// </summary>
-public static class ModExtensions
+public static class LangHelper
 {
     /// <summary>
     ///     Retrieves the text value for a localization key belonging to this piece of content with the
@@ -56,11 +56,14 @@ public static class ModExtensions
     /// <param name="mod">The mod used as the base for the localization key.</param>
     /// <param name="suffix">The suffix appended to the mod's localization key.</param>
     /// <returns>The localized text corresponding to the constructed key.</returns>
-    public static string GetLocalizationValue(this Mod mod, string suffix)
+    public static string LocalizationValue(this Mod mod, string suffix)
     {
         return Language.GetTextValue(mod.GetLocalizationKey(suffix));
     }
-
+    public static string LocalizationValue(string suffix)
+    {
+        return Language.GetTextValue(TrelamiumIII.Instance.GetLocalizationKey(suffix));
+    }
     /// <summary>
     ///     Retrieves the text value for a localization key belonging to this piece of content with the
     ///     given <paramref name="suffix" />. The text returned will be for the currently selected

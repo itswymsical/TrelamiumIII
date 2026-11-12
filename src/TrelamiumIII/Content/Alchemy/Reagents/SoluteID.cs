@@ -212,6 +212,7 @@ public sealed class SoluteID : ICustomAutoload
     {
         SlakedLime = Add(mod, new SoluteItem("SlakedLimeItem")
         {
+            TexturePath = AssetReferences.Content.Alchemy.Reagents.SlakedLimeItem.KEY,
             Value = Item.sellPrice(copper: 80),
             AlmanacPotency = 2,
             Temperaments = Temperament.Alkaline | Temperament.Inert,

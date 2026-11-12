@@ -20,6 +20,7 @@
   <ItemGroup>
     <Folder Include="Core\Rarities\Definitions\" />
     <Folder Include="Localization\DialogueLibrary\Silvian\" />
+    <Folder Include="Localization\PotionBrews\" />
   </ItemGroup>
 
   <!-- Reference only until ported to Core/Tiles/CustomTree: still uses Reverie namespaces and taiga grass tiles this mod doesn't have.

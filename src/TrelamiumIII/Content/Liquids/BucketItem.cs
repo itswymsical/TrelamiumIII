@@ -293,9 +293,9 @@ public abstract class BucketItem : ModItem
         tooltips.RemoveAt(consumable);
 
         tooltips.Add(new TooltipLine(Mod, "LiquidTooltip0", 
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "LiquidTooltips.LiquidTooltip0") + $" {LiquidType.DisplayName}"));
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "LiquidTooltips.LiquidTooltip0") + $" {LiquidType.DisplayName}"));
         tooltips.Add(new TooltipLine(Mod, "LiquidTooltip1", 
-            ModExtensions.GetLocalizationValue(TrelamiumIII.Instance, "LiquidTooltips.LiquidTooltip1")));
+            LangHelper.LocalizationValue(TrelamiumIII.Instance, "LiquidTooltips.LiquidTooltip1")));
     }
 
     private void UseBuckets(On_Player.orig_ItemCheck_UseBuckets orig, Player self, Item sItem)

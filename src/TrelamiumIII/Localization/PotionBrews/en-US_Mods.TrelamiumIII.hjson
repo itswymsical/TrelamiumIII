@@ -1,0 +1,23 @@
+PotionBrews: {
+	Spelunker: {
+		MineralTier:
+			'''
+			Reveals the location of minerals:
+			([tex:TrelamiumIII/Content/Alchemy/Reagents/Niter], [tex:TrelamiumIII/Content/Alchemy/Reagents/Cinnabar], [tex:TrelamiumIII/Content/Alchemy/Reagents/Sulfur], [tex:TrelamiumIII/Content/Items/Lodestone/LodestoneItem], [tex:TrelamiumIII/Content/Alchemy/Reagents/RockSalt], [tex:TrelamiumIII/Content/Alchemy/Reagents/FrigorificSalt])
+			'''
+		OreTier1: Reveals the location of the following: ([i:12], [i:699], [i:11], [i:700])
+		OreTier2:
+			'''
+			Reveals the location of the following:
+			([i:14], [i:701], [i:13], [i:702], [i:116], [i:56], [i:880])
+			'''
+		OreTier3:
+			'''
+			Reveals the location of the following: 
+			([i:174], [i:364])
+			'''
+		OreTier4: Reveals the location of the following: ([i:1104], [i:365])
+		OreTier5: Reveals the location of the following:([i:1105], [i:366], [i:947], [i:3460])
+		Vanilla: Reveals the location of all ores and minerals
+	}
+}

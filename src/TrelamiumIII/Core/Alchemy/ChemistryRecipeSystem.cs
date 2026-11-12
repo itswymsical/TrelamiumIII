@@ -163,7 +163,7 @@ public partial class ChemistryRecipeSystem : ModSystem
         //    .From(ItemID.BottledWater, new BrewRecipe(ComponentMatcher.Of(SoluteID.Potash, 2), SoluteID.Quicklime));
 
         AlchemyCore.Result(SoluteID.FrigorificSalt)
-            .From(SolventID.AquaInertis, new BrewRecipe(SoluteID.Niter, SoluteID.RockSalt, ItemID.IceBlock));
+            .From(SolventID.AquaInertis, new BrewRecipe(SoluteID.Niter, AnyMineralSalt, ItemID.IceBlock));
 
         AlchemyCore.Result(SoluteID.BlueVitriol)
             .From(SolventID.AquaFortis, new BrewRecipe(ModContent.ItemType<OxidizedCopperItem>()));
@@ -361,7 +361,16 @@ public partial class ChemistryRecipeSystem : ModSystem
             .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Daybloom, ItemID.GlowingMushroom) { Potency = 2 }));
 
         AlchemyCore.Result(ItemID.SpelunkerPotion)
-            .From(ItemID.BottledWater, HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow, Gold) { Potency = 2 }));
+            .From(SolventID.AquaSpecularis, HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Blinkroot, GoldOre) { Potency = 4 }))
+            .From(SolventID.AquaSpecularis, new BrewRecipe(GoldOre, 2) { Potency = 2 })
+            .From(SolventID.AquaInertis, HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Blinkroot, GoldOre) { Potency = 3 }))
+             
+            // Hardmode
+            .From([ItemID.BottledWater, SolventID.AquaSpecularis, SolventID.AquaInertis], HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Blinkroot, AdamantiteOre) { Potency = 5 }))
+             
+            // Default
+            .From([ItemID.BottledWater, SolventID.AquaInertis], HerbsOrSeeds(new BrewRecipe(ItemID.Moonglow, ItemID.Blinkroot, ItemID.PlatinumOre) { Potency = 3 }))
+            .From([ItemID.BottledWater, SolventID.AquaInertis], HerbsOrSeeds(new BrewRecipe(ItemID.Blinkroot, ItemID.Moonglow, ItemID.GoldOre) { Potency = 2 }));
         #endregion
 
         #region Fishing

@@ -401,7 +401,7 @@ public sealed class WoodenWardenBoss : ModNPC
     {
         bestiaryEntry.Info.AddRange([
             new MoonLordPortraitBackgroundProviderBestiaryInfoElement(),
-            new FlavorTextBestiaryInfoElement(Mod.GetLocalizationValue("WoodenWardenBoss.Bestiary")),
+            new FlavorTextBestiaryInfoElement(Mod.LocalizationValue("WoodenWardenBoss.Bestiary")),
         ]);
     }
 
