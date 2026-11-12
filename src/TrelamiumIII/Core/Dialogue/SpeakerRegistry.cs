@@ -100,7 +100,7 @@ public static class SpeakerRegistry
         {
             Id = "Argie",
             FrameCount = 1,
-            Font = TrelamiumFonts.AndikaBoldItalic,
+            Font = TrelamiumFonts.AgravePro_SemiBold,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Argie.Speech.Asset]),
             Color = new(255, 110, 80),
         });
@@ -109,7 +109,7 @@ public static class SpeakerRegistry
         {
             Id = "Permafrost",
             FrameCount = 1,
-            Font = TrelamiumFonts.OldEnglishFive,
+            Font = TrelamiumFonts.Cardinal,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Permafrost.Speech.Asset]),
             Color = Color.LightSkyBlue,
         });
@@ -118,7 +118,7 @@ public static class SpeakerRegistry
         {
             Id = "Edith",
             FrameCount = 1,
-            Font = TrelamiumFonts.PaprikaFont,
+            Font = TrelamiumFonts.AgravePro_Regular,
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Sophie.Speech.Asset]),
             Color = new(214, 178, 120),
         });

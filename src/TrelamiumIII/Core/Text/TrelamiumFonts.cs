@@ -19,7 +19,7 @@ public static class TrelamiumFonts
     public static DynamicSpriteFont CardinalAlternate { get; private set; } = null!;
     public static DynamicSpriteFont OldEnglishFive { get; private set; } = null!;
     public static DynamicSpriteFont BlackFlag { get; private set; } = null!;
-    public static DynamicSpriteFont AngelicanText { get; private set; } = null!;
+    public static DynamicSpriteFont AnglicanText { get; private set; } = null!;
     public static DynamicSpriteFont Canterbury { get; private set; } = null!;
 
     // Terraria-aesthetic fonts
@@ -66,17 +66,17 @@ public static class TrelamiumFonts
         AgravePro_SemiBold = BakedFont.Load(mod, $"{DIRECTORY}/AgravePro-SemiBold");
         AgravePro_Bold = BakedFont.Load(mod, $"{DIRECTORY}/AgravePro-Bold");
 
-        AngelicanText = BakedFont.Load(mod, $"{DIRECTORY}/AngelicanText-Regular");
-        BlackFlag = BakedFont.Load(mod, $"{DIRECTORY}/BlackFlag-Regular");
+        AnglicanText = BakedFont.Load(mod, $"{DIRECTORY}/AnglicanText");
+        BlackFlag = BakedFont.Load(mod, $"{DIRECTORY}/BlackFlag");
 
-        Canterbury = BakedFont.Load(mod, $"{DIRECTORY}/Canterbury-Regular");
-        Cardinal = BakedFont.Load(mod, $"{DIRECTORY}/Cardinal-Regular");
-        CardinalAlternate = BakedFont.Load(mod, $"{DIRECTORY}/CardinalAlternate-Regular");
+        Canterbury = BakedFont.Load(mod, $"{DIRECTORY}/Canterbury");
+        Cardinal = BakedFont.Load(mod, $"{DIRECTORY}/Cardinal");
+        CardinalAlternate = BakedFont.Load(mod, $"{DIRECTORY}/Cardinal-Alternate");
 
         Hybrid = BakedFont.Load(mod, $"{DIRECTORY}/Hybrid");
         ManufacturingConsent = BakedFont.Load(mod, $"{DIRECTORY}/ManufacturingConsent-Regular");
 
-        OldEnglishFive = BakedFont.Load(mod, $"{DIRECTORY}/OldEnglishFive-Regular");
+        OldEnglishFive = BakedFont.Load(mod, $"{DIRECTORY}/OldEnglishFive");
 
         PaprikaFont = BakedFont.Load(mod, $"{DIRECTORY}/Paprika-Regular");
         PatrickHand = BakedFont.Load(mod, $"{DIRECTORY}/PatrickHand-Regular");
@@ -105,7 +105,7 @@ public static class TrelamiumFonts
         AgravePro_SemiBold = null!;
         AgravePro_Bold = null!;
 
-        AngelicanText = null!;
+        AnglicanText = null!;
         BlackFlag = null!;
         Canterbury = null!;
         Cardinal = null!;

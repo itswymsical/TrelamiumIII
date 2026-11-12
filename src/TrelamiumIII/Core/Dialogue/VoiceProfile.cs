@@ -36,7 +36,7 @@ public sealed class VoiceProfile
     ///   down, and the ticks stay evenly spaced however unevenly the letters arrive. Roughly: 3 is
     ///   chattery, 4 is conversational, 6 and up is deliberate.
     /// </remarks>
-    public int Subdivision { get; init; } = 4;
+    public int Subdivision { get; init; } = 2;
 
     public VoiceProfile(VoiceMode mode, params SoundStyle[] sounds)
     {
