@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TrelamiumIII.Core.Residues.Types;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Residues;
 
@@ -63,7 +64,8 @@ public sealed class NPCTrails : GlobalNPC
 
     public override void Load()
     {
-        RegisterAIStyle(NPCAIStyleID.Slime, NPCTrail.Of<SlimedResidue>() with { Tint = SlimeTint });
+        RegisterAIStyle(NPCAIStyleID.Slime, NPCTrail.Of<SlimedResidue>() with { Tint = SlimeTint, 
+            Duration = TimeConversion.SetTime(secs: 2) });
 
         // Critters that happen to hop with the slime AI. They have no gel to leave.
         Exclude(NPCID.Grasshopper);
@@ -91,6 +93,9 @@ public sealed class NPCTrails : GlobalNPC
     /// </summary>
     public override bool PreAI(NPC npc)
     {
+        if (npc.aiStyle == NPCAIStyleID.Slime && !Main.masterMode) // slimes only splatter residue in master mode
+            return false;
+
         if (For(npc) is { LandingRadius: > 0f } trail && npc.velocity.Y == 0f && npc.oldVelocity.Y >= trail.LandingSpeed)
             Mark(npc, trail, npc.Bottom + new Vector2(0f, 8f), trail.LandingRadius, trail.LandingIntensity);
 
@@ -112,6 +117,9 @@ public sealed class NPCTrails : GlobalNPC
 
     private static void Burst(NPC npc)
     {
+        if (npc.aiStyle == NPCAIStyleID.Slime && !Main.masterMode) // slimes only splatter residue in master mode
+            return;
+
         if (For(npc) is { DeathRadius: > 0f } trail)
             Mark(npc, trail, npc.Center, trail.DeathRadius + Math.Max(npc.width, npc.height) * 0.5f, trail.DeathIntensity);
     }
