@@ -11,24 +11,11 @@ using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-internal sealed class BottledOilItem : BottledLiquidItem
+public class BottledOilItem : ModItem
 {
-    public BottledOilItem()
-    {
-        Rare = ItemRarityID.White;
-
-        AlmanacPotency = 3;
-        Temperaments = Temperament.Volatile;
-        Hidden = false;
-
-        Recipes = self => self.CreateRecipe()
-            .AddIngredient(ItemID.Bottle)
-            .AddCondition(OilLiquids.NearCrude)
-            .Register();
-    }
-
     public override void SetDefaults()
     {
+        base.SetDefaults();
         Item.damage = 9;
         Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
         Item.width = Item.height = 26;
@@ -56,14 +43,6 @@ internal sealed class BottledOilItem : BottledLiquidItem
         component.debuffDuration = TimeConversion.SetTime(secs: 3);
         component.Modifiers = [TemperamentModifier.Volatile];
     }
-
-    public override ChemicalRole ChemicalRole => ChemicalRole.Solvent;
-
-    protected override BottleTemplate Template => BottleTemplate.Solution;
-
-    protected override LiquidPalette Palette => new(new Color(14, 14, 14), new Color(36, 28, 43), new Color(40, 38, 60));
-
-    protected override bool SurfaceIsLiquid => true;
 }
 
 public class BottledOilProjectile : ChemicalProjectile
