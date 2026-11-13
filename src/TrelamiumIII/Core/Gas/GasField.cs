@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using Terraria.DataStructures;
+using Terraria.Localization;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Common.DamageMeter;
 using TrelamiumIII.Core.Graphics.Fields;
+using static Terraria.Localization.NetworkText;
 
 namespace TrelamiumIII.Core.Gas;
 
@@ -539,6 +542,11 @@ public abstract class GasField : FieldLayer
         if (Strike(in emitter, npc))
             emitter.Payload?.Hit(npc, this as ChemicalGasField);
     }
+    //protected virtual void OnEmitterHitPlayer(ref GasEmitter emitter, Player Player)
+    //{
+    //    if (Strike(in emitter, Player))
+    //        emitter.Payload?.Hit(Player, this as ChemicalGasField);
+    //}
 
     /// <summary>
     /// Lands an emitter's damage on a target, from the one client entitled to.
@@ -559,6 +567,8 @@ public abstract class GasField : FieldLayer
     /// <returns>Whether the hit landed on this client.</returns>
     protected bool Strike(in GasEmitter emitter, NPC npc)
         => Strike(npc, emitter.Damage, emitter.Knockback, MathF.Sign(emitter.Velocity.X), emitter.Owner);
+    protected bool Strike(in GasEmitter emitter, Player player)
+    => Strike(player, emitter.Damage, emitter.Knockback, MathF.Sign(emitter.Velocity.X), emitter.Owner);
 
     /// <inheritdoc cref="Strike(in GasEmitter, NPC)" />
     /// <param name="direction">Knockback direction, -1 or 1; 0 counts as 1.</param>
@@ -592,7 +602,19 @@ public abstract class GasField : FieldLayer
 
         return true;
     }
+    protected bool Strike(Player player, int damage, float knockback, int direction, int owner)
+    {
+        player.Hurt(
+            PlayerDeathReason.ByCustomReason(new NetworkText("", Mode.LocalizationKey)),
+            damage,
+            direction == 0 ? 1 : direction,
+            false,
+            false,
+            Crit: false,
+            30);
 
+        return true;
+    }
     #endregion
 
     /// <summary>

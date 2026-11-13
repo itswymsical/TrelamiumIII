@@ -6,7 +6,7 @@ namespace TrelamiumIII.Core.Graphics.Fields.Layers;
 ///     Neutral-density dark gas shed by the Eye of Cthulhu's remains, and the vortex that swallows them.
 ///     Palette runs from void to a cold pale rim (the ends of the menu ink nebula).
 /// </summary>
-public sealed class ApathiaField : FieldLayer
+public sealed class ApathosField : FieldLayer
 {
     public override int LoadOrder => 10;
 
@@ -67,7 +67,7 @@ public sealed class ApathiaField : FieldLayer
         node.Life -= 1f;
     }
 
-    private static ApathiaField? Layer => FieldSystem.GetLayer<ApathiaField>();
+    private static ApathosField? Layer => FieldSystem.GetLayer<ApathosField>();
 
     public static void Bloom(Vector2 center, float radius, int count = 22)
     {

@@ -1471,6 +1471,11 @@ Items: {
 		DisplayName: Spirit Of Salt Bucket
 		Tooltip: ""
 	}
+
+	HeroSword: {
+		DisplayName: Hero Sword
+		Tooltip: ""
+	}
 }
 
 Tiles: {
@@ -1506,7 +1511,7 @@ Tiles: {
 	TuffTile.MapEntry: Tuff
 	BirchChestTile.MapEntry: Birch Chest
 	BirchDresserTile.MapEntry: Birch Dresser
-	NiterTile.MapEntry: Niter Tile
+	NiterTile.MapEntry: Niter
 }
 
 Projectiles: {
@@ -1533,10 +1538,10 @@ Projectiles: {
 	DeathweedSeedProjectile.DisplayName: Deathweed Seed
 	WaterleafSeedProjectile.DisplayName: Waterleaf Seed
 	AcornLauncherProjectile.DisplayName: Acorn Launcher
-	AcornProjectile.DisplayName: Acorn Projectile
+	AcornProjectile.DisplayName: Acorn
 	AcornShrapnelProjectile.DisplayName: Acorn Shrapnel
 	SaplingMakerProjectile.DisplayName: Sapling Maker
-	SaplingProjectile.DisplayName: Sapling Projectile
+	SaplingProjectile.DisplayName: Sapling
 	SharpnutDaggerProjectile.DisplayName: Sharpnut Dagger
 	MagnoliaPowderProjectile.DisplayName: Magnolia Powder
 	CorruptedSporeBurstProjectile.DisplayName: Corrupted Spores
@@ -1568,8 +1573,8 @@ Projectiles: {
 	EbonstoneStalagmiteProj.DisplayName: Ebonstone Stalagmite
 	CrimstoneStalagmiteProj.DisplayName: Crimstone Stalagmite
 	EarthShardProj.DisplayName: Earth Shard
-	SkofnungProjectile.DisplayName: Skofnung Projectile
-	VitriolicGelProj.DisplayName: Vitriolic Gel Proj
+	SkofnungProjectile.DisplayName: Skofnung
+	VitriolicGelProj.DisplayName: Vitriolic Gel
 	StalagMagMKIIProj.DisplayName: StalagMag-MK II
 	GelBallProjectile.DisplayName: Gel Ball
 	ResidueBlast.DisplayName: Blast
@@ -1590,8 +1595,8 @@ Projectiles: {
 	ThrownTool.DisplayName: Thrown Tool
 	ArcticFlaskProjectile.DisplayName: Arctic Flask
 	SoilClodProjectile.DisplayName: Soil Clod
-	PeatBallProjectile.DisplayName: Peat Ball Projectile
-	BroadswordProjectile.DisplayName: Broadsword Projectile
+	PeatBallProjectile.DisplayName: Peat Ball
+	BottledOilProjectile.DisplayName: Bottled Oil Projectile
 }
 
 NPCs: {
@@ -1723,6 +1728,16 @@ Buffs: {
 	SaturationBuff: {
 		DisplayName: Saturated
 		Description: An augmented brew lingers in you
+	}
+
+	ReverieMagickAfflictionBuff: {
+		DisplayName: Reverie Magick Affliction Buff
+		Description: Mods.TrelamiumIII.Buffs.ReverieMagickAfflictionBuff.Description
+	}
+
+	OiledDebuff: {
+		DisplayName: Oiled Debuff
+		Description: Mods.TrelamiumIII.Buffs.OiledDebuff.Description
 	}
 }
 

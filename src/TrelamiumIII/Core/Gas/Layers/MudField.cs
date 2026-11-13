@@ -2,14 +2,16 @@ using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Residues;
+using TrelamiumIII.Core.Residues.Bodies;
 using TrelamiumIII.Core.Residues.Types;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Core.Gas.Layers;
 
 /// <summary>Wet mud: a heavy liquid that slumps and pools, coating what it settles on in <see cref="MuddiedResidue" />.</summary>
 public sealed class MudField : ChemicalGasField
 {
-    public override ChemicalDamageType ChemicalType => ChemicalDamageType.Solute;
+    public override ChemicalDamageType ChemicalType => ChemicalDamageType.None;
 
     public override int ChemicalDamage => 1;
 
@@ -84,10 +86,15 @@ public sealed class MudField : ChemicalGasField
         if (ChemicalPayload.IsAuthority(owner))
             ResidueSystem.Apply<MuddiedResidue>(tileX, tileY, intensity, owner: owner);
     }
+
     //protected override void OnTileContact(ref FieldNode node, int tileX, int tileY, Tile tile)
     //{
     //    base.OnTileContact(ref node, tileX, tileY, tile);
     //    node.Viscosity *= 1.12f;
     //}
-    protected override void OnPlayerContact(ref FieldNode node, Player player) { }
+
+    protected override void OnPlayerContact(ref FieldNode node, Player player)
+    {
+       player.AddBuff(ModContent.BuffType<Mired>(), 600);
+    }
 }

@@ -160,10 +160,10 @@ public sealed class EyeGoreParticle : Particle
 
         float intensity = Drift == GoreDrift.Drawn ? 0.95f : 0.55f;
 
-        ApathiaField.Shroud(Position, Velocity, intensity * envelope);
+        ApathosField.Shroud(Position, Velocity, intensity * envelope);
 
         if (Drift == GoreDrift.Drawn && Velocity.LengthSquared() > 9f)
-            ApathiaField.Trail(Position, Velocity, 11f);
+            ApathosField.Trail(Position, Velocity, 11f);
 
         // Occasional on purpose: every-tick sparks stop reading as individual glints.
         if (Main.rand.NextFloat() < 0.16f * envelope)
@@ -274,7 +274,7 @@ public sealed class EyeGoreParticle : Particle
 
     private const float HALO_STRENGTH = 0.5f;
 
-    /// <summary>Cold violet, matching <see cref="ApathiaField" />'s rim so the bloom and gas read as one material.</summary>
+    /// <summary>Cold violet, matching <see cref="ApathosField" />'s rim so the bloom and gas read as one material.</summary>
     private static readonly Color BloomColor = new(150, 142, 224);
 
     private static readonly Color HaloColor = new(74, 62, 150);

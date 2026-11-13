@@ -13,6 +13,9 @@ namespace TrelamiumIII.Content.Liquids;
 public sealed class OilLiquids : CustomLiquid, IInternalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
+    public static Condition NearCrude => Instance.Crude.Near;
+    public static Condition NearPitch => Instance.Pitch.Near;
+    public static Condition NearSunflower => Instance.Sunflower.Near;
 
     private const int PitchFlowInterval = 2;
 

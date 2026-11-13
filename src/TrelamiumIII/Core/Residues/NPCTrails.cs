@@ -93,13 +93,13 @@ public sealed class NPCTrails : GlobalNPC
     /// </summary>
     public override bool PreAI(NPC npc)
     {
-        if (npc.aiStyle == NPCAIStyleID.Slime && !Main.masterMode) // slimes only splatter residue in master mode
-            return false;
+        //if (npc.aiStyle == NPCAIStyleID.Slime && !Main.masterMode) // slimes only splatter residue in master mode
+        //    return false;
 
-        if (For(npc) is { LandingRadius: > 0f } trail && npc.velocity.Y == 0f && npc.oldVelocity.Y >= trail.LandingSpeed)
-            Mark(npc, trail, npc.Bottom + new Vector2(0f, 8f), trail.LandingRadius, trail.LandingIntensity);
+        //if (For(npc) is { LandingRadius: > 0f } trail && npc.velocity.Y == 0f && npc.oldVelocity.Y >= trail.LandingSpeed)
+        //    Mark(npc, trail, npc.Bottom + new Vector2(0f, 8f), trail.LandingRadius, trail.LandingIntensity);
 
-        return true;
+        return base.PreAI(npc);
     }
 
     /// <summary>Clients and single player. A server has no hit effects to run, so it marks from <see cref="OnKill" />.</summary>

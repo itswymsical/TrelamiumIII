@@ -41,6 +41,18 @@ public sealed class Entangled : ModBuff
         Main.buffNoSave[Type] = true;
     }
 }
+public sealed class OiledDebuff : ModBuff
+{
+    public const float Slow = 0.6f;
+
+    public override string Texture => $"Terraria/Images/Buff_{BuffID.Oiled}";
+
+    public override void SetStaticDefaults()
+    {
+        Main.debuff[Type] = true;
+        Main.buffNoSave[Type] = true;
+    }
+}
 
 /// <summary>Frozen solid: no AI and no horizontal movement. See <see cref="CanFreeze" /> for who is immune.</summary>
 public sealed class Frozen : ModBuff
@@ -88,6 +100,8 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
 
     private static readonly Color MiredTint = new(150, 115, 80);
 
+    private static readonly Color OiledTint = new(36, 28, 43);
+
     private static readonly Color EntangledTint = new(130, 185, 95);
 
     /// <summary>The scale applied after the last AI tick, undone before the next. 1 when nothing was applied.</summary>
@@ -117,6 +131,9 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
 
         if (npc.HasBuff<Entangled>())
             slow = MathF.Max(slow, Entangled.Slow);
+
+        if (npc.HasBuff<OiledDebuff>())
+            slow = MathF.Max(slow, OiledDebuff.Slow);
 
         return 1f - (IsBossLike(npc) ? slow * 0.5f : slow);
     }
@@ -209,6 +226,12 @@ public sealed class ChemicalControlGlobalNPC : GlobalNPC
         {
             drawColor = Color.Lerp(drawColor, MiredTint, 0.3f);
             Speck(npc, DustID.Mud, 12);
+        }
+
+        if (npc.HasBuff<OiledDebuff>())
+        {
+            drawColor = Color.Lerp(drawColor, OiledTint, 0.3f);
+            Speck(npc, DustID.Smoke, 12);
         }
 
         if (npc.HasBuff<Enfeebled>())

@@ -44,6 +44,7 @@ public sealed record BrewRecipe
 
     /// <summary>Whether brewing returns the solvent's bottle. Null derives it; see <see cref="AlchemyRecipe.ReturnsBottle" />.</summary>
     public bool? ReturnsBottle { get; init; }
+    public bool? ReturnsBucket { get; init; }
 
     /// <summary>Non-null excludes this variant from recipe validation; the value is logged as the justification.</summary>
     public string? SuppressValidation { get; init; }
@@ -115,6 +116,7 @@ public sealed class AlchemyResolution
     public BrewComposition Composition { get; init; }
 
     public bool ReturnsBottle => Found && Recipe!.ReturnsBottle;
+    public bool ReturnsBucket => Found && Recipe!.ReturnsBucket;
 
     /// <summary>Items taken from each component slot per batch; 0 for unclaimed slots.</summary>
     public int[] ComponentCosts { get; init; } = Array.Empty<int>();
@@ -265,6 +267,7 @@ public static class AlchemyCore
                     Components = variant.Components,
                     InputStack = variant.InputStack,
                     ReturnsBottleOverride = variant.ReturnsBottle,
+                    ReturnsBucketOverride = variant.ReturnsBucket,
                     SuppressValidation = variant.SuppressValidation,
                     CreateOutput = variant.CustomOutput is { } custom
                         ? _ => custom()
@@ -539,6 +542,7 @@ public sealed class AlchemyRecipe
 
     /// <inheritdoc cref="BrewRecipe.ReturnsBottle" />
     public bool? ReturnsBottleOverride { get; init; }
+    public bool? ReturnsBucketOverride { get; init; }
 
     /// <inheritdoc cref="BrewRecipe.SuppressValidation" />
     public string? SuppressValidation { get; init; }
@@ -550,6 +554,9 @@ public sealed class AlchemyRecipe
     public bool ReturnsBottle => ReturnsBottleOverride ?? (InputType != ItemID.Bottle
         && ChemicalRoles.Of(InputType) == ChemicalRole.Solvent
         && ChemicalRoles.Of(OutputItemType) == ChemicalRole.Solute);
+    public bool ReturnsBucket => ReturnsBucketOverride ?? (InputType != ItemID.EmptyBucket
+    && ChemicalRoles.Of(InputType) == ChemicalRole.Solvent
+    && ChemicalRoles.Of(OutputItemType) == ChemicalRole.Solute);
 
     /// <summary>Sum of component minimum potencies; ranks matches so the more demanding recipe wins.</summary>
     public int TotalMinPotency => SumMinPotency(Components);

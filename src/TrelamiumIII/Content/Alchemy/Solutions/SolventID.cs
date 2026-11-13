@@ -1,6 +1,3 @@
-using ModLiquidLib.Utils;
-using TrelamiumIII.Content.Liquids;
-using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
@@ -17,32 +14,19 @@ public sealed class SolventID : ICustomAutoload
     /// <summary>Texture for items with no sprite in <see cref="DIRECTORY" />.</summary>
     private static readonly string Placeholder = Assets.Textures.Placeholder.PlaceholderBrew.KEY;
 
-    #region Base solvents
-
     public static int AquaSalis => ModContent.ItemType<AquaSalis>();
 
-    public static int BottledOil { get; private set; }
-
-    #endregion
-
-    #region Acids
+    public static int BottledOil => ModContent.ItemType<BottledOilItem>();
 
     public static int OilOfVitriol { get; private set; }
-    public static int AquaRegia { get; private set; }
 
-    #endregion
-
-    #region Brewed solvents
+    public static int AquaRegia => ModContent.ItemType<AquaRegia>();
 
     public static int AquaInertis => ModContent.ItemType<AquaInertis>();
 
     public static int Dead { get; private set; }
 
     public static int BloodtoothExtract { get; private set; }
-
-    #endregion
-
-    #region Principle tonics
 
     public static int AquaHarmonia { get; private set; }
 
@@ -58,36 +42,14 @@ public sealed class SolventID : ICustomAutoload
 
     public static int AquaPestis { get; private set; }
 
-    #endregion
-
-    #region Solutes
-
     public static int FibrousSlurry { get; private set; }
-
-    #endregion
 
     public static void Autoload(Mod mod)
     {
-        LoadBaseSolvents(mod);
         LoadAcids(mod);
         LoadBrewedSolvents(mod);
         LoadTonics(mod);
         LoadSolutes(mod);
-    }
-
-    private static void LoadBaseSolvents(Mod mod)
-    {
-        BottledOil = Add(mod, new SolventItem("BottledOilItem")
-        {
-            Value = Item.sellPrice(silver: 2),
-            AlmanacPotency = 2,
-            Temperaments = Temperament.Volatile,
-            LegacyNames = ["BottledOil"],
-            Recipes = self => self.CreateRecipe()
-                .AddIngredient(ItemID.Bottle)
-                .AddLiquid<OilLiquids>()
-                .Register(),
-        });
     }
 
     private static void LoadAcids(Mod mod)
@@ -99,15 +61,6 @@ public sealed class SolventID : ICustomAutoload
             Value = Item.sellPrice(silver: 2),
             AlmanacPotency = 4,
             Temperaments = Temperament.Acidic,
-        });
-
-        AquaRegia = Add(mod, new SolventItem("AquaRegiaItem")
-        {
-            TexturePath = Placeholder,
-            Rare = ItemRarityID.Orange,
-            Value = Item.sellPrice(silver: 20),
-            AlmanacPotency = 5,
-            Temperaments = Temperament.Acidic | Temperament.Catalytic,
         });
     }
 

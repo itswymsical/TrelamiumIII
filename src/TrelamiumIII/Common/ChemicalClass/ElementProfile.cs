@@ -89,10 +89,19 @@ public sealed record ElementProfile : IChemicalSource
     {
         ChemicalType = ChemicalDamageType.Caustic,
         ChemicalDamage = 1,
-        ContactBuff = BuffID.Poisoned,
+        ContactBuff = -1,
         BodyColor = new Vector3(0.24f, 0.34f, 0.06f),
         EdgeColor = new Vector3(0.72f, 0.92f, 0.22f),
         EmittedLight = new Vector3(0.05f, 0.10f, 0.02f),
+    };
+
+    public static readonly ElementProfile Mired = new()
+    {
+        ChemicalType = ChemicalDamageType.Solute,
+        ChemicalDamage = 0,
+        ContactBuff = ModContent.BuffType<Mired>(),
+        BodyColor = new Vector3(0.34f, 0.22f, 0.13f),
+        EdgeColor = new Vector3(0.22f, 0.14f, 0.09f),
     };
 
     /// <summary>Decay, rot and blood. No contact debuff; corrupt spores request bleeding themselves.</summary>

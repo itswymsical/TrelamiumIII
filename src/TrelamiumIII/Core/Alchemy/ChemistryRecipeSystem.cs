@@ -34,6 +34,7 @@ public partial class ChemistryRecipeSystem : ModSystem
         RegisterSolvents();
         RegisterSolutes();
         RegisterSolutions();
+        RegisterBuckets();
         RegisterMisc();
         RegisterWeapons();
 
@@ -195,7 +196,12 @@ public partial class ChemistryRecipeSystem : ModSystem
 
         #endregion
     }
+    private static void RegisterBuckets()
+    {
+        AlchemyCore.Result(ItemID.WaterBucket)
+        .From(ItemID.EmptyBucket, new BrewRecipe(ItemID.IceBlock, 5) { ReturnsBucket = true });
 
+    }
     /// <summary>
     /// Vanilla's potion recipes, at potency 2 with a seed variant (see <see cref="HerbsOrSeeds" />), plus augmentations. Vanilla
     /// amounts become slot levels and <see cref="BrewRecipe.InputStack" />; four-ingredient recipes keep their key ingredient with
@@ -219,7 +225,7 @@ public partial class ChemistryRecipeSystem : ModSystem
             .Augment(ComponentMatcher.Of(ItemID.PinkGel, 2)).Buff(BuffID.Regeneration, potency: 2, durationTicks: Time(secs: 30));
 
         AlchemyCore.Result(ItemID.HealingPotion)
-            .From(ItemID.LesserHealingPotion, new BrewRecipe(ItemID.GlowingMushroom) { Potency = 2, InputStack = 2 });
+            .From(ItemID.LesserHealingPotion, new BrewRecipe(ComponentMatcher.Of(ItemID.Mushroom, 2)) { Potency = 2});
 
         AlchemyCore.Result(ItemID.GreaterHealingPotion)
             .From(ItemID.BottledWater,

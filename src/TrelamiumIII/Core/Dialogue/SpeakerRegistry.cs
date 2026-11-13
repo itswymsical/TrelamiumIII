@@ -136,7 +136,7 @@ public static class SpeakerRegistry
         {
             Id = "Dryad",
             FrameCount = 1,
-            Font = TrelamiumFonts.AndikaBold,
+            Font = TrelamiumFonts.AgravePro_SemiBold,
             Color = new(122, 190, 112),
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Dryad.Speech.Asset]),
         });
