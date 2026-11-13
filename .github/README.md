@@ -15,3 +15,8 @@ Trelamium is a reimagination of the former content mod, Trelamium.
 
 ## Tools
 * [tml-build](https://github.com/gold-meridian/tml-build/tree/master) by [Gold Meridian](https://github.com/gold-meridian)
+
+---
+## Disclaimers
+
+Trelamium III's backend systems and framework tools *formerly used* agentic tools to develop architecture. If you would like to participate in the process of refactoring these systems, feel free to contact wymsical.
