@@ -35,11 +35,7 @@ public sealed class SeedAmmoGlobalItem : GlobalItem
 
         int soil = projectile.Info.FavouriteSoil();
 
-<<<<<<< HEAD
         string text = Mod.LocalizationValue($"SeedAmmo.{projectile.Info.Herb}")
-=======
-        string text = Mod.GetLocalizationValue($"SeedAmmo.{projectile.Info.Herb}")
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                       + '\n'
                       + Mod.GetLocalizationValue("SeedAmmo.FavouriteSoil", soil, Lang.GetItemNameValue(soil));
 

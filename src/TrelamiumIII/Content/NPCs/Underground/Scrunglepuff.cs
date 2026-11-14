@@ -67,13 +67,8 @@ public class Scrunglepuff : ModNPC
         NPC.damage = 8;
         NPC.defense = 5;
         NPC.lifeMax = 80;
-<<<<<<< HEAD
         NPC.HitSound = Assets.SFX.NPC.Scrungle.ScrunglepuffHit.Asset;
         NPC.DeathSound = Assets.SFX.NPC.Scrungle.ScrunglepuffHit.Asset with { Pitch = 0.6f};
-=======
-        NPC.HitSound = Assets.SFX.ScrunglepuffHit.Asset;
-        NPC.DeathSound = Assets.SFX.ScrunglepuffHit.Asset with { Pitch = 0.6f};
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         NPC.knockBackResist = 1.5f;
         NPC.value = Item.buyPrice(copper: 80);
         NPC.aiStyle = -1;
@@ -254,11 +249,7 @@ public class Scrunglepuff : ModNPC
                     if (SubTimer == 1f)
                     {
                         NPC.velocity.Y = -4f;
-<<<<<<< HEAD
                         SoundEngine.PlaySound(Assets.SFX.NPC.Scrungle.ScrunglepuffEmerge.Asset, NPC.position);
-=======
-                        SoundEngine.PlaySound(Assets.SFX.ScrunglepuffEmerge.Asset, NPC.position);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                     }
 
                     int emergeFrame = (int)(SubTimer / 4f);

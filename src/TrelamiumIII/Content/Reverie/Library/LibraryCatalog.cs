@@ -59,17 +59,10 @@ public static class LibraryCatalog
     public static readonly IReadOnlyList<LibraryBook> Books =
     [
         new("IlluminanceI", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceI", IlluminanceCover),
-<<<<<<< HEAD
         //new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover),
         //new("RootAndReason", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.Book),
         //new("QuietSeasons", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.SpellTome),
         //new("WeightOfLight", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.MagnetSphere),
-=======
-        new("IlluminanceII", LibraryCategory.Philosophy, "IlluminanceSeries.IlluminanceII", IlluminanceCover),
-        new("RootAndReason", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.Book),
-        new("QuietSeasons", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.SpellTome),
-        new("WeightOfLight", LibraryCategory.Philosophy, PlaceholderKey, CoverItem: ItemID.MagnetSphere),
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         //new("AnniesDiary", LibraryCategory.History, "Misc.Diary", ArchaicCover),
         //new("PrimordialSands", LibraryCategory.History, "PrimordialSands1", CoverItem: ItemID.RazorbladeTyphoon),

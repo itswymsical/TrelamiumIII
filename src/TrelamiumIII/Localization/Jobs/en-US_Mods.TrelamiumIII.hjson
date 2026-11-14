@@ -131,11 +131,7 @@ Jobs: {
 
 	HomeForager: {
 		Name: Home Forager
-<<<<<<< HEAD
 		Description: '''"This place is empty... you look strong!"'''
-=======
-		Description: '''"You can't have town without townsfolk!"'''
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
 		Tasks: {
 			// GatherItemTask: {0} = item name, {1} = amount.

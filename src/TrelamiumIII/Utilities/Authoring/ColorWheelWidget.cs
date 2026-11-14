@@ -1,10 +1,6 @@
 using Terraria.GameContent;
 
-<<<<<<<< HEAD:src/TrelamiumIII/Utilities/Authoring/ColorWheelWidget.cs
 namespace TrelamiumIII.Utilities.Authoring;
-========
-namespace TrelamiumIII.Core.Books.Authoring;
->>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb:src/TrelamiumIII/Core/Books/Authoring/ColorWheelWidget.cs
 
 /// <summary>
 ///     HSV picker: a saturation/value box plus hue strip, so white and black are one click away. Driven by UI mouse events.

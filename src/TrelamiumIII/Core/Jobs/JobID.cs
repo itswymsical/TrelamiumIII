@@ -13,11 +13,8 @@ public static class JobID
     public const int ExplosiveArchitecture = 8;
     public const int MycologyHunt = 9;
     public const int SporeSurvey = 10;
-<<<<<<< HEAD
     public const int Townhome = 11;
     public const int CopperStandard = 12;
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
    // public const int GuideKingSlimeI = 0;
    // public const int MerchantEyeOfCthulhuI = 0;

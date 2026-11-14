@@ -10,7 +10,6 @@ namespace TrelamiumIII.Content.Liquids;
 ///     Oil base: crude by default. Pitch is crude's heavy residue, slower to flow and harder to wade; sunflower oil is
 ///     pressed, not drilled. Each carries its own surface. Every oil explodes on meeting lava.
 /// </summary>
-<<<<<<< HEAD
 public sealed class OilLiquids : CustomLiquid, IInternalLiquidSurface
 {
     public static OilLiquids Instance { get; private set; } = null!;
@@ -20,14 +19,6 @@ public sealed class OilLiquids : CustomLiquid, IInternalLiquidSurface
 
     private const int PitchFlowInterval = 2;
 
-=======
-public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
-{
-    public static OilLiquids Instance { get; private set; } = null!;
-
-    private const int PitchFlowInterval = 4;
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>Crude's surface, which pitch shares.</summary>
     public LiquidSurface Surface { get; } = new("Oil")
     {
@@ -37,19 +28,12 @@ public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
         Speed = 0.7f,
     };
 
-<<<<<<< HEAD
     public LiquidSurface? SurfaceAt(int i, int j) => InternalLiqAt(i, j).Surface ?? Surface;
-=======
-    public LiquidSurface? SurfaceAt(int i, int j) => ConditionAt(i, j).Surface ?? Surface;
-
-    public Color SurfaceTint(int i, int j) => ConditionAt(i, j).SurfaceTint;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     public Color SurfaceTint(int i, int j) => InternalLiqAt(i, j).SurfaceTint;
 
     public InternalLiquid Crude { get; private set; } = null!;
 
-<<<<<<< HEAD
     public InternalLiquid Pitch { get; private set; } = null!;
 
     public InternalLiquid Sunflower { get; private set; } = null!;
@@ -90,46 +74,6 @@ public sealed class OilLiquids : ConditionalLiquid, IConditionalLiquidSurface
         });
     }
 
-=======
-    public LiquidCondition Sunflower { get; private set; } = null!;
-
-    public override void Load()
-    {
-        base.Load();
-        Instance = this;
-    }
-
-    public override void Unload()
-    {
-        Instance = null!;
-        base.Unload();
-    }
-
-    /// <remarks>The grayscale BaseLiquid set: crude's tint matches the old dark crude sheet, and pitch darkens it further.</remarks>
-    protected override void DefineConditions()
-    {
-        Crude = AddCondition(new LiquidCondition("Crude") { Tint = new Color(72, 72, 74) });
-
-        Pitch = AddCondition(new LiquidCondition("Pitch")
-        {
-            Tint = new Color(22, 13, 23),
-            Strength = 0.88f,
-        });
-
-        Sunflower = AddCondition(new LiquidCondition("Sunflower")
-        {
-            Tint = new Color(252, 228, 137),
-            Surface = new LiquidSurface("Ripple")
-            {
-                ColorA = Rgb(255, 255, 104),
-                ColorB = Rgb(254, 237, 154),
-                Scale = 0.33f,
-                Speed = 1.55f
-            },
-        });
-    }
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>The station's Bottled Oil + 4 Cobweb = 2 Pitch, with a bottle's worth of oil spent from the pool.</summary>
     protected override void DefineItemReactions()
         => AddItemReaction(Crude, new ItemReaction(ItemID.Cobweb)

@@ -1,9 +1,5 @@
 using ReLogic.Content;
-<<<<<<< HEAD
 using TrelamiumIII.Core.Residues;
-=======
-using TrelamiumIII.Core.Tiles.Conditions;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
 namespace TrelamiumIII.Core.Tiles.Seals;
 

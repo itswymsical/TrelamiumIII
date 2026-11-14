@@ -1,9 +1,6 @@
 using System.ComponentModel;
-<<<<<<< HEAD
 using System.IO;
 using System.Linq;
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 using Newtonsoft.Json;
 using Terraria.ModLoader.Config;
 
@@ -28,7 +25,6 @@ public sealed class DeveloperConfig : ModConfig
     /// <summary>Whether authoring exports also land in the source tree.</summary>
     [JsonIgnore]
     public bool HasSourceDirectory => !string.IsNullOrWhiteSpace(SourceDirectory);
-<<<<<<< HEAD
 
     /// <summary>The configured source tree, else the one under ModSources that holds <c>build.txt</c>.</summary>
     public static string? SourceRoot()
@@ -43,6 +39,4 @@ public sealed class DeveloperConfig : ModConfig
 
         return candidates.FirstOrDefault(path => File.Exists(Path.Combine(path, "build.txt")));
     }
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 }

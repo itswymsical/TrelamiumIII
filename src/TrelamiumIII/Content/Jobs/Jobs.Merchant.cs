@@ -64,7 +64,6 @@ public sealed class CopperStandard : Job
 
     public override JobCondition UnlockCondition => JobCondition.WorldDay(3);
 
-<<<<<<< HEAD
     public override void OnJobStart() => Context.Play("Merchant.CopperStandard_Greeting", zoomIn: true);
 
     public override void OnSetAdvanced(int previousSet, int newSet) => Context.Play($"Merchant.CopperStandard_Set{newSet}");
@@ -75,10 +74,6 @@ public sealed class CopperStandard : Job
         base.OnJobComplete(giveRewards);
         Context.Play("Merchant.CopperStandard_Complete");
     }
-=======
-    public override void OnJobStart()
-        => Context.Play("Merchant.GoldMine_Greeting");
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     public override void OnEvent(GameEvent evt)
     {

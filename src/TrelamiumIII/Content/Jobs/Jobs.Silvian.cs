@@ -74,12 +74,8 @@ public sealed class BotanyBasics : Job
         ],
         rewards:
         [
-<<<<<<< HEAD
             new JobReward(ItemID.HerbBag),
             new JobReward(ItemID.GoldCoin, 1),
-=======
-            new JobReward(ItemID.SilverCoin, 50),
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             new JobReward("TrelamiumIII/MagnoliaSeedsItem", 5)
         ],
         providerNPC: ModContent.NPCType<Silvian>())
@@ -119,16 +115,12 @@ public sealed class PlantInSeedBedTask(string key, int count, bool favouredSoilO
 {
     public override bool Matches(GameEvent evt)
     {
-<<<<<<< HEAD
         if (evt.Type != GameEventType.TilePlace || evt.TileType is not { } type || evt.TileX is not { } i || evt.TileY is not { } j)
             return false;
 
         bool customHerb = TileLoader.GetTile(type) is CustomHerb;
 
         if (type != TileID.ImmatureHerbs && !customHerb)
-=======
-        if (evt.Type != GameEventType.TilePlace || evt.TileType != TileID.ImmatureHerbs || evt.TileX is not { } i || evt.TileY is not { } j)
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             return false;
 
         Tile below = Framing.GetTileSafely(i, j + 1);
@@ -136,13 +128,10 @@ public sealed class PlantInSeedBedTask(string key, int count, bool favouredSoilO
         if (!below.HasTile || !FarmingSystem.SeedBedTypes.TryGetValue(below.TileType, out SeedBedTile? bed))
             return false;
 
-<<<<<<< HEAD
         // PreferredHerbs only lists vanilla herbs, so no soil favours a custom one yet.
         if (customHerb)
             return !favouredSoilOnly;
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         // Herb tiles store their style in frameX, 18 px per herb, in HerbType order.
         var herb = (HerbType)(Framing.GetTileSafely(i, j).TileFrameX / 18);
 

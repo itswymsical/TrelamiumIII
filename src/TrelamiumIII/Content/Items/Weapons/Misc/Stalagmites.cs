@@ -13,7 +13,6 @@ public sealed class StalagmiteItem : ModItem, IStalagMagAmmo, ICustomAutoload
     private readonly string stone;
     private readonly int sourceBlock;
     private readonly StalagMagShot shot;
-<<<<<<< HEAD
 
     private StalagmiteItem(string stone, int sourceBlock, StalagMagShot shot)
     {
@@ -30,24 +29,6 @@ public sealed class StalagmiteItem : ModItem, IStalagMagAmmo, ICustomAutoload
 
     public StalagMagShot Shot => shot;
 
-=======
-
-    private StalagmiteItem(string stone, int sourceBlock, StalagMagShot shot)
-    {
-        this.stone = stone;
-        this.sourceBlock = sourceBlock;
-        this.shot = shot;
-    }
-
-    protected override bool CloneNewInstances => true;
-
-    public override string Name => $"{stone}Stalagmite";
-
-    public override string Texture => AssetReferences.Assets.Textures.PlaceholderItem.KEY;
-
-    public StalagMagShot Shot => shot;
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     public static void Autoload(Mod mod)
     {
         Add(mod, "Stone", ItemID.StoneBlock, DustID.Stone, TileID.Stone, damage: 12, BuffID.BrokenArmor, buffTime: 300);

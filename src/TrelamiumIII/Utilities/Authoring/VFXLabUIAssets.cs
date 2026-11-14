@@ -2,11 +2,7 @@ using System.Collections.Generic;
 using ReLogic.Content;
 using Terraria.ID;
 
-<<<<<<<< HEAD:src/TrelamiumIII/Utilities/Authoring/VFXLabUIAssets.cs
 namespace TrelamiumIII.Utilities.Authoring;
-========
-namespace TrelamiumIII.Core.Books.Authoring;
->>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb:src/TrelamiumIII/Core/Books/Authoring/AuthoringSkin.cs
 
 public static class VFXLabUIAssets
 {

@@ -90,10 +90,6 @@ class SilvianDialogue : ModDialogue
             .UnlockJob(JobID.HerbalForager)
             .Register();
 
-<<<<<<< HEAD
-=======
-        // No unlock here: both answers to "you're joking, right?" carry it.
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         Dialogue.Define("Silvian.Garden_Join")
             .Line(Speaker, emote: 0, speed: 0.8f, [new Pause(40)])
             .Line(Speaker, emote: 0, speed: 0.9f, [new Pause(24), new Pause(16)])

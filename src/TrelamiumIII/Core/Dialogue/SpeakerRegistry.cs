@@ -100,11 +100,7 @@ public static class SpeakerRegistry
         {
             Id = "Argie",
             FrameCount = 1,
-<<<<<<< HEAD
             Font = TrelamiumFonts.AgravePro_SemiBold,
-=======
-            Font = TrelamiumFonts.PatrickHand,
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             Voice = new VoiceProfile(VoiceMode.Random, [Assets.SFX.Dialogue.Argie.Speech.Asset]),
             Color = new(255, 110, 80),
         });

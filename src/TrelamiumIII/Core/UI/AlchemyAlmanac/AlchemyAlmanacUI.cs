@@ -8,10 +8,6 @@ using Terraria.UI;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Alchemy.Brewing;
 using TrelamiumIII.Core.Books;
-<<<<<<< HEAD
-=======
-using TrelamiumIII.Core.Books.Lore;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 using TrelamiumIII.Core.UI.Projected;
 
 namespace TrelamiumIII.Core.UI.AlchemyAlmanac;

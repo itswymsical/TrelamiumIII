@@ -44,7 +44,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
 
     private const int WIDTH_STEP = 22;
 
-<<<<<<< HEAD
     /// <summary>
     ///     Wrap width while docked, in texels: a wide, low text box across the bottom of the screen rather than a
     ///     bubble. About 730 screen pixels at UI scale 1. Bounded by <see cref="PanelStyle.SURFACE_WIDTH" /> the
@@ -52,8 +51,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     /// </summary>
     private const int DOCKED_TEXT_WIDTH = 540;
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>Rows a line may take before the box stretches wider to hold it.</summary>
     private const int COMPACT_LINES = 3;
 
@@ -101,27 +98,16 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     private const float ANCHOR_GAP = 34f;
 
     /// <summary>A docked box undocks once the speaker is within this many tiles.</summary>
-<<<<<<< HEAD
     private const float UNDOCK_TILES = 5f;
 
     /// <summary>A hanging box docks once the speaker is past this many tiles. Must exceed <see cref="UNDOCK_TILES" />.</summary>
     private const float DOCK_TILES = 6f;
-=======
-    private const float UNDOCK_TILES = 20f;
-
-    /// <summary>A hanging box docks once the speaker is past this many tiles. Must exceed <see cref="UNDOCK_TILES" />.</summary>
-    private const float DOCK_TILES = 30f;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     /// <summary>Screen pixels a docked box's speaker has to be inside the screen edge before it undocks.</summary>
     private const float UNDOCK_INSET = 48f;
 
     /// <summary>Gap between a docked box and the bottom of the screen, in UI pixels.</summary>
-<<<<<<< HEAD
     private const float DOCK_MARGIN = 76f;
-=======
-    private const float DOCK_MARGIN = 28f;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     /// <summary>Size of a docked box relative to one hanging over its speaker.</summary>
     private const float DOCK_SCALE = 0.85f;
@@ -184,12 +170,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     /// <summary>Wrap width the current line was laid out at, in texels.</summary>
     private int wrapWidth = TEXT_WIDTH;
 
-<<<<<<< HEAD
     /// <summary>Whether the current line was laid out for the docked box, at <see cref="DOCKED_TEXT_WIDTH" />.</summary>
     private bool wrappedDocked;
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>Per-line shrink for long lines; fixed once the line is laid out.</summary>
     private float density = 1f;
 
@@ -385,11 +368,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     private void Adopt(DialogueData line)
     {
         current = line;
-<<<<<<< HEAD
-=======
-        layout = Wrap(line.PlainText);
-        density = MathF.Max(1f - Math.Max(layout.LineCount - COMPACT_LINES, 0) * DENSITY_STEP, MIN_DENSITY);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         revealedOn = new int[line.PlainText.Length];
 
         // Re-resolved per line: a conversation with two people in it has to move between their heads,
@@ -401,12 +379,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         UpdateFacing(snap: true);
         UpdateDock(snap: !dockSettled);
 
-<<<<<<< HEAD
         // After docking is decided, since a docked box wraps wider.
         Relayout();
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         RootSpeaker();
 
         Array.Clear(choiceHover);
@@ -422,7 +397,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         choiceSlot = MeasureChoiceSlot();
     }
 
-<<<<<<< HEAD
     /// <summary>Lays out the current line for the box as it stands, docked or hanging.</summary>
     private void Relayout()
     {
@@ -437,16 +411,10 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
     ///     Lays the line out at the narrowest width that keeps it to <see cref="COMPACT_LINES" /> rows,
     ///     stretching no further than <see cref="MAX_TEXT_WIDTH" />. Docked, it takes
     ///     <see cref="DOCKED_TEXT_WIDTH" /> outright.
-=======
-    /// <summary>
-    ///     Lays the line out at the narrowest width that keeps it to <see cref="COMPACT_LINES" /> rows,
-    ///     stretching no further than <see cref="MAX_TEXT_WIDTH" />.
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// </summary>
     /// <remarks>
     ///     A wide, short box covers less of the scene than a narrow, tall one and keeps clear of the
     ///     speaker it hangs over, so a long line spends width before it spends height. Run once per
-<<<<<<< HEAD
     ///     line, and again only if the box docks or undocks mid-line; never per frame.
     /// </remarks>
     private TextGlyphLayout Wrap(string text)
@@ -459,12 +427,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
             return TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
         }
 
-=======
-    ///     line, never per frame: a handful of layouts at most, and the result is fixed while it types.
-    /// </remarks>
-    private TextGlyphLayout Wrap(string text)
-    {
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         wrapWidth = TEXT_WIDTH;
         TextGlyphLayout laid = TextGlyphLayout.Build(text, Font, TEXT_SCALE, wrapWidth);
 
@@ -633,7 +595,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
             return;
         }
 
-<<<<<<< HEAD
         // A press landing on the frame the last glyph appeared, or during a pause after it, is still
         // before the answers are up. Going on from here would end the conversation unanswered.
         if (current!.HasChoices)
@@ -642,8 +603,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
             return;
         }
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         if (pending.Count > 0)
             NextLine();
         else
@@ -846,7 +805,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         if (current is null)
             return;
 
-<<<<<<< HEAD
         UpdateDock();
 
         // Docking or undocking mid-line re-wraps it, rather than leaving it at the other state's width.
@@ -881,32 +839,6 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         // The tail retracts as the box docks; at the bottom of the screen there is nobody to point at.
         float tail = 1f - DockBlend;
 
-=======
-        int nameWidth = NamePlateWidth();
-        int nameHeight = (int)MathF.Ceiling(Font.LineSpacing * NAME_SCALE) + 2;
-
-        // Taken from the font rather than the layout so an empty line still gets a one-line box
-        // instead of collapsing to a sliver.
-        float lineHeight = Font.LineSpacing * TEXT_SCALE;
-        float maxHeight = MathF.Max(PanelStyle.MaxContentHeight(nameWidth > 0 ? nameHeight : 0), lineHeight);
-
-        Vector2 needed = new(
-            Math.Clamp(MathF.Ceiling(layout.ExtentAfter(charIndex)), MIN_TEXT_WIDTH, wrapWidth),
-            Math.Clamp(MathF.Max(layout.LinesAfter(charIndex), 1) * lineHeight, lineHeight, maxHeight));
-
-        smoothedSize = Vector2.Lerp(smoothedSize, needed, 0.22f);
-        smoothedSize = Vector2.Max(smoothedSize, needed);
-
-        Point content = new((int)MathF.Round(smoothedSize.X), (int)MathF.Ceiling(smoothedSize.Y));
-
-        UpdateDock();
-        UpdateFit(nameWidth, nameHeight, Math.Clamp(MathF.Max(layout.LineCount, 1) * lineHeight, lineHeight, maxHeight));
-        UpdateFacing();
-
-        // The tail retracts as the box docks; at the bottom of the screen there is nobody to point at.
-        float tail = 1f - DockBlend;
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         // Two passes: the first sizes the bubble so the anchor can be compared against its centre,
         // the second rebuilds it with the tail actually leaning at the speaker.
         geometry = PanelStyle.Measure(content, nameWidth, nameHeight, 0f, tail);
@@ -987,12 +919,9 @@ public sealed class DialogueBox : IDialoguePresenter, IProjectedContent, IProjec
         // a set of answers to the same question.
         Point room = PanelStyle.MaxChoiceContent();
 
-<<<<<<< HEAD
         if (widest + CHOICE_PAD_X * 2 > room.X)
             TrelamiumIII.Instance?.Logger?.Warn($"Dialogue '{DialogueKey}': a choice is {widest} texels wide, more than a slot's {room.X - CHOICE_PAD_X * 2} - it will be cut off.");
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         return new Point(
             Math.Min((int)MathF.Ceiling(widest) + CHOICE_PAD_X * 2, room.X),
             Math.Min((int)MathF.Ceiling(Font.LineSpacing * CHOICE_SCALE) + CHOICE_PAD_Y * 2, room.Y));

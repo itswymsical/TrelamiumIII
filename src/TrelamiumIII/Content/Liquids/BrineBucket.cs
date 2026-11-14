@@ -36,15 +36,12 @@ public class BrineBucketItem : ModItem
     public override void HoldItem(Player player)
     {
         LiquidUtils.PlaceLiquid(player, Item, LiquidID.Water, WaterLiquids.Instance.Brine.Name);
-<<<<<<< HEAD
     }
 
     public override void ModifyTooltips(List<TooltipLine> tooltips)
     {
         var consumable = tooltips.FindIndex(t => t.Name == "Consumable");
         tooltips.RemoveAt(consumable);
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
 
     /// <summary>
@@ -65,11 +62,7 @@ public class BrineBucketItem : ModItem
         Tile tile = Main.tile[x, y];
         byte before = tile.LiquidAmount;
         bool brine = sItem.type == ItemID.EmptyBucket && before > 0 && tile.LiquidType == LiquidID.Water
-<<<<<<< HEAD
             && tile.InternalLiquid() == WaterLiquids.Instance.Brine.Index;
-=======
-            && tile.LiquidCondition() == WaterLiquids.Instance.Brine.Index;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         int[] buckets = LiquidID_TLmod.Sets.CreateLiquidBucketItem;
         int waterBucket = buckets[LiquidID.Water];

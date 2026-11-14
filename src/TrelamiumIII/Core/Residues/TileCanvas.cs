@@ -111,11 +111,7 @@ internal sealed class TileCanvas(ITileCanvasSource source) : ARenderTargetConten
         {
             Ghost ghost = ghosts[i];
 
-<<<<<<< HEAD:src/TrelamiumIII/Core/Residues/TileCanvas.cs
             // A tile that took the residue again draws itself.
-=======
-            // A tile that took the condition again draws itself.
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb:src/TrelamiumIII/Core/Tiles/Conditions/TileCanvas.cs
             if (--ghost.Ticks <= 0 || source.Contains(ghost.Position))
             {
                 ghosts[i] = ghosts[^1];

@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 ﻿using TrelamiumIII.Core;
 
 namespace TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
-=======
-﻿namespace TrelamiumIII.Content.Ingress.HighlandsBiome.SpruceFurniture;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
 public class SpruceShingles : ModItem
 {

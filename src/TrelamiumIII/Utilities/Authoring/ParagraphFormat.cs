@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:src/TrelamiumIII/Utilities/Authoring/ParagraphFormat.cs
 namespace TrelamiumIII.Utilities.Authoring;
-========
-namespace TrelamiumIII.Core.Books.Authoring;
->>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb:src/TrelamiumIII/Core/Books/Authoring/ParagraphFormat.cs
 
 /// <summary>Settings shared by a whole paragraph, as opposed to per-character <see cref="CharFormat" />.</summary>
 public readonly record struct ParagraphFormat(

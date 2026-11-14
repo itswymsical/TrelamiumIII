@@ -53,19 +53,6 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
     protected override CombatStyle GetCombatStyle() => CombatStyle.Melee with { DetectRange = 160f, LeashRange = 200f };
 
-    /// <summary>Paces his house and garden, or 12 tiles around his anchor without one.</summary>
-    protected override int WanderRadius => Home?.Area.Width ?? 12;
-
-    /// <summary>Stays behind closed doors at night and in the rain.</summary>
-    protected override bool CanUseDoors => Main.dayTime && !Main.raining;
-
-    protected override int ChatChance => 300;
-
-    /// <summary>Cuts down anything that comes close with his sickle.</summary>
-    public override int CombatWeapon => ItemID.Sickle;
-
-    protected override CombatStyle GetCombatStyle() => CombatStyle.Melee with { DetectRange = 160f, LeashRange = 200f };
-
     public override void PostAI()
     {
         base.PostAI();
@@ -97,11 +84,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
 
         // Talked to before the encounter could trigger, so the greeting plays as a small scene of its own.
         if (!silvian.Met)
-<<<<<<< HEAD
             return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.Silvian.SilviansTheme.Slot);
-=======
-            return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.HomeForagerMusic.Slot);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         if (SilvianAlmanac.IsDue(player))
             return ChatEncounter.Play(SilvianAlmanac.HandoffKey);

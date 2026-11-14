@@ -224,12 +224,9 @@ public sealed class FungoreBoss : ModNPC
     /// <summary>Frames of struggling before the cloud goes up.</summary>
     private const int DEATH_TICKS = 199;
 
-<<<<<<< HEAD
     /// <summary>Ticks the server waits after the cloud before the kill, so lagging clients still reach it.</summary>
     private const int DEATH_KILL_DELAY = 10;
 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>Airborne frames a retreat waits for the floor before despawning in the air.</summary>
     private const int RETREAT_FALL_TIMEOUT = 180;
 

@@ -6,10 +6,6 @@ using ReLogic.Graphics;
 using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.UI;
-<<<<<<< HEAD
-=======
-using TrelamiumIII.Core.Books.Authoring;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 using TrelamiumIII.Core.Structures;
 using TrelamiumIII.Utilities.Authoring;
 
@@ -309,19 +305,11 @@ internal sealed class StructureEditorUI : UIState
 
         y += ToolSize + ToolGap + GroupGap;
 
-<<<<<<< HEAD
         IconButton(spriteBatch, ref y, x, VFXLabUIAssets.BackArrow, false, StructureEditorMode.Undo,
             StructureEditorMode.CurveInProgress ? "Remove the curve's last node (Ctrl+Z)" : "Undo (Ctrl+Z)",
             StructureEditorMode.History.CanUndo || StructureEditorMode.CurveInProgress);
 
         IconButton(spriteBatch, ref y, x, VFXLabUIAssets.ForwardArrow, false, StructureEditorMode.Redo, "Redo (Ctrl+Y)",
-=======
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.BackArrow, false, StructureEditorMode.Undo,
-            StructureEditorMode.CurveInProgress ? "Remove the curve's last node (Ctrl+Z)" : "Undo (Ctrl+Z)",
-            StructureEditorMode.History.CanUndo || StructureEditorMode.CurveInProgress);
-
-        IconButton(spriteBatch, ref y, x, AuthoringSkin.ForwardArrow, false, StructureEditorMode.Redo, "Redo (Ctrl+Y)",
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             StructureEditorMode.History.CanRedo && !StructureEditorMode.CurveInProgress);
 
         IconButton(spriteBatch, ref y, x, TextureAssets.Tile[ModContent.TileType<StructureVoidTile>()].Value, false,
@@ -471,11 +459,7 @@ internal sealed class StructureEditorUI : UIState
         bool focused = focus == field;
         bool hover = area.Contains(Cursor);
 
-<<<<<<< HEAD
         VFXLabUIAssets.DrawPanel(spriteBatch, area, (focused ? VFXLabUIAssets.ButtonIdle : VFXLabUIAssets.Inset) * (hover ? 1.1f : 1f));
-=======
-        AuthoringSkin.DrawPanel(spriteBatch, area, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
         bool showTyped = focused || typed.Length > 0;
@@ -506,11 +490,7 @@ internal sealed class StructureEditorUI : UIState
                 bool hover = area.Contains(Cursor);
                 bool chosen = anchor == cell;
 
-<<<<<<< HEAD
                 spriteBatch.Draw(pixel, area, chosen ? VFXLabUIAssets.Selection : hover ? VFXLabUIAssets.ButtonHover : VFXLabUIAssets.ButtonIdle);
-=======
-                spriteBatch.Draw(pixel, area, chosen ? AuthoringSkin.Selection : hover ? AuthoringSkin.ButtonHover : AuthoringSkin.ButtonIdle);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                 Register(area, hover, () => anchor = cell, null, "Anchor: the part of the canvas a typed size keeps in place");
             }
         }
@@ -519,11 +499,7 @@ internal sealed class StructureEditorUI : UIState
     private void OpenOptions(SpriteBatch spriteBatch, int x, int y, int width)
     {
         options = new Rectangle(x - 5, y - 5, width + 10, ToolSize + 10);
-<<<<<<< HEAD
         VFXLabUIAssets.DrawPanel(spriteBatch, options, VFXLabUIAssets.Panel * 0.95f);
-=======
-        AuthoringSkin.DrawPanel(spriteBatch, options, AuthoringSkin.Panel * 0.95f);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
     #endregion
 
@@ -660,11 +636,7 @@ internal sealed class StructureEditorUI : UIState
         bool hover = searchBox.Contains(Cursor);
         bool focused = focus == TextField.Search;
 
-<<<<<<< HEAD
         VFXLabUIAssets.DrawPanel(spriteBatch, searchBox, (focused ? VFXLabUIAssets.ButtonIdle : VFXLabUIAssets.Inset) * (hover ? 1.1f : 1f));
-=======
-        AuthoringSkin.DrawPanel(spriteBatch, searchBox, (focused ? AuthoringSkin.ButtonIdle : AuthoringSkin.Inset) * (hover ? 1.1f : 1f));
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         bool caret = focused && Main.GameUpdateCount / 30 % 2 == 0;
         string shown = search.Length > 0 || focused ? search + (caret ? "|" : string.Empty) : "Search...";
@@ -866,11 +838,7 @@ internal sealed class StructureEditorUI : UIState
     {
         bool hover = enabled && area.Contains(Cursor);
 
-<<<<<<< HEAD
         VFXLabUIAssets.DrawButton(spriteBatch, area, hover, active);
-=======
-        AuthoringSkin.DrawButton(spriteBatch, area, hover, active);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         DrawMask(spriteBatch, mask, area, fill, enabled ? 1f : 0.35f);
 
         if (enabled)

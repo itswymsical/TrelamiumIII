@@ -16,17 +16,7 @@ public sealed class SolventID : ICustomAutoload
 
     public static int AquaSalis => ModContent.ItemType<AquaSalis>();
 
-<<<<<<< HEAD
     public static int BottledOil => ModContent.ItemType<BottledOilItem>();
-=======
-    public static int Brine => ModContent.ItemType<BrineBottleItem>();
-
-    public static int BottledOil { get; private set; }
-
-    #endregion
-
-    #region Acids
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     public static int OilOfVitriol { get; private set; }
 
@@ -62,24 +52,6 @@ public sealed class SolventID : ICustomAutoload
         LoadSolutes(mod);
     }
 
-<<<<<<< HEAD
-=======
-    private static void LoadBaseSolvents(Mod mod)
-    {
-        BottledOil = Add(mod, new SolventItem("BottledOilItem")
-        {
-            Value = Item.sellPrice(silver: 2),
-            AlmanacPotency = 2,
-            Temperaments = Temperament.Volatile,
-            LegacyNames = ["BottledOil"],
-            Recipes = self => self.CreateRecipe()
-                .AddIngredient(ItemID.Bottle)
-                .AddLiquid<OilLiquids>()
-                .Register(),
-        });
-    }
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     private static void LoadAcids(Mod mod)
     {
         OilOfVitriol = Add(mod, new SolventItem("OilOfVitriolItem")
@@ -94,19 +66,6 @@ public sealed class SolventID : ICustomAutoload
 
     private static void LoadBrewedSolvents(Mod mod)
     {
-<<<<<<< HEAD
-=======
-        Inert = Add(mod, new SolventItem("AquaInteris")
-        {
-            Rare = ItemRarityID.Gray,
-            AlmanacPotency = 1,
-            LegacyNames = ["InertSolutionItem"],
-            Temperaments = Temperament.Inert,
-            AlmanacRarity = ItemRarityID.White,
-            Hidden = false,
-        });
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         Dead = Add(mod, new SolventItem("DeadSolutionItem")
         {
             Rare = ItemRarityID.Gray,

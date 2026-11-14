@@ -63,23 +63,6 @@ public static class StructureEditor
 
     private static string AutosavePath(string name) => Path.Combine(Main.SavePath, "TrelamiumIII", "Structures", "Autosave", name + StructureFile.Extension);
 
-<<<<<<< HEAD
-=======
-    /// <summary>The configured source tree, else the one under ModSources that holds <c>build.txt</c>.</summary>
-    private static string? SourceRoot()
-    {
-        DeveloperConfig config = DeveloperConfig.Instance;
-
-        if (config.HasSourceDirectory && Directory.Exists(config.SourceDirectory))
-            return config.SourceDirectory;
-
-        string sources = Path.Combine(Main.SavePath, "ModSources", "TrelamiumIII");
-        string[] candidates = [Path.Combine(sources, "src", "TrelamiumIII"), sources];
-
-        return candidates.FirstOrDefault(path => File.Exists(Path.Combine(path, "build.txt")));
-    }
-
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     /// <summary>The named structure from <see cref="Folder" />, converting a <c>.shstruct</c> when there is no <c>.tstruct</c>.</summary>
     /// <param name="warnings">Content a conversion could not carry over.</param>
     public static StructureData Load(string name, out List<string> warnings)

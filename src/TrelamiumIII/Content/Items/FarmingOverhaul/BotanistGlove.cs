@@ -3,13 +3,10 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Common.DamageMeter;
-<<<<<<< HEAD
 using TrelamiumIII.Content.Ingress;
 using TrelamiumIII.Core;
 
 // TODO: Spirit Reforged support (Coarse Dirt, 
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
 namespace TrelamiumIII.Content.Items.FarmingOverhaul;
 
@@ -46,12 +43,8 @@ public static class ThrowableSoil
         [ItemID.SiltBlock] = new(7, 10.5f, 32f, ProjectileID.SiltBall, DustID.Silt),
         [ItemID.SlushBlock] = new(7, 10.5f, 32f, ProjectileID.SlushBall, DustID.Slush, BuffID.Frostburn, 90),
         [ItemID.SnowBlock] = new(7, 9.5f, 32f, ProjectileID.SnowBallFriendly, DustID.Snow, BuffID.Frostburn, 120),
-<<<<<<< HEAD
         [ItemID.AshBlock] = new(8, 9f, 32f, ProjectileID.AshBallFalling, DustID.Ash, BuffID.Confused, 60),
         [ModContent.ItemType<PeatBlock>()] = new(8, 9f, 32f, (short)ModContent.ProjectileType<PeatBallProjectile>(), DustID.Dirt)
-=======
-        [ItemID.AshBlock] = new(8, 9f, 32f, ProjectileID.AshBallFalling, DustID.Ash, BuffID.Confused, 60)
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     };
 
     public static bool TryGet(int itemType, out SoilClod clod) => clods.TryGetValue(itemType, out clod);
@@ -248,7 +241,6 @@ public sealed class SoilClodProjectile : ModProjectile
         return false;
     }
 }
-<<<<<<< HEAD
 
 public class PeatBallProjectile : ModProjectile
 {
@@ -258,5 +250,3 @@ public class PeatBallProjectile : ModProjectile
         Projectile.CloneDefaults(ProjectileID.DirtBall);
     }
 }
-=======
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb

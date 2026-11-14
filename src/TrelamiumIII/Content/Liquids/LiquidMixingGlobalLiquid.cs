@@ -23,11 +23,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
         int acid = LiquidLoader.LiquidType<AcidicLiquids>();
         int alkali = LiquidLoader.LiquidType<AlkalineLiquids>();
 
-<<<<<<< HEAD
         foreach (int pocketed in (ReadOnlySpan<int>)[LiquidLoader.LiquidType<MuddledBrewLiquid>(), LiquidLoader.LiquidType<SolventLiquid>()])
-=======
-        foreach (int pocketed in (ReadOnlySpan<int>)[LiquidLoader.LiquidType<BrewLiquid>(), LiquidLoader.LiquidType<SolventLiquid>()])
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         {
             if (type != pocketed && otherLiquid != pocketed)
                 continue;
@@ -94,19 +90,11 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
     {
         Tile tile = Main.tile[i, j];
 
-<<<<<<< HEAD
         if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || CustomLiquidSet.ByType(pocketedType) is not { } pocketed)
             return;
 
         InternalLiquid liquid = pocketed.Get(tile.InternalLiquid());
         byte hostLiquid = 0;
-=======
-        if (tile.LiquidAmount == 0 || tile.LiquidType != pocketedType || LiquidConditionSet.ByType(pocketedType) is not { } pocketed)
-            return;
-
-        LiquidCondition condition = pocketed.Get(tile.LiquidCondition());
-        byte hostCondition = 0;
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
         foreach (Point offset in Neighbours)
         {
@@ -137,11 +125,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
 
         int spent = (int)MathF.Ceiling(alkali.LiquidAmount * AcidSpentPerUnit);
         alkali.LiquidType = LiquidID.Water;
-<<<<<<< HEAD
         LiquidInternalSystem.Set(x, y, WaterLiquids.Instance.Brine.Index);
-=======
-        LiquidConditionSystem.Set(x, y, WaterLiquids.Instance.Brine.Index);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         acid.LiquidAmount = (byte)Math.Max(acid.LiquidAmount - spent, 0);
 
         Liquid.AddWater(x, y);
@@ -153,11 +137,7 @@ public sealed class LiquidMixingGlobalLiquid : GlobalLiquid
             NetMessage.sendWater(acidX, acidY);
         }
 
-<<<<<<< HEAD
         LiquidInternalSystem.Fizz(x, y);
-=======
-        LiquidConditionSystem.Fizz(x, y);
->>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
 
     /// <summary>Empties the water or honey at (x, y), spending acid at (acidX, acidY) in proportion.</summary>
