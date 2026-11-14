@@ -11,7 +11,7 @@ public class RustedIronSword : ModItem
         Item.DamageType = DamageClass.Melee;
         Item.knockBack = 2.75f;
 
-        Item.damage = 8;
+        Item.damage = 9;
         Item.rare = ItemRarityID.Gray;
         Item.UseSound = SoundID.Item1;
         Item.crit = 2;

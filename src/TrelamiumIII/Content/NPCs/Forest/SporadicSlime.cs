@@ -85,10 +85,10 @@ public class SporadicSlime : ModNPC
         NPC reference = new NPC();
         reference.SetDefaults(variantType);
 
-        NPC.lifeMax = (int)(reference.lifeMax * 1.15f);
-        NPC.life = (int)(reference.lifeMax * 1.15f);
+        NPC.lifeMax = (int)(reference.lifeMax * 1.11f);
+        NPC.life = (int)(reference.lifeMax * 1.11f);
         NPC.damage = reference.damage;
-        NPC.defense = reference.defense + 2;
+        NPC.defense = reference.defense + 1;
         NPC.knockBackResist = reference.knockBackResist;
         NPC.value = reference.value;
         NPC.alpha = reference.alpha;

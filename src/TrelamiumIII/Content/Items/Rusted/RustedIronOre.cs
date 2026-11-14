@@ -9,11 +9,12 @@ public class RustedIronOre : ModTile
         Main.tileMerge[Type][TileID.Stone] = true;
         Main.tileMergeDirt[Type] = true;
         Main.tileBlockLight[Type] = true;
+        Main.tileSpelunker[Type] = true;
         Main.tileBlendAll[Type] = true;
         HitSound = SoundID.Tink;
         DustType = DustID.Iron;
         RegisterItemDrop(ItemID.MudBlock);
-        AddMapEntry(new Color(108, 98, 88));
+        AddMapEntry(new Color(108, 98, 88), CreateMapEntryName());
     }
     public override void NumDust(int i, int j, bool fail, ref int num) => num = fail ? 1 : 3;
 }

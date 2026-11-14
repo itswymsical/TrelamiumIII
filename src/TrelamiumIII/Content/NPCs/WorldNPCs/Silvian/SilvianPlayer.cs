@@ -32,6 +32,11 @@ public sealed class SilvianPlayer : ModPlayer
     /// <summary>Asked him who Argie is and took the letter. Saying "nothing" leaves this false so he asks again.</summary>
     public bool AskedAboutArgie { get; set; }
 
+    /// <summary>
+    /// Asked Silvian about his uncle.
+    /// </summary>
+    public bool AskedAboutSubstrate { get; set; }
+
     /// <summary>The general lesson the Help button gives next. Not saved: each session starts from the top.</summary>
     public int NextLesson { get; set; }
 

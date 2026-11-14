@@ -32,8 +32,10 @@ public sealed class AcidicLiquids : CustomLiquid, ILiquidSurface
     public static Condition NearBlueVitriol => Instance.BlueVitriol.Near;
     public static Condition NearGreenVitriol => Instance.GreenVitriol.Near;
     public static Condition NearSpiritOfSalt => Instance.SpiritOfSalt.Near;
-    public static Condition NearGold_P1 => Instance.GoldSolution[0].Near;
-    public static Condition NearGold_P2 => Instance.GoldSolution[1].Near;
+
+    /// <summary>Near-liquid conditions for every gold solution potency.</summary>
+    public static Condition[] NearGoldSolution =>
+        Array.ConvertAll(Instance.GoldSolution, liquid => liquid.Near);
 
     public InternalLiquid Acid { get; private set; } = null!;
 

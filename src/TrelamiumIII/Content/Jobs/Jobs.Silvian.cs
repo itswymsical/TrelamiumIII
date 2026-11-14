@@ -86,7 +86,7 @@ public sealed class BotanyBasics : Job
     public override ChatEncounter GetChatEncounter(NPC npc, Player player) => CurrentTaskSet switch
     {
         SoilLessonSet => ChatEncounter.Play("Silvian.BotanyBasics_Soil"),
-        WrapUpSet => ChatEncounter.Play("Silvian.BotanyBasics_WrapUp"),
+        WrapUpSet => ChatEncounter.Play("Silvian.BotanyBasics_WrapUp").AsScene().WithMusic(Assets.Music.Cinematic.In_Memory.Slot),
         _ => ChatEncounter.None
     };
 

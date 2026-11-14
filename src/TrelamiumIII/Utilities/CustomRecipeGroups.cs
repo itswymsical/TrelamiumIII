@@ -14,6 +14,7 @@ public class CustomRecipeGroups : ModSystem
     public const string Soil = "Soil";
     public const string Dirts = nameof(ItemID.DirtBlock);
     public const string RottenChunk = nameof(ItemID.RottenChunk);
+
     public override void AddRecipeGroups()
     {
         RegisterRecipeGroup(CopperBar, displayItem: ItemID.CopperBar, items: [ItemID.CopperBar, ItemID.TinBar]);

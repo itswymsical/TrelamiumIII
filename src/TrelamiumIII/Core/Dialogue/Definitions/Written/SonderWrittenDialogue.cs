@@ -2,6 +2,8 @@
 //   Written by Daydreamer from the document "Sonder". Change the document and export it again:
 //   anything edited here is replaced the next time it's exported.
 // </auto-generated>
+using TrelamiumIII.Content.NPCs.WorldNPCs.Sonder;
+
 namespace TrelamiumIII.Core.Dialogue.Definitions;
 
 /// <summary>
@@ -18,66 +20,77 @@ sealed class SonderWrittenDialogue : ModSystem
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(14))
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(28))
-                .Choice()
-                .Choice()
-                .Choice()
-                .Choice()
+                .Choice("Sonder.SonderChoice_1")
+                .Choice("Sonder.SonderChoice_2")
+                .Choice("Sonder.SonderChoice_3")
+                .Choice("Sonder.SonderChoice_4")
+            .OnComplete(() => SonderWorldSystem.HasMetSonder = true)
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_1")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(16))
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(14), new Pause(14), new Pause(14)])
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_2")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18), new Pause(18)])
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_3")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderChoice_4")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderReunion")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
-                .Choice()
-                .Choice()
-                .Choice()
-                .Choice()
+                .Choice("Sonder.SonderExperience_Bland")
+                .Choice("Sonder.SonderExperience_Passion")
+                .Choice("Sonder.SonderExperience_Strength")
+                .Choice("Sonder.SonderExperience_Silent")
             .Register();
 
-        Dialogue.Define("Sonder.SonderExperience_None")
+        Dialogue.Define("Sonder.SonderExperience_Silent")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(18)])
-                .Choice()
-                .Choice()
+                .Choice("Sonder.SonderAppear")
+                .Choice("Sonder.SonderLeave")
             .Register();
 
         Dialogue.Define("Sonder.SonderExperience_Bland")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(14))
-                .Choice()
-                .Choice()
+                .Choice("Sonder.SonderAppear")
+                .Choice("Sonder.SonderLeave")
             .Register();
 
         Dialogue.Define("Sonder.SonderExperience_Passion")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(18))
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(18)])
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderExperience_Strength")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18), new Pause(14), new Pause(14)])
             .Line(Speaker, emote: 0, speed: 1.1f)
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(18)])
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderAppear")
             .Line(Speaker, emote: 0, speed: 1.1f, new Pause(14))
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(18)])
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
 
         Dialogue.Define("Sonder.SonderLeave")
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(14), new Pause(18)])
+            .OnComplete(() => SonderNPC.CinematicDespawn())
             .Register();
     }
 }

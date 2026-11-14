@@ -66,12 +66,12 @@ public sealed class JobContext(Player player, JobPlayer jobs)
 
     #region Presentation
     /// <summary>Opens a dialogue line, if this client is the one that should see it.</summary>
-    public bool Play(string dialogueKey, bool zoomIn = false, bool letterbox = false)
+    public bool Play(string dialogueKey, bool zoomIn = false, bool letterbox = false, int? music = null)
     {
         if (!IsLocal || string.IsNullOrEmpty(dialogueKey))
             return false;
 
-        return DialogueManager.Instance.StartDialogue(dialogueKey, zoomIn, letterbox);
+        return DialogueManager.Instance.StartDialogue(dialogueKey, zoomIn, letterbox, music: music);
     }
     #endregion
 }

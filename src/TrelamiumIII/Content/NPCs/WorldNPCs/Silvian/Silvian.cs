@@ -87,7 +87,7 @@ public class Silvian : TerrarianNPC, INarrativeSpeaker
             return ChatEncounter.Play(SilvianEncounter.GreetingKey).AsScene().WithMusic(Assets.Music.Silvian.SilviansTheme.Slot);
 
         if (SilvianAlmanac.IsDue(player))
-            return ChatEncounter.Play(SilvianAlmanac.HandoffKey);
+            return ChatEncounter.Play(SilvianAlmanac.HandoffKey).AsScene().WithMusic(Assets.Music.Cinematic.In_Memory.Slot);
 
         // The greeting was cut short before it could offer his first job.
         if (silvian.JobStateOf(JobID.HerbalForager) == JobState.Locked)

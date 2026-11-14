@@ -2,11 +2,11 @@ Almanac: {
 	FlavorText: {
 		// Conventional chemistry
 		Sulfur: Brimstone scraped off the ash where the world runs hot. Smells like a promise it fully intends to keep!
-		Niter: On its own it does nothing at all. But set it beside something that burns, and watch it turn polite company into an argument. Hehe.
-		RockSalt: Boil the brine and this is what you get! Preserves, scours, and puts out fires.
-		PureSalt: Crust from the mixture of brine and fresh water. More potent than rock salt, and it knows it.
+		Niter: A fine crystalline salt that comes from the earth. It has a lot of potential, but you have to be careful with it.
+		RockSalt: A coarse crystalline salt that comes from the earth. It has a lot of potential, but you have to be careful with it.
+		PureSalt: Crust from the mixture of brine and fresh water. More potent than rock salt, but not as dangerous as niter.
 		Quicklime: Limestone burnt past giving a crap. Give it water and it gives you heat back, immediately and without room for discussion.
-		BoneAsh: A good ol' residue that you oughta handle respectfully; it's already been through enough.
+		BoneAsh: A good ol' residue that you oughta handle respectfully. It's already been through enough.
 		Potash: Wood ash, wetted and dried. It's of the humblest things in this book, and half the almanac calls it a friend.
 		// Acids.
 		OilofVitriol: Green stone roasted until it weeps like a baby. Careful! It'll weep on you too if you're careless.
@@ -21,9 +21,9 @@ Almanac: {
 		// Distillates and powders.
 		SpiritofOil: The first and lightest thing off the still, and the most eager to catch. Keep it away from the lamp, neph.
 		Pitch: A sticky residue you get out of crude oil. Sticks to whatever it lands on; I wouldn't recommend falling into it.
-		BlackPowder: Six of niter to one of sulfur to one of coal. Get the ratio wrong and it merely smoulders. Get it right and stand further back!
+		BlackPowder: A mixture of three things that don't get along. It has a lot of potential, but you have to be careful with it.
 		ColdFire: It lights itself. No spark, no flint, only air! Store it under water and think about that.
-		// Reagents the book had somehow never listed.
+		// Reagents
 		BottledOil: Thick, dark, and patient. Everything it touches becomes easier to set ablaze. Use with caution! I know how you like to play with fire.
 		BrineBottle: Salt water in a bottle. I wouldn't call it glamorous, but boil it down and you have the start of a salt pipeline.
 		FibrousSlurry: A keen solvent made of cobwebs and plant matter. Thickens, binds, and asks for nothing in return.
@@ -38,7 +38,7 @@ Almanac: {
 		SnowBlock: The weather can be an alchemist too, snow's a perfect example. This water-soluble's got heart, let it melt and you'll see what I mean.
 		// Herbs
 		Daybloom: A flower that opens with the sun. It likes plain soil, and is quite charasmatic.
-		Magnolia: A mentor of the plant world. Magnolies have special pheromones that make other herbs wise up. Everyone wants these around.
+		Magnolia: A mentor of the plant world. Maggies have special pheromones that make other herbs wise up. Everyone wants these around.
 		Moonglow: A flower that opens with the moon. It likes mud, and it likes to be left alone.
 		Blinkroot: Blinkroots are shy until mature. They're easy to miss until they start illuminating the caverns. If you need a good catalyzer, these are your goto.
 		Waterleaf: Waterleafs are picky about their soil. They need conflict, which is why they grow on sand. If you need to dilute somethin', they'll be your handyman.
@@ -47,7 +47,7 @@ Almanac: {
 		Sunflower: Always up bright and early, facing the sun. Sunflowers are a good source of oil, but make sure to treat them right.
 		Deathweed: Deathweeds are the only herb that can grow in the twisted biomes! They also vitiate the soil around them, so be careful where you plant them.
 		// Mushrooms
-		Mushroom: Your standard fungus. 'Shrooms are a good start to alchemy, but they don't have much to say for themselves. Argie would say otherwise.
+		Mushroom: Your standard fungus. 'Shrooms are a good start to alchemy, but they don't have much to say for themselves.
 		GlowingMushroom: A mushroom that glows in the dark. Here's a secret: the glow is actually a chemical reaction!
 		FlyAgaric: A mushroom that can make you see things. It's a good catalyst, but don't get too carried away with it.
 		VileMushroom: Poison! I've tried eating one like a fool. Wouldn't recommend it. If you need a good poison, these are your goto.

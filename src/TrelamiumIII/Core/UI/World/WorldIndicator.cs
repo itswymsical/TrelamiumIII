@@ -48,10 +48,10 @@ public class WorldIndicator : IWorldUI
     private Entity? _tracked;
     private Vector2 _trackOffset;
 
-    /// <summary>Continuous clock driving the idle bob. Never resets, so the bob never stutters.</summary>
+    /// <summary>Continuous clock driving the idle bob using delta time.</summary>
     private float _bobTime;
 
-    /// <summary>Seconds into the current one-shot burst. Only meaningful while <see cref="_bursting" />.</summary>
+    /// <summary>Seconds into the current one-shot burst.</summary>
     private float _burstTime;
     private bool _bursting;
 
@@ -80,7 +80,6 @@ public class WorldIndicator : IWorldUI
 
     public bool IsHidden => _hidden;
 
-    /// <summary>0 when fully hidden, 1 when fully shown. Multiplied into everything drawn.</summary>
     public float Opacity => _hideFade;
 
     public virtual AnimationType AnimationStyle => _instanceAnimation ?? AnimationType.Hover;
@@ -97,10 +96,6 @@ public class WorldIndicator : IWorldUI
         _instanceAnimation = animationType;
     }
 
-    /// <summary>
-    ///     Pins the indicator to an entity. NPCs anchor from their <see cref="Entity.Top" /> so the
-    ///     icon sits over the head regardless of hitbox height; everything else uses its position.
-    /// </summary>
     public void TrackEntity(Entity entity, Vector2 offset)
     {
         _tracked = entity;
@@ -114,7 +109,6 @@ public class WorldIndicator : IWorldUI
         => WorldAnchor = (_tracked is NPC npc ? npc.Top : _tracked!.position) + _trackOffset;
 
     #region Visibility
-    /// <summary>Fades the indicator out. It stays registered but stops drawing and taking clicks.</summary>
     public void Hide()
     {
         if (_hidden)
@@ -125,7 +119,6 @@ public class WorldIndicator : IWorldUI
         _fadeTime = 0f;
     }
 
-    /// <summary>Fades the indicator back in.</summary>
     public void Show()
     {
         if (!_hidden)
@@ -136,12 +129,12 @@ public class WorldIndicator : IWorldUI
         _fadeTime = 0f;
     }
 
-    private void UpdateHideFade()
+    private void UpdateHideFade(float delta)
     {
         if (!_fading)
             return;
 
-        _fadeTime += 1f / 60f;
+        _fadeTime += delta;
 
         float progress = Math.Min(_fadeTime / HIDE_FADE_DURATION, 1f);
         float eased = EaseFunction.EaseCubicOut.Ease(progress);
@@ -158,9 +151,10 @@ public class WorldIndicator : IWorldUI
 
     public void Update(GameTime gameTime)
     {
-        _bobTime += 0.1f;
+        float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        // A tracked entity that has gone means the indicator has nothing left to mark.
+        _bobTime += delta * 5f;
+
         if (_tracked != null && !_tracked.active)
         {
             IsActive = false;
@@ -170,24 +164,23 @@ public class WorldIndicator : IWorldUI
         if (IsTracking)
             UpdateTrackedPosition();
 
-        UpdateHideFade();
+        UpdateHideFade(delta);
 
         WasHovering = IsHovering;
         IsHovering = !_hidden && _hideFade > 0f && CheckHovering();
 
-        UpdateAnimation();
+        UpdateAnimation(delta);
         PostUpdate();
     }
 
-    /// <summary>Hook for subclasses to react to state changes each tick.</summary>
     protected virtual void PostUpdate() { }
 
     #region Animation
-    private void UpdateAnimation()
+    private void UpdateAnimation(float delta)
     {
         if (IsHovering)
         {
-            _hoverFade = Math.Min(_hoverFade + HOVER_FADE_SPEED, 1f);
+            _hoverFade = Math.Min(_hoverFade + HOVER_FADE_SPEED * delta * 60f, 1f);
 
             if (JustHovered)
             {
@@ -197,12 +190,12 @@ public class WorldIndicator : IWorldUI
         }
         else
         {
-            _hoverFade = Math.Max(_hoverFade - HOVER_FADE_SPEED, 0f);
+            _hoverFade = Math.Max(_hoverFade - HOVER_FADE_SPEED * delta * 60f, 0f);
         }
 
         if (_bursting)
         {
-            _burstTime += 1f / 60f;
+            _burstTime += delta;
 
             if (_burstTime >= BurstDuration)
             {
@@ -233,19 +226,11 @@ public class WorldIndicator : IWorldUI
 
     private Vector2 ComputeOffset()
     {
-        float amplitude = AnimationStyle switch
-        {
-            AnimationType.Wag => 2.5f,
-            AnimationType.Swivel => 3.5f,
-            AnimationType.Shake => 2f,
-            _ => 3f
-        };
-
+        const float amplitude = 3f;
         var offset = new Vector2(0f, (float)Math.Sin(_bobTime * 0.8f) * amplitude);
 
         if (AnimationStyle == AnimationType.Shake && _bursting)
         {
-            // Decays over the burst so the jolt settles rather than stopping dead.
             float intensity = SHAKE_INTENSITY * (1f - _burstTime / SHAKE_DURATION) * 15f;
             offset += new Vector2(
                 (float)(Main.rand.NextDouble() - 0.5) * intensity,
@@ -276,10 +261,6 @@ public class WorldIndicator : IWorldUI
         }
     }
 
-    /// <summary>
-    ///     Idle-to-hover swell. Eased by the hover fade rather than snapped, so the icon grows into
-    ///     the hover state instead of popping.
-    /// </summary>
     public virtual float GetAnimationScale()
     {
         float hovered = AnimationStyle switch
@@ -297,20 +278,23 @@ public class WorldIndicator : IWorldUI
     #endregion
 
     #region Interaction
-    /// <summary>
-    ///     Draw scale in UI space. The icon should end up <see cref="WorldUI.ZoomScale" /> times its
-    ///     texture size on screen so it sits in the scene, but the layer already multiplies by the
-    ///     UI scale, so that has to be divided back out.
-    /// </summary>
-    protected float IconScale => GetAnimationScale() * WorldUI.ZoomScale / Main.UIScale;
 
-    /// <summary>The icon's box in UI space.</summary>
+    protected float IconScale => WorldUI.ZoomScale / Main.UIScale;
+
+    /// <summary>
+    /// Scale used exclusively for drawing animations (sine bob, hover scale swell, etc.).
+    /// </summary>
+    protected float VisualIconScale => GetAnimationScale() * WorldUI.ZoomScale / Main.UIScale;
+
     protected Rectangle Bounds()
     {
-        Vector2 center = WorldUI.ToUI(WorldAnchor + Offset);
+        // Use purely the static WorldAnchor (no Offset)
+        Vector2 center = WorldUI.ToUI(WorldAnchor);
 
-        float w = Width * IconScale;
-        float h = Height * IconScale;
+        // Optional: Extend/pad the hitbox slightly (e.g., +6 pixels padding all around) for easier clicking
+        int padding = 6;
+        float w = (Width * IconScale) + padding;
+        float h = (Height * IconScale) + padding;
 
         return new Rectangle(
             (int)(center.X - w / 2f),
@@ -321,8 +305,6 @@ public class WorldIndicator : IWorldUI
 
     public bool CheckHovering()
     {
-        // A focused panel owns the cursor; indicators underneath it must not light up or steal the
-        // click that is meant for one of its buttons.
         if (!IsActive || PlayerInput.IgnoreMouseInterface || WorldUISystem.HasOpenPanel)
             return false;
 
@@ -352,10 +334,5 @@ public class WorldIndicator : IWorldUI
         DrawIcon(spriteBatch, WorldUI.ToUI(WorldAnchor + Offset), _hideFade);
     }
 
-    /// <summary>
-    ///     Draws the marker itself. <paramref name="uiPosition" /> is the anchor in UI space and is
-    ///     where the icon should be centred; <paramref name="opacity" /> already carries the
-    ///     hide/show fade.
-    /// </summary>
     protected virtual void DrawIcon(SpriteBatch spriteBatch, Vector2 uiPosition, float opacity) { }
 }
