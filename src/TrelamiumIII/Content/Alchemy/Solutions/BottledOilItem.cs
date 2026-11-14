@@ -1,47 +1,34 @@
-using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
-using TrelamiumIII.Core.Components.Items;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Gas.Layers;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Projectiles;
-using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy.Solutions;
 
-public class BottledOilItem : ModItem
+public class BottledOilItem : ModItem, IAlmanacDefined
 {
+    AlmanacEntry IAlmanacDefined.AlmanacEntry => new()
+    {
+        Temperaments = Temperament.Inert | Temperament.Volatile,
+        AlmanacPotency = 3,
+        Hidden = true,
+    };
+
     public override void SetDefaults()
     {
         base.SetDefaults();
-        Item.damage = 9;
-        Item.DamageType = ModContent.GetInstance<ChemicalDamageClass>();
-        Item.width = Item.height = 26;
-        Item.rare = ItemRarityID.Gray;
-        Item.value = Item.sellPrice(copper: 0);
+        Item.value = Item.sellPrice(silver: 14);
+    }
 
-        Item.useStyle = ItemUseStyleID.Swing;
-        Item.useAnimation = Item.useTime = 24;
-
-        Item.UseSound = SoundID.Item106;
-        Item.shoot = ModContent.ProjectileType<BottledOilProjectile>();
-        Item.shootSpeed = 6.75f;
-        Item.autoReuse = true;
-        Item.consumable = true;
-        Item.maxStack = Item.CommonMaxStack;
-        Item.noUseGraphic = true;
-        Item.noMelee = true;
-
-        if (!Item.TryEnable(out ChemicalSourceComponent component))
-            return;
-
-        component.ChemicalType = ChemicalDamageType.Solute;
-        component.ChemicalDamage = 1;
-        component.debuffRate = 30;
-        component.debuffDuration = TimeConversion.SetTime(secs: 3);
-        component.Modifiers = [TemperamentModifier.Volatile];
+    public override void AddRecipes()
+    {
+        CreateRecipe()
+            .AddIngredient(ItemID.Bottle)
+            .AddCondition(OilLiquids.NearCrude)
+            .Register();
     }
 }
 

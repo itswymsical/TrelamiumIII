@@ -2,18 +2,17 @@
 using TrelamiumIII.Content.Alchemy.Reagents;
 using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.Liquids;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Common.Systems;
 
 public sealed class RecipeConditions : ModSystem
 {
-    public static Condition NearSunflowerOil { get; private set; } = null!;
     public static Condition RainingForBottles { get; private set; } = null!;
 
     public override void Load()
     {
         base.Load();
-        NearSunflowerOil = new Condition(Mod.GetLocalization("Conditions.NearSunflowerOil", () => "Near Sunflower Oil"), () => IsNear(Main.LocalPlayer, OilLiquids.Instance.Sunflower));
         RainingForBottles = new Condition(Mod.GetLocalization("Conditions.RainingForBottles", () => "In the Rain"), () => Main.LocalPlayer.ZoneRain && Main.raining);
     }
 
@@ -50,8 +49,8 @@ public sealed class RecipeConditions : ModSystem
 
         Recipe fertilizer = Recipe.Create(ItemID.Fertilizer);
         fertilizer.AddIngredient(ItemID.PoopBlock, 3)
-            .AddRecipeGroup(nameof(ItemID.Bass))
-            .AddRecipeGroup(nameof(ItemID.DirtBlock), 3)
+            .AddRecipeGroup(CustomRecipeGroups.Fish)
+            .AddRecipeGroup(CustomRecipeGroups.Dirts, 3)
             .AddTile(TileID.WorkBenches)
             .Register();
 
@@ -69,29 +68,6 @@ public sealed class RecipeConditions : ModSystem
         bottledWater.AddIngredient(ItemID.Bottle)
             .AddCondition(RainingForBottles)
             .Register();
-    }
-
-    public override void AddRecipeGroups()
-    {
-        RecipeGroup CopperBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.CopperBar)}",
-                    ItemID.CopperBar, ItemID.TinBar);
-        RecipeGroup.RegisterGroup(nameof(ItemID.CopperBar), CopperBarRecipeGroup);
-
-        RecipeGroup SilverBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.SilverBar)}",
-            ItemID.SilverBar, ItemID.TungstenBar);
-        RecipeGroup.RegisterGroup(nameof(ItemID.SilverBar), SilverBarRecipeGroup);
-
-        RecipeGroup GoldBarRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.GoldBar)}",
-            ItemID.GoldBar, ItemID.PlatinumBar);
-        RecipeGroup.RegisterGroup(nameof(ItemID.GoldBar), GoldBarRecipeGroup);
-
-        RecipeGroup FishRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.Bass)}", 2290, 2297, 2298, 2299, 2300, 2301, 2302, 2303, 2304, 2305, 2306, 2307,
-            2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317, 2318, 2319, 2321, 4401, 4402);
-        RecipeGroup.RegisterGroup(nameof(ItemID.Bass), FishRecipeGroup);
-
-        RecipeGroup soilRecipeGroup = new(() => $"{Language.GetTextValue("LegacyMisc.37")} {Lang.GetItemNameValue(ItemID.DirtBlock)}",
-            ItemID.DirtBlock, ItemID.MudBlock, ItemID.AshBlock);
-        RecipeGroup.RegisterGroup(nameof(ItemID.DirtBlock), soilRecipeGroup);
     }
 
     //public override void PostAddRecipes()

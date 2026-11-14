@@ -1,5 +1,6 @@
 using ReLogic.Content;
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.Graphics.Fields;
 using TrelamiumIII.Core.Residues;
 using TrelamiumIII.Core.Residues.Types;
@@ -67,7 +68,7 @@ public sealed class CrudeOilField : ChemicalGasField
         BodyAlphaFloor = 0.85f,
         Shadow = ColorUtils.Rgb(5, 5, 5),
         Body = ColorUtils.Rgb(43, 33, 56),
-        Core = ColorUtils.Rgb(34, 35, 64),
+        Core = ColorUtils.Rgb(5, 5, 5),
         Outline = ColorUtils.Rgb(43, 34, 40),
         OutlineAlpha = 0.95f,
         Highlight = ColorUtils.Rgb(72, 39, 75),
@@ -90,6 +91,16 @@ public sealed class CrudeOilField : ChemicalGasField
     //    base.OnTileContact(ref node, tileX, tileY, tile);
     //    node.Viscosity *= 1.12f;
     //}
+
+    protected override void OnLiquidContact(ref FieldNode node, int tileX, int tileY, Tile tile)
+    {
+        base.OnLiquidContact(ref node, tileX, tileY, tile);
+
+        if (tile.LiquidType == LavaLiquids.Instance.Molten.Index)
+        {
+            BurnedResidue.Ignite(tileX, tileY, BurnProfile.Fuse, 1, node.Owner);
+        }
+    }
 
     protected override void OnPlayerContact(ref FieldNode node, Player player)
     {

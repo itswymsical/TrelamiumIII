@@ -18,7 +18,7 @@ internal sealed class AquaRegia : BottledLiquidItem
 
         Recipes = self => self.CreateRecipe()
             .AddIngredient(ItemID.Bottle)
-            //.AddCondition(AcidicLiquids.NearRegia)
+            .AddCondition(AcidicLiquids.NearRegia)
             .Register();
     }
 

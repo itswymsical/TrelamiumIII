@@ -2,6 +2,7 @@ using TrelamiumIII.Content.Alchemy.Solutions;
 using TrelamiumIII.Content.Alchemy.Tiles;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Alchemy.Reagents;
 
@@ -103,13 +104,7 @@ public sealed class SoluteID : ICustomAutoload
             Recipes = self =>
             {
                 self.CreateRecipe(3)
-                    .AddIngredient(ItemID.RottenChunk, 2)
-                    .AddIngredient(ItemID.StoneBlock, 5)
-                    .AddTile(TileID.Furnaces)
-                    .Register();
-
-                self.CreateRecipe(3)
-                    .AddIngredient(ItemID.Vertebrae, 2)
+                    .AddRecipeGroup(CustomRecipeGroups.RottenChunk, 2)
                     .AddIngredient(ItemID.StoneBlock, 5)
                     .AddTile(TileID.Furnaces)
                     .Register();

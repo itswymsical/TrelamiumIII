@@ -1,4 +1,5 @@
 using TrelamiumIII.Common.ChemicalClass;
+using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Alchemy;
 using TrelamiumIII.Core.Components.Items;
@@ -53,6 +54,18 @@ public class AquaTerrae : ModItem, IAlmanacDefined
         CreateRecipe(5)
             .AddIngredient(ItemID.BottledWater)
             .AddIngredient(ItemID.DirtBlock, 5)
+            .Register();
+
+        CreateRecipe()
+            .AddIngredient(ItemID.Bottle)
+            .AddRecipeGroup(CustomRecipeGroups.Dirts)
+            .AddCondition(WaterLiquids.NearBrine)
+            .Register();
+
+        CreateRecipe()
+            .AddIngredient(ItemID.Bottle)
+            .AddRecipeGroup(CustomRecipeGroups.Dirts)
+            .AddCondition(Condition.NearWater)
             .Register();
     }
 }

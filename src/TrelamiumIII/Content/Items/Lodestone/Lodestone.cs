@@ -130,7 +130,7 @@ public class MagnetizedCoil : ModItem
 
         var recipe = CreateRecipe(2);
         recipe.AddIngredient(ItemID.Chain, 2);
-        recipe.AddRecipeGroup(nameof(ItemID.CopperBar), 1);
+        recipe.AddRecipeGroup(CustomRecipeGroups.CopperBar, 1);
         recipe.AddTile(TileID.Anvils);
         recipe.Register();
     }

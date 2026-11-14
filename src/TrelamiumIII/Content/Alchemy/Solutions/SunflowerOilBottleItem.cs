@@ -18,7 +18,7 @@ internal sealed class SunflowerOilBottleItem : BottledLiquidItem
 
         Recipes = self => self.CreateRecipe()
             .AddIngredient(ItemID.Bottle)
-            .AddCondition(RecipeConditions.NearSunflowerOil)
+            .AddCondition(OilLiquids.NearSunflower)
             .Register();
     }
 

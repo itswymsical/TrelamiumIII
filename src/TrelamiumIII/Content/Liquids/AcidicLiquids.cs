@@ -1,3 +1,4 @@
+using System.Linq;
 using Terraria.GameContent.Liquid;
 using TrelamiumIII.Common.ChemicalClass;
 using TrelamiumIII.Content.Alchemy.Tiles;
@@ -24,7 +25,15 @@ public sealed class AcidicLiquids : CustomLiquid, ILiquidSurface
 
     public Color SurfaceTint(int i, int j) => InternalLiqAt(i, j).Tint;
 
-    public static Condition NearNitricAcid => Instance.AquaFortis.Near;
+    public static Condition NearNitric => Instance.AquaFortis.Near;
+    public static Condition NearRegia => Instance.AquaRegia.Near;
+    public static Condition NearAcid => Instance.Acid.Near;
+    public static Condition NearOilVitriol => Instance.OilOfVitriol.Near;
+    public static Condition NearBlueVitriol => Instance.BlueVitriol.Near;
+    public static Condition NearGreenVitriol => Instance.GreenVitriol.Near;
+    public static Condition NearSpiritOfSalt => Instance.SpiritOfSalt.Near;
+    public static Condition NearGold_P1 => Instance.GoldSolution[0].Near;
+    public static Condition NearGold_P2 => Instance.GoldSolution[1].Near;
 
     public InternalLiquid Acid { get; private set; } = null!;
 

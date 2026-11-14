@@ -18,7 +18,7 @@ internal sealed class AquaFortis : BottledLiquidItem
 
         Recipes = self => self.CreateRecipe()
             .AddIngredient(ItemID.Bottle)
-            .AddCondition(AcidicLiquids.NearNitricAcid)
+            .AddCondition(AcidicLiquids.NearNitric)
             .Register();
     }
 

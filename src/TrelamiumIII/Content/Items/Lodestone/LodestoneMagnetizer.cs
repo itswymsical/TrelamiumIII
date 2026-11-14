@@ -74,7 +74,7 @@ public class LodestoneMagnetizer : ModItem
         CreateRecipe()
         .AddIngredient<LodestoneItem>(25)
         .AddIngredient<MagnetizedCoil>(8)
-        .AddRecipeGroup(nameof(ItemID.CopperBar), 15)
+        .AddRecipeGroup(CustomRecipeGroups.CopperBar, 15)
         .AddTile(TileID.Anvils)
         .Register();
     }

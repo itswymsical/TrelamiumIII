@@ -5,6 +5,7 @@ using TrelamiumIII.Content.Items.Ammo;
 using TrelamiumIII.Core;
 using TrelamiumIII.Core.Gas;
 using TrelamiumIII.Core.Projectiles;
+using TrelamiumIII.Utilities;
 
 namespace TrelamiumIII.Content.Items.Weapons;
 
@@ -52,7 +53,7 @@ public class CanisterCannon : ModItem
         CreateRecipe()
             .AddRecipeGroup(RecipeGroupID.IronBar, 15)
             .AddIngredient(ItemID.IllegalGunParts)
-            .AddRecipeGroup(nameof(ItemID.GoldBar), 2)
+            .AddRecipeGroup(CustomRecipeGroups.GoldBar, 2)
             .AddTile(TileID.Anvils)
             .Register();
     }
