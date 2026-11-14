@@ -1,5 +1,6 @@
 using TrelamiumIII.Core.Books.Layout;
 using TrelamiumIII.Core.Books.Text;
+using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Books.Definitions;
 
@@ -8,10 +9,12 @@ internal static class IlluminanceSeries
 {
     public static BookPalette Palette => BookPalette.Default() with
     {
-        Cover = new Color(2, 19, 27),
-        Spine = new Color(2, 19, 27),
-        Shadow = new Color(3, 42, 59),
-        Trim = new Color(30, 86, 113),
+        Cover = new Color(14, 2, 28),
+        Spine = new Color(6, 2, 28),
+        Shadow = new Color(30, 28, 68),
+        Trim = new Color(47, 43, 79),
+        PageColor = new Color(30, 30, 35),
+        Ink = Color.White,
         CoverArt = Assets.Textures.BookCoverArt.IlluminanceCover.KEY,
     };
 }
@@ -24,6 +27,18 @@ public sealed class IlluminanceBook : ModBook
     public override string Key => "IlluminanceSeries.IlluminanceI";
 
     protected override BookPalette Palette => IlluminanceSeries.Palette;
+
+    public static BookTypeface Illuminance { get; } = new(
+        () => TrelamiumFonts.CascadiaMono_Regular,
+        () => TrelamiumFonts.CascadiaMono_Regular,
+        () => TrelamiumFonts.CascadiaMono_Medium)
+    {
+        Bold = () => TrelamiumFonts.CascadiaMono_Bold,
+        Italic = () => TrelamiumFonts.CascadiaMono_Italic,
+        BoldItalic = () => TrelamiumFonts.CascadiaMono_BoldItalic,
+    };
+
+    protected override BookTypeface? Typeface => Illuminance;
 
     protected override void Build(BookBuilder book)
     {

@@ -17,6 +17,14 @@ public static class TrelamiumFonts
     public static DynamicSpriteFont ManufacturingConsent { get; private set; } = null!;
     public static DynamicSpriteFont Cardinal { get; private set; } = null!;
     public static DynamicSpriteFont CardinalAlternate { get; private set; } = null!;
+
+    // coolio omega 42
+    public static DynamicSpriteFont CascadiaMono_Regular { get; private set; } = null!;
+    public static DynamicSpriteFont CascadiaMono_Medium { get; private set; } = null!;
+    public static DynamicSpriteFont CascadiaMono_Bold { get; private set; } = null!;
+    public static DynamicSpriteFont CascadiaMono_Italic { get; private set; } = null!;
+    public static DynamicSpriteFont CascadiaMono_BoldItalic { get; private set; } = null!;
+
     public static DynamicSpriteFont OldEnglishFive { get; private set; } = null!;
     public static DynamicSpriteFont BlackFlag { get; private set; } = null!;
     public static DynamicSpriteFont AnglicanText { get; private set; } = null!;
@@ -73,6 +81,12 @@ public static class TrelamiumFonts
         Cardinal = BakedFont.Load(mod, $"{DIRECTORY}/Cardinal");
         CardinalAlternate = BakedFont.Load(mod, $"{DIRECTORY}/Cardinal-Alternate");
 
+        CascadiaMono_Regular = BakedFont.Load(mod, $"{DIRECTORY}/CascadiaMono-Regular");
+        CascadiaMono_Bold = BakedFont.Load(mod, $"{DIRECTORY}/CascadiaMono-Bold");
+        CascadiaMono_Medium = BakedFont.Load(mod, $"{DIRECTORY}/CascadiaMono-Medium");
+        CascadiaMono_Italic = BakedFont.Load(mod, $"{DIRECTORY}/CascadiaMono-Italic");
+        CascadiaMono_BoldItalic = BakedFont.Load(mod, $"{DIRECTORY}/CascadiaMono-BoldItalic");
+
         Hybrid = BakedFont.Load(mod, $"{DIRECTORY}/Hybrid");
         ManufacturingConsent = BakedFont.Load(mod, $"{DIRECTORY}/ManufacturingConsent-Regular");
 
@@ -110,6 +124,12 @@ public static class TrelamiumFonts
         Canterbury = null!;
         Cardinal = null!;
         CardinalAlternate = null!;
+
+        CascadiaMono_Regular = null!;
+        CascadiaMono_Medium = null!;
+        CascadiaMono_Bold = null!;
+        CascadiaMono_Italic = null!;
+        CascadiaMono_BoldItalic = null!;
 
         Hybrid = null!;
         ManufacturingConsent = null!;
