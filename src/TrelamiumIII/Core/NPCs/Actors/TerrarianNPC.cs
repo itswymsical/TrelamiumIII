@@ -76,13 +76,31 @@ public abstract class TerrarianNPC : WorldNPC
         return Puppet.BeginUse(aimAt);
     }
 
+<<<<<<< HEAD
     /// <summary>Front arm during rock-paper-scissors. Null outside a game or while the director has the NPC.</summary>
+=======
+    /// <summary>
+    /// Front arm during rock-paper-scissors: pumped for 40 ticks before each of the three reveals, held out for 20 after.
+    /// Null outside a game or while the director has the NPC.
+    /// </summary>
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     private float? GameArmRotation()
     {
         if (State is not (TownState.GameLead or TownState.GameListen) || Director is { IsBusy: true })
             return null;
 
+<<<<<<< HEAD
         return TownPoses.RockPaperScissorsArm(StateTicks % TownPoses.RockPaperScissorsCycle);
+=======
+        int beat = StateTicks % 420;
+        if (beat >= 180)
+            return null;
+
+        int round = beat % 60;
+        float lift = round < 40 ? 0.45f + 0.4f * MathF.Abs(MathF.Sin(round * MathHelper.Pi / 10f)) : 0.15f;
+
+        return -(MathHelper.PiOver2 + lift);
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
 
     /// <summary>Swaps in <see cref="TerrarianEntryIcon"/>; the vanilla icon cannot draw a player model.</summary>

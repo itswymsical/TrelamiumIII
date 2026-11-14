@@ -126,6 +126,7 @@ public abstract class Villager : TerrarianNPC
             OpenTradeUI();
     }
 
+<<<<<<< HEAD
     /// <summary>The weapon, offers and stock are rolled on every side and loaded only on the server, so clients take the server's.</summary>
     public override void SendExtraAI(BinaryWriter writer)
     {
@@ -140,6 +141,12 @@ public abstract class Villager : TerrarianNPC
         weapon = reader.ReadInt32();
         ReadTradeState(reader);
     }
+=======
+    /// <summary>The weapon is rolled on every side, so the server's roll is the one clients use.</summary>
+    public override void SendExtraAI(BinaryWriter writer) => writer.Write(weapon);
+
+    public override void ReceiveExtraAI(BinaryReader reader) => weapon = reader.ReadInt32();
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
     public override void SaveData(TagCompound tag)
     {

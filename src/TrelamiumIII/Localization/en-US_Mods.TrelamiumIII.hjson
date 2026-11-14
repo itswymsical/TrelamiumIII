@@ -597,6 +597,14 @@ Items: {
 		Tooltip: Don't tell anyone you have this...
 	}
 
+<<<<<<< HEAD
+=======
+	BrineBottleItem: {
+		DisplayName: Brine Bottle
+		Tooltip: Serves as a base solvent for alchemy
+	}
+
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	CharcoalItem: {
 		DisplayName: Charcoal
 		Tooltip: ""
@@ -617,6 +625,14 @@ Items: {
 		Tooltip: Provides temporary swiftness
 	}
 
+<<<<<<< HEAD
+=======
+	InertSolutionItem: {
+		DisplayName: Aqua Inertis
+		Tooltip: Serves as a base solvent for alchemy
+	}
+
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	MagnoliaItem: {
 		DisplayName: Magnolia
 		Tooltip: "'charismatic amongst other flowers...'"
@@ -1103,7 +1119,7 @@ Items: {
 	}
 
 	AquaTerrae: {
-		DisplayName: Aqua Terrae
+		DisplayName: Aqua Terra
 		Tooltip: Breaks into a heavy blob of mud that coats the ground and slows whatever wades through it
 	}
 
@@ -1175,12 +1191,20 @@ Items: {
 	# Placeholder job items (docs/act-one.md). Text is provisional.
 	BandageRoll: {
 		DisplayName: Bandage Roll
+<<<<<<< HEAD
 		Tooltip: "'Clean for now.'"
+=======
+		Tooltip: "'Clean, for now'"
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	}
 
 	AntisepticTincture: {
 		DisplayName: Antiseptic Tincture
+<<<<<<< HEAD
 		Tooltip: "'Stings, that's how you know it's working.'"
+=======
+		Tooltip: "'Stings. That's how you know it's working!'"
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	}
 
 	SutureKit: {
@@ -1188,6 +1212,7 @@ Items: {
 		Tooltip: "'Needle, thread, and a steady hand sold separately'"
 	}
 
+<<<<<<< HEAD
 	GuidesPlans: {
 		DisplayName: Guide's Plans
 		Tooltip:
@@ -1197,6 +1222,8 @@ Items: {
 			'''
 	}
 
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	SilviansLetter: {
 		DisplayName: Silvian's Letter
 		Tooltip:
@@ -1382,6 +1409,7 @@ Items: {
 		Tooltip: ""
 	}
 
+<<<<<<< HEAD
 	AquaInertis: {
 		DisplayName: Aqua Inertis
 		Tooltip: Serves as a base solvent for alchemy
@@ -1474,6 +1502,10 @@ Items: {
 
 	HeroSword: {
 		DisplayName: Hero Sword
+=======
+	AquaInteris: {
+		DisplayName: Aqua Interis
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 		Tooltip: ""
 	}
 }
@@ -1511,7 +1543,10 @@ Tiles: {
 	TuffTile.MapEntry: Tuff
 	BirchChestTile.MapEntry: Birch Chest
 	BirchDresserTile.MapEntry: Birch Dresser
+<<<<<<< HEAD
 	NiterTile.MapEntry: Niter
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 }
 
 Projectiles: {
@@ -1595,8 +1630,11 @@ Projectiles: {
 	ThrownTool.DisplayName: Thrown Tool
 	ArcticFlaskProjectile.DisplayName: Arctic Flask
 	SoilClodProjectile.DisplayName: Soil Clod
+<<<<<<< HEAD
 	PeatBallProjectile.DisplayName: Peat Ball
 	BottledOilProjectile.DisplayName: Bottled Oil Projectile
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 }
 
 NPCs: {
@@ -1650,8 +1688,11 @@ NPCs: {
 		DisplayName: Glowing Sporadic Slime
 		Bestiary: A slime that has soaked up the glowing mushroom biome's spores. The mothers split into glowing young when popped, and every one of them carries samples a mycologist would want.
 	}
+<<<<<<< HEAD
 
 	EosforosBoss.DisplayName: Eosforos Boss
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 }
 
 Buffs: {
@@ -2146,12 +2187,20 @@ Liquids: {
 		Conditions.Brine: Brine
 	}
 
+<<<<<<< HEAD
 	Lava.Liquids.Molten: Lava
+=======
+	Lava.Conditions.Molten: Lava
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 
 	AlkalineLiquids: {
 		MapEntry: Alkali
 
+<<<<<<< HEAD
 		Liquids: {
+=======
+		Conditions: {
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 			Lye: Lye
 			Limewater: Limewater
 			SpiritOfHartshorn: Spirit of Hartshorn
@@ -2160,7 +2209,11 @@ Liquids: {
 
 	SolventLiquid: {
 		MapEntry: Solvent
+<<<<<<< HEAD
 		Liquids.Mixed: Mixed Solvent
+=======
+		Conditions.Mixed: Mixed Solvent
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	}
 
 	AcidicLiquids: {
@@ -2196,7 +2249,10 @@ Conditions: {
 	# {0}: the liquid condition's display name.
 	NearLiquid: Near {0}
 	RainingForBottles: In the Rain
+<<<<<<< HEAD
 	CopperTrial: Once the Merchant asks for it
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	InGlowingMushroomBiome: When killed in the glowing mushroom biome
 }
 

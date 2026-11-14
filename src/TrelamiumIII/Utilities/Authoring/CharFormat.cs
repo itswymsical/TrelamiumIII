@@ -2,7 +2,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
+<<<<<<<< HEAD:src/TrelamiumIII/Utilities/Authoring/CharFormat.cs
 namespace TrelamiumIII.Utilities.Authoring;
+========
+namespace TrelamiumIII.Core.Books.Authoring;
+>>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb:src/TrelamiumIII/Core/Books/Authoring/CharFormat.cs
 
 /// <summary>Character-level formatting that can change between letters; paragraph settings stay on the block.</summary>
 public readonly record struct CharFormat(bool Bold, bool Italic, float Scale, int? Ink)

@@ -1,6 +1,10 @@
 ﻿using TrelamiumIII.Content.Liquids;
 using TrelamiumIII.Core.Liquids;
+<<<<<<< HEAD
 using TrelamiumIII.Core.Residues;
+=======
+using TrelamiumIII.Core.Tiles.Conditions;
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 using TrelamiumIII.Core.Tiles.Seals;
 using System.IO;
 using TrelamiumIII.Core.ExperientialSystem;
@@ -26,6 +30,7 @@ partial class TrelamiumIII
         DryadArrivalStart,
         IngressRiftRequest,
         SilvianEncounter,
+<<<<<<< HEAD
         InternalLiquids,
         Seals,
         SharedWorldData,
@@ -33,6 +38,10 @@ partial class TrelamiumIII
         VillagerTrade,
         BlueprintMoveIn,
         BodyCoat,
+=======
+        LiquidConditions,
+        Seals,
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -75,6 +84,7 @@ partial class TrelamiumIII
             case MessageType.Seals:
                 SealSystem.Receive(reader, whoAmI);
                 break;
+<<<<<<< HEAD
             case MessageType.SharedWorldData:
                 Common.Subworlds.SharedWorldData.Receive(reader, whoAmI);
                 break;
@@ -90,6 +100,8 @@ partial class TrelamiumIII
             case MessageType.BodyCoat:
                 Core.Residues.Bodies.BodyCoatNet.Receive(reader, whoAmI);
                 break;
+=======
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             default:
                 Logger.WarnFormat("TrelamiumIII: Unknown Message type: {0}", msgType);
                 break;

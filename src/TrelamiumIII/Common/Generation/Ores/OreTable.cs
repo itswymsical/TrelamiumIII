@@ -81,6 +81,11 @@ public static class OreTable
         // small world.
         veins.Add(new(rockSalt, At(Surface), At(Underworld), 8f, (4, 8), (5, 9), [TileID.SnowBlock, TileID.IceBlock], Clustering: 0.3f));
 
+        // Salt beds through the underground snow biome. Shinies runs after Generate Ice Biome, so snow and ice are
+        // already down. Misses off them are retried, so nearly every vein counted lands in the snow: about 40 on a
+        // small world.
+        veins.Add(new(rockSalt, At(Surface), At(Underworld), 8f, (4, 8), (5, 9), [TileID.SnowBlock, TileID.IceBlock], Clustering: 0.3f));
+
         return veins;
     }
 }

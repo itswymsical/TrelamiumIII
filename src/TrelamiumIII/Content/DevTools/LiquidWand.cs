@@ -68,7 +68,11 @@ public class LiquidWand : ModItem
         List<Mode> modes = [];
 
         // Water and lava have condition sets, so their conditions stand in for the plain liquids.
+<<<<<<< HEAD
         foreach (CustomLiquidSet liquidSet in CustomLiquidSet.All)
+=======
+        foreach (LiquidConditionSet liquid in LiquidConditionSet.All)
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         {
             foreach (InternalLiquid liquid in liquidSet.InternalLiquids.Where(l => l is not BrewLiquid))
                 modes.Add(new Mode(liquidSet.LiquidType, liquid.Name, $"{liquidSet.Name} / {liquid.DisplayName}"));

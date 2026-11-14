@@ -14,7 +14,11 @@ DialogueLibrary: {
 		Greeting_True: {
 			Line1: {
 				Text: "[speakerName:player].[] Good to meet ya.[] So what brings you 'round these parts?[] You ain't from here, I can tell that much."
+<<<<<<< HEAD
 				Choice1.Text: Finding my way.
+=======
+				Choice1.Text: Just finding my way around.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...
@@ -26,7 +30,11 @@ DialogueLibrary: {
 
 			Line2: {
 				Text: Keep your name if you want it.[] So what brings you 'round these parts?
+<<<<<<< HEAD
 				Choice1.Text: Finding my way.
+=======
+				Choice1.Text: Just finding my way around.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...
@@ -38,7 +46,11 @@ DialogueLibrary: {
 
 			Line2: {
 				Text: So what brings you 'round these parts?
+<<<<<<< HEAD
 				Choice1.Text: Finding my way.
+=======
+				Choice1.Text: Just finding my way around.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: Looking for trouble.
 				Choice3.Text: Speedrunning.
 				Choice4.Text: ...

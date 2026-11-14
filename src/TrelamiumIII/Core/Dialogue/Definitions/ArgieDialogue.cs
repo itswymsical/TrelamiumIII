@@ -27,13 +27,21 @@ class ArgieDialogue : ModDialogue
         Dialogue.Define(ArgieNPC.GreetingKey)
             .Line(Speaker, emote: 0, speed: 1.15f, [new Pause(14), new Pause(14), new Pause(18)])
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(18), new Pause(14)])
+<<<<<<< HEAD
             .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(12), new Pause(28), new Pause(14)])
+=======
+            .Line(Speaker, emote: 0, speed: 1.1f, [new Pause(12), new Pause(16), new Pause(14)])
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                 .Choice(ArgieMeeting.BrighterKey)
                 .Choice(ArgieMeeting.BrighterKey)
             .Register();
 
         Dialogue.Define(ArgieNPC.LetterGreetingKey)
+<<<<<<< HEAD
             .Line(Speaker, emote: 0, speed: 1.15f, [new Pause(14), new Pause(14)])
+=======
+            .Line(Speaker, emote: 0, speed: 1.15f, [new Pause(14), new Pause(14), new Pause(18)])
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             .Line(Speaker, emote: 0, speed: 1f)
                 .Choice("Argie.Letter")
                 .Choice("Argie.Letter")
@@ -41,7 +49,11 @@ class ArgieDialogue : ModDialogue
 
         Dialogue.Define("Argie.Letter")
             .Line(Speaker, emote: 0, speed: 0.95f, [new Pause(30), new Pause(20)])
+<<<<<<< HEAD
             .Line(Speaker, emote: 0, speed: 0.9f, [new Pause(30), new Pause(18)])
+=======
+            .Line(Speaker, emote: 0, speed: 0.9f, [new Pause(30), new Pause(18), new Pause(16)])
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                 .Choice(ArgieMeeting.BrighterKey)
                 .Choice(ArgieMeeting.BrighterKey)
             .OnComplete(ArgieMeeting.TakeLetter)

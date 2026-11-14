@@ -60,6 +60,7 @@ public sealed class InikiField : FieldLayer
     {
         Noise = static () => Assets.Textures.Noise.LiquidNoise.Asset,
         WorldLight = new Vector3(0.78f),
+<<<<<<< HEAD
         Threshold = 0.042600006f,
         NoiseScale = 0.7592f,
         NoiseStrength = 0.06f,
@@ -68,11 +69,24 @@ public sealed class InikiField : FieldLayer
         DepthRange = 1.7620001f,
         Bands = 4.098f,
         BodyAlpha = 0.87978f,
+=======
+        Threshold = InkStyle.MoteThreshold,
+        NoiseScale = InkStyle.MoteWobbleScale,
+        NoiseStrength = 0.06f,
+        Drift = InkStyle.MoteWobbleDrift,
+        FlowStrength = 0.10f,
+        Bands = InkStyle.MoteBands,
+        BodyAlpha = InkStyle.MoteBodyAlpha,
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         Shadow = InkStyle.MoteShadowColor,
         Body = InkStyle.MoteBodyColor,
         Core = InkStyle.MoteCoreColor,
         Outline = InkStyle.MoteRimColor,
+<<<<<<< HEAD
         OutlineAlpha = 0.52096f,
+=======
+        OutlineAlpha = InkStyle.MoteRimAlpha,
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     };
 
     protected override void ApplyLighting(ref FieldNode node) { }

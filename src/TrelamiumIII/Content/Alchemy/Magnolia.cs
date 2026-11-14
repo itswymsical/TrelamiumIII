@@ -388,6 +388,28 @@ public class MagnoliaTile : CustomHerb
     {
         base.SetStaticDefaults();
 
+<<<<<<< HEAD
+=======
+        TileID.Sets.ReplaceTileBreakUp[Type] =
+            TileID.Sets.IgnoredInHouseScore[Type] =
+            TileID.Sets.IgnoredByGrowingSaplings[Type] = true;
+
+        TileMaterials.SetForTileId(Type, TileMaterials._materialsByName["Plant"]);
+
+        var name = CreateMapEntryName();
+        AddMapEntry(new Color(128, 128, 128), name);
+
+        TileObjectData.newTile.CopyFrom(TileObjectData.StyleAlch);
+        TileObjectData.newTile.AnchorValidTiles = [
+            TileID.Grass,
+        ];
+
+        TileObjectData.newTile.AnchorAlternateTiles = [TileID.ClayPot, TileID.PlanterBox, .. SeedBedItem.TileTypes];
+
+        TileObjectData.addTile(Type);
+
+        HitSound = SoundID.Grass;
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         DustType = DustID.BubbleBurst_White;
     }
 }

@@ -1,6 +1,10 @@
 using System.Collections.Generic;
 using ReLogic.Graphics;
 using Terraria.UI.Chat;
+<<<<<<< HEAD
+=======
+using TrelamiumIII.Core.Books.Authoring;
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 using TrelamiumIII.Core.Books.Text;
 using TrelamiumIII.Utilities.Authoring;
 

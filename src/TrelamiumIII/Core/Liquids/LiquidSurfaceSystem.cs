@@ -35,11 +35,19 @@ public interface ILiquidSurface
     bool HasSurface(int i, int j) => true;
 }
 /// <summary>
+<<<<<<< HEAD
 ///     For a liquid whose internal types each carry their own surface, usually <see cref="InternalLiquid.Surface" />.
 ///     <see cref="ILiquidSurface.Surface" /> is then the fallback for conditions without one. Use
 ///     <see cref="ILiquidSurface" /> alone when every internal type shares one surface.
 /// </summary>
 public interface IInternalLiquidSurface : ILiquidSurface
+=======
+///     For a liquid whose conditions each carry their own surface, usually <see cref="LiquidCondition.Surface" />.
+///     <see cref="ILiquidSurface.Surface" /> is then the fallback for conditions without one. Use
+///     <see cref="ILiquidSurface" /> alone when every condition shares one surface.
+/// </summary>
+public interface IConditionalLiquidSurface : ILiquidSurface
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 {
     /// <summary>The surface drawn at (i, j), or null for none.</summary>
     LiquidSurface? SurfaceAt(int i, int j);
@@ -117,7 +125,11 @@ public sealed class LiquidSurfaceSystem : ModSystem
         if (isBackgroundDraw || (uint)type >= (uint)surfaces.Length || surfaces[type] is not { } owner || !owner.HasSurface(i, j))
             return;
 
+<<<<<<< HEAD
         LiquidSurface? surface = owner is IInternalLiquidSurface conditional ? conditional.SurfaceAt(i, j) : owner.Surface;
+=======
+        LiquidSurface? surface = owner is IConditionalLiquidSurface conditional ? conditional.SurfaceAt(i, j) : owner.Surface;
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
         if (surface is null || !collected.Add(new Point(i, j)))
             return;
 

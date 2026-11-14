@@ -1,5 +1,6 @@
 DialogueLibrary: {
 	Argie: {
+<<<<<<< HEAD
 		Greeting: {
 			Line1.Text: Oh![] A visitor![] Hello! Hello![] Don't touch anything.
 			Line2.Text: Not with your bare hands, anyway.[] I'm not saying something bad will happen![] I just don't know that it won't.
@@ -7,16 +8,37 @@ DialogueLibrary: {
 			Line3: {
 				Text: I am Argie![] the GREATEST Mycologist to ever exist![] uhm....[] Anyways, this is my lab, and those are my colleagues.
 				Choice1.Text: colleagues?
+=======
+		# Each [] is a pause anchor and must match the Pause count in ArgieDialogue.
+		# She hasn't slept, she talks to the mushrooms "professionally", and nobody touches anything barehanded.
+		
+		# The meeting without Silvian's letter. Both answers lead into Brighter.
+		Greeting: {
+			Line1.Text: Oh![] A visitor![] Hello! Hello![] Don't touch anything.
+			Line2.Text: Not with your bare hands, anyway.[] I'm not saying something bad will happen.[] I'm saying I don't know that it won't.
+
+			Line3: {
+				Text: Argie.[] Mycologist.[] This is my lab,[] and those are my colleagues.
+				Choice1.Text: Your colleagues?
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: ...
 			}
 		}
 
+<<<<<<< HEAD
+=======
+		# The meeting with Silvian's letter in hand. The letter is John's, kept by Silvian since his death.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 		Greeting_Letter: {
 			Line1.Text: Oh![] A visitor![] Hello! Hello![] Don't touch anything.
 
 			Line2: {
 				Text: ...What's that you're holding?
+<<<<<<< HEAD
 				Choice1.Text: A letter.
+=======
+				Choice1.Text: A letter. Silvian asked me to bring it.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: ...
 			}
 		}
@@ -25,18 +47,33 @@ DialogueLibrary: {
 			Line1.Text: That's Mr. Substrate's handwriting![] ...Silvian kept this?[] He hasn't written me a word since the funeral.
 
 			Line2: {
+<<<<<<< HEAD
 				Text: ...[] Thank you.[] I'll read this properly when I have the time.
 				Choice1.Text: Are you ok?
+=======
+				Text: ...[] Sorry.[] I'll read it later.[] Properly.
+				Choice1.Text: Are you alright?
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice2.Text: ...
 			}
 		}
 
+<<<<<<< HEAD
 		Brighter: {
 			Line1.Text: ...Hold still a secon.[] The fungi glow brighter around you...![] That's so peculiar.
 			Line2.Text: I've logged every glowcap in this grotto for the past six years.[] They have never once done that.
 			Line3.Text: Okay.[] Okay![] New plan![] You're going to help me out.
 			Line4.Text: I need fungi from outside the grotto to compare against.[] Fly agaric from the surface grass,[] puffballs,[] and dewdrop bonnets.
 			Line5.Text: Puffballs come off Scrunglepuffs,[] but they don't like giving them up.[] The dewdrops only grow on clouds,[] up on the floating islands.
+=======
+		# The mushrooms around the player brighten while this plays (ArgieMeeting). Ends by offering the fungus hunt.
+		Brighter: {
+			Line1.Text: ...Hold still.[] They're brighter around you.[] Why are they brighter around you?
+			Line2.Text: I've logged every cap in this grotto for six years.[] They have never once done that.
+			Line3.Text: Okay.[] Okay![] New plan.[] You're going to help me.
+			Line4.Text: I need fungi from outside the grotto to compare against.[] Fly agaric from the surface grass,[] puffballs,[] and dewdrop bonnets.
+			Line5.Text: Puffballs come off Scrunglepuffs,[] and they don't like giving them up.[] The bonnets only grow on clouds,[] up on the floating islands.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 			Line6.Text: Bring them back and I'll tell you what I find.[] Probably.
 		}
 
@@ -45,11 +82,19 @@ DialogueLibrary: {
 			Line2.Text: ...[] Thank you.[] I'll read it later.[] Properly.
 		}
 
+<<<<<<< HEAD
 		JobOffer.Line1.Text: Where were we?[] Right.[] Fly agaric,[] puffballs,[] dewdrop bonnets.[] I need samples!
 
 		MycologyHunt_Greeting: {
 			Line1.Text: Five fly agaric,[] three puffballs,[] three dewdrop bonnets.[] Please Write it down![] I would myself,[] but I'm out of paper.
 			Line2.Text: And gloves![] Wear gloves while handling!
+=======
+		JobOffer.Line1.Text: Where were we?[] Right.[] Fly agaric,[] puffballs,[] dewdrop bonnets.[] I need samples.
+
+		MycologyHunt_Greeting: {
+			Line1.Text: Five fly agaric,[] three puffballs,[] three dewdrop bonnets.[] Write it down.[] I would,[] but I'm out of paper.
+			Line2.Text: And gloves.[] Wear gloves.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 		}
 
 		MycologyHunt_HandIn: {
@@ -62,11 +107,19 @@ DialogueLibrary: {
 
 		MycologyHunt_Complete: {
 			Line1.Text: Fly agaric: calm.[] Puffball: calm.[] Bonnet: calm,[] and a little damp.
+<<<<<<< HEAD
 			Line2.Text: Splendid![] The mycelium under this grotto has been flinching for weeks.
 			Line3.Text: Something down there is big,[] and it's shifting around.
 
 			Line4: {
 				Text: I need spore samples from around the grotto to work out where.[] The local creatures have been infested with them:[] skellies,[] slimes,[] and even scrunglepuffs.[] Will you help?
+=======
+			Line2.Text: Mine aren't.[] The mycelium under this grotto has been flinching for weeks.
+			Line3.Text: Something down there is big,[] and it's moving.
+
+			Line4: {
+				Text: I need spore samples from around the grotto to work out where.[] The locals carry them:[] the mushroom zombies,[] the crabs,[] the ladybugs.[] Will you help?
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice1.Text: Of course.
 				Choice2.Text: Maybe later.
 			}
@@ -74,12 +127,17 @@ DialogueLibrary: {
 
 		SurveyOffer: {
 			Line1: {
+<<<<<<< HEAD
 				Text: That thing under the grotto.[] I still need those spore samples, friend!
+=======
+				Text: The thing under the grotto.[] I still need those spore samples.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice1.Text: I'll get them.
 				Choice2.Text: Maybe later.
 			}
 		}
 
+<<<<<<< HEAD
 		SurveyOffer_Yes.Line1.Text: Ten samples ought to do it![] Twelve if you like me, hehe.
 		SurveyOffer_No.Line1.Text: Okay.[] I'll just sit here.[] On top of it.
 		SporeSurvey_Greeting.Line1.Text: The Spore samples, yes.[] Just need about ten, friend![] Don't breathe them through your mouth!
@@ -87,11 +145,21 @@ DialogueLibrary: {
 		SporeSurvey_HandIn: {
 			Line1: {
 				Text: Samples?[] Give, give, give!
+=======
+		SurveyOffer_Yes.Line1.Text: Ten should do it.[] Twelve if you like me.
+		SurveyOffer_No.Line1.Text: Okay.[] I'll just sit here.[] On top of it.
+		SporeSurvey_Greeting.Line1.Text: Spore samples.[] Ten.[] Don't breathe through your mouth.
+
+		SporeSurvey_HandIn: {
+			Line1: {
+				Text: Samples?[] Give, give, give.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 				Choice1.Text: Here.
 				Choice2.Text: Not yet.
 			}
 		}
 
+<<<<<<< HEAD
 		SporeSurvey_Complete: {
 			Line1.Text: Whatever thing is,[] it keeps growing under the lab.[] I've collected a few already.
 			Line2.Text: Tehy started moving a few hours ago...[] around when you showed up.[] Correlation isn't causation.[] That is, usually the case.
@@ -101,5 +169,17 @@ DialogueLibrary: {
 		}
 
 		SporeAgain.Line1.Text: Used it?[] Lost it?[] ...I have plenty![] Take as many as you need, you're my new exterminator!
+=======
+		# The spore is in the job's reward bag. This is how Fungore is found now: it no longer grows in the world.
+		SporeSurvey_Complete: {
+			Line1.Text: It's right under us.[] Under the lab.[] Under my workbench.
+			Line2.Text: And it started moving...[] around when you showed up.[] Correlation isn't causation.[] Usually.
+			Line3.Text: I cultured something from your samples.[] It's a spore.[] I genuinely don't know what it does.
+			Line4.Text: Be careful with it.[] If you use it,[] use it on the surface.
+			Line5.Text: If something's coming up,[] I'd rather it came up out there than under my workbench.
+		}
+
+		SporeAgain.Line1.Text: Used it?[] Lost it?[] ...I made another.[] I make a lot of things.
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
 	}
 }

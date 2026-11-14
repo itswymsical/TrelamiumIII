@@ -17,7 +17,11 @@ public sealed class RecipeConditions : ModSystem
         RainingForBottles = new Condition(Mod.GetLocalization("Conditions.RainingForBottles", () => "In the Rain"), () => Main.LocalPlayer.ZoneRain && Main.raining);
     }
 
+<<<<<<< HEAD
     public static bool IsNear(Player player, InternalLiquid condition)
+=======
+    public static bool IsNear(Player player, LiquidCondition condition)
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     {
         int centerX = (int)((player.position.X + player.width * 0.5f) / 16f);
         int feetY = (int)((player.position.Y + player.height) / 16f);
@@ -30,7 +34,11 @@ public sealed class RecipeConditions : ModSystem
                     continue;
 
                 Tile tile = Main.tile[x, y];
+<<<<<<< HEAD
                 if (tile.LiquidAmount > 200 && tile.LiquidType == OilLiquids.Instance.Type && tile.InternalLiquid() == condition.Index)
+=======
+                if (tile.LiquidAmount > 200 && tile.LiquidType == OilLiquids.Instance.Type && tile.LiquidCondition() == condition.Index)
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
                     return true;
             }
         }

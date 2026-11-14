@@ -195,7 +195,11 @@ internal sealed class SilvianEncounterScene(NPC silvian)
             SilvianEncounter.GreetingKey,
             zoomIn: true,
             letterbox: true,
+<<<<<<< HEAD
             music: Assets.Music.Silvian.SilviansTheme.Slot,
+=======
+            music: Assets.Music.HomeForagerMusic.Slot,
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
             anchor: DialogueAnchor.OnSpeaker(Silvian));
 
         if (started)

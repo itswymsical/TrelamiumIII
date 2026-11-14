@@ -62,7 +62,11 @@ internal abstract class AlchemyStationUIBase : UIState
             return;
 
         StartBrew(resolution, count);
+<<<<<<< HEAD
         SoundEngine.PlaySound(Assets.SFX.UI.Brewing.Asset);
+=======
+        SoundEngine.PlaySound(Assets.SFX.Brewing.Asset);
+>>>>>>> 6caac6b18e663ba14545f8ff6bb0ae697d11ebfb
     }
 
     /// <summary>Begins brewing the previewed output, which is already scaled by <paramref name="count"/>.</summary>
