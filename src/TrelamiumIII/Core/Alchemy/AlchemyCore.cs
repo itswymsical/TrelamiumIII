@@ -211,7 +211,6 @@ public static class AlchemyCore
     public static void AddPotencySteps()
     {
         var claimed = new HashSet<(int Output, int Type, AlchemyComponentGroup? Group, Temperament Infusion)>();
-
         foreach (Augmentation augmentation in _augmentations)
             foreach (ComponentMatcher matcher in augmentation.Components)
                 claimed.Add((augmentation.Output, matcher.ExactType, matcher.Group, matcher.Infusion));

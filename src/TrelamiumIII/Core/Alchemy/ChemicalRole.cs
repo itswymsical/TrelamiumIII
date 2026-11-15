@@ -26,7 +26,7 @@ public enum ChemicalRole
 /// <summary>Which items are solutes, solvents and solutions, and the temperaments and traits each carries.</summary>
 public static class ChemicalRoles
 {
-    private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/";
+    private const string ICON_DIRECTORY = $"{nameof(TrelamiumIII)}/Assets/Textures/UI/";
 
     private static readonly Dictionary<int, ChemicalRole> authored = [];
     private static readonly Dictionary<int, ChemicalRole> derived = [];

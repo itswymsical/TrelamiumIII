@@ -25,7 +25,12 @@ public class CustomRecipeGroups : ModSystem
             2290, 2297, 2298, 2299, 2300, 2301, 2302, 2303, 2304, 2305, 2306, 2307,
             2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317, 2318, 2319, 2321, 4401, 4402]);
 
-        RegisterRecipeGroup(Soil, displayItem: ItemID.DirtBlock, items: [ItemID.DirtBlock, ItemID.MudBlock, ItemID.AshBlock]);
+        RegisterRecipeGroup(Soil, displayItem: ItemID.DirtBlock, items: 
+            [
+            ItemID.DirtBlock, ItemID.MudBlock, ItemID.AshBlock, ModContent.ItemType<PeatBlock>(),
+            ItemID.SandBlock, ItemID.ClayBlock
+            ]);
+
         RegisterRecipeGroup(RottenChunk, displayItem: ItemID.RottenChunk, items: [ItemID.RottenChunk, ItemID.Vertebrae]);
 
         RegisterRecipeGroup(Dirts, displayItem: ItemID.DirtBlock, items: 

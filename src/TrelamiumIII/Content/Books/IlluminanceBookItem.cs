@@ -4,11 +4,8 @@ namespace TrelamiumIII.Content.Books;
 
 public class IlluminanceBookItem : ModItem
 {
-    public override void SetStaticDefaults()
-    {
-        Item.ResearchUnlockCount = 3;
-    }
-
+    public override void SetStaticDefaults() => Item.ResearchUnlockCount = 1;
+    
     public override void SetDefaults()
     {
         Item.width = Item.height = 28;

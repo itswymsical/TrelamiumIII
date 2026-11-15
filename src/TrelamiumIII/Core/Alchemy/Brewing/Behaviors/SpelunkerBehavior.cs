@@ -39,10 +39,9 @@ public static class SpelunkerReveal
     // and masks the rest. Tune freely; any ore not listed here is always revealed.
     private static readonly (int TileType, int Tier)[] Ladder =
     {   
-        (TileID.Copper, 0),       (TileID.Tin, 0),
         (TileID.Iron, 1),         (TileID.Lead, 1),
         (TileID.Silver, 2),       (TileID.Tungsten, 2),
-        (TileID.Gold, 2),         (TileID.Platinum, 2),
+        (TileID.Gold, 3),         (TileID.Platinum, 3),
         (TileID.Demonite, 2),     (TileID.Crimtane, 2),
         (TileID.Meteorite, 2),    (TileID.Hellstone, 2),
         (TileID.Cobalt, 4),       (TileID.Palladium, 4),
@@ -85,8 +84,8 @@ public static class SpelunkerReveal
         2 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier1"),
         3 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier2"),
         4 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier3"),
-        5 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier4"),
-        _ => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.OreTier5"),
+        5 => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.Vanilla"),
+        _ => LangHelper.LocalizationValue(TrelamiumIII.Instance, "PotionBrews.Spelunker.Vanilla"),
     };
 }
 

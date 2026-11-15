@@ -4,7 +4,6 @@ using TrelamiumIII.Core.Text;
 
 namespace TrelamiumIII.Core.Books.Definitions;
 
-/// <summary>The series binding: deep teal boards around the Illuminance cover art.</summary>
 internal static class IlluminanceSeries
 {
     public static BookPalette Palette => BookPalette.Default() with
@@ -15,13 +14,11 @@ internal static class IlluminanceSeries
         Trim = new Color(47, 43, 79),
         PageColor = new Color(30, 30, 35),
         Ink = Color.White,
+        PageEdgeColor = new Color(41, 41, 48),
         CoverArt = Assets.Textures.BookCoverArt.IlluminanceCover.KEY,
     };
 }
 
-/// <summary>
-///     Laine L.'s <em>Illuminance</em>, a scholar's memoir: the shape a long book takes, one Chapter call plus prose per chapter.
-/// </summary>
 public sealed class IlluminanceBook : ModBook
 {
     public override string Key => "IlluminanceSeries.IlluminanceI";
@@ -39,11 +36,8 @@ public sealed class IlluminanceBook : ModBook
     };
 
     protected override BookTypeface? Typeface => Illuminance;
-
     protected override void Build(BookBuilder book)
     {
-        // Front matter: the title, then the table of contents. Contents may sit anywhere; it measures
-        // from the chapter count, so putting it before the chapters it lists is not circular.
         book
             .Space(32f)
             .Heading("Title", rule: false, BlockStyle.Heading with { Scale = 0.9f, Align = TextAlign.Center })
@@ -58,7 +52,6 @@ public sealed class IlluminanceBook : ModBook
         Chapter(book, "Ch5");
     }
 
-    /// <summary>One chapter's layout, shared by every chapter in the book.</summary>
     private static void Chapter(BookBuilder builder, string chapter)
     {
         builder
